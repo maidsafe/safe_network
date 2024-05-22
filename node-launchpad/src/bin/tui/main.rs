@@ -6,18 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use clap::Parser;
-use color_eyre::eyre::Result;
-use sn_peers_acquisition::PeersArgs;
-use std::env;
-use tokio::task::LocalSet;
-
 mod terminal;
 
+use clap::Parser;
+use color_eyre::eyre::Result;
 use node_launchpad::{
     app::App,
     utils::{initialize_logging, initialize_panic_handler, version},
 };
+use sn_peers_acquisition::PeersArgs;
+use std::{env, path::PathBuf};
+use tokio::task::LocalSet;
 
 #[derive(Parser, Debug)]
 #[command(author, version = version(), about)]
@@ -40,6 +39,12 @@ pub struct Cli {
     )]
     pub frame_rate: f64,
 
+    /// Provide a path for the safenode binary to be used by the service.
+    ///
+    /// Useful for creating the service using a custom built binary.
+    #[clap(long)]
+    safenode_path: Option<PathBuf>,
+
     #[command(flatten)]
     pub(crate) peers: PeersArgs,
 }
@@ -51,7 +56,12 @@ async fn tokio_main() -> Result<()> {
 
     let args = Cli::parse();
 
-    let mut app = App::new(args.tick_rate, args.frame_rate, args.peers)?;
+    let mut app = App::new(
+        args.tick_rate,
+        args.frame_rate,
+        args.peers,
+        args.safenode_path,
+    )?;
     app.run().await?;
 
     Ok(())
