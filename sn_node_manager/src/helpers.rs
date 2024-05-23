@@ -69,7 +69,7 @@ pub async fn download_and_extract_release(
     };
 
     let mut download_attempts = 1;
-    let archive_path = loop {
+    let safenode_download_path = loop {
         if download_attempts > MAX_DOWNLOAD_RETRIES {
             bail!("Failed to download release after {MAX_DOWNLOAD_RETRIES} tries.");
         }
@@ -82,7 +82,11 @@ pub async fn download_and_extract_release(
                 .download_release(url, &download_dir_path, &callback)
                 .await
             {
-                Ok(archive_path) => break archive_path,
+                Ok(archive_path) => {
+                    let safenode_download_path =
+                        release_repo.extract_release_archive(&archive_path, &download_dir_path)?;
+                    break safenode_download_path;
+                }
                 Err(err) => {
                     if verbosity != VerbosityLevel::Minimal {
                         println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
@@ -112,7 +116,20 @@ pub async fn download_and_extract_release(
             );
             let archive_path = download_dir_path.join(&archive_name);
             if archive_path.exists() {
-                break archive_path;
+                // try extracting it, else download it.
+                match release_repo.extract_release_archive(&archive_path, &download_dir_path) {
+                    Ok(safenode_download_path) => {
+                        if verbosity != VerbosityLevel::Minimal {
+                            println!("Using cached {release_type} version {version}...");
+                        }
+                        break safenode_download_path;
+                    }
+                    Err(_) => {
+                        if verbosity != VerbosityLevel::Minimal {
+                            println!("Cached {release_type} version {version} is corrupted. Downloading again...");
+                        }
+                    }
+                }
             }
 
             if verbosity != VerbosityLevel::Minimal {
@@ -129,7 +146,11 @@ pub async fn download_and_extract_release(
                 )
                 .await
             {
-                Ok(archive_path) => break archive_path,
+                Ok(archive_path) => {
+                    let safenode_download_path =
+                        release_repo.extract_release_archive(&archive_path, &download_dir_path)?;
+                    break safenode_download_path;
+                }
                 Err(err) => {
                     if verbosity != VerbosityLevel::Minimal {
                         println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
@@ -145,9 +166,6 @@ pub async fn download_and_extract_release(
     if let Some(pb) = pb {
         pb.finish_and_clear();
     }
-
-    let safenode_download_path =
-        release_repo.extract_release_archive(&archive_path, &download_dir_path)?;
 
     if verbosity != VerbosityLevel::Minimal {
         println!("Download completed: {}", &safenode_download_path.display());
