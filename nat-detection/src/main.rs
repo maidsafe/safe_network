@@ -30,10 +30,10 @@ const CONFIDENCE_MAX: usize = 2;
 const RETRY_INTERVAL: Duration = Duration::from_secs(10);
 
 /// A tool to detect NAT status of the machine. It can be run in server mode or client mode.
-/// The program exits with the following error codes based on the network status:
-/// - 0: Public NAT
-/// - 1: Public under UPnP
-/// - 2: Private or Unknown NAT
+/// The program returns with the following exit codes based on the network status:
+/// - 10: Public NAT
+/// - 11: Public under UPnP
+/// - 12: Private or Unknown NAT
 #[derive(Debug, Parser)]
 #[clap(version, author)]
 struct Opt {
@@ -101,9 +101,9 @@ async fn main() -> Result<()> {
                 info!(%addr, "NAT is public{}", if running_with_upnp { " (with UPnP)" } else { "" });
                 if running_with_upnp {
                     // The error codes are used by other programs, caution when changing them.
-                    std::process::exit(1);
+                    std::process::exit(11);
                 } else {
-                    std::process::exit(0);
+                    std::process::exit(10);
                 }
             }
             NatStatus::Private => {
@@ -115,12 +115,12 @@ async fn main() -> Result<()> {
                     running_with_upnp = true;
                 } else {
                     info!("NAT is private");
-                    std::process::exit(2);
+                    std::process::exit(12);
                 }
             }
             NatStatus::Unknown => {
                 info!("NAT status is unknown");
-                std::process::exit(2);
+                std::process::exit(12);
             }
         }
     }
