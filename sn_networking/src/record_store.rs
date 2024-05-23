@@ -839,13 +839,18 @@ pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
     let base_multiplier = 1.1_f32;
     let rewarder = max(1, base_multiplier.powf(reward_steps as f32) as u64);
 
-    // 1.05.powf(800) = 9E+16
+    // Fine tuning here helps to get a desired curve:
+    // 1, Close to the max supply (4.3E+18) when stored records reaching full.
+    // 2, Charging around `token`s near the situation of 80% storage reached.
+    //
+    // 1.02.powf(1638) = 1.25E+14 => charge_at_full = 10 * MAX_RECORDS * 1.25E+14 = 5.4E+18
+    // 1.02.powf(820) = 1.1E+7 => charge_at_80_percent = 10 * 0.8 * MAX_RECORDS * 1.1E+7 = 3.6E+11 (360 tokens)
+    let base_multiplier = 1.0225_f32;
+
     // Given currently the max_records is set at MAX_RECORDS,
     // hence setting the multiplier trigger at 60% of the max_records
     let exponential_pricing_trigger = 6 * max_records / 10;
 
-    // Fine tuning here helps to get a desired curve
-    let base_multiplier = 1.0225_f32;
     let multiplier = max(
         1,
         base_multiplier.powf(records_stored.saturating_sub(exponential_pricing_trigger) as f32)
