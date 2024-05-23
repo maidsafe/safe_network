@@ -11,7 +11,7 @@ use color_eyre::eyre::{bail, OptionExt, Result};
 use libp2p::Multiaddr;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::NatDetectionStatus;
-use std::path::PathBuf;
+use std::{path::PathBuf, process::Stdio};
 
 #[derive(Debug)]
 pub struct NatDetectionOptions {
@@ -47,21 +47,34 @@ pub async fn run_nat_detection(
         bail!("No servers provided for NAT detection");
     }
 
-    let status = std::process::Command::new(nat_detection_path)
-        .arg("--server_addr")
-        .arg(
-            options
-                .servers
-                .iter()
-                .map(|addr| addr.to_string())
-                .collect::<Vec<String>>()
-                .join(","),
-        )
-        .status()?;
+    if verbosity != VerbosityLevel::Minimal {
+        println!("Running NAT detection. This can take a while..");
+    }
+
+    let stdout = match verbosity {
+        VerbosityLevel::Minimal => Stdio::null(),
+        VerbosityLevel::Normal => Stdio::inherit(),
+        VerbosityLevel::Full => Stdio::inherit(),
+    };
+
+    let mut command = std::process::Command::new(nat_detection_path);
+    command.arg(
+        options
+            .servers
+            .iter()
+            .map(|addr| addr.to_string())
+            .collect::<Vec<String>>()
+            .join(","),
+    );
+    // todo: clarify the different verbosity levels. Minimal actually means none. Full/Normal are not used yet.
+    if verbosity == VerbosityLevel::Full {
+        command.arg("-vv");
+    }
+    let status = command.stdout(stdout).status()?;
     match status.code().ok_or_eyre("Failed to get the exit code")? {
-        0 => Ok(NatDetectionStatus::Public),
-        1 => Ok(NatDetectionStatus::UPnP),
-        2 => Ok(NatDetectionStatus::Private),
-        _ => bail!("Failed to detect NAT status"),
+        10 => Ok(NatDetectionStatus::Public),
+        11 => Ok(NatDetectionStatus::UPnP),
+        12 => Ok(NatDetectionStatus::Private),
+        code => bail!("Failed to detect NAT status, exit code: {code}"),
     }
 }
