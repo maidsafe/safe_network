@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716434928883,
+  "lastUpdate": 1716435054973,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "0d60555638267e3607cf3203912cf0117c4f9e61",
-          "message": "feat: extendable local state DAG in cli",
-          "timestamp": "2024-02-07T14:50:56Z",
-          "tree_id": "93198813e754521e18ed6687ed58dd0d1d184bb7",
-          "url": "https://github.com/maidsafe/safe_network/commit/0d60555638267e3607cf3203912cf0117c4f9e61"
-        },
-        "date": 1707320771956,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 55,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4e26ee4008ee5187fd93e95093ec1ec4b7160246",
+          "message": "chore: update sn-releases",
+          "timestamp": "2024-05-23T12:15:09+09:00",
+          "tree_id": "99225385565d5da6f2d9df6b3012e325eddf463d",
+          "url": "https://github.com/maidsafe/safe_network/commit/4e26ee4008ee5187fd93e95093ec1ec4b7160246"
+        },
+        "date": 1716435054123,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
