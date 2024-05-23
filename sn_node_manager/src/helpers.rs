@@ -69,7 +69,7 @@ pub async fn download_and_extract_release(
     };
 
     let mut download_attempts = 1;
-    let safenode_download_path = loop {
+    let binary_download_path = loop {
         if download_attempts > MAX_DOWNLOAD_RETRIES {
             bail!("Failed to download release after {MAX_DOWNLOAD_RETRIES} tries.");
         }
@@ -83,9 +83,9 @@ pub async fn download_and_extract_release(
                 .await
             {
                 Ok(archive_path) => {
-                    let safenode_download_path =
+                    let binary_download_path =
                         release_repo.extract_release_archive(&archive_path, &download_dir_path)?;
-                    break safenode_download_path;
+                    break binary_download_path;
                 }
                 Err(err) => {
                     if verbosity != VerbosityLevel::Minimal {
@@ -118,11 +118,11 @@ pub async fn download_and_extract_release(
             if archive_path.exists() {
                 // try extracting it, else download it.
                 match release_repo.extract_release_archive(&archive_path, &download_dir_path) {
-                    Ok(safenode_download_path) => {
+                    Ok(binary_download_path) => {
                         if verbosity != VerbosityLevel::Minimal {
                             println!("Using cached {release_type} version {version}...");
                         }
-                        break safenode_download_path;
+                        break binary_download_path;
                     }
                     Err(_) => {
                         if verbosity != VerbosityLevel::Minimal {
@@ -147,9 +147,9 @@ pub async fn download_and_extract_release(
                 .await
             {
                 Ok(archive_path) => {
-                    let safenode_download_path =
+                    let binary_download_path =
                         release_repo.extract_release_archive(&archive_path, &download_dir_path)?;
-                    break safenode_download_path;
+                    break binary_download_path;
                 }
                 Err(err) => {
                     if verbosity != VerbosityLevel::Minimal {
@@ -168,15 +168,15 @@ pub async fn download_and_extract_release(
     }
 
     if verbosity != VerbosityLevel::Minimal {
-        println!("Download completed: {}", &safenode_download_path.display());
+        println!("Download completed: {}", &binary_download_path.display());
     }
 
     // Finally, obtain the version number from the binary by running `--version`. This is useful
     // when the `--url` argument is used, and in any case, ultimately the binary we obtained is the
     // source of truth.
-    let bin_version = get_bin_version(&safenode_download_path)?;
+    let bin_version = get_bin_version(&binary_download_path)?;
 
-    Ok((safenode_download_path, bin_version))
+    Ok((binary_download_path, bin_version))
 }
 
 pub fn get_bin_version(bin_path: &PathBuf) -> Result<String> {

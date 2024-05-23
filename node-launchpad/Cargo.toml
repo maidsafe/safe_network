@@ -46,7 +46,7 @@ serde_json = "1.0.107"
 signal-hook = "0.3.17"
 sn-node-manager = { version = "0.8.0", path = "../sn_node_manager" }
 sn_peers_acquisition = { version = "0.2.12", path = "../sn_peers_acquisition" }
-sn-releases = "~0.2.4"
+sn-releases = "~0.2.5"
 sn_service_management = { version = "0.3.0", path = "../sn_service_management" }
 strip-ansi-escapes = "0.2.0"
 strum = { version = "0.26.1", features = ["derive"] }

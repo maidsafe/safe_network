@@ -15,7 +15,9 @@ use crate::{
 };
 use color_eyre::eyre::{OptionExt, Result};
 use ratatui::{prelude::*, widgets::*};
-use sn_node_manager::{config::get_node_registry_path, VerbosityLevel};
+use sn_node_manager::{
+    cmd::nat_detection::NatDetectionOptions, config::get_node_registry_path, VerbosityLevel,
+};
 use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
 use std::path::PathBuf;
@@ -383,6 +385,14 @@ fn maintain_n_running_nodes(
             None,
             None,
             None,
+            Some(NatDetectionOptions {
+                force_nat_detection: false,
+                path: None,
+                servers: vec![],
+                terminate_on_private_nat: true,
+                url: None,
+                version: None,
+            }),
             None,
             Some(owner),
             peers_args,
