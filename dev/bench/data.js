@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716465735935,
+  "lastUpdate": 1716483754740,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "9e32aa47e00f725b854c9b51fc9b377512dab769",
-          "message": "ci: temporary debugging output for release process\n\nSomething is causing the build agent to run out of space. I have a suspicion it's possible that it's\nsomething to do with how `release-plz` determines changes in the crates, and it could be struggling\nbecause the number of crates in our workspace has grown.\n\nThe first thing is to enable debugging output, because I seen some `debug!` usage in the\n`release-plz` codebase. Hoping maybe that could provide some clues if it is `release-plz` that is\ncausing the disk usage.\n\nIf not, each step has output to display the disk usage, which hopefully may give us other clues.\n\nThis commit can be reverted when we have solved the issue.",
-          "timestamp": "2024-02-08T13:25:41Z",
-          "tree_id": "de9f57e68f0df34e88923c5a26d6f6196d203f7a",
-          "url": "https://github.com/maidsafe/safe_network/commit/9e32aa47e00f725b854c9b51fc9b377512dab769"
-        },
-        "date": 1707399342171,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2568172860580804,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8276454129343296,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.99238334612797,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 42.45683895507164,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "363e38c49fb8b7b2dc5d505b8af8ef0d1955ffbf",
+          "message": "feat(nat_detection): release nat detection binary",
+          "timestamp": "2024-05-23T17:48:54+01:00",
+          "tree_id": "681841f86e4d15439a39bc66eec686f15459fcd1",
+          "url": "https://github.com/maidsafe/safe_network/commit/363e38c49fb8b7b2dc5d505b8af8ef0d1955ffbf"
+        },
+        "date": 1716483745109,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2051970986304152,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.1161166064055843,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 47.540644084622976,
             "unit": "MiB/s"
           }
         ]
