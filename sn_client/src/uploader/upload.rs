@@ -128,7 +128,9 @@ pub(super) async fn start_upload(
                     "The maximum repayments were reached for these addresses: {:?}",
                     uploader.max_repayments_reached
                 );
-                return Err(ClientError::MaximumRepaymentsReached);
+                return Err(ClientError::MaximumRepaymentsReached(
+                    uploader.max_repayments_reached.into_iter().collect(),
+                ));
             }
 
             let summary = UploadSummary {
@@ -535,7 +537,7 @@ impl UploaderInterface for Uploader {
                     error!("Encountered error {err:?} when getting store_cost for {xorname:?}",);
 
                     let max_repayments_reached =
-                        matches!(&err, ClientError::MaximumRepaymentsReached);
+                        matches!(&err, ClientError::MaximumRepaymentsReached(_));
 
                     TaskResult::GetStoreCostErr {
                         xorname,
@@ -940,7 +942,7 @@ impl InnerUploader {
                     max_repayments_for_failed_data,
                 ) {
                     // error is used by the caller.
-                    return Err(ClientError::MaximumRepaymentsReached);
+                    return Err(ClientError::MaximumRepaymentsReached(vec![xorname]));
                 }
 
                 debug!("Filtering out payments from {filter_list:?} during get_store_cost for {xorname:?}");

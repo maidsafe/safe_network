@@ -448,7 +448,7 @@ async fn maximum_repayment_error_should_be_triggered_during_get_store_cost() -> 
 
     assert_matches!(
         upload_handle.await?,
-        Err(ClientError::MaximumRepaymentsReached)
+        Err(ClientError::MaximumRepaymentsReached(_))
     );
     let events = events_handle.await?;
 
