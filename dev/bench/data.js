@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716436890062,
+  "lastUpdate": 1716436891823,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "1cb965776dc13fd993e4d13b872c852ae172c6b1",
-          "message": "fix: rust docs error",
-          "timestamp": "2024-02-07T16:24:48Z",
-          "tree_id": "6fe382b693d2b84cb23d75de38568f74f35026a7",
-          "url": "https://github.com/maidsafe/safe_network/commit/1cb965776dc13fd993e4d13b872c852ae172c6b1"
-        },
-        "date": 1707326416355,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6368,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35115,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "0030fda0f6e15fd32d153bd8424b71cfe2bbb2d9",
+          "message": "feat: improved spend verification with DAG and fault detection",
+          "timestamp": "2024-05-23T03:15:31Z",
+          "tree_id": "4ec053bb7aa7b6259908649a48fbba07374be450",
+          "url": "https://github.com/maidsafe/safe_network/commit/0030fda0f6e15fd32d153bd8424b71cfe2bbb2d9"
+        },
+        "date": 1716436891495,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 15882,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 115221,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 7,
             "unit": "ms"
           }
         ]
