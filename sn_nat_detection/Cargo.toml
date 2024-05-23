@@ -10,7 +10,7 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.1.0"
 
 [[bin]]
-name = "detect-nat"
+name = "nat-detection"
 path = "src/main.rs"
 
 [dependencies]

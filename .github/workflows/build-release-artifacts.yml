@@ -105,6 +105,7 @@ jobs:
         run: |
           tree artifacts
           just package-release-assets "faucet"
+          just package-release-assets "nat-detection"
           just package-release-assets "node-launchpad"
           just package-release-assets "safe"
           just package-release-assets "safenode"

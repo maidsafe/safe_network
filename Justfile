@@ -114,6 +114,7 @@ build-release-artifacts arch:
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
     cargo install cross
     cross build --release --target $arch --bin faucet --features=distribution
+    cross build --release --target $arch --bin nat-detection
     cross build --release --target $arch --bin node-launchpad
     cross build --release --features="network-contacts,distribution" --target $arch --bin safe
     cross build --release --features=network-contacts --target $arch --bin safenode
@@ -123,6 +124,7 @@ build-release-artifacts arch:
     cross build --release --target $arch --bin sn_auditor
   else
     cargo build --release --target $arch --bin faucet --features=distribution
+    cargo build --release --target $arch --bin nat-detection
     cargo build --release --target $arch --bin node-launchpad
     cargo build --release --features="network-contacts,distribution" --target $arch --bin safe
     cargo build --release --features=network-contacts --target $arch --bin safenode
@@ -175,6 +177,7 @@ package-release-assets bin version="":
 
   supported_bins=(\
     "faucet" \
+    "nat-detection" \
     "node-launchpad" \
     "safe" \
     "safenode" \
@@ -190,6 +193,9 @@ package-release-assets bin version="":
   case "$bin" in
     faucet)
       crate_dir_name="sn_faucet"
+      ;;
+    nat-detection)
+      crate_dir_name="sn_nat_detection"
       ;;
     node-launchpad)
       crate_dir_name="node-launchpad"
@@ -256,6 +262,7 @@ upload-github-release-assets:
     "sn-node-manager"
     "sn_node_rpc_client"
     "sn_auditor"
+    "sn_nat_detection"
   )
 
   commit_msg=$(git log -1 --pretty=%B)
@@ -300,6 +307,10 @@ upload-github-release-assets:
             bin_name="sn_auditor"
             bucket="sn-auditor"
             ;;
+          sn_nat_detection)
+            bin_name="nat-detection"
+            bucket="nat-detection"
+            ;;
           *)
             echo "The $crate crate is not supported"
             exit 1
@@ -330,6 +341,9 @@ upload-release-assets-to-s3 bin_name:
   case "{{bin_name}}" in
     faucet)
       bucket="sn-faucet"
+      ;;
+    nat-detection)
+      bucket="nat-detection"
       ;;
     node-launchpad)
       bucket="node-launchpad"

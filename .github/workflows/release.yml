@@ -160,6 +160,7 @@ jobs:
           # ensures that they will exist after the new crate has been published.
 
           just package-release-assets "faucet"
+          just package-release-assets "nat-detection"
           just package-release-assets "node-launchpad"
           just package-release-assets "safe"
           just package-release-assets "safenode"
@@ -168,6 +169,7 @@ jobs:
           just package-release-assets "safenodemand"
           just package-release-assets "sn_auditor"
           just upload-release-assets-to-s3 "faucet"
+          just upload-release-assets-to-s3 "nat-detection"
           just upload-release-assets-to-s3 "node-launchpad"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
@@ -190,6 +192,7 @@ jobs:
           # Now upload the 'latest' versions to S3. This can be done later because the node manager
           # does not depend on these existing.
           just package-release-assets "faucet" "latest"
+          just package-release-assets "nat-detection" "latest"
           just package-release-assets "node-launchpad" "latest"
           just package-release-assets "safe" "latest"
           just package-release-assets "safenode" "latest"
@@ -197,8 +200,9 @@ jobs:
           just package-release-assets "safenode-manager" "latest"
           just package-release-assets "safenodemand" "latest"
           just package-release-assets "sn_auditor" "latest"
-          just upload-release-assets-to-s3 "node-launchpad"
           just upload-release-assets-to-s3 "faucet"
+          just upload-release-assets-to-s3 "nat-detection"
+          just upload-release-assets-to-s3 "node-launchpad"
           just upload-release-assets-to-s3 "safe"
           just upload-release-assets-to-s3 "safenode"
           just upload-release-assets-to-s3 "safenode-manager"
