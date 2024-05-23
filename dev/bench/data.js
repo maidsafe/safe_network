@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716465593158,
+  "lastUpdate": 1716465730806,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "69eaf0acf2fc1457c46bedd324bd564b71077daf",
-          "message": "Revert \"chore: roll back to log more\"\n\nThis reverts commit df945bfa31ae197f35e8dbe381282e69b4961142.",
-          "timestamp": "2024-02-08T11:02:09+01:00",
-          "tree_id": "5d9f9b98ea4f59351b1843d0a0aaf61ca3980652",
-          "url": "https://github.com/maidsafe/safe_network/commit/69eaf0acf2fc1457c46bedd324bd564b71077daf"
-        },
-        "date": 1707387205526,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 70,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "d535c9fdbdd255e61f3a273160d49c84148d7cb8",
+          "message": "chore(node): remove un-necessary is_relayed check inside add_potential_candidates",
+          "timestamp": "2024-05-23T11:11:21Z",
+          "tree_id": "fd272cb42b78843c7df57686fc5c1458caac448b",
+          "url": "https://github.com/maidsafe/safe_network/commit/d535c9fdbdd255e61f3a273160d49c84148d7cb8"
+        },
+        "date": 1716465730407,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
