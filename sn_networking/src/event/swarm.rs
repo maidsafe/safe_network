@@ -140,7 +140,7 @@ impl SwarmDriver {
                         // If we're not in local mode, only add globally reachable addresses.
                         // Strip the `/p2p/...` part of the multiaddresses.
                         // Collect into a HashSet directly to avoid multiple allocations and handle deduplication.
-                        let addrs: HashSet<Multiaddr> = match self.local {
+                        let mut addrs: HashSet<Multiaddr> = match self.local {
                             true => info
                                 .listen_addrs
                                 .into_iter()
@@ -154,12 +154,19 @@ impl SwarmDriver {
                                 .collect(),
                         };
 
-                        self.relay_manager.add_potential_candidates(
-                            &peer_id,
-                            &addrs,
-                            &info.protocols,
-                            &self.bad_nodes,
-                        );
+                        let has_relayed = addrs.iter().any(|multiaddr| {
+                            multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit))
+                        });
+
+                        // Do not use an `already relayed` peer as `potential relay candidate`.
+                        if !has_relayed {
+                            self.relay_manager.add_potential_candidates(
+                                &peer_id,
+                                &addrs,
+                                &info.protocols,
+                                &self.bad_nodes,
+                            );
+                        }
 
                         // When received an identify from un-dialed peer, try to dial it
                         // The dial shall trigger the same identify to be sent again and confirm
@@ -232,6 +239,13 @@ impl SwarmDriver {
                                 info!("Peer {peer_id:?} is considered as bad, blocking it.");
                             } else {
                                 self.remove_bootstrap_from_full(peer_id);
+
+                                // Avoid have `direct link format` addrs co-exists with `relay` addr
+                                if has_relayed {
+                                    addrs.retain(|multiaddr| {
+                                        multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit))
+                                    });
+                                }
 
                                 trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
