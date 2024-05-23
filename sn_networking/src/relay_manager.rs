@@ -16,6 +16,12 @@ use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 const MAX_CONCURRENT_RELAY_CONNECTIONS: usize = 3;
 const MAX_POTENTIAL_CANDIDATES: usize = 15;
 
+pub(crate) fn is_a_relayed_peer(addrs: &HashSet<Multiaddr>) -> bool {
+    addrs
+        .iter()
+        .any(|multiaddr| multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit)))
+}
+
 /// To manager relayed connections.
 #[derive(Debug)]
 pub(crate) struct RelayManager {
@@ -104,16 +110,11 @@ impl RelayManager {
         if Self::does_it_support_relay_server_protocol(stream_protocols) {
             // todo: collect and manage multiple addrs
             if let Some(addr) = addrs.iter().next() {
-                // only consider non relayed peers
-                if !addr.iter().any(|p| p == Protocol::P2pCircuit) {
-                    if let Some(relay_addr) = Self::craft_relay_address(addr, Some(*peer_id)) {
-                        debug!(
-                            "Adding {peer_id:?} with {relay_addr:?} as a potential relay candidate"
-                        );
-                        self.candidates.push_back((*peer_id, relay_addr));
-                    }
-                } else {
-                    trace!("Addr for peer {peer_id:?} contains P2pCircuit protocol. Not adding as candidate.");
+                // The calling place shall already checked whether the peer is `relayed`.
+                // Hence here can add the addr directly.
+                if let Some(relay_addr) = Self::craft_relay_address(addr, Some(*peer_id)) {
+                    debug!("Adding {peer_id:?} with {relay_addr:?} as a potential relay candidate");
+                    self.candidates.push_back((*peer_id, relay_addr));
                 }
             }
         } else {

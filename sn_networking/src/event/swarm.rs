@@ -8,7 +8,7 @@
 
 use crate::{
     cmd::SwarmCmd, event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p,
-    target_arch::Instant, NetworkEvent, Result, SwarmDriver,
+    relay_manager::is_a_relayed_peer, target_arch::Instant, NetworkEvent, Result, SwarmDriver,
 };
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
@@ -154,9 +154,7 @@ impl SwarmDriver {
                                 .collect(),
                         };
 
-                        let has_relayed = addrs.iter().any(|multiaddr| {
-                            multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit))
-                        });
+                        let has_relayed = is_a_relayed_peer(&addrs);
 
                         // Do not use an `already relayed` peer as `potential relay candidate`.
                         if !has_relayed {
