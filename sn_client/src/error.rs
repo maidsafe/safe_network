@@ -8,6 +8,8 @@
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
+use crate::UploadSummary;
+
 use super::ClientEvent;
 use sn_protocol::NetworkAddress;
 use sn_registers::{Entry, EntryHash};
@@ -140,8 +142,14 @@ pub enum Error {
     #[error("Too many sequential payment errors reported during upload")]
     SequentialUploadPaymentError,
 
-    #[error("The maximum specified repayments has been reached for {0:?}")]
-    MaximumRepaymentsReached(Vec<XorName>),
+    #[error("The maximum specified repayments has been reached for a single item: {0:?}")]
+    MaximumRepaymentsReached(XorName),
+
+    #[error("The upload failed with maximum repayments reached for multiple items: {items:?} Summary: {summary:?}")]
+    UploadFailedWithMaximumRepaymentsReached {
+        items: Vec<XorName>,
+        summary: UploadSummary,
+    },
 
     #[error("Error occurred when access wallet file")]
     FailedToAccessWallet,
