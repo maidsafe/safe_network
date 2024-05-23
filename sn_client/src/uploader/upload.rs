@@ -122,17 +122,6 @@ pub(super) async fn start_upload(
                     .balance();
             #[cfg(test)]
             trace!("UPLOADER STATE: finished uploading all items {uploader:?}");
-
-            if !uploader.max_repayments_reached.is_empty() {
-                error!(
-                    "The maximum repayments were reached for these addresses: {:?}",
-                    uploader.max_repayments_reached
-                );
-                return Err(ClientError::MaximumRepaymentsReached(
-                    uploader.max_repayments_reached.into_iter().collect(),
-                ));
-            }
-
             let summary = UploadSummary {
                 storage_cost: uploader.upload_storage_cost,
                 royalty_fees: uploader.upload_royalty_fees,
@@ -142,6 +131,18 @@ pub(super) async fn start_upload(
                 skipped_count: uploader.skipped_count,
                 uploaded_registers: uploader.uploaded_registers,
             };
+
+            if !uploader.max_repayments_reached.is_empty() {
+                error!(
+                    "The maximum repayments were reached for these addresses: {:?}",
+                    uploader.max_repayments_reached
+                );
+                return Err(ClientError::UploadFailedWithMaximumRepaymentsReached {
+                    items: uploader.max_repayments_reached.into_iter().collect(),
+                    summary,
+                });
+            }
+
             return Ok(summary);
         }
 
@@ -942,7 +943,7 @@ impl InnerUploader {
                     max_repayments_for_failed_data,
                 ) {
                     // error is used by the caller.
-                    return Err(ClientError::MaximumRepaymentsReached(vec![xorname]));
+                    return Err(ClientError::MaximumRepaymentsReached(xorname));
                 }
 
                 debug!("Filtering out payments from {filter_list:?} during get_store_cost for {xorname:?}");
