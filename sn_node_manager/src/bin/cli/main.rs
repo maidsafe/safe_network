@@ -391,7 +391,7 @@ pub enum AuditorSubCmd {
         #[clap(long)]
         path: Option<PathBuf>,
         #[command(flatten)]
-        peers: PeersArgs,
+        peers: Box<PeersArgs>,
         /// Provide a auditor binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
@@ -863,7 +863,7 @@ async fn main() -> Result<()> {
                 beta_encryption_key,
                 env_variables,
                 log_dir_path,
-                peers,
+                *peers,
                 path,
                 url,
                 version,
