@@ -8,17 +8,24 @@
 
 #![allow(clippy::too_many_arguments)]
 
-use super::{download_and_get_upgrade_bin_path, is_running_as_root, print_upgrade_summary};
+use super::{
+    download_and_get_upgrade_bin_path, is_running_as_root, nat_detection::NatDetectionOptions,
+    print_upgrade_summary,
+};
 use crate::{
     add_services::{
         add_node,
         config::{AddNodeServiceOptions, PortRange},
     },
+    cmd::nat_detection,
     config,
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
-use color_eyre::{eyre::eyre, Help, Result};
+use color_eyre::{
+    eyre::{bail, eyre, OptionExt},
+    Help, Result,
+};
 use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
@@ -28,7 +35,8 @@ use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::{ServiceControl, ServiceController},
     rpc::RpcClient,
-    NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
+    NatDetectionStatus, NodeRegistry, NodeService, ServiceStateActions, ServiceStatus,
+    UpgradeOptions, UpgradeResult,
 };
 use sn_transfers::HotWallet;
 use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
@@ -39,18 +47,19 @@ pub async fn add(
     count: Option<u16>,
     data_dir_path: Option<PathBuf>,
     env_variables: Option<Vec<(String, String)>>,
-    home_network: bool,
+    mut home_network: bool,
     local: bool,
     log_dir_path: Option<PathBuf>,
     log_format: Option<LogFormat>,
     metrics_port: Option<PortRange>,
+    nat_detection: Option<NatDetectionOptions>,
     node_port: Option<PortRange>,
     owner: Option<String>,
     peers: PeersArgs,
     rpc_address: Option<Ipv4Addr>,
     rpc_port: Option<PortRange>,
     src_path: Option<PathBuf>,
-    upnp: bool,
+    mut upnp: bool,
     url: Option<String>,
     user: Option<String>,
     version: Option<String>,
@@ -117,6 +126,43 @@ pub async fn add(
             sn_peers_acquisition::error::Error::PeersNotObtained => Vec::new(),
             _ => return Err(e.into()),
         },
+    };
+
+    if let Some(options) = nat_detection {
+        let nat_status = if node_registry.nat_status.is_none() || options.force_nat_detection {
+            let nat_status =
+                nat_detection::run_nat_detection(&options, &*release_repo, verbosity).await?;
+            if verbosity != VerbosityLevel::Minimal {
+                println!("NAT status has been found to be: {nat_status:?}");
+            }
+            node_registry.nat_status = Some(nat_status.clone());
+            node_registry.save()?;
+            nat_status
+        } else {
+            node_registry
+                .nat_status
+                .clone()
+                .ok_or_eyre("Checked to make sure it is not none")?
+        };
+
+        // override the upnp and home-network options
+        match nat_status {
+            NatDetectionStatus::Public => {
+                upnp = false;
+                home_network = false;
+            }
+            NatDetectionStatus::UPnP => {
+                upnp = true;
+                home_network = false;
+            }
+            NatDetectionStatus::Private => {
+                if options.terminate_on_private_nat {
+                    bail!("Terminating as the NAT status is private");
+                }
+                upnp = false;
+                home_network = true;
+            }
+        }
     };
 
     let options = AddNodeServiceOptions {
@@ -510,6 +556,7 @@ pub async fn maintain_n_running_nodes(
     log_dir_path: Option<PathBuf>,
     log_format: Option<LogFormat>,
     metrics_port: Option<PortRange>,
+    nat_detection: Option<NatDetectionOptions>,
     node_port: Option<PortRange>,
     owner: Option<String>,
     peers: PeersArgs,
@@ -600,6 +647,7 @@ pub async fn maintain_n_running_nodes(
                     log_dir_path,
                     log_format,
                     metrics_port,
+                    nat_detection,
                     node_port,
                     owner,
                     peers,
