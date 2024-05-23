@@ -66,6 +66,12 @@ changelog_update = true
 git_release_enable = false
 
 [[package]]
+name = "sn_nat_detection"
+release = true
+changelog_update = true
+git_release_enable = false
+
+[[package]]
 name = "sn_networking"
 release = true
 changelog_update = true
