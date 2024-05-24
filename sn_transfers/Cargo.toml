@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_transfers"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.18.0"
+version = "0.18.1"
 
 [features]
 reward-forward = []

@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.106.2"
+version = "0.106.3"
 
 [features]
 default = []
@@ -41,11 +41,11 @@ rayon = "1.8.0"
 rmp-serde = "1.1.1"
 self_encryption = "~0.29.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
-sn_networking = { path = "../sn_networking", version = "0.15.2" }
-sn_protocol = { path = "../sn_protocol", version = "0.16.6" }
+sn_networking = { path = "../sn_networking", version = "0.15.3" }
+sn_protocol = { path = "../sn_protocol", version = "0.16.7" }
 serde_json = "1.0"
 sn_registers = { path = "../sn_registers", version = "0.3.13" }
-sn_transfers = { path = "../sn_transfers", version = "0.18.0" }
+sn_transfers = { path = "../sn_transfers", version = "0.18.1" }
 tempfile = "3.6.0"
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"
@@ -68,7 +68,7 @@ dirs-next = "~2.0.0"
 # add rand to libp2p
 libp2p-identity = { version = "0.2.7", features = ["rand"] }
 sn_client = { path = "../sn_client", features = ["test-utils"] }
-sn_logging = { path = "../sn_logging", version = "0.2.26" }
+sn_logging = { path = "../sn_logging", version = "0.2.27" }
 sn_registers = { path = "../sn_registers", version = "0.3.13", features = [
     "test-utils",
 ] }

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.27](https://github.com/joshuef/safe_network/compare/sn_logging-v0.2.26...sn_logging-v0.2.27) - 2024-05-24
+
+### Added
+- *(nodeman)* add LogFormat as a startup arg for nodes
+
 ## [0.2.26-alpha.1](https://github.com/maidsafe/safe_network/compare/sn_logging-v0.2.26-alpha.0...sn_logging-v0.2.26-alpha.1) - 2024-05-07
 
 ### Added

@@ -6,6 +6,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.19](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.4.18...sn_faucet-v0.4.19) - 2024-05-24
+
+### Added
+- *(faucet)* allow gifting by default
+- *(faucet)* increase initial balance
+- *(faucet)* make gifting server feat dependent
+- *(faucet)* send small amount to faucet, rest to foundation
+- *(faucet)* add feat for gifting-from-genesis
+- faucet donate endpoint to feed the faucet
+- *(faucet)* fully limit any concurrency
+- *(faucet)* log from sn_client
+- report protocol mismatch error
+
+### Fixed
+- *(faucet)* cleanup unused vars
+- *(faucet)* rate limit before getting wallet
+- *(faucet)* ensure faucet is funded in main fn
+- update calls to HotWallet::load
+- *(faucet)* fix distribution 'from' wallet loading
+- *(client)* move acct_packet mnemonic into client layer
+
+### Other
+- enable default features during faucet release
+- *(release)* sn_auditor-v0.1.16/sn_cli-v0.91.4/sn_faucet-v0.4.18/sn_metrics-v0.1.7/sn_node-v0.106.4/sn_service_management-v0.2.8/node-launchpad-v0.1.5/sn-node-manager-v0.7.7/sn_node_rpc_client-v0.6.17
+- *(release)* sn_auditor-v0.1.15/sn_cli-v0.91.3/sn_faucet-v0.4.17/sn_metrics-v0.1.6/sn_node-v0.106.3/sn_service_management-v0.2.7/node-launchpad-v0.1.2/sn_node_rpc_client-v0.6.16
+- *(release)* sn_client-v0.106.2/sn_networking-v0.15.2/sn_cli-v0.91.2/sn_node-v0.106.2/sn_auditor-v0.1.14/sn_faucet-v0.4.16/sn_node_rpc_client-v0.6.15
+- *(release)* sn_auditor-v0.1.13/sn_client-v0.106.1/sn_networking-v0.15.1/sn_protocol-v0.16.6/sn_cli-v0.91.1/sn_faucet-v0.4.15/sn_node-v0.106.1/node-launchpad-v0.1.1/sn_node_rpc_client-v0.6.14/sn_peers_acquisition-v0.2.12/sn_service_management-v0.2.6
+- *(release)* sn_auditor-v0.1.12/sn_client-v0.106.0/sn_networking-v0.15.0/sn_transfers-v0.18.0/sn_peers_acquisition-v0.2.11/sn_logging-v0.2.26/sn_cli-v0.91.0/sn_faucet-v0.4.14/sn_metrics-v0.1.5/sn_node-v0.106.0/sn_service_management-v0.2.5/test_utils-v0.4.1/node-launchpad-v/sn-node-manager-v0.7.5/sn_node_rpc_client-v0.6.13/token_supplies-v0.1.48/sn_protocol-v0.16.5
+- *(versions)* sync versions with latest crates.io vs
+- addres review comments
+- *(faucet)* log initilization failure and upload faucet log
+- *(CI)* upload faucet log during CI
+- *(release)* sn_auditor-v0.1.7/sn_client-v0.105.3/sn_networking-v0.14.4/sn_protocol-v0.16.3/sn_build_info-v0.1.7/sn_transfers-v0.17.2/sn_peers_acquisition-v0.2.10/sn_cli-v0.90.4/sn_faucet-v0.4.9/sn_metrics-v0.1.4/sn_node-v0.105.6/sn_service_management-v0.2.4/sn-node-manager-v0.7.4/sn_node_rpc_client-v0.6.8/token_supplies-v0.1.47
+- *(deps)* bump dependencies
+
 ## [0.4.18](https://github.com/maidsafe/safe_network/compare/sn_faucet-v0.4.17...sn_faucet-v0.4.18) - 2024-05-20
 
 ### Other

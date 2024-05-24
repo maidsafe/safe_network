@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.3](https://github.com/joshuef/safe_network/compare/sn_networking-v0.15.2...sn_networking-v0.15.3) - 2024-05-24
+
+### Added
+- *(metrics)* expose store cost value
+- keep track of the estimated network size metric
+- record lip2p relay and dctur metrics
+- *(node)* periodically forward reward to specific address
+
+### Fixed
+- avoid adding mixed type addresses into RT
+- enable libp2p metrics to be captured
+
+### Other
+- *(node)* tuning the pricing curve
+- *(node)* remove un-necessary is_relayed check inside add_potential_candidates
+- move historic_quoting_metrics out of the record_store dir
+- clippy fixes for open metrics feature
+- make open metrics feature default but without starting it by default
+- *(networking)* update tests for pricing curve tweaks
+- *(refactor)* stabilise node size to 4k records,
+- Revert "feat(node): make spend and cash_note reason field configurable"
+- Revert "chore: rename output reason to purpose for clarity"
+
 ## [0.15.2](https://github.com/maidsafe/safe_network/compare/sn_networking-v0.15.1...sn_networking-v0.15.2) - 2024-05-09
 
 ### Fixed
