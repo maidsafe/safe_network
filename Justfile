@@ -195,7 +195,7 @@ package-release-assets bin version="":
       crate_dir_name="sn_faucet"
       ;;
     nat-detection)
-      crate_dir_name="sn_nat_detection"
+      crate_dir_name="nat-detection"
       ;;
     node-launchpad)
       crate_dir_name="node-launchpad"
@@ -262,7 +262,7 @@ upload-github-release-assets:
     "sn-node-manager"
     "sn_node_rpc_client"
     "sn_auditor"
-    "sn_nat_detection"
+    "nat-detection"
   )
 
   commit_msg=$(git log -1 --pretty=%B)
@@ -307,7 +307,7 @@ upload-github-release-assets:
             bin_name="sn_auditor"
             bucket="sn-auditor"
             ;;
-          sn_nat_detection)
+          nat-detection)
             bin_name="nat-detection"
             bucket="nat-detection"
             ;;
