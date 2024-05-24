@@ -6,6 +6,117 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.92.0](https://github.com/joshuef/safe_network/compare/sn_cli-v0.91.4...sn_cli-v0.92.0) - 2024-05-24
+
+### Added
+- improved spend verification with DAG and fault detection
+- upgrade cli audit to use DAG
+- remove two uneeded env vars
+- pass genesis_cn pub fields separate to hide sk
+- pass sk_str via cli opt
+- *(audit)* collect payment forward statistics
+- *(client)* dump spends creation_reason statistics
+- *(node)* make spend and cash_note reason field configurable
+- *(cli)* readd wallet helper address for dist feat
+- *(cli)* generate a mnemonic as wallet basis if no wallet found
+- *(cli)* eip2333 helpers for accounts
+- [**breaking**] renamings in CashNote
+- [**breaking**] rename token to amount in Spend
+- *(cli)* implement FilesUploadStatusNotifier trait for lib code
+- *(cli)* return the files upload summary after a successful files upload
+- unit testing dag, double spend poisoning tweaks
+- report protocol mismatch error
+- hide genesis keypair
+- *(node)* use separate keys of Foundation and Royalty
+- *(wallet)* ensure genesis wallet attempts to load from local on init first
+- *(faucet)* increase initial balance
+- *(faucet)* make gifting server feat dependent
+- *(faucet)* send small amount to faucet, rest to foundation
+- *(faucet)* add feat for gifting-from-genesis
+- *(audit)* intercept sender of the payment forward
+- spend reason enum and sized cipher
+- *(metrics)* expose store cost value
+- keep track of the estimated network size metric
+- record lip2p relay and dctur metrics
+- *(node)* periodically forward reward to specific address
+- use default keys for genesis, or override
+- use different key for payment forward
+- hide genesis keypair
+- tracking beta rewards from the DAG
+
+### Fixed
+- audit flags activated independently
+- reduce blabber in dot and royalties audit mode
+- *(cli)* avoid mis-estimation due to overflow
+- *(cli)* acct_packet tests updated
+- more test and cli fixes
+- update calls to HotWallet::load
+- *(client)* move acct_packet mnemonic into client layer
+- *(client)* ensure we have a wallet or generate one via mnemonic
+- *(uploader)* do not error out immediately on max repayment errors
+- *(node)* notify fetch completion earlier to avoid being skipped
+- avoid adding mixed type addresses into RT
+- enable libp2p metrics to be captured
+- correct genesis_pk naming
+- genesis_cn public fields generated from hard coded value
+- invalid spend reason in data payments
+
+### Other
+- further improve fast mode gathering speed
+- improve cli DAG collection
+- improve DAG collection perf
+- *(release)* sn_auditor-v0.1.16/sn_cli-v0.91.4/sn_faucet-v0.4.18/sn_metrics-v0.1.7/sn_node-v0.106.4/sn_service_management-v0.2.8/node-launchpad-v0.1.5/sn-node-manager-v0.7.7/sn_node_rpc_client-v0.6.17
+- improve DAG verification redundancy
+- *(release)* sn_auditor-v0.1.15/sn_cli-v0.91.3/sn_faucet-v0.4.17/sn_metrics-v0.1.6/sn_node-v0.106.3/sn_service_management-v0.2.7/node-launchpad-v0.1.2/sn_node_rpc_client-v0.6.16
+- resolve errors after reverts
+- Revert "feat(node): make spend and cash_note reason field configurable"
+- Revert "chore: refactor CASH_NOTE_REASON strings to consts"
+- Revert "feat(client): dump spends creation_reason statistics"
+- Revert "chore: address review comments"
+- *(release)* sn_client-v0.106.2/sn_networking-v0.15.2/sn_cli-v0.91.2/sn_node-v0.106.2/sn_auditor-v0.1.14/sn_faucet-v0.4.16/sn_node_rpc_client-v0.6.15
+- *(release)* sn_auditor-v0.1.13/sn_client-v0.106.1/sn_networking-v0.15.1/sn_protocol-v0.16.6/sn_cli-v0.91.1/sn_faucet-v0.4.15/sn_node-v0.106.1/node-launchpad-v0.1.1/sn_node_rpc_client-v0.6.14/sn_peers_acquisition-v0.2.12/sn_service_management-v0.2.6
+- *(release)* sn_auditor-v0.1.12/sn_client-v0.106.0/sn_networking-v0.15.0/sn_transfers-v0.18.0/sn_peers_acquisition-v0.2.11/sn_logging-v0.2.26/sn_cli-v0.91.0/sn_faucet-v0.4.14/sn_metrics-v0.1.5/sn_node-v0.106.0/sn_service_management-v0.2.5/test_utils-v0.4.1/node-launchpad-v/sn-node-manager-v0.7.5/sn_node_rpc_client-v0.6.13/token_supplies-v0.1.48/sn_protocol-v0.16.5
+- *(versions)* sync versions with latest crates.io vs
+- address review comments
+- refactor CASH_NOTE_REASON strings to consts
+- addres review comments
+- *(cli)* update mnemonic wallet seed phrase wording
+- *(CI)* upload faucet log during CI
+- remove deprecated wallet deposit cmd
+- fix typo for issue 1494
+- *(release)* sn_auditor-v0.1.7/sn_client-v0.105.3/sn_networking-v0.14.4/sn_protocol-v0.16.3/sn_build_info-v0.1.7/sn_transfers-v0.17.2/sn_peers_acquisition-v0.2.10/sn_cli-v0.90.4/sn_faucet-v0.4.9/sn_metrics-v0.1.4/sn_node-v0.105.6/sn_service_management-v0.2.4/sn-node-manager-v0.7.4/sn_node_rpc_client-v0.6.8/token_supplies-v0.1.47
+- *(cli)* make FilesUploadSummary public
+- *(deps)* bump dependencies
+- *(uploader)* return summary when upload fails due to max repayments
+- *(uploader)* return the list of max repayment reached items
+- remove now unused mostly duplicated code
+- *(faucet)* devskim ignore
+- *(faucet)* log existing faucet balance if non-zero
+- *(faucet)* add foundation PK as const
+- *(faucet)* clarify logs for verification
+- increase initial faucet balance
+- add temp log
+- *(faucet)* refresh cashnotes on fund
+- devSkim ignore foundation pub temp key
+- update got 'gifting-from-genesis' faucet feat
+- make open metrics feature default but without starting it by default
+- Revert "feat(cli): track spend creation reasons during audit"
+- *(node)* tuning the pricing curve
+- *(node)* remove un-necessary is_relayed check inside add_potential_candidates
+- move historic_quoting_metrics out of the record_store dir
+- clippy fixes for open metrics feature
+- *(networking)* update tests for pricing curve tweaks
+- *(refactor)* stabilise node size to 4k records,
+- Revert "chore: rename output reason to purpose for clarity"
+- *(transfers)* comment and naming updates for clarity
+- log genesis PK
+- rename improperly named foundation_key
+- reconfigure local network owner args
+- use const for default user or owner
+- Revert "feat: spend shows the purposes of outputs created for"
+- *(node)* use proper SpendReason enum
+- add consts
+
 ## [0.91.4](https://github.com/maidsafe/safe_network/compare/sn_cli-v0.91.3...sn_cli-v0.91.4) - 2024-05-20
 
 ### Other

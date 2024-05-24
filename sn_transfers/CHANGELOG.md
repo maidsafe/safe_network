@@ -6,6 +6,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.1](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.18.0...sn_transfers-v0.18.1) - 2024-05-24
+
+### Added
+- use default keys for genesis, or override
+- use different key for payment forward
+- remove two uneeded env vars
+- pass genesis_cn pub fields separate to hide sk
+- hide genesis keypair
+- hide genesis keypair
+- pass sk_str via cli opt
+- *(node)* use separate keys of Foundation and Royalty
+- *(wallet)* ensure genesis wallet attempts to load from local on init first
+- *(faucet)* make gifting server feat dependent
+- tracking beta rewards from the DAG
+- *(audit)* collect payment forward statistics
+- *(node)* periodically forward reward to specific address
+- spend reason enum and sized cipher
+
+### Fixed
+- correct genesis_pk naming
+- genesis_cn public fields generated from hard coded value
+- invalid spend reason in data payments
+
+### Other
+- *(transfers)* comment and naming updates for clarity
+- log genesis PK
+- rename improperly named foundation_key
+- reconfigure local network owner args
+- *(refactor)* stabilise node size to 4k records,
+- use const for default user or owner
+- resolve errors after reverts
+- Revert "feat(node): make spend and cash_note reason field configurable"
+- Revert "feat: spend shows the purposes of outputs created for"
+- Revert "chore: rename output reason to purpose for clarity"
+- Revert "feat(cli): track spend creation reasons during audit"
+- Revert "chore: refactor CASH_NOTE_REASON strings to consts"
+- Revert "chore: address review comments"
+- *(node)* use proper SpendReason enum
+- add consts
+
 ## [0.18.0-alpha.1](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.18.0-alpha.0...sn_transfers-v0.18.0-alpha.1) - 2024-05-07
 
 ### Added
