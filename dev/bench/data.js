@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716512565874,
+  "lastUpdate": 1716512658159,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "f16e2c6cff6f279acbcab280f8389d7d32da8b1f",
-          "message": "chore: obtain the version number from binary\n\nThe process for downloading and extracting a binary is changed to obtain the version by running the\nbinary that was obtained, using its `--version` argument.\n\nThis avoids the need to use a string like \"custom\" for the version number when the `--url` argument\nwas used.",
-          "timestamp": "2024-02-08T16:33:44Z",
-          "tree_id": "2f50793b79c03c14d47278ec090d38430759d7d9",
-          "url": "https://github.com/maidsafe/safe_network/commit/f16e2c6cff6f279acbcab280f8389d7d32da8b1f"
-        },
-        "date": 1707413038079,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c87c60968e81f64d896cfd732cc9327f9ab541c4",
+          "message": "chore: move dag svg",
+          "timestamp": "2024-05-24T09:48:06+09:00",
+          "tree_id": "798f6f6045000bb0c1974b7534ef42337016bad5",
+          "url": "https://github.com/maidsafe/safe_network/commit/c87c60968e81f64d896cfd732cc9327f9ab541c4"
+        },
+        "date": 1716512657698,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 61,
             "unit": "MB"
           }
         ]
