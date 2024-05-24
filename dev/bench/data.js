@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716552386007,
+  "lastUpdate": 1716552388334,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "208627891392384b2679c54328e4b4ea53262afe",
-          "message": "chore(node): disable metrics record",
-          "timestamp": "2024-02-09T09:49:16+01:00",
-          "tree_id": "5a1ca6d36f8ebc8bb8642c97d20be79406b63f2a",
-          "url": "https://github.com/maidsafe/safe_network/commit/208627891392384b2679c54328e4b4ea53262afe"
-        },
-        "date": 1707469591013,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6486,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 38824,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "bc5ee8eca0e8bc3c66c01454d895cc2f7f0b6909",
           "message": "fix(node): store records even with max_records reached",
           "timestamp": "2024-02-09T09:40:39Z",
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "47ad157d320c820116c57967c36015dd0d15dc3e",
+          "message": "ci: fix justfile indentation",
+          "timestamp": "2024-05-24T20:43:51+09:00",
+          "tree_id": "5c3c81730170842319d5d9b279af49508310f0ac",
+          "url": "https://github.com/maidsafe/safe_network/commit/47ad157d320c820116c57967c36015dd0d15dc3e"
+        },
+        "date": 1716552387728,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14713,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 91214,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
             "unit": "ms"
           }
         ]
