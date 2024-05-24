@@ -66,8 +66,8 @@ changelog_update = true
 git_release_enable = false
 
 [[package]]
-name = "sn_nat_detection"
-release = true
+name = "nat-detection"
+release = false
 changelog_update = true
 git_release_enable = false
 
