@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Safe Network Auditor"
 name = "sn_auditor"
-version = "0.1.16"
+version = "0.1.17"
 edition = "2021"
 homepage = "https://maidsafe.net"
 repository = "https://github.com/maidsafe/safe_network"
@@ -28,8 +28,8 @@ dirs-next = "~2.0.0"
 graphviz-rust = { version = "0.9.0", optional = true }
 serde = { version = "1.0.133", features = ["derive", "rc"] }
 serde_json = "1.0.108"
-sn_client = { path = "../sn_client", version = "0.106.2" }
-sn_logging = { path = "../sn_logging", version = "0.2.26" }
+sn_client = { path = "../sn_client", version = "0.106.3" }
+sn_logging = { path = "../sn_logging", version = "0.2.27" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.2.12" }
 tiny_http = { version = "0.12", features = ["ssl-rustls"] }
 tracing = { version = "~0.1.26" }

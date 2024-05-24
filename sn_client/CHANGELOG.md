@@ -6,6 +6,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.106.3](https://github.com/joshuef/safe_network/compare/sn_client-v0.106.2...sn_client-v0.106.3) - 2024-05-24
+
+### Added
+- improved spend verification with DAG and fault detection
+- upgrade cli audit to use DAG
+- remove two uneeded env vars
+- pass genesis_cn pub fields separate to hide sk
+- hide genesis keypair
+- pass sk_str via cli opt
+- *(node)* use separate keys of Foundation and Royalty
+- *(wallet)* ensure genesis wallet attempts to load from local on init first
+- *(faucet)* increase initial balance
+- *(faucet)* make gifting server feat dependent
+- *(faucet)* send small amount to faucet, rest to foundation
+- *(faucet)* add feat for gifting-from-genesis
+- *(audit)* intercept sender of the payment forward
+- *(audit)* collect payment forward statistics
+- spend reason enum and sized cipher
+- *(metrics)* expose store cost value
+- keep track of the estimated network size metric
+- record lip2p relay and dctur metrics
+- *(node)* periodically forward reward to specific address
+- use default keys for genesis, or override
+- use different key for payment forward
+- hide genesis keypair
+- tracking beta rewards from the DAG
+
+### Fixed
+- *(uploader)* do not error out immediately on max repayment errors
+- *(node)* notify fetch completion earlier to avoid being skipped
+- avoid adding mixed type addresses into RT
+- enable libp2p metrics to be captured
+- correct genesis_pk naming
+- genesis_cn public fields generated from hard coded value
+- invalid spend reason in data payments
+
+### Other
+- *(uploader)* return summary when upload fails due to max repayments
+- *(uploader)* return the list of max repayment reached items
+- improve cli DAG collection
+- remove now unused mostly duplicated code
+- improve DAG verification redundancy
+- *(faucet)* devskim ignore
+- *(faucet)* log existing faucet balance if non-zero
+- *(faucet)* add foundation PK as const
+- *(faucet)* clarify logs for verification
+- increase initial faucet balance
+- add temp log
+- *(faucet)* refresh cashnotes on fund
+- devSkim ignore foundation pub temp key
+- update got 'gifting-from-genesis' faucet feat
+- make open metrics feature default but without starting it by default
+- Revert "feat(node): make spend and cash_note reason field configurable"
+- Revert "feat(cli): track spend creation reasons during audit"
+- Revert "chore: refactor CASH_NOTE_REASON strings to consts"
+- Revert "feat(client): dump spends creation_reason statistics"
+- Revert "chore: address review comments"
+- *(node)* tuning the pricing curve
+- *(node)* remove un-necessary is_relayed check inside add_potential_candidates
+- move historic_quoting_metrics out of the record_store dir
+- clippy fixes for open metrics feature
+- *(networking)* update tests for pricing curve tweaks
+- *(refactor)* stabilise node size to 4k records,
+- Revert "chore: rename output reason to purpose for clarity"
+- *(transfers)* comment and naming updates for clarity
+- log genesis PK
+- rename improperly named foundation_key
+- reconfigure local network owner args
+- use const for default user or owner
+- resolve errors after reverts
+- Revert "feat: spend shows the purposes of outputs created for"
+- *(node)* use proper SpendReason enum
+- add consts
+
 ## [0.106.2](https://github.com/maidsafe/safe_network/compare/sn_client-v0.106.1...sn_client-v0.106.2) - 2024-05-09
 
 ### Fixed
