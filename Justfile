@@ -374,7 +374,8 @@ upload-release-assets-to-s3 bin_name:
 
   cd deploy/{{bin_name}}
   for file in *.zip *.tar.gz; do
-    aws s3 cp "$file" "s3://$bucket/$file" --acl public-read done
+    aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
+  done
 
 node-man-integration-tests:
   #!/usr/bin/env bash
