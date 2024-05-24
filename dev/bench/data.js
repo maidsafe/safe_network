@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716512661108,
+  "lastUpdate": 1716513761302,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "c4953b2dc5a618f0ef137f6889d979bd849fd785",
-          "message": "docs: copyright update to current year",
-          "timestamp": "2024-02-08T18:14:03Z",
-          "tree_id": "786a54288d71668b6051c2567cdaa4f5b323eb2a",
-          "url": "https://github.com/maidsafe/safe_network/commit/c4953b2dc5a618f0ef137f6889d979bd849fd785"
-        },
-        "date": 1707418899998,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2571220615351895,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8615643326823306,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.65106829206487,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 50.747851071488675,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "aabb9b5fb478ca9525adc262bf258a6c02ce69a5",
+          "message": "feat(nat): rename nat-detection folder + disable release for now",
+          "timestamp": "2024-05-24T10:09:21+09:00",
+          "tree_id": "5a224e6e28d1ce4eec1ded3f593961c2cc9e0ddf",
+          "url": "https://github.com/maidsafe/safe_network/commit/aabb9b5fb478ca9525adc262bf258a6c02ce69a5"
+        },
+        "date": 1716513753845,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2467288536386107,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.2701885909192634,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 45.36786698664127,
             "unit": "MiB/s"
           }
         ]
