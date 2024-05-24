@@ -4553,6 +4553,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "nat-detection"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "clap-verbosity-flag",
+ "color-eyre",
+ "futures",
+ "libp2p",
+ "sn_networking",
+ "tokio",
+ "tracing",
+ "tracing-log 0.2.0",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "netlink-packet-core"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7164,22 +7180,6 @@ dependencies = [
  "serde_yaml",
  "url",
  "walkdir",
-]
-
-[[package]]
-name = "sn_nat_detection"
-version = "0.1.0"
-dependencies = [
- "clap",
- "clap-verbosity-flag",
- "color-eyre",
- "futures",
- "libp2p",
- "sn_networking",
- "tokio",
- "tracing",
- "tracing-log 0.2.0",
- "tracing-subscriber",
 ]
 
 [[package]]
