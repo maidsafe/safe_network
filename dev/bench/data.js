@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716526357713,
+  "lastUpdate": 1716526360057,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a3aceeeb82ef70c495b4ac5ccabaf619b08bc777",
-          "message": "ci: update to release-plz 0.3.43",
-          "timestamp": "2024-02-09T09:33:48+01:00",
-          "tree_id": "975f20e616c8a7c5226a31a2856d3ccd71bb218f",
-          "url": "https://github.com/maidsafe/safe_network/commit/a3aceeeb82ef70c495b4ac5ccabaf619b08bc777"
-        },
-        "date": 1707468655024,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 198,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 192,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a43207281917eb5b120a4e16294bf28d0ce1b303",
+          "message": "ci: rename justfile sn_nat_detection",
+          "timestamp": "2024-05-24T13:36:43+09:00",
+          "tree_id": "0c75c99b17092079946fdd6411835ab3f34f4446",
+          "url": "https://github.com/maidsafe/safe_network/commit/a43207281917eb5b120a4e16294bf28d0ce1b303"
+        },
+        "date": 1716526359107,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 185,
             "unit": "MB"
           },
           {
