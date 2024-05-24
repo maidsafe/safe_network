@@ -2,7 +2,7 @@
 
 This is a small webserver application that allows you to audit the SAFE Network Currency by gathering a DAG of Spends on the Network. 
 
-![](./dag.svg)
+![](./resources/dag.svg)
 
 ## Usage
 

@@ -27,6 +27,5 @@ metrics/prometheus/prometheus.yml
 # ignore dot svg and MacOS .DS_Store
 .DS_Store
 *.dot
-*.svg
 
 sn_node_manager/.vagrant
