@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716526362672,
+  "lastUpdate": 1716552227824,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "208627891392384b2679c54328e4b4ea53262afe",
-          "message": "chore(node): disable metrics record",
-          "timestamp": "2024-02-09T09:49:16+01:00",
-          "tree_id": "5a1ca6d36f8ebc8bb8642c97d20be79406b63f2a",
-          "url": "https://github.com/maidsafe/safe_network/commit/208627891392384b2679c54328e4b4ea53262afe"
-        },
-        "date": 1707469486806,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2863705637032998,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.7905956287776457,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.93892838772154,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 50.802537224911156,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "47ad157d320c820116c57967c36015dd0d15dc3e",
+          "message": "ci: fix justfile indentation",
+          "timestamp": "2024-05-24T20:43:51+09:00",
+          "tree_id": "5c3c81730170842319d5d9b279af49508310f0ac",
+          "url": "https://github.com/maidsafe/safe_network/commit/47ad157d320c820116c57967c36015dd0d15dc3e"
+        },
+        "date": 1716552222358,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.189492770601797,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.168458073659786,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 49.404131395981906,
             "unit": "MiB/s"
           }
         ]
