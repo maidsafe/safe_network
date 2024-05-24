@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716514429720,
+  "lastUpdate": 1716514431082,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "0894052e7761c74d6fa320d0c6f1f763deb2f64d",
-          "message": "ci: use a different disk for the release process\n\nFor reasons not yet determined, the publishing process undertaken by `release-plz` is using up 20GB\nof disk space, which results in the root file system on the Github Actions build agent being filled\nup during the process, since the disk only has 20GB of free space.\n\nIt turns out there's another disk at `/mnt`, which has over 60GB of space, so we should be able to\nrun the release process from there, until we can resolve the problem with `release-plz`.\n\nI tested the manual checkout on the merge workflow just to make sure it worked ok.\n\nThis also upgrades the version of `release-plz` to 0.3.43, in the hopes that it maybe uses less disk\nspace. Some `df -h` commands are left in so that we can see if there is any improvement.",
-          "timestamp": "2024-02-09T06:30:40Z",
-          "tree_id": "13ff417043d7f2ba9f4bc210168299be5f5c6885",
-          "url": "https://github.com/maidsafe/safe_network/commit/0894052e7761c74d6fa320d0c6f1f763deb2f64d"
-        },
-        "date": 1707463403456,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 204,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 87,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 88,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e64ebc13c64b49df6bf88c555a186b1b56a1da58",
+          "message": "chore: dont release nat-detection yet\n\ndont trigger release-plz on this at all",
+          "timestamp": "2024-05-24T10:18:23+09:00",
+          "tree_id": "3f1f8ff67d5fef6574480a536bfba8058717e102",
+          "url": "https://github.com/maidsafe/safe_network/commit/e64ebc13c64b49df6bf88c555a186b1b56a1da58"
+        },
+        "date": 1716514430720,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 192,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
