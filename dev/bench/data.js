@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716512529024,
+  "lastUpdate": 1716512561882,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "7d486c583b523be38b6a0ffbafb94a00b880a808",
-          "message": "fix(bench): update retry strategy args",
-          "timestamp": "2024-02-08T15:56:33Z",
-          "tree_id": "8ead4ecac72f07861ded1f3af7986a0a3a8e7cc9",
-          "url": "https://github.com/maidsafe/safe_network/commit/7d486c583b523be38b6a0ffbafb94a00b880a808"
-        },
-        "date": 1707410662606,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e430d4f3b1d20d32ad570dd53d274e782a1e8b57",
+          "message": "chore(node): tuning the pricing curve",
+          "timestamp": "2024-05-24T09:46:32+09:00",
+          "tree_id": "549eaf4a29e8942ad8ac9603245da0ab344ae9c6",
+          "url": "https://github.com/maidsafe/safe_network/commit/e430d4f3b1d20d32ad570dd53d274e782a1e8b57"
+        },
+        "date": 1716512561191,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 57,
             "unit": "MB"
           }
         ]
