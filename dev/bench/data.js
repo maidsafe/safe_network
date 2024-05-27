@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716810851533,
+  "lastUpdate": 1716836324757,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7f6dcc5098302f2d90c55d60007b9bfc160291f4",
-          "message": "fix: apply suspicious_open_options from clippy",
-          "timestamp": "2024-02-12T09:57:29+01:00",
-          "tree_id": "db1469d544a2ac285844554698e51e4552dd93a9",
-          "url": "https://github.com/maidsafe/safe_network/commit/7f6dcc5098302f2d90c55d60007b9bfc160291f4"
-        },
-        "date": 1707729160064,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2828775196467537,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.834232071040639,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.40856329917939,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 42.125669954550354,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "f3453f0c6136e972637e9d66461a5e0a2b25ac83",
+          "message": "feat(network)!: move network versioning away from sn_protocol",
+          "timestamp": "2024-05-27T18:13:06Z",
+          "tree_id": "6298ea7c4153600bc2f41986e92aeb8f7070c7e7",
+          "url": "https://github.com/maidsafe/safe_network/commit/f3453f0c6136e972637e9d66461a5e0a2b25ac83"
+        },
+        "date": 1716836319916,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2376457521092816,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.0697271354967932,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 46.88590054382463,
             "unit": "MiB/s"
           }
         ]
