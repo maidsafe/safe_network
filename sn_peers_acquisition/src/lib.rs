@@ -15,7 +15,7 @@ use lazy_static::lazy_static;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use rand::{seq::SliceRandom, thread_rng};
 #[cfg(feature = "network-contacts")]
-use sn_protocol::version::get_network_version;
+use sn_networking::version::get_network_version;
 use tracing::*;
 #[cfg(feature = "network-contacts")]
 use url::Url;
