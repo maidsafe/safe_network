@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -24,7 +24,7 @@ async fn step_by_step_spend_dag_gathering(client: &Client, mut dag: SpendDag) ->
     let start_time = std::time::Instant::now();
     let mut depth_exponential = 1;
     let mut current_utxos = dag.get_utxos();
-    let mut last_utxos = BTreeSet::new();
+    let mut last_utxos = HashSet::new();
 
     println!("Gathering the Spend DAG, note that this might take a very long time...");
     while last_utxos != current_utxos {

@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use sn_transfers::{
     is_genesis_spend, CashNoteRedemption, Hash, NanoTokens, SignedSpend, SpendAddress,
 };
+use std::collections::HashSet;
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
@@ -263,8 +264,8 @@ impl SpendDag {
     /// Get the UTXOs: all the addresses that are refered to as children by other spends
     /// but that don't have children themselves.
     /// Those will eventually exist on the Network as the address is spent by their owners.
-    pub fn get_utxos(&self) -> BTreeSet<SpendAddress> {
-        let mut leaves = BTreeSet::new();
+    pub fn get_utxos(&self) -> HashSet<SpendAddress> {
+        let mut leaves = HashSet::new();
         for node_index in self.dag.node_indices() {
             if !self
                 .dag

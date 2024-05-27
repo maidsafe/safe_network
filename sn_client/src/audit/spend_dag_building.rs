@@ -11,7 +11,7 @@ use crate::{Client, Error, SpendDag};
 use futures::{future::join_all, StreamExt};
 use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 impl Client {
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
@@ -48,13 +48,15 @@ impl Client {
         dag.insert(spend_addr, first_spend.clone());
 
         // use iteration instead of recursion to avoid stack overflow
-        let mut txs_to_follow = BTreeSet::from_iter([first_spend.spend.spent_tx]);
-        let mut known_tx = BTreeSet::new();
+        let mut txs_to_follow = HashSet::new();
+        txs_to_follow.insert(first_spend.spend.spent_tx);
+
+        let mut known_tx = HashSet::new();
         let mut gen: u32 = 0;
         let start = std::time::Instant::now();
 
         while !txs_to_follow.is_empty() {
-            let mut next_gen_tx = BTreeSet::new();
+            let mut next_gen_tx = HashSet::new();
 
             // list up all descendants
             let mut addrs = vec![];
@@ -104,10 +106,13 @@ impl Client {
 
             // only follow tx we haven't already gathered
             known_tx.extend(txs_to_follow.iter().map(|tx| tx.hash()));
-            txs_to_follow = next_gen_tx
-                .into_iter()
-                .filter(|tx| !known_tx.contains(&tx.hash()))
-                .collect();
+            txs_to_follow = HashSet::new();
+
+            for tx in next_gen_tx {
+                if !known_tx.contains(&tx.hash()) {
+                    txs_to_follow.insert(tx);
+                }
+            }
 
             // go on to next gen
             gen += 1;
@@ -169,13 +174,17 @@ impl Client {
         }
 
         // use iteration instead of recursion to avoid stack overflow
-        let mut txs_to_verify = BTreeSet::from_iter([new_spend.spend.parent_tx]);
+        let mut txs_to_verify = HashSet::new();
+
+        txs_to_verify.insert(new_spend.spend.parent_tx);
+
         let mut depth = 0;
-        let mut known_txs = BTreeSet::new();
+        let mut known_txs = HashSet::new();
         let start = std::time::Instant::now();
 
-        while !txs_to_verify.is_empty() {
-            let mut next_gen_tx = BTreeSet::new();
+        let mut still_txs_to_verify = true;
+        while still_txs_to_verify {
+            let mut next_gen_tx = HashSet::new();
 
             for parent_tx in txs_to_verify {
                 let parent_tx_hash = parent_tx.hash();
@@ -193,7 +202,7 @@ impl Client {
                     .zip(addrs_to_verify.clone())
                     .map(|(maybe_spend, a)|
                         maybe_spend.map_err(|err| WalletError::CouldNotVerifyTransfer(format!("at depth {depth} - Failed to get spend {a:?} from network for parent Tx {parent_tx_hash:?}: {err}"))))
-                    .collect::<WalletResult<BTreeSet<_>>>()?;
+                    .collect::<WalletResult<HashSet<_>>>()?;
                 debug!(
                     "Depth {depth} - Got {:?} spends for parent Tx: {parent_tx_hash:?}",
                     spends.len()
@@ -227,11 +236,17 @@ impl Client {
                 }
             }
 
+            txs_to_verify = HashSet::new();
             // only verify parents we haven't already verified
-            txs_to_verify = next_gen_tx
-                .into_iter()
-                .filter(|tx| !known_txs.contains(&tx.hash()))
-                .collect();
+            for tx in next_gen_tx {
+                if !known_txs.contains(&tx.hash()) {
+                    txs_to_verify.insert(tx);
+                }
+            }
+
+            if txs_to_verify.is_empty() {
+                still_txs_to_verify = false;
+            }
 
             depth += 1;
             let elapsed = start.elapsed();
@@ -264,7 +279,7 @@ impl Client {
     pub async fn spend_dag_continue_from(
         &self,
         dag: &mut SpendDag,
-        utxos: BTreeSet<SpendAddress>,
+        utxos: HashSet<SpendAddress>,
         max_depth: Option<u32>,
         verify: bool,
     ) -> WalletResult<()> {
