@@ -14,7 +14,9 @@ use color_eyre::eyre::{bail, eyre, Result};
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
 use sn_client::networking::NetworkError;
-use sn_client::transfers::{Hash, NanoTokens, SignedSpend, SpendAddress, GENESIS_SPEND_UNIQUE_KEY};
+use sn_client::transfers::{
+    Hash, NanoTokens, SignedSpend, SpendAddress, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
+};
 use sn_client::Error as ClientError;
 use sn_client::{Client, SpendDag, SpendDagGet};
 use std::collections::{BTreeMap, BTreeSet};
@@ -23,6 +25,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
+    time::{Duration, Instant},
 };
 
 pub const SPEND_DAG_FILENAME: &str = "spend_dag";
@@ -45,6 +48,8 @@ pub struct SpendDagDb {
 
 /// Map of Discord usernames to their tracked forwarded payments
 type ForwardedPayments = BTreeMap<String, BTreeSet<(SpendAddress, NanoTokens)>>;
+
+const REATTEMPT_INTERVAL: Duration = Duration::from_secs(3600);
 
 #[derive(Clone, Serialize, Deserialize)]
 struct SpendJsonResponse {
@@ -302,6 +307,7 @@ impl SpendDagDb {
         }
 
         let mut new_addresses = vec![];
+        let mut utxo_addresses = BTreeMap::new();
         loop {
             if addresses.is_empty() {
                 for address in &new_addresses {
@@ -309,6 +315,22 @@ impl SpendDagDb {
                 }
                 new_addresses.clear();
             }
+
+            if addresses.is_empty() && new_addresses.is_empty() {
+                let re_attempt_address: Vec<_> = utxo_addresses
+                    .iter()
+                    .filter_map(|(address, time_stamp)| {
+                        if *time_stamp > Instant::now() {
+                            None
+                        } else {
+                            Some(*address)
+                        }
+                    })
+                    .collect();
+                addresses.extend(re_attempt_address);
+                utxo_addresses.retain(|_, time_stamp| *time_stamp > Instant::now());
+            }
+
             let address = if let Some(address) = addresses.pop_first() {
                 address
             } else {
@@ -317,6 +339,23 @@ impl SpendDagDb {
 
             match client.crawl_spend_from_network(address).await {
                 Ok(spend) => {
+                    let mut new_utxos = vec![];
+
+                    // Royalty output doesn't need to be queried
+                    let mut royalty_pubkeys = BTreeSet::new();
+                    for derivation_idx in spend.spend.network_royalties.iter() {
+                        let unique_pubkey = NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx);
+                        let _ = royalty_pubkeys.insert(unique_pubkey);
+                    }
+
+                    for output in spend.spend.spent_tx.outputs.iter() {
+                        if royalty_pubkeys.contains(&output.unique_pubkey) {
+                            continue;
+                        }
+                        let new_utxo = SpendAddress::from_unique_pubkey(&output.unique_pubkey);
+                        new_utxos.push(new_utxo);
+                    }
+
                     // make sure we have the foundation secret key
                     let sk = if let Some(sk) = &self.encryption_sk {
                         sk.clone()
@@ -325,9 +364,13 @@ impl SpendDagDb {
                         return;
                     };
 
+                    // output address of the payment forward spend doesn't need to be queried
                     let user_name_hash = match spend.reason().get_sender_hash(&sk) {
                         Some(n) => n,
-                        None => continue,
+                        None => {
+                            new_addresses.extend(new_utxos);
+                            continue;
+                        }
                     };
                     let addr = spend.address();
                     let amount = spend.spend.amount;
@@ -348,13 +391,13 @@ impl SpendDagDb {
                         };
 
                     if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
-                        debug!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
+                        eprintln!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
                         self_payments
                             .entry(user_name.to_owned())
                             .or_default()
                             .insert((addr, amount));
                     } else {
-                        info!(
+                        eprintln!(
                                 "Found a forwarded reward for an unknown participant at {:?}: {user_name_hash:?}",
                                 spend.address()
                             );
@@ -363,12 +406,10 @@ impl SpendDagDb {
                             .or_default()
                             .insert((addr, amount));
                     }
-                    for output in spend.spend.spent_tx.outputs.iter() {
-                        let new_utxo = SpendAddress::from_unique_pubkey(&output.unique_pubkey);
-                        new_addresses.push(new_utxo);
-                    }
                 }
-                Err(_) => continue,
+                Err(_) => {
+                    let _ = utxo_addresses.insert(address, Instant::now() + REATTEMPT_INTERVAL);
+                }
             }
         }
 

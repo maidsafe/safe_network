@@ -27,7 +27,7 @@ use tiny_http::{Response, Server};
 const DAG_DUMPING_INTERVAL_SECS: u64 = 5 * 60;
 
 /// Backup the beta rewards in a timestamped json file
-const BETA_REWARDS_BACKOUP_INTERVAL_SECS: u64 = 3 * 60 * 60;
+const BETA_REWARDS_BACKOUP_INTERVAL_SECS: u64 = 3 * 60;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -235,7 +235,7 @@ async fn initialize_background_spend_dag_collection(
     let d = dag.clone();
     tokio::spawn(async move {
         loop {
-            println!("Duming DAG...");
+            println!("Dumping DAG...");
             let _ = d
                 .dump()
                 .map_err(|e| eprintln!("Could not dump DAG to disk: {e}"));
