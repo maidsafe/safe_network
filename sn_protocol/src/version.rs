@@ -12,7 +12,7 @@ lazy_static! {
     /// The node version used during Identify Behaviour.
     pub static ref IDENTIFY_NODE_VERSION_STR: String =
         format!(
-            "safe{}/node/{}",
+            "safe{}/alpha-reward-test/node/{}",
             write_network_version_with_slash(),
             get_truncate_version_str()
         );
@@ -20,7 +20,7 @@ lazy_static! {
     /// The client version used during Identify Behaviour.
     pub static ref IDENTIFY_CLIENT_VERSION_STR: String =
         format!(
-            "safe{}/client/{}",
+            "safe{}/alpha-reward-test/client/{}",
             write_network_version_with_slash(),
             get_truncate_version_str()
         );
@@ -28,7 +28,7 @@ lazy_static! {
     /// / first version for the req/response protocol
     pub static ref REQ_RESPONSE_VERSION_STR: String =
         format!(
-            "/safe{}/node/{}",
+            "/safe{}/alpha-reward-test/node/{}",
             write_network_version_with_slash(),
             get_truncate_version_str()
         );
@@ -37,7 +37,7 @@ lazy_static! {
     /// The identify protocol version
     pub static ref IDENTIFY_PROTOCOL_STR: String =
         format!(
-            "safe{}/{}",
+            "safe{}/alpha-reward-test/{}",
             write_network_version_with_slash(),
             get_truncate_version_str()
         );
