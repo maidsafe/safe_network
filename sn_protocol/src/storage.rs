@@ -29,6 +29,8 @@ pub use self::{
 pub enum RetryStrategy {
     /// Quick: Resolves to a 15-second wait or 1 retry attempt.
     Quick,
+    /// Quick: Resolves to a 15-second wait or 1 retry attempt _unless we get some data back_, in which case we continue retrying
+    Optimistic,
     /// Balanced: Resolves to a 60-second wait or 3 retry attempt.
     Balanced,
     /// Persistent: Resolves to a 180-second wait or 6 retry attempt.
@@ -39,6 +41,7 @@ impl RetryStrategy {
     pub fn get_duration(&self) -> Duration {
         match self {
             RetryStrategy::Quick => Duration::from_secs(15),
+            RetryStrategy::Optimistic => Duration::from_secs(15),
             RetryStrategy::Balanced => Duration::from_secs(60),
             RetryStrategy::Persistent => Duration::from_secs(180),
         }
@@ -47,6 +50,7 @@ impl RetryStrategy {
     pub fn get_count(&self) -> usize {
         match self {
             RetryStrategy::Quick => 1,
+            RetryStrategy::Optimistic => 1,
             RetryStrategy::Balanced => 3,
             RetryStrategy::Persistent => 6,
         }
@@ -59,6 +63,7 @@ impl FromStr for RetryStrategy {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "quick" => Ok(RetryStrategy::Quick),
+            "optimistic" => Ok(RetryStrategy::Optimistic),
             "balanced" => Ok(RetryStrategy::Balanced),
             "persistent" => Ok(RetryStrategy::Persistent),
             _ => Err(Error::ParseRetryStrategyError),

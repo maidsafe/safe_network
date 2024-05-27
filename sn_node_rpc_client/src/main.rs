@@ -80,12 +80,7 @@ enum Cmd {
 #[tokio::main]
 async fn main() -> Result<()> {
     // For client, default to log to std::out
-    let logging_targets = vec![
-        ("safenode".to_string(), Level::INFO),
-        ("sn_transfers".to_string(), Level::INFO),
-        ("sn_networking".to_string(), Level::INFO),
-        ("sn_node".to_string(), Level::INFO),
-    ];
+    let logging_targets = vec![("dicord-bot".to_string(), Level::INFO)];
     let _log_appender_guard = LogBuilder::new(logging_targets).initialize()?;
 
     let opt = Opt::parse();

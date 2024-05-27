@@ -205,17 +205,21 @@ impl SpendDagDb {
 
         let mut total_updates = 0;
 
-        while total_updates < MAX_DAG_UPDATES {
-            let new_additions = self
-                .client
-                .clone()
-                .ok_or(eyre!("Cannot update in offline mode"))?
-                .spend_dag_continue_from_utxos(&mut dag, Some(MAX_DAG_UPDATES), true)
-                .await?;
+        // while total_updates < MAX_DAG_UPDATES {
+        let new_additions = self
+            .client
+            .clone()
+            .ok_or(eyre!("Cannot update in offline mode"))?
+            .spend_dag_continue_from_utxos(&mut dag, Some(MAX_DAG_UPDATES), true)
+            .await?;
 
-            total_updates += new_additions;
-        }
-
+        total_updates += new_additions;
+        debug!("Total new dag additions: {total_updates}");
+        // if new_additions < 10 {
+        //     println!("Not manhy new additions, stopping... collection");
+        //     break;
+        // }
+        // }
         // write update to DAG
         let mut dag_w_handle = self
             .dag
@@ -245,7 +249,7 @@ impl SpendDagDb {
         });
 
         info!(
-            "Time: {:?}ms Updated the dag {MAX_DAG_UPDATES:?}",
+            "Time: {:?}ms Updated the dag with {total_updates:?}",
             start.elapsed().as_millis()
         );
 

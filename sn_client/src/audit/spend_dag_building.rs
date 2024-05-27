@@ -79,7 +79,7 @@ impl Client {
                 //   1, Expect `majority` copies as it is a `Spend`;
                 //   2, But don't retry as most will be `UTXO` which won't be found.
                 .map(|a| async move { (self.crawl_spend_from_network(a).await, a) })
-                .buffer_unordered(crate::MAX_CONCURRENT_TASKS);
+                .buffer_unordered(crate::MAX_CONCURRENT_TASKS * 2);
             info!(
                 "Gen {gen} - Getting {} spends from {} txs in batches of: {}",
                 addrs.len(),
@@ -304,6 +304,8 @@ impl Client {
     ) -> WalletResult<usize> {
         let main_dag_src = dag.source();
         let starting_dag_size = dag.spends_count();
+
+        debug!("Starting DAG size: {starting_dag_size}");
         let mut total_dag_size = starting_dag_size;
 
         let all_utxos_len = utxos.len();
@@ -333,8 +335,12 @@ impl Client {
         while let Some((res, addr)) = stream.next().await {
             match res {
                 Ok(sub_dag) => {
-                    let new_entries = sub_dag.spends_count() - starting_dag_size;
-                    debug!("Gathered sub DAG from: {addr:?},with {new_entries} new entries");
+                    let new_entries = sub_dag
+                        .spends_count()
+                        .checked_sub(starting_dag_size)
+                        .unwrap_or(0);
+                    debug!("subdag spends {:}", sub_dag.spends_count());
+                    debug!("Gathered sub DAG from: {addr:?}, with {new_entries} new entries");
                     if let Err(e) = dag.merge(sub_dag, verify) {
                         warn!("Failed to merge sub dag from {addr:?} into dag: {e}");
                     }

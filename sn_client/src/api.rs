@@ -902,12 +902,6 @@ impl Client {
 
     /// Get a spend from network.
     ///
-    /// # Arguments
-    /// * 'address' - [SpendAddress]
-    ///
-    /// Return Type:
-    ///
-    /// Result<[SignedSpend]>
     ///
     /// # Example
     /// ```no_run
@@ -934,7 +928,7 @@ impl Client {
             address,
             GetRecordCfg {
                 get_quorum: Quorum::Majority,
-                retry_strategy: Some(RetryStrategy::Balanced),
+                retry_strategy: Some(RetryStrategy::Quick),
                 target_record: None,
                 expected_holders: Default::default(),
             },
