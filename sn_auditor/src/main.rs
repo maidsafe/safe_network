@@ -24,7 +24,7 @@ use std::path::PathBuf;
 use tiny_http::{Response, Server};
 
 /// Interval in seconds to update the DAG, save to disk, and update beta participants
-const DAG_UPDATE_INTERVAL_SECS: u64 = 60;
+const DAG_UPDATE_INTERVAL_SECS: u64 = 5;
 
 /// Backup the beta rewards in a timestamped json file
 const BETA_REWARDS_BACKOUP_INTERVAL_SECS: u64 = 3 * 60 * 60;

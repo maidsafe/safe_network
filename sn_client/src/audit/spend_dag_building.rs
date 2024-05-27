@@ -315,6 +315,7 @@ impl Client {
         let mut utxos_vec: Vec<_> = utxos.into_iter().collect();
         let mut rng = rand::rngs::OsRng;
         utxos_vec.shuffle(&mut rng);
+
         let subset_utxos = utxos_vec
             .into_iter()
             .take(max_updates.unwrap_or(all_utxos_len))
