@@ -140,23 +140,27 @@ async fn main() -> Result<()> {
     // default to verifying storage
     let should_verify_store = !opt.no_verify;
 
-    match opt.cmd {
+    // PowerShell seems having issue to showing the unwrapped error
+    // Hence capture the result and print it out explicity.
+    let cmd_str = format!("{:?}", opt.cmd);
+    let result = match opt.cmd {
         SubCmd::Wallet(cmds) => {
-            wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+            wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
         SubCmd::WatchOnlyWallet(cmds) => {
-            wo_wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+            wo_wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
         SubCmd::Files(cmds) => {
-            files_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+            files_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
         SubCmd::Folders(cmds) => {
-            folders_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+            folders_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
         SubCmd::Register(cmds) => {
-            register_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await?
+            register_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
     };
+    println!("Completed with {result:?} of execute {cmd_str:?}");
 
     Ok(())
 }
