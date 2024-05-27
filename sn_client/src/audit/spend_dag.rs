@@ -652,7 +652,7 @@ impl SpendDag {
         debug!("Looking for orphans of {source:?}");
         recorded_faults.extend(self.find_orphans(source)?);
 
-        trace!(
+        debug!(
             "Time: {:?} Orphans found after ",
             start.elapsed().as_millis()
         );
@@ -712,7 +712,7 @@ impl SpendDag {
             }
         }
 
-        trace!(
+        debug!(
             "Time: {:?} Txs checked found after ",
             start.elapsed().as_millis()
         );
@@ -774,7 +774,7 @@ impl SpendDag {
             recorded_faults.extend(descendants_faults);
         }
 
-        trace!(
+        debug!(
             "Time: {:?} Parent verified after",
             start.elapsed().as_millis()
         );

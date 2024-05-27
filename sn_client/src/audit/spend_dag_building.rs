@@ -90,8 +90,8 @@ impl Client {
                 match res {
                     Ok(spend) => {
                         info!("Fetched spend {addr:?} from network.");
-                        dag.insert(addr, spend.clone());
                         next_gen_tx.insert(spend.spend.spent_tx.clone());
+                        dag.insert(addr, spend);
                     }
                     Err(Error::Network(NetworkError::GetRecordError(
                         GetRecordError::RecordNotFound,
@@ -297,7 +297,7 @@ impl Client {
                     utxo,
                 )
             })
-            .buffer_unordered(crate::MAX_CONCURRENT_TASKS);
+            .buffer_unordered(crate::MAX_CONCURRENT_TASKS * 2);
 
         while let Some((res, addr)) = stream.next().await {
             match res {

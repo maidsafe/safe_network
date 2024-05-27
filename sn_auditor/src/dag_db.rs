@@ -185,6 +185,8 @@ impl SpendDagDb {
 
     /// Update DAG from Network
     pub async fn update(&mut self) -> Result<()> {
+        let start = Instant::now();
+        info!("Updating DAG from network...");
         // read current DAG
         let mut dag = {
             self.dag
@@ -229,6 +231,11 @@ impl SpendDagDb {
                 error!("Failed to gather forwarded payments: {e}");
             }
         });
+
+        info!(
+            "Time: {:?}ms Updated the dag {NEXT_10_GEN:?}",
+            start.elapsed().as_millis()
+        );
 
         Ok(())
     }
@@ -311,6 +318,7 @@ impl SpendDagDb {
 
     // Gather forwarded payments from the DAG
     pub(crate) async fn gather_forwarded_payments(&self) -> Result<()> {
+        let start = Instant::now();
         info!("Gathering forwarded payments...");
 
         // make sure we have the foundation secret key
@@ -363,6 +371,10 @@ impl SpendDagDb {
             .map_err(|e| eyre!("Failed to get payments write lock: {e}"))?;
         self_payments.extend(payments);
         info!("Done gathering forwarded payments");
+        debug!(
+            "Time to gather forwarded payments: {}ms",
+            start.elapsed().as_millis()
+        );
         Ok(())
     }
 
