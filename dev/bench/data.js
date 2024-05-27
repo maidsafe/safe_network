@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716552388334,
+  "lastUpdate": 1716809245601,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bc5ee8eca0e8bc3c66c01454d895cc2f7f0b6909",
-          "message": "fix(node): store records even with max_records reached",
-          "timestamp": "2024-02-09T09:40:39Z",
-          "tree_id": "db29dc425b0ea5f7f3e22e2f1a671154deba22cf",
-          "url": "https://github.com/maidsafe/safe_network/commit/bc5ee8eca0e8bc3c66c01454d895cc2f7f0b6909"
-        },
-        "date": 1707474196083,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1883232480949273,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.7855546329294596,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.334328516136004,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 49.404131395981906,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5d20f98ccc8190990ae4babb027a2531eab72384",
+          "message": "chore(deps): bump wagoid/commitlint-github-action from 6.0.0 to 6.0.1\n\nBumps [wagoid/commitlint-github-action](https://github.com/wagoid/commitlint-github-action) from 6.0.0 to 6.0.1.\n- [Changelog](https://github.com/wagoid/commitlint-github-action/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/wagoid/commitlint-github-action/compare/3c75220e8d20774b68eea48e869a706ff7249b54...7f0a61df502599e1f1f50880aaa7ec1e2c0592f2)\n\n---\nupdated-dependencies:\n- dependency-name: wagoid/commitlint-github-action\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2024-05-27T20:07:22+09:00",
+          "tree_id": "82dd8b589dbf934e61524b66c373a0439ac3770b",
+          "url": "https://github.com/maidsafe/safe_network/commit/5d20f98ccc8190990ae4babb027a2531eab72384"
+        },
+        "date": 1716809239621,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1502736259226067,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.2552660408719662,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 46.27717306636026,
             "unit": "MiB/s"
           }
         ]
