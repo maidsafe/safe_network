@@ -245,14 +245,21 @@ async fn initialize_background_spend_dag_collection(
     let mut d = dag.clone();
     tokio::spawn(async move {
         loop {
+            let start = std::time::Instant::now();
             println!("Updating DAG...");
             let _ = d
-                .update()
+                .update_dag_from_network()
                 .await
                 .map_err(|e| eprintln!("Could not update DAG: {e}"));
+            println!("DAG updated in {} seconds...", start.elapsed().as_secs());
+            debug!("DAG updated in {} seconds...", start.elapsed().as_secs());
             let _ = d
                 .dump()
                 .map_err(|e| eprintln!("Could not dump DAG to disk: {e}"));
+            debug!(
+                "DAG dumped after {} seconds from start",
+                start.elapsed().as_secs()
+            );
             println!("Sleeping for {DAG_UPDATE_INTERVAL_SECS} seconds...");
             tokio::time::sleep(tokio::time::Duration::from_secs(DAG_UPDATE_INTERVAL_SECS)).await;
         }

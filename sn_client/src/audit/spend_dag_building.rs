@@ -9,10 +9,10 @@
 use crate::{Client, Error, SpendDag};
 
 use futures::{future::join_all, StreamExt};
+use rand::prelude::SliceRandom;
 use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
 use std::collections::HashSet;
-
 impl Client {
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
     /// Started from Genesis this gives the entire SpendDag of the Network at a certain point in time
@@ -20,11 +20,13 @@ impl Client {
     pub async fn spend_dag_build_from(
         &self,
         spend_addr: SpendAddress,
-        max_depth: Option<u32>,
+        max_updates: Option<usize>,
         verify: bool,
     ) -> WalletResult<SpendDag> {
         info!("Building spend DAG from {spend_addr:?}");
         let mut dag = SpendDag::new(spend_addr);
+
+        let mut dag_updates_applied = 0;
 
         // get first spend
         let first_spend = match self.get_spend_from_network(spend_addr).await {
@@ -92,6 +94,16 @@ impl Client {
                         info!("Fetched spend {addr:?} from network.");
                         next_gen_tx.insert(spend.spend.spent_tx.clone());
                         dag.insert(addr, spend);
+                        dag_updates_applied += 1;
+
+                        if let Some(max_update_count) = max_updates {
+                            if dag_updates_applied >= max_update_count {
+                                info!(
+                                "Reached max updates count of {max_update_count}, stopping DAG collection from {spend_addr:?}"
+                            );
+                                break;
+                            }
+                        }
                     }
                     Err(Error::Network(NetworkError::GetRecordError(
                         GetRecordError::RecordNotFound,
@@ -116,9 +128,14 @@ impl Client {
 
             // go on to next gen
             gen += 1;
-            if gen >= max_depth.unwrap_or(u32::MAX) {
-                info!("Reached generation {gen}, stopping DAG collection from {spend_addr:?}");
-                break;
+
+            if let Some(max_update_count) = max_updates {
+                if dag_updates_applied >= max_update_count {
+                    info!(
+                    "Reached max updates count of {max_update_count}, stopping DAG collection from {spend_addr:?}"
+                );
+                    break;
+                }
             }
         }
 
@@ -276,24 +293,37 @@ impl Client {
     /// Extends an existing SpendDag starting from the given utxos
     /// If verify is true, records faults in the DAG
     /// Stops gathering after max_depth generations
+    ///
+    /// Returns the number of updates made to the DAG
     pub async fn spend_dag_continue_from(
         &self,
         dag: &mut SpendDag,
         utxos: HashSet<SpendAddress>,
-        max_depth: Option<u32>,
+        max_updates: Option<usize>,
         verify: bool,
-    ) -> WalletResult<()> {
+    ) -> WalletResult<usize> {
         let main_dag_src = dag.source();
+        let starting_dag_size = dag.spends_count();
+        let mut total_dag_size = starting_dag_size;
+
+        let all_utxos_len = utxos.len();
         info!(
             "Expanding spend DAG with source: {main_dag_src:?} from {} utxos",
-            utxos.len()
+            all_utxos_len
         );
-
-        let mut stream = futures::stream::iter(utxos.into_iter())
+        // Select a subset of utxos up to max_updates, shuffling to prevent bias
+        let mut utxos_vec: Vec<_> = utxos.into_iter().collect();
+        let mut rng = rand::rngs::OsRng;
+        utxos_vec.shuffle(&mut rng);
+        let subset_utxos = utxos_vec
+            .into_iter()
+            .take(max_updates.unwrap_or(all_utxos_len))
+            .collect::<HashSet<_>>();
+        let mut stream = futures::stream::iter(subset_utxos.into_iter())
             .map(|utxo| async move {
                 debug!("Queuing task to gather DAG from utxo: {:?}", utxo);
                 (
-                    self.spend_dag_build_from(utxo, max_depth, false).await,
+                    self.spend_dag_build_from(utxo, max_updates, false).await,
                     utxo,
                 )
             })
@@ -302,31 +332,38 @@ impl Client {
         while let Some((res, addr)) = stream.next().await {
             match res {
                 Ok(sub_dag) => {
-                    debug!("Gathered sub DAG from: {addr:?}");
+                    let new_entries = sub_dag.spends_count() - starting_dag_size;
+                    debug!("Gathered sub DAG from: {addr:?},with {new_entries} new entries");
                     if let Err(e) = dag.merge(sub_dag, verify) {
                         warn!("Failed to merge sub dag from {addr:?} into dag: {e}");
                     }
+                    total_dag_size += new_entries;
                 }
                 Err(e) => warn!("Failed to gather sub dag from {addr:?}: {e}"),
             };
         }
 
         info!("Done gathering spend DAG from utxos");
-        Ok(())
+
+        let total_new_entries = total_dag_size - starting_dag_size;
+        Ok(total_new_entries)
     }
 
     /// Extends an existing SpendDag starting from the utxos in this DAG
     /// Covers the entirety of currently existing Spends if the DAG was built from Genesis
+    ///
+    /// // if max_updates is Some(n), stops after n updates
     /// If verify is true, records faults in the DAG
     /// Stops gathering after max_depth generations
     pub async fn spend_dag_continue_from_utxos(
         &self,
         dag: &mut SpendDag,
-        max_depth: Option<u32>,
+        max_updates: Option<usize>,
         verify: bool,
-    ) -> WalletResult<()> {
+    ) -> WalletResult<usize> {
         let utxos = dag.get_utxos();
-        self.spend_dag_continue_from(dag, utxos, max_depth, verify)
+
+        self.spend_dag_continue_from(dag, utxos, max_updates, verify)
             .await
     }
 }

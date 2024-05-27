@@ -10,6 +10,7 @@ use bls::SecretKey;
 use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use sn_transfers::{
     is_genesis_spend, CashNoteRedemption, Hash, NanoTokens, SignedSpend, SpendAddress,
@@ -400,6 +401,11 @@ impl SpendDag {
             .collect()
     }
 
+    /// Get total spends in the DAG
+    pub fn spends_count(&self) -> usize {
+        self.spends.len()
+    }
+
     /// Get the faults recorded in the DAG
     pub fn faults(&self) -> &BTreeMap<SpendAddress, BTreeSet<SpendFault>> {
         &self.faults
@@ -708,14 +714,16 @@ impl SpendDag {
                 continue;
             }
 
-            // verify parent Tx
-            for s in spends {
-                recorded_faults.extend(self.verify_parent_tx(s)?);
-            }
+            // verify parent Tx in parallel
+            let faults: Result<Vec<_>, _> = spends
+                .par_iter()
+                .map(|s| self.verify_parent_tx(s))
+                .collect();
+            recorded_faults.extend(faults?.into_iter().flatten());
         }
 
         debug!(
-            "Time: {:?} Txs checked found after ",
+            "Time: {:?} Txs verified after ",
             start.elapsed().as_millis()
         );
 
@@ -731,10 +739,9 @@ impl SpendDag {
 
     /// Verifies a single transaction and returns resulting errors and DAG poisoning spread
     fn verify_parent_tx(&self, spend: &SignedSpend) -> Result<BTreeSet<SpendFault>, DagError> {
-        let start = Instant::now();
         let addr = spend.address();
         let mut recorded_faults = BTreeSet::new();
-        debug!(
+        trace!(
             "Verifying parent transaction {} at: {addr:?}",
             spend.spend.parent_tx.hash().to_hex()
         );
@@ -775,11 +782,6 @@ impl SpendDag {
             let descendants_faults = self.poison_all_descendants(spend, poison)?;
             recorded_faults.extend(descendants_faults);
         }
-
-        debug!(
-            "Time: {:?} Parent verified after",
-            start.elapsed().as_millis()
-        );
 
         Ok(recorded_faults)
     }

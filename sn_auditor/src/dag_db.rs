@@ -73,6 +73,7 @@ impl SpendDagDb {
                 d
             }
             Err(_) => {
+                debug!("No local dag file found");
                 println!("Found no local spend DAG file, starting from Genesis");
                 new_dag_with_genesis_only(&client).await?
             }
@@ -148,6 +149,7 @@ impl SpendDagDb {
 
     /// Dump DAG to disk
     pub fn dump(&self) -> Result<()> {
+        let start = Instant::now();
         std::fs::create_dir_all(&self.path)?;
         let dag_path = self.path.join(SPEND_DAG_FILENAME);
         let dag_ref = self.dag.clone();
@@ -155,6 +157,8 @@ impl SpendDagDb {
             .read()
             .map_err(|e| eyre!("Failed to get read lock: {e}"))?;
         r_handle.dump_to_file(dag_path)?;
+
+        info!("Time: Dumped DAG in {}ms", start.elapsed().as_millis());
         Ok(())
     }
 
@@ -184,7 +188,7 @@ impl SpendDagDb {
     }
 
     /// Update DAG from Network
-    pub async fn update(&mut self) -> Result<()> {
+    pub async fn update_dag_from_network(&mut self) -> Result<()> {
         let start = Instant::now();
         info!("Updating DAG from network...");
         // read current DAG
@@ -196,13 +200,21 @@ impl SpendDagDb {
                 .clone()
         };
 
-        // update that copy 10 generations further
-        const NEXT_10_GEN: u32 = 10;
-        self.client
-            .clone()
-            .ok_or(eyre!("Cannot update in offline mode"))?
-            .spend_dag_continue_from_utxos(&mut dag, Some(NEXT_10_GEN), true)
-            .await?;
+        // continue after 100 updates
+        const MAX_DAG_UPDATES: usize = 100;
+
+        let mut total_updates = 0;
+
+        while total_updates < MAX_DAG_UPDATES {
+            let new_additions = self
+                .client
+                .clone()
+                .ok_or(eyre!("Cannot update in offline mode"))?
+                .spend_dag_continue_from_utxos(&mut dag, Some(MAX_DAG_UPDATES), true)
+                .await?;
+
+            total_updates += new_additions;
+        }
 
         // write update to DAG
         let mut dag_w_handle = self
@@ -233,7 +245,7 @@ impl SpendDagDb {
         });
 
         info!(
-            "Time: {:?}ms Updated the dag {NEXT_10_GEN:?}",
+            "Time: {:?}ms Updated the dag {MAX_DAG_UPDATES:?}",
             start.elapsed().as_millis()
         );
 
