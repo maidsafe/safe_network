@@ -6,46 +6,50 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{helpers::download_and_extract_release, VerbosityLevel};
+use crate::{
+    config::get_node_registry_path, helpers::download_and_extract_release, VerbosityLevel,
+};
 use color_eyre::eyre::{bail, OptionExt, Result};
 use libp2p::Multiaddr;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
-use sn_service_management::NatDetectionStatus;
+use sn_service_management::{NatDetectionStatus, NodeRegistry};
 use std::{path::PathBuf, process::Stdio};
 
-#[derive(Debug)]
-pub struct NatDetectionOptions {
-    pub force_nat_detection: bool,
-    pub path: Option<PathBuf>,
-    pub servers: Vec<Multiaddr>,
-    pub terminate_on_private_nat: bool,
-    pub url: Option<String>,
-    pub version: Option<String>,
-}
-
 pub async fn run_nat_detection(
-    options: &NatDetectionOptions,
-    release_repo: &dyn SafeReleaseRepoActions,
+    servers: Vec<Multiaddr>,
+    force_run: bool,
+    path: Option<PathBuf>,
+    url: Option<String>,
+    version: Option<String>,
     verbosity: VerbosityLevel,
-) -> Result<NatDetectionStatus> {
-    let nat_detection_path = if let Some(path) = options.path.clone() {
+) -> Result<()> {
+    let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+
+    if !force_run {
+        if let Some(status) = node_registry.nat_status {
+            if verbosity != VerbosityLevel::Minimal {
+                println!("NAT status has already been set as: {status:?}");
+            }
+            return Ok(());
+        }
+    }
+
+    let nat_detection_path = if let Some(path) = path {
         path
     } else {
+        let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+
         let (nat_detection_path, _) = download_and_extract_release(
             ReleaseType::NatDetection,
-            options.url.clone(),
-            options.version.clone(),
-            release_repo,
+            url,
+            version,
+            &*release_repo,
             verbosity,
             None,
         )
         .await?;
         nat_detection_path
     };
-
-    if options.servers.is_empty() {
-        bail!("No servers provided for NAT detection");
-    }
 
     if verbosity != VerbosityLevel::Minimal {
         println!("Running NAT detection. This can take a while..");
@@ -59,8 +63,7 @@ pub async fn run_nat_detection(
 
     let mut command = std::process::Command::new(nat_detection_path);
     command.arg(
-        options
-            .servers
+        servers
             .iter()
             .map(|addr| addr.to_string())
             .collect::<Vec<String>>()
@@ -71,10 +74,19 @@ pub async fn run_nat_detection(
         command.arg("-vv");
     }
     let status = command.stdout(stdout).status()?;
-    match status.code().ok_or_eyre("Failed to get the exit code")? {
-        10 => Ok(NatDetectionStatus::Public),
-        11 => Ok(NatDetectionStatus::UPnP),
-        12 => Ok(NatDetectionStatus::Private),
+    let status = match status.code().ok_or_eyre("Failed to get the exit code")? {
+        10 => NatDetectionStatus::Public,
+        11 => NatDetectionStatus::UPnP,
+        12 => NatDetectionStatus::Private,
         code => bail!("Failed to detect NAT status, exit code: {code}"),
+    };
+
+    if verbosity != VerbosityLevel::Minimal {
+        println!("NAT status has been found to be: {status:?}");
     }
+
+    node_registry.nat_status = Some(status);
+    node_registry.save()?;
+
+    Ok(())
 }
