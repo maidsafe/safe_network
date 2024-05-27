@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716810846449,
+  "lastUpdate": 1716810848877,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "dd05850e841efb7dd870828fb754b237a2fae731",
-          "message": "ci: re-add disk space debugging\n\nI would still like to monitor how much disk space `release-plz` is using just to see if upgrading to\nthe new version has likely solved the problem we were having.",
-          "timestamp": "2024-02-09T14:24:28Z",
-          "tree_id": "cc38ce26177b75d8fdda76ec8be802b328a49fa5",
-          "url": "https://github.com/maidsafe/safe_network/commit/dd05850e841efb7dd870828fb754b237a2fae731"
-        },
-        "date": 1707489373518,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 189,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "2bf9430268de56581b108e42c2c815e9bd0cef41",
+          "message": "chore(cli): showing cli final execution result explicitly",
+          "timestamp": "2024-05-27T10:56:45Z",
+          "tree_id": "552e875d2036e952de85186786df48e1f499f8e2",
+          "url": "https://github.com/maidsafe/safe_network/commit/2bf9430268de56581b108e42c2c815e9bd0cef41"
+        },
+        "date": 1716810848034,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
