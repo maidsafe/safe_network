@@ -23,6 +23,10 @@ use crate::{
     relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
     target_arch::{interval, spawn, Instant},
+    version::{
+        IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
+        REQ_RESPONSE_VERSION_STR,
+    },
     GetRecordError, Network, CLOSE_GROUP_SIZE,
 };
 use crate::{transport, NodeIssue};
@@ -48,10 +52,6 @@ use prometheus_client::registry::Registry;
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
     storage::RetryStrategy,
-    version::{
-        IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
-        REQ_RESPONSE_VERSION_STR,
-    },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::PaymentQuote;

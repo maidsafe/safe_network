@@ -7,8 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::SwarmCmd, event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p,
-    relay_manager::is_a_relayed_peer, target_arch::Instant, NetworkEvent, Result, SwarmDriver,
+    cmd::SwarmCmd,
+    event::NodeEvent,
+    multiaddr_is_global, multiaddr_strip_p2p,
+    relay_manager::is_a_relayed_peer,
+    target_arch::Instant,
+    version::{IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR},
+    NetworkEvent, Result, SwarmDriver,
 };
 use itertools::Itertools;
 #[cfg(feature = "local-discovery")]
@@ -24,10 +29,7 @@ use libp2p::{
     },
     Multiaddr, PeerId, TransportError,
 };
-use sn_protocol::{
-    get_port_from_multiaddr,
-    version::{IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR},
-};
+use sn_protocol::get_port_from_multiaddr;
 use std::collections::HashSet;
 use tokio::time::Duration;
 
