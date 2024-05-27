@@ -123,6 +123,11 @@ impl SpendDag {
     /// If the inserted spend is a double spend, it will be saved along with the previous spend
     /// Return true if the spend was inserted and false if it was already in the DAG
     pub fn insert(&mut self, spend_addr: SpendAddress, spend: SignedSpend) -> bool {
+        let spend_unique_pubkey = spend.spend.unique_pubkey;
+        let spend_parent_hash = spend.spend.parent_tx.hash();
+        let spend_parent_inputs = spend.spend.parent_tx.inputs.clone();
+        let spent_outputs = spend.spend.spent_tx.outputs.clone();
+
         let existing_entry = self.spends.get(&spend_addr).cloned();
         let new_node_idx = match existing_entry {
             // add new spend to the DAG
@@ -130,49 +135,46 @@ impl SpendDag {
                 let node_idx = self.dag.add_node(spend_addr);
                 self.spends.insert(
                     spend_addr,
-                    DagEntry::Spend(Box::new(spend.clone()), node_idx.index()),
+                    DagEntry::Spend(Box::new(spend), node_idx.index()),
                 );
                 node_idx
             }
             // or upgrade a known but not gathered entry to spend
             Some(DagEntry::NotGatheredYet(idx)) => {
                 self.spends
-                    .insert(spend_addr, DagEntry::Spend(Box::new(spend.clone()), idx));
+                    .insert(spend_addr, DagEntry::Spend(Box::new(spend), idx));
                 let node_idx = NodeIndex::new(idx);
                 self.remove_all_edges(node_idx);
                 node_idx
             }
             // or upgrade spend to double spend if it is different from the existing one
             Some(DagEntry::Spend(s, idx)) => {
-                let existing_spend = *s.clone();
+                let existing_spend = *s;
                 if existing_spend == spend {
                     return false;
                 }
 
                 let node_idx = self.dag.add_node(spend_addr);
-                let double_spend = DagEntry::DoubleSpend(vec![
-                    (existing_spend.clone(), idx),
-                    (spend.clone(), node_idx.index()),
-                ]);
+                let double_spend =
+                    DagEntry::DoubleSpend(vec![(existing_spend, idx), (spend, node_idx.index())]);
                 self.spends.insert(spend_addr, double_spend);
                 node_idx
             }
             // or add extra spend to an existing double spend if it is unknown yet
-            Some(DagEntry::DoubleSpend(vec_s)) => {
+            Some(DagEntry::DoubleSpend(mut vec_s)) => {
                 if vec_s.iter().any(|(s, _idx)| s == &spend) {
                     return false;
                 }
 
                 let node_idx = self.dag.add_node(spend_addr);
-                let mut vec_s = vec_s.clone();
-                vec_s.push((spend.clone(), node_idx.index()));
+                vec_s.push((spend, node_idx.index()));
                 self.spends.insert(spend_addr, DagEntry::DoubleSpend(vec_s));
                 node_idx
             }
         };
 
         // link to descendants
-        for descendant in spend.spend.spent_tx.outputs.iter() {
+        for descendant in spent_outputs.iter() {
             let descendant_addr = SpendAddress::from_unique_pubkey(&descendant.unique_pubkey);
 
             // add descendant if not already in dag
@@ -196,7 +198,7 @@ impl SpendDag {
 
         // link to ancestors
         const PENDING_AMOUNT: NanoTokens = NanoTokens::from(0);
-        for ancestor in spend.spend.parent_tx.inputs.iter() {
+        for ancestor in spend_parent_inputs.iter() {
             let ancestor_addr = SpendAddress::from_unique_pubkey(&ancestor.unique_pubkey);
 
             // add ancestor if not already in dag
@@ -219,7 +221,7 @@ impl SpendDag {
                         .spent_tx
                         .outputs
                         .iter()
-                        .find(|o| o.unique_pubkey == spend.spend.unique_pubkey)
+                        .find(|o| o.unique_pubkey == spend_unique_pubkey)
                         .map(|o| o.amount)
                         .unwrap_or(PENDING_AMOUNT);
                     self.dag
@@ -227,14 +229,14 @@ impl SpendDag {
                 }
                 DagEntry::DoubleSpend(multiple_ancestors) => {
                     for (ancestor_spend, ancestor_idx) in multiple_ancestors {
-                        if ancestor_spend.spend.spent_tx.hash() == spend.spend.parent_tx.hash() {
+                        if ancestor_spend.spend.spent_tx.hash() == spend_parent_hash {
                             let ancestor_idx = NodeIndex::new(*ancestor_idx);
                             let ancestor_given_amount = ancestor_spend
                                 .spend
                                 .spent_tx
                                 .outputs
                                 .iter()
-                                .find(|o| o.unique_pubkey == spend.spend.unique_pubkey)
+                                .find(|o| o.unique_pubkey == spend_unique_pubkey)
                                 .map(|o| o.amount)
                                 .unwrap_or(PENDING_AMOUNT);
                             self.dag
