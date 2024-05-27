@@ -12,7 +12,7 @@ use libp2p::Multiaddr;
 use sn_logging::LogFormat;
 use sn_node_manager::{
     add_services::config::{parse_port_range, PortRange},
-    cmd::{self, nat_detection::NatDetectionOptions},
+    cmd::{self},
     VerbosityLevel,
 };
 use sn_peers_acquisition::PeersArgs;
@@ -51,6 +51,14 @@ pub enum SubCmd {
     /// distributions, however, use Systemd, which *does* support user-mode services.
     #[clap(name = "add")]
     Add {
+        /// Auto set NAT related flags (--upnp or --home-network) on the safenode service if our NAT status is obtained
+        /// by running the NAT detection subcommand.
+        ///
+        /// This will cause an error if the NAT status has not been set.
+        ///
+        /// This will override any --upnp or --home-network option that were passed in.
+        #[clap(long, default_value_t = false)]
+        auto_set_nat_flags: bool,
         /// The number of service instances.
         ///
         /// If the --first argument is used, the count has to be one, so --count and --first are
@@ -113,8 +121,6 @@ pub enum SubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = parse_port_range)]
         metrics_port: Option<PortRange>,
-        #[clap(subcommand)]
-        nat_detection: Option<NatDetectionSubCmd>,
         /// Specify a port for the safenode service(s).
         ///
         /// If not used, ports will be selected at random.
@@ -207,6 +213,8 @@ pub enum SubCmd {
     Faucet(FaucetSubCmd),
     #[clap(subcommand)]
     Local(LocalSubCmd),
+    #[clap(subcommand)]
+    NatDetection(NatDetectionSubCmd),
     /// Remove safenode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be removed.
@@ -634,19 +642,13 @@ pub enum FaucetSubCmd {
 /// Nat Detection process subcommands.
 #[derive(Subcommand, Debug, Clone)]
 pub enum NatDetectionSubCmd {
-    /// Run NAT detection to determine whether --upnp or --home-network or none should be applied to the safenode
-    /// services.
+    /// RUn NAT detection to fetch and store our NAT status to the node registry.
     ///
-    /// This will override any --upnp or --home-network option that were passed in.
-    NatDetection {
-        /// Set this flag to force the NAT Detection process to run
+    /// The status can be later used with the `safenode-manager add --auto-set-nat-flags` command.
+    Run {
+        /// Provide a path for the NAT detection binary to be used.
         ///
-        /// If not set, the value of the previous run will be used.
-        #[clap(long, default_value_t = false)]
-        force_nat_detection: bool,
-        /// Provide a path for the NAT Detection binary to be used when adding safenode services.
-        ///
-        /// Useful for running NAT Detection using a custom built binary.
+        /// Useful for running NAT detection using a custom built binary.
         #[clap(long)]
         path: Option<PathBuf>,
         /// Provide the list of NAT servers to connect.
@@ -655,10 +657,7 @@ pub enum NatDetectionSubCmd {
         /// Alternatively, the address can be written as `1.2.3.4:1200`.
         #[clap(long)]
         servers: Vec<Multiaddr>,
-        /// Set this flag to exit if the NAT is found to be private.
-        #[clap(long, default_value_t = false)]
-        terminate_on_private_nat: bool,
-        /// Provide a NAT Detection binary using a URL.
+        /// Provide a NAT detection binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
         ///
@@ -667,7 +666,7 @@ pub enum NatDetectionSubCmd {
         /// a testnet to test some changes they have on a fork.
         #[clap(long, conflicts_with = "version")]
         url: Option<String>,
-        /// Provide a specific version of the NAT Detection to be installed.
+        /// Provide a specific version of the NAT detection to be installed.
         ///
         /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
@@ -857,6 +856,7 @@ async fn main() -> Result<()> {
 
     match args.cmd {
         SubCmd::Add {
+            auto_set_nat_flags,
             count,
             data_dir_path,
             env_variables,
@@ -865,7 +865,6 @@ async fn main() -> Result<()> {
             log_dir_path,
             log_format,
             metrics_port,
-            nat_detection,
             node_port,
             owner,
             path,
@@ -877,26 +876,8 @@ async fn main() -> Result<()> {
             user,
             version,
         } => {
-            let nat_detection = nat_detection.map(|cmds| {
-                let NatDetectionSubCmd::NatDetection {
-                    force_nat_detection,
-                    path,
-                    servers,
-                    terminate_on_private_nat,
-                    url,
-                    version,
-                } = cmds;
-
-                NatDetectionOptions {
-                    force_nat_detection,
-                    path,
-                    servers,
-                    terminate_on_private_nat,
-                    url,
-                    version,
-                }
-            });
             let _ = cmd::node::add(
+                auto_set_nat_flags,
                 count,
                 data_dir_path,
                 env_variables,
@@ -905,7 +886,6 @@ async fn main() -> Result<()> {
                 log_dir_path,
                 log_format,
                 metrics_port,
-                nat_detection,
                 node_port,
                 owner,
                 peers,
@@ -1077,6 +1057,15 @@ async fn main() -> Result<()> {
                 json,
             } => cmd::local::status(details, fail, json).await,
         },
+        SubCmd::NatDetection(NatDetectionSubCmd::Run {
+            path,
+            servers,
+            url,
+            version,
+        }) => {
+            cmd::nat_detection::run_nat_detection(servers, true, path, url, version, verbosity)
+                .await
+        }
         SubCmd::Remove {
             keep_directories,
             peer_id: peer_ids,
