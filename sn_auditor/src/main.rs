@@ -23,8 +23,8 @@ use sn_peers_acquisition::PeersArgs;
 use std::path::PathBuf;
 use tiny_http::{Response, Server};
 
-/// Interval in seconds to update the DAG, save to disk, and update beta participants
-const DAG_UPDATE_INTERVAL_SECS: u64 = 5 * 60;
+/// Interval in seconds to save the DAG to disk
+const DAG_DUMPING_INTERVAL_SECS: u64 = 5 * 60;
 
 /// Backup the beta rewards in a timestamped json file
 const BETA_REWARDS_BACKOUP_INTERVAL_SECS: u64 = 3 * 60 * 60;
@@ -81,9 +81,7 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let log_builder = logging_init(opt.log_output_dest, opt.log_format)?;
     let _log_handles = log_builder.initialize()?;
-
     let beta_participants = load_and_update_beta_participants(opt.beta_participants)?;
-
     let maybe_sk = if let Some(sk_str) = opt.beta_encryption_key {
         match SecretKey::from_hex(&sk_str) {
             Ok(sk) => Some(sk),
@@ -201,7 +199,7 @@ async fn initialize_background_spend_dag_collection(
     }
 
     // initialize the DAG
-    let dag = dag_db::SpendDagDb::new(path.clone(), client.clone(), foundation_sk)
+    let dag = dag_db::SpendDagDb::new(path.clone(), client, foundation_sk)
         .await
         .map_err(|e| eyre!("Could not create SpendDag Db: {e}"))?;
 
@@ -209,17 +207,9 @@ async fn initialize_background_spend_dag_collection(
     if force_from_genesis {
         println!("Forcing DAG to be updated from genesis...");
         let mut d = dag.clone();
-        let mut genesis_dag = dag_db::new_dag_with_genesis_only(&client)
-            .await
-            .map_err(|e| eyre!("Could not create new DAG from genesis: {e}"))?;
+
         tokio::spawn(async move {
-            let _ = client
-                .spend_dag_continue_from_utxos(&mut genesis_dag, None, true)
-                .await
-                .map_err(|e| eprintln!("Could not update DAG from genesis: {e}"));
-            let _ = d
-                .merge(genesis_dag)
-                .map_err(|e| eprintln!("Failed to merge from genesis DAG into our DAG: {e}"));
+            d.dag_crawling_from_genesis().await;
         });
     }
 
@@ -241,20 +231,16 @@ async fn initialize_background_spend_dag_collection(
     }
 
     // background thread to update DAG
-    println!("Starting background DAG collection thread...");
-    let mut d = dag.clone();
+    println!("Starting background DAG dumping thread...");
+    let d = dag.clone();
     tokio::spawn(async move {
         loop {
-            println!("Updating DAG...");
-            let _ = d
-                .update()
-                .await
-                .map_err(|e| eprintln!("Could not update DAG: {e}"));
+            println!("Duming DAG...");
             let _ = d
                 .dump()
                 .map_err(|e| eprintln!("Could not dump DAG to disk: {e}"));
-            println!("Sleeping for {DAG_UPDATE_INTERVAL_SECS} seconds...");
-            tokio::time::sleep(tokio::time::Duration::from_secs(DAG_UPDATE_INTERVAL_SECS)).await;
+            println!("Sleeping for {DAG_DUMPING_INTERVAL_SECS} seconds...");
+            tokio::time::sleep(tokio::time::Duration::from_secs(DAG_DUMPING_INTERVAL_SECS)).await;
         }
     });
 

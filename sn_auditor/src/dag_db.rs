@@ -39,7 +39,7 @@ pub struct SpendDagDb {
     pub(crate) path: PathBuf,
     dag: Arc<RwLock<SpendDag>>,
     forwarded_payments: Arc<RwLock<ForwardedPayments>>,
-    pub(crate) beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
+    beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
     encryption_sk: Option<SecretKey>,
 }
 
@@ -180,56 +180,6 @@ impl SpendDagDb {
         Ok(())
     }
 
-    /// Update DAG from Network
-    pub async fn update(&mut self) -> Result<()> {
-        // read current DAG
-        let mut dag = {
-            self.dag
-                .clone()
-                .read()
-                .map_err(|e| eyre!("Failed to get read lock: {e}"))?
-                .clone()
-        };
-
-        // update that copy 10 generations further
-        const NEXT_10_GEN: u32 = 10;
-        self.client
-            .clone()
-            .ok_or(eyre!("Cannot update in offline mode"))?
-            .spend_dag_continue_from_utxos(&mut dag, Some(NEXT_10_GEN), true)
-            .await?;
-
-        // write update to DAG
-        let mut dag_w_handle = self
-            .dag
-            .write()
-            .map_err(|e| eyre!("Failed to get write lock: {e}"))?;
-        *dag_w_handle = dag;
-        std::mem::drop(dag_w_handle);
-
-        #[cfg(feature = "svg-dag")]
-        {
-            // update and save svg to file in a background thread so we don't block
-            //
-            let self_clone = self.clone();
-            tokio::spawn(async move {
-                if let Err(e) = self_clone.dump_dag_svg() {
-                    error!("Failed to dump DAG svg: {e}");
-                }
-            });
-        }
-
-        // gather forwarded payments in a background thread so we don't block
-        let self_clone = self.clone();
-        tokio::spawn(async move {
-            if let Err(e) = self_clone.gather_forwarded_payments().await {
-                error!("Failed to gather forwarded payments: {e}");
-            }
-        });
-
-        Ok(())
-    }
-
     /// Merge a SpendDag into the current DAG
     /// This can be used to enrich our DAG with a DAG from another node to avoid costly computations
     /// Make sure to verify the other DAG is trustworthy before calling this function to merge it in
@@ -302,64 +252,6 @@ impl SpendDagDb {
         participants: Vec<String>,
     ) -> Result<()> {
         self.track_new_beta_participants(participants)?;
-        self.gather_forwarded_payments().await?;
-        Ok(())
-    }
-
-    // Gather forwarded payments from the DAG
-    pub(crate) async fn gather_forwarded_payments(&self) -> Result<()> {
-        info!("Gathering forwarded payments...");
-
-        // make sure we have the foundation secret key
-        let sk = self
-            .encryption_sk
-            .clone()
-            .ok_or_else(|| eyre!("Foundation secret key not set"))?;
-
-        // get spends from current DAG
-        let dag = self.dag.read().map_err(|e| {
-            eyre!("Failed to get dag read lock for gathering forwarded payments: {e}")
-        })?;
-        let all_spends = dag.all_spends();
-
-        // find spends with payments
-        let mut payments: ForwardedPayments = BTreeMap::new();
-        for spend in all_spends {
-            let user_name_hash = match spend.reason().get_sender_hash(&sk) {
-                Some(n) => n,
-                None => continue,
-            };
-            let addr = spend.address();
-            let amount = spend.spend.amount;
-            let beta_participants_read = self
-                .beta_participants
-                .read()
-                .map_err(|e| eyre!("Failed to get payments write lock: {e}"))?;
-            if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
-                debug!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
-                payments
-                    .entry(user_name.to_owned())
-                    .or_default()
-                    .insert((addr, amount));
-            } else {
-                info!(
-                    "Found a forwarded reward for an unknown participant at {:?}: {user_name_hash:?}",
-                    spend.address()
-                );
-                payments
-                    .entry(format!("unknown participant: {user_name_hash:?}"))
-                    .or_default()
-                    .insert((addr, amount));
-            }
-        }
-
-        // save new payments
-        let mut self_payments = self
-            .forwarded_payments
-            .write()
-            .map_err(|e| eyre!("Failed to get payments write lock: {e}"))?;
-        self_payments.extend(payments);
-        info!("Done gathering forwarded payments");
         Ok(())
     }
 
@@ -381,6 +273,106 @@ impl SpendDagDb {
             .map_err(|e| eyre!("Could not write rewards backup to disk: {e}"))?;
 
         Ok(())
+    }
+
+    pub(crate) async fn dag_crawling_from_genesis(&mut self) {
+        let client = if let Some(client) = &self.client {
+            client.clone()
+        } else {
+            eprintln!("Do not have an attached client");
+            return;
+        };
+
+        let mut addresses;
+        {
+            let genesis_dag = match new_dag_with_genesis_only(&client).await {
+                Ok(dag) => dag,
+                Err(err) => {
+                    eprintln!("Could not create new DAG from genesis: {err}");
+                    return;
+                }
+            };
+
+            addresses = genesis_dag.get_utxos();
+
+            if let Err(err) = self.merge(genesis_dag) {
+                eprintln!("Failed to merge from genesis DAG into our DAG: {err}");
+                return;
+            }
+        }
+
+        let mut new_addresses = vec![];
+        loop {
+            if addresses.is_empty() {
+                for address in &new_addresses {
+                    let _ = addresses.insert(*address);
+                }
+                new_addresses.clear();
+            }
+            let address = if let Some(address) = addresses.pop_first() {
+                address
+            } else {
+                break;
+            };
+
+            match client.crawl_spend_from_network(address).await {
+                Ok(spend) => {
+                    // make sure we have the foundation secret key
+                    let sk = if let Some(sk) = &self.encryption_sk {
+                        sk.clone()
+                    } else {
+                        eprintln!("Foundation secret key not set!");
+                        return;
+                    };
+
+                    let user_name_hash = match spend.reason().get_sender_hash(&sk) {
+                        Some(n) => n,
+                        None => continue,
+                    };
+                    let addr = spend.address();
+                    let amount = spend.spend.amount;
+                    let beta_participants_read =
+                        if let Ok(beta_participants_read) = self.beta_participants.read() {
+                            beta_participants_read
+                        } else {
+                            eprintln!("Failed to get participants read lock!");
+                            continue;
+                        };
+
+                    let mut self_payments =
+                        if let Ok(self_payments) = self.forwarded_payments.write() {
+                            self_payments
+                        } else {
+                            eprintln!("Failed to get payments write lock!");
+                            continue;
+                        };
+
+                    if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
+                        debug!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
+                        self_payments
+                            .entry(user_name.to_owned())
+                            .or_default()
+                            .insert((addr, amount));
+                    } else {
+                        info!(
+                                "Found a forwarded reward for an unknown participant at {:?}: {user_name_hash:?}",
+                                spend.address()
+                            );
+                        self_payments
+                            .entry(format!("unknown participant: {user_name_hash:?}"))
+                            .or_default()
+                            .insert((addr, amount));
+                    }
+                    for output in spend.spend.spent_tx.outputs.iter() {
+                        let new_utxo = SpendAddress::from_unique_pubkey(&output.unique_pubkey);
+                        new_addresses.push(new_utxo);
+                    }
+                }
+                Err(_) => continue,
+            }
+        }
+
+        eprintln!("No more unknown spends!");
     }
 }
 
