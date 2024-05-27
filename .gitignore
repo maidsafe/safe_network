@@ -19,6 +19,7 @@ settings.json
 
 # ignore log files
 *.log
+*.log.*.gz*
 bump_version_output
 heaptrack.*.gz
 

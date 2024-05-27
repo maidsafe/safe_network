@@ -649,7 +649,7 @@ impl SpendDag {
 
         // check all transactions
         for (addr, _) in self.spends.iter() {
-            debug!("Verifying transaction at: {addr:?}");
+            trace!("Verifying transaction at: {addr:?}");
             // get the spend at this address
             let spends = self
                 .spends
@@ -702,10 +702,13 @@ impl SpendDag {
             }
         }
 
-        info!(
-            "Found {} faults: {recorded_faults:#?}",
-            recorded_faults.len()
-        );
+        if !recorded_faults.is_empty() {
+            warn!(
+                "Found {} faults: {recorded_faults:#?}",
+                recorded_faults.len()
+            );
+        }
+
         Ok(recorded_faults)
     }
 
@@ -714,7 +717,7 @@ impl SpendDag {
         let addr = spend.address();
         let mut recorded_faults = BTreeSet::new();
         debug!(
-            "Verifying transaction {} at: {addr:?}",
+            "Verifying parent transaction {} at: {addr:?}",
             spend.spend.parent_tx.hash().to_hex()
         );
 
