@@ -24,6 +24,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
 };
+use tokio::time::Instant;
 
 pub const SPEND_DAG_FILENAME: &str = "spend_dag";
 #[cfg(feature = "svg-dag")]
@@ -64,6 +65,7 @@ impl SpendDagDb {
         encryption_sk: Option<SecretKey>,
     ) -> Result<Self> {
         let dag_path = path.join(SPEND_DAG_FILENAME);
+        let start = Instant::now();
         info!("Loading DAG from {dag_path:?}...");
         let dag = match SpendDag::load_from_file(&dag_path) {
             Ok(d) => {
@@ -76,6 +78,7 @@ impl SpendDagDb {
             }
         };
 
+        info!("Loaded DAG in {}ms", start.elapsed().as_millis());
         Ok(Self {
             client: Some(client),
             path,

@@ -18,6 +18,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
 };
+use tokio::time::Instant;
 
 use super::dag_error::{DagError, SpendFault};
 
@@ -334,6 +335,8 @@ impl SpendDag {
             sub_dag.source(),
             source
         );
+
+        let start = Instant::now();
         for (addr, spends) in sub_dag.spends {
             // only add spends to the dag, ignoring utxos and not yet gathered relatives
             // utxos will be added automatically as their ancestors are added
@@ -350,7 +353,7 @@ impl SpendDag {
                 }
             }
         }
-
+        info!("Merging sub DAG took {}ms", start.elapsed().as_millis());
         // recompute faults
         if verify {
             self.record_faults(&source)?;
@@ -620,7 +623,8 @@ impl SpendDag {
     /// Verify the DAG and return faults detected in the DAG
     /// If the DAG itself is invalid, return an error immediately
     pub fn verify(&self, source: &SpendAddress) -> Result<BTreeSet<SpendFault>, DagError> {
-        info!("Verifying DAG starting off: {source:?}");
+        let start = Instant::now();
+        info!("Verifying DAG starting off: {source:?} at {start:?}");
         let mut recorded_faults = BTreeSet::new();
 
         // verify the DAG is acyclic
@@ -646,6 +650,11 @@ impl SpendDag {
         // identify orphans (spends that don't come from the source)
         debug!("Looking for orphans of {source:?}");
         recorded_faults.extend(self.find_orphans(source)?);
+
+        trace!(
+            "Time: {:?} Orphans found after ",
+            start.elapsed().as_millis()
+        );
 
         // check all transactions
         for (addr, _) in self.spends.iter() {
@@ -702,6 +711,11 @@ impl SpendDag {
             }
         }
 
+        trace!(
+            "Time: {:?} Txs checked found after ",
+            start.elapsed().as_millis()
+        );
+
         if !recorded_faults.is_empty() {
             warn!(
                 "Found {} faults: {recorded_faults:#?}",
@@ -714,6 +728,7 @@ impl SpendDag {
 
     /// Verifies a single transaction and returns resulting errors and DAG poisoning spread
     fn verify_parent_tx(&self, spend: &SignedSpend) -> Result<BTreeSet<SpendFault>, DagError> {
+        let start = Instant::now();
         let addr = spend.address();
         let mut recorded_faults = BTreeSet::new();
         debug!(
@@ -757,6 +772,11 @@ impl SpendDag {
             let descendants_faults = self.poison_all_descendants(spend, poison)?;
             recorded_faults.extend(descendants_faults);
         }
+
+        trace!(
+            "Time: {:?} Parent verified after",
+            start.elapsed().as_millis()
+        );
 
         Ok(recorded_faults)
     }
