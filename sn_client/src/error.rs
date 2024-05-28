@@ -13,7 +13,6 @@ use crate::UploadSummary;
 use super::ClientEvent;
 use sn_protocol::NetworkAddress;
 use sn_registers::{Entry, EntryHash};
-use sn_transfers::{SignedSpend, SpendAddress};
 use std::collections::BTreeSet;
 use thiserror::Error;
 use tokio::time::Duration;
@@ -68,8 +67,6 @@ pub enum Error {
     /// A general error when verifying a transfer validity in the network.
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
-    #[error("Double spend detected at address: {0:?}")]
-    DoubleSpend(SpendAddress, Box<SignedSpend>, Box<SignedSpend>),
     #[error("Invalid DAG")]
     InvalidDag,
     #[error("Serialization error: {0:?}")]

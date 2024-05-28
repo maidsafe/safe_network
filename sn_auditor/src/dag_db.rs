@@ -389,8 +389,7 @@ pub async fn new_dag_with_genesis_only(client: &Client) -> Result<SpendDag> {
     let mut dag = SpendDag::new(genesis_addr);
     let genesis_spend = match client.get_spend_from_network(genesis_addr).await {
         Ok(s) => s,
-        Err(ClientError::Network(NetworkError::DoubleSpendAttempt(spend1, spend2)))
-        | Err(ClientError::DoubleSpend(_, spend1, spend2)) => {
+        Err(ClientError::Network(NetworkError::DoubleSpendAttempt(spend1, spend2))) => {
             let addr = spend1.address();
             println!("Double spend detected at Genesis: {addr:?}");
             dag.insert(genesis_addr, *spend2);
