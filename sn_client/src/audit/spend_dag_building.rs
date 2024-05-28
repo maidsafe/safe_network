@@ -13,10 +13,28 @@ use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
 use std::collections::BTreeSet;
 
+enum InternalGetNetworkSpend {
+    Spend(Box<SignedSpend>),
+    DoubleSpend(Box<SignedSpend>, Box<SignedSpend>),
+    NotFound,
+    Error(Error),
+}
+
 impl Client {
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
     /// Started from Genesis this gives the entire SpendDag of the Network at a certain point in time
     /// Once the DAG collected, optionally verifies and records errors in the DAG
+    ///
+    /// ```text
+    ///                                   -> Spend7 ---> UTXO_11
+    ///                                 /
+    /// Genesis -> Spend1 -----> Spend2 ---> Spend5 ---> UTXO_10
+    ///                   \
+    ///                     ---> Spend3 ---> Spend6 ---> UTXO_9
+    ///                     \
+    ///                       -> Spend4 ---> UTXO_8
+    ///
+    /// ```
     pub async fn spend_dag_build_from(
         &self,
         spend_addr: SpendAddress,
@@ -27,21 +45,18 @@ impl Client {
         let mut dag = SpendDag::new(spend_addr);
 
         // get first spend
-        let first_spend = match self.get_spend_from_network(spend_addr).await {
-            Ok(s) => s,
-            Err(Error::Network(NetworkError::GetRecordError(GetRecordError::RecordNotFound))) => {
+        let first_spend = match self.crawl_spend(spend_addr).await {
+            InternalGetNetworkSpend::Spend(s) => *s,
+            InternalGetNetworkSpend::DoubleSpend(s1, s2) => {
+                dag.insert(spend_addr, *s2);
+                *s1
+            }
+            InternalGetNetworkSpend::NotFound => {
                 // the cashnote was not spent yet, so it's an UTXO
                 info!("UTXO at {spend_addr:?}");
                 return Ok(dag);
             }
-            Err(Error::Network(NetworkError::DoubleSpendAttempt(s1, s2))) => {
-                // the cashnote was spent twice, take it into account and continue
-                info!("Double spend at {spend_addr:?}");
-                dag.insert(spend_addr, *s2);
-                *s1
-            }
-            Err(e) => {
-                warn!("Failed to get spend at {spend_addr:?}: {e}");
+            InternalGetNetworkSpend::Error(e) => {
                 return Err(WalletError::FailedToGetSpend(e.to_string()));
             }
         };
@@ -71,10 +86,7 @@ impl Client {
 
             // get all spends in parallel
             let mut stream = futures::stream::iter(addrs.clone())
-                // For crawling, a special fetch policy is deployed to improve the performance:
-                //   1, Expect `majority` copies as it is a `Spend`;
-                //   2, But don't retry as most will be `UTXO` which won't be found.
-                .map(|a| async move { (self.crawl_spend_from_network(a).await, a) })
+                .map(|a| async move { (self.crawl_spend(a).await, a) })
                 .buffer_unordered(crate::MAX_CONCURRENT_TASKS);
             info!(
                 "Gen {gen} - Getting {} spends from {} txs in batches of: {}",
@@ -84,20 +96,22 @@ impl Client {
             );
 
             // insert spends in the dag as they are collected
-            while let Some((res, addr)) = stream.next().await {
-                match res {
-                    Ok(spend) => {
-                        info!("Fetched spend {addr:?} from network.");
-                        dag.insert(addr, spend.clone());
+            while let Some((get_spend, addr)) = stream.next().await {
+                match get_spend {
+                    InternalGetNetworkSpend::Spend(spend) => {
                         next_gen_tx.insert(spend.spend.spent_tx.clone());
+                        dag.insert(addr, *spend);
                     }
-                    Err(Error::Network(NetworkError::GetRecordError(
-                        GetRecordError::RecordNotFound,
-                    ))) => {
-                        info!("Reached UTXO at {addr:?}");
+                    InternalGetNetworkSpend::DoubleSpend(s1, s2) => {
+                        info!("Fetched double spend at {addr:?} from network, following both...");
+                        next_gen_tx.insert(s1.spend.spent_tx.clone());
+                        next_gen_tx.insert(s2.spend.spent_tx.clone());
+                        dag.insert(addr, *s1);
+                        dag.insert(addr, *s2);
                     }
-                    Err(err) => {
-                        error!("Failed to get spend at {addr:?} during DAG collection: {err:?}");
+                    InternalGetNetworkSpend::NotFound => info!("Reached UTXO at {addr:?}"),
+                    InternalGetNetworkSpend::Error(err) => {
+                        error!("Failed to get spend at {addr:?} during DAG collection: {err:?}")
                     }
                 }
             }
@@ -186,21 +200,39 @@ impl Client {
                 // get all parent spends in parallel
                 let tasks: Vec<_> = addrs_to_verify
                     .clone()
-                    .map(|a| self.crawl_spend_from_network(a))
+                    .map(|a| self.crawl_spend(a))
                     .collect();
-                let spends = join_all(tasks).await
+                let mut spends = BTreeSet::new();
+                for (spend_get, a) in join_all(tasks)
+                    .await
                     .into_iter()
                     .zip(addrs_to_verify.clone())
-                    .map(|(maybe_spend, a)|
-                        maybe_spend.map_err(|err| WalletError::CouldNotVerifyTransfer(format!("at depth {depth} - Failed to get spend {a:?} from network for parent Tx {parent_tx_hash:?}: {err}"))))
-                    .collect::<WalletResult<BTreeSet<_>>>()?;
-                debug!(
-                    "Depth {depth} - Got {:?} spends for parent Tx: {parent_tx_hash:?}",
-                    spends.len()
-                );
+                {
+                    match spend_get {
+                        InternalGetNetworkSpend::Spend(s) => {
+                            spends.insert(*s);
+                        }
+                        InternalGetNetworkSpend::DoubleSpend(s1, s2) => {
+                            spends.extend([*s1, *s2]);
+                        }
+                        InternalGetNetworkSpend::NotFound => {
+                            return Err(WalletError::FailedToGetSpend(format!(
+                                "Missing ancestor spend at {a:?}"
+                            )))
+                        }
+                        InternalGetNetworkSpend::Error(e) => {
+                            return Err(WalletError::FailedToGetSpend(format!(
+                                "Failed to get ancestor spend at {a:?}: {e}"
+                            )))
+                        }
+                    }
+                }
+                let spends_len = spends.len();
+                debug!("Depth {depth} - Got {spends_len} spends for parent Tx: {parent_tx_hash:?}");
                 trace!("Spends for {parent_tx_hash:?} - {spends:?}");
 
                 // check if we reached the genesis Tx
+                known_txs.insert(parent_tx_hash);
                 if parent_tx == *sn_transfers::GENESIS_CASHNOTE_PARENT_TX
                     && spends
                         .iter()
@@ -208,12 +240,8 @@ impl Client {
                     && spends.len() == 1
                 {
                     debug!("Depth {depth} - reached genesis Tx on one branch: {parent_tx_hash:?}");
-                    known_txs.insert(parent_tx_hash);
                     continue;
                 }
-
-                known_txs.insert(parent_tx_hash);
-                debug!("Depth {depth} - Verified parent Tx: {parent_tx_hash:?}");
 
                 // add spends to the dag
                 for (spend, addr) in spends.clone().into_iter().zip(addrs_to_verify) {
@@ -313,5 +341,32 @@ impl Client {
         let utxos = dag.get_utxos();
         self.spend_dag_continue_from(dag, utxos, max_depth, verify)
             .await
+    }
+
+    /// Internal get spend helper for DAG purposes
+    /// For crawling, a special fetch policy is deployed to improve the performance:
+    ///   1. Expect `majority` copies as it is a `Spend`;
+    ///   2. But don't retry as most will be `UTXO` which won't be found.
+    async fn crawl_spend(&self, spend_addr: SpendAddress) -> InternalGetNetworkSpend {
+        match self.crawl_spend_from_network(spend_addr).await {
+            Ok(s) => {
+                debug!("DAG crawling: fetched spend {spend_addr:?} from network");
+                InternalGetNetworkSpend::Spend(Box::new(s))
+            }
+            Err(Error::Network(NetworkError::GetRecordError(GetRecordError::RecordNotFound))) => {
+                debug!("DAG crawling: spend at {spend_addr:?} not found on the network");
+                InternalGetNetworkSpend::NotFound
+            }
+            Err(Error::Network(NetworkError::DoubleSpendAttempt(s1, s2))) => {
+                debug!("DAG crawling: got a double spend at {spend_addr:?} on the network");
+                InternalGetNetworkSpend::DoubleSpend(s1, s2)
+            }
+            Err(e) => {
+                debug!(
+                    "DAG crawling: got an error for spend at {spend_addr:?} on the network: {e}"
+                );
+                InternalGetNetworkSpend::Error(e)
+            }
+        }
     }
 }
