@@ -639,22 +639,23 @@ pub enum FaucetSubCmd {
     },
 }
 
-/// Nat Detection process subcommands.
+/// Manage NAT detection.
 #[derive(Subcommand, Debug, Clone)]
 pub enum NatDetectionSubCmd {
-    /// RUn NAT detection to fetch and store our NAT status to the node registry.
+    /// Use NAT detection to determine NAT status.
     ///
-    /// The status can be later used with the `safenode-manager add --auto-set-nat-flags` command.
+    /// The status can be used with the '--auto-set-nat-flags' argument on the 'add' command.
     Run {
         /// Provide a path for the NAT detection binary to be used.
         ///
         /// Useful for running NAT detection using a custom built binary.
         #[clap(long)]
         path: Option<PathBuf>,
-        /// Provide the list of NAT servers to connect.
+        /// Provide NAT servers in the form of a multiaddr or an address/port pair.
         ///
-        /// A multiaddr looks like `/ip4/1.2.3.4/tcp/1200/tcp` where `1.2.3.4` is the IP and `1200` is the port.
-        /// Alternatively, the address can be written as `1.2.3.4:1200`.
+        /// We attempt to establish connections to these servers to determine our own NAT status.
+        ///
+        /// The argument can be used multiple times.
         #[clap(long)]
         servers: Vec<Multiaddr>,
         /// Provide a NAT detection binary using a URL.

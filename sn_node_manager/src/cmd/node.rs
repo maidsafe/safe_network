@@ -18,10 +18,7 @@ use crate::{
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
-use color_eyre::{
-    eyre::{eyre, OptionExt},
-    Help, Result,
-};
+use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
@@ -31,8 +28,7 @@ use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::{ServiceControl, ServiceController},
     rpc::RpcClient,
-    NatDetectionStatus, NodeRegistry, NodeService, ServiceStateActions, ServiceStatus,
-    UpgradeOptions, UpgradeResult,
+    NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
 use sn_transfers::HotWallet;
 use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
@@ -44,7 +40,7 @@ pub async fn add(
     count: Option<u16>,
     data_dir_path: Option<PathBuf>,
     env_variables: Option<Vec<(String, String)>>,
-    mut home_network: bool,
+    home_network: bool,
     local: bool,
     log_dir_path: Option<PathBuf>,
     log_format: Option<LogFormat>,
@@ -55,7 +51,7 @@ pub async fn add(
     rpc_address: Option<Ipv4Addr>,
     rpc_port: Option<PortRange>,
     src_path: Option<PathBuf>,
-    mut upnp: bool,
+    upnp: bool,
     url: Option<String>,
     user: Option<String>,
     version: Option<String>,
@@ -124,30 +120,8 @@ pub async fn add(
         },
     };
 
-    if auto_set_nat_flags {
-        let nat_status = node_registry
-            .nat_status
-            .clone()
-            .ok_or_eyre("NAT status has not been set. Run `nat-detection` first")?;
-
-        // override the upnp and home-network options
-        match nat_status {
-            NatDetectionStatus::Public => {
-                upnp = false;
-                home_network = false;
-            }
-            NatDetectionStatus::UPnP => {
-                upnp = true;
-                home_network = false;
-            }
-            NatDetectionStatus::Private => {
-                upnp = false;
-                home_network = true;
-            }
-        }
-    }
-
     let options = AddNodeServiceOptions {
+        auto_set_nat_flags,
         bootstrap_peers,
         count,
         delete_safenode_src: src_path.is_none(),
