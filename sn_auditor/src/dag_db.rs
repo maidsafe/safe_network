@@ -10,6 +10,7 @@ use bls::SecretKey;
 #[cfg(feature = "svg-dag")]
 use color_eyre::eyre::Context;
 use color_eyre::eyre::{bail, eyre, Result};
+use futures::future::join_all;
 #[cfg(feature = "svg-dag")]
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
@@ -313,17 +314,11 @@ impl SpendDagDb {
             }
         }
 
-        let mut new_addresses = vec![];
         let mut utxo_addresses = BTreeMap::new();
+
+        // Use a concurrent approach to process multiple addresses simultaneously
         loop {
             if addresses.is_empty() {
-                for address in &new_addresses {
-                    let _ = addresses.insert(*address);
-                }
-                new_addresses.clear();
-            }
-
-            if addresses.is_empty() && new_addresses.is_empty() {
                 let re_attempt_address: Vec<_> = utxo_addresses
                     .iter()
                     .filter_map(|(address, time_stamp)| {
@@ -338,89 +333,109 @@ impl SpendDagDb {
                 utxo_addresses.retain(|_, time_stamp| *time_stamp > Instant::now());
             }
 
-            let address = if let Some(address) = addresses.pop_first() {
-                address
-            } else {
-                break;
-            };
+            let client_ref = &client;
+            let spends = join_all(addresses.iter().map(|&address| {
+                let client_clone = client_ref.clone();
+                async move { client_clone.crawl_spend_from_network(address).await }
+            }))
+            .await;
 
-            match client.crawl_spend_from_network(address).await {
-                Ok(spend) => {
-                    let mut new_utxos = vec![];
+            addresses.clear();
 
-                    // Royalty output doesn't need to be queried
-                    let mut royalty_pubkeys = BTreeSet::new();
-                    for derivation_idx in spend.spend.network_royalties.iter() {
-                        let unique_pubkey = NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx);
-                        let _ = royalty_pubkeys.insert(unique_pubkey);
+            for (address, result) in spends {
+                let spend = match result {
+                    Ok(spend) => Some(spend),
+                    Err(_) => {
+                        let _ = utxo_addresses.insert(address, Instant::now() + REATTEMPT_INTERVAL);
+
+                        None
                     }
+                };
 
-                    for output in spend.spend.spent_tx.outputs.iter() {
-                        if royalty_pubkeys.contains(&output.unique_pubkey) {
-                            continue;
-                        }
-                        let new_utxo = SpendAddress::from_unique_pubkey(&output.unique_pubkey);
-                        new_utxos.push(new_utxo);
-                    }
-
-                    // make sure we have the foundation secret key
-                    let sk = if let Some(sk) = &self.encryption_sk {
-                        sk.clone()
-                    } else {
-                        eprintln!("Foundation secret key not set!");
-                        return;
-                    };
-
-                    // output address of the payment forward spend doesn't need to be queried
-                    let user_name_hash = match spend.reason().get_sender_hash(&sk) {
-                        Some(n) => n,
-                        None => {
-                            new_addresses.extend(new_utxos);
-                            continue;
-                        }
-                    };
-                    let addr = spend.address();
-                    let amount = spend.spend.amount;
-                    let beta_participants_read =
-                        if let Ok(beta_participants_read) = self.beta_participants.read() {
-                            beta_participants_read
-                        } else {
-                            eprintln!("Failed to get participants read lock!");
-                            continue;
-                        };
-
-                    let mut self_payments =
-                        if let Ok(self_payments) = self.forwarded_payments.write() {
-                            self_payments
-                        } else {
-                            eprintln!("Failed to get payments write lock!");
-                            continue;
-                        };
-
-                    if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
-                        eprintln!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
-                        self_payments
-                            .entry(user_name.to_owned())
-                            .or_default()
-                            .insert((addr, amount));
-                    } else {
-                        eprintln!(
-                                "Found a forwarded reward for an unknown participant at {:?}: {user_name_hash:?}",
-                                spend.address()
-                            );
-                        self_payments
-                            .entry(format!("unknown participant: {user_name_hash:?}"))
-                            .or_default()
-                            .insert((addr, amount));
-                    }
-                }
-                Err(_) => {
-                    let _ = utxo_addresses.insert(address, Instant::now() + REATTEMPT_INTERVAL);
+                if let Some(spend) = spend {
+                    Self::process_spend(
+                        // &mut utxo_addresses,
+                        &mut addresses,
+                        // address,
+                        spend,
+                        &self.encryption_sk,
+                        &self.beta_participants,
+                        &self.forwarded_payments,
+                    )
+                    .await;
                 }
             }
         }
+    }
 
-        eprintln!("No more unknown spends!");
+    /// Helper function to process each spend and update relevant data structures.
+    async fn process_spend(
+        // utxo_addresses: &mut BTreeMap<SpendAddress, Instant>,
+        addresses: &mut BTreeSet<SpendAddress>,
+        spend: SignedSpend,
+        encryption_sk: &Option<SecretKey>,
+        beta_participants: &Arc<RwLock<BTreeMap<Hash, String>>>,
+        forwarded_payments: &Arc<RwLock<ForwardedPayments>>,
+    ) {
+        let mut new_utxos: Vec<SpendAddress> = vec![];
+
+        // Filter out royalty outputs
+        let mut royalty_pubkeys = BTreeSet::new();
+        for derivation_idx in spend.spend.network_royalties.iter() {
+            let unique_pubkey = NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx);
+            royalty_pubkeys.insert(unique_pubkey);
+        }
+
+        for output in spend.spend.spent_tx.outputs.iter() {
+            if !royalty_pubkeys.contains(&output.unique_pubkey) {
+                let new_utxo = SpendAddress::from_unique_pubkey(&output.unique_pubkey);
+                new_utxos.push(new_utxo);
+            }
+        }
+
+        // Check for the foundation secret key
+        let sk = if let Some(sk) = encryption_sk {
+            sk.clone()
+        } else {
+            eprintln!("Foundation secret key not set!");
+            return;
+        };
+
+        // Process payment forwarding
+        let user_name_hash = match spend.reason().get_sender_hash(&sk) {
+            Some(n) => n,
+            None => {
+                addresses.extend(new_utxos);
+                return;
+            }
+        };
+
+        let addr = spend.address();
+        let amount = spend.spend.amount;
+        let beta_participants_read = beta_participants.read().unwrap();
+
+        let mut self_payments = forwarded_payments.write().unwrap();
+
+        if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
+            eprintln!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
+            self_payments
+                .entry(user_name.to_owned())
+                .or_default()
+                .insert((addr, amount));
+        } else {
+            eprintln!(
+                "Found a forwarded reward for an unknown participant at {:?}: {user_name_hash:?}",
+                spend.address()
+            );
+            self_payments
+                .entry(format!("unknown participant: {user_name_hash:?}"))
+                .or_default()
+                .insert((addr, amount));
+        }
+
+        // for new_utxo in new_utxos {
+        //     utxo_addresses.insert(new_utxo);
+        // }
     }
 }
 

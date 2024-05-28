@@ -29,7 +29,7 @@ use tiny_http::{Response, Server};
 const DAG_DUMPING_INTERVAL_SECS: u64 = 5 * 60;
 
 /// Backup the beta rewards in a timestamped json file
-const BETA_REWARDS_BACKOUP_INTERVAL_SECS: u64 = 3 * 60;
+const BETA_REWARDS_BACKOUP_INTERVAL_SECS: u64 = 20 * 60;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]

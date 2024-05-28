@@ -6968,6 +6968,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "dirs-next",
+ "futures",
  "graphviz-rust",
  "itertools 0.13.0",
  "serde",

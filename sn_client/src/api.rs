@@ -944,17 +944,23 @@ impl Client {
 
     /// This is a similar funcation to `get_spend_from_network` to get a spend from network.
     /// Just using different `RetryStrategy` to improve the performance during crawling.
-    pub async fn crawl_spend_from_network(&self, address: SpendAddress) -> Result<SignedSpend> {
-        self.try_fetch_spend_from_network(
-            address,
-            GetRecordCfg {
-                get_quorum: Quorum::Majority,
-                retry_strategy: None,
-                target_record: None,
-                expected_holders: Default::default(),
-            },
-        )
-        .await
+    pub async fn crawl_spend_from_network(
+        &self,
+        address: SpendAddress,
+    ) -> (SpendAddress, Result<SignedSpend>) {
+        let result = self
+            .try_fetch_spend_from_network(
+                address,
+                GetRecordCfg {
+                    get_quorum: Quorum::Majority,
+                    retry_strategy: None,
+                    target_record: None,
+                    expected_holders: Default::default(),
+                },
+            )
+            .await;
+
+        (address, result)
     }
 
     async fn try_fetch_spend_from_network(

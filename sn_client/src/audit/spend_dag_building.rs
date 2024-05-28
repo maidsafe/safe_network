@@ -84,7 +84,7 @@ impl Client {
             );
 
             // insert spends in the dag as they are collected
-            while let Some((res, addr)) = stream.next().await {
+            while let Some(((_addr, res), addr)) = stream.next().await {
                 match res {
                     Ok(spend) => {
                         info!("Fetched spend {addr:?} from network.");
@@ -191,7 +191,7 @@ impl Client {
                 let spends = join_all(tasks).await
                     .into_iter()
                     .zip(addrs_to_verify.clone())
-                    .map(|(maybe_spend, a)|
+                    .map(|((_address, maybe_spend), a)|
                         maybe_spend.map_err(|err| WalletError::CouldNotVerifyTransfer(format!("at depth {depth} - Failed to get spend {a:?} from network for parent Tx {parent_tx_hash:?}: {err}"))))
                     .collect::<WalletResult<BTreeSet<_>>>()?;
                 debug!(
