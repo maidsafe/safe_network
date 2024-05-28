@@ -320,19 +320,28 @@ impl SpendDagDb {
         &self,
         participants: BTreeSet<String>,
     ) -> Result<()> {
+        let mut new_participants = vec![];
         // track new participants
         {
             let mut beta_participants = self.beta_participants.write().await;
-            beta_participants.extend(
-                participants
-                    .iter()
-                    .map(|p| (Hash::hash(p.as_bytes()), p.clone())),
-            );
+            beta_participants.extend(participants.iter().map(|p| {
+                let hash: Hash = Hash::hash(p.as_bytes());
+                new_participants.push((hash, p.clone()));
+                (hash, p.clone())
+            }));
         }
         // initialize forwarded payments
         {
             let mut fwd_payments = self.forwarded_payments.write().await;
-            fwd_payments.extend(participants.into_iter().map(|p| (p, BTreeSet::new())));
+            for (hash, p) in new_participants {
+                let unkown_str = format!("unknown participant: {hash:?}");
+                let payments = if let Some(prev_payments) = fwd_payments.remove(&unkown_str) {
+                    prev_payments
+                } else {
+                    BTreeSet::new()
+                };
+                let _ = fwd_payments.insert(p, payments);
+            }
         }
         Ok(())
     }
