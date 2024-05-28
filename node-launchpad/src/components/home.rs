@@ -258,7 +258,6 @@ impl Component for Home {
             Direction::Vertical,
             [
                 Constraint::Max(1),
-                Constraint::Min(5),
                 Constraint::Min(3),
                 // footer
                 Constraint::Max(3),
@@ -266,17 +265,6 @@ impl Component for Home {
         )
         .split(area);
         let popup_area = centered_rect_fixed(25, 3, area);
-
-        // top section
-        //
-        f.render_widget(
-            Paragraph::new("").block(
-                Block::default()
-                    .title("Autonomi Node Status")
-                    .borders(Borders::ALL),
-            ),
-            layer_zero[1],
-        );
 
         // Node List
         let rows: Vec<_> = self
@@ -323,7 +311,7 @@ impl Component for Home {
             )
             .highlight_symbol(">");
 
-        f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
+        f.render_stateful_widget(table, layer_zero[1], &mut self.node_table_state);
 
         // popup
         if self.lock_registry {
