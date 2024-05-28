@@ -16,10 +16,12 @@ use bls::SecretKey;
 use clap::Parser;
 use color_eyre::eyre::{eyre, Result};
 use dag_db::SpendDagDb;
+use itertools::Itertools;
 use sn_client::Client;
 use sn_logging::{Level, LogBuilder, LogFormat, LogOutputDest};
 use sn_peers_acquisition::get_peers_from_args;
 use sn_peers_acquisition::PeersArgs;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use tiny_http::{Response, Server};
 
@@ -185,7 +187,7 @@ async fn initialize_background_spend_dag_collection(
     client: Client,
     force_from_genesis: bool,
     clean: bool,
-    beta_participants: Vec<String>,
+    beta_participants: BTreeSet<String>,
     foundation_sk: Option<SecretKey>,
 ) -> Result<SpendDagDb> {
     println!("Initialize spend dag...");
@@ -297,14 +299,14 @@ fn get_auditor_data_dir_path() -> Result<PathBuf> {
 
 fn load_and_update_beta_participants(
     provided_participants_file: Option<PathBuf>,
-) -> Result<Vec<String>> {
+) -> Result<BTreeSet<String>> {
     let mut beta_participants = if let Some(participants_file) = provided_participants_file {
         let raw_data = std::fs::read_to_string(&participants_file)?;
         // instead of serde_json, just use a line separated file
         let discord_names = raw_data
             .lines()
             .map(|line| line.trim().to_string())
-            .collect::<Vec<String>>();
+            .collect::<BTreeSet<String>>();
         println!(
             "Tracking beta rewards for the {} discord usernames provided in {:?}",
             discord_names.len(),
@@ -312,7 +314,7 @@ fn load_and_update_beta_participants(
         );
         discord_names
     } else {
-        vec![]
+        BTreeSet::new()
     };
     // restore beta participants from local cached copy
     let local_participants_file =
@@ -331,8 +333,11 @@ fn load_and_update_beta_participants(
         beta_participants.extend(discord_names);
     }
     // write the beta participants to disk
-    let _ = std::fs::write(local_participants_file, beta_participants.join("\n"))
-        .map_err(|e| eprintln!("Failed to write beta participants to disk: {e}"));
+    let _ = std::fs::write(
+        local_participants_file,
+        beta_participants.iter().cloned().collect_vec().join("\n"),
+    )
+    .map_err(|e| eprintln!("Failed to write beta participants to disk: {e}"));
 
     Ok(beta_participants)
 }

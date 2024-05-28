@@ -10,6 +10,7 @@ use crate::dag_db::{self, SpendDagDb};
 use color_eyre::eyre::{eyre, Result};
 use sn_client::transfers::SpendAddress;
 use std::{
+    collections::BTreeSet,
     fs::{File, OpenOptions},
     io::{Cursor, Write},
     str::FromStr,
@@ -105,7 +106,9 @@ pub(crate) fn add_participant(
 }
 
 fn track_new_participant(dag: &SpendDagDb, discord_id: String) -> Result<()> {
-    dag.track_new_beta_participants(vec![discord_id.to_owned()])?;
+    let mut participants = BTreeSet::new();
+    participants.insert(discord_id.clone());
+    dag.track_new_beta_participants(participants)?;
 
     // only append new ids
     if dag.is_participant_tracked(&discord_id)? {

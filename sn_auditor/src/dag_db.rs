@@ -218,7 +218,7 @@ impl SpendDagDb {
     }
 
     /// Track new beta participants. This just add the participants to the list of tracked participants.
-    pub(crate) fn track_new_beta_participants(&self, participants: Vec<String>) -> Result<()> {
+    pub(crate) fn track_new_beta_participants(&self, participants: BTreeSet<String>) -> Result<()> {
         // track new participants
         {
             let mut beta_participants = self
@@ -248,13 +248,20 @@ impl SpendDagDb {
             .beta_participants
             .read()
             .map_err(|e| eyre!("Failed to get beta participants read lock: {e}"))?;
+
+        debug!("Existing beta participants: {beta_participants:?}");
+
+        debug!(
+            "Adding new beta participants: {discord_id}, {:?}",
+            Hash::hash(discord_id.as_bytes())
+        );
         Ok(beta_participants.contains_key(&Hash::hash(discord_id.as_bytes())))
     }
 
     /// Initialize reward forward tracking, gathers current rewards from the DAG
     pub(crate) async fn init_reward_forward_tracking(
         &self,
-        participants: Vec<String>,
+        participants: BTreeSet<String>,
     ) -> Result<()> {
         self.track_new_beta_participants(participants)?;
         Ok(())
