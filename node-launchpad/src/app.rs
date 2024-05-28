@@ -67,7 +67,6 @@ impl App {
             tick_rate,
             frame_rate,
             components: vec![
-                Box::new(tab),
                 Box::new(footer),
                 Box::new(home),
                 Box::new(discord_username_input),
