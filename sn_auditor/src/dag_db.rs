@@ -331,6 +331,11 @@ impl SpendDagDb {
                     .collect();
                 addresses.extend(re_attempt_address);
                 utxo_addresses.retain(|_, time_stamp| *time_stamp > Instant::now());
+
+                if addresses.is_empty() {
+                    tokio::time::sleep(REATTEMPT_INTERVAL).await;
+                    continue;
+                }
             }
 
             let client_ref = &client;
@@ -353,48 +358,38 @@ impl SpendDagDb {
                 };
 
                 if let Some(spend) = spend {
-                    Self::process_spend(
-                        // &mut utxo_addresses,
-                        &mut addresses,
-                        // address,
-                        spend,
-                        &self.encryption_sk,
-                        &self.beta_participants,
-                        &self.forwarded_payments,
-                    )
-                    .await;
+                    self.process_spend(&mut addresses, spend).await;
                 }
             }
         }
     }
 
     /// Helper function to process each spend and update relevant data structures.
-    async fn process_spend(
-        // utxo_addresses: &mut BTreeMap<SpendAddress, Instant>,
-        addresses: &mut BTreeSet<SpendAddress>,
-        spend: SignedSpend,
-        encryption_sk: &Option<SecretKey>,
-        beta_participants: &Arc<RwLock<BTreeMap<Hash, String>>>,
-        forwarded_payments: &Arc<RwLock<ForwardedPayments>>,
-    ) {
-        let mut new_utxos: Vec<SpendAddress> = vec![];
-
+    async fn process_spend(&self, addresses: &mut BTreeSet<SpendAddress>, spend: SignedSpend) {
         // Filter out royalty outputs
-        let mut royalty_pubkeys = BTreeSet::new();
-        for derivation_idx in spend.spend.network_royalties.iter() {
-            let unique_pubkey = NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx);
-            royalty_pubkeys.insert(unique_pubkey);
-        }
+        let royalty_pubkeys: BTreeSet<_> = spend
+            .spend
+            .network_royalties
+            .iter()
+            .map(|derivation_idx| NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+            .collect();
 
-        for output in spend.spend.spent_tx.outputs.iter() {
-            if !royalty_pubkeys.contains(&output.unique_pubkey) {
-                let new_utxo = SpendAddress::from_unique_pubkey(&output.unique_pubkey);
-                new_utxos.push(new_utxo);
-            }
-        }
+        let new_utxos: Vec<_> = spend
+            .spend
+            .spent_tx
+            .outputs
+            .iter()
+            .filter_map(|output| {
+                if !royalty_pubkeys.contains(&output.unique_pubkey) {
+                    Some(SpendAddress::from_unique_pubkey(&output.unique_pubkey))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         // Check for the foundation secret key
-        let sk = if let Some(sk) = encryption_sk {
+        let sk = if let Some(sk) = &self.encryption_sk {
             sk.clone()
         } else {
             eprintln!("Foundation secret key not set!");
@@ -412,12 +407,12 @@ impl SpendDagDb {
 
         let addr = spend.address();
         let amount = spend.spend.amount;
-        let beta_participants_read = beta_participants.read().unwrap();
+        let beta_participants_read = self.beta_participants.read().unwrap();
 
-        let mut self_payments = forwarded_payments.write().unwrap();
+        let mut self_payments = self.forwarded_payments.write().unwrap();
 
         if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
-            eprintln!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
+            trace!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
             self_payments
                 .entry(user_name.to_owned())
                 .or_default()
@@ -432,10 +427,6 @@ impl SpendDagDb {
                 .or_default()
                 .insert((addr, amount));
         }
-
-        // for new_utxo in new_utxos {
-        //     utxo_addresses.insert(new_utxo);
-        // }
     }
 }
 
