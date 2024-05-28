@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716836459642,
+  "lastUpdate": 1716909146564,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "ian@iancoleman.io",
-            "name": "Ian Coleman",
-            "username": "iancoleman"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "838407eae0cff44c13aacb7e280a5b1493a7b465",
-          "message": "feat(faucet): api endpoint to return distribution\n\nThe server sends 100 tokens for the endpoint:\nhttp://<ip>/<bls_hex_pubkey>\nThis adds a new (additional) endpoint to distribute to maid addresses:\nhttp://<ip>/distribution?address=<address>&pkhex=<pkhex>\nCalling the new endpoint will return an existing distribution for that\nmaidsafecoin address, or create a new distribution if needed.",
-          "timestamp": "2024-02-12T09:24:20Z",
-          "tree_id": "724feb688ec8d23f359955488db4bb66c289b0d9",
-          "url": "https://github.com/maidsafe/safe_network/commit/838407eae0cff44c13aacb7e280a5b1493a7b465"
-        },
-        "date": 1707733973883,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2924490250962106,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.87383049692891,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 59.526052193009086,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 46.88590054382463,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "19f8a07ba1c1fa98aa9abbcd73811ad75027e57a",
+          "message": "feat(node_manager): add unit tests and modify docs",
+          "timestamp": "2024-05-28T14:15:55Z",
+          "tree_id": "7add17fd25475ce72fc2c1c2e8fc108e62cfd494",
+          "url": "https://github.com/maidsafe/safe_network/commit/19f8a07ba1c1fa98aa9abbcd73811ad75027e57a"
+        },
+        "date": 1716909141258,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.0356190071197362,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.3240545948556544,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 44.476069059005674,
             "unit": "MiB/s"
           }
         ]
