@@ -78,7 +78,12 @@ pub(crate) fn add_participant(
     request: &Request,
 ) -> Result<Response<Cursor<Vec<u8>>>> {
     let discord_id = match request.url().split('/').last() {
-        Some(discord_id) => discord_id,
+        Some(discord_id) => {
+            // TODO: When we simply accept POST we can remove this decoding
+            // For now we need it to decode #fragments in urls
+            let discord_id = urlencoding::decode(discord_id)?;
+            discord_id.to_string()
+        }
         None => {
             return Ok(Response::from_string(
                 "No discord_id provided. Should be /add-participant/[your_discord_id_here]",
