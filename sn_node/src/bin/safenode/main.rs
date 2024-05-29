@@ -209,12 +209,7 @@ fn main() -> Result<()> {
     // another process with these args.
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
-    let owner = if let Some(owner) = opt.owner {
-        debug!("Node's owner set to: {owner}");
-        owner.clone()
-    } else {
-        "user".to_owned()
-    };
+    debug!("Node's owner set to: {:?}", opt.owner);
     let restart_options = rt.block_on(async move {
         let mut node_builder = NodeBuilder::new(
             keypair,
@@ -222,7 +217,7 @@ fn main() -> Result<()> {
             bootstrap_peers,
             opt.local,
             root_dir,
-            owner,
+            opt.owner.clone(),
             #[cfg(feature = "upnp")]
             opt.upnp,
         );

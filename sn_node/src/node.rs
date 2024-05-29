@@ -75,7 +75,7 @@ pub struct NodeBuilder {
     metrics_server_port: Option<u16>,
     /// Enable hole punching for nodes connecting from home networks.
     pub is_behind_home_network: bool,
-    owner: String,
+    owner: Option<String>,
     #[cfg(feature = "upnp")]
     upnp: bool,
 }
@@ -88,7 +88,7 @@ impl NodeBuilder {
         initial_peers: Vec<Multiaddr>,
         local: bool,
         root_dir: PathBuf,
-        owner: String,
+        owner: Option<String>,
         #[cfg(feature = "upnp")] upnp: bool,
     ) -> Self {
         Self {
@@ -207,7 +207,8 @@ pub(crate) struct Node {
     #[cfg(feature = "open-metrics")]
     pub(crate) node_metrics: Option<NodeMetrics>,
     /// node owner's discord username, in readable format
-    owner: String,
+    /// if not set, there will be no payment forward to be undertaken
+    owner: Option<String>,
 }
 
 impl Node {
@@ -308,15 +309,18 @@ impl Node {
                     // runs every balance_forward_interval time
                     _ = balance_forward_interval.tick() => {
                         if cfg!(feature = "reward-forward") {
-                            let start = std::time::Instant::now();
-                            trace!("Periodic balance forward triggered");
-                            let network = self.network.clone();
-                            let forwarding_reason = self.owner.clone();
+                            if let Some(ref owner) = self.owner {
+                                let start = std::time::Instant::now();
+                                trace!("Periodic balance forward triggered");
+                                let network = self.network.clone();
+                                let forwarding_reason = owner.clone();
 
-                            let _handle = spawn(async move {
-                                let _ = Self::try_forward_blance(network, forwarding_reason);
-                                info!("Periodic blance forward took {:?}", start.elapsed());
-                            });
+                                let _handle = spawn(async move {
+                                    let _ = Self::try_forward_blance(network, forwarding_reason);
+                                    info!("Periodic blance forward took {:?}", start.elapsed());
+                                });
+                            }
+
                         }
                     }
                     node_cmd = cmds_receiver.recv() => {
