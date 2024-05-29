@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod dag_crawling;
 mod dag_error;
 mod spend_dag;
-mod spend_dag_building;
 
 #[cfg(test)]
 mod tests;

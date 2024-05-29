@@ -6968,6 +6968,7 @@ dependencies = [
  "tiny_http",
  "tokio",
  "tracing",
+ "urlencoding",
 ]
 
 [[package]]

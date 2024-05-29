@@ -20,14 +20,12 @@ use sn_client::Client;
 use sn_logging::{Level, LogBuilder, LogFormat, LogOutputDest};
 use sn_peers_acquisition::get_peers_from_args;
 use sn_peers_acquisition::PeersArgs;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 use tiny_http::{Response, Server};
 
-/// Interval in seconds to update the DAG, save to disk, and update beta participants
-const DAG_UPDATE_INTERVAL_SECS: u64 = 5 * 60;
-
 /// Backup the beta rewards in a timestamped json file
-const BETA_REWARDS_BACKOUP_INTERVAL_SECS: u64 = 3 * 60 * 60;
+const BETA_REWARDS_BACKOUP_INTERVAL_SECS: u64 = 20 * 60;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -97,7 +95,7 @@ async fn main() -> Result<()> {
     if let Some(dag_to_view) = opt.offline_viewer {
         let dag = SpendDagDb::offline(dag_to_view, maybe_sk)?;
         #[cfg(feature = "svg-dag")]
-        dag.dump_dag_svg()?;
+        dag.dump_dag_svg().await?;
 
         start_server(dag).await?;
         return Ok(());
@@ -173,7 +171,7 @@ fn initialize_background_rewards_backup(dag: SpendDagDb) {
             .await;
             println!("Backing up beta rewards...");
 
-            if let Err(e) = dag.backup_rewards() {
+            if let Err(e) = dag.backup_rewards().await {
                 eprintln!("Failed to backup beta rewards: {e}");
             }
         }
@@ -187,7 +185,7 @@ async fn initialize_background_spend_dag_collection(
     client: Client,
     force_from_genesis: bool,
     clean: bool,
-    beta_participants: Vec<String>,
+    beta_participants: BTreeSet<String>,
     foundation_sk: Option<SecretKey>,
 ) -> Result<SpendDagDb> {
     println!("Initialize spend dag...");
@@ -209,23 +207,24 @@ async fn initialize_background_spend_dag_collection(
     if force_from_genesis {
         println!("Forcing DAG to be updated from genesis...");
         let mut d = dag.clone();
-        let mut genesis_dag = dag_db::new_dag_with_genesis_only(&client)
+        let mut genesis_dag = client
+            .new_dag_with_genesis_only()
             .await
             .map_err(|e| eyre!("Could not create new DAG from genesis: {e}"))?;
         tokio::spawn(async move {
-            let _ = client
+            client
                 .spend_dag_continue_from_utxos(&mut genesis_dag, None, true)
-                .await
-                .map_err(|e| eprintln!("Could not update DAG from genesis: {e}"));
+                .await;
             let _ = d
                 .merge(genesis_dag)
+                .await
                 .map_err(|e| eprintln!("Failed to merge from genesis DAG into our DAG: {e}"));
         });
     }
 
     // initialize svg
     #[cfg(feature = "svg-dag")]
-    dag.dump_dag_svg()?;
+    dag.dump_dag_svg().await?;
 
     // initialize beta rewards program tracking
     if !beta_participants.is_empty() {
@@ -234,7 +233,7 @@ async fn initialize_background_spend_dag_collection(
         };
 
         println!("Initializing beta rewards program tracking...");
-        if let Err(e) = dag.init_reward_forward_tracking(beta_participants).await {
+        if let Err(e) = dag.track_new_beta_participants(beta_participants).await {
             eprintln!("Could not initialize beta rewards: {e}");
             return Err(e);
         }
@@ -242,20 +241,12 @@ async fn initialize_background_spend_dag_collection(
 
     // background thread to update DAG
     println!("Starting background DAG collection thread...");
-    let mut d = dag.clone();
+    let d = dag.clone();
     tokio::spawn(async move {
-        loop {
-            println!("Updating DAG...");
-            let _ = d
-                .update()
-                .await
-                .map_err(|e| eprintln!("Could not update DAG: {e}"));
-            let _ = d
-                .dump()
-                .map_err(|e| eprintln!("Could not dump DAG to disk: {e}"));
-            println!("Sleeping for {DAG_UPDATE_INTERVAL_SECS} seconds...");
-            tokio::time::sleep(tokio::time::Duration::from_secs(DAG_UPDATE_INTERVAL_SECS)).await;
-        }
+        let _ = d
+            .continuous_background_update()
+            .await
+            .map_err(|e| eprintln!("Failed to update DAG in background thread: {e}"));
     });
 
     Ok(dag)
@@ -274,9 +265,11 @@ async fn start_server(dag: SpendDagDb) -> Result<()> {
         // Dispatch the request to the appropriate handler
         let response = match request.url() {
             "/" => routes::spend_dag_svg(&dag),
-            s if s.starts_with("/spend/") => routes::spend(&dag, &request),
-            s if s.starts_with("/add-participant/") => routes::add_participant(&dag, &request),
-            "/beta-rewards" => routes::beta_rewards(&dag),
+            s if s.starts_with("/spend/") => routes::spend(&dag, &request).await,
+            s if s.starts_with("/add-participant/") => {
+                routes::add_participant(&dag, &request).await
+            }
+            "/beta-rewards" => routes::beta_rewards(&dag).await,
             _ => routes::not_found(),
         };
 
@@ -311,7 +304,7 @@ fn get_auditor_data_dir_path() -> Result<PathBuf> {
 
 fn load_and_update_beta_participants(
     provided_participants_file: Option<PathBuf>,
-) -> Result<Vec<String>> {
+) -> Result<BTreeSet<String>> {
     let mut beta_participants = if let Some(participants_file) = provided_participants_file {
         let raw_data = std::fs::read_to_string(&participants_file)?;
         // instead of serde_json, just use a line separated file
@@ -348,5 +341,5 @@ fn load_and_update_beta_participants(
     let _ = std::fs::write(local_participants_file, beta_participants.join("\n"))
         .map_err(|e| eprintln!("Failed to write beta participants to disk: {e}"));
 
-    Ok(beta_participants)
+    Ok(beta_participants.into_iter().collect())
 }

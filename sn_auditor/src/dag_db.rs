@@ -13,23 +13,23 @@ use color_eyre::eyre::{bail, eyre, Result};
 #[cfg(feature = "svg-dag")]
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use serde::{Deserialize, Serialize};
-use sn_client::networking::NetworkError;
-use sn_client::transfers::{Hash, NanoTokens, SignedSpend, SpendAddress, GENESIS_SPEND_UNIQUE_KEY};
-use sn_client::Error as ClientError;
+use sn_client::transfers::{Hash, NanoTokens, SignedSpend, SpendAddress};
 use sn_client::{Client, SpendDag, SpendDagGet};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::{
-    path::PathBuf,
-    sync::{Arc, RwLock},
-};
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use tokio::sync::RwLock;
 
 pub const SPEND_DAG_FILENAME: &str = "spend_dag";
 #[cfg(feature = "svg-dag")]
 pub const SPEND_DAG_SVG_FILENAME: &str = "spend_dag.svg";
 /// Store a locally copy to restore on restart
 pub const BETA_PARTICIPANTS_FILENAME: &str = "beta_participants.txt";
+
+const REATTEMPT_INTERVAL: Duration = Duration::from_secs(3600);
+const SPENDS_PROCESSING_BUFFER_SIZE: usize = 4096;
 
 /// Abstraction for the Spend DAG database
 /// Currently in memory, with disk backup, but should probably be a real DB at scale
@@ -39,7 +39,7 @@ pub struct SpendDagDb {
     pub(crate) path: PathBuf,
     dag: Arc<RwLock<SpendDag>>,
     forwarded_payments: Arc<RwLock<ForwardedPayments>>,
-    pub(crate) beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
+    beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
     encryption_sk: Option<SecretKey>,
 }
 
@@ -72,7 +72,7 @@ impl SpendDagDb {
             }
             Err(_) => {
                 println!("Found no local spend DAG file, starting from Genesis");
-                new_dag_with_genesis_only(&client).await?
+                client.new_dag_with_genesis_only().await?
             }
         };
 
@@ -109,11 +109,9 @@ impl SpendDagDb {
     }
 
     /// Get info about a single spend in JSON format
-    pub fn spend_json(&self, address: SpendAddress) -> Result<String> {
+    pub async fn spend_json(&self, address: SpendAddress) -> Result<String> {
         let dag_ref = self.dag.clone();
-        let r_handle = dag_ref
-            .read()
-            .map_err(|e| eyre!("Failed to get read lock: {e}"))?;
+        let r_handle = dag_ref.read().await;
         let spend = r_handle.get_spend(&address);
         let faults = r_handle.get_spend_faults(&address);
         let fault = if faults.is_empty() {
@@ -144,13 +142,11 @@ impl SpendDagDb {
     }
 
     /// Dump DAG to disk
-    pub fn dump(&self) -> Result<()> {
+    pub async fn dump(&self) -> Result<()> {
         std::fs::create_dir_all(&self.path)?;
         let dag_path = self.path.join(SPEND_DAG_FILENAME);
         let dag_ref = self.dag.clone();
-        let r_handle = dag_ref
-            .read()
-            .map_err(|e| eyre!("Failed to get read lock: {e}"))?;
+        let r_handle = dag_ref.read().await;
         r_handle.dump_to_file(dag_path)?;
         Ok(())
     }
@@ -166,89 +162,146 @@ impl SpendDagDb {
 
     /// Dump current DAG as svg to disk
     #[cfg(feature = "svg-dag")]
-    pub fn dump_dag_svg(&self) -> Result<()> {
+    pub async fn dump_dag_svg(&self) -> Result<()> {
         info!("Dumping DAG to svg...");
         std::fs::create_dir_all(&self.path)?;
         let svg_path = self.path.join(SPEND_DAG_SVG_FILENAME);
         let dag_ref = self.dag.clone();
-        let r_handle = dag_ref
-            .read()
-            .map_err(|e| eyre!("Failed to get read lock: {e}"))?;
+        let r_handle = dag_ref.read().await;
         let svg = dag_to_svg(&r_handle)?;
         std::fs::write(svg_path.clone(), svg)?;
         info!("Successfully dumped DAG to {svg_path:?}...");
         Ok(())
     }
 
-    /// Update DAG from Network
-    pub async fn update(&mut self) -> Result<()> {
-        // read current DAG
-        let mut dag = {
-            self.dag
-                .clone()
-                .read()
-                .map_err(|e| eyre!("Failed to get read lock: {e}"))?
-                .clone()
+    /// Update DAG from Network continuously
+    pub async fn continuous_background_update(self) -> Result<()> {
+        let client = if let Some(client) = &self.client {
+            client.clone()
+        } else {
+            bail!("Cannot update DAG in offline mode")
         };
 
-        // update that copy 10 generations further
-        const NEXT_10_GEN: u32 = 10;
-        self.client
-            .clone()
-            .ok_or(eyre!("Cannot update in offline mode"))?
-            .spend_dag_continue_from_utxos(&mut dag, Some(NEXT_10_GEN), true)
-            .await?;
+        // init utxos to fetch
+        let start_dag = { self.dag.clone().read().await.clone() };
+        let mut utxo_addresses: BTreeMap<SpendAddress, Instant> = start_dag
+            .get_utxos()
+            .into_iter()
+            .map(|a| (a, Instant::now()))
+            .collect();
 
-        // write update to DAG
-        let mut dag_w_handle = self
-            .dag
-            .write()
-            .map_err(|e| eyre!("Failed to get write lock: {e}"))?;
-        *dag_w_handle = dag;
-        std::mem::drop(dag_w_handle);
-
-        #[cfg(feature = "svg-dag")]
-        {
-            // update and save svg to file in a background thread so we don't block
-            //
-            let self_clone = self.clone();
+        // beta rewards processing
+        let self_clone = self.clone();
+        let spend_processing = if let Some(sk) = self.encryption_sk.clone() {
+            let (tx, mut rx) = tokio::sync::mpsc::channel(SPENDS_PROCESSING_BUFFER_SIZE);
             tokio::spawn(async move {
-                if let Err(e) = self_clone.dump_dag_svg() {
-                    error!("Failed to dump DAG svg: {e}");
+                while let Some(spend) = rx.recv().await {
+                    self_clone.beta_background_process_spend(spend, &sk).await;
                 }
             });
-        }
+            Some(tx)
+        } else {
+            eprintln!("Foundation secret key not set! Beta rewards will not be processed.");
+            None
+        };
 
-        // gather forwarded payments in a background thread so we don't block
-        let self_clone = self.clone();
-        tokio::spawn(async move {
-            if let Err(e) = self_clone.gather_forwarded_payments().await {
-                error!("Failed to gather forwarded payments: {e}");
+        loop {
+            // get current utxos to fetch
+            let now = Instant::now();
+            let utxos_to_fetch;
+            (utxo_addresses, utxos_to_fetch) = utxo_addresses
+                .into_iter()
+                .partition(|(_address, time_stamp)| *time_stamp > now);
+            let addrs_to_get = utxos_to_fetch.keys().cloned().collect::<BTreeSet<_>>();
+
+            if addrs_to_get.is_empty() {
+                debug!("Sleeping for {REATTEMPT_INTERVAL:?} until next re-attempt...");
+                tokio::time::sleep(REATTEMPT_INTERVAL).await;
+                continue;
             }
-        });
 
-        Ok(())
+            // get a copy of the current DAG
+            let mut dag = { self.dag.clone().read().await.clone() };
+
+            // update it
+            client
+                .spend_dag_continue_from(&mut dag, addrs_to_get, spend_processing.clone(), true)
+                .await;
+
+            // update utxos
+            let new_utxos = dag.get_utxos();
+            utxo_addresses.extend(
+                new_utxos
+                    .into_iter()
+                    .map(|a| (a, Instant::now() + REATTEMPT_INTERVAL)),
+            );
+
+            // write updates to local DAG and save to disk
+            let mut dag_w_handle = self.dag.write().await;
+            *dag_w_handle = dag;
+            std::mem::drop(dag_w_handle);
+            if let Err(e) = self.dump().await {
+                error!("Failed to dump DAG: {e}");
+            }
+
+            // update and save svg to file in a background thread so we don't block
+            #[cfg(feature = "svg-dag")]
+            {
+                let self_clone = self.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = self_clone.dump_dag_svg().await {
+                        error!("Failed to dump DAG svg: {e}");
+                    }
+                });
+            }
+        }
+    }
+
+    /// Process each spend and update beta rewards data
+    pub async fn beta_background_process_spend(&self, spend: SignedSpend, sk: &SecretKey) {
+        // check for beta rewards reason
+        let user_name_hash = match spend.reason().get_sender_hash(sk) {
+            Some(n) => n,
+            None => {
+                return;
+            }
+        };
+
+        // add to local rewards
+        let addr = spend.address();
+        let amount = spend.spend.amount;
+        let beta_participants_read = self.beta_participants.read().await;
+        let mut self_payments = self.forwarded_payments.write().await;
+
+        if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
+            trace!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
+            self_payments
+                .entry(user_name.to_owned())
+                .or_default()
+                .insert((addr, amount));
+        } else {
+            warn!("Found a forwarded reward for an unknown participant at {addr:?}: {user_name_hash:?}");
+            eprintln!("Found a forwarded reward for an unknown participant at {addr:?}: {user_name_hash:?}");
+            self_payments
+                .entry(format!("unknown participant: {user_name_hash:?}"))
+                .or_default()
+                .insert((addr, amount));
+        }
     }
 
     /// Merge a SpendDag into the current DAG
     /// This can be used to enrich our DAG with a DAG from another node to avoid costly computations
     /// Make sure to verify the other DAG is trustworthy before calling this function to merge it in
-    pub fn merge(&mut self, other: SpendDag) -> Result<()> {
-        let mut w_handle = self
-            .dag
-            .write()
-            .map_err(|e| eyre!("Failed to get write lock: {e}"))?;
+    pub async fn merge(&mut self, other: SpendDag) -> Result<()> {
+        let mut w_handle = self.dag.write().await;
         w_handle.merge(other, true)?;
         Ok(())
     }
 
     /// Returns the current state of the beta program in JSON format, including total rewards for each participant
-    pub(crate) fn beta_program_json(&self) -> Result<String> {
+    pub(crate) async fn beta_program_json(&self) -> Result<String> {
         let r_handle = self.forwarded_payments.clone();
-        let beta_rewards = r_handle.read();
-
-        let participants =
-            beta_rewards.map_err(|e| eyre!("Failed to get beta rewards read lock: {e}"))?;
+        let participants = r_handle.read().await;
         let mut rewards_output = vec![];
         for (participant, rewards) in participants.iter() {
             let total_rewards = rewards
@@ -263,13 +316,13 @@ impl SpendDagDb {
     }
 
     /// Track new beta participants. This just add the participants to the list of tracked participants.
-    pub(crate) fn track_new_beta_participants(&self, participants: Vec<String>) -> Result<()> {
+    pub(crate) async fn track_new_beta_participants(
+        &self,
+        participants: BTreeSet<String>,
+    ) -> Result<()> {
         // track new participants
         {
-            let mut beta_participants = self
-                .beta_participants
-                .write()
-                .map_err(|e| eyre!("Failed to get beta participants write lock: {e}"))?;
+            let mut beta_participants = self.beta_participants.write().await;
             beta_participants.extend(
                 participants
                     .iter()
@@ -278,95 +331,28 @@ impl SpendDagDb {
         }
         // initialize forwarded payments
         {
-            let mut fwd_payments = self
-                .forwarded_payments
-                .write()
-                .map_err(|e| eyre!("Failed to get forwarded payments write lock: {e}"))?;
+            let mut fwd_payments = self.forwarded_payments.write().await;
             fwd_payments.extend(participants.into_iter().map(|p| (p, BTreeSet::new())));
         }
         Ok(())
     }
 
     /// Check if a participant is being tracked
-    pub(crate) fn is_participant_tracked(&self, discord_id: &str) -> Result<bool> {
-        let beta_participants = self
-            .beta_participants
-            .read()
-            .map_err(|e| eyre!("Failed to get beta participants read lock: {e}"))?;
+    pub(crate) async fn is_participant_tracked(&self, discord_id: &str) -> Result<bool> {
+        let beta_participants = self.beta_participants.read().await;
+        debug!("Existing beta participants: {beta_participants:?}");
+
+        debug!(
+            "Adding new beta participants: {discord_id}, {:?}",
+            Hash::hash(discord_id.as_bytes())
+        );
         Ok(beta_participants.contains_key(&Hash::hash(discord_id.as_bytes())))
     }
 
-    /// Initialize reward forward tracking, gathers current rewards from the DAG
-    pub(crate) async fn init_reward_forward_tracking(
-        &self,
-        participants: Vec<String>,
-    ) -> Result<()> {
-        self.track_new_beta_participants(participants)?;
-        self.gather_forwarded_payments().await?;
-        Ok(())
-    }
-
-    // Gather forwarded payments from the DAG
-    pub(crate) async fn gather_forwarded_payments(&self) -> Result<()> {
-        info!("Gathering forwarded payments...");
-
-        // make sure we have the foundation secret key
-        let sk = self
-            .encryption_sk
-            .clone()
-            .ok_or_else(|| eyre!("Foundation secret key not set"))?;
-
-        // get spends from current DAG
-        let dag = self.dag.read().map_err(|e| {
-            eyre!("Failed to get dag read lock for gathering forwarded payments: {e}")
-        })?;
-        let all_spends = dag.all_spends();
-
-        // find spends with payments
-        let mut payments: ForwardedPayments = BTreeMap::new();
-        for spend in all_spends {
-            let user_name_hash = match spend.reason().get_sender_hash(&sk) {
-                Some(n) => n,
-                None => continue,
-            };
-            let addr = spend.address();
-            let amount = spend.spend.amount;
-            let beta_participants_read = self
-                .beta_participants
-                .read()
-                .map_err(|e| eyre!("Failed to get payments write lock: {e}"))?;
-            if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
-                debug!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
-                payments
-                    .entry(user_name.to_owned())
-                    .or_default()
-                    .insert((addr, amount));
-            } else {
-                info!(
-                    "Found a forwarded reward for an unknown participant at {:?}: {user_name_hash:?}",
-                    spend.address()
-                );
-                payments
-                    .entry(format!("unknown participant: {user_name_hash:?}"))
-                    .or_default()
-                    .insert((addr, amount));
-            }
-        }
-
-        // save new payments
-        let mut self_payments = self
-            .forwarded_payments
-            .write()
-            .map_err(|e| eyre!("Failed to get payments write lock: {e}"))?;
-        self_payments.extend(payments);
-        info!("Done gathering forwarded payments");
-        Ok(())
-    }
-
     /// Backup beta rewards to a timestamped json file
-    pub(crate) fn backup_rewards(&self) -> Result<()> {
+    pub(crate) async fn backup_rewards(&self) -> Result<()> {
         info!("Beta rewards backup requested");
-        let json = match self.beta_program_json() {
+        let json = match self.beta_program_json().await {
             Ok(j) => j,
             Err(e) => bail!("Failed to get beta rewards json: {e}"),
         };
@@ -382,25 +368,6 @@ impl SpendDagDb {
 
         Ok(())
     }
-}
-
-pub async fn new_dag_with_genesis_only(client: &Client) -> Result<SpendDag> {
-    let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
-    let mut dag = SpendDag::new(genesis_addr);
-    let genesis_spend = match client.get_spend_from_network(genesis_addr).await {
-        Ok(s) => s,
-        Err(ClientError::Network(NetworkError::DoubleSpendAttempt(spend1, spend2))) => {
-            let addr = spend1.address();
-            println!("Double spend detected at Genesis: {addr:?}");
-            dag.insert(genesis_addr, *spend2);
-            dag.record_faults(&dag.source())?;
-            *spend1
-        }
-        Err(e) => return Err(eyre!("Failed to get genesis spend: {e}")),
-    };
-    dag.insert(genesis_addr, genesis_spend);
-
-    Ok(dag)
 }
 
 #[cfg(feature = "svg-dag")]

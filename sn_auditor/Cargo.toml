@@ -18,7 +18,8 @@ local-discovery = [
 network-contacts = ["sn_peers_acquisition/network-contacts"]
 open-metrics = ["sn_client/open-metrics"]
 websockets = ["sn_client/websockets"]
-svg-dag = ["graphviz-rust"]
+svg-dag = ["graphviz-rust", "dag-collection"]
+dag-collection = []
 
 [dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
@@ -42,3 +43,4 @@ tokio = { version = "1.32.0", features = [
     "time",
     "fs",
 ] }
+urlencoding = "2.1.3"
