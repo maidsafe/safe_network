@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716909311905,
+  "lastUpdate": 1716952080594,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ace1d190b7c19527efe2d4d6b55dcf55942620dd",
-          "message": "refactor(cli): improvements based on peer review",
-          "timestamp": "2024-02-12T10:02:28Z",
-          "tree_id": "a3e00f21ec19b83706d5a40d6e87ff4939d4725a",
-          "url": "https://github.com/maidsafe/safe_network/commit/ace1d190b7c19527efe2d4d6b55dcf55942620dd"
-        },
-        "date": 1707736130265,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.266545567254792,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.833435999715785,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.248395693026076,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 44.476069059005674,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "78effffc278e5c0b414431aeb9787dbf6d7f2bba",
+          "message": "refactor: spend verification error management",
+          "timestamp": "2024-05-29T02:21:53Z",
+          "tree_id": "bf51481c1e5b9062745132dcbafee83fe8093953",
+          "url": "https://github.com/maidsafe/safe_network/commit/78effffc278e5c0b414431aeb9787dbf6d7f2bba"
+        },
+        "date": 1716952073715,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2311356974395284,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.054849657786147,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 53.5494628089902,
             "unit": "MiB/s"
           }
         ]
