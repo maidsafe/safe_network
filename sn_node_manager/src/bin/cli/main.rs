@@ -855,6 +855,8 @@ async fn main() -> Result<()> {
     let args = Cmd::parse();
     let verbosity = VerbosityLevel::from(args.verbose);
 
+    configure_winsw(verbosity).await?;
+
     match args.cmd {
         SubCmd::Add {
             auto_set_nat_flags,
@@ -1124,4 +1126,32 @@ fn parse_environment_variables(env_var: &str) -> Result<(String, String)> {
         ));
     }
     Ok((parts[0].to_string(), parts[1].to_string()))
+}
+
+#[cfg(windows)]
+async fn configure_winsw(verbosity: VerbosityLevel) -> Result<()> {
+    use sn_node_manager::config::get_node_manager_path;
+
+    // If the node manager was installed using `safeup`, it would have put the winsw.exe binary at
+    // `C:\Users\<username>\safe\winsw.exe`, sitting it alongside the other safe-related binaries.
+    //
+    // However, if the node manager has been obtained by other means, we can put winsw.exe
+    // alongside the directory where the services are defined. This prevents creation of what would
+    // seem like a random `safe` directory in the user's home directory.
+    let safeup_winsw_path = dirs_next::home_dir()
+        .ok_or_else(|| eyre!("Could not obtain user home directory"))?
+        .join("safe")
+        .join("winsw.exe");
+    if safeup_winsw_path.exists() {
+        sn_node_manager::helpers::configure_winsw(&safeup_winsw_path, verbosity).await?;
+    } else {
+        sn_node_manager::helpers::configure_winsw(
+            &get_node_manager_path()?.join("winsw.exe"), verbosity).await?;
+    }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+async fn configure_winsw(_verbosity: VerbosityLevel) -> Result<()> {
+    Ok(())
 }
