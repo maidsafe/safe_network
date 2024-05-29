@@ -12,7 +12,7 @@ use super::{
     Component, Frame,
 };
 use crate::{
-    action::{Action, HomeActions},
+    action::{Action, FooterActions, HomeActions},
     components::resource_allocation::GB_PER_NODE,
     config::Config,
     mode::{InputMode, Scene},
@@ -110,6 +110,14 @@ impl Home {
             self.node_services.len()
         );
 
+        if let Some(action_sender) = self.action_sender.as_ref() {
+            if let Err(err) = action_sender.send(Action::FooterActions(
+                FooterActions::AtleastOneNodePresent(!self.node_services.is_empty()),
+            )) {
+                error!("Error while sending action: {err:?}");
+            }
+        }
+
         if !self.node_services.is_empty() && self.node_table_state.selected().is_none() {
             self.node_table_state.select(Some(0));
         }
@@ -178,7 +186,18 @@ impl Home {
 impl Component for Home {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.action_sender = Some(tx);
+
+        // Update the stats to be shown as soon as the app is run
         self.try_update_node_stats(true)?;
+
+        // update the footer as soon as the app is run
+        if let Some(action_sender) = self.action_sender.as_ref() {
+            if let Err(err) = action_sender.send(Action::FooterActions(
+                FooterActions::AtleastOneNodePresent(!self.node_services.is_empty()),
+            )) {
+                error!("Error while sending action: {err:?}");
+            }
+        }
         Ok(())
     }
 
@@ -320,7 +339,7 @@ impl Component for Home {
                 // node status
                 Constraint::Min(3),
                 // footer
-                Constraint::Max(3),
+                Constraint::Max(5),
             ],
         )
         .split(area);
