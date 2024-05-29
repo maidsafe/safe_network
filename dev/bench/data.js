@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1716952080594,
+  "lastUpdate": 1716952212948,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ace1d190b7c19527efe2d4d6b55dcf55942620dd",
-          "message": "refactor(cli): improvements based on peer review",
-          "timestamp": "2024-02-12T10:02:28Z",
-          "tree_id": "a3e00f21ec19b83706d5a40d6e87ff4939d4725a",
-          "url": "https://github.com/maidsafe/safe_network/commit/ace1d190b7c19527efe2d4d6b55dcf55942620dd"
-        },
-        "date": 1707736232586,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 59,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "78effffc278e5c0b414431aeb9787dbf6d7f2bba",
+          "message": "refactor: spend verification error management",
+          "timestamp": "2024-05-29T02:21:53Z",
+          "tree_id": "bf51481c1e5b9062745132dcbafee83fe8093953",
+          "url": "https://github.com/maidsafe/safe_network/commit/78effffc278e5c0b414431aeb9787dbf6d7f2bba"
+        },
+        "date": 1716952212583,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
