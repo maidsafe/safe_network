@@ -6,14 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub mod action;
-pub mod app;
-pub mod components;
-pub mod config;
-pub mod mode;
-pub mod style;
-pub mod tui;
-pub mod utils;
+use ratatui::style::Color;
 
-#[macro_use]
-extern crate tracing;
+// pub const RED: Color = Color::Rgb(100, 20, 33); // looks dull
+pub const RED: Color = Color::Red;
+// pub const WHITE: Color = Color::Rgb(100, 100, 100); // looks dull
+pub const WHITE: Color = Color::Reset;
+// pub const TEAL: Color = Color::Rgb(0, 88, 100); // looks dull
+pub const TEAL: Color = Color::Cyan;
+pub const GRAY: Color = Color::DarkGray;
