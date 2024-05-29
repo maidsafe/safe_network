@@ -178,7 +178,19 @@ impl Component for Home {
                 self.allocated_disk_space = space;
             }
             Action::StoreDiscordUserName(username) => {
+                let reset_safenode_services = (self.discord_username != username)
+                    && !self.discord_username.is_empty()
+                    && !self.node_services.is_empty();
                 self.discord_username = username;
+
+                // todo: The discord_username popup should warn people that if nodes are running, they will be reset.
+                // And the earnings will be lost.
+                if reset_safenode_services {
+                    self.lock_registry = true;
+                    info!("Resetting safenode services because the discord username was reset.");
+                    let action_sender = self.get_actions_sender()?;
+                    reset_nodes(action_sender);
+                }
             }
             Action::HomeActions(HomeActions::StartNodes) => {
                 if self.lock_registry {
@@ -225,9 +237,17 @@ impl Component for Home {
 
                 stop_nodes(running_nodes, action_sender);
             }
-            Action::HomeActions(HomeActions::ServiceManagerOperationCompleted) => {
+            Action::HomeActions(HomeActions::StartNodesCompleted)
+            | Action::HomeActions(HomeActions::StopNodesCompleted) => {
                 self.lock_registry = false;
                 self.load_node_registry_and_update_states()?;
+            }
+            Action::HomeActions(HomeActions::ResetNodesCompleted) => {
+                self.lock_registry = false;
+                self.load_node_registry_and_update_states()?;
+
+                // trigger start nodes.
+                return Ok(Some(Action::HomeActions(HomeActions::StartNodes)));
             }
             // todo: should triggers go here? Make distinction between a component + a scene and how they interact.
             Action::HomeActions(HomeActions::TriggerDiscordUsernameInputBox) => {
@@ -347,20 +367,14 @@ impl Component for Home {
 
 fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     tokio::task::spawn_local(async move {
-        if let Err(err) = sn_node_manager::cmd::node::stop(
-            vec![],
-            services,
-            sn_node_manager::VerbosityLevel::Minimal,
-        )
-        .await
+        if let Err(err) =
+            sn_node_manager::cmd::node::stop(vec![], services, VerbosityLevel::Minimal).await
         {
             error!("Error while stopping services {err:?}");
         } else {
             info!("Successfully stopped services");
         }
-        if let Err(err) = action_sender.send(Action::HomeActions(
-            HomeActions::ServiceManagerOperationCompleted,
-        )) {
+        if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::StopNodesCompleted)) {
             error!("Error while sending action: {err:?}");
         }
     });
@@ -403,9 +417,22 @@ fn maintain_n_running_nodes(
         } else {
             info!("Maintained {count} running nodes successfully.");
         }
-        if let Err(err) = action_sender.send(Action::HomeActions(
-            HomeActions::ServiceManagerOperationCompleted,
-        )) {
+        if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::StartNodesCompleted))
+        {
+            error!("Error while sending action: {err:?}");
+        }
+    });
+}
+
+fn reset_nodes(action_sender: UnboundedSender<Action>) {
+    tokio::task::spawn_local(async move {
+        if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
+            error!("Error while resetting services {err:?}");
+        } else {
+            info!("Successfully reset services");
+        }
+        if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::ResetNodesCompleted))
+        {
             error!("Error while sending action: {err:?}");
         }
     });

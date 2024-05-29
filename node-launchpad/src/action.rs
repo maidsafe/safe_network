@@ -35,7 +35,9 @@ pub enum Action {
 pub enum HomeActions {
     StartNodes,
     StopNodes,
-    ServiceManagerOperationCompleted,
+    StartNodesCompleted,
+    StopNodesCompleted,
+    ResetNodesCompleted,
 
     TriggerDiscordUsernameInputBox,
     TriggerResourceAllocationInputBox,
