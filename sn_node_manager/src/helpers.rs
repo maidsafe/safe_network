@@ -31,6 +31,10 @@ pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Res
     }
 
     if !dest_path.exists() {
+        if verbosity != VerbosityLevel::Minimal {
+            println!("Downloading winsw.exe...");
+        }
+
         let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
         let mut pb = None;
