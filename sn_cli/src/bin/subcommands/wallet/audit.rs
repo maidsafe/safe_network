@@ -6,7 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::collections::BTreeSet;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -18,36 +17,27 @@ use sn_client::transfers::{CashNoteRedemption, SpendAddress, Transfer, GENESIS_S
 use sn_client::{Client, SpendDag};
 
 const SPEND_DAG_FILENAME: &str = "spend_dag";
+const SPENDS_PROCESSING_BUFFER_SIZE: usize = 4096;
 
 async fn step_by_step_spend_dag_gathering(client: &Client, mut dag: SpendDag) -> Result<SpendDag> {
-    let verify_after = false;
     let start_time = std::time::Instant::now();
-    let mut depth_exponential = 1;
-    let mut current_utxos = dag.get_utxos();
-    let mut last_utxos = BTreeSet::new();
-
     println!("Gathering the Spend DAG, note that this might take a very long time...");
-    while last_utxos != current_utxos {
-        let unexplored_utxos = current_utxos.difference(&last_utxos).cloned().collect();
-        last_utxos = std::mem::take(&mut current_utxos);
+    let (tx, mut rx) = tokio::sync::mpsc::channel(SPENDS_PROCESSING_BUFFER_SIZE);
+    tokio::spawn(async move {
+        let mut spend_count = 0;
+        let mut exponential = 64;
+        while let Some(_spend) = rx.recv().await {
+            spend_count += 1;
+            if spend_count % exponential == 0 {
+                println!("Collected {spend_count} spends...");
+                exponential *= 2;
+            }
+        }
+    });
 
-        client
-            .spend_dag_continue_from(
-                &mut dag,
-                unexplored_utxos,
-                Some(depth_exponential),
-                verify_after,
-            )
-            .await?;
-
-        depth_exponential += depth_exponential;
-        current_utxos = dag.get_utxos();
-        let dag_size = dag.all_spends().len();
-        println!(
-            "Depth {depth_exponential}: the DAG now has {dag_size} spends and {} UTXOs",
-            current_utxos.len()
-        );
-    }
+    client
+        .spend_dag_continue_from_utxos(&mut dag, Some(tx), false)
+        .await;
     println!("Done gathering the Spend DAG in {:?}", start_time.elapsed());
 
     // verify the DAG
@@ -74,8 +64,8 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path, fast_mode: bool) -> 
             println!("Found a local spend dag on disk, continuing from it...");
             if fast_mode {
                 client
-                    .spend_dag_continue_from_utxos(&mut dag, None, false)
-                    .await?;
+                    .spend_dag_continue_from_utxos(&mut dag, Default::default(), false)
+                    .await;
             }
             dag
         }
@@ -83,10 +73,13 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path, fast_mode: bool) -> 
             println!("Starting from Genesis as found no local spend dag on disk...");
             info!("Starting from Genesis as failed to load spend dag from disk: {err}");
             let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
-            let stop_after = if fast_mode { None } else { Some(1) };
-            client
-                .spend_dag_build_from(genesis_addr, stop_after, true)
-                .await?
+            if fast_mode {
+                client
+                    .spend_dag_build_from(genesis_addr, Default::default(), true)
+                    .await?
+            } else {
+                client.new_dag_with_genesis_only().await?
+            }
         }
     };
 
