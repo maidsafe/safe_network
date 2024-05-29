@@ -24,7 +24,7 @@ use tokio::sync::mpsc::UnboundedSender;
 const NODE_START_INTERVAL: usize = 10;
 
 pub struct Home {
-    /// Whether the component is active right now, capturing keystrokes + draw things.
+    /// Whether the component is active right now, capturing keystrokes + drawing things.
     active: bool,
     action_sender: Option<UnboundedSender<Action>>,
     config: Config,
@@ -34,7 +34,7 @@ pub struct Home {
     allocated_disk_space: usize,
     discord_username: String,
     // Currently the node registry file does not support concurrent actions and thus can lead to
-    // inconsistent state. A simple file lock or a db like file would work.
+    // inconsistent state. Another solution would be to have a file lock/db.
     lock_registry: bool,
     // Peers to pass into nodes for startup
     peers_args: PeersArgs,
@@ -273,7 +273,6 @@ impl Component for Home {
             return Ok(());
         }
 
-        // index 0 is reserved for tab
         let layer_zero = Layout::new(
             Direction::Vertical,
             [
@@ -286,6 +285,26 @@ impl Component for Home {
         )
         .split(area);
         let popup_area = centered_rect_fixed(25, 3, area);
+
+        // header
+        let layer_one_header = Layout::new(
+            Direction::Horizontal,
+            vec![Constraint::Min(40), Constraint::Fill(20)],
+        )
+        .split(layer_zero[0]);
+        f.render_widget(
+            Paragraph::new("Autonomi Node Launchpad").alignment(Alignment::Left),
+            layer_one_header[0],
+        );
+        let discord_user_name_text = if self.discord_username.is_empty() {
+            "".to_string()
+        } else {
+            format!("Discord Username: {}", &self.discord_username)
+        };
+        f.render_widget(
+            Paragraph::new(discord_user_name_text).alignment(Alignment::Right),
+            layer_one_header[1],
+        );
 
         // top section
         //

@@ -12,7 +12,7 @@ use crate::{
     action::Action,
     components::{
         discord_username::DiscordUsernameInputBox, footer::Footer, home::Home,
-        resource_allocation::ResourceAllocationInputBox, tab::Tab, Component,
+        resource_allocation::ResourceAllocationInputBox, Component,
     },
     config::{AppData, Config},
     mode::{InputMode, Scene},
@@ -46,7 +46,6 @@ impl App {
     ) -> Result<Self> {
         let app_data = AppData::load()?;
 
-        let tab = Tab::default();
         let home = Home::new(
             app_data.allocated_disk_space,
             &app_data.discord_username,
@@ -60,14 +59,12 @@ impl App {
             ResourceAllocationInputBox::new(app_data.allocated_disk_space)?;
         let footer = Footer::default();
 
-        let scene = tab.get_current_scene();
         Ok(Self {
             config,
             app_data,
             tick_rate,
             frame_rate,
             components: vec![
-                Box::new(tab),
                 Box::new(footer),
                 Box::new(home),
                 Box::new(discord_username_input),
@@ -76,7 +73,7 @@ impl App {
             should_quit: false,
             should_suspend: false,
             input_mode: InputMode::Navigation,
-            scene,
+            scene: Scene::Home,
             last_tick_key_events: Vec::new(),
         })
     }
