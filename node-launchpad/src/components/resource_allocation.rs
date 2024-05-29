@@ -21,7 +21,8 @@ use crate::{
 use super::{utils::centered_rect_fixed, Component};
 
 pub const GB_PER_NODE: usize = 5;
-pub const GB: usize = 1024 * 1024 * 1024;
+pub const MB: usize = 1000 * 1000;
+pub const GB: usize = MB * 1000;
 
 pub struct ResourceAllocationInputBox {
     /// Whether the component is active right now, capturing keystrokes + draw things.

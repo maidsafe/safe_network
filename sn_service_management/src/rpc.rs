@@ -26,6 +26,7 @@ pub struct NodeInfo {
     pub data_path: PathBuf,
     pub version: String,
     pub uptime: Duration,
+    pub wallet_balance: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -112,6 +113,7 @@ impl RpcActions for RpcClient {
             data_path: PathBuf::from(node_info_resp.data_dir.clone()),
             version: node_info_resp.bin_version.clone(),
             uptime: Duration::from_secs(node_info_resp.uptime_secs),
+            wallet_balance: node_info_resp.wallet_balance,
         };
         Ok(node_info)
     }

@@ -39,6 +39,11 @@ pub enum HomeActions {
     StopNodesCompleted,
     ResetNodesCompleted,
 
+    NodesStatsObtained {
+        wallet_balance: u64,
+        space_used: u64,
+    },
+
     TriggerDiscordUsernameInputBox,
     TriggerResourceAllocationInputBox,
 
