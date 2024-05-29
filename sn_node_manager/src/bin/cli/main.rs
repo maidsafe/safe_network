@@ -8,10 +8,12 @@
 
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
+use libp2p::Multiaddr;
 use sn_logging::LogFormat;
 use sn_node_manager::{
     add_services::config::{parse_port_range, PortRange},
-    cmd, VerbosityLevel,
+    cmd::{self},
+    VerbosityLevel,
 };
 use sn_peers_acquisition::PeersArgs;
 use std::{net::Ipv4Addr, path::PathBuf};
@@ -49,6 +51,14 @@ pub enum SubCmd {
     /// distributions, however, use Systemd, which *does* support user-mode services.
     #[clap(name = "add")]
     Add {
+        /// Auto set NAT related flags (--upnp or --home-network) on the safenode service if our NAT status is obtained
+        /// by running the NAT detection subcommand.
+        ///
+        /// This will cause an error if the NAT status has not been set.
+        ///
+        /// This will override any --upnp or --home-network option that were passed in.
+        #[clap(long, default_value_t = false)]
+        auto_set_nat_flags: bool,
         /// The number of service instances.
         ///
         /// If the --first argument is used, the count has to be one, so --count and --first are
@@ -203,6 +213,8 @@ pub enum SubCmd {
     Faucet(FaucetSubCmd),
     #[clap(subcommand)]
     Local(LocalSubCmd),
+    #[clap(subcommand)]
+    NatDetection(NatDetectionSubCmd),
     /// Remove safenode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be removed.
@@ -627,6 +639,44 @@ pub enum FaucetSubCmd {
     },
 }
 
+/// Manage NAT detection.
+#[derive(Subcommand, Debug, Clone)]
+pub enum NatDetectionSubCmd {
+    /// Use NAT detection to determine NAT status.
+    ///
+    /// The status can be used with the '--auto-set-nat-flags' argument on the 'add' command.
+    Run {
+        /// Provide a path for the NAT detection binary to be used.
+        ///
+        /// Useful for running NAT detection using a custom built binary.
+        #[clap(long)]
+        path: Option<PathBuf>,
+        /// Provide NAT servers in the form of a multiaddr or an address/port pair.
+        ///
+        /// We attempt to establish connections to these servers to determine our own NAT status.
+        ///
+        /// The argument can be used multiple times.
+        #[clap(long)]
+        servers: Vec<Multiaddr>,
+        /// Provide a NAT detection binary using a URL.
+        ///
+        /// The binary must be inside a zip or gzipped tar archive.
+        ///
+        /// This option can be used to test a nat detection binary that has been built from a forked
+        /// branch and uploaded somewhere. A typical use case would be for a developer who launches
+        /// a testnet to test some changes they have on a fork.
+        #[clap(long, conflicts_with = "version")]
+        url: Option<String>,
+        /// Provide a specific version of the NAT detection to be installed.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
+        /// The binary will be downloaded.
+        #[clap(long)]
+        version: Option<String>,
+    },
+}
+
 /// Manage local networks.
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug)]
@@ -807,6 +857,7 @@ async fn main() -> Result<()> {
 
     match args.cmd {
         SubCmd::Add {
+            auto_set_nat_flags,
             count,
             data_dir_path,
             env_variables,
@@ -827,6 +878,7 @@ async fn main() -> Result<()> {
             version,
         } => {
             let _ = cmd::node::add(
+                auto_set_nat_flags,
                 count,
                 data_dir_path,
                 env_variables,
@@ -1006,6 +1058,15 @@ async fn main() -> Result<()> {
                 json,
             } => cmd::local::status(details, fail, json).await,
         },
+        SubCmd::NatDetection(NatDetectionSubCmd::Run {
+            path,
+            servers,
+            url,
+            version,
+        }) => {
+            cmd::nat_detection::run_nat_detection(servers, true, path, url, version, verbosity)
+                .await
+        }
         SubCmd::Remove {
             keep_directories,
             peer_id: peer_ids,

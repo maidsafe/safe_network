@@ -18,12 +18,15 @@ use crate::{
     config::{create_owned_dir, get_user_safenode_data_dir},
     VerbosityLevel, DAEMON_SERVICE_NAME,
 };
-use color_eyre::{eyre::eyre, Help, Result};
+use color_eyre::{
+    eyre::{eyre, OptionExt},
+    Help, Result,
+};
 use colored::Colorize;
 use service_manager::ServiceInstallCtx;
 use sn_service_management::{
     auditor::AuditorServiceData, control::ServiceControl, DaemonServiceData, FaucetServiceData,
-    NodeRegistry, NodeServiceData, ServiceStatus,
+    NatDetectionStatus, NodeRegistry, NodeServiceData, ServiceStatus,
 };
 use std::{
     ffi::OsString,
@@ -39,7 +42,7 @@ use std::{
 ///
 /// Returns the service names of the added services.
 pub async fn add_node(
-    options: AddNodeServiceOptions,
+    mut options: AddNodeServiceOptions,
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     verbosity: VerbosityLevel,
@@ -179,6 +182,29 @@ pub async fn add_node(
             options.safenode_src_path.clone(),
             service_safenode_path.clone(),
         )?;
+
+        if options.auto_set_nat_flags {
+            let nat_status = node_registry
+                .nat_status
+                .clone()
+                .ok_or_eyre("NAT status has not been set. Run 'nat-detection' first")?;
+
+            match nat_status {
+                NatDetectionStatus::Public => {
+                    options.upnp = false;
+                    options.home_network = false;
+                }
+                NatDetectionStatus::UPnP => {
+                    options.upnp = true;
+                    options.home_network = false;
+                }
+                NatDetectionStatus::Private => {
+                    options.upnp = false;
+                    options.home_network = true;
+                }
+            }
+        }
+
         let install_ctx = InstallNodeServiceCtxBuilder {
             bootstrap_peers: options.bootstrap_peers.clone(),
             data_dir_path: service_data_dir_path.clone(),

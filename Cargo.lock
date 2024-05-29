@@ -3390,7 +3390,7 @@ dependencies = [
  "iana-time-zone-haiku",
  "js-sys",
  "wasm-bindgen",
- "windows-core 0.51.1",
+ "windows-core 0.52.0",
 ]
 
 [[package]]
@@ -6933,9 +6933,9 @@ dependencies = [
 
 [[package]]
 name = "sn-releases"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a83cfa246e4e358f310ee5932ddf70c50f785de54cd77141d597197a29c32ba6"
+checksum = "7100630b1530aba7b0ecd3c7d5189a7472d24af72e4391b1ea0beff809ea8ab8"
 dependencies = [
  "async-trait",
  "chrono",

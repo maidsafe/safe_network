@@ -17,7 +17,7 @@ pub mod local;
 pub mod rpc;
 pub mod rpc_client;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum VerbosityLevel {
     Minimal,
     Normal,

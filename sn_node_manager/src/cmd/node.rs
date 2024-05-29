@@ -36,6 +36,7 @@ use tracing::debug;
 
 /// Returns the added service names
 pub async fn add(
+    auto_set_nat_flags: bool,
     count: Option<u16>,
     data_dir_path: Option<PathBuf>,
     env_variables: Option<Vec<(String, String)>>,
@@ -120,6 +121,7 @@ pub async fn add(
     };
 
     let options = AddNodeServiceOptions {
+        auto_set_nat_flags,
         bootstrap_peers,
         count,
         delete_safenode_src: src_path.is_none(),
@@ -502,6 +504,7 @@ pub async fn upgrade(
 ///
 /// The arguments here are used during add() mostly.
 pub async fn maintain_n_running_nodes(
+    auto_set_nat_flags: bool,
     max_nodes_to_run: u16,
     data_dir_path: Option<PathBuf>,
     env_variables: Option<Vec<(String, String)>>,
@@ -592,6 +595,7 @@ pub async fn maintain_n_running_nodes(
              );
 
                 let added_service_list = add(
+                    auto_set_nat_flags,
                     Some(to_add_count as u16),
                     data_dir_path,
                     env_variables,

@@ -46,6 +46,13 @@ pub enum ServiceStatus {
     Removed,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum NatDetectionStatus {
+    Public,
+    UPnP,
+    Private,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum UpgradeResult {
     Forced(String, String),
@@ -96,6 +103,7 @@ pub struct NodeRegistry {
     pub daemon: Option<DaemonServiceData>,
     pub environment_variables: Option<Vec<(String, String)>>,
     pub faucet: Option<FaucetServiceData>,
+    pub nat_status: Option<NatDetectionStatus>,
     pub nodes: Vec<NodeServiceData>,
     pub save_path: PathBuf,
 }
@@ -121,6 +129,7 @@ impl NodeRegistry {
                 daemon: None,
                 environment_variables: None,
                 faucet: None,
+                nat_status: None,
                 nodes: vec![],
                 save_path: path.to_path_buf(),
             });
@@ -139,6 +148,7 @@ impl NodeRegistry {
                 daemon: None,
                 environment_variables: None,
                 faucet: None,
+                nat_status: None,
                 nodes: vec![],
                 save_path: path.to_path_buf(),
             });

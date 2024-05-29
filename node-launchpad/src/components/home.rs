@@ -363,6 +363,7 @@ fn maintain_n_running_nodes(
 ) {
     tokio::task::spawn_local(async move {
         if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
+            false,
             count,
             None,
             None,
