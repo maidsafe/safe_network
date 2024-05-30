@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717049798470,
+  "lastUpdate": 1717063937811,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "777e6cdc8b780f87ede384c7e7dbc5104b2a726d",
-          "message": "fix: avoid clippy error due to new feature guard",
-          "timestamp": "2024-02-12T15:55:27+01:00",
-          "tree_id": "f4f6b4c325e3557055f67b83872eb11d5b089dc9",
-          "url": "https://github.com/maidsafe/safe_network/commit/777e6cdc8b780f87ede384c7e7dbc5104b2a726d"
-        },
-        "date": 1707750343978,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2271591303903422,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.801740719658649,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.54187973674749,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.36083367035156,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "89e806bc198d01c6fa7ac4e2803fbace151bbdda",
+          "message": "fix(networking): upnp feature gates for metrics",
+          "timestamp": "2024-05-30T09:20:36Z",
+          "tree_id": "61499bd862f3e51e50460665a85f46ef335cfd58",
+          "url": "https://github.com/maidsafe/safe_network/commit/89e806bc198d01c6fa7ac4e2803fbace151bbdda"
+        },
+        "date": 1717063932228,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1878501982351555,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.652859829676284,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.32900510297143,
             "unit": "MiB/s"
           }
         ]
