@@ -19,7 +19,7 @@ pub enum Action {
     SwitchInputMode(InputMode),
 
     StoreDiscordUserName(String),
-    StoreAllocatedDiskSpace(usize),
+    StoreNodesToStart(usize),
 
     Tick,
     Render,

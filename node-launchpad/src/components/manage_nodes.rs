@@ -28,8 +28,8 @@ pub const GB: usize = MB * 1000;
 pub struct ManageNodes {
     /// Whether the component is active right now, capturing keystrokes + drawing things.
     active: bool,
-    available_disk_space_bytes: usize,
-    allocated_space_input: Input,
+    available_disk_space_gb: usize,
+    nodes_to_start_input: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
 }
@@ -38,14 +38,18 @@ impl ManageNodes {
     pub fn new(allocated_space: usize) -> Result<Self> {
         let new = Self {
             active: false,
-            available_disk_space_bytes: Self::get_available_space_gb()?,
-            allocated_space_input: Input::default().with_value(allocated_space.to_string()),
+            available_disk_space_gb: Self::get_available_space_b()? / GB,
+            nodes_to_start_input: Input::default().with_value(allocated_space.to_string()),
             old_value: Default::default(),
         };
         Ok(new)
     }
 
-    fn get_available_space_gb() -> Result<usize> {
+    fn get_nodes_to_start(&self) -> usize {
+        self.nodes_to_start_input.value().parse().unwrap_or(0)
+    }
+
+    fn get_available_space_b() -> Result<usize> {
         let disks = Disks::new_with_refreshed_list();
 
         let available_space_b = disks
@@ -77,27 +81,25 @@ impl Component for ManageNodes {
         // while in entry mode, key bindings are not captured, so gotta exit entry mode from here
         let send_back = match key.code {
             KeyCode::Enter => {
-                let allocated_space_str = self.allocated_space_input.value().to_string();
-                let allocated_space =
-                    if let Ok(allocated_space) = allocated_space_str.trim().parse::<usize>() {
-                        let allocated_space =
-                            std::cmp::min(allocated_space, self.available_disk_space_bytes);
-                        let max_nodes = allocated_space / GB_PER_NODE;
-                        max_nodes * GB_PER_NODE
-                    } else {
-                        0
-                    };
+                let nodes_to_start_str = self.nodes_to_start_input.value().to_string();
+                let nodes_to_start = {
+                    let max_space_to_use = std::cmp::min(
+                        self.get_nodes_to_start() * GB_PER_NODE,
+                        self.available_disk_space_gb,
+                    );
+                    max_space_to_use / GB_PER_NODE
+                };
                 // set the new value
-                self.allocated_space_input = self
-                    .allocated_space_input
+                self.nodes_to_start_input = self
+                    .nodes_to_start_input
                     .clone()
-                    .with_value(allocated_space.to_string());
+                    .with_value(nodes_to_start.to_string());
 
                 debug!(
-                    "Got Enter, value found to be {allocated_space} derived from input: {allocated_space_str:?} and switching scene",
+                    "Got Enter, value found to be {nodes_to_start} derived from input: {nodes_to_start_str:?} and switching scene",
                 );
                 vec![
-                    Action::StoreAllocatedDiskSpace(allocated_space),
+                    Action::StoreNodesToStart(nodes_to_start),
                     Action::SwitchScene(Scene::Home),
                 ]
             }
@@ -107,47 +109,61 @@ impl Component for ManageNodes {
                     self.old_value
                 );
                 // reset to old value
-                self.allocated_space_input = self
-                    .allocated_space_input
+                self.nodes_to_start_input = self
+                    .nodes_to_start_input
                     .clone()
                     .with_value(self.old_value.clone());
                 vec![Action::SwitchScene(Scene::Home)]
             }
             KeyCode::Char(c) if c.is_numeric() => {
-                self.allocated_space_input.handle_event(&Event::Key(key));
+                // don't allow leading zeros
+                if c == '0' && self.nodes_to_start_input.value().is_empty() {
+                    return Ok(vec![]);
+                }
+                // if it might exceed the available space, then enter the max
+                let number = c.to_string().parse::<usize>().unwrap_or(0);
+                let new_value = format!("{}{}", self.get_nodes_to_start(), number)
+                    .parse::<usize>()
+                    .unwrap_or(0);
+                if new_value * GB_PER_NODE > self.available_disk_space_gb {
+                    let max_nodes = self.available_disk_space_gb / GB_PER_NODE;
+                    self.nodes_to_start_input = self
+                        .nodes_to_start_input
+                        .clone()
+                        .with_value(max_nodes.to_string());
+                    return Ok(vec![]);
+                }
+                self.nodes_to_start_input.handle_event(&Event::Key(key));
                 vec![]
             }
             KeyCode::Backspace => {
-                self.allocated_space_input.handle_event(&Event::Key(key));
+                self.nodes_to_start_input.handle_event(&Event::Key(key));
                 vec![]
             }
             KeyCode::Up | KeyCode::Down => {
-                let allocated_space_str = self.allocated_space_input.value().to_string();
-                let allocated_space = if let Ok(allocated_space) =
-                    allocated_space_str.trim().parse::<usize>()
-                {
+                let nodes_to_start = {
+                    let nodes_to_start = self.get_nodes_to_start();
+
                     if key.code == KeyCode::Up {
-                        if allocated_space + GB_PER_NODE <= self.available_disk_space_bytes / GB {
-                            allocated_space + GB_PER_NODE
+                        if (nodes_to_start + 1) * GB_PER_NODE <= self.available_disk_space_gb {
+                            nodes_to_start + 1
                         } else {
-                            allocated_space
+                            nodes_to_start
                         }
                     } else {
                         // Key::Down
-                        if allocated_space >= GB_PER_NODE {
-                            allocated_space - GB_PER_NODE
+                        if nodes_to_start == 0 {
+                            0
                         } else {
-                            allocated_space
+                            nodes_to_start - 1
                         }
                     }
-                } else {
-                    0
                 };
                 // set the new value
-                self.allocated_space_input = self
-                    .allocated_space_input
+                self.nodes_to_start_input = self
+                    .nodes_to_start_input
                     .clone()
-                    .with_value(allocated_space.to_string());
+                    .with_value(nodes_to_start.to_string());
                 vec![]
             }
             _ => {
@@ -162,7 +178,7 @@ impl Component for ManageNodes {
             Action::SwitchScene(scene) => match scene {
                 Scene::ManageNodes => {
                     self.active = true;
-                    self.old_value = self.allocated_space_input.value().to_string();
+                    self.old_value = self.nodes_to_start_input.value().to_string();
                     // set to entry input mode as we want to handle everything within our handle_key_events
                     // so by default if this scene is active, we capture inputs.
                     Some(Action::SwitchInputMode(InputMode::Entry))
@@ -232,12 +248,12 @@ impl Component for ManageNodes {
         )
         .split(layer_one[1]);
 
-        let start = Paragraph::new("Start").style(Style::default().fg(GHOST_WHITE));
+        let start = Paragraph::new("Start ").style(Style::default().fg(GHOST_WHITE));
         f.render_widget(start, layer_input_field[1]);
 
         let width = layer_input_field[2].width.max(3) - 3;
-        let scroll = self.allocated_space_input.visual_scroll(width as usize);
-        let input = Paragraph::new(self.allocated_space_input.value())
+        let scroll = self.nodes_to_start_input.visual_scroll(width as usize);
+        let input = Paragraph::new(self.get_nodes_to_start().to_string())
             .style(Style::new().fg(VIVID_SKY_BLUE))
             .scroll((0, scroll as u16))
             .alignment(Alignment::Center);
@@ -248,12 +264,12 @@ impl Component for ManageNodes {
         f.render_widget(nodes_text, layer_input_field[3]);
 
         // ==== info field ====
-        let available_space_gb = self.available_disk_space_bytes / GB;
+        let available_space_gb = self.available_disk_space_gb;
         let info_style = Style::default().fg(VIVID_SKY_BLUE);
         let info = Line::from(vec![
             Span::styled("Using", info_style),
             Span::styled(
-                format!(" {}GB ", self.allocated_space_input.value()),
+                format!(" {}GB ", self.get_nodes_to_start() * GB_PER_NODE),
                 info_style.bold(),
             ),
             Span::styled(

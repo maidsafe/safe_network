@@ -47,14 +47,14 @@ impl App {
         let app_data = AppData::load()?;
 
         let home = Home::new(
-            app_data.allocated_disk_space,
+            app_data.nodes_to_start,
             &app_data.discord_username,
             peers_args,
             safenode_path,
         )?;
         let config = Config::new()?;
         let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
-        let manage_nodes = ManageNodes::new(app_data.allocated_disk_space)?;
+        let manage_nodes = ManageNodes::new(app_data.nodes_to_start)?;
         let footer = Footer::default();
         let help = HelpPopUp::default();
 
@@ -180,9 +180,9 @@ impl App {
                         self.app_data.discord_username.clone_from(username);
                         self.app_data.save()?;
                     }
-                    Action::StoreAllocatedDiskSpace(space) => {
-                        debug!("Storing allocated disk space: {space:?}");
-                        self.app_data.allocated_disk_space = space;
+                    Action::StoreNodesToStart(count) => {
+                        debug!("Storing nodes to start: {count:?}");
+                        self.app_data.nodes_to_start = count;
                         self.app_data.save()?;
                     }
                     _ => {}

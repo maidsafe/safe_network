@@ -13,7 +13,6 @@ use super::{
 };
 use crate::{
     action::{Action, FooterActions, HomeActions},
-    components::manage_nodes::GB_PER_NODE,
     config::Config,
     mode::{InputMode, Scene},
     style::{COOL_GREY, EUCALYPTUS, GHOST_WHITE, VERY_LIGHT_AZURE},
@@ -47,7 +46,7 @@ pub struct Home {
     node_services: Vec<NodeServiceData>,
     node_stats: NodesStats,
     node_table_state: TableState,
-    allocated_disk_space: usize,
+    nodes_to_start: usize,
     discord_username: String,
     // Currently the node registry file does not support concurrent actions and thus can lead to
     // inconsistent state. Another solution would be to have a file lock/db.
@@ -72,7 +71,7 @@ impl Home {
             active: true,
             node_services: Default::default(),
             node_stats: NodesStats::new(),
-            allocated_disk_space,
+            nodes_to_start: allocated_disk_space,
             node_table_state: Default::default(),
             lock_registry: Default::default(),
             discord_username: discord_username.to_string(),
@@ -219,8 +218,8 @@ impl Component for Home {
                 Scene::BetaProgramme | Scene::ManageNodes | Scene::HelpPopUp => self.active = true,
                 _ => self.active = false,
             },
-            Action::StoreAllocatedDiskSpace(space) => {
-                self.allocated_disk_space = space;
+            Action::StoreNodesToStart(count) => {
+                self.nodes_to_start = count;
             }
             Action::StoreDiscordUserName(username) => {
                 let reset_safenode_services = (self.discord_username != username)
@@ -243,8 +242,8 @@ impl Component for Home {
                     return Ok(None);
                 }
 
-                if self.allocated_disk_space == 0 {
-                    info!("Disk space not allocated. Ask for input.");
+                if self.nodes_to_start == 0 {
+                    info!("Nodes to start not set. Ask for input.");
                     return Ok(Some(Action::HomeActions(HomeActions::TriggerManageNodes)));
                 }
                 if self.discord_username.is_empty() {
@@ -252,13 +251,12 @@ impl Component for Home {
                     return Ok(Some(Action::HomeActions(HomeActions::TriggerBetaProgramme)));
                 }
 
-                let node_count = self.allocated_disk_space / GB_PER_NODE;
                 self.lock_registry = true;
                 let action_sender = self.get_actions_sender()?;
-                info!("Running maintain node count: {node_count:?}");
+                info!("Running maintain node count: {:?}", self.nodes_to_start);
 
                 maintain_n_running_nodes(
-                    node_count as u16,
+                    self.nodes_to_start as u16,
                     self.discord_username.clone(),
                     self.peers_args.clone(),
                     self.safenode_path.clone(),
