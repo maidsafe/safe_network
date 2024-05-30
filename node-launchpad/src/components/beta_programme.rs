@@ -6,12 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::time::{Duration, Instant};
-
-use super::{
-    utils::{centered_rect, centered_rect_fixed},
-    Component,
-};
+use super::{utils::centered_rect_fixed, Component};
 use crate::{
     action::Action,
     mode::{InputMode, Scene},
@@ -22,8 +17,6 @@ use color_eyre::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tui_input::{backend::crossterm::EventHandler, Input};
-
-const SPLASH_SCREEN_TIMEOUT: Duration = Duration::from_secs(1);
 
 pub struct BetaProgramme {
     /// Whether the component is active right now, capturing keystrokes + draw things.
@@ -39,7 +32,6 @@ enum BetaProgrammeState {
     ShowTCs,
     RejectTCs,
     AcceptTCsAndEnterDiscordId,
-    RegisteringDiscordIdSuccess(Instant),
 }
 
 impl BetaProgramme {
@@ -67,12 +59,13 @@ impl BetaProgramme {
                     return vec![];
                 }
                 debug!(
-                    "Got Enter, saving the discord username {username:?} and switching to RegisteringDiscordIdSuccess",
+                    "Got Enter, saving the discord username {username:?}  and switching to DiscordIdAlreadySet, and Home Scene",
                 );
-                self.state = BetaProgrammeState::RegisteringDiscordIdSuccess(Instant::now());
-                vec![Action::StoreDiscordUserName(
-                    self.discord_input_filed.value().to_string(),
-                )]
+                self.state = BetaProgrammeState::DiscordIdAlreadySet;
+                vec![
+                    Action::StoreDiscordUserName(self.discord_input_filed.value().to_string()),
+                    Action::SwitchScene(Scene::Home),
+                ]
             }
             KeyCode::Esc => {
                 debug!(
@@ -140,9 +133,6 @@ impl Component for BetaProgramme {
                 vec![Action::SwitchScene(Scene::Home)]
             }
             BetaProgrammeState::AcceptTCsAndEnterDiscordId => self.capture_inputs(key),
-            BetaProgrammeState::RegisteringDiscordIdSuccess(_) => {
-                vec![]
-            }
         };
         Ok(send_back)
     }
@@ -162,16 +152,6 @@ impl Component for BetaProgramme {
                     None
                 }
             },
-            Action::Tick => {
-                if let BetaProgrammeState::RegisteringDiscordIdSuccess(time) = self.state {
-                    if time.elapsed() > SPLASH_SCREEN_TIMEOUT {
-                        debug!("RegisteringDiscordIdSuccess msg closed. Switching to home scene.");
-                        self.state = BetaProgrammeState::ShowTCs;
-                        return Ok(Some(Action::SwitchScene(Scene::Home)));
-                    }
-                }
-                None
-            }
             _ => None,
         };
         Ok(send_back)
@@ -428,13 +408,6 @@ impl Component for BetaProgramme {
                     button_yes_style,
                 )]);
                 f.render_widget(button_yes, buttons_layer[1]);
-            }
-            BetaProgrammeState::RegisteringDiscordIdSuccess(_) => {
-                let centered_rect = centered_rect(90, 25, layer_one[1]);
-                let text =
-                    Paragraph::new("Discord ID saved successfully!").alignment(Alignment::Center);
-
-                f.render_widget(text, centered_rect);
             }
         }
 
