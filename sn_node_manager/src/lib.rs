@@ -625,6 +625,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -716,6 +717,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -876,6 +878,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -1036,6 +1039,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -1409,6 +1413,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -1621,6 +1626,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -1761,6 +1767,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -2033,6 +2040,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -2197,6 +2205,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -2344,6 +2353,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -2494,6 +2504,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -2641,6 +2652,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -2788,6 +2800,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -2938,6 +2951,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
@@ -3088,6 +3102,7 @@ mod tests {
                 log_path: PathBuf::from("/var/log/safenode/safenode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
             })
         });
         mock_rpc_client
