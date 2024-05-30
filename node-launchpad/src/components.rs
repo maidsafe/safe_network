@@ -19,6 +19,7 @@ use crate::{
 
 pub mod beta_programme;
 pub mod footer;
+pub mod help;
 pub mod home;
 pub mod options;
 pub mod resource_allocation;

@@ -216,7 +216,9 @@ impl Component for Home {
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
                 }
-                Scene::BetaProgramme | Scene::ResourceAllocationInputBox => self.active = true,
+                Scene::BetaProgramme | Scene::ResourceAllocationInputBox | Scene::HelpPopUp => {
+                    self.active = true
+                }
                 _ => self.active = false,
             },
             Action::StoreAllocatedDiskSpace(space) => {
@@ -308,6 +310,9 @@ impl Component for Home {
             }
             Action::HomeActions(HomeActions::TriggerResourceAllocationInputBox) => {
                 return Ok(Some(Action::SwitchScene(Scene::ResourceAllocationInputBox)));
+            }
+            Action::HomeActions(HomeActions::TriggerHelp) => {
+                return Ok(Some(Action::SwitchScene(Scene::HelpPopUp)));
             }
 
             Action::HomeActions(HomeActions::PreviousTableItem) => {

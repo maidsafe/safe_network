@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use crate::{
     action::Action,
     components::{
-        beta_programme::BetaProgramme, footer::Footer, home::Home,
+        beta_programme::BetaProgramme, footer::Footer, help::HelpPopUp, home::Home,
         resource_allocation::ResourceAllocationInputBox, Component,
     },
     config::{AppData, Config},
@@ -57,6 +57,7 @@ impl App {
         let resource_allocation_input =
             ResourceAllocationInputBox::new(app_data.allocated_disk_space)?;
         let footer = Footer::default();
+        let help = HelpPopUp::default();
 
         Ok(Self {
             config,
@@ -68,6 +69,7 @@ impl App {
                 Box::new(home),
                 Box::new(discord_username_input),
                 Box::new(resource_allocation_input),
+                Box::new(help),
             ],
             should_quit: false,
             should_suspend: false,
