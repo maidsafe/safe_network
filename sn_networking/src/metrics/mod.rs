@@ -31,6 +31,7 @@ pub(crate) struct NetworkMetrics {
     pub(crate) records_stored: Gauge,
     pub(crate) estimated_network_size: Gauge,
     pub(crate) store_cost: Gauge,
+    #[cfg(feature = "upnp")]
     pub(crate) upnp_events: Family<upnp::UpnpEventLabels, Counter>,
 
     // system info
@@ -63,7 +64,10 @@ impl NetworkMetrics {
             store_cost.clone(),
         );
 
+
+        #[cfg(feature = "upnp")]
         let upnp_events = Family::default();
+        #[cfg(feature = "upnp")]
         sub_registry.register(
             "upnp_events",
             "Events emitted by the UPnP behaviour",
@@ -89,6 +93,7 @@ impl NetworkMetrics {
             records_stored,
             estimated_network_size,
             store_cost,
+            #[cfg(feature = "upnp")]
             upnp_events,
             process_memory_used_mb,
             process_cpu_usage_percentage,

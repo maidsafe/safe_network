@@ -84,6 +84,7 @@ impl SwarmDriver {
                         .on_successful_reservation_by_client(&relay_peer_id, &mut self.swarm);
                 }
             }
+            #[cfg(feature = "upnp")]
             SwarmEvent::Behaviour(NodeEvent::Upnp(upnp_event)) => {
                 #[cfg(feature = "open-metrics")]
                 if let Some(metrics) = &self.network_metrics {
