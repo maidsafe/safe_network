@@ -6,11 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{
-    ops::{Deref, DerefMut},
-    time::Duration,
-};
-
+use crate::style::SPACE_CADET;
 use color_eyre::eyre::Result;
 use crossterm::{
     cursor,
@@ -18,11 +14,16 @@ use crossterm::{
         DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
         Event as CrosstermEvent, KeyEvent, KeyEventKind, MouseEvent,
     },
+    style::SetBackgroundColor,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use futures::{FutureExt, StreamExt};
 use ratatui::backend::CrosstermBackend as Backend;
 use serde::{Deserialize, Serialize};
+use std::{
+    ops::{Deref, DerefMut},
+    time::Duration,
+};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
     task::JoinHandle,
@@ -162,6 +163,12 @@ impl Tui {
                       _event_tx.send(Event::Tick).unwrap();
                   },
                   _ = render_delay => {
+                    // todo: background color is written on every render, is this okay?
+                    let background_color: SetBackgroundColor = SetBackgroundColor(SPACE_CADET.into());
+                    let _ = crossterm::execute!(
+                         io(),
+                        background_color,
+                    );
                       _event_tx.send(Event::Render).unwrap();
                   },
                 }
@@ -188,7 +195,14 @@ impl Tui {
 
     pub fn enter(&mut self) -> Result<()> {
         crossterm::terminal::enable_raw_mode()?;
-        crossterm::execute!(io(), EnterAlternateScreen, cursor::Hide)?;
+        let background_color: SetBackgroundColor = SetBackgroundColor(SPACE_CADET.into());
+        crossterm::execute!(
+            io(),
+            background_color,
+            EnterAlternateScreen,
+            background_color,
+            cursor::Hide
+        )?;
         if self.mouse {
             crossterm::execute!(io(), EnableMouseCapture)?;
         }

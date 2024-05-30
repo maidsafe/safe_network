@@ -16,6 +16,7 @@ use crate::{
     components::resource_allocation::GB_PER_NODE,
     config::Config,
     mode::{InputMode, Scene},
+    style::{COOL_GREY, EUCALYPTUS, GHOST_WHITE, VERY_LIGHT_AZURE},
 };
 use color_eyre::eyre::{OptionExt, Result};
 use fs_extra::dir::get_size;
@@ -353,28 +354,46 @@ impl Component for Home {
         )
         .split(layer_zero[0]);
         f.render_widget(
-            Paragraph::new("Autonomi Node Launchpad").alignment(Alignment::Left),
+            Paragraph::new("Autonomi Node Launchpad")
+                .alignment(Alignment::Left)
+                .style(Style::default().fg(COOL_GREY)),
             layer_one_header[0],
         );
         let discord_user_name_text = if self.discord_username.is_empty() {
             "".to_string()
         } else {
-            format!("Discord Username: {}", &self.discord_username)
+            format!("Discord Username: {} ", &self.discord_username)
         };
         f.render_widget(
-            Paragraph::new(discord_user_name_text).alignment(Alignment::Right),
+            Paragraph::new(discord_user_name_text)
+                .alignment(Alignment::Right)
+                .style(Style::default().fg(VERY_LIGHT_AZURE)),
             layer_one_header[1],
         );
 
         // ==== Device Status =====
 
         if self.node_services.is_empty() {
+            let line1 = Line::from(vec![Span::styled(
+                "No Nodes on this device",
+                Style::default().fg(GHOST_WHITE),
+            )]);
+            let line2 = Line::from(vec![
+                Span::styled("Press ", Style::default().fg(GHOST_WHITE)),
+                Span::styled("Ctrl+G", Style::default().fg(EUCALYPTUS)),
+                Span::styled(
+                    " to Add Nodes and get started.",
+                    Style::default().fg(GHOST_WHITE),
+                ),
+            ]);
             f.render_widget(
-                Paragraph::new("No nodes detected.\nUse the Manage nodes command to begin.").block(
+                Paragraph::new(vec![line1, line2]).block(
                     Block::default()
                         .title("Device Status")
+                        .title_style(Style::default().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
-                        .padding(Padding::uniform(1)),
+                        .padding(Padding::uniform(1))
+                        .style(Style::default().fg(VERY_LIGHT_AZURE)),
                 ),
                 layer_zero[1],
             );
@@ -416,13 +435,15 @@ impl Component for Home {
                         "Memory usage",
                         "Network Usage",
                     ])
-                    .style(Style::new().bold()),
+                    .style(Style::new().bold().fg(GHOST_WHITE)),
                 )
                 .block(
                     Block::default()
                         .title("Device Status")
+                        .title_style(Style::default().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
-                        .padding(Padding::uniform(1)),
+                        .padding(Padding::uniform(1))
+                        .style(Style::default().fg(VERY_LIGHT_AZURE)),
                 );
             f.render_widget(stats_table, layer_zero[1]);
             // "todo: display a table".to_string()
@@ -441,44 +462,48 @@ impl Component for Home {
                 let peer_id = peer_id.map(|p| p.to_string()).unwrap_or("-".to_string());
                 let status = format!("{:?}", n.status);
 
-                let row = vec![peer_id, status];
-                Some(Row::new(row))
+                let row = vec![n.service_name.clone(), peer_id, status];
+                let row_style = if n.status == ServiceStatus::Running {
+                    Style::default().fg(EUCALYPTUS)
+                } else {
+                    Style::default().fg(GHOST_WHITE)
+                };
+                Some(Row::new(row).style(row_style))
             })
             .collect();
 
         if node_rows.is_empty() {
             f.render_widget(
-                Paragraph::new("Nodes will appear here when added").block(
-                    Block::default()
-                        .title("Node Status")
-                        .borders(Borders::ALL)
-                        .padding(Padding::uniform(1)),
-                ),
+                Paragraph::new("Nodes will appear here when added")
+                    .style(Style::default().fg(COOL_GREY))
+                    .block(
+                        Block::default()
+                            .title("Node Status")
+                            .title_style(Style::default().fg(COOL_GREY))
+                            .borders(Borders::ALL)
+                            .border_style(style::Style::default().fg(COOL_GREY))
+                            .padding(Padding::uniform(1)),
+                    ),
                 layer_zero[2],
             );
         } else {
-            let node_widths = [Constraint::Min(30), Constraint::Max(10)];
-            // give green borders if we are running
-            let table_border_style = if self.get_running_nodes().len() > 1 {
-                Style::default().green()
-            } else {
-                Style::default()
-            };
+            let node_widths = [
+                Constraint::Max(15),
+                Constraint::Min(30),
+                Constraint::Max(10),
+            ];
             let table = Table::new(node_rows, node_widths)
                 .column_spacing(2)
-                .header(
-                    Row::new(vec!["PeerId", "Status"])
-                        .style(Style::new().bold())
-                        .bottom_margin(1),
-                )
                 .highlight_style(Style::new().reversed())
                 .block(
                     Block::default()
                         .title("Node Status")
+                        .padding(Padding::new(2, 2, 1, 1))
+                        .title_style(Style::default().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
-                        .border_style(table_border_style),
+                        .border_style(Style::default().fg(EUCALYPTUS)),
                 )
-                .highlight_symbol(">");
+                .highlight_symbol("*");
             f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
         }
 
