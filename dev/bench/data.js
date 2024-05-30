@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717049680002,
+  "lastUpdate": 1717049795507,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "913fb5e7832d6be0ce77c1eccdce700511951fb9",
-          "message": "chore(node): feature guard royalty_reward publish",
-          "timestamp": "2024-02-12T13:31:42Z",
-          "tree_id": "0ab25ab828d7292f1c5c1454b273bcc0e3c87786",
-          "url": "https://github.com/maidsafe/safe_network/commit/913fb5e7832d6be0ce77c1eccdce700511951fb9"
-        },
-        "date": 1707747179191,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 48,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "777e6cdc8b780f87ede384c7e7dbc5104b2a726d",
           "message": "fix: avoid clippy error due to new feature guard",
           "timestamp": "2024-02-12T15:55:27+01:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f0b459424301a535c33f3d80267dbbd361f13bad",
+          "message": "fix(auditor): check unknown hash when add new participant",
+          "timestamp": "2024-05-30T15:02:19+09:00",
+          "tree_id": "7f4c2e2050bd75d620496ef3012a217662b7b480",
+          "url": "https://github.com/maidsafe/safe_network/commit/f0b459424301a535c33f3d80267dbbd361f13bad"
+        },
+        "date": 1717049795211,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
