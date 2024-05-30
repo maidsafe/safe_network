@@ -10,7 +10,7 @@ use super::Component;
 use crate::{
     action::{Action, FooterActions},
     mode::Scene,
-    style::{GRAY, RED, TEAL, WHITE},
+    style::{COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE},
 };
 use color_eyre::eyre::Result;
 use ratatui::{prelude::*, widgets::*};
@@ -48,9 +48,9 @@ impl Component for Footer {
         .split(area);
         let border = Paragraph::new("").block(
             Block::default()
-                .title("Available Commands")
+                .title("Key Commands")
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(RED)),
+                .border_style(Style::default().fg(COOL_GREY)),
         );
 
         let layer_one = Layout::new(
@@ -69,49 +69,55 @@ impl Component for Footer {
         .split(layer_zero[1]);
 
         let text_style = if self.nodes_exist {
-            Style::default().fg(RED)
+            Style::default().fg(EUCALYPTUS)
         } else {
-            Style::default().fg(GRAY)
+            Style::default().fg(LIGHT_PERIWINKLE)
         };
 
         let command_style = if self.nodes_exist {
-            Style::default().fg(WHITE)
+            Style::default().fg(GHOST_WHITE)
         } else {
-            Style::default().fg(GRAY)
+            Style::default().fg(LIGHT_PERIWINKLE)
         };
 
         let (line1, line2) = match self.current_scene {
             Scene::Home => {
                 let line1 = Line::from(vec![
-                    Span::styled(" [Ctrl+S] ", command_style),
+                    Span::styled(" [Ctrl+G] ", command_style),
                     Span::styled("Start all Nodes       ", text_style),
                     Span::styled("[Ctrl+X] ", command_style),
                     Span::styled("Stop all Nodes         ", text_style),
-                    Span::styled("[H] ", Style::default().fg(WHITE)),
-                    Span::styled("Help", Style::default().fg(RED)),
+                    Span::styled("[H] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled("Help", Style::default().fg(EUCALYPTUS)),
                 ]);
 
                 let line2 = Line::from(vec![
-                    Span::styled(" [Ctrl+G] ", Style::default().fg(WHITE)),
-                    Span::styled("Manage Nodes          ", Style::default().fg(RED)),
-                    Span::styled("[Ctrl+B] ", Style::default().fg(WHITE)),
-                    Span::styled("Beta Rewards Programme ", Style::default().fg(TEAL)),
-                    Span::styled("[Q] ", Style::default().fg(WHITE)),
-                    Span::styled("Quit", Style::default().fg(RED)),
+                    Span::styled(" [O] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled(
+                        "Manage Nodes               ",
+                        Style::default().fg(EUCALYPTUS),
+                    ),
+                    Span::styled("[D] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled(
+                        "Beta Rewards Programme      ",
+                        Style::default().fg(VERY_LIGHT_AZURE),
+                    ),
+                    Span::styled("[Q] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled("Quit", Style::default().fg(EUCALYPTUS)),
                 ]);
 
                 (line1, line2)
             }
             Scene::Options => (Line::from("none"), Line::from("none")),
             Scene::DiscordUsernameInputBox => {
-                let line1 = Line::from(" ⏎ Accept, [Esc] Cancel");
-                let line2 = Line::from(" ⏎ Accept, [Esc] Cancel");
+                let line1 = Line::from(" ⏎ Accept");
+                let line2 = Line::from(" [Esc] Cancel");
 
                 (line1, line2)
             }
             Scene::ResourceAllocationInputBox => {
-                let line1 = Line::from(" ⏎ Accept, [Esc] Cancel.");
-                let line2 = Line::from(" ⏎ Accept, [Esc] Cancel.");
+                let line1 = Line::from(" ⏎ Accept");
+                let line2 = Line::from(" [Esc] Cancel");
                 (line1, line2)
             }
         };
