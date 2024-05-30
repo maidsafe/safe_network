@@ -8,14 +8,14 @@
 
 use crate::target_arch::sleep;
 use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
-use prometheus_client::{
-    metrics::{counter::Counter, family::Family, gauge::Gauge},
-    registry::Registry,
-};
+#[cfg(feature = "upnp")]
+use prometheus_client::metrics::{counter::Counter, family::Family};
+use prometheus_client::{metrics::gauge::Gauge, registry::Registry};
 use sysinfo::{Pid, ProcessRefreshKind, System};
 use tokio::time::Duration;
 
 // Implementation to record `libp2p::upnp::Event` metrics
+#[cfg(feature = "upnp")]
 mod upnp;
 
 const UPDATE_INTERVAL: Duration = Duration::from_secs(15);
