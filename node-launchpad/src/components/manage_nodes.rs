@@ -16,6 +16,7 @@ use tui_input::{backend::crossterm::EventHandler, Input};
 use crate::{
     action::Action,
     mode::{InputMode, Scene},
+    style::{EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
 };
 
 use super::{utils::centered_rect_fixed, Component};
@@ -24,8 +25,8 @@ pub const GB_PER_NODE: usize = 5;
 pub const MB: usize = 1000 * 1000;
 pub const GB: usize = MB * 1000;
 
-pub struct ResourceAllocationInputBox {
-    /// Whether the component is active right now, capturing keystrokes + draw things.
+pub struct ManageNodes {
+    /// Whether the component is active right now, capturing keystrokes + drawing things.
     active: bool,
     available_disk_space_bytes: usize,
     allocated_space_input: Input,
@@ -33,7 +34,7 @@ pub struct ResourceAllocationInputBox {
     old_value: String,
 }
 
-impl ResourceAllocationInputBox {
+impl ManageNodes {
     pub fn new(allocated_space: usize) -> Result<Self> {
         let new = Self {
             active: false,
@@ -67,7 +68,7 @@ impl ResourceAllocationInputBox {
     }
 }
 
-impl Component for ResourceAllocationInputBox {
+impl Component for ManageNodes {
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         if !self.active {
             return Ok(vec![]);
@@ -159,7 +160,7 @@ impl Component for ResourceAllocationInputBox {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::ResourceAllocationInputBox => {
+                Scene::ManageNodes => {
                     self.active = true;
                     self.old_value = self.allocated_space_input.value().to_string();
                     // set to entry input mode as we want to handle everything within our handle_key_events
@@ -181,54 +182,117 @@ impl Component for ResourceAllocationInputBox {
             return Ok(());
         }
 
-        let layer_zero = centered_rect_fixed(40, 5, area);
-
+        let layer_zero = centered_rect_fixed(52, 15, area);
         let layer_one = Layout::new(
             Direction::Vertical,
             [
-                // for the layer 0 border
+                // for the pop_up_border
                 Constraint::Length(2),
                 // for the input field
-                Constraint::Min(1),
-                // for help text
                 Constraint::Length(1),
-                // border
+                // for the info field telling how much gb used
+                Constraint::Length(1),
+                // gap before help
+                Constraint::Length(1),
+                // for the help
+                Constraint::Length(3),
+                // for the dash
+                Constraint::Min(1),
+                // for the buttons
+                Constraint::Length(1),
+                // for the pop_up_border
                 Constraint::Length(1),
             ],
         )
         .split(layer_zero);
-
-        // layer zero
-        let available_space_gb = self.available_disk_space_bytes / GB;
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_type(BorderType::Double)
-                .border_style(Style::new().bold())
-                .title(format!(
-                    " Allocate space ({available_space_gb} GB available) ",
-                ))
-                .title_alignment(Alignment::Center),
+                .title("Manage Nodes")
+                .padding(Padding::uniform(2))
+                .border_style(Style::new().fg(GHOST_WHITE)),
         );
-
         f.render_widget(Clear, layer_zero);
-        f.render_widget(pop_up_border, layer_zero);
 
-        // layer one - 1
-        let width = layer_one[1].width.max(3) - 3;
+        // ==== input field ====
+        let layer_input_field = Layout::new(
+            Direction::Horizontal,
+            [
+                // for the gap
+                Constraint::Min(5),
+                // Start
+                Constraint::Length(5),
+                // Input box
+                Constraint::Length(5),
+                // Nodes(s)
+                Constraint::Length(8),
+                // gap
+                Constraint::Min(5),
+            ],
+        )
+        .split(layer_one[1]);
 
+        let start = Paragraph::new("Start").style(Style::default().fg(GHOST_WHITE));
+        f.render_widget(start, layer_input_field[1]);
+
+        let width = layer_input_field[2].width.max(3) - 3;
         let scroll = self.allocated_space_input.visual_scroll(width as usize);
         let input = Paragraph::new(self.allocated_space_input.value())
+            .style(Style::new().fg(VIVID_SKY_BLUE))
             .scroll((0, scroll as u16))
             .alignment(Alignment::Center);
 
-        f.render_widget(input, layer_one[1]);
+        f.render_widget(input, layer_input_field[2]);
 
-        f.render_widget(
-            Paragraph::new(format!(" (Enter in {GB_PER_NODE}GB increments)↑↓ "))
-                .alignment(Alignment::Center),
-            layer_one[3],
-        );
+        let nodes_text = Paragraph::new("Node(s)").style(Style::default().fg(GHOST_WHITE));
+        f.render_widget(nodes_text, layer_input_field[3]);
+
+        // ==== info field ====
+        let available_space_gb = self.available_disk_space_bytes / GB;
+        let info_style = Style::default().fg(VIVID_SKY_BLUE);
+        let info = Line::from(vec![
+            Span::styled("Using", info_style),
+            Span::styled(
+                format!(" {}GB ", self.allocated_space_input.value()),
+                info_style.bold(),
+            ),
+            Span::styled(
+                format!("of {available_space_gb}GB available space"),
+                info_style,
+            ),
+        ]);
+        let info = Paragraph::new(info).alignment(Alignment::Center);
+        f.render_widget(info, layer_one[2]);
+
+        // ==== help ====
+        let help = Paragraph::new("  Note: Each node will use a small amount of CPU\n  Memory and Network Bandwidth. We recommend\n  starting no more than 5 at a time.")
+            .style(Style::default().fg(GHOST_WHITE));
+        f.render_widget(help, layer_one[4]);
+
+        // ==== dash ====
+        let dash = Block::new()
+            .borders(Borders::BOTTOM)
+            .border_style(Style::new().fg(GHOST_WHITE));
+        f.render_widget(dash, layer_one[5]);
+
+        // ==== buttons ====
+        let buttons_layer =
+            Layout::horizontal(vec![Constraint::Percentage(45), Constraint::Percentage(55)])
+                .split(layer_one[6]);
+
+        let button_no = Line::from(vec![Span::styled(
+            "  Close [Esc]",
+            Style::default().fg(LIGHT_PERIWINKLE),
+        )]);
+        f.render_widget(button_no, buttons_layer[0]);
+        let button_yes = Line::from(vec![Span::styled(
+            "Start Node(s) [Enter]  ",
+            Style::default().fg(EUCALYPTUS),
+        )]);
+        let button_yes = Paragraph::new(button_yes).alignment(Alignment::Right);
+        f.render_widget(button_yes, buttons_layer[1]);
+
+        f.render_widget(pop_up_border, layer_zero);
 
         Ok(())
     }

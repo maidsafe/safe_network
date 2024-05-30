@@ -14,7 +14,7 @@ pub enum Scene {
     Home,
     Options,
     BetaProgramme,
-    ResourceAllocationInputBox,
+    ManageNodes,
     HelpPopUp,
 }
 

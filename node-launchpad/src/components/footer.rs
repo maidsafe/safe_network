@@ -81,9 +81,9 @@ impl Component for Footer {
         };
 
         let (line1, line2) = match self.current_scene {
-            Scene::Home | Scene::BetaProgramme | Scene::HelpPopUp => {
+            Scene::Home | Scene::BetaProgramme | Scene::HelpPopUp | Scene::ManageNodes => {
                 let line1 = Line::from(vec![
-                    Span::styled(" [Ctrl+G] ", command_style),
+                    Span::styled(" [Ctrl+S] ", command_style),
                     Span::styled("Start all Nodes       ", text_style),
                     Span::styled("[Ctrl+X] ", command_style),
                     Span::styled("Stop all Nodes          ", text_style),
@@ -92,11 +92,8 @@ impl Component for Footer {
                 ]);
 
                 let line2 = Line::from(vec![
-                    Span::styled(" [O] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled(
-                        "Manage Nodes               ",
-                        Style::default().fg(EUCALYPTUS),
-                    ),
+                    Span::styled(" [Ctrl+G] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled("Manage Nodes          ", Style::default().fg(EUCALYPTUS)),
                     Span::styled("[Ctrl+B] ", Style::default().fg(GHOST_WHITE)),
                     Span::styled(
                         "Beta Rewards Programmes ",
@@ -109,11 +106,6 @@ impl Component for Footer {
                 (line1, line2)
             }
             Scene::Options => (Line::from("none"), Line::from("none")),
-            Scene::ResourceAllocationInputBox => {
-                let line1 = Line::from(" ⏎ Accept");
-                let line2 = Line::from(" [Esc] Cancel");
-                (line1, line2)
-            }
         };
 
         f.render_widget(Paragraph::new(line1), layer_one[1]);

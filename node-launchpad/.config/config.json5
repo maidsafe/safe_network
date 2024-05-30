@@ -1,9 +1,9 @@
 {
   "keybindings": {
     "Home": {
-      "<Ctrl-g>": {"HomeActions":"StartNodes"},
-      "<Ctrl-G>": {"HomeActions":"StartNodes"},
-      "<Ctrl-Shift-g>": {"HomeActions":"StartNodes"},
+      "<Ctrl-s>": {"HomeActions":"StartNodes"},
+      "<Ctrl-S>": {"HomeActions":"StartNodes"},
+      "<Ctrl-Shift-s>": {"HomeActions":"StartNodes"},
       "<Ctrl-x>": {"HomeActions":"StopNodes"}, 
       "<Ctrl-X>": {"HomeActions":"StopNodes"},
       "<Ctrl-Shift-x>": {"HomeActions":"StopNodes"},
@@ -17,9 +17,10 @@
       "<Ctrl-b>": {"HomeActions":"TriggerBetaProgramme"},
       "<Ctrl-B>": {"HomeActions":"TriggerBetaProgramme"},
       "<Ctrl-Shift-b>": {"HomeActions":"TriggerBetaProgramme"},
-      "<o>": {"HomeActions":"TriggerResourceAllocationInputBox"},
-      "<O>": {"HomeActions":"TriggerResourceAllocationInputBox"},
-      "<Shift-o>": {"HomeActions":"TriggerResourceAllocationInputBox"},
+      "<Ctrl-g>": {"HomeActions":"TriggerManageNodes"},
+      "<Ctrl-G>": {"HomeActions":"TriggerManageNodes"},
+      "<Ctrl-Shift-g>": {"HomeActions":"TriggerManageNodes"},
+      "<Shift-o>": {"HomeActions":"TriggerManageNodes"},
       "<h>": {"HomeActions":"TriggerHelp"},
       "<H>": {"HomeActions":"TriggerHelp"},
       "<Shift-h>": {"HomeActions":"TriggerHelp"},
