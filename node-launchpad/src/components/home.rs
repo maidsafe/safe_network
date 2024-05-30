@@ -84,7 +84,6 @@ impl Home {
 
     /// Tries to trigger the update of node stats if the last update was more than `NODE_STAT_UPDATE_INTERVAL` ago.
     /// The result is sent via the HomeActions::NodesStatsObtained action.
-    // todo: the initial fetch has to happen as soon as we have the action_sender allocated.
     fn try_update_node_stats(&mut self, force_update: bool) -> Result<()> {
         if self.node_stats.last_update.elapsed() > NODE_STAT_UPDATE_INTERVAL || force_update {
             self.node_stats.last_update = Instant::now();
@@ -107,7 +106,7 @@ impl Home {
             .filter(|node| node.status != ServiceStatus::Removed)
             .collect();
         info!(
-            "Loaded node registry. Runnign nodes: {:?}",
+            "Loaded node registry. Running nodes: {:?}",
             self.node_services.len()
         );
 
@@ -410,8 +409,9 @@ impl Component for Home {
             // "todo: display a table".to_string()
         };
 
-        // Node List
-        let rows: Vec<_> = self
+        // ==== Node Status =====
+
+        let node_rows: Vec<_> = self
             .node_services
             .iter()
             .filter_map(|n| {
@@ -419,43 +419,49 @@ impl Component for Home {
                 if n.status == ServiceStatus::Removed {
                     return None;
                 }
-                let service_name = n.service_name.clone();
                 let peer_id = peer_id.map(|p| p.to_string()).unwrap_or("-".to_string());
                 let status = format!("{:?}", n.status);
 
-                let row = vec![service_name, peer_id, status];
+                let row = vec![peer_id, status];
                 Some(Row::new(row))
             })
             .collect();
 
-        let widths = [
-            Constraint::Max(15),
-            Constraint::Min(30),
-            Constraint::Max(10),
-        ];
-        // give green borders if we are running
-        let table_border_style = if self.get_running_nodes().len() > 1 {
-            Style::default().green()
+        if node_rows.is_empty() {
+            f.render_widget(
+                Paragraph::new("Nodes will appear here when added").block(
+                    Block::default()
+                        .title("Node Status")
+                        .borders(Borders::ALL)
+                        .padding(Padding::uniform(1)),
+                ),
+                layer_zero[2],
+            );
         } else {
-            Style::default()
-        };
-        let table = Table::new(rows, widths)
-            .column_spacing(2)
-            .header(
-                Row::new(vec!["Service", "PeerId", "Status"])
-                    .style(Style::new().bold())
-                    .bottom_margin(1),
-            )
-            .highlight_style(Style::new().reversed())
-            .block(
-                Block::default()
-                    .title("Node list")
-                    .borders(Borders::ALL)
-                    .border_style(table_border_style),
-            )
-            .highlight_symbol(">");
-
-        f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
+            let node_widths = [Constraint::Min(30), Constraint::Max(10)];
+            // give green borders if we are running
+            let table_border_style = if self.get_running_nodes().len() > 1 {
+                Style::default().green()
+            } else {
+                Style::default()
+            };
+            let table = Table::new(node_rows, node_widths)
+                .column_spacing(2)
+                .header(
+                    Row::new(vec!["PeerId", "Status"])
+                        .style(Style::new().bold())
+                        .bottom_margin(1),
+                )
+                .highlight_style(Style::new().reversed())
+                .block(
+                    Block::default()
+                        .title("Node Status")
+                        .borders(Borders::ALL)
+                        .border_style(table_border_style),
+                )
+                .highlight_symbol(">");
+            f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
+        }
 
         // popup
         if self.lock_registry {
