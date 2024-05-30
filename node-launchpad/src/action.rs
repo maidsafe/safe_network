@@ -45,7 +45,7 @@ pub enum HomeActions {
         space_used: u64,
     },
 
-    TriggerDiscordUsernameInputBox,
+    TriggerBetaProgramme,
     TriggerResourceAllocationInputBox,
 
     PreviousTableItem,
