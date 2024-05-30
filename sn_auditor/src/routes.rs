@@ -70,7 +70,7 @@ pub(crate) fn not_found() -> Result<Response<Cursor<Vec<u8>>>> {
 }
 
 pub(crate) async fn beta_rewards(dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>> {
-    let json = dag
+    let (json, _) = dag
         .beta_program_json()
         .await
         .map_err(|e| eyre!("Failed to get beta rewards JSON: {e}"))?;
