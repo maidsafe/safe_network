@@ -3,8 +3,10 @@
     "Home": {
       "<Ctrl-g>": {"HomeActions":"StartNodes"},
       "<Ctrl-G>": {"HomeActions":"StartNodes"},
+      "<Ctrl-Shift-g>": {"HomeActions":"StartNodes"},
       "<Ctrl-x>": {"HomeActions":"StopNodes"}, 
       "<Ctrl-X>": {"HomeActions":"StopNodes"},
+      "<Ctrl-Shift-x>": {"HomeActions":"StopNodes"},
 
       "up" : {"HomeActions":"PreviousTableItem"},
       "down": {"HomeActions":"NextTableItem"},
@@ -14,8 +16,14 @@
 
       "<Ctrl-b>": {"HomeActions":"TriggerBetaProgramme"},
       "<Ctrl-B>": {"HomeActions":"TriggerBetaProgramme"},
+      "<Ctrl-Shift-b>": {"HomeActions":"TriggerBetaProgramme"},
       "<o>": {"HomeActions":"TriggerResourceAllocationInputBox"},
       "<O>": {"HomeActions":"TriggerResourceAllocationInputBox"},
+      "<Shift-o>": {"HomeActions":"TriggerResourceAllocationInputBox"},
+      "<h>": {"HomeActions":"TriggerHelp"},
+      "<H>": {"HomeActions":"TriggerHelp"},
+      "<Shift-h>": {"HomeActions":"TriggerHelp"},
+
 
       "<q>": "Quit",
       "<Shift-q>": "Quit",

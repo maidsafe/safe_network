@@ -15,6 +15,7 @@ pub enum Scene {
     Options,
     BetaProgramme,
     ResourceAllocationInputBox,
+    HelpPopUp,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
