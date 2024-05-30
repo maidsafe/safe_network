@@ -30,11 +30,13 @@ use warp::{
 };
 
 #[cfg(feature = "initial-data")]
+use autonomi::FilesUploader;
+#[cfg(feature = "initial-data")]
 use color_eyre::eyre;
 #[cfg(feature = "initial-data")]
-use sn_client::WalletClient;
+use sn_client::{UploadCfg, BATCH_SIZE};
 #[cfg(feature = "initial-data")]
-use sn_transfers::HotWallet;
+use sn_protocol::storage::RetryStrategy;
 #[cfg(feature = "initial-data")]
 use tokio::{fs, io::AsyncWriteExt};
 
@@ -68,9 +70,7 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
 
     #[cfg(feature = "initial-data")]
     {
-        // reload wallet for uploading
-        let wallet = load_account_wallet_or_create_with_mnemonic(&root_dir, None)?;
-        upload_initial_data(client, wallet).await?;
+        upload_initial_data(client, &root_dir).await?;
     }
 
     startup_server(client.clone()).await
@@ -78,9 +78,7 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
 
 #[cfg(feature = "initial-data")]
 /// Trigger one by one uploading of intitial data packets to the entwork.
-async fn upload_initial_data(client: &Client, wallet: HotWallet) -> Result<()> {
-    let _wallet_client = WalletClient::new(client.clone(), wallet);
-
+async fn upload_initial_data(client: &Client, root_dir: &Path) -> Result<()> {
     let urls = vec![
         "https://releases.ubuntu.com/23.04/ubuntu-23.04-desktop-amd64.iso",
         "https://releases.ubuntu.com/23.04/ubuntu-23.04-live-server-amd64.iso",
@@ -116,13 +114,54 @@ async fn upload_initial_data(client: &Client, wallet: HotWallet) -> Result<()> {
     }
 
     let results = futures::future::join_all(download_tasks).await;
+    let mut download_files = vec![];
     results.into_iter().for_each(|res| match res {
-        Ok(Ok(fname)) => info!("Download completed successfully, file written to {fname:?}"),
+        Ok(Ok(fname)) => {
+            info!("Download completed successfully, file written to {fname:?}");
+            println!("Download completed successfully, file written to {fname:?}");
+            download_files.push(fname);
+        }
         Ok(Err(e)) => error!("Error downloading file: {}", e),
         Err(e) => error!("Task panicked: {}", e),
     });
-    // TODO: move files uploader from cli (filesuploader)-> client
-    // Then use that for uploading each of these files to the network, one by one.
+
+    let upload_cfg = UploadCfg {
+        batch_size: BATCH_SIZE,
+        verify_store: true,
+        retry_strategy: RetryStrategy::Quick,
+        ..Default::default()
+    };
+
+    for file_path in download_files {
+        let files_uploader = FilesUploader::new(client.clone(), root_dir.to_path_buf())
+            .set_make_data_public(true)
+            .set_upload_cfg(upload_cfg)
+            .insert_path(&file_path);
+
+        let summary = files_uploader.start_upload().await?;
+
+        info!(
+            "File {file_path:?} uploaded completed with summary {:?}",
+            summary.upload_summary
+        );
+        println!(
+            "File {file_path:?} uploaded completed with summary {:?}",
+            summary.upload_summary
+        );
+
+        for (_, file_name, head_address) in summary.completed_files.iter() {
+            info!(
+                "Head address of {file_name:?} is {:?}",
+                head_address.to_hex()
+            );
+            println!(
+                "Head address of {file_name:?} is {:?}",
+                head_address.to_hex()
+            );
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(600));
+    }
 
     Ok(())
 }
