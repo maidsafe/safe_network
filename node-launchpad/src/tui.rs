@@ -6,11 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{
-    ops::{Deref, DerefMut},
-    time::Duration,
-};
-
 use color_eyre::eyre::Result;
 use crossterm::{
     cursor,
@@ -18,11 +13,16 @@ use crossterm::{
         DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
         Event as CrosstermEvent, KeyEvent, KeyEventKind, MouseEvent,
     },
+    style::{Color, SetBackgroundColor},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use futures::{FutureExt, StreamExt};
 use ratatui::backend::CrosstermBackend as Backend;
 use serde::{Deserialize, Serialize};
+use std::{
+    ops::{Deref, DerefMut},
+    time::Duration,
+};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
     task::JoinHandle,
@@ -139,12 +139,14 @@ impl Tui {
                             _event_tx.send(Event::Mouse(mouse)).unwrap();
                           },
                           CrosstermEvent::Resize(x, y) => {
+                            Self::set_background_color();
                             _event_tx.send(Event::Resize(x, y)).unwrap();
                           },
                           CrosstermEvent::FocusLost => {
                             _event_tx.send(Event::FocusLost).unwrap();
                           },
                           CrosstermEvent::FocusGained => {
+                            Self::set_background_color();
                             _event_tx.send(Event::FocusGained).unwrap();
                           },
                           CrosstermEvent::Paste(s) => {
@@ -162,6 +164,8 @@ impl Tui {
                       _event_tx.send(Event::Tick).unwrap();
                   },
                   _ = render_delay => {
+                    // todo: background color is written on every render, is this okay?
+                    Self::set_background_color();
                       _event_tx.send(Event::Render).unwrap();
                   },
                 }
@@ -188,7 +192,17 @@ impl Tui {
 
     pub fn enter(&mut self) -> Result<()> {
         crossterm::terminal::enable_raw_mode()?;
-        crossterm::execute!(io(), EnterAlternateScreen, cursor::Hide)?;
+        let (background_color, reset) = Self::get_background_color();
+
+        crossterm::execute!(
+            io(),
+            reset,
+            background_color,
+            EnterAlternateScreen,
+            reset,
+            background_color,
+            cursor::Hide
+        )?;
         if self.mouse {
             crossterm::execute!(io(), EnableMouseCapture)?;
         }
@@ -233,6 +247,20 @@ impl Tui {
 
     pub async fn next(&mut self) -> Option<Event> {
         self.event_rx.recv().await
+    }
+
+    fn set_background_color() {
+        let (background_color, reset) = Self::get_background_color();
+        let _ = crossterm::execute!(io(), reset, background_color,);
+    }
+
+    /// Returns the background color and the reset color.
+    fn get_background_color() -> (SetBackgroundColor, SetBackgroundColor) {
+        let background_color: SetBackgroundColor =
+            SetBackgroundColor(crossterm::style::Color::AnsiValue(234));
+        let reset = SetBackgroundColor(Color::Reset);
+
+        (background_color, reset)
     }
 }
 
