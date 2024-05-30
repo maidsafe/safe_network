@@ -216,9 +216,7 @@ impl Component for Home {
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
                 }
-                Scene::DiscordUsernameInputBox | Scene::ResourceAllocationInputBox => {
-                    self.active = true
-                }
+                Scene::BetaProgramme | Scene::ResourceAllocationInputBox => self.active = true,
                 _ => self.active = false,
             },
             Action::StoreAllocatedDiskSpace(space) => {
@@ -253,9 +251,7 @@ impl Component for Home {
                 }
                 if self.discord_username.is_empty() {
                     info!("Discord username not assigned. Ask for input.");
-                    return Ok(Some(Action::HomeActions(
-                        HomeActions::TriggerDiscordUsernameInputBox,
-                    )));
+                    return Ok(Some(Action::HomeActions(HomeActions::TriggerBetaProgramme)));
                 }
 
                 let node_count = self.allocated_disk_space / GB_PER_NODE;
@@ -307,8 +303,8 @@ impl Component for Home {
                 return Ok(Some(Action::HomeActions(HomeActions::StartNodes)));
             }
             // todo: should triggers go here? Make distinction between a component + a scene and how they interact.
-            Action::HomeActions(HomeActions::TriggerDiscordUsernameInputBox) => {
-                return Ok(Some(Action::SwitchScene(Scene::DiscordUsernameInputBox)));
+            Action::HomeActions(HomeActions::TriggerBetaProgramme) => {
+                return Ok(Some(Action::SwitchScene(Scene::BetaProgramme)));
             }
             Action::HomeActions(HomeActions::TriggerResourceAllocationInputBox) => {
                 return Ok(Some(Action::SwitchScene(Scene::ResourceAllocationInputBox)));
