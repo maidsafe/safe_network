@@ -50,11 +50,17 @@ pub struct Home {
     discord_username: String,
     // Currently the node registry file does not support concurrent actions and thus can lead to
     // inconsistent state. Another solution would be to have a file lock/db.
-    lock_registry: bool,
+    lock_registry: Option<LockRegistryState>,
     // Peers to pass into nodes for startup
     peers_args: PeersArgs,
     // If path is provided, we don't fetch the binary from the network
     safenode_path: Option<PathBuf>,
+}
+
+pub enum LockRegistryState {
+    StartingNodes,
+    StoppingNodes,
+    ResettingNodes,
 }
 
 impl Home {
@@ -230,14 +236,14 @@ impl Component for Home {
                 // todo: The discord_username popup should warn people that if nodes are running, they will be reset.
                 // And the earnings will be lost.
                 if reset_safenode_services {
-                    self.lock_registry = true;
+                    self.lock_registry = Some(LockRegistryState::ResettingNodes);
                     info!("Resetting safenode services because the discord username was reset.");
                     let action_sender = self.get_actions_sender()?;
                     reset_nodes(action_sender);
                 }
             }
             Action::HomeActions(HomeActions::StartNodes) => {
-                if self.lock_registry {
+                if self.lock_registry.is_some() {
                     error!("Registry is locked. Cannot start node now.");
                     return Ok(None);
                 }
@@ -246,12 +252,8 @@ impl Component for Home {
                     info!("Nodes to start not set. Ask for input.");
                     return Ok(Some(Action::HomeActions(HomeActions::TriggerManageNodes)));
                 }
-                if self.discord_username.is_empty() {
-                    info!("Discord username not assigned. Ask for input.");
-                    return Ok(Some(Action::HomeActions(HomeActions::TriggerBetaProgramme)));
-                }
 
-                self.lock_registry = true;
+                self.lock_registry = Some(LockRegistryState::StartingNodes);
                 let action_sender = self.get_actions_sender()?;
                 info!("Running maintain node count: {:?}", self.nodes_to_start);
 
@@ -264,13 +266,13 @@ impl Component for Home {
                 );
             }
             Action::HomeActions(HomeActions::StopNodes) => {
-                if self.lock_registry {
+                if self.lock_registry.is_some() {
                     error!("Registry is locked. Cannot stop node now.");
                     return Ok(None);
                 }
 
                 let running_nodes = self.get_running_nodes();
-                self.lock_registry = true;
+                self.lock_registry = Some(LockRegistryState::StoppingNodes);
                 let action_sender = self.get_actions_sender()?;
                 info!("Stopping node service: {running_nodes:?}");
 
@@ -288,11 +290,11 @@ impl Component for Home {
             }
             Action::HomeActions(HomeActions::StartNodesCompleted)
             | Action::HomeActions(HomeActions::StopNodesCompleted) => {
-                self.lock_registry = false;
+                self.lock_registry = None;
                 self.load_node_registry_and_update_states()?;
             }
             Action::HomeActions(HomeActions::ResetNodesCompleted) => {
-                self.lock_registry = false;
+                self.lock_registry = None;
                 self.load_node_registry_and_update_states()?;
 
                 // trigger start nodes.
@@ -339,7 +341,6 @@ impl Component for Home {
             ],
         )
         .split(area);
-        let popup_area = centered_rect_fixed(25, 3, area);
 
         // ==== Header ====
 
@@ -502,20 +503,39 @@ impl Component for Home {
             f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
         }
 
-        // popup
-        if self.lock_registry {
+        // ===== Popup =====
+
+        if let Some(registry_state) = &self.lock_registry {
+            let popup_area = centered_rect_fixed(50, 12, area);
             f.render_widget(Clear, popup_area);
-            f.render_widget(
-                Paragraph::new("Please wait...")
-                    .alignment(Alignment::Center)
-                    .block(
-                        Block::default()
-                            .borders(Borders::ALL)
-                            .border_type(BorderType::Double)
-                            .border_style(Style::new().bold()),
-                    ),
-                popup_area,
-            );
+            let popup_border =
+                Paragraph::new("Manage Nodes").block(Block::default().borders(Borders::ALL));
+
+            let popup_text = match registry_state {
+                LockRegistryState::StartingNodes => "Starting nodes...",
+                LockRegistryState::StoppingNodes => "Stopping nodes...",
+                LockRegistryState::ResettingNodes => "Resetting nodes...",
+            };
+            let centred_area = Layout::new(
+                Direction::Vertical,
+                vec![
+                    // border
+                    Constraint::Length(1),
+                    Constraint::Min(1),
+                    // our text goes here
+                    Constraint::Length(1),
+                    Constraint::Min(1),
+                    // border
+                    Constraint::Length(1),
+                ],
+            )
+            .split(popup_area)[2];
+            let text = Paragraph::new(popup_text)
+                .alignment(Alignment::Center)
+                .style(style::Style::default().fg(EUCALYPTUS));
+            f.render_widget(text, centred_area);
+
+            f.render_widget(popup_border, popup_area);
         }
 
         Ok(())
@@ -545,6 +565,7 @@ fn maintain_n_running_nodes(
     action_sender: UnboundedSender<Action>,
 ) {
     tokio::task::spawn_local(async move {
+        let owner = if owner.is_empty() { None } else { Some(owner) };
         if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
             false,
             count,
@@ -556,7 +577,7 @@ fn maintain_n_running_nodes(
             None,
             None,
             None,
-            Some(owner),
+            owner,
             peers_args,
             None,
             None,
