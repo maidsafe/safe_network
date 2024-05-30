@@ -17,7 +17,7 @@ use crate::{
     tui::{Event, Frame},
 };
 
-pub mod discord_username;
+pub mod beta_programme;
 pub mod footer;
 pub mod home;
 pub mod options;

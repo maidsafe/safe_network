@@ -4702,6 +4702,7 @@ dependencies = [
  "fs_extra",
  "futures",
  "human-panic",
+ "itertools 0.12.1",
  "json5",
  "lazy_static",
  "libc",
