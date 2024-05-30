@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use crate::{
     action::Action,
     components::{
-        discord_username::DiscordUsernameInputBox, footer::Footer, home::Home,
+        beta_programme::BetaProgramme, footer::Footer, home::Home,
         resource_allocation::ResourceAllocationInputBox, Component,
     },
     config::{AppData, Config},
@@ -53,8 +53,7 @@ impl App {
             safenode_path,
         )?;
         let config = Config::new()?;
-        let discord_username_input =
-            DiscordUsernameInputBox::new(app_data.discord_username.clone());
+        let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
         let resource_allocation_input =
             ResourceAllocationInputBox::new(app_data.allocated_disk_space)?;
         let footer = Footer::default();

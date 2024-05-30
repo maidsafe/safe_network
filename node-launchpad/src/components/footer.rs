@@ -81,12 +81,12 @@ impl Component for Footer {
         };
 
         let (line1, line2) = match self.current_scene {
-            Scene::Home => {
+            Scene::Home | Scene::DiscordUsernameInputBox => {
                 let line1 = Line::from(vec![
                     Span::styled(" [Ctrl+G] ", command_style),
                     Span::styled("Start all Nodes       ", text_style),
                     Span::styled("[Ctrl+X] ", command_style),
-                    Span::styled("Stop all Nodes         ", text_style),
+                    Span::styled("Stop all Nodes          ", text_style),
                     Span::styled("[H] ", Style::default().fg(GHOST_WHITE)),
                     Span::styled("Help", Style::default().fg(EUCALYPTUS)),
                 ]);
@@ -97,9 +97,9 @@ impl Component for Footer {
                         "Manage Nodes               ",
                         Style::default().fg(EUCALYPTUS),
                     ),
-                    Span::styled("[D] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled("[Ctrl+B] ", Style::default().fg(GHOST_WHITE)),
                     Span::styled(
-                        "Beta Rewards Programme      ",
+                        "Beta Rewards Programmes ",
                         Style::default().fg(VERY_LIGHT_AZURE),
                     ),
                     Span::styled("[Q] ", Style::default().fg(GHOST_WHITE)),
@@ -109,12 +109,6 @@ impl Component for Footer {
                 (line1, line2)
             }
             Scene::Options => (Line::from("none"), Line::from("none")),
-            Scene::DiscordUsernameInputBox => {
-                let line1 = Line::from(" ⏎ Accept");
-                let line2 = Line::from(" [Esc] Cancel");
-
-                (line1, line2)
-            }
             Scene::ResourceAllocationInputBox => {
                 let line1 = Line::from(" ⏎ Accept");
                 let line2 = Line::from(" [Esc] Cancel");

@@ -12,8 +12,8 @@
       "tab": {"TabActions":"NextTab"},
       "<Shift-tab>": {"TabActions":"PreviousTab"},
 
-      "<d>": {"HomeActions":"TriggerDiscordUsernameInputBox"},
-      "<D>": {"HomeActions":"TriggerDiscordUsernameInputBox"},
+      "<Ctrl-b>": {"HomeActions":"TriggerDiscordUsernameInputBox"},
+      "<Ctrl-B>": {"HomeActions":"TriggerDiscordUsernameInputBox"},
       "<o>": {"HomeActions":"TriggerResourceAllocationInputBox"},
       "<O>": {"HomeActions":"TriggerResourceAllocationInputBox"},
 
