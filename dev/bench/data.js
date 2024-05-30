@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717033487014,
+  "lastUpdate": 1717046609110,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a95398cd00c25fa5b01bb29dea14efa9e8ee9b82",
-          "message": "chore(networking): clear all stats afgter we log them",
-          "timestamp": "2024-02-12T14:31:29+01:00",
-          "tree_id": "2904615cf42db9382d49056d8192d4aafd0df4c6",
-          "url": "https://github.com/maidsafe/safe_network/commit/a95398cd00c25fa5b01bb29dea14efa9e8ee9b82"
-        },
-        "date": 1707745290217,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2363515135189347,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8271178135473995,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.292185953378656,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.4035709962234,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "478256a05bb0063ed5f25271d263a925331b496f",
+          "message": "feat: integrate DAG crawling fixes from Josh and Qi",
+          "timestamp": "2024-05-30T04:38:57Z",
+          "tree_id": "c09f553847edb8569fe015c9f519c59561da9cde",
+          "url": "https://github.com/maidsafe/safe_network/commit/478256a05bb0063ed5f25271d263a925331b496f"
+        },
+        "date": 1717046604239,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2463216439234588,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6861277545557982,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.28253705469951,
             "unit": "MiB/s"
           }
         ]
