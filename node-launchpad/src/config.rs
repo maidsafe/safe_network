@@ -19,7 +19,7 @@ const CONFIG: &str = include_str!("../.config/config.json5");
 #[derive(Clone, Debug, Deserialize, Default, Serialize)]
 pub struct AppData {
     pub discord_username: String,
-    pub allocated_disk_space: usize,
+    pub nodes_to_start: usize,
 }
 
 impl AppData {
