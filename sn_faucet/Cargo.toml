@@ -11,9 +11,10 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.4.19"
 
 [features]
-default = ["gifting"]
+default = ["gifting", "initial-data"]
 distribution = ["base64", "bitcoin", "minreq"]
 gifting = []
+initial-data = ["reqwest", "futures"]
 
 [[bin]]
 path = "src/main.rs"
@@ -45,6 +46,8 @@ tokio = { version = "1.32.0", features = ["parking_lot", "rt"] }
 tracing = { version = "~0.1.26" }
 url = "2.5.0"
 fs2 = "0.4.3"
+reqwest = { version = "0.12.4", optional = true }
+futures = { version = "0.3.30", optional = true }
 
 [lints]
 workspace = true
