@@ -42,9 +42,17 @@ pub struct SpendDagDb {
     client: Option<Client>,
     pub(crate) path: PathBuf,
     dag: Arc<RwLock<SpendDag>>,
-    forwarded_payments: Arc<RwLock<ForwardedPayments>>,
+    beta_tracking: Arc<RwLock<BetaTracking>>,
     beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
     encryption_sk: Option<SecretKey>,
+}
+
+#[derive(Clone, Default)]
+struct BetaTracking {
+    forwarded_payments: ForwardedPayments,
+    processed_spends: u64,
+    total_accumulated_utxo: u64,
+    total_on_track_utxo: u64,
 }
 
 /// Map of Discord usernames to their tracked forwarded payments
@@ -86,7 +94,7 @@ impl SpendDagDb {
             client: Some(client),
             path,
             dag: Arc::new(RwLock::new(dag)),
-            forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
+            beta_tracking: Arc::new(RwLock::new(Default::default())),
             beta_participants: Arc::new(RwLock::new(BTreeMap::new())),
             encryption_sk,
         })
@@ -108,7 +116,7 @@ impl SpendDagDb {
             client: None,
             path,
             dag: Arc::new(RwLock::new(dag)),
-            forwarded_payments: Arc::new(RwLock::new(BTreeMap::new())),
+            beta_tracking: Arc::new(RwLock::new(Default::default())),
             beta_participants: Arc::new(RwLock::new(BTreeMap::new())),
             encryption_sk,
         })
@@ -198,24 +206,32 @@ impl SpendDagDb {
         Ok(())
     }
 
-    /// Returns the current state of the beta program in JSON format, including total rewards for each participant
-    pub(crate) fn beta_program_json(&self) -> Result<String> {
-        let r_handle = self.forwarded_payments.clone();
-        let beta_rewards = r_handle.read();
-
-        let participants =
-            beta_rewards.map_err(|e| eyre!("Failed to get beta rewards read lock: {e}"))?;
+    /// Returns the current state of the beta program in JSON format,
+    /// including total rewards for each participant.
+    /// Also returns the current tracking performance in readable format.
+    pub(crate) fn beta_program_json(&self) -> Result<(String, String)> {
+        let beta_tracking = self.beta_tracking
+            .read()
+            .map_err(|e| eyre!("Failed to get beta rewards read lock: {e}"))?;
         let mut rewards_output = vec![];
-        for (participant, rewards) in participants.iter() {
+        let mut total_hits = 0 as u64;
+        let mut total_amount = 0 as u64;
+        for (participant, rewards) in beta_tracking.forwarded_payments.iter() {
+            total_hits += rewards.len() as u64;
             let total_rewards = rewards
                 .iter()
                 .map(|(_, amount)| amount.as_nano())
                 .sum::<u64>();
+            total_amount += total_rewards;
 
             rewards_output.push((participant.clone(), total_rewards));
         }
         let json = serde_json::to_string_pretty(&rewards_output)?;
-        Ok(json)
+        let tracking_performance = format!("processed_spends: {}\ntotal_accumulated_utxo:{}\ntotal_on_track_utxo:{}\nskipped_utxo:{}\nrepeated_utxo:{}\ntotal_hits:{}\ntotal_amount:{}",
+            beta_tracking.processed_spends, beta_tracking.total_accumulated_utxo, beta_tracking.total_on_track_utxo, beta_tracking.total_accumulated_utxo - beta_tracking.total_on_track_utxo,
+            beta_tracking.total_on_track_utxo - beta_tracking.processed_spends, total_hits, total_amount
+            );
+        Ok((json, tracking_performance))
     }
 
     /// Track new beta participants. This just add the participants to the list of tracked participants.
@@ -234,11 +250,13 @@ impl SpendDagDb {
         }
         // initialize forwarded payments
         {
-            let mut fwd_payments = self
-                .forwarded_payments
+            let mut beta_tracking = self
+                .beta_tracking
                 .write()
                 .map_err(|e| eyre!("Failed to get forwarded payments write lock: {e}"))?;
-            fwd_payments.extend(participants.into_iter().map(|p| (p, BTreeSet::new())));
+            beta_tracking
+                .forwarded_payments
+                .extend(participants.into_iter().map(|p| (p, BTreeSet::new())));
         }
         Ok(())
     }
@@ -271,8 +289,8 @@ impl SpendDagDb {
     /// Backup beta rewards to a timestamped json file
     pub(crate) fn backup_rewards(&self) -> Result<()> {
         info!("Beta rewards backup requested");
-        let json = match self.beta_program_json() {
-            Ok(j) => j,
+        let (json, tracking_performance) = match self.beta_program_json() {
+            Ok(r) => r,
             Err(e) => bail!("Failed to get beta rewards json: {e}"),
         };
 
@@ -284,6 +302,13 @@ impl SpendDagDb {
         info!("Writing rewards backup to {backup_file:?}");
         std::fs::write(backup_file, json)
             .map_err(|e| eyre!("Could not write rewards backup to disk: {e}"))?;
+
+        let backup_file = self
+            .path
+            .join(format!("tracking_performance_{timestamp}.log"));
+        info!("Writing tracking performance to {backup_file:?}");
+        std::fs::write(backup_file, tracking_performance)
+            .map_err(|e| eyre!("Could not write tracking performance to disk: {e}"))?;
 
         Ok(())
     }
@@ -366,6 +391,10 @@ impl SpendDagDb {
 
     /// Helper function to process each spend and update relevant data structures.
     async fn process_spend(&self, addresses: &mut BTreeSet<SpendAddress>, spend: SignedSpend) {
+        let mut beta_tracking = self.beta_tracking.write().unwrap();
+        beta_tracking.total_accumulated_utxo += 1;
+        beta_tracking.processed_spends += spend.spend.spent_tx.outputs.len() as u64;
+
         // Filter out royalty outputs
         let royalty_pubkeys: BTreeSet<_> = spend
             .spend
@@ -400,6 +429,7 @@ impl SpendDagDb {
         let user_name_hash = match spend.reason().get_sender_hash(&sk) {
             Some(n) => n,
             None => {
+                beta_tracking.total_on_track_utxo += new_utxos.len() as u64;
                 addresses.extend(new_utxos);
                 return;
             }
@@ -409,11 +439,9 @@ impl SpendDagDb {
         let amount = spend.spend.amount;
         let beta_participants_read = self.beta_participants.read().unwrap();
 
-        let mut self_payments = self.forwarded_payments.write().unwrap();
-
         if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
             trace!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
-            self_payments
+            beta_tracking.forwarded_payments
                 .entry(user_name.to_owned())
                 .or_default()
                 .insert((addr, amount));
@@ -422,7 +450,7 @@ impl SpendDagDb {
                 "Found a forwarded reward for an unknown participant at {:?}: {user_name_hash:?}",
                 spend.address()
             );
-            self_payments
+            beta_tracking.forwarded_payments
                 .entry(format!("unknown participant: {user_name_hash:?}"))
                 .or_default()
                 .insert((addr, amount));
