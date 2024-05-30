@@ -64,7 +64,6 @@ impl NetworkMetrics {
             store_cost.clone(),
         );
 
-
         #[cfg(feature = "upnp")]
         let upnp_events = Family::default();
         #[cfg(feature = "upnp")]
