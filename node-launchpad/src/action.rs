@@ -46,7 +46,7 @@ pub enum HomeActions {
     },
 
     TriggerBetaProgramme,
-    TriggerResourceAllocationInputBox,
+    TriggerManageNodes,
     TriggerHelp,
 
     PreviousTableItem,

@@ -7,13 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    resource_allocation::{GB, MB},
+    manage_nodes::{GB, MB},
     utils::centered_rect_fixed,
     Component, Frame,
 };
 use crate::{
     action::{Action, FooterActions, HomeActions},
-    components::resource_allocation::GB_PER_NODE,
+    components::manage_nodes::GB_PER_NODE,
     config::Config,
     mode::{InputMode, Scene},
     style::{COOL_GREY, EUCALYPTUS, GHOST_WHITE, VERY_LIGHT_AZURE},
@@ -216,9 +216,7 @@ impl Component for Home {
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
                 }
-                Scene::BetaProgramme | Scene::ResourceAllocationInputBox | Scene::HelpPopUp => {
-                    self.active = true
-                }
+                Scene::BetaProgramme | Scene::ManageNodes | Scene::HelpPopUp => self.active = true,
                 _ => self.active = false,
             },
             Action::StoreAllocatedDiskSpace(space) => {
@@ -247,9 +245,7 @@ impl Component for Home {
 
                 if self.allocated_disk_space == 0 {
                     info!("Disk space not allocated. Ask for input.");
-                    return Ok(Some(Action::HomeActions(
-                        HomeActions::TriggerResourceAllocationInputBox,
-                    )));
+                    return Ok(Some(Action::HomeActions(HomeActions::TriggerManageNodes)));
                 }
                 if self.discord_username.is_empty() {
                     info!("Discord username not assigned. Ask for input.");
@@ -308,8 +304,8 @@ impl Component for Home {
             Action::HomeActions(HomeActions::TriggerBetaProgramme) => {
                 return Ok(Some(Action::SwitchScene(Scene::BetaProgramme)));
             }
-            Action::HomeActions(HomeActions::TriggerResourceAllocationInputBox) => {
-                return Ok(Some(Action::SwitchScene(Scene::ResourceAllocationInputBox)));
+            Action::HomeActions(HomeActions::TriggerManageNodes) => {
+                return Ok(Some(Action::SwitchScene(Scene::ManageNodes)));
             }
             Action::HomeActions(HomeActions::TriggerHelp) => {
                 return Ok(Some(Action::SwitchScene(Scene::HelpPopUp)));

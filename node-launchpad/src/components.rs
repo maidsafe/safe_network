@@ -21,8 +21,8 @@ pub mod beta_programme;
 pub mod footer;
 pub mod help;
 pub mod home;
+pub mod manage_nodes;
 pub mod options;
-pub mod resource_allocation;
 pub mod tab;
 pub mod utils;
 

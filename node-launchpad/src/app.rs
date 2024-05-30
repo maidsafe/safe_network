@@ -12,7 +12,7 @@ use crate::{
     action::Action,
     components::{
         beta_programme::BetaProgramme, footer::Footer, help::HelpPopUp, home::Home,
-        resource_allocation::ResourceAllocationInputBox, Component,
+        manage_nodes::ManageNodes, Component,
     },
     config::{AppData, Config},
     mode::{InputMode, Scene},
@@ -54,8 +54,7 @@ impl App {
         )?;
         let config = Config::new()?;
         let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
-        let resource_allocation_input =
-            ResourceAllocationInputBox::new(app_data.allocated_disk_space)?;
+        let manage_nodes = ManageNodes::new(app_data.allocated_disk_space)?;
         let footer = Footer::default();
         let help = HelpPopUp::default();
 
@@ -68,7 +67,7 @@ impl App {
                 Box::new(footer),
                 Box::new(home),
                 Box::new(discord_username_input),
-                Box::new(resource_allocation_input),
+                Box::new(manage_nodes),
                 Box::new(help),
             ],
             should_quit: false,
