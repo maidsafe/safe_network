@@ -13,7 +13,7 @@ pub enum Scene {
     #[default]
     Home,
     Options,
-    DiscordUsernameInputBox,
+    BetaProgramme,
     ResourceAllocationInputBox,
 }
 

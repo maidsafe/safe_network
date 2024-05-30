@@ -140,7 +140,7 @@ impl Component for BetaProgramme {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::DiscordUsernameInputBox => {
+                Scene::BetaProgramme => {
                     self.active = true;
                     self.old_value = self.discord_input_filed.value().to_string();
                     // set to entry input mode as we want to handle everything within our handle_key_events
