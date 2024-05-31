@@ -64,7 +64,7 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path, fast_mode: bool) -> 
             println!("Found a local spend dag on disk, continuing from it...");
             if fast_mode {
                 client
-                    .spend_dag_continue_from_utxos(&mut dag, Default::default(), false)
+                    .spend_dag_continue_from_utxos(&mut dag, None, false)
                     .await;
             }
             dag
@@ -75,7 +75,7 @@ async fn gather_spend_dag(client: &Client, root_dir: &Path, fast_mode: bool) -> 
             let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
             if fast_mode {
                 client
-                    .spend_dag_build_from(genesis_addr, Default::default(), true)
+                    .spend_dag_build_from(genesis_addr, None, true)
                     .await?
             } else {
                 client.new_dag_with_genesis_only().await?
