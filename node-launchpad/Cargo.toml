@@ -42,12 +42,13 @@ libc = "0.2.148"
 log = "0.4.20"
 nix = { version = "0.28.0", features = ["user"] }
 pretty_assertions = "1.4.0"
+rand = "0.8.5"
 ratatui = { version = "0.26.0", features = ["serde", "macros", "unstable-widget-ref"] }
 serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.107"
 signal-hook = "0.3.17"
 sn-node-manager = { version = "0.8.0", path = "../sn_node_manager" }
-sn_peers_acquisition = { version = "0.2.12", path = "../sn_peers_acquisition" }
+sn_peers_acquisition = { version = "0.2.12", path = "../sn_peers_acquisition", features = ["network-contacts"]}
 sn-releases = "~0.2.5"
 sn_service_management = { version = "0.3.0", path = "../sn_service_management" }
 strip-ansi-escapes = "0.2.0"

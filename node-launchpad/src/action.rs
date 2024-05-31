@@ -39,6 +39,8 @@ pub enum HomeActions {
     StartNodesCompleted,
     StopNodesCompleted,
     ResetNodesCompleted,
+    SuccessfullyDetectedNatStatus,
+    ErrorWhileRunningNatDetection,
 
     NodesStatsObtained {
         wallet_balance: u64,
