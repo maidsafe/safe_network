@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717172132257,
+  "lastUpdate": 1717192067048,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1",
-          "message": "chore(refactor): move mod.rs files the modern way",
-          "timestamp": "2024-02-14T10:20:03Z",
-          "tree_id": "7081c2d2ffd9eb353633811c692a4a2fa529ea6a",
-          "url": "https://github.com/maidsafe/safe_network/commit/f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1"
-        },
-        "date": 1707909037575,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2468353265251593,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.808403162869221,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.103971940342774,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 55.92226783474292,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "c9a381ef7bba8bf9255ae1df006afb1ec33f8464",
+          "message": "chore: use new version of `service-manager` crate",
+          "timestamp": "2024-05-31T22:30:15+01:00",
+          "tree_id": "6aa229fba8ec7997735b7a9c0ce835de5471ebed",
+          "url": "https://github.com/maidsafe/safe_network/commit/c9a381ef7bba8bf9255ae1df006afb1ec33f8464"
+        },
+        "date": 1717192061516,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2562116858662704,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.665303849371759,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.28065068685349,
             "unit": "MiB/s"
           }
         ]
