@@ -55,6 +55,7 @@ pub async fn restart_node_service(
                 )
             })?;
         let install_ctx = InstallNodeServiceCtxBuilder {
+            autostart: current_node_clone.auto_restart,
             bootstrap_peers: node_registry.bootstrap_peers.clone(),
             data_dir_path: current_node_clone.data_dir_path.clone(),
             env_variables: node_registry.environment_variables.clone(),
@@ -162,6 +163,7 @@ pub async fn restart_node_service(
         };
 
         let install_ctx = InstallNodeServiceCtxBuilder {
+            autostart: current_node_clone.auto_restart,
             bootstrap_peers: node_registry.bootstrap_peers.clone(),
             data_dir_path: data_dir_path.clone(),
             env_variables: node_registry.environment_variables.clone(),
@@ -185,6 +187,7 @@ pub async fn restart_node_service(
         })?;
 
         let mut node = NodeServiceData {
+            auto_restart: current_node_clone.auto_restart,
             connected_peers: None,
             data_dir_path,
             genesis: current_node_clone.genesis,

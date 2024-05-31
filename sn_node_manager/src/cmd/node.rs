@@ -36,6 +36,7 @@ use tracing::debug;
 
 /// Returns the added service names
 pub async fn add(
+    auto_restart: bool,
     auto_set_nat_flags: bool,
     count: Option<u16>,
     data_dir_path: Option<PathBuf>,
@@ -121,6 +122,7 @@ pub async fn add(
     };
 
     let options = AddNodeServiceOptions {
+        auto_restart,
         auto_set_nat_flags,
         bootstrap_peers,
         count,
@@ -449,6 +451,7 @@ pub async fn upgrade(
             &node_registry.environment_variables
         };
         let options = UpgradeOptions {
+            auto_restart: false,
             bootstrap_peers: node_registry.bootstrap_peers.clone(),
             env_variables: env_variables.clone(),
             force: use_force,
@@ -499,11 +502,11 @@ pub async fn upgrade(
     Ok(())
 }
 
-/// This function ensures running exactly the provided number of nodes at any time by stopping nodes or
-/// by adding + starting nodes if required.
+/// Ensure n nodes are running by stopping nodes or by adding and starting nodes if required.
 ///
-/// The arguments here are used during add() mostly.
+/// The arguments here are mostly mirror those used in `add`.
 pub async fn maintain_n_running_nodes(
+    auto_restart: bool,
     auto_set_nat_flags: bool,
     max_nodes_to_run: u16,
     data_dir_path: Option<PathBuf>,
@@ -595,6 +598,7 @@ pub async fn maintain_n_running_nodes(
              );
 
                 let added_service_list = add(
+                    auto_restart,
                     auto_set_nat_flags,
                     Some(to_add_count as u16),
                     data_dir_path,

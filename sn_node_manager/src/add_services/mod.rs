@@ -101,7 +101,6 @@ pub async fn add_node(
         .to_string_lossy()
         .to_string();
 
-    //  store the bootstrap peers and the provided env variable.
     {
         let mut should_save = false;
         let new_bootstrap_peers: Vec<_> = options
@@ -206,6 +205,7 @@ pub async fn add_node(
         }
 
         let install_ctx = InstallNodeServiceCtxBuilder {
+            autostart: options.auto_restart,
             bootstrap_peers: options.bootstrap_peers.clone(),
             data_dir_path: service_data_dir_path.clone(),
             env_variables: options.env_variables.clone(),
@@ -236,6 +236,7 @@ pub async fn add_node(
                 ));
 
                 node_registry.nodes.push(NodeServiceData {
+                    auto_restart: options.auto_restart,
                     connected_peers: None,
                     data_dir_path: service_data_dir_path.clone(),
                     genesis: options.genesis,
@@ -406,6 +407,7 @@ pub fn add_daemon(
             OsString::from("--address"),
             OsString::from(options.address.to_string()),
         ],
+        autostart: true,
         contents: None,
         environment: options.env_variables,
         label: DAEMON_SERVICE_NAME.parse()?,

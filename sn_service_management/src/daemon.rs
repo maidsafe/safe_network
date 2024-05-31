@@ -56,18 +56,19 @@ impl<'a> ServiceStateActions for DaemonService<'a> {
             .ok_or_else(|| Error::DaemonEndpointNotSet)
             .map(|e| (e.ip().to_string(), e.port().to_string()))?;
         let install_ctx = ServiceInstallCtx {
-            label: self.service_data.service_name.parse()?,
-            program: self.service_data.daemon_path.clone(),
             args: vec![
                 OsString::from("--port"),
                 OsString::from(port),
                 OsString::from("--address"),
                 OsString::from(address),
             ],
+            autostart: true,
             contents: None,
+            environment: None,
+            label: self.service_data.service_name.parse()?,
+            program: self.service_data.daemon_path.clone(),
             username: None,
             working_directory: None,
-            environment: None,
         };
         Ok(install_ctx)
     }

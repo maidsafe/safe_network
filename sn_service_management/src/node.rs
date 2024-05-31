@@ -99,6 +99,7 @@ impl<'a> ServiceStateActions for NodeService<'a> {
 
         Ok(ServiceInstallCtx {
             args,
+            autostart: options.auto_restart,
             contents: None,
             environment: options.env_variables,
             label: label.clone(),
@@ -170,6 +171,8 @@ impl<'a> ServiceStateActions for NodeService<'a> {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeServiceData {
+    #[serde(default)]
+    pub auto_restart: bool,
     #[serde(
         serialize_with = "serialize_connected_peers",
         deserialize_with = "deserialize_connected_peers"

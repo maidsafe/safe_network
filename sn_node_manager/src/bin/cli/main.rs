@@ -51,12 +51,19 @@ pub enum SubCmd {
     /// distributions, however, use Systemd, which *does* support user-mode services.
     #[clap(name = "add")]
     Add {
-        /// Auto set NAT related flags (--upnp or --home-network) on the safenode service if our NAT status is obtained
-        /// by running the NAT detection subcommand.
+        /// Set to automatically restart safenode services upon OS reboot.
         ///
-        /// This will cause an error if the NAT status has not been set.
+        /// If not used, any added services will *not* restart automatically when the OS reboots
+        /// and they will need to be explicitly started again.
+        #[clap(long, default_value_t = false)]
+        auto_restart: bool,
+        /// Auto set NAT flags (--upnp or --home-network) if our NAT status has been obtained by
+        /// running the NAT detection command.
         ///
-        /// This will override any --upnp or --home-network option that were passed in.
+        /// Using the argument will cause an error if the NAT detection command has not already
+        /// ran.
+        ///
+        /// This will override any --upnp or --home-network options.
         #[clap(long, default_value_t = false)]
         auto_set_nat_flags: bool,
         /// The number of service instances.
@@ -859,6 +866,7 @@ async fn main() -> Result<()> {
 
     match args.cmd {
         SubCmd::Add {
+            auto_restart,
             auto_set_nat_flags,
             count,
             data_dir_path,
@@ -880,6 +888,7 @@ async fn main() -> Result<()> {
             version,
         } => {
             let _ = cmd::node::add(
+                auto_restart,
                 auto_set_nat_flags,
                 count,
                 data_dir_path,
