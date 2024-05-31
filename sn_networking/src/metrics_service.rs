@@ -19,8 +19,8 @@ use std::{
 const METRICS_CONTENT_TYPE: &str = "application/openmetrics-text;charset=utf-8;version=1.0.0";
 
 pub(crate) fn run_metrics_server(registry: Registry, port: u16) {
-    // The server should not bind to localhost/127.0.0.1 as it will not accept connections from containers.
-    let addr = ([0, 0, 0, 0], port).into();
+    // todo: containers don't work with localhost.
+    let addr = ([127, 0, 0, 1], port).into();
 
     tokio::spawn(async move {
         let server = Server::bind(&addr).serve(MakeMetricService::new(registry));
