@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717192190637,
+  "lastUpdate": 1717192193830,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1",
-          "message": "chore(refactor): move mod.rs files the modern way",
-          "timestamp": "2024-02-14T10:20:03Z",
-          "tree_id": "7081c2d2ffd9eb353633811c692a4a2fa529ea6a",
-          "url": "https://github.com/maidsafe/safe_network/commit/f7d2d08ea8c8f142f99f5f6be0d4f5be30881fd1"
-        },
-        "date": 1707909147512,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 190,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "c9a381ef7bba8bf9255ae1df006afb1ec33f8464",
+          "message": "chore: use new version of `service-manager` crate",
+          "timestamp": "2024-05-31T22:30:15+01:00",
+          "tree_id": "6aa229fba8ec7997735b7a9c0ce835de5471ebed",
+          "url": "https://github.com/maidsafe/safe_network/commit/c9a381ef7bba8bf9255ae1df006afb1ec33f8464"
+        },
+        "date": 1717192193008,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 194,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
