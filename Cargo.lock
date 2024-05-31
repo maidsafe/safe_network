@@ -6753,8 +6753,9 @@ dependencies = [
 
 [[package]]
 name = "service-manager"
-version = "0.6.2"
-source = "git+https://github.com/jacderida/service-manager-rs?branch=read_winsw_location_from_env_var#17ad9cf693a96f0e4990b0904a63ac22d722ed0a"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab6249b027d9ec7b3da04208515d92a0aadd57b3f1f9b99e27fb3d9db3fedceb"
 dependencies = [
  "cfg-if",
  "dirs",
