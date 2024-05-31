@@ -335,6 +335,7 @@ pub async fn run_node(
         .collect();
 
     Ok(NodeServiceData {
+        auto_restart: false,
         connected_peers,
         data_dir_path: node_info.data_path,
         genesis: run_options.genesis,

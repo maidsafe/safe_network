@@ -185,6 +185,7 @@ pub async fn upgrade(
         &node_registry.environment_variables
     };
     let options = UpgradeOptions {
+        auto_restart: true,
         bootstrap_peers: node_registry.bootstrap_peers.clone(),
         env_variables: env_variables.clone(),
         force,

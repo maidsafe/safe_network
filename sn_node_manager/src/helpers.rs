@@ -56,7 +56,25 @@ pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Res
             callback
         };
 
-        release_repo.download_winsw(dest_path, &callback).await?;
+        let mut download_attempts = 1;
+        loop {
+            if download_attempts > MAX_DOWNLOAD_RETRIES {
+                bail!("Failed to download WinSW after {MAX_DOWNLOAD_RETRIES} tries.");
+            }
+            match release_repo.download_winsw(dest_path, &callback).await {
+                Ok(_) => break,
+                Err(e) => {
+                    if verbosity != VerbosityLevel::Minimal {
+                        println!("Error downloading WinSW: {e:?}");
+                        println!("Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}");
+                    }
+                    download_attempts += 1;
+                    if let Some(pb) = &pb {
+                        pb.finish_and_clear();
+                    }
+                }
+            }
+        }
 
         if let Some(pb) = pb {
             pb.finish_and_clear();
@@ -138,7 +156,8 @@ pub async fn download_and_extract_release(
                 }
                 Err(err) => {
                     if verbosity != VerbosityLevel::Minimal {
-                        println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
+                        println!("Error downloading release: {err:?}");
+                        println!("Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}");
                     }
                     download_attempts += 1;
                     if let Some(pb) = &pb {

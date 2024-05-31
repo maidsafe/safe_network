@@ -637,6 +637,7 @@ fn maintain_n_running_nodes(
 
         let owner = if owner.is_empty() { None } else { Some(owner) };
         if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
+            false,
             true,
             count,
             None,

@@ -69,13 +69,14 @@ impl<'a> ServiceStateActions for FaucetService<'a> {
         args.push(OsString::from("server"));
 
         Ok(ServiceInstallCtx {
+            args,
+            autostart: true,
+            contents: None,
+            environment: options.env_variables,
             label: self.service_data.service_name.parse()?,
             program: self.service_data.faucet_path.to_path_buf(),
-            args,
-            contents: None,
             username: Some(self.service_data.user.to_string()),
             working_directory: None,
-            environment: options.env_variables,
         })
     }
 

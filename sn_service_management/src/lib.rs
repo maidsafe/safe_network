@@ -64,6 +64,7 @@ pub enum UpgradeResult {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UpgradeOptions {
+    pub auto_restart: bool,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
     pub force: bool,

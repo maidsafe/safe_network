@@ -42,6 +42,7 @@ pub fn parse_port_range(s: &str) -> Result<PortRange> {
 
 #[derive(Debug, PartialEq)]
 pub struct InstallNodeServiceCtxBuilder {
+    pub autostart: bool,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub data_dir_path: PathBuf,
     pub env_variables: Option<Vec<(String, String)>>,
@@ -113,18 +114,20 @@ impl InstallNodeServiceCtxBuilder {
         }
 
         Ok(ServiceInstallCtx {
+            args,
+            autostart: self.autostart,
+            contents: None,
+            environment: self.env_variables,
             label: label.clone(),
             program: self.safenode_path.to_path_buf(),
-            args,
-            contents: None,
             username: self.service_user.clone(),
             working_directory: None,
-            environment: self.env_variables,
         })
     }
 }
 
 pub struct AddNodeServiceOptions {
+    pub auto_restart: bool,
     pub auto_set_nat_flags: bool,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub count: Option<u16>,
@@ -183,13 +186,14 @@ impl InstallAuditorServiceCtxBuilder {
         }
 
         Ok(ServiceInstallCtx {
+            args,
+            autostart: true,
+            contents: None,
+            environment: self.env_variables,
             label: self.name.parse()?,
             program: self.auditor_path.to_path_buf(),
-            args,
-            contents: None,
             username: Some(self.service_user.to_string()),
             working_directory: None,
-            environment: self.env_variables,
         })
     }
 }
@@ -226,13 +230,14 @@ impl InstallFaucetServiceCtxBuilder {
         args.push(OsString::from("server"));
 
         Ok(ServiceInstallCtx {
+            args,
+            autostart: true,
+            contents: None,
+            environment: self.env_variables,
             label: self.name.parse()?,
             program: self.faucet_path.to_path_buf(),
-            args,
-            contents: None,
             username: Some(self.service_user.to_string()),
             working_directory: None,
-            environment: self.env_variables,
         })
     }
 }

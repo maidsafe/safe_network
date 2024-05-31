@@ -4720,7 +4720,7 @@ dependencies = [
  "serde_json",
  "signal-hook",
  "sn-node-manager",
- "sn-releases 0.2.6",
+ "sn-releases",
  "sn_peers_acquisition",
  "sn_service_management",
  "strip-ansi-escapes",
@@ -6944,7 +6944,7 @@ dependencies = [
  "serde",
  "serde_json",
  "service-manager",
- "sn-releases 0.2.5",
+ "sn-releases",
  "sn_logging",
  "sn_peers_acquisition",
  "sn_protocol",
@@ -6957,25 +6957,6 @@ dependencies = [
  "users",
  "uuid",
  "which 6.0.1",
-]
-
-[[package]]
-name = "sn-releases"
-version = "0.2.5"
-source = "git+https://github.com/jacderida/sn-releases?branch=feat-download_winsw#e0d296c5916c9c194149438c2da16b7d935a9d3a"
-dependencies = [
- "async-trait",
- "chrono",
- "flate2",
- "lazy_static",
- "regex",
- "reqwest 0.12.4",
- "semver",
- "serde_json",
- "tar",
- "thiserror",
- "tokio",
- "zip",
 ]
 
 [[package]]
@@ -7919,9 +7900,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.37.0"
+version = "1.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1adbebffeca75fcfd058afa480fb6c0b81e165a0323f9c9d39c9697e37c46787"
+checksum = "ba4f4a02a7a80d6f274636f0aa95c7e383b912d41fe721a31f29e29698585a4a"
 dependencies = [
  "backtrace",
  "bytes",
@@ -7948,9 +7929,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b"
+checksum = "5f5ae998a069d4b5aba8ee9dad856af7d520c3699e6159b185c2acd48155d39a"
 dependencies = [
  "proc-macro2",
  "quote",
