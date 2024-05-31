@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717119137202,
+  "lastUpdate": 1717119139137,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "ac1479b3f10a6689c1c79147fb85787e64432375",
-          "message": "fix: manage the genesis spend case",
-          "timestamp": "2024-02-13T10:47:41Z",
-          "tree_id": "62eab6edffb641dce09bea1a0d12f772d3ad4555",
-          "url": "https://github.com/maidsafe/safe_network/commit/ac1479b3f10a6689c1c79147fb85787e64432375"
-        },
-        "date": 1707824309763,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 204,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "40431902c23e48bbc043cf91b175d508b5cea442",
+          "message": "feat(auditor): measuring beta tracking performance",
+          "timestamp": "2024-05-31T00:44:35Z",
+          "tree_id": "59668eef17ee50a49f0f7e57c41f9ee0ecfacf77",
+          "url": "https://github.com/maidsafe/safe_network/commit/40431902c23e48bbc043cf91b175d508b5cea442"
+        },
+        "date": 1717119138499,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 183,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
