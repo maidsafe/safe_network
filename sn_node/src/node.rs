@@ -15,9 +15,10 @@ use super::{
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetrics;
 use crate::RunningNode;
-
 use bytes::Bytes;
 use libp2p::{identity::Keypair, Multiaddr, PeerId};
+#[cfg(feature = "open-metrics")]
+use prometheus_client::metrics::gauge::Gauge;
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
@@ -53,15 +54,19 @@ use sn_networking::PutRecordCfg;
 use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
 
 /// Interval to trigger replication of all records to all peers.
-/// This is the max time it should take. Minimum interval at any ndoe will be half this
+/// This is the max time it should take. Minimum interval at any node will be half this
 pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
 
 /// Max number of attempts that chunk proof verification will be carried out against certain target,
 /// before classifying peer as a bad peer.
 const MAX_CHUNK_PROOF_VERIFY_ATTEMPTS: usize = 3;
 
-/// Invertal between chunk proof verfication to be retired against the same target.
+/// Interval between chunk proof verification to be retired against the same target.
 const CHUNK_PROOF_VERIFY_RETRY_INTERVAL: Duration = Duration::from_secs(15);
+
+#[cfg(feature = "reward-forward")]
+/// Track the forward balance by storing the balance in a file. This is useful to restore the balance between restarts.
+const FORWARDED_BALANCE_FILE_NAME: &str = "forwarded_balance";
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
@@ -219,6 +224,20 @@ impl Node {
         let peers_connected = Arc::new(AtomicUsize::new(0));
         let mut cmds_receiver = self.node_cmds.subscribe();
 
+        // read the forwarded balance from the file and set the metric.
+        // This is done initially because reward forwarding takes a while to kick in
+        #[cfg(all(feature = "reward-forward", feature = "open-metrics"))]
+        let node_copy = self.clone();
+        #[cfg(all(feature = "reward-forward", feature = "open-metrics"))]
+        let _handle = spawn(async move {
+            let root_dir = node_copy.network.root_dir_path;
+            let balance = read_forwarded_balance_value(&root_dir);
+
+            if let Some(ref node_metrics) = node_copy.node_metrics {
+                let _ = node_metrics.total_forwarded_rewards.set(balance as i64);
+            }
+        });
+
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
             // use a random inactivity timeout to ensure that the nodes do not sync when messages
@@ -315,9 +334,16 @@ impl Node {
                                 let network = self.network.clone();
                                 let forwarding_reason = owner.clone();
 
+                                #[cfg(feature = "open-metrics")]
+                                let total_forwarded_rewards = self.node_metrics.as_ref().map(|metrics|metrics.total_forwarded_rewards.clone());
+
                                 let _handle = spawn(async move {
-                                    let _ = Self::try_forward_blance(network, forwarding_reason);
-                                    info!("Periodic blance forward took {:?}", start.elapsed());
+
+                                    #[cfg(feature = "open-metrics")]
+                                    let _ = Self::try_forward_balance(network, forwarding_reason, total_forwarded_rewards);
+                                    #[cfg(not(feature = "open-metrics"))]
+                                    let _ = Self::try_forward_balance(network, forwarding_reason);
+                                    info!("Periodic balance forward took {:?}", start.elapsed());
                                 });
                             }
 
@@ -765,8 +791,39 @@ impl Node {
         }
     }
 
+    #[cfg(not(feature = "open-metrics"))]
+    fn try_forward_balance(network: Network, forward_reason: String) -> Result<()> {
+        if let Err(err) = Self::try_forward_balance_inner(network, forward_reason) {
+            error!("Error while trying to forward balance: {err:?}");
+            return Err(err);
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "open-metrics")]
+    fn try_forward_balance(
+        network: Network,
+        forward_reason: String,
+        forwarded_balance_metric: Option<Gauge>,
+    ) -> Result<()> {
+        match Self::try_forward_balance_inner(network, forward_reason) {
+            Ok(cumulative_forwarded_amount) => {
+                if let Some(forwarded_balance_metric) = forwarded_balance_metric {
+                    let _ = forwarded_balance_metric.set(cumulative_forwarded_amount as i64);
+                }
+            }
+            Err(err) => {
+                error!("Error while trying to forward balance: {err:?}");
+                return Err(err);
+            }
+        };
+
+        Ok(())
+    }
+
     /// Forward received rewards to another address
-    fn try_forward_blance(network: Network, forward_reason: String) -> Result<()> {
+    /// Returns the cumulative amount forwarded
+    fn try_forward_balance_inner(network: Network, forward_reason: String) -> Result<u64> {
         let mut spend_requests = vec![];
         {
             // load wallet
@@ -777,6 +834,10 @@ impl Node {
 
             spend_requests.extend(wallet.prepare_forward_signed_spend(payee, forward_reason)?);
         }
+        let total_forwarded_amount = spend_requests
+            .iter()
+            .map(|s| s.token().as_nano())
+            .sum::<u64>();
 
         let record_kind = RecordKind::Spend;
         let put_cfg = PutRecordCfg {
@@ -787,7 +848,7 @@ impl Node {
         };
 
         info!(
-            "Reward forwarding sending {} spends in this iteration.",
+            "Reward forwarding sending {} spends in this iteration. Total forwarded amount: {total_forwarded_amount}",
             spend_requests.len()
         );
 
@@ -833,7 +894,24 @@ impl Node {
             std::thread::sleep(Duration::from_millis(500));
         }
 
-        Ok(())
+        // write the balance to a file
+        let balance_file_path = network.root_dir_path.join(FORWARDED_BALANCE_FILE_NAME);
+        let old_balance = read_forwarded_balance_value(&balance_file_path);
+        let updated_balance = old_balance + total_forwarded_amount;
+        if let Err(err) = std::fs::write(&balance_file_path, updated_balance.to_string()) {
+            error!(
+                "Failed to write the updated balance to the file {balance_file_path:?} with {err:?}"
+            );
+        }
+
+        Ok(updated_balance)
+    }
+}
+
+fn read_forwarded_balance_value(balance_file_path: &PathBuf) -> u64 {
+    match std::fs::read_to_string(balance_file_path) {
+        Ok(balance) => balance.parse::<u64>().unwrap_or(0),
+        Err(_) => 0,
     }
 }
 

@@ -510,7 +510,9 @@ impl Node {
 
         #[cfg(feature = "open-metrics")]
         if let Some(node_metrics) = &self.node_metrics {
-            let _ = node_metrics.reward_wallet_balance.set(new_balance as i64);
+            let _ = node_metrics
+                .current_reward_wallet_balance
+                .set(new_balance as i64);
         }
 
         if royalties_cash_notes_r.is_empty() {
