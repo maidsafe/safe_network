@@ -1155,7 +1155,10 @@ async fn configure_winsw(verbosity: VerbosityLevel) -> Result<()> {
         sn_node_manager::helpers::configure_winsw(&safeup_winsw_path, verbosity).await?;
     } else {
         sn_node_manager::helpers::configure_winsw(
-            &get_node_manager_path()?.join("winsw.exe"), verbosity).await?;
+            &get_node_manager_path()?.join("winsw.exe"),
+            verbosity,
+        )
+        .await?;
     }
     Ok(())
 }
