@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717120011820,
+  "lastUpdate": 1717120013190,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "89f6afd1ddeb83b41cfaf19a60a5c0f4a8fcc602",
-          "message": "fix(CI): usng smaller target to avoid our_of_disk error",
-          "timestamp": "2024-02-13T16:24:31Z",
-          "tree_id": "440c4ae58b37326e470a06e0ebcc7620cff625d9",
-          "url": "https://github.com/maidsafe/safe_network/commit/89f6afd1ddeb83b41cfaf19a60a5c0f4a8fcc602"
-        },
-        "date": 1707844684715,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 191,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 193,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "b869ad1f2528efae1d70f33df9d331197fb344ce",
+          "message": "chore: no openssl dep for faucet",
+          "timestamp": "2024-05-31T10:32:20+09:00",
+          "tree_id": "b5328864e536c712296505475402c6bcdae83d8b",
+          "url": "https://github.com/maidsafe/safe_network/commit/b869ad1f2528efae1d70f33df9d331197fb344ce"
+        },
+        "date": 1717120012870,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 189,
             "unit": "MB"
           },
           {
