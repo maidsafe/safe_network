@@ -8,9 +8,15 @@
 
 use crate::target_arch::sleep;
 use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
+#[cfg(feature = "upnp")]
+use prometheus_client::metrics::{counter::Counter, family::Family};
 use prometheus_client::{metrics::gauge::Gauge, registry::Registry};
 use sysinfo::{Pid, ProcessRefreshKind, System};
 use tokio::time::Duration;
+
+// Implementation to record `libp2p::upnp::Event` metrics
+#[cfg(feature = "upnp")]
+mod upnp;
 
 const UPDATE_INTERVAL: Duration = Duration::from_secs(15);
 const TO_MB: u64 = 1_000_000;
@@ -25,6 +31,8 @@ pub(crate) struct NetworkMetrics {
     pub(crate) records_stored: Gauge,
     pub(crate) estimated_network_size: Gauge,
     pub(crate) store_cost: Gauge,
+    #[cfg(feature = "upnp")]
+    pub(crate) upnp_events: Family<upnp::UpnpEventLabels, Counter>,
 
     // system info
     process_memory_used_mb: Gauge,
@@ -56,6 +64,15 @@ impl NetworkMetrics {
             store_cost.clone(),
         );
 
+        #[cfg(feature = "upnp")]
+        let upnp_events = Family::default();
+        #[cfg(feature = "upnp")]
+        sub_registry.register(
+            "upnp_events",
+            "Events emitted by the UPnP behaviour",
+            upnp_events.clone(),
+        );
+
         let process_memory_used_mb = Gauge::default();
         sub_registry.register(
             "process_memory_used_mb",
@@ -75,6 +92,8 @@ impl NetworkMetrics {
             records_stored,
             estimated_network_size,
             store_cost,
+            #[cfg(feature = "upnp")]
+            upnp_events,
             process_memory_used_mb,
             process_cpu_usage_percentage,
         };

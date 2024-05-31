@@ -10,8 +10,11 @@ use crate::{Client, Error, SpendDag};
 
 use futures::{future::join_all, StreamExt};
 use sn_networking::{GetRecordError, NetworkError};
-use sn_transfers::{SignedSpend, SpendAddress, WalletError, WalletResult};
+use sn_transfers::{
+    SignedSpend, SpendAddress, WalletError, WalletResult, GENESIS_SPEND_UNIQUE_KEY,
+};
 use std::collections::BTreeSet;
+use tokio::sync::mpsc::Sender;
 
 enum InternalGetNetworkSpend {
     Spend(Box<SignedSpend>),
@@ -21,6 +24,24 @@ enum InternalGetNetworkSpend {
 }
 
 impl Client {
+    pub async fn new_dag_with_genesis_only(&self) -> WalletResult<SpendDag> {
+        let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
+        let mut dag = SpendDag::new(genesis_addr);
+        let genesis_spend = match self.get_spend_from_network(genesis_addr).await {
+            Ok(s) => s,
+            Err(Error::Network(NetworkError::DoubleSpendAttempt(spend1, spend2))) => {
+                let addr = spend1.address();
+                println!("Double spend detected at Genesis: {addr:?}");
+                dag.insert(genesis_addr, *spend2);
+                *spend1
+            }
+            Err(e) => return Err(WalletError::FailedToGetSpend(e.to_string())),
+        };
+        dag.insert(genesis_addr, genesis_spend);
+
+        Ok(dag)
+    }
+
     /// Builds a SpendDag from a given SpendAddress recursively following descendants all the way to UTxOs
     /// Started from Genesis this gives the entire SpendDag of the Network at a certain point in time
     /// Once the DAG collected, optionally verifies and records errors in the DAG
@@ -38,7 +59,7 @@ impl Client {
     pub async fn spend_dag_build_from(
         &self,
         spend_addr: SpendAddress,
-        max_depth: Option<u32>,
+        spend_processing: Option<Sender<SignedSpend>>,
         verify: bool,
     ) -> WalletResult<SpendDag> {
         info!("Building spend DAG from {spend_addr:?}");
@@ -100,12 +121,25 @@ impl Client {
                 match get_spend {
                     InternalGetNetworkSpend::Spend(spend) => {
                         next_gen_tx.insert(spend.spend.spent_tx.clone());
+                        if let Some(sender) = &spend_processing {
+                            let _ = sender.send(*spend.clone()).await.map_err(|e| {
+                                error!("Failed to send spend {addr:?} to processing: {e}")
+                            });
+                        }
                         dag.insert(addr, *spend);
                     }
                     InternalGetNetworkSpend::DoubleSpend(s1, s2) => {
                         info!("Fetched double spend at {addr:?} from network, following both...");
                         next_gen_tx.insert(s1.spend.spent_tx.clone());
                         next_gen_tx.insert(s2.spend.spent_tx.clone());
+                        if let Some(sender) = &spend_processing {
+                            let _ = sender.send(*s1.clone()).await.map_err(|e| {
+                                error!("Failed to send spend {addr:?} to processing: {e}")
+                            });
+                            let _ = sender.send(*s2.clone()).await.map_err(|e| {
+                                error!("Failed to send spend {addr:?} to processing: {e}")
+                            });
+                        }
                         dag.insert(addr, *s1);
                         dag.insert(addr, *s2);
                     }
@@ -125,10 +159,6 @@ impl Client {
 
             // go on to next gen
             gen += 1;
-            if gen >= max_depth.unwrap_or(u32::MAX) {
-                info!("Reached generation {gen}, stopping DAG collection from {spend_addr:?}");
-                break;
-            }
         }
 
         let elapsed = start.elapsed();
@@ -288,31 +318,25 @@ impl Client {
 
     /// Extends an existing SpendDag starting from the given utxos
     /// If verify is true, records faults in the DAG
-    /// Stops gathering after max_depth generations
     pub async fn spend_dag_continue_from(
         &self,
         dag: &mut SpendDag,
         utxos: BTreeSet<SpendAddress>,
-        max_depth: Option<u32>,
+        spend_processing: Option<Sender<SignedSpend>>,
         verify: bool,
-    ) -> WalletResult<()> {
+    ) {
         let main_dag_src = dag.source();
         info!(
             "Expanding spend DAG with source: {main_dag_src:?} from {} utxos",
             utxos.len()
         );
 
-        let mut stream = futures::stream::iter(utxos.into_iter())
-            .map(|utxo| async move {
-                debug!("Queuing task to gather DAG from utxo: {:?}", utxo);
-                (
-                    self.spend_dag_build_from(utxo, max_depth, false).await,
-                    utxo,
-                )
-            })
-            .buffer_unordered(crate::MAX_CONCURRENT_TASKS);
-
-        while let Some((res, addr)) = stream.next().await {
+        let sender = spend_processing.clone();
+        let tasks = utxos
+            .iter()
+            .map(|utxo| self.spend_dag_build_from(*utxo, sender.clone(), false));
+        let sub_dags = join_all(tasks).await;
+        for (res, addr) in sub_dags.into_iter().zip(utxos.into_iter()) {
             match res {
                 Ok(sub_dag) => {
                     debug!("Gathered sub DAG from: {addr:?}");
@@ -325,7 +349,6 @@ impl Client {
         }
 
         info!("Done gathering spend DAG from utxos");
-        Ok(())
     }
 
     /// Extends an existing SpendDag starting from the utxos in this DAG
@@ -335,11 +358,11 @@ impl Client {
     pub async fn spend_dag_continue_from_utxos(
         &self,
         dag: &mut SpendDag,
-        max_depth: Option<u32>,
+        spend_processing: Option<Sender<SignedSpend>>,
         verify: bool,
-    ) -> WalletResult<()> {
+    ) {
         let utxos = dag.get_utxos();
-        self.spend_dag_continue_from(dag, utxos, max_depth, verify)
+        self.spend_dag_continue_from(dag, utxos, spend_processing, verify)
             .await
     }
 

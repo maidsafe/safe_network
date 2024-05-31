@@ -10,6 +10,7 @@ use crate::dag_db::{self, SpendDagDb};
 use color_eyre::eyre::{eyre, Result};
 use sn_client::transfers::SpendAddress;
 use std::{
+    collections::BTreeSet,
     fs::{File, OpenOptions},
     io::{Cursor, Write},
     str::FromStr,
@@ -33,7 +34,10 @@ pub(crate) fn spend_dag_svg(_dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>
     }
 }
 
-pub(crate) fn spend(dag: &SpendDagDb, request: &Request) -> Result<Response<Cursor<Vec<u8>>>> {
+pub(crate) async fn spend(
+    dag: &SpendDagDb,
+    request: &Request,
+) -> Result<Response<Cursor<Vec<u8>>>> {
     let addr = match request.url().split('/').last() {
         Some(addr) => addr,
         None => {
@@ -54,6 +58,7 @@ pub(crate) fn spend(dag: &SpendDagDb, request: &Request) -> Result<Response<Curs
     };
     let json = dag
         .spend_json(spend_addr)
+        .await
         .map_err(|e| eyre!("Failed to get spend JSON: {e}"))?;
     let response = Response::from_data(json);
     Ok(response)
@@ -64,20 +69,26 @@ pub(crate) fn not_found() -> Result<Response<Cursor<Vec<u8>>>> {
     Ok(response)
 }
 
-pub(crate) fn beta_rewards(dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>> {
+pub(crate) async fn beta_rewards(dag: &SpendDagDb) -> Result<Response<Cursor<Vec<u8>>>> {
     let json = dag
         .beta_program_json()
+        .await
         .map_err(|e| eyre!("Failed to get beta rewards JSON: {e}"))?;
     let response = Response::from_data(json);
     Ok(response)
 }
 
-pub(crate) fn add_participant(
+pub(crate) async fn add_participant(
     dag: &SpendDagDb,
     request: &Request,
 ) -> Result<Response<Cursor<Vec<u8>>>> {
     let discord_id = match request.url().split('/').last() {
-        Some(discord_id) => discord_id,
+        Some(discord_id) => {
+            // TODO: When we simply accept POST we can remove this decoding
+            // For now we need it to decode #fragments in urls
+            let discord_id = urlencoding::decode(discord_id)?;
+            discord_id.to_string()
+        }
         None => {
             return Ok(Response::from_string(
                 "No discord_id provided. Should be /add-participant/[your_discord_id_here]",
@@ -94,7 +105,7 @@ pub(crate) fn add_participant(
         return Ok(Response::from_string("discord_id cannot be empty").with_status_code(400));
     }
 
-    if let Err(err) = track_new_participant(dag, discord_id.to_owned()) {
+    if let Err(err) = track_new_participant(dag, discord_id.to_owned()).await {
         return Ok(
             Response::from_string(format!("Failed to track new participant: {err}"))
                 .with_status_code(400),
@@ -104,11 +115,12 @@ pub(crate) fn add_participant(
     Ok(Response::from_string("Successfully added participant "))
 }
 
-fn track_new_participant(dag: &SpendDagDb, discord_id: String) -> Result<()> {
-    dag.track_new_beta_participants(vec![discord_id.to_owned()])?;
+async fn track_new_participant(dag: &SpendDagDb, discord_id: String) -> Result<()> {
+    dag.track_new_beta_participants(BTreeSet::from_iter([discord_id.to_owned()]))
+        .await?;
 
     // only append new ids
-    if dag.is_participant_tracked(&discord_id)? {
+    if dag.is_participant_tracked(&discord_id).await? {
         return Ok(());
     }
 
