@@ -20,9 +20,10 @@ use crate::{
 use color_eyre::eyre::{OptionExt, Result};
 use fs_extra::dir::get_size;
 use futures::StreamExt;
+use rand::seq::SliceRandom;
 use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{config::get_node_registry_path, VerbosityLevel};
-use sn_peers_acquisition::PeersArgs;
+use sn_peers_acquisition::{get_bootstrap_peers_from_url, PeersArgs};
 use sn_service_management::{
     rpc::{RpcActions, RpcClient},
     NodeRegistry, NodeServiceData, ServiceStatus,
@@ -36,6 +37,10 @@ use tokio::sync::mpsc::UnboundedSender;
 
 const NODE_START_INTERVAL: usize = 10;
 const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(15);
+const NAT_DETECTION_SERVERS_LIST_URL: &str =
+    "https://sn-testnet.s3.eu-west-2.amazonaws.com/nat-detection-servers";
+/// If nat detection fails for more than 3 times, we don't want to waste time running during every node start.
+const MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION: usize = 3;
 
 pub struct Home {
     /// Whether the component is active right now, capturing keystrokes + drawing things.
@@ -44,6 +49,8 @@ pub struct Home {
     config: Config,
     // state
     node_services: Vec<NodeServiceData>,
+    is_nat_status_determined: bool,
+    error_while_running_nat_detection: usize,
     node_stats: NodesStats,
     node_table_state: TableState,
     nodes_to_start: usize,
@@ -76,6 +83,8 @@ impl Home {
             config: Default::default(),
             active: true,
             node_services: Default::default(),
+            is_nat_status_determined: false,
+            error_while_running_nat_detection: 0,
             node_stats: NodesStats::new(),
             nodes_to_start: allocated_disk_space,
             node_table_state: Default::default(),
@@ -106,6 +115,7 @@ impl Home {
 
     fn load_node_registry_and_update_states(&mut self) -> Result<()> {
         let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+        self.is_nat_status_determined = node_registry.nat_status.is_some();
         self.node_services = node_registry
             .nodes
             .into_iter()
@@ -129,6 +139,12 @@ impl Home {
         }
 
         Ok(())
+    }
+
+    /// Only run NAT detection if we haven't determined the status yet and we haven't failed more than 3 times.
+    fn should_we_run_nat_detection(&self) -> bool {
+        !self.is_nat_status_determined
+            && self.error_while_running_nat_detection < MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION
     }
 
     fn get_running_nodes(&self) -> Vec<String> {
@@ -261,6 +277,7 @@ impl Component for Home {
                     self.nodes_to_start as u16,
                     self.discord_username.clone(),
                     self.peers_args.clone(),
+                    self.should_we_run_nat_detection(),
                     self.safenode_path.clone(),
                     action_sender,
                 );
@@ -299,6 +316,17 @@ impl Component for Home {
 
                 // trigger start nodes.
                 return Ok(Some(Action::HomeActions(HomeActions::StartNodes)));
+            }
+            Action::HomeActions(HomeActions::SuccessfullyDetectedNatStatus) => {
+                debug!("Successfully detected nat status, is_nat_status_determined set to true");
+                self.is_nat_status_determined = true;
+            }
+            Action::HomeActions(HomeActions::ErrorWhileRunningNatDetection) => {
+                self.error_while_running_nat_detection += 1;
+                debug!(
+                    "Error while running nat detection. Error count: {}",
+                    self.error_while_running_nat_detection
+                );
             }
             // todo: should triggers go here? Make distinction between a component + a scene and how they interact.
             Action::HomeActions(HomeActions::TriggerBetaProgramme) => {
@@ -508,11 +536,20 @@ impl Component for Home {
         if let Some(registry_state) = &self.lock_registry {
             let popup_area = centered_rect_fixed(50, 12, area);
             f.render_widget(Clear, popup_area);
-            let popup_border =
-                Paragraph::new("Manage Nodes").block(Block::default().borders(Borders::ALL));
+            let popup_border = Paragraph::new("Manage Nodes").block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::new().fg(GHOST_WHITE)),
+            );
 
             let popup_text = match registry_state {
-                LockRegistryState::StartingNodes => "Starting nodes...",
+                LockRegistryState::StartingNodes => {
+                    if self.should_we_run_nat_detection() {
+                        "Starting nodes...\nPlease wait, performing initial NAT detection\nThis may take a couple minutes."
+                    } else {
+                        "Starting nodes..."
+                    }
+                }
                 LockRegistryState::StoppingNodes => "Stopping nodes...",
                 LockRegistryState::ResettingNodes => "Resetting nodes...",
             };
@@ -523,7 +560,7 @@ impl Component for Home {
                     Constraint::Length(1),
                     Constraint::Min(1),
                     // our text goes here
-                    Constraint::Length(1),
+                    Constraint::Length(3),
                     Constraint::Min(1),
                     // border
                     Constraint::Length(1),
@@ -557,21 +594,54 @@ fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     });
 }
 
+async fn run_nat_detection_process() -> Result<()> {
+    let servers = get_bootstrap_peers_from_url(NAT_DETECTION_SERVERS_LIST_URL.parse()?).await?;
+    let servers = servers
+        .choose_multiple(&mut rand::thread_rng(), 10)
+        .cloned()
+        .collect::<Vec<_>>();
+    info!("Running nat detection with servers: {servers:?}");
+    sn_node_manager::cmd::nat_detection::run_nat_detection(
+        servers,
+        true,
+        None,
+        None,
+        Some("0.1.0".to_string()),
+        VerbosityLevel::Minimal,
+    )
+    .await?;
+    Ok(())
+}
+
 fn maintain_n_running_nodes(
     count: u16,
     owner: String,
     peers_args: PeersArgs,
+    run_nat_detection: bool,
     safenode_path: Option<PathBuf>,
     action_sender: UnboundedSender<Action>,
 ) {
     tokio::task::spawn_local(async move {
+        if run_nat_detection {
+            if let Err(err) = run_nat_detection_process().await {
+                error!("Error while running nat detection {err:?}. Registering the error.");
+                if let Err(err) = action_sender.send(Action::HomeActions(
+                    HomeActions::ErrorWhileRunningNatDetection,
+                )) {
+                    error!("Error while sending action: {err:?}");
+                }
+            } else {
+                info!("Successfully ran nat detection.");
+            }
+        }
+
         let owner = if owner.is_empty() { None } else { Some(owner) };
         if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
-            false,
+            true,
             count,
             None,
             None,
-            true,
+            false,
             false,
             None,
             None,
@@ -583,7 +653,7 @@ fn maintain_n_running_nodes(
             None,
             safenode_path,
             None,
-            true,
+            false,
             None,
             None,
             VerbosityLevel::Minimal,

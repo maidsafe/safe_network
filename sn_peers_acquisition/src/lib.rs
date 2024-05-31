@@ -162,7 +162,7 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
 /// Get bootstrap peers from the Network contacts file stored in the given URL.
 ///
 /// If URL is not provided, the addresses are fetched from the default NETWORK_CONTACTS_URL
-async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
+pub async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
     let mut retries = 0;
 
     loop {

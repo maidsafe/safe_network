@@ -656,7 +656,7 @@ pub enum NatDetectionSubCmd {
         /// We attempt to establish connections to these servers to determine our own NAT status.
         ///
         /// The argument can be used multiple times.
-        #[clap(long)]
+        #[clap(long, required = true, value_delimiter = ',')]
         servers: Vec<Multiaddr>,
         /// Provide a NAT detection binary using a URL.
         ///
@@ -672,7 +672,7 @@ pub enum NatDetectionSubCmd {
         /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
         /// The binary will be downloaded.
-        #[clap(long)]
+        #[clap(long, default_value = "0.1.0")]
         version: Option<String>,
     },
 }
