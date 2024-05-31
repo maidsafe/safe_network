@@ -144,6 +144,12 @@ pub async fn add_node(
         } else {
             service_control.get_available_port()?
         };
+        let metrics_free_port = if let Some(port) = metrics_port {
+            Some(port)
+        } else {
+            Some(service_control.get_available_port()?)
+        };
+
         let rpc_socket_addr = if let Some(addr) = options.rpc_address {
             SocketAddr::new(IpAddr::V4(addr), rpc_free_port)
         } else {
@@ -214,7 +220,7 @@ pub async fn add_node(
             local: options.local,
             log_dir_path: service_log_dir_path.clone(),
             log_format: options.log_format,
-            metrics_port,
+            metrics_port: metrics_free_port,
             name: service_name.clone(),
             node_port,
             owner: options.owner.clone(),
@@ -245,7 +251,7 @@ pub async fn add_node(
                     local: options.local,
                     log_dir_path: service_log_dir_path.clone(),
                     log_format: options.log_format,
-                    metrics_port,
+                    metrics_port: metrics_free_port,
                     node_port,
                     number: node_number,
                     reward_balance: None,
