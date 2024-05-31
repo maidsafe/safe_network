@@ -105,10 +105,11 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
 
     let mut mock_service_control = MockServiceControl::new();
     let mut seq = Sequence::new();
+    let mut ports = vec![Ok(8081), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8081))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -120,7 +121,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         local: true,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -388,10 +389,11 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     let mut seq = Sequence::new();
 
     // Expected calls for first installation
+    let mut ports = vec![Ok(8081), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8081))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -403,7 +405,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -425,10 +427,11 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         .in_sequence(&mut seq);
 
     // Expected calls for second installation
+    let mut ports = vec![Ok(8083), Ok(15003)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8083))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         bootstrap_peers: vec![],
@@ -439,7 +442,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15003),
         name: "safenode2".to_string(),
         node_port: None,
         owner: None,
@@ -461,10 +464,11 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         .in_sequence(&mut seq);
 
     // Expected calls for third installation
+    let mut ports = vec![Ok(8085), Ok(15005)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8085))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
@@ -475,7 +479,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         local: false,
         log_format: None,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
-        metrics_port: None,
+        metrics_port: Some(15005),
         name: "safenode3".to_string(),
         node_port: None,
         owner: None,
@@ -614,10 +618,11 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
 
     let mut seq = Sequence::new();
 
+    let mut ports = vec![Ok(12001), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(12001))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -629,7 +634,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -742,10 +747,11 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
 
     let mut seq = Sequence::new();
 
+    let mut ports = vec![Ok(12001), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(12001))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         bootstrap_peers: vec![],
@@ -756,7 +762,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -886,10 +892,11 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
     safenode_download_path.write_binary(b"fake safenode bin")?;
 
     let mut seq = Sequence::new();
+    let mut ports = vec![Ok(8083), Ok(15003)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8083))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         bootstrap_peers: vec![],
@@ -900,7 +907,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15003),
         name: "safenode2".to_string(),
         node_port: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
@@ -1004,10 +1011,11 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
 
     let mut seq = Sequence::new();
 
+    let mut ports = vec![Ok(12001), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(12001))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         bootstrap_peers: vec![],
@@ -1018,7 +1026,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: Some(custom_port),
         owner: None,
@@ -1109,10 +1117,11 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
     let mut seq = Sequence::new();
 
     // First service
+    let mut ports = vec![Ok(8081), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(15000))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     mock_service_control
         .expect_install()
@@ -1121,7 +1130,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
             eq(ServiceInstallCtx {
                 args: vec![
                     OsString::from("--rpc"),
-                    OsString::from("127.0.0.1:15000"),
+                    OsString::from("127.0.0.1:8081"),
                     OsString::from("--root-dir"),
                     OsString::from(
                         node_data_dir
@@ -1140,6 +1149,8 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                     ),
                     OsString::from("--port"),
                     OsString::from("12000"),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15001"),
                 ],
                 contents: None,
                 environment: None,
@@ -1157,10 +1168,11 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
         .in_sequence(&mut seq);
 
     // Second service
+    let mut ports = vec![Ok(8083), Ok(15003)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(15001))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     mock_service_control
         .expect_install()
@@ -1169,7 +1181,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
             eq(ServiceInstallCtx {
                 args: vec![
                     OsString::from("--rpc"),
-                    OsString::from("127.0.0.1:15001"),
+                    OsString::from("127.0.0.1:8083"),
                     OsString::from("--root-dir"),
                     OsString::from(
                         node_data_dir
@@ -1188,6 +1200,8 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                     ),
                     OsString::from("--port"),
                     OsString::from("12001"),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15003"),
                 ],
                 contents: None,
                 environment: None,
@@ -1205,10 +1219,11 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
         .in_sequence(&mut seq);
 
     // Third service
+    let mut ports = vec![Ok(8085), Ok(15005)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(15002))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     mock_service_control
         .expect_install()
@@ -1217,7 +1232,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
             eq(ServiceInstallCtx {
                 args: vec![
                     OsString::from("--rpc"),
-                    OsString::from("127.0.0.1:15002"),
+                    OsString::from("127.0.0.1:8085"),
                     OsString::from("--root-dir"),
                     OsString::from(
                         node_data_dir
@@ -1236,6 +1251,8 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                     ),
                     OsString::from("--port"),
                     OsString::from("12002"),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15005"),
                 ],
                 contents: None,
                 environment: None,
@@ -1636,10 +1653,11 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
     let mut seq = Sequence::new();
 
     // First service
+    let mut ports = vec![Ok(8081)].into_iter();
     mock_service_control
         .expect_get_available_port()
         .times(1)
-        .returning(|| Ok(15000))
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     mock_service_control
         .expect_install()
@@ -1648,7 +1666,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
             eq(ServiceInstallCtx {
                 args: vec![
                     OsString::from("--rpc"),
-                    OsString::from("127.0.0.1:15000"),
+                    OsString::from("127.0.0.1:8081"),
                     OsString::from("--root-dir"),
                     OsString::from(
                         node_data_dir
@@ -1684,10 +1702,11 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
         .in_sequence(&mut seq);
 
     // Second service
+    let mut ports = vec![Ok(8083)].into_iter();
     mock_service_control
         .expect_get_available_port()
         .times(1)
-        .returning(|| Ok(15001))
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     mock_service_control
         .expect_install()
@@ -1696,7 +1715,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
             eq(ServiceInstallCtx {
                 args: vec![
                     OsString::from("--rpc"),
-                    OsString::from("127.0.0.1:15001"),
+                    OsString::from("127.0.0.1:8083"),
                     OsString::from("--root-dir"),
                     OsString::from(
                         node_data_dir
@@ -1732,10 +1751,11 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
         .in_sequence(&mut seq);
 
     // Third service
+    let mut ports = vec![Ok(8085)].into_iter();
     mock_service_control
         .expect_get_available_port()
         .times(1)
-        .returning(|| Ok(15002))
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
     mock_service_control
         .expect_install()
@@ -1744,7 +1764,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
             eq(ServiceInstallCtx {
                 args: vec![
                     OsString::from("--rpc"),
-                    OsString::from("127.0.0.1:15002"),
+                    OsString::from("127.0.0.1:8085"),
                     OsString::from("--root-dir"),
                     OsString::from(
                         node_data_dir
@@ -1996,7 +2016,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
 }
 
 #[tokio::test]
-async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<()> {
+async fn add_node_should_use_a_custom_port_range_for_the_metrics_server() -> Result<()> {
     let tmp_data_dir = assert_fs::TempDir::new()?;
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
@@ -2023,6 +2043,12 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
 
     let mut seq = Sequence::new();
 
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(20000))
+        .in_sequence(&mut seq);
+
     // First service
     mock_service_control
         .expect_install()
@@ -2048,6 +2074,8 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                             .to_string_lossy()
                             .to_string(),
                     ),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15000"),
                 ],
                 contents: None,
                 environment: None,
@@ -2062,6 +2090,12 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
             eq(false),
         )
         .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(20001))
         .in_sequence(&mut seq);
 
     // Second service
@@ -2089,6 +2123,8 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                             .to_string_lossy()
                             .to_string(),
                     ),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15001"),
                 ],
                 contents: None,
                 environment: None,
@@ -2103,6 +2139,12 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
             eq(false),
         )
         .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(20002))
         .in_sequence(&mut seq);
 
     // Third service
@@ -2130,6 +2172,402 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                             .to_string_lossy()
                             .to_string(),
                     ),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15002"),
+                ],
+                contents: None,
+                environment: None,
+                label: "safenode3".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("safenode3")
+                    .join(SAFENODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            auto_set_nat_flags: false,
+            bootstrap_peers: vec![],
+            count: Some(3),
+            delete_safenode_src: true,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            log_format: None,
+            metrics_port: Some(PortRange::Range(15000, 15002)),
+            owner: None,
+            node_port: None,
+            rpc_address: None,
+            rpc_port: None,
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    safenode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+    assert_eq!(node_registry.nodes.len(), 3);
+    assert_eq!(node_registry.nodes[0].metrics_port, Some(15000));
+    assert_eq!(node_registry.nodes[1].metrics_port, Some(15001));
+    assert_eq!(node_registry.nodes[2].metrics_port, Some(15002));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_return_an_error_if_duplicate_custom_metric_port_is_used() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_format: None,
+            metrics_port: Some(15001),
+            node_port: None,
+            number: 1,
+            owner: None,
+            peer_id: None,
+            pid: None,
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: "0.98.1".to_string(),
+        }],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let result = add_node(
+        AddNodeServiceOptions {
+            auto_set_nat_flags: false,
+            bootstrap_peers: vec![],
+            count: None,
+            delete_safenode_src: true,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            log_format: None,
+            metrics_port: Some(PortRange::Single(15001)),
+            owner: None,
+            node_port: None,
+            rpc_address: None,
+            rpc_port: None,
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    )
+    .await;
+
+    match result {
+        Ok(_) => panic!("This test is supposed to result in a failure"),
+        Err(e) => {
+            assert_eq!(e.to_string(), "Port 15001 is being used by another service");
+            Ok(())
+        }
+    }
+}
+
+#[tokio::test]
+async fn add_node_should_return_an_error_if_duplicate_custom_metric_port_in_range_is_used(
+) -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![NodeServiceData {
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_format: None,
+            metrics_port: Some(15001),
+            node_port: None,
+            number: 1,
+            owner: None,
+            peer_id: None,
+            pid: None,
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: "0.98.1".to_string(),
+        }],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let result = add_node(
+        AddNodeServiceOptions {
+            auto_set_nat_flags: false,
+            bootstrap_peers: vec![],
+            count: None,
+            delete_safenode_src: true,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            log_format: None,
+            metrics_port: Some(PortRange::Range(15001, 15002)),
+            owner: None,
+            node_port: None,
+            rpc_address: None,
+            rpc_port: None,
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &MockServiceControl::new(),
+        VerbosityLevel::Normal,
+    )
+    .await;
+
+    match result {
+        Ok(_) => panic!("This test is supposed to result in a failure"),
+        Err(e) => {
+            assert_eq!(e.to_string(), "Port 15001 is being used by another service");
+            Ok(())
+        }
+    }
+}
+
+#[tokio::test]
+async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let mut seq = Sequence::new();
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(15001))
+        .in_sequence(&mut seq);
+
+    // First service
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:20000"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("safenode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("safenode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15001"),
+                ],
+                contents: None,
+                environment: None,
+                label: "safenode1".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("safenode1")
+                    .join(SAFENODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(15003))
+        .in_sequence(&mut seq);
+
+    // Second service
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:20001"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("safenode2")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("safenode2")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15003"),
+                ],
+                contents: None,
+                environment: None,
+                label: "safenode2".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("safenode2")
+                    .join(SAFENODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(15005))
+        .in_sequence(&mut seq);
+
+    // Third service
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:20002"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("safenode3")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("safenode3")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15005"),
                 ],
                 contents: None,
                 environment: None,
@@ -2401,10 +2839,11 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
 
     let mut seq = Sequence::new();
 
+    let mut ports = vec![Ok(12001), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(12001))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -2416,7 +2855,7 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -2501,10 +2940,11 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
 
     let mut seq = Sequence::new();
 
+    let mut ports = vec![Ok(12001), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(12001))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -2516,7 +2956,7 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -2601,10 +3041,11 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
 
     let mut seq = Sequence::new();
 
+    let mut ports = vec![Ok(12001), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(12001))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -2616,7 +3057,7 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -2702,10 +3143,11 @@ async fn add_node_should_return_an_error_if_nat_status_is_none_but_auto_set_nat_
 
     let mut seq = Sequence::new();
 
+    let mut ports = vec![Ok(12001), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(12001))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let result = add_node(
@@ -3310,10 +3752,11 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
     let mut seq = Sequence::new();
 
     // Expected calls for first installation
+    let mut ports = vec![Ok(8081), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8081))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -3325,7 +3768,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -3412,10 +3855,11 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
     let mut seq = Sequence::new();
 
     // Expected calls for first installation
+    let mut ports = vec![Ok(8081), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8081))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -3427,7 +3871,7 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -3514,10 +3958,11 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
     let mut seq = Sequence::new();
 
     // Expected calls for first installation
+    let mut ports = vec![Ok(8081), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8081))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -3529,7 +3974,7 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -3613,10 +4058,11 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
 
     let mut seq = Sequence::new();
 
+    let mut ports = vec![Ok(8081), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8081))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     let install_ctx = InstallNodeServiceCtxBuilder {
@@ -3628,7 +4074,7 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
         local: false,
         log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
         log_format: None,
-        metrics_port: None,
+        metrics_port: Some(15001),
         name: "safenode1".to_string(),
         node_port: None,
         owner: None,
@@ -3713,10 +4159,11 @@ async fn add_node_should_assign_an_owner() -> Result<()> {
 
     let mut mock_service_control = MockServiceControl::new();
     let mut seq = Sequence::new();
+    let mut ports = vec![Ok(8081), Ok(15001)].into_iter();
     mock_service_control
         .expect_get_available_port()
-        .times(1)
-        .returning(|| Ok(8081))
+        .times(2)
+        .returning(move || ports.next().unwrap())
         .in_sequence(&mut seq);
 
     mock_service_control
@@ -3742,6 +4189,8 @@ async fn add_node_should_assign_an_owner() -> Result<()> {
                             .to_string_lossy()
                             .to_string(),
                     ),
+                    OsString::from("--metrics-server-port"),
+                    OsString::from("15001"),
                     OsString::from("--owner"),
                     OsString::from("discord_username"),
                 ],
