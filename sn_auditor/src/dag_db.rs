@@ -398,16 +398,25 @@ impl SpendDagDb {
             .duration_since(UNIX_EPOCH)
             .map(|t| format!("{t:?}"))
             .unwrap_or_default();
-        let backup_file = self.path.join(format!("beta_rewards_{timestamp}.json"));
+
+        let backup_folder = self.path.join("rewards_log");
+        // Create the directory if it doesn't exist
+        std::fs::create_dir_all(&backup_folder)
+            .map_err(|e| eyre!("Could not create rewards backup directory: {e}"))?;
+        let backup_file = backup_folder.as_path().join(format!("beta_rewards_{timestamp}.json"));
         info!("Writing rewards backup to {backup_file:?}");
+
         std::fs::write(backup_file, json)
             .map_err(|e| eyre!("Could not write rewards backup to disk: {e}"))?;
 
-        let backup_file = self
-            .path
-            .join(format!("tracking_performance_{timestamp}.log"));
-        info!("Writing tracking performance to {backup_file:?}");
-        std::fs::write(backup_file, tracking_performance)
+        let perf_folder = self.path.join("performance_log");
+        // Create the directory if it doesn't exist
+        std::fs::create_dir_all(&perf_folder)
+            .map_err(|e| eyre!("Could not create tracking performance directory: {e}"))?;
+        let perf_file = perf_folder.as_path().join(format!("tracking_performance_{timestamp}.json"));
+
+        info!("Writing tracking performance to {perf_file:?}");
+        std::fs::write(perf_file, tracking_performance)
             .map_err(|e| eyre!("Could not write tracking performance to disk: {e}"))?;
 
         Ok(())

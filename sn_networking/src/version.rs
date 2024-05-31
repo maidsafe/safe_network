@@ -80,7 +80,7 @@ fn get_truncate_version_str() -> String {
     let version_str = env!("CARGO_PKG_VERSION");
     let parts = version_str.split('.').collect::<Vec<_>>();
     if parts.len() >= 2 {
-        format!("{}.{}", parts[0], parts[1])
+        format!("{}.{}", parts[0], "16")
     } else {
         panic!("Cannot obtain truncated version str for {version_str:?}: {parts:?}");
     }
