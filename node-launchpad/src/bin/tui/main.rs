@@ -12,6 +12,7 @@ use clap::Parser;
 use color_eyre::eyre::Result;
 use node_launchpad::{
     app::App,
+    config::configure_winsw,
     utils::{initialize_logging, initialize_panic_handler, version},
 };
 use sn_peers_acquisition::PeersArgs;
@@ -73,6 +74,8 @@ fn is_running_in_terminal() -> bool {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    configure_winsw().await?;
+
     if !is_running_in_terminal() {
         // If we weren't already running in a terminal, this process returns early, having spawned
         // a new process that launches a terminal.

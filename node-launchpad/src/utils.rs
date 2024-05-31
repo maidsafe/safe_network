@@ -6,8 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::config::get_launchpad_data_dir_path;
 use color_eyre::eyre::{Context, Result};
-use std::path::PathBuf;
 use tracing::error;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
@@ -73,20 +73,6 @@ pub fn initialize_panic_handler() -> Result<()> {
         std::process::exit(libc::EXIT_FAILURE);
     }));
     Ok(())
-}
-
-pub fn get_launchpad_data_dir_path() -> Result<PathBuf> {
-    let mut home_dirs = dirs_next::data_dir().expect("Data directory is obtainable");
-    home_dirs.push("safe");
-    home_dirs.push("launchpad");
-    std::fs::create_dir_all(home_dirs.as_path())?;
-    Ok(home_dirs)
-}
-
-pub fn get_config_dir() -> Result<PathBuf> {
-    let config_dir = get_launchpad_data_dir_path()?.join("config");
-    std::fs::create_dir_all(&config_dir)?;
-    Ok(config_dir)
 }
 
 pub fn initialize_logging() -> Result<()> {
