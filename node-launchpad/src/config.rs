@@ -13,8 +13,40 @@ use derive_deref::{Deref, DerefMut};
 use ratatui::style::{Color, Modifier, Style};
 use serde::{de::Deserializer, Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 const CONFIG: &str = include_str!("../.config/config.json5");
+
+pub fn get_launchpad_data_dir_path() -> Result<PathBuf> {
+    let mut home_dirs = dirs_next::data_dir().expect("Data directory is obtainable");
+    home_dirs.push("safe");
+    home_dirs.push("launchpad");
+    std::fs::create_dir_all(home_dirs.as_path())?;
+    Ok(home_dirs)
+}
+
+pub fn get_config_dir() -> Result<PathBuf> {
+    // TODO: consider using dirs_next::config_dir. Configuration and data are different things.
+    let config_dir = get_launchpad_data_dir_path()?.join("config");
+    std::fs::create_dir_all(&config_dir)?;
+    Ok(config_dir)
+}
+
+#[cfg(windows)]
+pub async fn configure_winsw() -> Result<()> {
+    let data_dir_path = get_launchpad_data_dir_path()?;
+    sn_node_manager::helpers::configure_winsw(
+        &data_dir_path.join("winsw.exe"),
+        sn_node_manager::VerbosityLevel::Minimal,
+    )
+    .await?;
+    Ok(())
+}
+
+#[cfg(not(windows))]
+pub async fn configure_winsw() -> Result<()> {
+    Ok(())
+}
 
 #[derive(Clone, Debug, Deserialize, Default, Serialize)]
 pub struct AppData {
@@ -24,8 +56,8 @@ pub struct AppData {
 
 impl AppData {
     pub fn load() -> Result<Self> {
-        let config_dir = crate::utils::get_config_dir()
-            .map_err(|_| color_eyre::eyre::eyre!("Could not obtain config dir"))?;
+        let config_dir =
+            get_config_dir().map_err(|_| color_eyre::eyre::eyre!("Could not obtain config dir"))?;
         let config_path = config_dir.join("app_data.json");
 
         if !config_path.exists() {
@@ -41,7 +73,7 @@ impl AppData {
     }
 
     pub fn save(&self) -> Result<()> {
-        let config_dir = crate::utils::get_config_dir()
+        let config_dir = get_config_dir()
             .map_err(|_| config::ConfigError::Message("Could not obtain data dir".to_string()))?;
 
         let config_path = config_dir.join("app_data.json");
@@ -63,9 +95,9 @@ pub struct Config {
 impl Config {
     pub fn new() -> Result<Self, config::ConfigError> {
         let default_config: Config = json5::from_str(CONFIG).unwrap();
-        let data_dir = crate::utils::get_launchpad_data_dir_path()
+        let data_dir = get_launchpad_data_dir_path()
             .map_err(|_| config::ConfigError::Message("Could not obtain data dir".to_string()))?;
-        let config_dir = crate::utils::get_config_dir()
+        let config_dir = get_config_dir()
             .map_err(|_| config::ConfigError::Message("Could not obtain data dir".to_string()))?;
         let mut builder = config::Config::builder()
             .set_default("_data_dir", data_dir.to_str().unwrap())?

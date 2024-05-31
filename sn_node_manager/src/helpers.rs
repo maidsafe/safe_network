@@ -15,7 +15,7 @@ use semver::Version;
 use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepoActions};
 use std::{
     io::Read,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
     sync::Arc,
 };
@@ -23,6 +23,51 @@ use std::{
 use crate::{config, VerbosityLevel};
 
 const MAX_DOWNLOAD_RETRIES: u8 = 3;
+
+#[cfg(windows)]
+pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Result<()> {
+    if let Ok(_) = which::which("winsw.exe") {
+        return Ok(());
+    }
+
+    if !dest_path.exists() {
+        let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+
+        let mut pb = None;
+        let callback = if verbosity != VerbosityLevel::Minimal {
+            let progress_bar = Arc::new(ProgressBar::new(0));
+            progress_bar.set_style(ProgressStyle::default_bar()
+                .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")?
+                .progress_chars("#>-"));
+            pb = Some(progress_bar.clone());
+            let pb_clone = progress_bar.clone();
+            let callback: Box<dyn Fn(u64, u64) + Send + Sync> =
+                Box::new(move |downloaded, total| {
+                    pb_clone.set_length(total);
+                    pb_clone.set_position(downloaded);
+                });
+            callback
+        } else {
+            let callback: Box<dyn Fn(u64, u64) + Send + Sync> = Box::new(move |_, _| {});
+            callback
+        };
+
+        release_repo.download_winsw(dest_path, &callback).await?;
+
+        if let Some(pb) = pb {
+            pb.finish_and_clear();
+        }
+    }
+
+    std::env::set_var("WINSW_PATH", dest_path.to_string_lossy().to_string());
+
+    Ok(())
+}
+
+#[cfg(not(windows))]
+pub async fn configure_winsw(_dest_path: &Path, _verbosity: VerbosityLevel) -> Result<()> {
+    Ok(())
+}
 
 /// Downloads and extracts a release binary to a temporary location.
 ///
