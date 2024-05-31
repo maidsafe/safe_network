@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717120013190,
+  "lastUpdate": 1717120014794,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "89f6afd1ddeb83b41cfaf19a60a5c0f4a8fcc602",
-          "message": "fix(CI): usng smaller target to avoid our_of_disk error",
-          "timestamp": "2024-02-13T16:24:31Z",
-          "tree_id": "440c4ae58b37326e470a06e0ebcc7620cff625d9",
-          "url": "https://github.com/maidsafe/safe_network/commit/89f6afd1ddeb83b41cfaf19a60a5c0f4a8fcc602"
-        },
-        "date": 1707844686269,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6110,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36057,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 38480,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "b869ad1f2528efae1d70f33df9d331197fb344ce",
+          "message": "chore: no openssl dep for faucet",
+          "timestamp": "2024-05-31T10:32:20+09:00",
+          "tree_id": "b5328864e536c712296505475402c6bcdae83d8b",
+          "url": "https://github.com/maidsafe/safe_network/commit/b869ad1f2528efae1d70f33df9d331197fb344ce"
+        },
+        "date": 1717120014464,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7557,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34726,
             "unit": "ms"
           },
           {
