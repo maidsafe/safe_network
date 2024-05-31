@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717119181589,
+  "lastUpdate": 1717119184163,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "de5784a04b0032d8b64ffc409c07952d1ac10128",
-          "message": "chore(node): move gossip const behind feature flag",
-          "timestamp": "2024-02-13T13:22:16+01:00",
-          "tree_id": "16d8ccf320466b3cd5e9470fc66ddfe493da56e6",
-          "url": "https://github.com/maidsafe/safe_network/commit/de5784a04b0032d8b64ffc409c07952d1ac10128"
-        },
-        "date": 1707827671195,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 193,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 183,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "ddf92cf76574a588c14b59e15705924c7f3a149d",
+          "message": "ci: build faucet with initial data upload",
+          "timestamp": "2024-05-31T10:17:55+09:00",
+          "tree_id": "5936aba29947de7742694e1ffcbfa0e0131b22fd",
+          "url": "https://github.com/maidsafe/safe_network/commit/ddf92cf76574a588c14b59e15705924c7f3a149d"
+        },
+        "date": 1717119183105,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
             "unit": "MB"
           },
           {
