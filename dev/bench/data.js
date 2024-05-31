@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717118665991,
+  "lastUpdate": 1717118668267,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "3a5fc3d86dd1639e4e6278127876f4c58f59994c",
-          "message": "ci(faucet): enable distribution builds by default",
-          "timestamp": "2024-02-12T15:06:58Z",
-          "tree_id": "086b346ff77de5ce28c26fe7e513525e20a4d139",
-          "url": "https://github.com/maidsafe/safe_network/commit/3a5fc3d86dd1639e4e6278127876f4c58f59994c"
-        },
-        "date": 1707753946755,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5691,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33480,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34300,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "ac27ee5eeb93ec581ee7b2f23bf2d93da71a7ca6",
+          "message": "feat(launchpad): update the start stop node popup",
+          "timestamp": "2024-05-31T00:38:16Z",
+          "tree_id": "e72362280c02917353162e8350b0ffceabf26f6c",
+          "url": "https://github.com/maidsafe/safe_network/commit/ac27ee5eeb93ec581ee7b2f23bf2d93da71a7ca6"
+        },
+        "date": 1717118667463,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7017,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33354,
             "unit": "ms"
           },
           {
