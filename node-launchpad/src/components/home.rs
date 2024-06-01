@@ -364,7 +364,7 @@ impl Component for Home {
         f.render_widget(
             Paragraph::new("Autonomi Node Launchpad")
                 .alignment(Alignment::Left)
-                .style(Style::default().fg(LIGHT_PERIWINKLE)),
+                .fg(LIGHT_PERIWINKLE),
             layer_one_header[0],
         );
         let discord_user_name_text = if self.discord_username.is_empty() {
@@ -375,7 +375,7 @@ impl Component for Home {
         f.render_widget(
             Paragraph::new(discord_user_name_text)
                 .alignment(Alignment::Right)
-                .style(Style::default().fg(VERY_LIGHT_AZURE)),
+                .fg(VERY_LIGHT_AZURE),
             layer_one_header[1],
         );
 
@@ -483,7 +483,7 @@ impl Component for Home {
         if node_rows.is_empty() {
             f.render_widget(
                 Paragraph::new("Nodes will appear here when added")
-                    .style(Style::default().fg(LIGHT_PERIWINKLE))
+                    .fg(LIGHT_PERIWINKLE)
                     .block(
                         Block::default()
                             .title("Node Status")
@@ -554,7 +554,7 @@ impl Component for Home {
             .split(popup_area)[2];
             let text = Paragraph::new(popup_text)
                 .alignment(Alignment::Center)
-                .style(style::Style::default().fg(EUCALYPTUS));
+                .fg(EUCALYPTUS);
             f.render_widget(text, centred_area);
 
             f.render_widget(popup_border, popup_area);
