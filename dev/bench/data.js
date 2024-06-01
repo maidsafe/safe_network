@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717204595589,
+  "lastUpdate": 1717204714151,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "4c961fe638fe986a30b5b8a35fa7ea76c8f84fe6",
-          "message": "chore(docs): update based on comments",
-          "timestamp": "2024-02-14T14:27:51Z",
-          "tree_id": "f8a5f1e4fb27efbe1510e90c6e2c7463aaacba0e",
-          "url": "https://github.com/maidsafe/safe_network/commit/4c961fe638fe986a30b5b8a35fa7ea76c8f84fe6"
-        },
-        "date": 1707923467591,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 59,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a02b93729070d81f2ea42ffbec135c1d05503443",
+          "message": "ci: no initial-data upload from faucet",
+          "timestamp": "2024-06-01T10:04:18+09:00",
+          "tree_id": "02ba86df0f5ea5d963f948312fc05673487a6ac0",
+          "url": "https://github.com/maidsafe/safe_network/commit/a02b93729070d81f2ea42ffbec135c1d05503443"
+        },
+        "date": 1717204713802,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
