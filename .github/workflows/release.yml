@@ -152,6 +152,13 @@ jobs:
         run: |
           ls -la
           sed -i '/^\[workspace\]/,/^\[/ {/^publish = false$/d;}' ./release-plz.toml
+          sed -i '/^\[workspace\]/,/^\[/ {/^git_release_draft = true$/d;}' ./release-plz.toml
+          sed -i '/^\[workspace\]/,/^\[/ {/^git_tag_enable = false$/d;}' ./release-plz.toml
+      
+      # only publish if we're on the stable branch
+      - name: Conditionally remove 'git_release_draft = true' from workspace in release-plz.toml on stable branch
+        if: startsWith(github.ref_name, 'stable/') && github.event_name != 'workflow_dispatch'
+        run: |
 
       - name: upload to s3
         shell: bash
@@ -186,10 +193,10 @@ jobs:
           just upload-release-assets-to-s3 "safenode_rpc_client"
           just upload-release-assets-to-s3 "sn_auditor"
 
-
+      # unless release plz toml is changed (as above removing certain limits)
+      # github releases are drafts, and we do not publish to crates.io
       - name: publish and release
         shell: bash
-        if: github.event_name != 'workflow_dispatch'
         run: |
           # The `release-plz` command publishes crates which had their versions bumped, and also
           # creates Github releases. The binaries are then attached to the releases in the

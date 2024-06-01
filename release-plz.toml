@@ -1,5 +1,7 @@
 [workspace]
 publish = false
+git_release_draft = true
+git_tag_enable = false
 allow_dirty = false
 changelog_update = true
 dependencies_update = false
