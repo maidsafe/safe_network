@@ -16,11 +16,12 @@ use crate::{
     },
     config::{AppData, Config},
     mode::{InputMode, Scene},
+    style::SPACE_CADET,
     tui,
 };
 use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
-use ratatui::prelude::Rect;
+use ratatui::{prelude::Rect, style::Style, widgets::Block};
 use sn_peers_acquisition::PeersArgs;
 use tokio::sync::mpsc;
 
@@ -157,6 +158,10 @@ impl App {
                     }
                     Action::Render => {
                         tui.draw(|f| {
+                            f.render_widget(
+                                Block::new().style(Style::new().bg(SPACE_CADET)),
+                                f.size(),
+                            );
                             for component in self.components.iter_mut() {
                                 let r = component.draw(f, f.size());
                                 if let Err(e) = r {
