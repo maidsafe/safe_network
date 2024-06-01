@@ -10,7 +10,7 @@ use super::{utils::centered_rect_fixed, Component};
 use crate::{
     action::Action,
     mode::{InputMode, Scene},
-    style::{EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
+    style::{clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
     widgets::hyperlink::Hyperlink,
 };
 use color_eyre::Result;
@@ -182,10 +182,11 @@ impl Component for BetaProgramme {
             Block::default()
                 .borders(Borders::ALL)
                 .title("Beta Rewards Programme")
+                .title_style(Style::new().fg(VIVID_SKY_BLUE))
                 .padding(Padding::uniform(2))
-                .border_style(Style::new().fg(GHOST_WHITE)),
+                .border_style(Style::new().fg(VIVID_SKY_BLUE)),
         );
-        f.render_widget(Clear, layer_zero);
+        clear_area(f, layer_zero);
 
         match self.state {
             BetaProgrammeState::DiscordIdAlreadySet => {
@@ -229,7 +230,7 @@ impl Component for BetaProgramme {
                 );
                 f.render_widget(input, layer_two[1]);
 
-                let text = Paragraph::new("  Changing the username will lead to loss of earned rewards.\n  The nodes will be restarted to reflect the change.");
+                let text = Paragraph::new("  Changing the username will lead to loss of earned.\n  rewards. The nodes will be restarted to reflect\n  the change.");
                 f.render_widget(text, layer_two[2]);
 
                 let dash = Block::new()
@@ -286,6 +287,7 @@ impl Component for BetaProgramme {
                     ),
                     "https://autonomi.com/beta/terms",
                 );
+
                 f.render_widget_ref(link, layer_two[1]);
 
                 let dash = Block::new()

@@ -15,7 +15,7 @@ use crate::{
     action::{Action, FooterActions, HomeActions},
     config::Config,
     mode::{InputMode, Scene},
-    style::{COOL_GREY, EUCALYPTUS, GHOST_WHITE, VERY_LIGHT_AZURE},
+    style::{clear_area, COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE},
 };
 use color_eyre::eyre::{OptionExt, Result};
 use fs_extra::dir::get_size;
@@ -88,7 +88,7 @@ impl Home {
             node_stats: NodesStats::new(),
             nodes_to_start: allocated_disk_space,
             node_table_state: Default::default(),
-            lock_registry: Default::default(),
+            lock_registry: None,
             discord_username: discord_username.to_string(),
             safenode_path,
         };
@@ -380,7 +380,7 @@ impl Component for Home {
         f.render_widget(
             Paragraph::new("Autonomi Node Launchpad")
                 .alignment(Alignment::Left)
-                .style(Style::default().fg(COOL_GREY)),
+                .style(Style::default().fg(LIGHT_PERIWINKLE)),
             layer_one_header[0],
         );
         let discord_user_name_text = if self.discord_username.is_empty() {
@@ -414,10 +414,10 @@ impl Component for Home {
                 Paragraph::new(vec![line1, line2]).block(
                     Block::default()
                         .title("Device Status")
-                        .title_style(Style::default().fg(GHOST_WHITE))
+                        .title_style(Style::new().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
                         .padding(Padding::uniform(1))
-                        .style(Style::default().fg(VERY_LIGHT_AZURE)),
+                        .border_style(Style::new().fg(VERY_LIGHT_AZURE)),
                 ),
                 layer_zero[1],
             );
@@ -499,11 +499,11 @@ impl Component for Home {
         if node_rows.is_empty() {
             f.render_widget(
                 Paragraph::new("Nodes will appear here when added")
-                    .style(Style::default().fg(COOL_GREY))
+                    .style(Style::default().fg(LIGHT_PERIWINKLE))
                     .block(
                         Block::default()
                             .title("Node Status")
-                            .title_style(Style::default().fg(COOL_GREY))
+                            .title_style(Style::default().fg(LIGHT_PERIWINKLE))
                             .borders(Borders::ALL)
                             .border_style(style::Style::default().fg(COOL_GREY))
                             .padding(Padding::uniform(1)),
@@ -535,7 +535,8 @@ impl Component for Home {
 
         if let Some(registry_state) = &self.lock_registry {
             let popup_area = centered_rect_fixed(50, 12, area);
-            f.render_widget(Clear, popup_area);
+            clear_area(f, popup_area);
+
             let popup_border = Paragraph::new("Manage Nodes").block(
                 Block::default()
                     .borders(Borders::ALL)
