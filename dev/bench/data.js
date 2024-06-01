@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717208520448,
+  "lastUpdate": 1717208638282,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "4460baf9ea30b742b9874fdae310c1687f3a776b",
-          "message": "test: token_distribution",
-          "timestamp": "2024-02-15T08:07:32Z",
-          "tree_id": "dcac8eaaca9c0402ee5b0d94980d74670601774a",
-          "url": "https://github.com/maidsafe/safe_network/commit/4460baf9ea30b742b9874fdae310c1687f3a776b"
-        },
-        "date": 1707987273775,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 55,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/a02b93729070d81f2ea42ffbec135c1d05503443"
         },
         "date": 1717204713802,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "a80e04f33f37000231aa7d20244f27c9771e605e",
+          "message": "ci: allow release kickoff via workflow dispatch",
+          "timestamp": "2024-06-01T11:09:49+09:00",
+          "tree_id": "68d4c8056c0438952ba95a02fc3c7c123036da01",
+          "url": "https://github.com/maidsafe/safe_network/commit/a80e04f33f37000231aa7d20244f27c9771e605e"
+        },
+        "date": 1717208637899,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
