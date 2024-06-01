@@ -16,7 +16,7 @@ use tui_input::{backend::crossterm::EventHandler, Input};
 use crate::{
     action::Action,
     mode::{InputMode, Scene},
-    style::{EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
+    style::{clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
 };
 
 use super::{utils::centered_rect_fixed, Component};
@@ -225,11 +225,12 @@ impl Component for ManageNodes {
             Block::default()
                 .borders(Borders::ALL)
                 .title("Manage Nodes")
+                .title_style(Style::new().fg(GHOST_WHITE))
                 .title_style(Style::new().fg(EUCALYPTUS))
                 .padding(Padding::uniform(2))
                 .border_style(Style::new().fg(EUCALYPTUS)),
         );
-        f.render_widget(Clear, layer_zero);
+        clear_area(f, layer_zero);
 
         // ==== input field ====
         let layer_input_field = Layout::new(
@@ -261,7 +262,7 @@ impl Component for ManageNodes {
 
         f.render_widget(input, layer_input_field[2]);
 
-        let nodes_text = Paragraph::new("Node(s)").style(Style::default().fg(GHOST_WHITE));
+        let nodes_text = Paragraph::new("Node(s)").fg(GHOST_WHITE);
         f.render_widget(nodes_text, layer_input_field[3]);
 
         // ==== info field ====
@@ -283,7 +284,7 @@ impl Component for ManageNodes {
 
         // ==== help ====
         let help = Paragraph::new("  Note: Each node will use a small amount of CPU\n  Memory and Network Bandwidth. We recommend\n  starting no more than 5 at a time.")
-            .style(Style::default().fg(GHOST_WHITE));
+            .fg(GHOST_WHITE);
         f.render_widget(help, layer_one[4]);
 
         // ==== dash ====

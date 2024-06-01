@@ -10,7 +10,7 @@ use super::{utils::centered_rect_fixed, Component};
 use crate::{
     action::Action,
     mode::{InputMode, Scene},
-    style::{COOL_GREY, GHOST_WHITE, VIVID_SKY_BLUE},
+    style::{clear_area, EUCALYPTUS, GHOST_WHITE, VIVID_SKY_BLUE},
     tui::Frame,
     widgets::hyperlink::Hyperlink,
 };
@@ -90,17 +90,18 @@ impl Component for HelpPopUp {
             ],
         )
         .split(layer_zero);
-        f.render_widget(Clear, layer_zero);
+        clear_area(f, layer_zero);
 
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
                 .title("Get Help")
-                .border_style(Style::new().fg(COOL_GREY)),
+                .title_style(style::Style::default().fg(EUCALYPTUS))
+                .border_style(Style::new().fg(EUCALYPTUS)),
         );
 
         let line1 = Paragraph::new(" See the quick start guides:");
-        f.render_widget(line1, layer_one[1]);
+        f.render_widget(line1.fg(GHOST_WHITE), layer_one[1]);
         let link1 = Hyperlink::new(
             Span::styled(
                 " https://docs.autonomi.com/getstarted",
@@ -110,7 +111,7 @@ impl Component for HelpPopUp {
         );
         f.render_widget_ref(link1, layer_one[2]);
 
-        let line2 = Paragraph::new(" Get direct help via Discord:");
+        let line2 = Paragraph::new(" Get direct help via Discord:").fg(GHOST_WHITE);
         f.render_widget(line2, layer_one[3]);
         let link2 = Hyperlink::new(
             Span::styled(
@@ -121,7 +122,7 @@ impl Component for HelpPopUp {
         );
         f.render_widget_ref(link2, layer_one[4]);
 
-        let line3 = Paragraph::new(" To join the Beta Rewards Program:");
+        let line3 = Paragraph::new(" To join the Beta Rewards Program:").fg(GHOST_WHITE);
         f.render_widget(line3, layer_one[5]);
         let link3 = Hyperlink::new(
             Span::styled(

@@ -209,7 +209,8 @@ impl Component for BetaProgramme {
                 .split(layer_one[1]);
 
                 let prompt = Paragraph::new("Discord Username associated with this device:")
-                    .alignment(Alignment::Center);
+                    .alignment(Alignment::Center)
+                    .fg(GHOST_WHITE);
 
                 f.render_widget(prompt, layer_two[0]);
 
@@ -231,7 +232,7 @@ impl Component for BetaProgramme {
                 f.render_widget(input, layer_two[1]);
 
                 let text = Paragraph::new("  Changing the username will lead to loss of earned.\n  rewards. The nodes will be restarted to reflect\n  the change.");
-                f.render_widget(text, layer_two[2]);
+                f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
 
                 let dash = Block::new()
                     .borders(Borders::BOTTOM)
@@ -279,7 +280,7 @@ impl Component for BetaProgramme {
                 .split(layer_one[1]);
 
                 let text = Paragraph::new("  Earn a slice of millions of tokens created at\n  the genesis of the Autonomi Network by running\n  nodes to build and test the Beta.\n\n  To continue in the beta Rewards Program you\n  agree to the Terms and Conditions found here:");
-                f.render_widget(text, layer_two[0]);
+                f.render_widget(text.fg(GHOST_WHITE), layer_two[0]);
                 let link = Hyperlink::new(
                     Span::styled(
                         "  https://autonomi.com/beta/terms",
@@ -328,7 +329,7 @@ impl Component for BetaProgramme {
                 .split(layer_one[1]);
 
                 let text = Paragraph::new("  Terms and conditions not accepted\n  Beta Rewards Programme entry not approved\n  You can still run nodes on the network, but\n  you will not be part of the Beta Rewards\n  Programme.\n");
-                f.render_widget(text, layer_two[0]);
+                f.render_widget(text.fg(GHOST_WHITE), layer_two[0]);
 
                 let dash = Block::new()
                     .borders(Borders::BOTTOM)
@@ -362,7 +363,7 @@ impl Component for BetaProgramme {
                 let prompt =
                     Paragraph::new("Enter your Discord Username").alignment(Alignment::Center);
 
-                f.render_widget(prompt, layer_two[0]);
+                f.render_widget(prompt.fg(GHOST_WHITE), layer_two[0]);
 
                 let input = Paragraph::new(self.discord_input_filed.value())
                     .alignment(Alignment::Center)
@@ -382,7 +383,7 @@ impl Component for BetaProgramme {
                 f.render_widget(input, layer_two[1]);
 
                 let text = Paragraph::new("  Submit your username and track your progress on\n  our Discord server. Note: your username may be\n  different from your display name.");
-                f.render_widget(text, layer_two[2]);
+                f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
 
                 let dash = Block::new()
                     .borders(Borders::BOTTOM)
