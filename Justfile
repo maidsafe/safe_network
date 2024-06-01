@@ -113,7 +113,7 @@ build-release-artifacts arch:
 
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
     cargo install cross
-    cross build --release --target $arch --bin faucet --features="distribution,initial-data"
+    cross build --release --target $arch --bin faucet --features=distribution
     cross build --release --target $arch --bin nat-detection
     cross build --release --target $arch --bin node-launchpad
     cross build --release --features="network-contacts,distribution" --target $arch --bin safe
@@ -123,7 +123,7 @@ build-release-artifacts arch:
     cross build --release --target $arch --bin safenode_rpc_client
     cross build --release --target $arch --bin sn_auditor
   else
-    cargo build --release --target $arch --bin faucet --features="distribution,initial-data"
+    cargo build --release --target $arch --bin faucet --features=distribution
     cargo build --release --target $arch --bin nat-detection
     cargo build --release --target $arch --bin node-launchpad
     cargo build --release --features="network-contacts,distribution" --target $arch --bin safe
