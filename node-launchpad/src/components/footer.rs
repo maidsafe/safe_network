@@ -104,7 +104,7 @@ impl Component for Footer {
                     Span::styled("Manage Nodes          ", Style::default().fg(EUCALYPTUS)),
                     Span::styled("[Ctrl+B] ", Style::default().fg(GHOST_WHITE)),
                     Span::styled(
-                        "Beta Rewards Programmes ",
+                        "Beta Rewards Program    ",
                         Style::default().fg(VERY_LIGHT_AZURE),
                     ),
                     Span::styled("[Q] ", Style::default().fg(GHOST_WHITE)),

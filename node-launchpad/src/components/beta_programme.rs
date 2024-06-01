@@ -181,7 +181,7 @@ impl Component for BetaProgramme {
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Beta Rewards Programme")
+                .title("Beta Rewards Program")
                 .title_style(Style::new().fg(VIVID_SKY_BLUE))
                 .padding(Padding::uniform(2))
                 .border_style(Style::new().fg(VIVID_SKY_BLUE)),
@@ -328,7 +328,7 @@ impl Component for BetaProgramme {
                 )
                 .split(layer_one[1]);
 
-                let text = Paragraph::new("  Terms and conditions not accepted\n  Beta Rewards Programme entry not approved\n  You can still run nodes on the network, but\n  you will not be part of the Beta Rewards\n  Programme.\n");
+                let text = Paragraph::new("  Terms and conditions not accepted\n  Beta Rewards Program entry not approved\n  You can still run nodes on the network, but\n  you will not be part of the Beta Rewards\n  Program.\n");
                 f.render_widget(text.fg(GHOST_WHITE), layer_two[0]);
 
                 let dash = Block::new()
