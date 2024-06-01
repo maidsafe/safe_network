@@ -12,7 +12,7 @@ use super::{
     Component, Frame,
 };
 use crate::{
-    action::{Action, FooterActions, HomeActions},
+    action::{Action, HomeActions},
     config::Config,
     mode::{InputMode, Scene},
     style::{clear_area, COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE},
@@ -126,14 +126,6 @@ impl Home {
             self.node_services.len()
         );
 
-        if let Some(action_sender) = self.action_sender.as_ref() {
-            if let Err(err) = action_sender.send(Action::FooterActions(
-                FooterActions::AtleastOneNodePresent(!self.node_services.is_empty()),
-            )) {
-                error!("Error while sending action: {err:?}");
-            }
-        }
-
         if !self.node_services.is_empty() && self.node_table_state.selected().is_none() {
             self.node_table_state.select(Some(0));
         }
@@ -212,14 +204,6 @@ impl Component for Home {
         // Update the stats to be shown as soon as the app is run
         self.try_update_node_stats(true)?;
 
-        // update the footer as soon as the app is run
-        if let Some(action_sender) = self.action_sender.as_ref() {
-            if let Err(err) = action_sender.send(Action::FooterActions(
-                FooterActions::AtleastOneNodePresent(!self.node_services.is_empty()),
-            )) {
-                error!("Error while sending action: {err:?}");
-            }
-        }
         Ok(())
     }
 
