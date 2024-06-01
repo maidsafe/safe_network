@@ -8,17 +8,25 @@
 
 use super::Component;
 use crate::{
-    action::{Action, FooterActions},
+    action::Action,
     mode::Scene,
     style::{COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE},
 };
 use color_eyre::eyre::Result;
 use ratatui::{prelude::*, widgets::*};
 
-#[derive(Default)]
 pub struct Footer {
     current_scene: Scene,
-    nodes_exist: bool,
+    nodes_to_start_configured: bool,
+}
+
+impl Footer {
+    pub fn new(nodes_to_start_configured: bool) -> Self {
+        Self {
+            current_scene: Scene::Home,
+            nodes_to_start_configured,
+        }
+    }
 }
 
 impl Component for Footer {
@@ -27,8 +35,8 @@ impl Component for Footer {
             Action::SwitchScene(scene) => {
                 self.current_scene = scene;
             }
-            Action::FooterActions(FooterActions::AtleastOneNodePresent(nodes_exist)) => {
-                self.nodes_exist = nodes_exist;
+            Action::StoreNodesToStart(count) => {
+                self.nodes_to_start_configured = count > 0;
             }
             _ => {}
         }
@@ -68,13 +76,13 @@ impl Component for Footer {
         )
         .split(layer_zero[1]);
 
-        let text_style = if self.nodes_exist {
+        let text_style = if self.nodes_to_start_configured {
             Style::default().fg(EUCALYPTUS)
         } else {
             Style::default().fg(LIGHT_PERIWINKLE)
         };
 
-        let command_style = if self.nodes_exist {
+        let command_style = if self.nodes_to_start_configured {
             Style::default().fg(GHOST_WHITE)
         } else {
             Style::default().fg(LIGHT_PERIWINKLE)

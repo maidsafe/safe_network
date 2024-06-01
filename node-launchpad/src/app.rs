@@ -56,7 +56,7 @@ impl App {
         let config = Config::new()?;
         let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
         let manage_nodes = ManageNodes::new(app_data.nodes_to_start)?;
-        let footer = Footer::default();
+        let footer = Footer::new(app_data.nodes_to_start > 0);
         let help = HelpPopUp::default();
 
         Ok(Self {
