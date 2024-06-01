@@ -43,3 +43,10 @@ unwrap_used = "warn"
 [profile.release]
 debug = 0
 strip = "debuginfo"
+
+
+[workspace.metadata.release]
+pre-release-commit-message = "chore: release"
+publish = false
+push = false
+tag = false
