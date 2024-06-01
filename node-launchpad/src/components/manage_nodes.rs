@@ -225,8 +225,9 @@ impl Component for ManageNodes {
             Block::default()
                 .borders(Borders::ALL)
                 .title("Manage Nodes")
+                .title_style(Style::new().fg(EUCALYPTUS))
                 .padding(Padding::uniform(2))
-                .border_style(Style::new().fg(GHOST_WHITE)),
+                .border_style(Style::new().fg(EUCALYPTUS)),
         );
         f.render_widget(Clear, layer_zero);
 
