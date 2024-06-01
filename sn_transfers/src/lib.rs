@@ -42,35 +42,88 @@ use lazy_static::lazy_static;
 /// The following PKs shall be updated to match its correspondent SKs before the formal release
 ///
 /// Foundation wallet public key (used to receive initial disbursment from the genesis wallet)
-const FOUNDATION_PK_STR: &str = "8f73b97377f30bed96df1c92daf9f21b4a82c862615439fab8095e68860a5d0dff9f97dba5aef503a26c065e5cb3c7ca"; // DevSkim: ignore DS173237
+const DEFAULT_FOUNDATION_PK_STR: &str = "8f73b97377f30bed96df1c92daf9f21b4a82c862615439fab8095e68860a5d0dff9f97dba5aef503a26c065e5cb3c7ca"; // DevSkim: ignore DS173237
 /// Public key where network royalties payments are expected to be made to.
-const NETWORK_ROYALTIES_STR: &str = "b4243ec9ceaec374ef992684cd911b209758c5de53d1e406b395bc37ebc8ce50e68755ea6d32da480ae927e1af4ddadb"; // DevSkim: ignore DS173237
+const DEFAULT_NETWORK_ROYALTIES_STR: &str = "b4243ec9ceaec374ef992684cd911b209758c5de53d1e406b395bc37ebc8ce50e68755ea6d32da480ae927e1af4ddadb"; // DevSkim: ignore DS173237
 /// Public key where payment forward to be targeted.
-const PAYMENT_FORWARD_STR: &str = "a585839f0502713a0ed6a327f3bd0c301f9e8fe298c93dd00ed7869d8e6804244f0d3014e90df45cd344a7ccd702865c"; // DevSkim: ignore DS173237
+const DEFAULT_PAYMENT_FORWARD_STR: &str = "a585839f0502713a0ed6a327f3bd0c301f9e8fe298c93dd00ed7869d8e6804244f0d3014e90df45cd344a7ccd702865c"; // DevSkim: ignore DS173237
 
 lazy_static! {
     pub static ref FOUNDATION_PK: MainPubkey = {
-        match MainPubkey::from_hex(FOUNDATION_PK_STR) {
+        let compile_time_key = option_env!("FOUNDATION_PK").unwrap_or(DEFAULT_FOUNDATION_PK_STR);
+        let runtime_key =
+            std::env::var("FOUNDATION_PK").unwrap_or_else(|_| compile_time_key.to_string());
+
+        if runtime_key == DEFAULT_FOUNDATION_PK_STR {
+            warn!("Using default FOUNDATION_PK: {}", DEFAULT_FOUNDATION_PK_STR);
+        } else if runtime_key == compile_time_key {
+            warn!("Using compile-time FOUNDATION_PK: {}", compile_time_key);
+        } else {
+            warn!("Overridden by runtime FOUNDATION_PK: {}", runtime_key);
+        }
+
+        match MainPubkey::from_hex(&runtime_key) {
             Ok(pk) => pk,
-            Err(err) => panic!("Failed to parse hard-coded foundation PK: {err:?}"),
+            Err(err) => panic!("Failed to parse foundation PK: {err:?}"),
         }
     };
 }
 
 lazy_static! {
     pub static ref NETWORK_ROYALTIES_PK: MainPubkey = {
-        match MainPubkey::from_hex(NETWORK_ROYALTIES_STR) {
+        let compile_time_key =
+            option_env!("NETWORK_ROYALTIES_PK").unwrap_or(DEFAULT_NETWORK_ROYALTIES_STR);
+        let runtime_key =
+            std::env::var("NETWORK_ROYALTIES_PK").unwrap_or_else(|_| compile_time_key.to_string());
+
+        if runtime_key == DEFAULT_NETWORK_ROYALTIES_STR {
+            warn!(
+                "Using default NETWORK_ROYALTIES_PK: {}",
+                DEFAULT_NETWORK_ROYALTIES_STR
+            );
+        } else if runtime_key == compile_time_key {
+            warn!(
+                "Using compile-time NETWORK_ROYALTIES_PK: {}",
+                compile_time_key
+            );
+        } else {
+            warn!(
+                "Overridden by runtime NETWORK_ROYALTIES_PK: {}",
+                runtime_key
+            );
+        }
+
+        match MainPubkey::from_hex(&runtime_key) {
             Ok(pk) => pk,
-            Err(err) => panic!("Failed to parse hard-coded network royalty PK: {err:?}"),
+            Err(err) => panic!("Failed to parse network royalties PK: {err:?}"),
         }
     };
 }
 
 lazy_static! {
     pub static ref PAYMENT_FORWARD_PK: MainPubkey = {
-        match MainPubkey::from_hex(PAYMENT_FORWARD_STR) {
+        let compile_time_key =
+            option_env!("PAYMENT_FORWARD_PK").unwrap_or(DEFAULT_PAYMENT_FORWARD_STR);
+        let runtime_key =
+            std::env::var("PAYMENT_FORWARD_PK").unwrap_or_else(|_| compile_time_key.to_string());
+
+        if runtime_key == DEFAULT_PAYMENT_FORWARD_STR {
+            warn!(
+                "Using default PAYMENT_FORWARD_PK: {}",
+                DEFAULT_PAYMENT_FORWARD_STR
+            );
+        } else if runtime_key == compile_time_key {
+            warn!(
+                "Using compile-time PAYMENT_FORWARD_PK: {}",
+                compile_time_key
+            );
+        } else {
+            warn!("Overridden by runtime PAYMENT_FORWARD_PK: {}", runtime_key);
+        }
+
+        match MainPubkey::from_hex(&runtime_key) {
             Ok(pk) => pk,
-            Err(err) => panic!("Failed to parse hard-coded payment forward PK: {err:?}"),
+            Err(err) => panic!("Failed to parse payment forward PK: {err:?}"),
         }
     };
 }

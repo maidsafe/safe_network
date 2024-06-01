@@ -24,6 +24,13 @@ Libp2p.<br>
 
 ### For Developers
 
+At build time the following env vars can be set to override default keys (** and must be set during the release process to override the default keys**. Github Secrets can be used to set these values for the release process):
+
+`FOUNDATION_PK` - The foundation public key to use for the initial disbursement to the foundation.
+`GENESIS_PK` - The genesis spend public key to use for genesis verification.
+`GENESIS_SK` - If building the faucet for the genesis spend, this is the secret key to use for genesis verification. This should be kept secret.
+`NETWORK_ROYALTIES_PK` - The foundation public key to use for receiving network royalties.
+
 - [Client](https://github.com/maidsafe/safe_network/blob/main/sn_client/README.md) The client APIs
   allowing use of the SafeNetwork to users and developers.
 - [Registers](https://github.com/maidsafe/safe_network/blob/main/sn_registers/README.md) The CRDT
@@ -513,8 +520,7 @@ metrics.
 
 ## Contributing
 
-Feel free to clone and modify this project. Pull requests are welcome.<br>You can also visit *
-*[The MaidSafe Forum](https://safenetforum.org/)** for discussion or if you would like to join our
+Feel free to clone and modify this project. Pull requests are welcome.<br>You can also visit \* \*[The MaidSafe Forum](https://safenetforum.org/)\*\* for discussion or if you would like to join our
 online community.
 
 ### Pull Request Process
