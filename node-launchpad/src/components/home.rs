@@ -425,14 +425,14 @@ impl Component for Home {
             let stats_rows = vec![Row::new(vec![
                 self.node_stats.wallet_balance.to_string(),
                 space_used_value,
-                self.node_stats.memory_usage.to_string(),
-                self.node_stats.network_usage.to_string(),
+                // self.node_stats.memory_usage.to_string(),
+                // self.node_stats.network_usage.to_string(),
             ])];
             let stats_width = [
                 Constraint::Min(15),
                 Constraint::Min(10),
-                Constraint::Min(10),
-                Constraint::Min(10),
+                // Constraint::Min(10),
+                // Constraint::Min(10),
             ];
             let stats_table = Table::new(stats_rows, stats_width)
                 .column_spacing(2)
@@ -440,8 +440,8 @@ impl Component for Home {
                     Row::new(vec![
                         "Wallet Balance",
                         space_used_header.as_str(),
-                        "Memory usage",
-                        "Network Usage",
+                        // "Memory usage",
+                        // "Network Usage",
                     ])
                     .style(Style::new().bold().fg(GHOST_WHITE)),
                 )
@@ -677,10 +677,8 @@ fn reset_nodes(action_sender: UnboundedSender<Action>) {
 struct NodesStats {
     pub wallet_balance: u64,
     pub space_used: u64,
-    pub memory_usage: usize,
-    pub network_usage: usize,
-
-    // pub system_info: sysinfo::System,
+    // pub memory_usage: usize,
+    // pub network_usage: usize,
     pub last_update: Instant,
 }
 
@@ -689,9 +687,8 @@ impl NodesStats {
         Self {
             wallet_balance: 0,
             space_used: 0,
-            memory_usage: 0,
-            network_usage: 0,
-            // system_info: sysinfo::System::new_all(),
+            // memory_usage: 0,
+            // network_usage: 0,
             last_update: Instant::now(),
         }
     }
