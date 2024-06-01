@@ -64,25 +64,24 @@ pub enum Error {
 }
 
 lazy_static! {
-    /// This key is public for auditing purposes.
-    /// The hard coded value is for testing purposes,
-    /// In production a hard-coded PK should be set at build time.
-    /// This allows all nodes to validate it.
-    /// The env set value is only used for testing purpose.
     pub static ref GENESIS_PK: MainPubkey = {
-        let pk_str =  if let Ok(pk_str) = std::env::var("GENESIS_PK") {
-            pk_str
-        }
-        else {
-            warn!("USING DEFAULT GENESIS SK (9934c2) FOR TESTING PURPOSES! EXPECTING PAIRED SK (23746b) TO BE USED!");
-            DEFAULT_LIVE_GENESIS_PK.to_string()
-        };
+        let compile_time_key = option_env!("GENESIS_PK").unwrap_or(DEFAULT_LIVE_GENESIS_PK);
+        let runtime_key =
+            std::env::var("GENESIS_PK").unwrap_or_else(|_| compile_time_key.to_string());
 
-        match MainPubkey::from_hex(pk_str) {
+        if runtime_key == DEFAULT_LIVE_GENESIS_PK {
+            warn!("USING DEFAULT GENESIS SK (9934c2) FOR TESTING PURPOSES! EXPECTING PAIRED SK (23746b) TO BE USED!");
+        } else if runtime_key == compile_time_key {
+            warn!("Using compile-time GENESIS_PK: {}", compile_time_key);
+        } else {
+            warn!("Overridden by runtime GENESIS_PK: {}", runtime_key);
+        }
+
+        match MainPubkey::from_hex(&runtime_key) {
             Ok(pk) => {
                 info!("Genesis PK: {pk:?}");
                 pk
-            },
+            }
             Err(err) => panic!("Failed to parse genesis PK: {err:?}"),
         }
     };
