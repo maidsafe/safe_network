@@ -8,13 +8,13 @@
 
 use ratatui::style::Color;
 
-pub const GHOST_WHITE: Color = Color::White;
-pub const COOL_GREY: Color = Color::Gray;
-pub const LIGHT_PERIWINKLE: Color = Color::DarkGray;
-pub const VERY_LIGHT_AZURE: Color = Color::LightBlue;
-pub const EUCALYPTUS: Color = Color::LightGreen;
-pub const SIZZLING_RED: Color = Color::Red;
-pub const SPACE_CADET: Color = Color::Blue;
-pub const DARK_GUNMETAL: Color = Color::Black;
-pub const INDIGO: Color = Color::Blue;
-pub const VIVID_SKY_BLUE: Color = Color::LightBlue;
+pub const GHOST_WHITE: Color = Color::Indexed(15);
+pub const COOL_GREY: Color = Color::Indexed(246);
+pub const LIGHT_PERIWINKLE: Color = Color::Indexed(252);
+pub const VERY_LIGHT_AZURE: Color = Color::Indexed(75);
+pub const EUCALYPTUS: Color = Color::Indexed(120); // 115 looks dull
+pub const SIZZLING_RED: Color = Color::Indexed(197);
+pub const SPACE_CADET: Color = Color::Indexed(17);
+pub const DARK_GUNMETAL: Color = Color::Indexed(255);
+pub const INDIGO: Color = Color::Indexed(60);
+pub const VIVID_SKY_BLUE: Color = Color::Indexed(45);
