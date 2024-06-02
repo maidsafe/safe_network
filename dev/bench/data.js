@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717323402208,
+  "lastUpdate": 1717323521213,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9de1b840b4dacc1440d933b0c9767f6752c130d5",
-          "message": "test: token_distribution against network",
-          "timestamp": "2024-02-19T12:17:04+01:00",
-          "tree_id": "371767604e4c2b5c8a1f7fe04b29b284c0b3b297",
-          "url": "https://github.com/maidsafe/safe_network/commit/9de1b840b4dacc1440d933b0c9767f6752c130d5"
-        },
-        "date": 1708342433380,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 47,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 55,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "769914472ad5f7ef7bc435d16a904e5b0a4b8fd7",
+          "message": "feat(keys): enable compile or runtime override of keys",
+          "timestamp": "2024-06-02T09:29:11Z",
+          "tree_id": "78338e3e38ae47c84b17a03b59c9b9cd42f92095",
+          "url": "https://github.com/maidsafe/safe_network/commit/769914472ad5f7ef7bc435d16a904e5b0a4b8fd7"
+        },
+        "date": 1717323520620,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
