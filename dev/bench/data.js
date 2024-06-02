@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717315547249,
+  "lastUpdate": 1717315665788,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "0a7c38798142fda015cea605e65cf7fb77e46dc7",
-          "message": "fix(networking): no external addr if client",
-          "timestamp": "2024-02-15T12:19:01+01:00",
-          "tree_id": "792be4155cca7583311593d443582120bf552c45",
-          "url": "https://github.com/maidsafe/safe_network/commit/0a7c38798142fda015cea605e65cf7fb77e46dc7"
-        },
-        "date": 1707996675052,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 48,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5114e09cc66d92c57b46112b5c5a7b1c64326030",
+          "message": "chore: cargo release config",
+          "timestamp": "2024-06-02T16:53:35+09:00",
+          "tree_id": "78d317a0fe2a8858253671691d882c79a5d572fb",
+          "url": "https://github.com/maidsafe/safe_network/commit/5114e09cc66d92c57b46112b5c5a7b1c64326030"
+        },
+        "date": 1717315665440,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
