@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717322357102,
+  "lastUpdate": 1717323402208,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9de1b840b4dacc1440d933b0c9767f6752c130d5",
-          "message": "test: token_distribution against network",
-          "timestamp": "2024-02-19T12:17:04+01:00",
-          "tree_id": "371767604e4c2b5c8a1f7fe04b29b284c0b3b297",
-          "url": "https://github.com/maidsafe/safe_network/commit/9de1b840b4dacc1440d933b0c9767f6752c130d5"
-        },
-        "date": 1708342332972,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2748165632999067,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8571413589816168,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.55752460700373,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.949834794754175,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "769914472ad5f7ef7bc435d16a904e5b0a4b8fd7",
+          "message": "feat(keys): enable compile or runtime override of keys",
+          "timestamp": "2024-06-02T09:29:11Z",
+          "tree_id": "78338e3e38ae47c84b17a03b59c9b9cd42f92095",
+          "url": "https://github.com/maidsafe/safe_network/commit/769914472ad5f7ef7bc435d16a904e5b0a4b8fd7"
+        },
+        "date": 1717323396960,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1928239177292903,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6805830002646567,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.963097412404444,
             "unit": "MiB/s"
           }
         ]
