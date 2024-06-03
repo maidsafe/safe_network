@@ -86,6 +86,8 @@ jobs:
           for package in $(cargo metadata --no-deps --format-version=1 | jq -r '.packages[].name'); do
             cargo build -p "$package" --all-targets --all-features
           done
+          echo "All packages built successfully. Cleaning up..."
+          cargo clean
 
   unit:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
