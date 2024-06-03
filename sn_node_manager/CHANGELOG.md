@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.9.0...sn-node-manager-v0.9.1) - 2024-06-03
+
+### Other
+- bump versions to enable re-release with env vars at compilation
+
 ## [0.9.0](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.8.0...sn-node-manager-v0.9.0) - 2024-06-03
 
 ### Added
