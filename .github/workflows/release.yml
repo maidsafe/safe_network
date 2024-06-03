@@ -153,7 +153,7 @@ jobs:
 
       # only publish if we're on the stable branch
       - name: Conditionally remove 'publish = false' from workspace in release-plz.toml on stable branch
-        if: startsWith(github.ref_name, 'stable') && github.event_name != 'workflow_dispatch'
+        if: startsWith(github.ref_name, 'stable')
         run: |
           ls -la
           sed -i '/^\[workspace\]/,/^\[/ {/^publish = false$/d;}' ./release-plz.toml
@@ -162,7 +162,7 @@ jobs:
 
       # only publish if we're on the stable branch
       - name: Conditionally remove 'git_release_draft = true' from workspace in release-plz.toml on stable branch
-        if: startsWith(github.ref_name, 'stable') && github.event_name != 'workflow_dispatch'
+        if: startsWith(github.ref_name, 'stable')
         run: |
 
       - name: upload to s3
