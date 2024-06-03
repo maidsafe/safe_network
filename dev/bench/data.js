@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717407874457,
+  "lastUpdate": 1717416250791,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "6b73b44311271a295d7bd12b5952d49839082ffb",
-          "message": "feat(node): terminate node on too many HDD write errors",
-          "timestamp": "2024-02-19T15:17:00Z",
-          "tree_id": "2fed9c6e254c18262ab13ab9e79d26bc0817753a",
-          "url": "https://github.com/maidsafe/safe_network/commit/6b73b44311271a295d7bd12b5952d49839082ffb"
-        },
-        "date": 1708359181329,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2342964730400905,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.7926694822586142,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.189911052009556,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.18697911163505,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c036da20f706a74b79fe62db1c99972489009ea6",
+          "message": "fix: enable compile time sk setting for faucet/genesis",
+          "timestamp": "2024-06-03T20:51:20+09:00",
+          "tree_id": "c59c90d395b4a7b63077ebbfd082c5bfeee3d8d2",
+          "url": "https://github.com/maidsafe/safe_network/commit/c036da20f706a74b79fe62db1c99972489009ea6"
+        },
+        "date": 1717416245512,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2130403584584577,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6315361277869003,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 56.34535384811703,
             "unit": "MiB/s"
           }
         ]
