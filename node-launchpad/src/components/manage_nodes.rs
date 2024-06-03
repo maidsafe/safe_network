@@ -24,6 +24,7 @@ use super::{utils::centered_rect_fixed, Component};
 pub const GB_PER_NODE: usize = 5;
 pub const MB: usize = 1000 * 1000;
 pub const GB: usize = MB * 1000;
+pub const MAX_NODE_COUNT: usize = 50;
 
 pub struct ManageNodes {
     /// Whether the component is active right now, capturing keystrokes + drawing things.
@@ -35,17 +36,18 @@ pub struct ManageNodes {
 }
 
 impl ManageNodes {
-    pub fn new(allocated_space: usize) -> Result<Self> {
+    pub fn new(nodes_to_start: usize) -> Result<Self> {
+        let nodes_to_start = std::cmp::min(nodes_to_start, MAX_NODE_COUNT);
         let new = Self {
             active: false,
             available_disk_space_gb: Self::get_available_space_b()? / GB,
-            nodes_to_start_input: Input::default().with_value(allocated_space.to_string()),
+            nodes_to_start_input: Input::default().with_value(nodes_to_start.to_string()),
             old_value: Default::default(),
         };
         Ok(new)
     }
 
-    fn get_nodes_to_start(&self) -> usize {
+    fn get_nodes_to_start_val(&self) -> usize {
         self.nodes_to_start_input.value().parse().unwrap_or(0)
     }
 
@@ -60,6 +62,12 @@ impl ManageNodes {
             .available_space() as usize;
 
         Ok(available_space_b)
+    }
+
+    // Returns the max number of nodes to start
+    // It is the minimum of the available disk space and the max nodes limit
+    fn max_nodes_to_start(&self) -> usize {
+        std::cmp::min(self.available_disk_space_gb / GB_PER_NODE, MAX_NODE_COUNT)
     }
 
     #[cfg(unix)]
@@ -82,13 +90,9 @@ impl Component for ManageNodes {
         let send_back = match key.code {
             KeyCode::Enter => {
                 let nodes_to_start_str = self.nodes_to_start_input.value().to_string();
-                let nodes_to_start = {
-                    let max_space_to_use = std::cmp::min(
-                        self.get_nodes_to_start() * GB_PER_NODE,
-                        self.available_disk_space_gb,
-                    );
-                    max_space_to_use / GB_PER_NODE
-                };
+                let nodes_to_start =
+                    std::cmp::min(self.get_nodes_to_start_val(), self.max_nodes_to_start());
+
                 // set the new value
                 self.nodes_to_start_input = self
                     .nodes_to_start_input
@@ -120,17 +124,18 @@ impl Component for ManageNodes {
                 if c == '0' && self.nodes_to_start_input.value().is_empty() {
                     return Ok(vec![]);
                 }
-                // if it might exceed the available space, then enter the max
                 let number = c.to_string().parse::<usize>().unwrap_or(0);
-                let new_value = format!("{}{}", self.get_nodes_to_start(), number)
+                let new_value = format!("{}{}", self.get_nodes_to_start_val(), number)
                     .parse::<usize>()
                     .unwrap_or(0);
-                if new_value * GB_PER_NODE > self.available_disk_space_gb {
-                    let max_nodes = self.available_disk_space_gb / GB_PER_NODE;
+                // if it might exceed the available space or if more than max_node_count, then enter the max
+                if new_value * GB_PER_NODE > self.available_disk_space_gb
+                    || new_value > MAX_NODE_COUNT
+                {
                     self.nodes_to_start_input = self
                         .nodes_to_start_input
                         .clone()
-                        .with_value(max_nodes.to_string());
+                        .with_value(self.max_nodes_to_start().to_string());
                     return Ok(vec![]);
                 }
                 self.nodes_to_start_input.handle_event(&Event::Key(key));
@@ -142,20 +147,22 @@ impl Component for ManageNodes {
             }
             KeyCode::Up | KeyCode::Down => {
                 let nodes_to_start = {
-                    let nodes_to_start = self.get_nodes_to_start();
+                    let current_val = self.get_nodes_to_start_val();
 
                     if key.code == KeyCode::Up {
-                        if (nodes_to_start + 1) * GB_PER_NODE <= self.available_disk_space_gb {
-                            nodes_to_start + 1
+                        if current_val + 1 >= MAX_NODE_COUNT {
+                            MAX_NODE_COUNT
+                        } else if (current_val + 1) * GB_PER_NODE <= self.available_disk_space_gb {
+                            current_val + 1
                         } else {
-                            nodes_to_start
+                            current_val
                         }
                     } else {
                         // Key::Down
-                        if nodes_to_start == 0 {
+                        if current_val == 0 {
                             0
                         } else {
-                            nodes_to_start - 1
+                            current_val - 1
                         }
                     }
                 };
@@ -255,7 +262,7 @@ impl Component for ManageNodes {
 
         let width = layer_input_field[2].width.max(3) - 3;
         let scroll = self.nodes_to_start_input.visual_scroll(width as usize);
-        let input = Paragraph::new(self.get_nodes_to_start().to_string())
+        let input = Paragraph::new(self.get_nodes_to_start_val().to_string())
             .style(Style::new().fg(VIVID_SKY_BLUE))
             .scroll((0, scroll as u16))
             .alignment(Alignment::Center);
@@ -271,7 +278,7 @@ impl Component for ManageNodes {
         let info = Line::from(vec![
             Span::styled("Using", info_style),
             Span::styled(
-                format!(" {}GB ", self.get_nodes_to_start() * GB_PER_NODE),
+                format!(" {}GB ", self.get_nodes_to_start_val() * GB_PER_NODE),
                 info_style.bold(),
             ),
             Span::styled(
@@ -283,7 +290,9 @@ impl Component for ManageNodes {
         f.render_widget(info, layer_one[2]);
 
         // ==== help ====
-        let help = Paragraph::new("  Note: Each node will use a small amount of CPU\n  Memory and Network Bandwidth. We recommend\n  starting no more than 5 at a time.")
+        let help = Paragraph::new(
+            format!("  Note: Each node will use a small amount of CPU\n  Memory and Network Bandwidth. We recommend\n  starting no more than 5 at a time (max {MAX_NODE_COUNT} nodes).")
+        )
             .fg(GHOST_WHITE);
         f.render_widget(help, layer_one[4]);
 
