@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717405291055,
+  "lastUpdate": 1717405411651,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "96c25f5c8eaf929d6b3189e0054b1b4ddaff702e",
-          "message": "chore(client): handle kad event put_record result",
-          "timestamp": "2024-02-19T13:14:26Z",
-          "tree_id": "f4553b276ea98aa5d1e7c8aebb5503365b76f2f9",
-          "url": "https://github.com/maidsafe/safe_network/commit/96c25f5c8eaf929d6b3189e0054b1b4ddaff702e"
-        },
-        "date": 1708352641773,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 48,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/76c485d4676259442bd86b1577be54d33cec6c33"
         },
         "date": 1717398483213,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "64bc3a5de972c80355fc41981b06d16ea2115fdf",
+          "message": "ci: fix the stable branch name check",
+          "timestamp": "2024-06-03T17:42:24+09:00",
+          "tree_id": "b5afd0aef64e4f68af34b1a8a0d74f33cbb8a1ff",
+          "url": "https://github.com/maidsafe/safe_network/commit/64bc3a5de972c80355fc41981b06d16ea2115fdf"
+        },
+        "date": 1717405411008,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
