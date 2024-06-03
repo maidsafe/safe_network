@@ -77,11 +77,9 @@ pub fn initialize_panic_handler() -> Result<()> {
 
 pub fn initialize_logging() -> Result<()> {
     let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-    let log_path = get_launchpad_data_dir_path()?
-        .join("logs")
-        .join(format!("log_{timestamp}"));
+    let log_path = get_launchpad_data_dir_path()?.join("logs");
     std::fs::create_dir_all(&log_path)?;
-    let log_file = std::fs::File::create(log_path.join("launchpad.log"))
+    let log_file = std::fs::File::create(log_path.join(format!("launchpad_{timestamp}.log")))
         .context(format!("Failed to create file {log_path:?}"))?;
     std::env::set_var(
         "RUST_LOG",
