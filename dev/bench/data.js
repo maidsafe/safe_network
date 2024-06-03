@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717377398506,
+  "lastUpdate": 1717398364222,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fe7c7b442b0779bdb3ac378baa9101144a0cc019",
-          "message": "test(networking): update the replication fetcher tests, now we cleanup failed nodes",
-          "timestamp": "2024-02-19T13:56:09+01:00",
-          "tree_id": "27727eb77e8fd2ff875f70e4085414884fde8ba7",
-          "url": "https://github.com/maidsafe/safe_network/commit/fe7c7b442b0779bdb3ac378baa9101144a0cc019"
-        },
-        "date": 1708348266513,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2561685462880765,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8071330395854717,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.077079778031546,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.32923897230996,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "76c485d4676259442bd86b1577be54d33cec6c33",
+          "message": "chore(ci): clean up cargo dir to prevent low disk space error",
+          "timestamp": "2024-06-03T06:20:21Z",
+          "tree_id": "2c884890a6dca6d67d6967421d61b5862f94b695",
+          "url": "https://github.com/maidsafe/safe_network/commit/76c485d4676259442bd86b1577be54d33cec6c33"
+        },
+        "date": 1717398359169,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2309150815563756,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.65053254363363,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.54346001650932,
             "unit": "MiB/s"
           }
         ]
