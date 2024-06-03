@@ -26,10 +26,11 @@ Libp2p.<br>
 
 At build time the following env vars can be set to override default keys (** and must be set during the release process to override the default keys**. Github Secrets can be used to set these values for the release process):
 
-`FOUNDATION_PK` - The foundation public key to use for the initial disbursement to the foundation.
-`GENESIS_PK` - The genesis spend public key to use for genesis verification.
-`GENESIS_SK` - If building the faucet for the genesis spend, this is the secret key to use for genesis verification. This should be kept secret.
-`NETWORK_ROYALTIES_PK` - The foundation public key to use for receiving network royalties.
+- `GENESIS_PK` - The genesis spend public key to use for genesis verification.
+- `GENESIS_SK` - If building the faucet for the genesis spend, this is the secret key to use for genesis verification. This should be kept secret.
+- `FOUNDATION_PK` - The foundation public key to use for the initial disbursement to the foundation.
+- `NETWORK_ROYALTIES_PK` - The foundation public key to use for receiving network royalties.
+- `PAYMENT_FORWARD_PK` - The public key to use for payment forwarding for the beta network collection.
 
 - [Client](https://github.com/maidsafe/safe_network/blob/main/sn_client/README.md) The client APIs
   allowing use of the SafeNetwork to users and developers.

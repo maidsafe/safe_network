@@ -112,6 +112,7 @@ lazy_static! {
     /// The one for live network shall be passed in via env set.
     static ref GENESIS_SK_STR: String = {
         if let Ok(sk) = std::env::var("GENESIS_SK") {
+            info!("Using runtime GENESIS_SK");
             sk
         }
         else {
