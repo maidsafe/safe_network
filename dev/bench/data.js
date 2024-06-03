@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717416383382,
+  "lastUpdate": 1717419372419,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "72412bd554c2ae3bffd8c196c999b702b1f02327",
-          "message": "perf: improve DAG crawling performance with better parallelisation",
-          "timestamp": "2024-02-20T07:48:14Z",
-          "tree_id": "d8f8b2942dbe2be7c11f2a2dbdddb48f5766401c",
-          "url": "https://github.com/maidsafe/safe_network/commit/72412bd554c2ae3bffd8c196c999b702b1f02327"
-        },
-        "date": 1708418162294,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3148347540902876,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8579788711684353,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 59.26668300941532,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 56.34535384811703,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "1d555be032c28ede405f27cc510b0d3114019c05",
+          "message": "feat(launchpad): limit node count to 50",
+          "timestamp": "2024-06-03T12:08:47Z",
+          "tree_id": "f36c2c72d36c63af747716d262645adaa3345ee4",
+          "url": "https://github.com/maidsafe/safe_network/commit/1d555be032c28ede405f27cc510b0d3114019c05"
+        },
+        "date": 1717419367299,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2276026216478544,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6763199520923542,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.60619177420025,
             "unit": "MiB/s"
           }
         ]
