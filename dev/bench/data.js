@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717377276554,
+  "lastUpdate": 1717377395377,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5dd7bb310cdcbfa24b3c4174c19a9f098a02c116",
-          "message": "refactor(cli): allow to pass files iterator to chunk-mgr and files-upload tools\n\nAlso allow to use different paths for local wallet dir and chunk-mgr artifacts/cache.",
-          "timestamp": "2024-02-19T13:04:06+01:00",
-          "tree_id": "9ed2329f44ebf61000f6b6d90616653bcc189ff7",
-          "url": "https://github.com/maidsafe/safe_network/commit/5dd7bb310cdcbfa24b3c4174c19a9f098a02c116"
-        },
-        "date": 1708344964980,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d459d32606fafecfa01d3f2aa808f01171e953be",
+          "message": "ci: use secrets during build process\n\nAdds secret use for build time generation with new keys etc.\nUpdates readme",
+          "timestamp": "2024-06-03T10:02:17+09:00",
+          "tree_id": "a60cf1b88cc64478237972a3596aa611dd66db3d",
+          "url": "https://github.com/maidsafe/safe_network/commit/d459d32606fafecfa01d3f2aa808f01171e953be"
+        },
+        "date": 1717377394967,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
