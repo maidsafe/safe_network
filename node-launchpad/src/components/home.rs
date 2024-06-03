@@ -6,17 +6,16 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{
-    manage_nodes::{GB, MB},
-    utils::centered_rect_fixed,
-    Component, Frame,
-};
+use super::{manage_nodes::GB_PER_NODE, utils::centered_rect_fixed, Component, Frame};
 use crate::{
     action::{Action, HomeActions},
     config::Config,
     mode::{InputMode, Scene},
     node_stats::NodeStats,
-    style::{clear_area, COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE},
+    style::{
+        clear_area, COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE,
+        VIVID_SKY_BLUE,
+    },
 };
 use color_eyre::eyre::{OptionExt, Result};
 use rand::seq::SliceRandom;
@@ -27,11 +26,12 @@ use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
 use std::{
     path::PathBuf,
     time::{Duration, Instant},
+    vec,
 };
 use tokio::sync::mpsc::UnboundedSender;
 
 const NODE_START_INTERVAL: usize = 10;
-const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(15);
+const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 const NAT_DETECTION_SERVERS_LIST_URL: &str =
     "https://sn-testnet.s3.eu-west-2.amazonaws.com/nat-detection-servers";
 /// If nat detection fails for more than 3 times, we don't want to waste time running during every node start.
@@ -407,52 +407,44 @@ impl Component for Home {
             );
         } else {
             // display stats as a table
-            let (space_used_value, space_used_header) = {
-                // if space used within 1GB, display in mb
-                if self.node_stats.space_used as f64 / (MB as f64) < (MB as f64) {
-                    (
-                        format!("{:.2}", self.node_stats.space_used as f64 / MB as f64),
-                        "Space Used (MB)".to_string(),
-                    )
-                } else {
-                    // else display in gb
-                    (
-                        format!("{:.2}", self.node_stats.space_used as f64 / GB as f64),
-                        "Space Used (GB)".to_string(),
-                    )
-                }
-            };
-            let stats_rows = vec![Row::new(vec![
-                self.node_stats.wallet_balance.to_string(),
-                space_used_value,
-                self.node_stats.memory_usage_mb.to_string(),
-                self.node_stats.network_usage.to_string(),
-            ])];
-            let stats_width = [
-                Constraint::Min(15),
-                Constraint::Min(10),
-                Constraint::Min(10),
-                Constraint::Min(10),
-            ];
-            let stats_table = Table::new(stats_rows, stats_width)
-                .column_spacing(2)
-                .header(
-                    Row::new(vec![
-                        "Wallet Balance",
-                        space_used_header.as_str(),
-                        "Memory usage (MB)",
-                        "Network Usage",
-                    ])
-                    .style(Style::new().bold().fg(GHOST_WHITE)),
+
+            let storage_allocated_row = Row::new(vec![
+                Cell::new("Storage Allocated".to_string()).fg(GHOST_WHITE),
+                Cell::new(format!("{} GB", self.nodes_to_start * GB_PER_NODE)).fg(GHOST_WHITE),
+            ]);
+            let memory_use_val = if self.node_stats.memory_usage_mb as f64 / 1024 as f64 > 1.0 {
+                format!(
+                    "{:.2} GB",
+                    self.node_stats.memory_usage_mb as f64 / 1024 as f64
                 )
-                .block(
-                    Block::default()
-                        .title("Device Status")
-                        .title_style(Style::default().fg(GHOST_WHITE))
-                        .borders(Borders::ALL)
-                        .padding(Padding::uniform(1))
-                        .style(Style::default().fg(VERY_LIGHT_AZURE)),
-                );
+            } else {
+                format!("{} MB", self.node_stats.memory_usage_mb)
+            };
+
+            let memory_use_row = Row::new(vec![
+                Cell::new("Memory Use".to_string()).fg(GHOST_WHITE),
+                Cell::new(memory_use_val).fg(GHOST_WHITE),
+            ]);
+            let total_nanos_earned_row = Row::new(vec![
+                Cell::new("Total Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
+                Cell::new(self.node_stats.forwarded_rewards.to_string())
+                    .fg(VIVID_SKY_BLUE)
+                    .bold(),
+            ]);
+            let stats_rows = vec![
+                storage_allocated_row,
+                memory_use_row.bottom_margin(2),
+                total_nanos_earned_row,
+            ];
+            let stats_width = [Constraint::Max(25), Constraint::Min(5)];
+            let stats_table = Table::new(stats_rows, stats_width).block(
+                Block::default()
+                    .title("Device Status")
+                    .title_style(Style::default().fg(GHOST_WHITE))
+                    .borders(Borders::ALL)
+                    .padding(Padding::uniform(1))
+                    .style(Style::default().fg(VERY_LIGHT_AZURE)),
+            );
             f.render_widget(stats_table, layer_zero[1]);
         };
 
