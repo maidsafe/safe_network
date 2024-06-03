@@ -26,7 +26,7 @@ const MAX_DOWNLOAD_RETRIES: u8 = 3;
 
 #[cfg(windows)]
 pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Result<()> {
-    if let Ok(_) = which::which("winsw.exe") {
+    if which::which("winsw.exe").is_ok() {
         return Ok(());
     }
 
