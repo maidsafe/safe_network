@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.22](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.4.21...sn_faucet-v0.4.22) - 2024-06-03
+
+### Other
+- updated the following local packages: sn_client, sn_transfers, sn_cli
+
 ## [0.4.20](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.4.19...sn_faucet-v0.4.20) - 2024-06-03
 
 ### Added

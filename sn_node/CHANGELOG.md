@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.107.2](https://github.com/joshuef/safe_network/compare/sn_node-v0.107.1...sn_node-v0.107.2) - 2024-06-03
+
+### Fixed
+- enable compile time sk setting for faucet/genesis
+
 ## [0.107.1](https://github.com/joshuef/safe_network/compare/sn_node-v0.107.0...sn_node-v0.107.1) - 2024-06-03
 
 ### Other
