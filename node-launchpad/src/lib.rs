@@ -11,6 +11,7 @@ pub mod app;
 pub mod components;
 pub mod config;
 pub mod mode;
+pub mod node_stats;
 pub mod style;
 pub mod tui;
 pub mod utils;

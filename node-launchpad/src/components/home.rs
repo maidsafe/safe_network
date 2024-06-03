@@ -15,21 +15,16 @@ use crate::{
     action::{Action, HomeActions},
     config::Config,
     mode::{InputMode, Scene},
+    node_stats::NodeStats,
     style::{clear_area, COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE},
 };
 use color_eyre::eyre::{OptionExt, Result};
-use fs_extra::dir::get_size;
-use futures::StreamExt;
 use rand::seq::SliceRandom;
 use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{config::get_node_registry_path, VerbosityLevel};
 use sn_peers_acquisition::{get_bootstrap_peers_from_url, PeersArgs};
-use sn_service_management::{
-    rpc::{RpcActions, RpcClient},
-    NodeRegistry, NodeServiceData, ServiceStatus,
-};
+use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
 use std::{
-    net::SocketAddr,
     path::PathBuf,
     time::{Duration, Instant},
 };
@@ -51,7 +46,8 @@ pub struct Home {
     node_services: Vec<NodeServiceData>,
     is_nat_status_determined: bool,
     error_while_running_nat_detection: usize,
-    node_stats: NodesStats,
+    node_stats: NodeStats,
+    node_stats_last_update: Instant,
     node_table_state: TableState,
     nodes_to_start: usize,
     discord_username: String,
@@ -85,7 +81,8 @@ impl Home {
             node_services: Default::default(),
             is_nat_status_determined: false,
             error_while_running_nat_detection: 0,
-            node_stats: NodesStats::new(),
+            node_stats: NodeStats::default(),
+            node_stats_last_update: Instant::now(),
             nodes_to_start: allocated_disk_space,
             node_table_state: Default::default(),
             lock_registry: None,
@@ -100,10 +97,10 @@ impl Home {
     /// Tries to trigger the update of node stats if the last update was more than `NODE_STAT_UPDATE_INTERVAL` ago.
     /// The result is sent via the HomeActions::NodesStatsObtained action.
     fn try_update_node_stats(&mut self, force_update: bool) -> Result<()> {
-        if self.node_stats.last_update.elapsed() > NODE_STAT_UPDATE_INTERVAL || force_update {
-            self.node_stats.last_update = Instant::now();
+        if self.node_stats_last_update.elapsed() > NODE_STAT_UPDATE_INTERVAL || force_update {
+            self.node_stats_last_update = Instant::now();
 
-            NodesStats::fetch_all_node_stats(&self.node_services, self.get_actions_sender()?);
+            NodeStats::fetch_all_node_stats(&self.node_services, self.get_actions_sender()?);
         }
         Ok(())
     }
@@ -289,12 +286,8 @@ impl Component for Home {
             Action::Tick => {
                 self.try_update_node_stats(false)?;
             }
-            Action::HomeActions(HomeActions::NodesStatsObtained {
-                wallet_balance,
-                space_used,
-            }) => {
-                self.node_stats.wallet_balance = wallet_balance;
-                self.node_stats.space_used = space_used;
+            Action::HomeActions(HomeActions::NodesStatsObtained(stats)) => {
+                self.node_stats = stats;
             }
             Action::HomeActions(HomeActions::StartNodesCompleted)
             | Action::HomeActions(HomeActions::StopNodesCompleted) => {
@@ -432,14 +425,14 @@ impl Component for Home {
             let stats_rows = vec![Row::new(vec![
                 self.node_stats.wallet_balance.to_string(),
                 space_used_value,
-                // self.node_stats.memory_usage.to_string(),
-                // self.node_stats.network_usage.to_string(),
+                self.node_stats.memory_usage_mb.to_string(),
+                self.node_stats.network_usage.to_string(),
             ])];
             let stats_width = [
                 Constraint::Min(15),
                 Constraint::Min(10),
-                // Constraint::Min(10),
-                // Constraint::Min(10),
+                Constraint::Min(10),
+                Constraint::Min(10),
             ];
             let stats_table = Table::new(stats_rows, stats_width)
                 .column_spacing(2)
@@ -447,8 +440,8 @@ impl Component for Home {
                     Row::new(vec![
                         "Wallet Balance",
                         space_used_header.as_str(),
-                        // "Memory usage",
-                        // "Network Usage",
+                        "Memory usage (MB)",
+                        "Network Usage",
                     ])
                     .style(Style::new().bold().fg(GHOST_WHITE)),
                 )
@@ -461,7 +454,6 @@ impl Component for Home {
                         .style(Style::default().fg(VERY_LIGHT_AZURE)),
                 );
             f.render_widget(stats_table, layer_zero[1]);
-            // "todo: display a table".to_string()
         };
 
         // ==== Node Status =====
@@ -677,96 +669,4 @@ fn reset_nodes(action_sender: UnboundedSender<Action>) {
             error!("Error while sending action: {err:?}");
         }
     });
-}
-
-/// The stats of all the running nodes
-/// todo: certain stats like wallet balance, space used can be calculated even if the node is offline.
-struct NodesStats {
-    pub wallet_balance: u64,
-    pub space_used: u64,
-    // pub memory_usage: usize,
-    // pub network_usage: usize,
-    pub last_update: Instant,
-}
-
-impl NodesStats {
-    pub fn new() -> Self {
-        Self {
-            wallet_balance: 0,
-            space_used: 0,
-            // memory_usage: 0,
-            // network_usage: 0,
-            last_update: Instant::now(),
-        }
-    }
-
-    pub fn fetch_all_node_stats(nodes: &[NodeServiceData], action_sender: UnboundedSender<Action>) {
-        let node_details = nodes
-            .iter()
-            .filter_map(|node| {
-                if node.status == ServiceStatus::Running {
-                    Some((
-                        node.service_name.clone(),
-                        node.rpc_socket_addr,
-                        node.data_dir_path.clone(),
-                    ))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        tokio::task::spawn_local(async move {
-            Self::fetch_all_node_stats_inner(node_details, action_sender).await;
-        });
-    }
-
-    async fn fetch_all_node_stats_inner(
-        node_details: Vec<(String, SocketAddr, PathBuf)>,
-        action_sender: UnboundedSender<Action>,
-    ) {
-        let mut stream = futures::stream::iter(node_details)
-            .map(|(service_name, rpc_addr, data_dir)| async move {
-                (
-                    Self::fetch_stat_per_node(rpc_addr, data_dir).await,
-                    service_name,
-                )
-            })
-            .buffer_unordered(5);
-
-        let mut all_wallet_balance = 0;
-        let mut all_space_used = 0;
-
-        while let Some((result, service_name)) = stream.next().await {
-            match result {
-                Ok((wallet_balance, space_used)) => {
-                    info!("Wallet balance: {wallet_balance}, Space used: {space_used}");
-                    all_wallet_balance += wallet_balance;
-                    all_space_used += space_used;
-                }
-                Err(err) => {
-                    error!("Error while fetching stats from {service_name:?}: {err:?}");
-                }
-            }
-        }
-
-        if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::NodesStatsObtained {
-            wallet_balance: all_wallet_balance,
-            space_used: all_space_used,
-        })) {
-            error!("Error while sending action: {err:?}");
-        }
-    }
-
-    // todo: get all the stats
-    async fn fetch_stat_per_node(rpc_addr: SocketAddr, data_dir: PathBuf) -> Result<(u64, u64)> {
-        let now = Instant::now();
-        let rpc_client = RpcClient::from_socket_addr(rpc_addr);
-        let wallet_balance = rpc_client.node_info().await?.wallet_balance;
-
-        let space_used = get_size(data_dir)?;
-
-        debug!("Fetched stats from {rpc_addr:?} in {:?}", now.elapsed());
-        Ok((wallet_balance, space_used))
-    }
 }

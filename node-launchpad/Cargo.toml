@@ -42,8 +42,12 @@ libc = "0.2.148"
 log = "0.4.20"
 nix = { version = "0.28.0", features = ["user"] }
 pretty_assertions = "1.4.0"
+prometheus-parse = "0.2.5"
 rand = "0.8.5"
 ratatui = { version = "0.26.0", features = ["serde", "macros", "unstable-widget-ref"] }
+reqwest = { version = "0.12.2", default-features = false, features = [
+    "rustls-tls-manual-roots",
+] }
 serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.107"
 signal-hook = "0.3.17"
