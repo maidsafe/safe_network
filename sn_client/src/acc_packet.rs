@@ -25,9 +25,23 @@ pub fn load_account_wallet_or_create_with_mnemonic(
         Ok(wallet) => Ok(wallet),
         Err(error) => {
             warn!("Issue loading wallet, creating a new one: {error}");
-            println!("Issue loading wallet from {root_dir:?}, creating a new one: {error}");
-            let mnemonic = user_secret::random_eip2333_mnemonic()?;
-            user_secret::write_mnemonic_to_disk(root_dir, &mnemonic)?;
+            println!("Issue loading wallet from {root_dir:?}");
+
+            let mnemonic = match user_secret::read_mnemonic_from_disk(root_dir) {
+                Ok(mnemonic) => {
+                    println!("Found existing mnemonic in {root_dir:?}, this will be used for key derivation.");
+                    info!("Using existing mnemonic from {root_dir:?}");
+                    mnemonic
+                }
+                Err(error) => {
+                    println!("No existing mnemonic found, creating a new one in {root_dir:?}.");
+                    warn!("No existing mnemonic found in {root_dir:?}, creating new one. Error was: {error:?}");
+                    let mnemonic = user_secret::random_eip2333_mnemonic()?;
+                    user_secret::write_mnemonic_to_disk(root_dir, &mnemonic)?;
+
+                    mnemonic
+                }
+            };
 
             let passphrase = derivation_passphrase.unwrap_or(DEFAULT_WALLET_DERIVIATION_PASSPHRASE);
 

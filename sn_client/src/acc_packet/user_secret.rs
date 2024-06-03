@@ -65,7 +65,6 @@ pub fn write_mnemonic_to_disk(files_dir: &Path, mnemonic: &bip39::Mnemonic) -> R
     Ok(())
 }
 
-#[allow(dead_code)] // as yet unused, will be used soon
 pub(super) fn read_mnemonic_from_disk(files_dir: &Path) -> Result<bip39::Mnemonic> {
     let filename = files_dir.join(MNEMONIC_FILENAME);
     let content = std::fs::read_to_string(filename)?;
