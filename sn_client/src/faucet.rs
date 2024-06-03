@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{wallet::send, Client, Error, Result};
-use sn_transfers::{load_genesis_wallet, HotWallet, NanoTokens, FOUNDATION_PK};
+use sn_transfers::{load_genesis_wallet, HotWallet, NanoTokens, Transfer, FOUNDATION_PK};
 
 const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(900000000000000000);
 
@@ -98,14 +98,14 @@ pub async fn fund_faucet_from_genesis_wallet(
             // write the foundation cashnote to disk
             let root_dir = faucet_wallet.api().wallet_dir();
 
-            let foundation_cashnote_path = root_dir.join("foundation_cashnote.cash_note");
+            let foundation_transfer_path = root_dir.join("foundation_disbursement.transfer");
 
-            debug!("Writing cash note to: {foundation_cashnote_path:?}");
-            let hex = foundation_cashnote
-                .to_hex()
-                .map_err(|_| Error::GenesisDisbursement)?;
-            if let Err(error) = std::fs::write(foundation_cashnote_path, hex) {
-                error!("Could not write the foundation cashnote to disk: {error}.");
+            debug!("Writing cash note to: {foundation_transfer_path:?}");
+
+            let transfer = Transfer::transfer_from_cash_note(&foundation_cashnote)?.to_hex()?;
+
+            if let Err(error) = std::fs::write(foundation_transfer_path, transfer) {
+                error!("Could not write the foundation transfer to disk: {error}.");
                 return Err(Error::from(error));
             }
         }
