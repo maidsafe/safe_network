@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717419495302,
+  "lastUpdate": 1717431624476,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "git@happybeing.com",
-            "name": "Mark",
-            "username": "happybeing"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "a7bc7fae053869e23fee8a1bb25e4d8683c7d676",
-          "message": "docs: marke merkle_reg() accessors as unstable (in comment) on Register types",
-          "timestamp": "2024-02-20T08:47:59Z",
-          "tree_id": "5ac976e35e1f62c0a97c41fc12793328f8a072e8",
-          "url": "https://github.com/maidsafe/safe_network/commit/a7bc7fae053869e23fee8a1bb25e4d8683c7d676"
-        },
-        "date": 1708422110993,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.248514466610662,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.7995997015881675,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.660677294361314,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.60619177420025,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6e0f3a1fb77af2e0908b12b2f337fe0e1390aa64",
+          "message": "fix(faucet): save the transfer not the cashnote for foundation",
+          "timestamp": "2024-06-03T15:09:41Z",
+          "tree_id": "7b18edf83ba90ce02ff2a16185e3f13e2431774e",
+          "url": "https://github.com/maidsafe/safe_network/commit/6e0f3a1fb77af2e0908b12b2f337fe0e1390aa64"
+        },
+        "date": 1717431618755,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2102480330511014,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6387583820891098,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.85792818601019,
             "unit": "MiB/s"
           }
         ]
