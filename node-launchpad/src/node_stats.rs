@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use color_eyre::Result;
-use fs_extra::dir::get_size;
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use sn_service_management::{NodeServiceData, ServiceStatus};
@@ -18,20 +17,14 @@ use crate::action::{Action, HomeActions};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NodeStats {
-    pub wallet_balance: u64,
     pub forwarded_rewards: u64,
-    pub space_used: u64,
     pub memory_usage_mb: usize,
-    pub network_usage: usize,
 }
 
 impl NodeStats {
     fn merge(&mut self, other: &NodeStats) {
-        self.wallet_balance += other.wallet_balance;
         self.forwarded_rewards += other.forwarded_rewards;
-        self.space_used += other.space_used;
         self.memory_usage_mb += other.memory_usage_mb;
-        self.network_usage += other.network_usage;
     }
 
     pub fn fetch_all_node_stats(nodes: &[NodeServiceData], action_sender: UnboundedSender<Action>) {
@@ -102,7 +95,7 @@ impl NodeStats {
         }
     }
 
-    async fn fetch_stat_per_node(metrics_port: u16, data_dir: PathBuf) -> Result<NodeStats> {
+    async fn fetch_stat_per_node(metrics_port: u16, _data_dir: PathBuf) -> Result<NodeStats> {
         let now = Instant::now();
 
         let body = reqwest::get(&format!("http://localhost:{metrics_port}/metrics"))
@@ -113,23 +106,11 @@ impl NodeStats {
         let all_metrics = prometheus_parse::Scrape::parse(lines.into_iter())?;
 
         let mut stats = NodeStats {
-            wallet_balance: 0,
-            space_used: get_size(data_dir)?,
             memory_usage_mb: 0,
-            network_usage: 0,
             forwarded_rewards: 0,
         };
         for sample in all_metrics.samples.iter() {
-            if sample.metric == "sn_node_current_reward_wallet_balance" {
-                match sample.value {
-                    prometheus_parse::Value::Counter(val)
-                    | prometheus_parse::Value::Gauge(val)
-                    | prometheus_parse::Value::Untyped(val) => {
-                        stats.wallet_balance = val as u64;
-                    }
-                    _ => {}
-                }
-            } else if sample.metric == "sn_networking_process_memory_used_mb" {
+            if sample.metric == "sn_networking_process_memory_used_mb" {
                 match sample.value {
                     prometheus_parse::Value::Counter(val)
                     | prometheus_parse::Value::Gauge(val)
