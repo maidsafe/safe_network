@@ -50,14 +50,13 @@ impl NodeStats {
                 }
             })
             .collect::<Vec<_>>();
-        if node_details.is_empty() {
-            info!("No running nodes to fetch stats from.");
-            return;
-        } else {
-            info!("Fetching stats from {} nodes", node_details.len());
+        if !node_details.is_empty() {
+            debug!("Fetching stats from {} nodes", node_details.len());
             tokio::task::spawn_local(async move {
                 Self::fetch_all_node_stats_inner(node_details, action_sender).await;
             });
+        } else {
+            debug!("No running nodes to fetch stats from.");
         }
     }
 
