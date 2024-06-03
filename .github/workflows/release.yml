@@ -17,14 +17,19 @@ on:
   workflow_dispatch:
     inputs:
       network_version_mode:
-        description: 'Set NETWORK_VERSION_MODE if desired. (This restricts the network from contacting any other network mode. If left empty, the default protocol is used)'
+        description: "Set NETWORK_VERSION_MODE if desired. (This restricts the network from contacting any other network mode. If left empty, the default protocol is used)"
         required: false
-        default: ''
+        default: ""
 
 env:
   RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
   JUST_BIN_URL: https://github.com/casey/just/releases/download/1.25.2/just-1.25.2-x86_64-unknown-linux-musl.tar.gz
   WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
+  GENESIS_PK: ${{ secrets.STABLE_GENESIS_PK }}
+  GENESIS_SK: ${{ secrets.STABLE_GENESIS_SK }}
+  FOUNDATION_PK: ${{ secrets.STABLE_FOUNDATION_PK }}
+  NETWORK_ROYALTIES_PK: ${{ secrets.STABLE_NETWORK_ROYALTIES_PK }}
+  PAYMENT_FORWARD_PK: ${{ secrets.STABLE_REWARD_FORWARDING_PK }}
 
 jobs:
   build:
@@ -154,7 +159,7 @@ jobs:
           sed -i '/^\[workspace\]/,/^\[/ {/^publish = false$/d;}' ./release-plz.toml
           sed -i '/^\[workspace\]/,/^\[/ {/^git_release_draft = true$/d;}' ./release-plz.toml
           sed -i '/^\[workspace\]/,/^\[/ {/^git_tag_enable = false$/d;}' ./release-plz.toml
-      
+
       # only publish if we're on the stable branch
       - name: Conditionally remove 'git_release_draft = true' from workspace in release-plz.toml on stable branch
         if: startsWith(github.ref_name, 'stable/') && github.event_name != 'workflow_dispatch'
@@ -209,8 +214,7 @@ jobs:
 
       - name: create github release assets
         shell: bash
-        run:  just upload-github-release-assets
-
+        run: just upload-github-release-assets
 
       - name: upload as latest release
         shell: bash
