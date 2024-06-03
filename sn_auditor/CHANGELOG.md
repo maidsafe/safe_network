@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.18](https://github.com/joshuef/safe_network/compare/sn_auditor-v0.1.17...sn_auditor-v0.1.18) - 2024-06-03
+
+### Added
+- *(auditor)* measuring beta tracking performance
+- integrate DAG crawling fixes from Josh and Qi
+
+### Fixed
+- *(auditor)* check unknown hash when add new participant
+
+### Other
+- spend verification error management
+
 ## [0.1.17](https://github.com/joshuef/safe_network/compare/sn_auditor-v0.1.16...sn_auditor-v0.1.17) - 2024-05-24
 
 ### Added

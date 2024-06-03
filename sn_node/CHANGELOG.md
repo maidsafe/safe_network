@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.107.0](https://github.com/joshuef/safe_network/compare/sn_node-v0.106.5...sn_node-v0.107.0) - 2024-06-03
+
+### Added
+- *(node)* make payment forward optional
+- *(networking)* add UPnP metrics
+- *(network)* [**breaking**] move network versioning away from sn_protocol
+- *(faucet)* write foundation cash note to disk
+- *(keys)* enable compile or runtime override of keys
+- *(launchpad)* use nat detection server to determine the nat status
+
+### Fixed
+- *(networking)* upnp feature gates for metrics
+- *(networking)* conditional upnp metrics
+
+### Other
+- *(networking)* cargo fmt
+- use secrets during build process
+- *(release)* sn_auditor-v0.1.17/sn_client-v0.106.3/sn_networking-v0.15.3/sn_transfers-v0.18.1/sn_logging-v0.2.27/sn_cli-v0.92.0/sn_faucet-v0.4.19/sn_node-v0.106.5/sn_service_management-v0.3.0/node-launchpad-v0.2.0/sn-node-manager-v0.8.0/sn_protocol-v0.16.7/sn_node_rpc_client-v0.6.18
+
 ## [0.106.5](https://github.com/joshuef/safe_network/compare/sn_node-v0.106.4...sn_node-v0.106.5) - 2024-05-24
 
 ### Added

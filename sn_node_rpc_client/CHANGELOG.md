@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.19](https://github.com/joshuef/safe_network/compare/sn_node_rpc_client-v0.6.18...sn_node_rpc_client-v0.6.19) - 2024-06-03
+
+### Other
+- update Cargo.lock dependencies
+
 ## [0.6.18](https://github.com/joshuef/safe_network/compare/sn_node_rpc_client-v0.6.17...sn_node_rpc_client-v0.6.18) - 2024-05-24
 
 ### Other

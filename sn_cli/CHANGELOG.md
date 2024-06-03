@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.93.0](https://github.com/joshuef/safe_network/compare/sn_cli-v0.92.0...sn_cli-v0.93.0) - 2024-06-03
+
+### Added
+- integrate DAG crawling fixes from Josh and Qi
+- *(faucet)* write foundation cash note to disk
+- *(client)* read existing mnemonic from disk if avilable
+- *(networking)* add UPnP metrics
+- *(network)* [**breaking**] move network versioning away from sn_protocol
+- *(keys)* enable compile or runtime override of keys
+- *(launchpad)* use nat detection server to determine the nat status
+
+### Fixed
+- *(networking)* upnp feature gates for metrics
+- *(networking)* conditional upnp metrics
+
+### Other
+- *(cli)* showing cli final execution result explicitly
+- rename DAG building to crawling
+- spend verification error management
+- *(networking)* cargo fmt
+- use secrets during build process
+- *(release)* sn_auditor-v0.1.17/sn_client-v0.106.3/sn_networking-v0.15.3/sn_transfers-v0.18.1/sn_logging-v0.2.27/sn_cli-v0.92.0/sn_faucet-v0.4.19/sn_node-v0.106.5/sn_service_management-v0.3.0/node-launchpad-v0.2.0/sn-node-manager-v0.8.0/sn_protocol-v0.16.7/sn_node_rpc_client-v0.6.18
+
 ## [0.92.0](https://github.com/joshuef/safe_network/compare/sn_cli-v0.91.4...sn_cli-v0.92.0) - 2024-05-24
 
 ### Added

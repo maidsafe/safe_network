@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0](https://github.com/joshuef/safe_network/compare/sn_networking-v0.15.3...sn_networking-v0.16.0) - 2024-06-03
+
+### Added
+- *(networking)* add UPnP metrics
+- *(network)* [**breaking**] move network versioning away from sn_protocol
+
+### Fixed
+- *(networking)* upnp feature gates for metrics
+- *(networking)* conditional upnp metrics
+
+### Other
+- *(networking)* cargo fmt
+
 ## [0.15.3](https://github.com/joshuef/safe_network/compare/sn_networking-v0.15.2...sn_networking-v0.15.3) - 2024-05-24
 
 ### Added

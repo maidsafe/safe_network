@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.2](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.18.1...sn_transfers-v0.18.2) - 2024-06-03
+
+### Added
+- *(faucet)* write foundation cash note to disk
+- *(keys)* enable compile or runtime override of keys
+
+### Other
+- use secrets during build process
+
 ## [0.18.1](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.18.0...sn_transfers-v0.18.1) - 2024-05-24
 
 ### Added

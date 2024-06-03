@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/joshuef/safe_network/compare/sn_peers_acquisition-v0.2.12...sn_peers_acquisition-v0.3.0) - 2024-06-03
+
+### Added
+- *(launchpad)* use nat detection server to determine the nat status
+- *(network)* [**breaking**] move network versioning away from sn_protocol
+
+### Other
+- *(release)* sn_auditor-v0.1.17/sn_client-v0.106.3/sn_networking-v0.15.3/sn_transfers-v0.18.1/sn_logging-v0.2.27/sn_cli-v0.92.0/sn_faucet-v0.4.19/sn_node-v0.106.5/sn_service_management-v0.3.0/node-launchpad-v0.2.0/sn-node-manager-v0.8.0/sn_protocol-v0.16.7/sn_node_rpc_client-v0.6.18
+
 ## [0.2.12](https://github.com/maidsafe/safe_network/compare/sn_peers_acquisition-v0.2.11...sn_peers_acquisition-v0.2.12) - 2024-05-08
 
 ### Other

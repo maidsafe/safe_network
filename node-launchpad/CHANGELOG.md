@@ -6,6 +6,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/joshuef/safe_network/compare/node-launchpad-v0.2.0...node-launchpad-v0.3.0) - 2024-06-03
+
+### Added
+- provide `--autostart` flag for `add` command
+- configure winsw in `node-launchpad`
+- *(launchpad)* use nat detection server to determine the nat status
+- *(launchpad)* update the start stop node popup
+- *(launchpad)* keep track of the nodes to start
+- *(launchpad)* update manage nodes ui
+- *(launchpad)* implement help pop up
+- *(launchpad)* revamp the beta programme flow
+- *(launchpad)* update footer to include two lines of commands
+- *(launchpad)* setup the basic device status table
+- *(launchpad)* set a new header for the home scene
+- *(launchpad)* set new discord id on change
+- *(manager)* implement nat detection during safenode add
+- *(node)* make payment forward optional
+- *(network)* [**breaking**] move network versioning away from sn_protocol
+- configure winsw in node manager
+- *(node_manager)* add unit tests and modify docs
+
+### Fixed
+- *(launchpad)* make the bg colors work better
+- *(manager)* update nat detection exit code
+
+### Other
+- *(launchpad)* typo fix, use program
+- *(launchpad)* fixes for white terminal theme
+- *(launchpad)* disable unused stats
+- *(launchpad)* disable start stop if node count not set
+- *(launchpad)* use the correct styling throughout
+- *(launchpad)* update scene variant name to BetaProgramme
+- *(launchpad)* removed the splash screen on discord id submition
+- *(launchpad)* set new color scheme for home
+- *(launchpad)* update node status box
+- *(manager)* move nat detection out of add subcommand
+- *(release)* sn_auditor-v0.1.17/sn_client-v0.106.3/sn_networking-v0.15.3/sn_transfers-v0.18.1/sn_logging-v0.2.27/sn_cli-v0.92.0/sn_faucet-v0.4.19/sn_node-v0.106.5/sn_service_management-v0.3.0/node-launchpad-v0.2.0/sn-node-manager-v0.8.0/sn_protocol-v0.16.7/sn_node_rpc_client-v0.6.18
+- use new version of `service-manager` crate
+- update NodeInfo struct inside the tests
+
 ## [0.2.0](https://github.com/joshuef/safe_network/compare/node-launchpad-v0.1.5...node-launchpad-v0.2.0) - 2024-05-24
 
 ### Added
