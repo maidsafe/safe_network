@@ -63,8 +63,8 @@ jobs:
       - shell: bash
         # run as the branch name with the suffix from workflow dispatch, allowing for an empty suffix as a valid option
         run: |
-          if [[ -z "${{ github.event.inputs.suffix }}" && "${{ github.ref_name }}" != "stable" ]]; then
-            echo "Error: Empty suffix is only allowed on the stable branch."
+          if [[ -z "${{ github.event.inputs.suffix }}" && "${{ github.ref_name }}" != stable* ]]; then
+            echo "Error: Empty suffix is only allowed on branches starting with 'stable'."
             exit 1
           fi
           ./resources/scripts/bump_version.sh ${{ github.event.inputs.suffix }}
