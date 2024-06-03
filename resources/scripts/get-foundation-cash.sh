@@ -11,6 +11,6 @@ FOUNDATION_SERVER="$1"
     exit 1
 fi
 
-scp root@$FOUNDATION_SERVER:/home/safe/.local/share/safe/test_faucet/wallet/foundation_cashnote.cash_note $TMPDIR/foundation.cash_note
-safe wallet receive $TMPDIR/foundation.cash_note
+scp root@$FOUNDATION_SERVER:/home/safe/.local/share/safe/test_faucet/wallet/foundation_disbursement.cash_note $TMPDIR/foundation.transfer
+safe wallet receive $TMPDIR/foundation.transfer
 safe wallet balance
