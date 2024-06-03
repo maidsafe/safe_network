@@ -82,6 +82,11 @@ pub enum SubCmd {
         ///  - Windows: C:\ProgramData\safenode\services
         #[clap(long, verbatim_doc_comment)]
         data_dir_path: Option<PathBuf>,
+        /// Set this flag to enable the metrics server. The ports will be selected at random.
+        ///
+        /// If you want to specify the ports, use the --metrics-port argument.
+        #[clap(long)]
+        enable_metrics_server: bool,
         /// Provide environment variables for the safenode service.
         ///
         /// Useful to set log levels. Variables should be comma separated without spaces.
@@ -121,7 +126,8 @@ pub enum SubCmd {
         /// This argument should only be used with a safenode binary that has the open-metrics
         /// feature enabled.
         ///
-        /// If not used, ports will be selected at random.
+        /// If not set, metrics server will not be started. Use --enable-metrics-server to start
+        /// the metrics server without specifying a port.
         ///
         /// If multiple services are being added and this argument is used, you must specify a
         /// range. For example, '12000-12004'. The length of the range must match the number of
@@ -870,6 +876,7 @@ async fn main() -> Result<()> {
             auto_set_nat_flags,
             count,
             data_dir_path,
+            enable_metrics_server,
             env_variables,
             home_network,
             local,
@@ -892,6 +899,7 @@ async fn main() -> Result<()> {
                 auto_set_nat_flags,
                 count,
                 data_dir_path,
+                enable_metrics_server,
                 env_variables,
                 home_network,
                 local,
