@@ -54,6 +54,10 @@ impl HotWallet {
         self.watchonly_wallet.api()
     }
 
+    pub fn root_dir(&self) -> &Path {
+        self.watchonly_wallet.api().wallet_dir()
+    }
+
     /// Stores the wallet to disk.
     /// This requires having exclusive access to the wallet to prevent concurrent processes from writing to it
     fn store(&self, exclusive_access: WalletExclusiveAccess) -> Result<()> {
