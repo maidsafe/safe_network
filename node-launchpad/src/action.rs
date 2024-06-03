@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::mode::{InputMode, Scene};
+use crate::{
+    mode::{InputMode, Scene},
+    node_stats::NodeStats,
+};
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
@@ -41,10 +44,7 @@ pub enum HomeActions {
     SuccessfullyDetectedNatStatus,
     ErrorWhileRunningNatDetection,
 
-    NodesStatsObtained {
-        wallet_balance: u64,
-        space_used: u64,
-    },
+    NodesStatsObtained(NodeStats),
 
     TriggerBetaProgramme,
     TriggerManageNodes,
