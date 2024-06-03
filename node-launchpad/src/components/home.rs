@@ -412,10 +412,10 @@ impl Component for Home {
                 Cell::new("Storage Allocated".to_string()).fg(GHOST_WHITE),
                 Cell::new(format!("{} GB", self.nodes_to_start * GB_PER_NODE)).fg(GHOST_WHITE),
             ]);
-            let memory_use_val = if self.node_stats.memory_usage_mb as f64 / 1024 as f64 > 1.0 {
+            let memory_use_val = if self.node_stats.memory_usage_mb as f64 / 1024_f64 > 1.0 {
                 format!(
                     "{:.2} GB",
-                    self.node_stats.memory_usage_mb as f64 / 1024 as f64
+                    self.node_stats.memory_usage_mb as f64 / 1024_f64
                 )
             } else {
                 format!("{} MB", self.node_stats.memory_usage_mb)
@@ -617,6 +617,7 @@ fn maintain_n_running_nodes(
             true,
             count,
             None,
+            true,
             None,
             false,
             false,
