@@ -132,6 +132,7 @@ pub struct AddNodeServiceOptions {
     pub bootstrap_peers: Vec<Multiaddr>,
     pub count: Option<u16>,
     pub delete_safenode_src: bool,
+    pub enable_metrics_server: bool,
     pub env_variables: Option<Vec<(String, String)>>,
     pub genesis: bool,
     pub home_network: bool,
