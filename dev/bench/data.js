@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717431752604,
+  "lastUpdate": 1717431754999,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "git@happybeing.com",
-            "name": "Mark",
-            "username": "happybeing"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "a7bc7fae053869e23fee8a1bb25e4d8683c7d676",
-          "message": "docs: marke merkle_reg() accessors as unstable (in comment) on Register types",
-          "timestamp": "2024-02-20T08:47:59Z",
-          "tree_id": "5ac976e35e1f62c0a97c41fc12793328f8a072e8",
-          "url": "https://github.com/maidsafe/safe_network/commit/a7bc7fae053869e23fee8a1bb25e4d8683c7d676"
-        },
-        "date": 1708422224326,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6660,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 37404,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 32330,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6e0f3a1fb77af2e0908b12b2f337fe0e1390aa64",
+          "message": "fix(faucet): save the transfer not the cashnote for foundation",
+          "timestamp": "2024-06-03T15:09:41Z",
+          "tree_id": "7b18edf83ba90ce02ff2a16185e3f13e2431774e",
+          "url": "https://github.com/maidsafe/safe_network/commit/6e0f3a1fb77af2e0908b12b2f337fe0e1390aa64"
+        },
+        "date": 1717431754154,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7552,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34125,
             "unit": "ms"
           },
           {
