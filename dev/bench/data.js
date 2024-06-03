@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717439723429,
+  "lastUpdate": 1717439840952,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "90990b74fbbe7ec5315929624c11a09c4b8fe1d6",
-          "message": "feat(folders): move folders/files metadata out of Folders entries",
-          "timestamp": "2024-02-20T08:49:28Z",
-          "tree_id": "ec17c519ed61eab8bd9ea169bddee09d9ba76ff2",
-          "url": "https://github.com/maidsafe/safe_network/commit/90990b74fbbe7ec5315929624c11a09c4b8fe1d6"
-        },
-        "date": 1708424325991,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "77734a13e4690771343b241c7d8e5545cd01508e",
+          "message": "fix(launchpad): pressing enter should start nodes",
+          "timestamp": "2024-06-03T17:46:34Z",
+          "tree_id": "0f58e0eb48580d31aac907c09693965a6141f4f9",
+          "url": "https://github.com/maidsafe/safe_network/commit/77734a13e4690771343b241c7d8e5545cd01508e"
+        },
+        "date": 1717439840528,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
