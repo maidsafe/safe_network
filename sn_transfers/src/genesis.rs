@@ -108,17 +108,20 @@ lazy_static! {
 }
 
 lazy_static! {
-    /// Secret_key for testing purposes.
-    /// The one for live network shall be passed in via env set.
-    static ref GENESIS_SK_STR: String = {
-        if let Ok(sk) = std::env::var("GENESIS_SK") {
-            info!("Using runtime GENESIS_SK");
-            sk
+    pub static ref GENESIS_SK_STR: String = {
+        let compile_time_key = option_env!("GENESIS_SK").unwrap_or(DEFAULT_LIVE_GENESIS_SK);
+        let runtime_key =
+            std::env::var("GENESIS_SK").unwrap_or_else(|_| compile_time_key.to_string());
+
+        if runtime_key == DEFAULT_LIVE_GENESIS_SK {
+            warn!("USING DEFAULT GENESIS SK (23746b) FOR TESTING PURPOSES! EXPECTING PAIRED PK (9934c2) TO BE USED!");
+        } else if runtime_key == compile_time_key {
+            warn!("Using compile-time GENESIS_SK");
+        } else {
+            warn!("Overridden by runtime GENESIS_SK");
         }
-        else {
-             warn!("USING DEFAULT GENESIS SK (23746b) FOR TESTING PURPOSES! EXPECTING PAIRED PK (9934c2) TO BE USED!");
-            DEFAULT_LIVE_GENESIS_SK.to_string()
-        }
+
+        runtime_key
     };
 }
 
