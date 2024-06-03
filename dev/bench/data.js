@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717377396880,
+  "lastUpdate": 1717377398506,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5dd7bb310cdcbfa24b3c4174c19a9f098a02c116",
-          "message": "refactor(cli): allow to pass files iterator to chunk-mgr and files-upload tools\n\nAlso allow to use different paths for local wallet dir and chunk-mgr artifacts/cache.",
-          "timestamp": "2024-02-19T13:04:06+01:00",
-          "tree_id": "9ed2329f44ebf61000f6b6d90616653bcc189ff7",
-          "url": "https://github.com/maidsafe/safe_network/commit/5dd7bb310cdcbfa24b3c4174c19a9f098a02c116"
-        },
-        "date": 1708344968906,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5869,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34911,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 31975,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "d459d32606fafecfa01d3f2aa808f01171e953be",
+          "message": "ci: use secrets during build process\n\nAdds secret use for build time generation with new keys etc.\nUpdates readme",
+          "timestamp": "2024-06-03T10:02:17+09:00",
+          "tree_id": "a60cf1b88cc64478237972a3596aa611dd66db3d",
+          "url": "https://github.com/maidsafe/safe_network/commit/d459d32606fafecfa01d3f2aa808f01171e953be"
+        },
+        "date": 1717377398130,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7077,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 31798,
             "unit": "ms"
           },
           {
