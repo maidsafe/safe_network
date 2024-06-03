@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717398364222,
+  "lastUpdate": 1717398483538,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fe7c7b442b0779bdb3ac378baa9101144a0cc019",
-          "message": "test(networking): update the replication fetcher tests, now we cleanup failed nodes",
-          "timestamp": "2024-02-19T13:56:09+01:00",
-          "tree_id": "27727eb77e8fd2ff875f70e4085414884fde8ba7",
-          "url": "https://github.com/maidsafe/safe_network/commit/fe7c7b442b0779bdb3ac378baa9101144a0cc019"
-        },
-        "date": 1708348371559,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/d459d32606fafecfa01d3f2aa808f01171e953be"
         },
         "date": 1717377394967,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "76c485d4676259442bd86b1577be54d33cec6c33",
+          "message": "chore(ci): clean up cargo dir to prevent low disk space error",
+          "timestamp": "2024-06-03T06:20:21Z",
+          "tree_id": "2c884890a6dca6d67d6967421d61b5862f94b695",
+          "url": "https://github.com/maidsafe/safe_network/commit/76c485d4676259442bd86b1577be54d33cec6c33"
+        },
+        "date": 1717398483213,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
