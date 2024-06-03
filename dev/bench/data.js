@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717407871377,
+  "lastUpdate": 1717407872755,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "ca146acd19d38f2bf7a6f18f4ccb89ac582efe86",
-          "message": "docs: rename readme example directories",
-          "timestamp": "2024-02-19T14:50:12Z",
-          "tree_id": "9de05321dd3f479ab8e314b99fa6fbabaf0a281b",
-          "url": "https://github.com/maidsafe/safe_network/commit/ca146acd19d38f2bf7a6f18f4ccb89ac582efe86"
-        },
-        "date": 1708357181669,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 202,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "49f13ac7eadd9c8fbb9ea48aae02e6a508d9b3c7",
+          "message": "ci: allow workflow action release to trigger publish on stable branches",
+          "timestamp": "2024-06-03T18:30:13+09:00",
+          "tree_id": "f011122300e218019981e01b6d266f7b19b147e3",
+          "url": "https://github.com/maidsafe/safe_network/commit/49f13ac7eadd9c8fbb9ea48aae02e6a508d9b3c7"
+        },
+        "date": 1717407872387,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
