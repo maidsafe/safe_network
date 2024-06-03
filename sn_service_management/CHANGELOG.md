@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.3.0...sn_service_management-v0.3.1) - 2024-06-03
+
+### Added
+- provide `--autostart` flag for `add` command
+- configure winsw in node manager
+- *(launchpad)* setup the basic device status table
+- *(manager)* implement nat detection during safenode add
+
+### Other
+- use new version of `service-manager` crate
+
 ## [0.3.0](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.2.8...sn_service_management-v0.3.0) - 2024-05-24
 
 ### Added

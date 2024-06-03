@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8](https://github.com/joshuef/safe_network/compare/sn_metrics-v0.1.7...sn_metrics-v0.1.8) - 2024-06-03
+
+### Other
+- update Cargo.lock dependencies
+
 ## [0.1.7](https://github.com/maidsafe/safe_network/compare/sn_metrics-v0.1.6...sn_metrics-v0.1.7) - 2024-05-20
 
 ### Other
