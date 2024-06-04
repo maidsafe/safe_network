@@ -116,13 +116,13 @@ pub(crate) async fn add_participant(
 }
 
 async fn track_new_participant(dag: &SpendDagDb, discord_id: String) -> Result<()> {
-    dag.track_new_beta_participants(BTreeSet::from_iter([discord_id.to_owned()]))
-        .await?;
-
     // only append new ids
     if dag.is_participant_tracked(&discord_id).await? {
         return Ok(());
     }
+
+    dag.track_new_beta_participants(BTreeSet::from_iter([discord_id.to_owned()]))
+        .await?;
 
     let local_participants_file = dag.path.join(dag_db::BETA_PARTICIPANTS_FILENAME);
 
