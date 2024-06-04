@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717518986772,
+  "lastUpdate": 1717518989654,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4478c8a927fbf1f3d7e28adf4de033f3e26c9069",
-          "message": "ci: fix branch check workflow",
-          "timestamp": "2024-02-21T13:49:48+01:00",
-          "tree_id": "9b897a5d5cab10754f7153560cd46a1cb288333e",
-          "url": "https://github.com/maidsafe/safe_network/commit/4478c8a927fbf1f3d7e28adf4de033f3e26c9069"
-        },
-        "date": 1708520527628,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6227,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36547,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 32276,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "28492209346fb0dad22d58efcfc87d6f0aaa4edb",
+          "message": "chore(launchpad): update text and logic for reset if discord_id change",
+          "timestamp": "2024-06-04T15:43:20Z",
+          "tree_id": "54816d049184f7ebbdd2c26653fb192f8f5815f0",
+          "url": "https://github.com/maidsafe/safe_network/commit/28492209346fb0dad22d58efcfc87d6f0aaa4edb"
+        },
+        "date": 1717518988558,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7438,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33823,
             "unit": "ms"
           },
           {
