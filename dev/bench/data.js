@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717539414541,
+  "lastUpdate": 1717539416082,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "f63c3b22b9259e5785314301fa4a66eb996bcc55",
-          "message": "ci: tweaks to auto branch switcher",
-          "timestamp": "2024-02-22T11:53:02+01:00",
-          "tree_id": "75ba6effad704b18412ab531413534bc1d4b7f50",
-          "url": "https://github.com/maidsafe/safe_network/commit/f63c3b22b9259e5785314301fa4a66eb996bcc55"
-        },
-        "date": 1708599889355,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 210,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 87,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "1aaba27c24304615b58776f56e6aa7f551c42b8d",
           "message": "ci: run memcheck on other merge queues too",
           "timestamp": "2024-02-22T12:12:40+01:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f7e1c3defd05ab22252896946c03c47337c193ec",
+          "message": "fix(node): avoid try to forward empty balance",
+          "timestamp": "2024-06-04T21:03:01Z",
+          "tree_id": "d06c1ba8143cd3d630fd96bb06cb986b328efcca",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7e1c3defd05ab22252896946c03c47337c193ec"
+        },
+        "date": 1717539415759,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 189,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
