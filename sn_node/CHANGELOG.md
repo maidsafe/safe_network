@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.107.4](https://github.com/joshuef/safe_network/compare/sn_node-v0.107.3...sn_node-v0.107.4) - 2024-06-04
+
+### Added
+- *(node)* expose cumulative forwarded reward as metric and cache it locally
+
+### Other
+- *(network)* set metrics server to run on localhost
+
 ## [0.107.3](https://github.com/joshuef/safe_network/compare/sn_node-v0.107.2...sn_node-v0.107.3) - 2024-06-04
 
 ### Other
