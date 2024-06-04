@@ -226,6 +226,13 @@ impl Component for Home {
             },
             Action::StoreNodesToStart(count) => {
                 self.nodes_to_start = count;
+                if self.nodes_to_start == 0 {
+                    info!("Nodes to start set to 0. Sending command to stop all nodes.");
+                    return Ok(Some(Action::HomeActions(HomeActions::StopNodes)));
+                } else {
+                    info!("Nodes to start set to: {count}. Sending command to start nodes");
+                    return Ok(Some(Action::HomeActions(HomeActions::StartNodes)));
+                }
             }
             Action::StoreDiscordUserName(username) => {
                 let reset_safenode_services = (self.discord_username != username)

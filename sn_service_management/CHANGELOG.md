@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.3.2...sn_service_management-v0.3.3) - 2024-06-03
+
+### Other
+- updated the following local packages: sn_transfers
+
 ## [0.3.1](https://github.com/joshuef/safe_network/compare/sn_service_management-v0.3.0...sn_service_management-v0.3.1) - 2024-06-03
 
 ### Added
