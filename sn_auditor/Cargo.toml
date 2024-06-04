@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Safe Network Auditor"
 name = "sn_auditor"
-version = "0.1.21"
+version = "0.1.22"
 edition = "2021"
 homepage = "https://maidsafe.net"
 repository = "https://github.com/maidsafe/safe_network"

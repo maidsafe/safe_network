@@ -6,6 +6,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4](https://github.com/joshuef/safe_network/compare/node-launchpad-v0.3.3...node-launchpad-v0.3.4) - 2024-06-04
+
+### Added
+- *(launchpad)* limit node count to 50
+- provide `--autostart` flag for `add` command
+- configure winsw in `node-launchpad`
+- *(launchpad)* use nat detection server to determine the nat status
+- *(launchpad)* update the start stop node popup
+- *(launchpad)* keep track of the nodes to start
+- *(launchpad)* update manage nodes ui
+- *(launchpad)* implement help pop up
+- *(launchpad)* revamp the beta programme flow
+- *(launchpad)* update footer to include two lines of commands
+- *(launchpad)* setup the basic device status table
+- *(launchpad)* set a new header for the home scene
+- *(launchpad)* set new discord id on change
+- *(manager)* implement nat detection during safenode add
+- *(launchpad)* provide safenode path for testing
+- *(manager)* maintain n running nodes
+- *(auditor)* add new beta participants via endpoint
+- *(launchpad)* accept peers args
+- supply discord username on launchpad
+- provide `--owner` arg for `add` cmd
+- *(nodeman)* add LogFormat as a startup arg for nodes
+- *(node-launchpad)* discord name widget styling
+- *(node-launchpad)* tweaks on resource allocation widget
+- *(launchpad)* initial automatic resource allocation logic
+- *(launchpad)* allow users to input disk space to allocate
+- *(launchpad)* store discord username to disk
+- *(launchpad)* use escape to exit input screen and restore old value
+- *(launchpad)* have customizable footer
+- *(launchpad)* add discord username scene
+- *(launchpad)* remove separate ai launcher bin references
+- *(launchpad)* ensure start mac launchapd with sudo only if not set
+
+### Fixed
+- *(launchpad)* pressing enter should start nodes
+- *(launchpad)* make the bg colors work better
+- *(manager)* update nat detection exit code
+- retain options on upgrade and prevent dup ports
+- *(launchpad)* check if component is active before handling events
+- *(launchpad)* prevent mac opening with sudo
+- use fixed size popups
+- *(launchpad)* prevent loops from terminal/sudo relaunching
+- *(launchpad)* do not try to run sudo twice
+
+### Other
+- *(release)* sn_auditor-v0.1.21/sn_client-v0.107.4/sn_peers_acquisition-v0.3.2/sn_cli-v0.93.3/sn_faucet-v0.4.23/sn_node-v0.107.3/node-launchpad-v0.3.3/sn-node-manager-v0.9.3/sn_node_rpc_client-v0.6.21
+- *(release)* sn_client-v0.107.3/sn_transfers-v0.18.4/sn_cli-v0.93.2/sn_node-v0.107.2/node-launchpad-v0.3.2/sn-node-manager-v0.9.2/sn_auditor-v0.1.20/sn_networking-v0.16.2/sn_protocol-v0.17.2/sn_faucet-v0.4.22/sn_service_management-v0.3.3/sn_node_rpc_client-v0.6.20
+- *(release)* sn_faucet-v0.4.21/sn_service_management-v0.3.2/sn_transfers-v0.18.3/sn_auditor-v0.1.19/sn_client-v0.107.2/sn_networking-v0.16.1/sn_cli-v0.93.1/sn_node-v0.107.1/node-launchpad-v0.3.1/sn-node-manager-v0.9.1/sn_peers_acquisition-v0.3.1
+- bump versions to enable re-release with env vars at compilation
+- *(release)* sn_auditor-v0.1.18/sn_client-v0.107.0/sn_networking-v0.16.0/sn_protocol-v0.17.0/sn_transfers-v0.18.2/sn_peers_acquisition-v0.3.0/sn_cli-v0.93.0/sn_faucet-v0.4.20/sn_metrics-v0.1.8/sn_node-v0.107.0/sn_service_management-v0.3.1/node-launchpad-v0.3.0/sn-node-manager-v0.9.0/sn_node_rpc_client-v0.6.19
+- *(launchpad)* typo fix, use program
+- *(launchpad)* fixes for white terminal theme
+- *(launchpad)* disable unused stats
+- *(launchpad)* disable start stop if node count not set
+- *(launchpad)* use the correct styling throughout
+- *(launchpad)* update scene variant name to BetaProgramme
+- *(launchpad)* removed the splash screen on discord id submition
+- *(launchpad)* set new color scheme for home
+- *(launchpad)* update node status box
+- *(manager)* move nat detection out of add subcommand
+- *(release)* sn_auditor-v0.1.17/sn_client-v0.106.3/sn_networking-v0.15.3/sn_transfers-v0.18.1/sn_logging-v0.2.27/sn_cli-v0.92.0/sn_faucet-v0.4.19/sn_node-v0.106.5/sn_service_management-v0.3.0/node-launchpad-v0.2.0/sn-node-manager-v0.8.0/sn_protocol-v0.16.7/sn_node_rpc_client-v0.6.18
+- update sn-releases
+- update based on comment
+- *(release)* sn_auditor-v0.1.16/sn_cli-v0.91.4/sn_faucet-v0.4.18/sn_metrics-v0.1.7/sn_node-v0.106.4/sn_service_management-v0.2.8/node-launchpad-v0.1.5/sn-node-manager-v0.7.7/sn_node_rpc_client-v0.6.17
+- check we are in terminal before creating one
+- *(release)* node-launchpad-v0.1.4
+- use published versions of deps
+- *(release)* node-launchpad-v0.1.3/sn-node-manager-v0.7.6
+- *(release)* sn_auditor-v0.1.15/sn_cli-v0.91.3/sn_faucet-v0.4.17/sn_metrics-v0.1.6/sn_node-v0.106.3/sn_service_management-v0.2.7/node-launchpad-v0.1.2/sn_node_rpc_client-v0.6.16
+- *(launchpad)* removing redudnat for loops
+- move helper text inside popup
+- change trigger resource allocation input box keybind
+- *(launchpad)* highlight the table in green if we're currently running
+- *(launchpad)* add more alternative keybinds
+- change terminal launch behaviour
+- use consistent border styles
+- *(launchpad)* use safe data dir to store configs
+- *(release)* sn_auditor-v0.1.13/sn_client-v0.106.1/sn_networking-v0.15.1/sn_protocol-v0.16.6/sn_cli-v0.91.1/sn_faucet-v0.4.15/sn_node-v0.106.1/node-launchpad-v0.1.1/sn_node_rpc_client-v0.6.14/sn_peers_acquisition-v0.2.12/sn_service_management-v0.2.6
+- *(release)* sn_auditor-v0.1.12/sn_client-v0.106.0/sn_networking-v0.15.0/sn_transfers-v0.18.0/sn_peers_acquisition-v0.2.11/sn_logging-v0.2.26/sn_cli-v0.91.0/sn_faucet-v0.4.14/sn_metrics-v0.1.5/sn_node-v0.106.0/sn_service_management-v0.2.5/test_utils-v0.4.1/node-launchpad-v/sn-node-manager-v0.7.5/sn_node_rpc_client-v0.6.13/token_supplies-v0.1.48/sn_protocol-v0.16.5
+- *(versions)* sync versions with latest crates.io vs for nodeman
+- *(versions)* sync versions with latest crates.io vs
+- rename sn_node_launchpad -> node-launchpad
+- rename `node-launchpad` crate to `sn_node_launchpad`
+- rebased and removed custom rustfmt
+- *(tui)* rename crate
+
 ## [0.3.3](https://github.com/joshuef/safe_network/compare/node-launchpad-v0.3.2...node-launchpad-v0.3.3) - 2024-06-04
 
 ### Added
