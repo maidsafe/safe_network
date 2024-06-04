@@ -89,7 +89,11 @@ impl Component for Footer {
         };
 
         let (line1, line2) = match self.current_scene {
-            Scene::Home | Scene::BetaProgramme | Scene::HelpPopUp | Scene::ManageNodes => {
+            Scene::Home
+            | Scene::BetaProgramme
+            | Scene::HelpPopUp
+            | Scene::ManageNodes
+            | Scene::ResetPopUp => {
                 let line1 = Line::from(vec![
                     Span::styled(" [Ctrl+S] ", command_style),
                     Span::styled("Start all Nodes       ", text_style),

@@ -36,11 +36,12 @@ pub enum Action {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
 pub enum HomeActions {
+    ResetNodes,
     StartNodes,
     StopNodes,
     StartNodesCompleted,
     StopNodesCompleted,
-    ResetNodesCompleted,
+    ResetNodesCompleted { trigger_start_node: bool },
     SuccessfullyDetectedNatStatus,
     ErrorWhileRunningNatDetection,
 
@@ -49,6 +50,7 @@ pub enum HomeActions {
     TriggerBetaProgramme,
     TriggerManageNodes,
     TriggerHelp,
+    TriggerResetNodesPopUp,
 
     PreviousTableItem,
     NextTableItem,
