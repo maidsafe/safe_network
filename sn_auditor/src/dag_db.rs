@@ -243,7 +243,7 @@ impl SpendDagDb {
             if addrs_to_get.is_empty() {
                 debug!(
                     "Sleeping for {:?} until next re-attempt...",
-                    *UTXO_REATTEMPT_INTERVAL
+                    *DAG_CRAWL_REST_INTERVAL
                 );
                 tokio::time::sleep(*DAG_CRAWL_REST_INTERVAL).await;
                 continue;
