@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.24](https://github.com/joshuef/safe_network/compare/sn_auditor-v0.1.23...sn_auditor-v0.1.24) - 2024-06-04
+
+### Fixed
+- *(audit)* dont overwrite beta tracking payments
+
 ## [0.1.23](https://github.com/joshuef/safe_network/compare/sn_auditor-v0.1.22...sn_auditor-v0.1.23) - 2024-06-04
 
 ### Other

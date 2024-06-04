@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.5](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.9.4...sn-node-manager-v0.9.5) - 2024-06-04
+
+### Fixed
+- *(transfer)* mismatched key shall result in decryption error
+
+### Other
+- *(transfer)* make discord_name decryption backward compatible
+
 ## [0.9.4](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.9.3...sn-node-manager-v0.9.4) - 2024-06-04
 
 ### Added
