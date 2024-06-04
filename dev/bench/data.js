@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717518989654,
+  "lastUpdate": 1717536712257,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4e77d03b69ce36c023392f97930ad550f0109187",
-          "message": "feat: use the old serialisation as default, add some docs",
-          "timestamp": "2024-02-22T08:15:31Z",
-          "tree_id": "81c2d2ec319136d12adede68054e98bbd13c3fa4",
-          "url": "https://github.com/maidsafe/safe_network/commit/4e77d03b69ce36c023392f97930ad550f0109187"
-        },
-        "date": 1708592466065,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2545430983276153,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8322271337302705,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.08632736203006,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.91771029395948,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7e1a730502e589ca37b6b1292c6eae2740fc459f",
+          "message": "fix: distinguish DAG crawl waits",
+          "timestamp": "2024-06-05T06:19:56+09:00",
+          "tree_id": "594c592097f612f9c6499b40a8f63909f18ee318",
+          "url": "https://github.com/maidsafe/safe_network/commit/7e1a730502e589ca37b6b1292c6eae2740fc459f"
+        },
+        "date": 1717536706326,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2555424140923448,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6900171637683465,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.46105699105798,
             "unit": "MiB/s"
           }
         ]
