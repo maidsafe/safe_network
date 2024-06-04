@@ -37,6 +37,14 @@ lazy_static! {
             .parse::<u64>()
             .unwrap_or(3600)
     );
+
+    /// time in seconds to rest between DAG crawls
+    static ref DAG_CRAWL_REST_INTERVAL: Duration = Duration::from_secs(
+        std::env::var("DAG_CRAWL_REST_INTERVAL")
+            .unwrap_or("60".to_string())
+            .parse::<u64>()
+            .unwrap_or(60)
+    );
 }
 
 const SPENDS_PROCESSING_BUFFER_SIZE: usize = 4096;
@@ -237,7 +245,7 @@ impl SpendDagDb {
                     "Sleeping for {:?} until next re-attempt...",
                     *UTXO_REATTEMPT_INTERVAL
                 );
-                tokio::time::sleep(*UTXO_REATTEMPT_INTERVAL).await;
+                tokio::time::sleep(*DAG_CRAWL_REST_INTERVAL).await;
                 continue;
             }
 
