@@ -6996,7 +6996,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.1.23"
+version = "0.2.0"
 dependencies = [
  "blsttc",
  "clap",
@@ -7275,7 +7275,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.107.4"
+version = "0.108.0"
 dependencies = [
  "assert_fs",
  "assert_matches",
