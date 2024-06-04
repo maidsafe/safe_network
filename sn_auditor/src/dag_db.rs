@@ -12,6 +12,7 @@ use color_eyre::eyre::Context;
 use color_eyre::eyre::{bail, eyre, Result};
 #[cfg(feature = "svg-dag")]
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use sn_client::transfers::{Hash, NanoTokens, SignedSpend, SpendAddress};
 use sn_client::{Client, SpendDag, SpendDagGet};
@@ -28,7 +29,16 @@ pub const SPEND_DAG_SVG_FILENAME: &str = "spend_dag.svg";
 /// Store a locally copy to restore on restart
 pub const BETA_PARTICIPANTS_FILENAME: &str = "beta_participants.txt";
 
-const DAG_RECRAWL_INTERVAL: Duration = Duration::from_secs(60);
+lazy_static! {
+    /// time in seconds UTXOs are refetched in DAG crawl
+    static ref UTXO_REATTEMPT_INTERVAL: Duration = Duration::from_secs(
+        std::env::var("UTXO_REATTEMPT_INTERVAL")
+            .unwrap_or("3600".to_string())
+            .parse::<u64>()
+            .unwrap_or(3600)
+    );
+}
+
 const SPENDS_PROCESSING_BUFFER_SIZE: usize = 4096;
 
 /// Abstraction for the Spend DAG database
@@ -223,8 +233,11 @@ impl SpendDagDb {
             let addrs_to_get = utxos_to_fetch.keys().cloned().collect::<BTreeSet<_>>();
 
             if addrs_to_get.is_empty() {
-                debug!("Sleeping for {DAG_RECRAWL_INTERVAL:?} until next re-attempt...");
-                tokio::time::sleep(DAG_RECRAWL_INTERVAL).await;
+                debug!(
+                    "Sleeping for {:?} until next re-attempt...",
+                    *UTXO_REATTEMPT_INTERVAL
+                );
+                tokio::time::sleep(*UTXO_REATTEMPT_INTERVAL).await;
                 continue;
             }
 
@@ -241,7 +254,7 @@ impl SpendDagDb {
             utxo_addresses.extend(
                 new_utxos
                     .into_iter()
-                    .map(|a| (a, Instant::now() + DAG_RECRAWL_INTERVAL)),
+                    .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
             );
 
             // write updates to local DAG and save to disk

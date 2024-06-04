@@ -38,6 +38,13 @@ It can be run with the following flags:
           discord usernames of the beta participants
 ```
 
+The following env var:
+
+```
+# time in seconds UTXOs are refetched in DAG crawl
+UTXO_REATTEMPT_INTERVAL=3600
+```
+
 ## Endpoints
 
 The webserver listens on port `4242` and has the following endpoints:
