@@ -16,6 +16,7 @@ pub enum Scene {
     BetaProgramme,
     ManageNodes,
     HelpPopUp,
+    ResetPopUp,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
