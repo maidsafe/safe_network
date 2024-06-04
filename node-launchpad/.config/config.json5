@@ -20,11 +20,12 @@
       "<Ctrl-g>": {"HomeActions":"TriggerManageNodes"},
       "<Ctrl-G>": {"HomeActions":"TriggerManageNodes"},
       "<Ctrl-Shift-g>": {"HomeActions":"TriggerManageNodes"},
-      "<Shift-o>": {"HomeActions":"TriggerManageNodes"},
       "<h>": {"HomeActions":"TriggerHelp"},
       "<H>": {"HomeActions":"TriggerHelp"},
       "<Shift-h>": {"HomeActions":"TriggerHelp"},
-
+      "<Ctrl-r>": {"HomeActions":"TriggerResetNodesPopUp"},
+      "<Ctrl-R>": {"HomeActions":"TriggerResetNodesPopUp"},
+      "<Ctrl-Shift-r>": {"HomeActions":"TriggerResetNodesPopUp"},
 
       "<q>": "Quit",
       "<Shift-q>": "Quit",

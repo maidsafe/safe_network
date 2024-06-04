@@ -12,7 +12,7 @@ use crate::{
     action::Action,
     components::{
         beta_programme::BetaProgramme, footer::Footer, help::HelpPopUp, home::Home,
-        manage_nodes::ManageNodes, Component,
+        manage_nodes::ManageNodes, reset_popup::ResetNodesPopup, Component,
     },
     config::{AppData, Config},
     mode::{InputMode, Scene},
@@ -58,6 +58,7 @@ impl App {
         let manage_nodes = ManageNodes::new(app_data.nodes_to_start)?;
         let footer = Footer::new(app_data.nodes_to_start > 0);
         let help = HelpPopUp::default();
+        let reset_nodes = ResetNodesPopup::default();
 
         Ok(Self {
             config,
@@ -70,6 +71,7 @@ impl App {
                 Box::new(discord_username_input),
                 Box::new(manage_nodes),
                 Box::new(help),
+                Box::new(reset_nodes),
             ],
             should_quit: false,
             should_suspend: false,

@@ -218,7 +218,10 @@ impl Component for Home {
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
                 }
-                Scene::BetaProgramme | Scene::ManageNodes | Scene::HelpPopUp => self.active = true,
+                Scene::BetaProgramme
+                | Scene::ManageNodes
+                | Scene::HelpPopUp
+                | Scene::ResetPopUp => self.active = true,
                 _ => self.active = false,
             },
             Action::StoreNodesToStart(count) => {
@@ -243,7 +246,7 @@ impl Component for Home {
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
                     info!("Resetting safenode services because the discord username was reset.");
                     let action_sender = self.get_actions_sender()?;
-                    reset_nodes(action_sender);
+                    reset_nodes(action_sender, true);
                 }
             }
             Action::HomeActions(HomeActions::StartNodes) => {
@@ -283,6 +286,18 @@ impl Component for Home {
 
                 stop_nodes(running_nodes, action_sender);
             }
+            Action::HomeActions(HomeActions::ResetNodes) => {
+                if self.lock_registry.is_some() {
+                    error!("Registry is locked. Cannot reset nodes now.");
+                    return Ok(None);
+                }
+
+                self.lock_registry = Some(LockRegistryState::ResettingNodes);
+                let action_sender = self.get_actions_sender()?;
+                info!("Got action to reset nodes");
+                reset_nodes(action_sender, false);
+            }
+
             Action::Tick => {
                 self.try_update_node_stats(false)?;
             }
@@ -294,12 +309,15 @@ impl Component for Home {
                 self.lock_registry = None;
                 self.load_node_registry_and_update_states()?;
             }
-            Action::HomeActions(HomeActions::ResetNodesCompleted) => {
+            Action::HomeActions(HomeActions::ResetNodesCompleted { trigger_start_node }) => {
                 self.lock_registry = None;
                 self.load_node_registry_and_update_states()?;
 
-                // trigger start nodes.
-                return Ok(Some(Action::HomeActions(HomeActions::StartNodes)));
+                if trigger_start_node {
+                    debug!("Reset nodes completed. Triggering start nodes.");
+                    return Ok(Some(Action::HomeActions(HomeActions::StartNodes)));
+                }
+                debug!("Reset nodes completed");
             }
             Action::HomeActions(HomeActions::SuccessfullyDetectedNatStatus) => {
                 debug!("Successfully detected nat status, is_nat_status_determined set to true");
@@ -322,7 +340,9 @@ impl Component for Home {
             Action::HomeActions(HomeActions::TriggerHelp) => {
                 return Ok(Some(Action::SwitchScene(Scene::HelpPopUp)));
             }
-
+            Action::HomeActions(HomeActions::TriggerResetNodesPopUp) => {
+                return Ok(Some(Action::SwitchScene(Scene::ResetPopUp)));
+            }
             Action::HomeActions(HomeActions::PreviousTableItem) => {
                 self.select_previous_table_item();
             }
@@ -650,14 +670,17 @@ fn maintain_n_running_nodes(
     });
 }
 
-fn reset_nodes(action_sender: UnboundedSender<Action>) {
+fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_reset: bool) {
     tokio::task::spawn_local(async move {
         if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
             error!("Error while resetting services {err:?}");
         } else {
             info!("Successfully reset services");
         }
-        if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::ResetNodesCompleted))
+        if let Err(err) =
+            action_sender.send(Action::HomeActions(HomeActions::ResetNodesCompleted {
+                trigger_start_node: start_nodes_after_reset,
+            }))
         {
             error!("Error while sending action: {err:?}");
         }
