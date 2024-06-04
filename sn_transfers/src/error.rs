@@ -88,6 +88,8 @@ pub enum TransferError {
     Blsttc(#[from] bls::error::Error),
     #[error("User name decryption failed")]
     UserNameDecryptFailed,
+    #[error("Using invalid decryption key")]
+    InvalidDecryptionKey,
     #[error("User name encryption failed")]
     DiscordNameCipherTooBig,
 }
