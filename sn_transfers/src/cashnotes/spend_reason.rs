@@ -114,9 +114,14 @@ impl DiscordName {
         let nonce = DerivationIndex(nonce_bytes.to_owned());
 
         let mut checksum = [0; CHECK_SUM_SIZE];
-        checksum.copy_from_slice(&bytes[CONTENT_SIZE..LIMIT_SIZE]);
-        if checksum != CHECK_SUM {
-            return Err(TransferError::InvalidDecryptionKey);
+        if bytes.len() < LIMIT_SIZE {
+            // Backward compatible, which will allow invalid key generate a random hash result
+            checksum = CHECK_SUM;
+        } else {
+            checksum.copy_from_slice(&bytes[CONTENT_SIZE..LIMIT_SIZE]);
+            if checksum != CHECK_SUM {
+                return Err(TransferError::InvalidDecryptionKey);
+            }
         }
 
         Ok(Self {
