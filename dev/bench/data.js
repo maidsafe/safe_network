@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717518855195,
+  "lastUpdate": 1717518983043,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4478c8a927fbf1f3d7e28adf4de033f3e26c9069",
-          "message": "ci: fix branch check workflow",
-          "timestamp": "2024-02-21T13:49:48+01:00",
-          "tree_id": "9b897a5d5cab10754f7153560cd46a1cb288333e",
-          "url": "https://github.com/maidsafe/safe_network/commit/4478c8a927fbf1f3d7e28adf4de033f3e26c9069"
-        },
-        "date": 1708520524509,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "28492209346fb0dad22d58efcfc87d6f0aaa4edb",
+          "message": "chore(launchpad): update text and logic for reset if discord_id change",
+          "timestamp": "2024-06-04T15:43:20Z",
+          "tree_id": "54816d049184f7ebbdd2c26653fb192f8f5815f0",
+          "url": "https://github.com/maidsafe/safe_network/commit/28492209346fb0dad22d58efcfc87d6f0aaa4edb"
+        },
+        "date": 1717518982019,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
