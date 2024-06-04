@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717499011387,
+  "lastUpdate": 1717499014012,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "96377f1080ce94e898bae9eb5ef26a3989ed184c",
-          "message": "ci: allow releases on alpha/betea/rc branches",
-          "timestamp": "2024-02-20T16:45:58+01:00",
-          "tree_id": "0d3e6f41cf57e00600120c42fa6bd33fc267a947",
-          "url": "https://github.com/maidsafe/safe_network/commit/96377f1080ce94e898bae9eb5ef26a3989ed184c"
-        },
-        "date": 1708444710859,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 202,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "8354c6d1693d63d059fcfa1aa5388fd84bf7888a",
           "message": "test: fix distribution test check",
           "timestamp": "2024-02-20T17:09:38+01:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "07e15389a279b003308e378a0d1c89dd1a355a5c",
+          "message": "chore(launchpad): clippy fixes",
+          "timestamp": "2024-06-04T10:13:42Z",
+          "tree_id": "6d4e26e7ac2ebe5f9aa596ff8e1643ceaf928692",
+          "url": "https://github.com/maidsafe/safe_network/commit/07e15389a279b003308e378a0d1c89dd1a355a5c"
+        },
+        "date": 1717499012934,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 174,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
