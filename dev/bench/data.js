@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717476211780,
+  "lastUpdate": 1717476242069,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "8492a315a250ef1a18e691558398d62b00318452",
-          "message": "chore: improve SpendDagGet names",
-          "timestamp": "2024-02-20T09:51:00Z",
-          "tree_id": "0bf2eed85a77bf03f86b2aa8adc7f26c16d6a33b",
-          "url": "https://github.com/maidsafe/safe_network/commit/8492a315a250ef1a18e691558398d62b00318452"
-        },
-        "date": 1708427366906,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6935e9354f99bb4c47dd990e6ccffab442673b0e",
+          "message": "chore: reduce dag recrawl interval",
+          "timestamp": "2024-06-04T13:29:49+09:00",
+          "tree_id": "6c277592df26dfc02cd489bc756cb17fa10c2383",
+          "url": "https://github.com/maidsafe/safe_network/commit/6935e9354f99bb4c47dd990e6ccffab442673b0e"
+        },
+        "date": 1717476241522,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
