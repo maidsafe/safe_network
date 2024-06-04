@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717537087377,
+  "lastUpdate": 1717539296294,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f63c3b22b9259e5785314301fa4a66eb996bcc55",
-          "message": "ci: tweaks to auto branch switcher",
-          "timestamp": "2024-02-22T11:53:02+01:00",
-          "tree_id": "75ba6effad704b18412ab531413534bc1d4b7f50",
-          "url": "https://github.com/maidsafe/safe_network/commit/f63c3b22b9259e5785314301fa4a66eb996bcc55"
-        },
-        "date": 1708599782024,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2354093144205123,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8372748841371345,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.77446195063047,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.09095172596307,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f7e1c3defd05ab22252896946c03c47337c193ec",
+          "message": "fix(node): avoid try to forward empty balance",
+          "timestamp": "2024-06-04T21:03:01Z",
+          "tree_id": "d06c1ba8143cd3d630fd96bb06cb986b328efcca",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7e1c3defd05ab22252896946c03c47337c193ec"
+        },
+        "date": 1717539290860,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2781330768638148,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.69102687140863,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.099171910088536,
             "unit": "MiB/s"
           }
         ]
