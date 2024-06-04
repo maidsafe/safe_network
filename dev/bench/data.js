@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717536832775,
+  "lastUpdate": 1717536835256,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4e77d03b69ce36c023392f97930ad550f0109187",
-          "message": "feat: use the old serialisation as default, add some docs",
-          "timestamp": "2024-02-22T08:15:31Z",
-          "tree_id": "81c2d2ec319136d12adede68054e98bbd13c3fa4",
-          "url": "https://github.com/maidsafe/safe_network/commit/4e77d03b69ce36c023392f97930ad550f0109187"
-        },
-        "date": 1708592575561,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 198,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7e1a730502e589ca37b6b1292c6eae2740fc459f",
+          "message": "fix: distinguish DAG crawl waits",
+          "timestamp": "2024-06-05T06:19:56+09:00",
+          "tree_id": "594c592097f612f9c6499b40a8f63909f18ee318",
+          "url": "https://github.com/maidsafe/safe_network/commit/7e1a730502e589ca37b6b1292c6eae2740fc459f"
+        },
+        "date": 1717536834246,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 197,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
