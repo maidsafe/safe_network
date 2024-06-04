@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3](https://github.com/joshuef/safe_network/compare/sn_peers_acquisition-v0.3.2...sn_peers_acquisition-v0.3.3) - 2024-06-04
+
+### Other
+- updated the following local packages: sn_networking
+
 ## [0.3.2](https://github.com/joshuef/safe_network/compare/sn_peers_acquisition-v0.3.1...sn_peers_acquisition-v0.3.2) - 2024-06-04
 
 ### Other

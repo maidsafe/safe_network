@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.107.5](https://github.com/joshuef/safe_network/compare/sn_client-v0.107.4...sn_client-v0.107.5) - 2024-06-04
+
+### Other
+- *(network)* set metrics server to run on localhost
+
 ## [0.107.4](https://github.com/joshuef/safe_network/compare/sn_client-v0.107.3...sn_client-v0.107.4) - 2024-06-04
 
 ### Fixed

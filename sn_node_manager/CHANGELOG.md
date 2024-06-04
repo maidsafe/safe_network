@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.9.3...sn-node-manager-v0.9.4) - 2024-06-04
+
+### Added
+- *(manager)* provide option to start metrics server using random ports
+- *(node)* expose cumulative forwarded reward as metric and cache it locally
+
+### Fixed
+- *(manager)* add metrics port if not set
+
 ## [0.9.3](https://github.com/joshuef/safe_network/compare/sn-node-manager-v0.9.2...sn-node-manager-v0.9.3) - 2024-06-04
 
 ### Added

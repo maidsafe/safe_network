@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5](https://github.com/joshuef/safe_network/compare/node-launchpad-v0.3.4...node-launchpad-v0.3.5) - 2024-06-04
+
+### Added
+- *(launchpad)* obtain stats from the metrics endpoint
+- *(node)* expose cumulative forwarded reward as metric and cache it locally
+- *(manager)* provide option to start metrics server using random ports
+
+### Fixed
+- *(launchpad)* modify the device status panel
+- *(manager)* add metrics port if not set
+
+### Other
+- *(launchpad)* move log line out of the loop
+- *(launchpad)* clippy fixes
+- *(launchpad)* update log folder structure
+
 ## [0.3.4](https://github.com/joshuef/safe_network/compare/node-launchpad-v0.3.3...node-launchpad-v0.3.4) - 2024-06-04
 
 ### Added
