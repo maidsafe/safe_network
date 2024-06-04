@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717536959173,
+  "lastUpdate": 1717537084530,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "22e202d00e714da4339da964afaa36144e006204",
-          "message": "ci: run merge queue tests for alpha/beta merge queues too",
-          "timestamp": "2024-02-22T09:57:10+01:00",
-          "tree_id": "00c7ad30c74093513c0582ad410f5928ceeab2fc",
-          "url": "https://github.com/maidsafe/safe_network/commit/22e202d00e714da4339da964afaa36144e006204"
-        },
-        "date": 1708593298469,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "f63c3b22b9259e5785314301fa4a66eb996bcc55",
           "message": "ci: tweaks to auto branch switcher",
           "timestamp": "2024-02-22T11:53:02+01:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4d4cefc36a27c157905930e18e42543b94010983",
+          "message": "chore: use dag crawl in logs",
+          "timestamp": "2024-06-05T06:24:18+09:00",
+          "tree_id": "f3fbb6c1c64d3cfcfa3fca180c4b8f1dbb3df9c8",
+          "url": "https://github.com/maidsafe/safe_network/commit/4d4cefc36a27c157905930e18e42543b94010983"
+        },
+        "date": 1717537084197,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
