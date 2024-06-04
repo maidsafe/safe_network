@@ -374,14 +374,22 @@ impl SpendDagDb {
             let mut beta_tracking = self.beta_tracking.write().await;
             for (hash, p) in new_participants {
                 let unkown_str = format!("unknown participant: {hash:?}");
-                let payments = if let Some(prev_payments) =
+                let mut payments = if let Some(prev_payments) =
                     beta_tracking.forwarded_payments.remove(&unkown_str)
                 {
                     prev_payments
                 } else {
                     BTreeSet::new()
                 };
-                let _ = beta_tracking.forwarded_payments.insert(p, payments);
+
+                if let Some(existing) = beta_tracking
+                    .forwarded_payments
+                    .insert(p.clone(), payments.clone())
+                {
+                    warn!("Overwriting existing participant {p} with new participant {hash:?}");
+                    payments.extend(existing);
+                    let _ = beta_tracking.forwarded_payments.insert(p.clone(), payments);
+                }
             }
         }
         Ok(())
