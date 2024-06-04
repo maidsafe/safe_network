@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717497032532,
+  "lastUpdate": 1717497157094,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "52bc2d84983e65c843432e656ec73e20c759781d",
-          "message": "feat: dependency reconfiguration",
-          "timestamp": "2024-02-20T15:50:44+01:00",
-          "tree_id": "d625ea53d4a01d7a2bd3578c905d2b9a767ea6cd",
-          "url": "https://github.com/maidsafe/safe_network/commit/52bc2d84983e65c843432e656ec73e20c759781d"
-        },
-        "date": 1708441366955,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f357925c761c62a6fdaf60e93e3fa79f47fc6833",
+          "message": "fix(transfer): mismatched key shall result in decryption error",
+          "timestamp": "2024-06-04T19:11:20+09:00",
+          "tree_id": "f64407e51131f59285afb520cd711de826e7b0e6",
+          "url": "https://github.com/maidsafe/safe_network/commit/f357925c761c62a6fdaf60e93e3fa79f47fc6833"
+        },
+        "date": 1717497156745,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
