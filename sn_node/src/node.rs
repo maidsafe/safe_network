@@ -833,9 +833,10 @@ impl Node {
             let mut wallet = HotWallet::load_from(&network.root_dir_path)?;
             let balance = wallet.balance();
 
-            let payee = vec![(balance, *PAYMENT_FORWARD_PK)];
-
-            spend_requests.extend(wallet.prepare_forward_signed_spend(payee, forward_reason)?);
+            if !balance.is_zero() {
+                let payee = vec![(balance, *PAYMENT_FORWARD_PK)];
+                spend_requests.extend(wallet.prepare_forward_signed_spend(payee, forward_reason)?);
+            }
         }
         let total_forwarded_amount = spend_requests
             .iter()
