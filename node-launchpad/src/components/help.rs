@@ -104,10 +104,10 @@ impl Component for HelpPopUp {
         f.render_widget(line1.fg(GHOST_WHITE), layer_one[1]);
         let link1 = Hyperlink::new(
             Span::styled(
-                " https://docs.autonomi.com/getstarted",
+                " https://autonomi.com/getting-started",
                 Style::default().fg(VIVID_SKY_BLUE),
             ),
-            "https://docs.autonomi.com/getstarted",
+            "https://autonomi.com/getting-started",
         );
         f.render_widget_ref(link1, layer_one[2]);
 
