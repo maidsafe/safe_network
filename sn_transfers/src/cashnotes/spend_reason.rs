@@ -64,7 +64,10 @@ impl SpendReason {
 const MAX_CIPHER_SIZE: usize = std::u8::MAX as usize;
 const DERIVATION_INDEX_SIZE: usize = 32;
 const HASH_SIZE: usize = 32;
-const LIMIT_SIZE: usize = HASH_SIZE + DERIVATION_INDEX_SIZE;
+const CHECK_SUM_SIZE: usize = 8;
+const CONTENT_SIZE: usize = HASH_SIZE + DERIVATION_INDEX_SIZE;
+const LIMIT_SIZE: usize = CONTENT_SIZE + CHECK_SUM_SIZE;
+const CHECK_SUM: [u8; CHECK_SUM_SIZE] = [15; CHECK_SUM_SIZE];
 
 /// Discord username encrypted to the Foundation's pubkey with a random nonce
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -81,6 +84,7 @@ pub struct DiscordNameCipher {
 struct DiscordName {
     hash: Hash,
     nonce: DerivationIndex,
+    checksum: [u8; CHECK_SUM_SIZE],
 }
 
 impl DiscordName {
@@ -89,24 +93,37 @@ impl DiscordName {
         DiscordName {
             hash: Hash::hash(user_name.as_bytes()),
             nonce: DerivationIndex::random(rng),
+            checksum: CHECK_SUM,
         }
     }
 
     fn to_sized_bytes(&self) -> [u8; LIMIT_SIZE] {
         let mut bytes: [u8; LIMIT_SIZE] = [0; LIMIT_SIZE];
         bytes[0..HASH_SIZE].copy_from_slice(self.hash.slice());
-        bytes[HASH_SIZE..LIMIT_SIZE].copy_from_slice(&self.nonce.0);
+        bytes[HASH_SIZE..CONTENT_SIZE].copy_from_slice(&self.nonce.0);
+        bytes[CONTENT_SIZE..LIMIT_SIZE].copy_from_slice(&self.checksum);
         bytes
     }
 
-    fn from_bytes(bytes: &[u8]) -> Self {
+    fn from_bytes(bytes: &[u8]) -> Result<Self> {
         let mut hash_bytes = [0; HASH_SIZE];
         hash_bytes.copy_from_slice(&bytes[0..HASH_SIZE]);
         let hash = Hash::from(hash_bytes.to_owned());
         let mut nonce_bytes = [0; DERIVATION_INDEX_SIZE];
-        nonce_bytes.copy_from_slice(&bytes[HASH_SIZE..LIMIT_SIZE]);
+        nonce_bytes.copy_from_slice(&bytes[HASH_SIZE..CONTENT_SIZE]);
         let nonce = DerivationIndex(nonce_bytes.to_owned());
-        Self { hash, nonce }
+
+        let mut checksum = [0; CHECK_SUM_SIZE];
+        checksum.copy_from_slice(&bytes[CONTENT_SIZE..LIMIT_SIZE]);
+        if checksum != CHECK_SUM {
+            return Err(TransferError::InvalidDecryptionKey);
+        }
+
+        Ok(Self {
+            hash,
+            nonce,
+            checksum,
+        })
     }
 }
 
@@ -134,7 +151,7 @@ impl DiscordNameCipher {
         let decrypted = sk
             .decrypt(&cipher)
             .ok_or(TransferError::UserNameDecryptFailed)?;
-        let discord_name = DiscordName::from_bytes(&decrypted);
+        let discord_name = DiscordName::from_bytes(&decrypted)?;
         Ok(discord_name.hash)
     }
 }
@@ -167,5 +184,13 @@ mod tests {
         assert_eq!(user_name_hash2, recovered_hash);
 
         assert_ne!(user_name_hash, user_name_hash2);
+
+        let encryption_wrong_pk = SecretKey::random().public_key();
+        let cypher_wrong = DiscordNameCipher::create(user_name, encryption_wrong_pk)
+            .expect("cypher creation failed");
+        assert_eq!(
+            Err(TransferError::InvalidDecryptionKey),
+            cypher_wrong.decrypt_to_username_hash(&encryption_sk)
+        );
     }
 }
