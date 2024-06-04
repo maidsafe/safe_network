@@ -4692,7 +4692,7 @@ dependencies = [
 
 [[package]]
 name = "node-launchpad"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "atty",
  "better-panic",
@@ -6982,7 +6982,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "blsttc",
  "clap",
@@ -7148,7 +7148,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.4.23"
+version = "0.4.24"
 dependencies = [
  "assert_fs",
  "base64 0.22.1",
