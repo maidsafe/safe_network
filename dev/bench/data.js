@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717476088227,
+  "lastUpdate": 1717476122801,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "8492a315a250ef1a18e691558398d62b00318452",
-          "message": "chore: improve SpendDagGet names",
-          "timestamp": "2024-02-20T09:51:00Z",
-          "tree_id": "0bf2eed85a77bf03f86b2aa8adc7f26c16d6a33b",
-          "url": "https://github.com/maidsafe/safe_network/commit/8492a315a250ef1a18e691558398d62b00318452"
-        },
-        "date": 1708427264271,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2391470020015818,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8492434623227576,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.702690300482914,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.26407196072566,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "6935e9354f99bb4c47dd990e6ccffab442673b0e",
+          "message": "chore: reduce dag recrawl interval",
+          "timestamp": "2024-06-04T13:29:49+09:00",
+          "tree_id": "6c277592df26dfc02cd489bc756cb17fa10c2383",
+          "url": "https://github.com/maidsafe/safe_network/commit/6935e9354f99bb4c47dd990e6ccffab442673b0e"
+        },
+        "date": 1717476117672,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2505084679976641,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.677868508133869,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.576400800821396,
             "unit": "MiB/s"
           }
         ]
