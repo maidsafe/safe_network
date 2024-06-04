@@ -271,7 +271,7 @@ impl SpendDagDb {
                     utxo_addresses.extend(
                         new_utxos
                             .into_iter()
-                            .map(|a| (a, Instant::now() + REATTEMPT_INTERVAL)),
+                            .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
                     );
                 } else {
                     panic!("There is no point in running the auditor if we are not collecting the DAG or collecting data through crawling. Please enable the `dag-collection` feature or provide beta program related arguments.");
@@ -293,7 +293,7 @@ impl SpendDagDb {
                 utxo_addresses.extend(
                     new_utxos
                         .into_iter()
-                        .map(|a| (a, Instant::now() + REATTEMPT_INTERVAL)),
+                        .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
                 );
 
                 // write updates to local DAG and save to disk
