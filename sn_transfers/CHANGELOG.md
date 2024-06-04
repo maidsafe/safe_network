@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.6](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.18.5...sn_transfers-v0.18.6) - 2024-06-04
+
+### Other
+- release
+- release
+
 ## [0.18.4](https://github.com/joshuef/safe_network/compare/sn_transfers-v0.18.3...sn_transfers-v0.18.4) - 2024-06-03
 
 ### Fixed
