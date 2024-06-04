@@ -4,6 +4,8 @@
 
 # Suffix to append to the version. Passed as an argument to this script.
 FOUNDATION_SERVER="$1"
+PEER="$2"
+
 
 # if doundation server not provided, exit
  if [ -z "$FOUNDATION_SERVER" ]; then
@@ -11,6 +13,12 @@ FOUNDATION_SERVER="$1"
     exit 1
 fi
 
-scp root@$FOUNDATION_SERVER:/home/safe/.local/share/safe/test_faucet/wallet/foundation_disbursement.cash_note $TMPDIR/foundation.transfer
-safe wallet receive $TMPDIR/foundation.transfer
+# if doundation server not provided, exit
+ if [ -z "$PEER" ]; then
+    echo "Please provide the starting peer id an argument to this script"
+    exit 1
+fi
+
+scp root@$FOUNDATION_SERVER:/home/safe/.local/share/safe/test_faucet/wallet/foundation_disbursement.transfer $TMPDIR/foundation.transfer
+safe --peer $2 wallet receive $TMPDIR/foundation.transfer --file
 safe wallet balance
