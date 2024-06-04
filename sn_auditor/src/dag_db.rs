@@ -28,7 +28,7 @@ pub const SPEND_DAG_SVG_FILENAME: &str = "spend_dag.svg";
 /// Store a locally copy to restore on restart
 pub const BETA_PARTICIPANTS_FILENAME: &str = "beta_participants.txt";
 
-const REATTEMPT_INTERVAL: Duration = Duration::from_secs(3600);
+const DAG_RECRAWL_INTERVAL: Duration = Duration::from_secs(60);
 const SPENDS_PROCESSING_BUFFER_SIZE: usize = 4096;
 
 /// Abstraction for the Spend DAG database
@@ -223,8 +223,8 @@ impl SpendDagDb {
             let addrs_to_get = utxos_to_fetch.keys().cloned().collect::<BTreeSet<_>>();
 
             if addrs_to_get.is_empty() {
-                debug!("Sleeping for {REATTEMPT_INTERVAL:?} until next re-attempt...");
-                tokio::time::sleep(REATTEMPT_INTERVAL).await;
+                debug!("Sleeping for {DAG_RECRAWL_INTERVAL:?} until next re-attempt...");
+                tokio::time::sleep(DAG_RECRAWL_INTERVAL).await;
                 continue;
             }
 
@@ -241,7 +241,7 @@ impl SpendDagDb {
             utxo_addresses.extend(
                 new_utxos
                     .into_iter()
-                    .map(|a| (a, Instant::now() + REATTEMPT_INTERVAL)),
+                    .map(|a| (a, Instant::now() + DAG_RECRAWL_INTERVAL)),
             );
 
             // write updates to local DAG and save to disk
