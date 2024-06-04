@@ -74,7 +74,9 @@ pub async fn run_faucet_server(client: &Client) -> Result<()> {
 
     #[cfg(feature = "initial-data")]
     {
-        let _ = upload_initial_data(client, &root_dir).await;
+        if cfg!(not(feature = "gifting")) {
+            let _ = upload_initial_data(client, &root_dir).await;
+        }
     }
 
     startup_server(client.clone()).await
