@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717476122801,
+  "lastUpdate": 1717476208758,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "89bcce569cce14aefdd9b74f0ba7ce59882f42cd",
-          "message": "ci: add test to memcheck to restart a node and check for reloaded chunks",
-          "timestamp": "2024-02-20T11:08:45+01:00",
-          "tree_id": "6d2ed08ca5d5fd54f1797f477404e189d673191f",
-          "url": "https://github.com/maidsafe/safe_network/commit/89bcce569cce14aefdd9b74f0ba7ce59882f42cd"
-        },
-        "date": 1708424454062,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bcac4b8d3fbc19eb82d2a774750c4ac9f3b21b6b",
+          "message": "feat(faucet_server): download and upload gutenberger book part by part",
+          "timestamp": "2024-06-04T13:29:16+09:00",
+          "tree_id": "927868ee2863b552e661815843e0bf068557d4e3",
+          "url": "https://github.com/maidsafe/safe_network/commit/bcac4b8d3fbc19eb82d2a774750c4ac9f3b21b6b"
+        },
+        "date": 1717476208337,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
