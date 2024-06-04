@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717478957326,
+  "lastUpdate": 1717478958790,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "3bb8b84f2193ba3111c7ab19a3d6ab207dc9287a",
-          "message": "feat(node): fetch new data copy immediately",
-          "timestamp": "2024-02-20T09:57:58Z",
-          "tree_id": "5569ed2e977556fbb12c1f49e2247bea6999b7af",
-          "url": "https://github.com/maidsafe/safe_network/commit/3bb8b84f2193ba3111c7ab19a3d6ab207dc9287a"
-        },
-        "date": 1708429873028,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 178,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "b40b7fb0ac470eafc3536dd445812b03215725b7",
+          "message": "chore: remove gifting and start initial data uploads",
+          "timestamp": "2024-06-04T14:15:31+09:00",
+          "tree_id": "76125e6c5c868452d722edfba47f612f0d615fee",
+          "url": "https://github.com/maidsafe/safe_network/commit/b40b7fb0ac470eafc3536dd445812b03215725b7"
+        },
+        "date": 1717478958442,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
