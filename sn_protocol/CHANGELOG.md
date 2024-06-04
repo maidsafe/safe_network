@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.4](https://github.com/joshuef/safe_network/compare/sn_protocol-v0.17.3...sn_protocol-v0.17.4) - 2024-06-04
+
+### Other
+- release
+- release
+
 ## [0.17.3](https://github.com/joshuef/safe_network/compare/sn_protocol-v0.17.2...sn_protocol-v0.17.3) - 2024-06-04
 
 ### Other
