@@ -235,14 +235,12 @@ impl Component for Home {
                 }
             }
             Action::StoreDiscordUserName(username) => {
-                let reset_safenode_services = (self.discord_username != username)
-                    && !self.discord_username.is_empty()
-                    && !self.node_services.is_empty();
+                let has_changed = self.discord_username != username;
+                let we_have_nodes = !self.node_services.is_empty();
+
                 self.discord_username = username;
 
-                // todo: The discord_username popup should warn people that if nodes are running, they will be reset.
-                // And the earnings will be lost.
-                if reset_safenode_services {
+                if we_have_nodes && has_changed {
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
                     info!("Resetting safenode services because the discord username was reset.");
                     let action_sender = self.get_actions_sender()?;

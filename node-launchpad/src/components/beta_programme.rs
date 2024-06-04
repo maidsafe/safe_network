@@ -231,7 +231,7 @@ impl Component for BetaProgramme {
                 );
                 f.render_widget(input, layer_two[1]);
 
-                let text = Paragraph::new("  Changing the username will lead to loss of earned.\n  rewards. The nodes will be restarted to reflect\n  the change.");
+                let text = Paragraph::new("  Changing your Username will reset all nodes,\n  and any Nanos left on this device will be\n  lost.");
                 f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
 
                 let dash = Block::new()
@@ -240,8 +240,8 @@ impl Component for BetaProgramme {
                 f.render_widget(dash, layer_two[3]);
 
                 let buttons_layer = Layout::horizontal(vec![
-                    Constraint::Percentage(50),
-                    Constraint::Percentage(50),
+                    Constraint::Percentage(55),
+                    Constraint::Percentage(45),
                 ])
                 .split(layer_two[4]);
 
@@ -257,7 +257,7 @@ impl Component for BetaProgramme {
                     Style::default().fg(EUCALYPTUS)
                 };
                 let button_yes = Line::from(vec![Span::styled(
-                    "Modify Username [Enter]",
+                    "Save Username [Enter]",
                     button_yes_style,
                 )]);
                 f.render_widget(button_yes, buttons_layer[1]);
