@@ -78,7 +78,6 @@ impl NodeStats {
         while let Some((result, service_name)) = stream.next().await {
             match result {
                 Ok(stats) => {
-                    info!("Obtained node stats from {service_name:?}");
                     all_node_stats.merge(&stats);
                 }
                 Err(err) => {
@@ -128,12 +127,11 @@ impl NodeStats {
                     _ => {}
                 }
             }
-
-            debug!(
-                "Fetched stats from metrics_port {metrics_port:?} in {:?}",
-                now.elapsed()
-            );
         }
+        trace!(
+            "Fetched stats from metrics_port {metrics_port:?} in {:?}",
+            now.elapsed()
+        );
         Ok(stats)
     }
 }
