@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717509919243,
+  "lastUpdate": 1717509921759,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "23d1122f64520a08e149da81ae8d47683564e3ea",
-          "message": "chore: update readme for default branch for PRs",
-          "timestamp": "2024-02-21T11:12:18+01:00",
-          "tree_id": "e84b3ff01cf651662c716ae7049068c3bebffa6b",
-          "url": "https://github.com/maidsafe/safe_network/commit/23d1122f64520a08e149da81ae8d47683564e3ea"
-        },
-        "date": 1708511367844,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 191,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "4478c8a927fbf1f3d7e28adf4de033f3e26c9069",
           "message": "ci: fix branch check workflow",
           "timestamp": "2024-02-21T13:49:48+01:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2b5759182091f16cd4f5d61700241988a7f63329",
+          "message": "fix(audit): dont overwrite beta tracking payments",
+          "timestamp": "2024-06-04T22:51:18+09:00",
+          "tree_id": "4ee93b24617f20884fdafd75a24855c537e670c6",
+          "url": "https://github.com/maidsafe/safe_network/commit/2b5759182091f16cd4f5d61700241988a7f63329"
+        },
+        "date": 1717509921364,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
