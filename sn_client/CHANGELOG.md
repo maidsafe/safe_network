@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.107.7](https://github.com/joshuef/safe_network/compare/sn_client-v0.107.6...sn_client-v0.107.7) - 2024-06-04
+
+### Other
+- release
+- release
+- *(release)* sn_client-v0.107.5/sn_networking-v0.16.3/sn_cli-v0.93.4/sn_node-v0.107.4/node-launchpad-v0.3.5/sn-node-manager-v0.9.4/sn_auditor-v0.1.23/sn_peers_acquisition-v0.3.3/sn_faucet-v0.4.25/sn_node_rpc_client-v0.6.22
+- *(network)* set metrics server to run on localhost
+
 ## [0.107.6](https://github.com/joshuef/safe_network/compare/sn_client-v0.107.5...sn_client-v0.107.6) - 2024-06-04
 
 ### Fixed
@@ -13,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Other
 - *(transfer)* make discord_name decryption backward compatible
-
 ## [0.107.5](https://github.com/joshuef/safe_network/compare/sn_client-v0.107.4...sn_client-v0.107.5) - 2024-06-04
 
 ### Other
