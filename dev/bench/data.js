@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717504421546,
+  "lastUpdate": 1717504423907,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "8721209501d8de6f01dbd8190addf0d39ec42846",
-          "message": "chore(deps): update service manager to the latest version",
-          "timestamp": "2024-02-20T16:20:50Z",
-          "tree_id": "6cc588d40d7dbac7d391fbaaeb04b4e34685ff47",
-          "url": "https://github.com/maidsafe/safe_network/commit/8721209501d8de6f01dbd8190addf0d39ec42846"
-        },
-        "date": 1708446766710,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 197,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "135cbc9683408d4f3fa42b851d66d3c0ac6b45ee",
+          "message": "chore(transfer): make discord_name decryption backward compatible",
+          "timestamp": "2024-06-04T11:09:04Z",
+          "tree_id": "a237b023e85488d15de3712ea03c9350130327ec",
+          "url": "https://github.com/maidsafe/safe_network/commit/135cbc9683408d4f3fa42b851d66d3c0ac6b45ee"
+        },
+        "date": 1717504423056,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 194,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
