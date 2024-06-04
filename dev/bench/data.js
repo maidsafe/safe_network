@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717479072065,
+  "lastUpdate": 1717479198059,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "077367d40ad331d46ffd1c67e1dcf648d18c5449",
-          "message": "fix(manager): retry release downloads on failure",
-          "timestamp": "2024-02-20T14:23:03Z",
-          "tree_id": "c24d64f78818ae0699ca61afbbf729865ffd1930",
-          "url": "https://github.com/maidsafe/safe_network/commit/077367d40ad331d46ffd1c67e1dcf648d18c5449"
-        },
-        "date": 1708439695389,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/b40b7fb0ac470eafc3536dd445812b03215725b7"
         },
         "date": 1717478956962,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "30e351fce86466bf336bbcff4e026029b2f5a355",
+          "message": "feat: utxo reattempt by env",
+          "timestamp": "2024-06-04T14:18:59+09:00",
+          "tree_id": "ab5133de2bed38f9d73a074be87b582d054d69f3",
+          "url": "https://github.com/maidsafe/safe_network/commit/30e351fce86466bf336bbcff4e026029b2f5a355"
+        },
+        "date": 1717479197467,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
