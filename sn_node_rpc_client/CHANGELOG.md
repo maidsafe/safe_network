@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.23](https://github.com/joshuef/safe_network/compare/sn_node_rpc_client-v0.6.22...sn_node_rpc_client-v0.6.23) - 2024-06-04
+
+### Other
+- updated the following local packages: sn_client, sn_transfers, sn_node
+
 ## [0.6.22](https://github.com/joshuef/safe_network/compare/sn_node_rpc_client-v0.6.21...sn_node_rpc_client-v0.6.22) - 2024-06-04
 
 ### Other
