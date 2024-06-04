@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717509584901,
+  "lastUpdate": 1717509586600,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "244a182c16b848d5042aeaa1b7c70afa3a4269dc",
-          "message": "ci: upload binaries to s3 before publish\n\nWe found CI node manager upgrade tests did not work correctly when a release was running at the same\ntime, which is a common scenario. The reason is because the node manager uses `crates.io` to get the\nlatest version of the node and then attempts to download binaries from S3 based on that version\nnumber, but those binaries were not yet available on S3.\n\nWe now change the process to upload the binaries to S3 before the publishing phase.",
-          "timestamp": "2024-02-20T20:55:50Z",
-          "tree_id": "0c00c85f000bd7ef360b947224d54861fb1a31e2",
-          "url": "https://github.com/maidsafe/safe_network/commit/244a182c16b848d5042aeaa1b7c70afa3a4269dc"
-        },
-        "date": 1708465389052,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5968,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35679,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33115,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e85b0aa25eec71011893b4d722196531a3d4f0f3",
+          "message": "fix(CI): enable faucet gifting for bench test",
+          "timestamp": "2024-06-04T22:45:25+09:00",
+          "tree_id": "bec8e98d95605e6bb7858198de3dacda6e3b2f65",
+          "url": "https://github.com/maidsafe/safe_network/commit/e85b0aa25eec71011893b4d722196531a3d4f0f3"
+        },
+        "date": 1717509586202,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 8065,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 38610,
             "unit": "ms"
           },
           {
