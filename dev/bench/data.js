@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717476210115,
+  "lastUpdate": 1717476211780,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "89bcce569cce14aefdd9b74f0ba7ce59882f42cd",
-          "message": "ci: add test to memcheck to restart a node and check for reloaded chunks",
-          "timestamp": "2024-02-20T11:08:45+01:00",
-          "tree_id": "6d2ed08ca5d5fd54f1797f477404e189d673191f",
-          "url": "https://github.com/maidsafe/safe_network/commit/89bcce569cce14aefdd9b74f0ba7ce59882f42cd"
-        },
-        "date": 1708424457140,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6103,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36253,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 30602,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "bcac4b8d3fbc19eb82d2a774750c4ac9f3b21b6b",
+          "message": "feat(faucet_server): download and upload gutenberger book part by part",
+          "timestamp": "2024-06-04T13:29:16+09:00",
+          "tree_id": "927868ee2863b552e661815843e0bf068557d4e3",
+          "url": "https://github.com/maidsafe/safe_network/commit/bcac4b8d3fbc19eb82d2a774750c4ac9f3b21b6b"
+        },
+        "date": 1717476211434,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7206,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32203,
             "unit": "ms"
           },
           {
