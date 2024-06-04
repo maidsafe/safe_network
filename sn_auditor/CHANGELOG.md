@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.21](https://github.com/joshuef/safe_network/compare/sn_auditor-v0.1.20...sn_auditor-v0.1.21) - 2024-06-04
+
+### Other
+- reduce dag recrawl interval
+
 ## [0.1.20](https://github.com/joshuef/safe_network/compare/sn_auditor-v0.1.19...sn_auditor-v0.1.20) - 2024-06-03
 
 ### Other

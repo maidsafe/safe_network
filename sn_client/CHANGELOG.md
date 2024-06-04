@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.107.4](https://github.com/joshuef/safe_network/compare/sn_client-v0.107.3...sn_client-v0.107.4) - 2024-06-04
+
+### Fixed
+- *(faucet)* save the transfer not the cashnote for foundation
+
+### Other
+- *(release)* sn_client-v0.107.3/sn_transfers-v0.18.4/sn_cli-v0.93.2/sn_node-v0.107.2/node-launchpad-v0.3.2/sn-node-manager-v0.9.2/sn_auditor-v0.1.20/sn_networking-v0.16.2/sn_protocol-v0.17.2/sn_faucet-v0.4.22/sn_service_management-v0.3.3/sn_node_rpc_client-v0.6.20
+
 ## [0.107.3](https://github.com/joshuef/safe_network/compare/sn_client-v0.107.2...sn_client-v0.107.3) - 2024-06-03
 
 ### Fixed

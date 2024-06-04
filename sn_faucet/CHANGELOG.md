@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.23](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.4.22...sn_faucet-v0.4.23) - 2024-06-04
+
+### Added
+- *(faucet_server)* download and upload gutenberger book part by part
+
 ## [0.4.22](https://github.com/joshuef/safe_network/compare/sn_faucet-v0.4.21...sn_faucet-v0.4.22) - 2024-06-03
 
 ### Other
