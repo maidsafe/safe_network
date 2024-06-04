@@ -250,7 +250,10 @@ impl Node {
                     PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
                 );
             let balance_forward_time = Duration::from_secs(balance_forward_interval);
-            debug!("BalanceForward interval set to {balance_forward_time:?}");
+            debug!(
+                "BalanceForward interval set to {balance_forward_time:?} to: {:?}",
+                PAYMENT_FORWARD_PK.to_hex(),
+            );
 
             let mut balance_forward_interval = tokio::time::interval(balance_forward_time);
             let _ = balance_forward_interval.tick().await; // first tick completes immediately
