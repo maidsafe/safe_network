@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717603112649,
+  "lastUpdate": 1717603232952,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "a94a53226f86e29ccec87e19076222e01efdf3f8",
-          "message": "ci: use another PAT token for base branch switch",
-          "timestamp": "2024-02-22T12:16:44+01:00",
-          "tree_id": "4479f6c6ec671c3b5092ce57ab23043e1ece1307",
-          "url": "https://github.com/maidsafe/safe_network/commit/a94a53226f86e29ccec87e19076222e01efdf3f8"
-        },
-        "date": 1708601340102,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "d34eaa4dcc72e4f1150e594b0379f6bed29de07b",
           "message": "ci: dont pass token to action for branch switch",
           "timestamp": "2024-02-22T12:36:55+01:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "4d27ec0c497c7a01263538288ab8fb58ab49a696",
+          "message": "chore(ci): add node lib tests to ci",
+          "timestamp": "2024-06-05T15:02:56Z",
+          "tree_id": "ec5d665d8d6a33fdd7ff155cb0d9a8ce2b51a68b",
+          "url": "https://github.com/maidsafe/safe_network/commit/4d27ec0c497c7a01263538288ab8fb58ab49a696"
+        },
+        "date": 1717603232628,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
