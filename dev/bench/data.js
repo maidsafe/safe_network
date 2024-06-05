@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717547775691,
+  "lastUpdate": 1717547777881,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "1aaba27c24304615b58776f56e6aa7f551c42b8d",
-          "message": "ci: run memcheck on other merge queues too",
-          "timestamp": "2024-02-22T12:12:40+01:00",
-          "tree_id": "51804a7bfbe9ed95bb1519566cd7a4a06085c978",
-          "url": "https://github.com/maidsafe/safe_network/commit/1aaba27c24304615b58776f56e6aa7f551c42b8d"
-        },
-        "date": 1708601085930,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 203,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "a94a53226f86e29ccec87e19076222e01efdf3f8",
           "message": "ci: use another PAT token for base branch switch",
           "timestamp": "2024-02-22T12:16:44+01:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "f3585bdb1d7638d27972657088d50d0c7049a82a",
+          "message": "fix(launchpad): update getting-started link",
+          "timestamp": "2024-06-04T23:47:11Z",
+          "tree_id": "828b60c11884d34887839bc9cb0d6fbc24e0ef6f",
+          "url": "https://github.com/maidsafe/safe_network/commit/f3585bdb1d7638d27972657088d50d0c7049a82a"
+        },
+        "date": 1717547776992,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
