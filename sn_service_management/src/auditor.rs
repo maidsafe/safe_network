@@ -72,7 +72,11 @@ impl<'a> ServiceStateActions for AuditorService<'a> {
             autostart: true,
             contents: None,
             environment: options.env_variables,
-            label: self.service_data.service_name.parse()?,
+            label: self
+                .service_data
+                .service_name
+                .parse()
+                .inspect_err(|err| error!("Failed to parse service name: {err:?}"))?,
             program: self.service_data.auditor_path.to_path_buf(),
             username: Some(self.service_data.user.to_string()),
             working_directory: None,

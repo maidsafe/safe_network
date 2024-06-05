@@ -35,6 +35,7 @@ pub async fn add(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if !is_running_as_root() {
+        error!("The faucet add command must run as the root user");
         return Err(eyre!("The add command must run as the root user"));
     }
 
@@ -70,6 +71,7 @@ pub async fn add(
         .await?
     };
 
+    info!("Adding faucet service");
     add_faucet(
         AddFaucetServiceOptions {
             bootstrap_peers: get_peers_from_args(peers).await?,
@@ -92,6 +94,7 @@ pub async fn add(
 
 pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
     if !is_running_as_root() {
+        error!("The faucet start command must run as the root user");
         return Err(eyre!("The start command must run as the root user"));
     }
 
@@ -100,6 +103,7 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
         if verbosity != VerbosityLevel::Minimal {
             print_banner("Start Faucet Service");
         }
+        info!("Starting faucet service");
 
         let service = FaucetService::new(faucet, Box::new(ServiceController {}));
         let mut service_manager = ServiceManager::new(
@@ -113,11 +117,13 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
         return Ok(());
     }
 
+    error!("The faucet service has not been added yet");
     Err(eyre!("The faucet service has not been added yet"))
 }
 
 pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
     if !is_running_as_root() {
+        error!("The faucet stop command must run as the root user");
         return Err(eyre!("The stop command must run as the root user"));
     }
 
@@ -126,6 +132,7 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
         if verbosity != VerbosityLevel::Minimal {
             print_banner("Stop Faucet Service");
         }
+        info!("Stopping faucet service");
 
         let service = FaucetService::new(faucet, Box::new(ServiceController {}));
         let mut service_manager =
@@ -137,6 +144,7 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
         return Ok(());
     }
 
+    error!("The faucet service has not been added yet");
     Err(eyre!("The faucet service has not been added yet"))
 }
 
@@ -161,6 +169,7 @@ pub async fn upgrade(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Upgrade Faucet Service");
     }
+    info!("Upgrading faucet service");
 
     let (upgrade_bin_path, target_version) =
         download_and_get_upgrade_bin_path(None, ReleaseType::Faucet, url, version, verbosity)

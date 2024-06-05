@@ -31,6 +31,7 @@ pub async fn add(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if !is_running_as_root() {
+        error!("The daemon add command must run as the root user");
         return Err(eyre!("The add command must run as the root user"));
     }
 
@@ -40,6 +41,7 @@ pub async fn add(
 
     let service_user = "safe";
     let service_manager = ServiceController {};
+    debug!("Trying to create service user '{service_user}' for the daemon");
     service_manager.create_service_user(service_user)?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
@@ -59,6 +61,8 @@ pub async fn add(
         )
         .await?
     };
+
+    info!("Adding daemon service");
 
     // At the moment we don't have the option to provide a user for running the service. Since
     // `safenodemand` requires manipulation of services, the user running it must either be root or
@@ -82,6 +86,7 @@ pub async fn add(
 
 pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
     if !is_running_as_root() {
+        error!("The daemon start command must run as the root user");
         return Err(eyre!("The start command must run as the root user"));
     }
 
@@ -90,6 +95,7 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
         if verbosity != VerbosityLevel::Minimal {
             print_banner("Start Daemon Service");
         }
+        info!("Starting daemon service");
 
         let service = DaemonService::new(daemon, Box::new(ServiceController {}));
         let mut service_manager =
@@ -109,11 +115,13 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
         return Ok(());
     }
 
+    error!("The daemon service has not been added yet");
     Err(eyre!("The daemon service has not been added yet"))
 }
 
 pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
     if !is_running_as_root() {
+        error!("The daemon stop command must run as the root user");
         return Err(eyre!("The stop command must run as the root user"));
     }
 
@@ -122,6 +130,7 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
         if verbosity != VerbosityLevel::Minimal {
             print_banner("Stop Daemon Service");
         }
+        info!("Stopping daemon service");
 
         let service = DaemonService::new(daemon, Box::new(ServiceController {}));
         let mut service_manager =
@@ -133,5 +142,6 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
         return Ok(());
     }
 
+    error!("The daemon service has not been added yet");
     Err(eyre!("The daemon service has not been added yet"))
 }

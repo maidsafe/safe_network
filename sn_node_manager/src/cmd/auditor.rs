@@ -37,6 +37,7 @@ pub async fn add(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if !is_running_as_root() {
+        error!("The auditor add command must run as the root user");
         return Err(eyre!("The add command must run as the root user"));
     }
 
@@ -72,6 +73,7 @@ pub async fn add(
         .await?
     };
 
+    info!("Adding auditor service");
     add_auditor(
         AddAuditorServiceOptions {
             auditor_src_bin_path,
@@ -95,12 +97,14 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
     if !is_running_as_root() {
         return Err(eyre!("The start command must run as the root user"));
     }
+    info!("Starting the auditor service");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if let Some(auditor) = &mut node_registry.auditor {
         if verbosity != VerbosityLevel::Minimal {
             print_banner("Start Auditor Service");
         }
+        info!("Starting the auditor service");
 
         let service = AuditorService::new(auditor, Box::new(ServiceController {}));
         let mut service_manager = ServiceManager::new(
@@ -113,7 +117,7 @@ pub async fn start(verbosity: VerbosityLevel) -> Result<()> {
         node_registry.save()?;
         return Ok(());
     }
-
+    error!("The auditor service has not been added yet");
     Err(eyre!("The auditor service has not been added yet"))
 }
 
@@ -127,6 +131,7 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
         if verbosity != VerbosityLevel::Minimal {
             print_banner("Stop Auditor Service");
         }
+        info!("Stopping the auditor service");
 
         let service = AuditorService::new(auditor, Box::new(ServiceController {}));
         let mut service_manager =
@@ -138,6 +143,7 @@ pub async fn stop(verbosity: VerbosityLevel) -> Result<()> {
         return Ok(());
     }
 
+    error!("The auditor service has not been added yet");
     Err(eyre!("The auditor service has not been added yet"))
 }
 
@@ -162,15 +168,21 @@ pub async fn upgrade(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Upgrade Auditor Service");
     }
+    info!("Upgrading the auditor service");
 
     let (upgrade_bin_path, target_version) =
         download_and_get_upgrade_bin_path(None, ReleaseType::SnAuditor, url, version, verbosity)
             .await?;
     let auditor = node_registry.auditor.as_mut().unwrap();
+    debug!(
+        "Current version {:?}, target version {target_version:?}",
+        auditor.version,
+    );
 
     if !force {
         let current_version = Version::parse(&auditor.version)?;
         if target_version <= current_version {
+            info!("The auditor is already at the latest version, do nothing.");
             println!(
                 "{} The auditor is already at the latest version",
                 "✓".green()
@@ -199,10 +211,14 @@ pub async fn upgrade(
 
     match service_manager.upgrade(options).await {
         Ok(upgrade_result) => {
+            info!("Upgrade the auditor service successfully");
             print_upgrade_summary(vec![("auditor".to_string(), upgrade_result)]);
             node_registry.save()?;
             Ok(())
         }
-        Err(e) => Err(eyre!("Upgrade failed: {e}")),
+        Err(e) => {
+            error!("Failed to upgrade the auditor service: {e:?}",);
+            Err(eyre!("Upgrade failed: {e}"))
+        }
     }
 }

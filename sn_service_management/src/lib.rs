@@ -14,6 +14,9 @@ pub mod faucet;
 pub mod node;
 pub mod rpc;
 
+#[macro_use]
+extern crate tracing;
+
 pub mod safenode_manager_proto {
     tonic::include_proto!("safenode_manager_proto");
 }
@@ -111,19 +114,26 @@ pub struct NodeRegistry {
 
 impl NodeRegistry {
     pub fn save(&self) -> Result<()> {
+        debug!("Saving node registry to: {:?}", self.save_path);
         let path = Path::new(&self.save_path);
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
+            std::fs::create_dir_all(parent).inspect_err(|err| {
+                error!("Error while creating node registry parent {parent:?}: {err:?}")
+            })?;
         }
 
         let json = serde_json::to_string(self)?;
-        let mut file = std::fs::File::create(self.save_path.clone())?;
-        file.write_all(json.as_bytes())?;
+        let mut file = std::fs::File::create(self.save_path.clone())
+            .inspect_err(|err| error!("Error creating node registry file: {err:?}"))?;
+        file.write_all(json.as_bytes())
+            .inspect_err(|err| error!("Error writing to node registry: {err:?}"))?;
+
         Ok(())
     }
 
     pub fn load(path: &Path) -> Result<Self> {
         if !path.exists() {
+            debug!("Loading default node registry as {path:?} does not exist");
             return Ok(NodeRegistry {
                 auditor: None,
                 bootstrap_peers: vec![],
@@ -135,10 +145,14 @@ impl NodeRegistry {
                 save_path: path.to_path_buf(),
             });
         }
+        debug!("Loading node registry from: {path:?}");
 
-        let mut file = std::fs::File::open(path)?;
+        let mut file = std::fs::File::open(path)
+            .inspect_err(|err| error!("Error while opening node registry: {err:?}"))?;
+
         let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
+        file.read_to_string(&mut contents)
+            .inspect_err(|err| error!("Error while reading node registry: {err:?}"))?;
 
         // It's possible for the file to be empty if the user runs a `status` command before any
         // services were added.
@@ -159,7 +173,8 @@ impl NodeRegistry {
     }
 
     pub fn from_json(json: &str) -> Result<Self> {
-        let registry = serde_json::from_str(json)?;
+        let registry = serde_json::from_str(json)
+            .inspect_err(|err| error!("Error while deserializing node registry: {err:?}"))?;
         Ok(registry)
     }
 
@@ -174,11 +189,16 @@ impl NodeRegistry {
 
 pub fn get_local_node_registry_path() -> Result<PathBuf> {
     let path = dirs_next::data_dir()
-        .ok_or_else(|| Error::UserDataDirectoryNotObtainable)?
+        .ok_or_else(|| {
+            error!("Failed to get data_dir");
+            Error::UserDataDirectoryNotObtainable
+        })?
         .join("safe")
         .join("local_node_registry.json");
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
+        std::fs::create_dir_all(parent).inspect_err(|err| {
+            error!("Error while creating node registry parent {parent:?}: {err:?}")
+        })?;
     }
     Ok(path)
 }

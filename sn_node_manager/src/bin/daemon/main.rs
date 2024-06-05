@@ -12,6 +12,7 @@ extern crate tracing;
 use clap::Parser;
 use color_eyre::eyre::{eyre, Result};
 use libp2p_identity::PeerId;
+use sn_logging::LogBuilder;
 use sn_node_manager::{config::get_node_registry_path, rpc, DAEMON_DEFAULT_PORT};
 use sn_service_management::{
     safenode_manager_proto::{
@@ -23,6 +24,7 @@ use sn_service_management::{
 };
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use tonic::{transport::Server, Code, Request, Response, Status};
+use tracing::Level;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -55,8 +57,10 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
             )
         })?;
 
-        let peer_id = PeerId::from_bytes(&request.get_ref().peer_id)
-            .map_err(|err| Status::new(Code::Internal, format!("Failed to parse PeerId: {err}")))?;
+        let peer_id = PeerId::from_bytes(&request.get_ref().peer_id).map_err(|err| {
+            error!("Failed to parse PeerId: {err}");
+            Status::new(Code::Internal, format!("Failed to parse PeerId: {err}"))
+        })?;
 
         Self::restart_handler(node_registry, peer_id, request.get_ref().retain_peer_id)
             .await
@@ -64,6 +68,7 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
                 Status::new(Code::Internal, format!("Failed to restart the node: {err}"))
             })?;
 
+        info!("Node service restarted for {peer_id:?}");
         Ok(Response::new(NodeServiceRestartResponse {}))
     }
 
@@ -89,6 +94,7 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
                 number: node.number as u32,
             })
             .collect::<Vec<_>>();
+        info!("Node status retrieved, nod len: {:?}", nodes_info.len());
         Ok(Response::new(GetStatusResponse { nodes: nodes_info }))
     }
 }
@@ -122,6 +128,7 @@ impl SafeNodeManagerDaemon {}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
+    let _log_handles = get_log_builder()?.initialize()?;
     println!("Starting safenodemand");
     let args = Args::parse();
     let service = SafeNodeManagerDaemon {};
@@ -138,4 +145,25 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn get_log_builder() -> Result<LogBuilder> {
+    let logging_targets = vec![
+        ("sn_node_manager".to_string(), Level::TRACE),
+        ("safenode_manager".to_string(), Level::TRACE),
+        ("safenodemand".to_string(), Level::TRACE),
+        ("sn_service_management".to_string(), Level::TRACE),
+    ];
+    let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+
+    let output_dest = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("Could not obtain user data directory"))?
+        .join("safe")
+        .join("safenodemand")
+        .join("logs")
+        .join(format!("log_{timestamp}"));
+
+    let mut log_builder = LogBuilder::new(logging_targets);
+    log_builder.output_dest(sn_logging::LogOutputDest::Path(output_dest));
+    Ok(log_builder)
 }

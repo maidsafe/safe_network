@@ -20,6 +20,7 @@ pub async fn restart_node(
     retain_peer_id: bool,
 ) -> Result<()> {
     for peer_id in peer_ids {
+        debug!("Sending NodeServiceRestartRequest to {peer_id:?} at {rpc_server_address:?}");
         let str_bytes = PeerId::from_str(&peer_id)?.to_bytes();
 
         let mut daemon_client = get_rpc_client(rpc_server_address).await?;
@@ -33,6 +34,7 @@ pub async fn restart_node(
             }))
             .await
             .map_err(|err| {
+                error!("Failed to restart node service with {peer_id:?} at {rpc_server_address:?} with err: {err:?}");
                 eyre!(
                     "Failed to restart node service with {peer_id:?} at {:?} with err: {err:?}",
                     daemon_client.addr
@@ -54,9 +56,11 @@ async fn get_rpc_client(socket_addr: SocketAddr) -> Result<DaemonRpcClient> {
             return Ok(rpc_client);
         }
         attempts += 1;
+        error!("Could not connect to rpc {endpoint:?}. Attempts: {attempts:?}/10");
         println!("Could not connect to rpc {endpoint:?}. Attempts: {attempts:?}/10");
         tokio::time::sleep(Duration::from_secs(1)).await;
         if attempts >= 10 {
+            error!("Failed to connect to {endpoint:?} even after 10 retries");
             bail!("Failed to connect to {endpoint:?} even after 10 retries");
         }
     }

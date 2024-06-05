@@ -266,7 +266,7 @@ impl LogBuilder {
         let mut layers = TracingLayers::default();
 
         let _reload_handle = layers
-            .fmt_layer(vec![], &output_dest, LogFormat::Default, None, None, true)
+            .fmt_layer(vec![], &output_dest, LogFormat::Default, None, None, false)
             .expect("Failed to get TracingLayers");
         layers
     }
