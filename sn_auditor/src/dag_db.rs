@@ -36,7 +36,7 @@ lazy_static! {
         std::env::var("UTXO_REATTEMPT_INTERVAL")
             .unwrap_or("3600".to_string())
             .parse::<u64>()
-            .unwrap_or(3600)
+            .unwrap_or(300)
     );
 
     /// time in seconds to rest between DAG crawls
