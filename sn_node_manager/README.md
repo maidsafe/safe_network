@@ -36,7 +36,7 @@ used in an elevated, administrative session.
 
 First, use the `add` command to create some services:
 ```
-$ safenode-manager add --count 3 --peer /ip4/46.101.80.187/udp/58070/quic-v1/p2p/12D3KooWKgJQedzCxrp33u3dBD1mUZ9HTjEjgrxskEBvzoQWkRT9
+$ safenode-manager add --count 3 --peer /ip4/139.59.168.228/udp/56309/quic-v1/p2p/12D3KooWFTMtaqu24ddDSXk9v5YxnuhJmTLFRunER1CG4wZ2XLUU
 ```
 
 This downloads the latest version of the `safenode` binary and creates three services that will initially connect to the specified peer. Soon, specification of a peer will not be required.
