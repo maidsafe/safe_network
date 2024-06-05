@@ -105,10 +105,13 @@ impl TracingLayers {
         format: LogFormat,
         max_uncompressed_log_files: Option<usize>,
         max_compressed_log_files: Option<usize>,
+        print_updates_to_stdout: bool,
     ) -> Result<ReloadHandle> {
         let layer = match output_dest {
             LogOutputDest::Stdout => {
-                println!("Logging to stdout");
+                if print_updates_to_stdout {
+                    println!("Logging to stdout");
+                }
                 tracing_fmt::layer()
                     .with_ansi(false)
                     .with_target(false)
@@ -117,7 +120,9 @@ impl TracingLayers {
             }
             LogOutputDest::Path(path) => {
                 std::fs::create_dir_all(path)?;
-                println!("Logging to directory: {path:?}");
+                if print_updates_to_stdout {
+                    println!("Logging to directory: {path:?}");
+                }
 
                 // the number of normal files
                 let max_uncompressed_log_files =
@@ -153,7 +158,9 @@ impl TracingLayers {
         };
         let targets = match std::env::var("SN_LOG") {
             Ok(sn_log_val) => {
-                println!("Using SN_LOG={sn_log_val}");
+                if print_updates_to_stdout {
+                    println!("Using SN_LOG={sn_log_val}");
+                }
                 get_logging_targets(&sn_log_val)?
             }
             Err(_) => default_logging_targets,
@@ -265,6 +272,8 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
             ("safenode".to_string(), Level::TRACE),
             ("safenode_rpc_client".to_string(), Level::TRACE),
             ("safe".to_string(), Level::TRACE),
+            ("safenode_manager".to_string(), Level::TRACE),
+            ("safenodemand".to_string(), Level::TRACE),
             // libs
             ("sn_build_info".to_string(), Level::TRACE),
             ("sn_cli".to_string(), Level::TRACE),
@@ -272,10 +281,12 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
             ("sn_faucet".to_string(), Level::TRACE),
             ("sn_logging".to_string(), Level::TRACE),
             ("sn_node".to_string(), Level::TRACE),
+            ("sn_node_manager".to_string(), Level::TRACE),
             ("sn_node_rpc_client".to_string(), Level::TRACE),
             ("sn_peers_acquisition".to_string(), Level::TRACE),
             ("sn_protocol".to_string(), Level::TRACE),
             ("sn_registers".to_string(), Level::INFO),
+            ("sn_service_management".to_string(), Level::TRACE),
             ("sn_transfers".to_string(), Level::TRACE),
         ]);
     }
