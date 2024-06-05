@@ -7,42 +7,44 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use lazy_static::lazy_static;
+use sn_transfers::{FOUNDATION_PK, GENESIS_PK, NETWORK_ROYALTIES_PK, PAYMENT_FORWARD_PK};
 
 lazy_static! {
     /// The node version used during Identify Behaviour.
     pub static ref IDENTIFY_NODE_VERSION_STR: String =
         format!(
-            "safe{}/node/{}",
+            "safe{}/node/{}/{}",
             write_network_version_with_slash(),
-            get_truncate_version_str()
+            get_truncate_version_str(),
+            get_key_version_str(),
         );
 
     /// The client version used during Identify Behaviour.
     pub static ref IDENTIFY_CLIENT_VERSION_STR: String =
         format!(
-            "safe{}/client/{}",
+            "safe{}/client/{}/{}",
             write_network_version_with_slash(),
-            get_truncate_version_str()
+            get_truncate_version_str(),
+            get_key_version_str(),
         );
 
-    /// / first version for the req/response protocol
+    /// The req/response protocol version
     pub static ref REQ_RESPONSE_VERSION_STR: String =
         format!(
-            "/safe{}/node/{}",
+            "/safe{}/node/{}/{}",
             write_network_version_with_slash(),
-            get_truncate_version_str()
+            get_truncate_version_str(),
+            get_key_version_str(),
         );
-
 
     /// The identify protocol version
     pub static ref IDENTIFY_PROTOCOL_STR: String =
         format!(
-            "safe{}/{}",
+            "safe{}/{}/{}",
             write_network_version_with_slash(),
-            get_truncate_version_str()
+            get_truncate_version_str(),
+            get_key_version_str(),
         );
-
-
 }
 
 /// Get the network version string.
@@ -84,4 +86,19 @@ fn get_truncate_version_str() -> String {
     } else {
         panic!("Cannot obtain truncated version str for {version_str:?}: {parts:?}");
     }
+}
+
+/// Get the PKs version string.
+/// If the public key mis-configed via env variable,
+/// it shall result in being rejected to join by the network
+fn get_key_version_str() -> String {
+    let mut f_k_str = FOUNDATION_PK.to_hex();
+    let _ = f_k_str.split_off(6);
+    let mut g_k_str = GENESIS_PK.to_hex();
+    let _ = g_k_str.split_off(6);
+    let mut n_k_str = NETWORK_ROYALTIES_PK.to_hex();
+    let _ = n_k_str.split_off(6);
+    let mut p_k_str = PAYMENT_FORWARD_PK.to_hex();
+    let _ = p_k_str.split_off(6);
+    format!("{f_k_str}_{g_k_str}_{n_k_str}_{p_k_str}")
 }
