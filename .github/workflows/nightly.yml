@@ -148,6 +148,10 @@ jobs:
           cargo test --release --package sn_client --bins
           cargo test --release --package sn_client --examples
 
+      - name: Run node tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_node --lib
+
       - name: Run network tests
         timeout-minutes: 25
         run: cargo test --release -p sn_networking
