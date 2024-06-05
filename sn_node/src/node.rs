@@ -902,21 +902,34 @@ impl Node {
         let balance_file_path = network.root_dir_path.join(FORWARDED_BALANCE_FILE_NAME);
         let old_balance = read_forwarded_balance_value(&balance_file_path);
         let updated_balance = old_balance + total_forwarded_amount;
-        if let Err(err) = std::fs::write(&balance_file_path, updated_balance.to_string()) {
-            error!(
-                "Failed to write the updated balance to the file {balance_file_path:?} with {err:?}"
-            );
-        }
+        trace!("Updating forwarded balance to {updated_balance}");
+        write_forwarded_balance_value(&balance_file_path, updated_balance)?;
 
         Ok(updated_balance)
     }
 }
 
 fn read_forwarded_balance_value(balance_file_path: &PathBuf) -> u64 {
+    trace!("Reading forwarded balance from file {balance_file_path:?}");
     match std::fs::read_to_string(balance_file_path) {
-        Ok(balance) => balance.parse::<u64>().unwrap_or(0),
-        Err(_) => 0,
+        Ok(balance) => balance.parse::<u64>().unwrap_or_else(|_| {
+            trace!("The balance from file is not a valid number");
+            0
+        }),
+        Err(_) => {
+            trace!("Error while reading to string, setting the balance to 0. This can happen at node init.");
+            0
+        }
     }
+}
+
+fn write_forwarded_balance_value(balance_file_path: &PathBuf, balance: u64) -> Result<()> {
+    if let Err(err) = std::fs::write(balance_file_path, balance.to_string()) {
+        error!(
+            "Failed to write the updated balance to the file {balance_file_path:?} with {err:?}"
+        );
+    }
+    Ok(())
 }
 
 async fn chunk_proof_verify_peer(
@@ -981,5 +994,31 @@ fn received_valid_chunk_proof(
     } else {
         debug!("Did not get a valid response for the ChunkProof from {peer:?}");
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::node::{read_forwarded_balance_value, write_forwarded_balance_value};
+    use color_eyre::Result;
+    use tempfile::tempdir;
+    #[test]
+    fn read_and_write_reward_to_file() -> Result<()> {
+        let dir = tempdir()?;
+        let balance_file_path = dir.path().join("forwarded_balance");
+
+        let balance = read_forwarded_balance_value(&balance_file_path);
+        assert_eq!(balance, 0);
+
+        write_forwarded_balance_value(&balance_file_path, balance + 10)?;
+        let balance = read_forwarded_balance_value(&balance_file_path);
+        assert_eq!(balance, 10);
+
+        write_forwarded_balance_value(&balance_file_path, balance + 100)?;
+        let balance = read_forwarded_balance_value(&balance_file_path);
+        assert_eq!(balance, 110);
+
+        Ok(())
     }
 }
