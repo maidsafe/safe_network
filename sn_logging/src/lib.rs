@@ -124,6 +124,8 @@ pub struct LogBuilder {
     format: LogFormat,
     max_uncompressed_log_files: Option<usize>,
     max_compressed_log_files: Option<usize>,
+    /// Setting this would print the sn_logging related updates to stdout.
+    print_updates_to_stdout: bool,
 }
 
 impl LogBuilder {
@@ -138,6 +140,7 @@ impl LogBuilder {
             format: LogFormat::Default,
             max_uncompressed_log_files: None,
             max_compressed_log_files: None,
+            print_updates_to_stdout: true,
         }
     }
 
@@ -161,6 +164,11 @@ impl LogBuilder {
         self.max_compressed_log_files = Some(files);
     }
 
+    /// Setting this to false would prevent sn_logging from printing things to stdout.
+    pub fn print_updates_to_stdout(&mut self, print: bool) {
+        self.print_updates_to_stdout = print;
+    }
+
     /// Inits node logging, returning the NonBlocking guard if present.
     /// This guard should be held for the life of the program.
     ///
@@ -174,6 +182,7 @@ impl LogBuilder {
             self.format,
             self.max_uncompressed_log_files,
             self.max_compressed_log_files,
+            self.print_updates_to_stdout,
         )?;
 
         #[cfg(feature = "otlp")]
@@ -192,7 +201,7 @@ impl LogBuilder {
             .try_init()
             .is_err()
         {
-            println!("Tried to initialize and set global default subscriber more than once");
+            eprintln!("Tried to initialize and set global default subscriber more than once");
         }
 
         Ok((reload_handle, layers.log_appender_guard))
@@ -257,7 +266,7 @@ impl LogBuilder {
         let mut layers = TracingLayers::default();
 
         let _reload_handle = layers
-            .fmt_layer(vec![], &output_dest, LogFormat::Default, None, None)
+            .fmt_layer(vec![], &output_dest, LogFormat::Default, None, None, true)
             .expect("Failed to get TracingLayers");
         layers
     }
