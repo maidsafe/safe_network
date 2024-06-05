@@ -75,9 +75,15 @@ impl Client {
         // forward spends to processing if provided
         let build_handle: tokio::task::JoinHandle<Result<SpendDag, WalletError>> =
             tokio::spawn(async move {
+                debug!("Starting building DAG from {spend_addr:?}...");
+                let now = std::time::Instant::now();
                 let mut dag = SpendDag::new(spend_addr);
                 while let Some(spend) = rx.recv().await {
                     let addr = spend.address();
+                    debug!(
+                        "Inserting spend at {addr:?} size: {}",
+                        dag.all_spends().len()
+                    );
                     dag.insert(addr, spend.clone());
                     if let Some(sender) = &spend_processing {
                         sender
@@ -86,6 +92,11 @@ impl Client {
                             .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
                     }
                 }
+                info!(
+                    "Done gathering DAG of size: {} in {:?}",
+                    dag.all_spends().len(),
+                    now.elapsed()
+                );
                 Ok(dag)
             });
 
