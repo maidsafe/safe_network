@@ -75,6 +75,7 @@ pub fn initialize_panic_handler() -> Result<()> {
     Ok(())
 }
 
+// todo: use sn_logging
 pub fn initialize_logging() -> Result<()> {
     let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let log_path = get_launchpad_data_dir_path()?.join("logs");
@@ -84,7 +85,7 @@ pub fn initialize_logging() -> Result<()> {
     std::env::set_var(
         "RUST_LOG",
         std::env::var("RUST_LOG")
-            .unwrap_or_else(|_| format!("{}=trace,debug", env!("CARGO_CRATE_NAME"))),
+            .unwrap_or_else(|_| format!("{}=trace,sn_node_manager=trace,sn_service_management=trace,sn_peers_acquisition=trace", env!("CARGO_CRATE_NAME"))),
     );
     let file_subscriber = tracing_subscriber::fmt::layer()
         .with_file(true)
