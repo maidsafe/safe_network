@@ -101,7 +101,7 @@ pub async fn add(
         .await?
     };
 
-    tracing::debug!("Parsing peers...");
+    debug!("Parsing peers from PeersArgs");
 
     // Handle the `PeersNotObtained` error to make the `--peer` argument optional for the node
     // manager.
@@ -115,10 +115,19 @@ pub async fn add(
     // return a huge peer list, and that's been problematic for service definition files.
     let is_first = peers.first;
     let bootstrap_peers = match get_peers_from_args(peers).await {
-        Ok(p) => p,
-        Err(e) => match e {
-            sn_peers_acquisition::error::Error::PeersNotObtained => Vec::new(),
-            _ => return Err(e.into()),
+        Ok(p) => {
+            info!("Obtained peers of length {}", p.len());
+            p
+        }
+        Err(err) => match err {
+            sn_peers_acquisition::error::Error::PeersNotObtained => {
+                info!("No bootstrap peers obtained, setting empty vec.");
+                Vec::new()
+            }
+            _ => {
+                error!("Error obtaining peers: {err:?}");
+                return Err(err.into());
+            }
         },
     };
 
@@ -148,12 +157,12 @@ pub async fn add(
         user_mode,
         version,
     };
-
+    info!("Adding node service(s)");
     let added_services_names =
         add_node(options, &mut node_registry, &service_manager, verbosity).await?;
 
     node_registry.save()?;
-    tracing::debug!("Node registry saved");
+    debug!("Node registry saved");
 
     Ok(added_services_names)
 }
@@ -177,16 +186,19 @@ pub async fn balance(
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
+        info!("Service indices is empty, cannot obtain the balance");
         // This could be the case if all services are at `Removed` status.
         println!("No balances to display");
         return Ok(());
     }
+    debug!("Obtaining balances for {} services", service_indices.len());
 
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client));
-        let wallet = HotWallet::load_from(&service.service_data.data_dir_path)?;
+        let wallet = HotWallet::load_from(&service.service_data.data_dir_path)
+            .inspect_err(|err| error!("Error while loading hot wallet: {err:?}"))?;
         println!(
             "{}: {}",
             service.service_data.service_name,
@@ -205,6 +217,7 @@ pub async fn remove(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Remove Safenode Services");
     }
+    info!("Removing safe node services with keep_dirs=({keep_directories}) for: {peer_ids:?}, {service_names:?}");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(
@@ -216,6 +229,7 @@ pub async fn remove(
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
+        info!("Service indices is empty, no services were eligible for removal");
         // This could be the case if all services are at `Removed` status.
         if verbosity != VerbosityLevel::Minimal {
             println!("No services were eligible for removal");
@@ -232,9 +246,13 @@ pub async fn remove(
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         match service_manager.remove(keep_directories).await {
             Ok(()) => {
+                debug!("Removed service {}", node.service_name);
                 node_registry.save()?;
             }
-            Err(e) => failed_services.push((node.service_name.clone(), e.to_string())),
+            Err(err) => {
+                error!("Failed to remove service {}: {err}", node.service_name);
+                failed_services.push((node.service_name.clone(), err.to_string()))
+            }
         }
     }
 
@@ -243,6 +261,7 @@ pub async fn remove(
 
 pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
     print_banner("Reset Safenode Services");
+    info!("Resetting all safenode services, with force={force}");
 
     if !force {
         println!("WARNING: all safenode services, data, and logs will be removed.");
@@ -264,6 +283,7 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
     // error if the file doesn't exist. On Windows this has been observed to happen.
     let node_registry_path = config::get_node_registry_path()?;
     if node_registry_path.exists() {
+        info!("Removing node registry file: {node_registry_path:?}");
         std::fs::remove_file(node_registry_path)?;
     }
 
@@ -279,6 +299,9 @@ pub async fn start(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Start Safenode Services");
     }
+    info!(
+        "Starting safenode services with interval={interval} for: {peer_ids:?}, {service_names:?}"
+    );
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(
@@ -290,6 +313,7 @@ pub async fn start(
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
+        info!("Service indices is empty, no services were eligible to be started");
         // This could be the case if all services are at `Removed` status.
         if verbosity != VerbosityLevel::Minimal {
             println!("No services were eligible to be started");
@@ -314,9 +338,13 @@ pub async fn start(
         }
         match service_manager.start().await {
             Ok(()) => {
+                debug!("Started service {}", node.service_name);
                 node_registry.save()?;
             }
-            Err(e) => failed_services.push((node.service_name.clone(), e.to_string())),
+            Err(err) => {
+                error!("Failed to start service {}: {err}", node.service_name);
+                failed_services.push((node.service_name.clone(), err.to_string()))
+            }
         }
     }
 
@@ -350,6 +378,7 @@ pub async fn stop(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Stop Safenode Services");
     }
+    info!("Stopping safenode services for: {peer_ids:?}, {service_names:?}");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(
@@ -361,6 +390,7 @@ pub async fn stop(
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
+        info!("Service indices is empty, no services were eligible to be stopped");
         // This could be the case if all services are at `Removed` status.
         if verbosity != VerbosityLevel::Minimal {
             println!("No services were eligible to be stopped");
@@ -377,9 +407,13 @@ pub async fn stop(
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         match service_manager.stop().await {
             Ok(()) => {
+                debug!("Stopped service {}", node.service_name);
                 node_registry.save()?;
             }
-            Err(e) => failed_services.push((node.service_name.clone(), e.to_string())),
+            Err(err) => {
+                error!("Failed to stop service {}: {err}", node.service_name);
+                failed_services.push((node.service_name.clone(), err.to_string()))
+            }
         }
     }
 
@@ -406,6 +440,9 @@ pub async fn upgrade(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Upgrade Safenode Services");
     }
+    info!(
+        "Upgrading safenode services with use_force={use_force} for: {peer_ids:?}, {service_names:?}"
+    );
 
     let (upgrade_bin_path, target_version) = download_and_get_upgrade_bin_path(
         custom_bin_path.clone(),
@@ -424,7 +461,10 @@ pub async fn upgrade(
     )
     .await?;
 
-    println!("listen addresses: {:?}", node_registry.nodes[0].listen_addr);
+    debug!(
+        "listen addresses for nodes[0]: {:?}",
+        node_registry.nodes[0].listen_addr
+    );
     if !use_force {
         let node_versions = node_registry
             .nodes
@@ -435,6 +475,7 @@ pub async fn upgrade(
             .iter()
             .any(|current_version| current_version < &target_version);
         if !any_nodes_need_upgraded {
+            info!("All nodes are at the latest version, no upgrade required.");
             if verbosity != VerbosityLevel::Minimal {
                 println!("{} All nodes are at the latest version", "✓".green());
             }
@@ -443,6 +484,7 @@ pub async fn upgrade(
     }
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
+    trace!("service_indices len: {}", service_indices.len());
     let mut upgrade_summary = Vec::new();
 
     for &index in &service_indices {
@@ -461,6 +503,7 @@ pub async fn upgrade(
             target_bin_path: upgrade_bin_path.clone(),
             target_version: target_version.clone(),
         };
+        let service_name = node.service_name.clone();
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client));
@@ -469,6 +512,7 @@ pub async fn upgrade(
 
         match service_manager.upgrade(options).await {
             Ok(upgrade_result) => {
+                info!("Service: {service_name} has been upgraded, result: {upgrade_result:?}",);
                 if upgrade_result != UpgradeResult::NotRequired {
                     // It doesn't seem useful to apply the interval if there was no upgrade
                     // required for the previous service.
@@ -480,10 +524,11 @@ pub async fn upgrade(
                     upgrade_result,
                 ));
             }
-            Err(e) => {
+            Err(err) => {
+                error!("Error upgrading service {service_name}: {err}");
                 upgrade_summary.push((
                     node.service_name.clone(),
-                    UpgradeResult::Error(format!("Error: {}", e)),
+                    UpgradeResult::Error(format!("Error: {}", err)),
                 ));
             }
         }
@@ -665,12 +710,14 @@ fn get_services_for_ops(
             {
                 service_indices.push(index);
             } else {
+                error!("No service named '{name}'");
                 return Err(eyre!(format!("No service named '{name}'")));
             }
         }
 
         for peer_id_str in &peer_ids {
-            let peer_id = PeerId::from_str(peer_id_str)?;
+            let peer_id = PeerId::from_str(peer_id_str)
+                .inspect_err(|err| error!("Error parsing PeerId: {err:?}"))?;
             if let Some(index) = node_registry
                 .nodes
                 .iter()
@@ -678,9 +725,9 @@ fn get_services_for_ops(
             {
                 service_indices.push(index);
             } else {
+                error!("Could not find node with peer id: '{peer_id:?}'");
                 return Err(eyre!(format!(
-                    "Could not find node with peer ID '{}'",
-                    peer_id
+                    "Could not find node with peer ID '{peer_id}'",
                 )));
             }
         }
@@ -702,6 +749,7 @@ fn summarise_any_failed_ops(
             }
         }
 
+        error!("Failed to {verb} one or more services");
         return Err(eyre!("Failed to {verb} one or more services"));
     }
     Ok(())

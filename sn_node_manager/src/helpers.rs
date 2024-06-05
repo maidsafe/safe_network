@@ -27,6 +27,7 @@ const MAX_DOWNLOAD_RETRIES: u8 = 3;
 #[cfg(windows)]
 pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Result<()> {
     if which::which("winsw.exe").is_ok() {
+        debug!("WinSW already installed, which returned Ok");
         return Ok(());
     }
 
@@ -34,6 +35,7 @@ pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Res
         if verbosity != VerbosityLevel::Minimal {
             println!("Downloading winsw.exe...");
         }
+        debug!("Downloading WinSW to {dest_path:?}");
 
         let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
@@ -59,6 +61,7 @@ pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Res
         let mut download_attempts = 1;
         loop {
             if download_attempts > MAX_DOWNLOAD_RETRIES {
+                error!("Failed to download WinSW after {MAX_DOWNLOAD_RETRIES} tries.");
                 bail!("Failed to download WinSW after {MAX_DOWNLOAD_RETRIES} tries.");
             }
             match release_repo.download_winsw(dest_path, &callback).await {
@@ -68,6 +71,7 @@ pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Res
                         println!("Error downloading WinSW: {e:?}");
                         println!("Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}");
                     }
+                    error!("Error downloading WinSW. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {e:?}");
                     download_attempts += 1;
                     if let Some(pb) = &pb {
                         pb.finish_and_clear();
@@ -79,7 +83,11 @@ pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Res
         if let Some(pb) = pb {
             pb.finish_and_clear();
         }
+    } else {
+        debug!("WinSW already installed, dest_path exists: {dest_path:?}");
     }
+
+    info!("WinSW installed at {dest_path:?}. Setting WINSW_PATH environment variable.");
 
     std::env::set_var("WINSW_PATH", dest_path.to_string_lossy().to_string());
 
@@ -104,6 +112,9 @@ pub async fn download_and_extract_release(
     verbosity: VerbosityLevel,
     download_dir_path: Option<PathBuf>,
 ) -> Result<(PathBuf, String)> {
+    debug!(
+        "Downloading and extracting release for {release_type}, url: {url:?}, version: {version:?}"
+    );
     let mut pb = None;
     let callback = if verbosity != VerbosityLevel::Minimal {
         let progress_bar = Arc::new(ProgressBar::new(0));
@@ -134,14 +145,17 @@ pub async fn download_and_extract_release(
         std::fs::create_dir_all(&path)?;
         path
     };
+    debug!("Download directory: {download_dir_path:?}");
 
     let mut download_attempts = 1;
     let binary_download_path = loop {
         if download_attempts > MAX_DOWNLOAD_RETRIES {
+            error!("Failed to download release after {MAX_DOWNLOAD_RETRIES} tries.");
             bail!("Failed to download release after {MAX_DOWNLOAD_RETRIES} tries.");
         }
 
         if let Some(url) = &url {
+            info!("Downloading release from {url}");
             if verbosity != VerbosityLevel::Minimal {
                 println!("Retrieving {release_type} from {url}");
             }
@@ -150,11 +164,13 @@ pub async fn download_and_extract_release(
                 .await
             {
                 Ok(archive_path) => {
-                    let binary_download_path =
-                        release_repo.extract_release_archive(&archive_path, &download_dir_path)?;
+                    let binary_download_path = release_repo
+                        .extract_release_archive(&archive_path, &download_dir_path)
+                        .inspect_err(|err| error!("Error while extracting archive {err:?}"))?;
                     break binary_download_path;
                 }
                 Err(err) => {
+                    error!("Error downloading release: {err:?}");
                     if verbosity != VerbosityLevel::Minimal {
                         println!("Error downloading release: {err:?}");
                         println!("Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}");
@@ -167,12 +183,19 @@ pub async fn download_and_extract_release(
             }
         } else {
             let version = if let Some(version) = version.clone() {
-                Version::parse(&version)?
+                let version = Version::parse(&version)?;
+                info!("Downloading release from S3 for version {version}");
+                version
             } else {
                 if verbosity != VerbosityLevel::Minimal {
                     println!("Retrieving latest version for {release_type}...");
                 }
-                release_repo.get_latest_version(&release_type).await?
+                let version = release_repo
+                    .get_latest_version(&release_type)
+                    .await
+                    .inspect_err(|err| error!("Error obtaining latest version {err:?}"))?;
+                info!("Downloading latest version from S3: {version}");
+                version
             };
 
             let archive_name = format!(
@@ -187,12 +210,14 @@ pub async fn download_and_extract_release(
                 // try extracting it, else download it.
                 match release_repo.extract_release_archive(&archive_path, &download_dir_path) {
                     Ok(binary_download_path) => {
+                        info!("Using cached {release_type} version {version}...");
                         if verbosity != VerbosityLevel::Minimal {
                             println!("Using cached {release_type} version {version}...");
                         }
                         break binary_download_path;
                     }
                     Err(_) => {
+                        info!("Cached {release_type} version {version} is corrupted. Downloading again...");
                         if verbosity != VerbosityLevel::Minimal {
                             println!("Cached {release_type} version {version} is corrupted. Downloading again...");
                         }
@@ -220,6 +245,7 @@ pub async fn download_and_extract_release(
                     break binary_download_path;
                 }
                 Err(err) => {
+                    error!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}:  {err:?}");
                     if verbosity != VerbosityLevel::Minimal {
                         println!("Error while downloading release. Trying again {download_attempts}/{MAX_DOWNLOAD_RETRIES}: {err:?}");
                     }
@@ -234,6 +260,7 @@ pub async fn download_and_extract_release(
     if let Some(pb) = pb {
         pb.finish_and_clear();
     }
+    info!("Download completed: {binary_download_path:?}");
 
     if verbosity != VerbosityLevel::Minimal {
         println!("Download completed: {}", &binary_download_path.display());
@@ -248,22 +275,32 @@ pub async fn download_and_extract_release(
 }
 
 pub fn get_bin_version(bin_path: &PathBuf) -> Result<String> {
+    trace!("Obtaining version of binary {bin_path:?}");
     let mut cmd = Command::new(bin_path)
         .arg("--version")
         .stdout(Stdio::piped())
-        .spawn()?;
+        .spawn()
+        .inspect_err(|err| error!("The program {bin_path:?} failed to start: {err:?}"))?;
 
     let mut output = String::new();
     cmd.stdout
         .as_mut()
-        .ok_or_else(|| eyre!("Failed to capture stdout"))?
-        .read_to_string(&mut output)?;
+        .ok_or_else(|| {
+            error!("Failed to capture stdout");
+            eyre!("Failed to capture stdout")
+        })?
+        .read_to_string(&mut output)
+        .inspect_err(|err| error!("Output contained non utf8 chars: {err:?}"))?;
 
     let version = output
         .split_whitespace()
         .last()
-        .ok_or_else(|| eyre!("Failed to parse version"))?
+        .ok_or_else(|| {
+            error!("Failed to parse version");
+            eyre!("Failed to parse version")
+        })?
         .to_string();
+    trace!("Obtained version of binary: {version}");
 
     Ok(version)
 }
@@ -284,6 +321,7 @@ pub fn create_temp_dir() -> Result<PathBuf> {
     let temp_dir = std::env::temp_dir();
     let unique_dir_name = uuid::Uuid::new_v4().to_string();
     let new_temp_dir = temp_dir.join(unique_dir_name);
-    std::fs::create_dir_all(&new_temp_dir)?;
+    std::fs::create_dir_all(&new_temp_dir)
+        .inspect_err(|err| error!("Failed to crete temp dir: {err:?}"))?;
     Ok(new_temp_dir)
 }

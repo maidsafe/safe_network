@@ -9,7 +9,7 @@
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
 use libp2p::Multiaddr;
-use sn_logging::LogFormat;
+use sn_logging::{LogBuilder, LogFormat};
 use sn_node_manager::{
     add_services::config::{parse_port_range, PortRange},
     cmd::{self},
@@ -17,6 +17,7 @@ use sn_node_manager::{
 };
 use sn_peers_acquisition::PeersArgs;
 use std::{net::Ipv4Addr, path::PathBuf};
+use tracing::Level;
 
 const DEFAULT_NODE_COUNT: u16 = 25;
 
@@ -867,8 +868,11 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Cmd::parse();
     let verbosity = VerbosityLevel::from(args.verbose);
+    let _log_handles = get_log_builder()?.initialize()?;
 
     configure_winsw(verbosity).await?;
+
+    tracing::info!("Executing cmd: {:?}", args.cmd);
 
     match args.cmd {
         SubCmd::Add {
@@ -1132,6 +1136,29 @@ async fn main() -> Result<()> {
             .await
         }
     }
+}
+
+fn get_log_builder() -> Result<LogBuilder> {
+    let logging_targets = vec![
+        ("sn_node_manager".to_string(), Level::TRACE),
+        ("safenode_manager".to_string(), Level::TRACE),
+        ("safenodemand".to_string(), Level::TRACE),
+        ("sn_service_management".to_string(), Level::TRACE),
+    ];
+    let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+
+    let output_dest = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("Could not obtain user data directory"))?
+        .join("safe")
+        .join("safenode-manager")
+        .join("logs")
+        .join(format!("log_{timestamp}"));
+
+    let mut log_builder = LogBuilder::new(logging_targets);
+    log_builder.output_dest(sn_logging::LogOutputDest::Path(output_dest));
+    // disabled by default, as it can interfere with status cmd.
+    log_builder.print_updates_to_stdout(false);
+    Ok(log_builder)
 }
 
 // Since delimiter is on, we get element of the csv and not the entire csv.

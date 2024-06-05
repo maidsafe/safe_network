@@ -134,8 +134,15 @@ impl<'a> ServiceStateActions for NodeService<'a> {
     }
 
     async fn on_start(&mut self) -> Result<()> {
-        let node_info = self.rpc_actions.node_info().await?;
-        let network_info = self.rpc_actions.network_info().await?;
+        let node_info =
+            self.rpc_actions.node_info().await.inspect_err(|err| {
+                error!("Error while obtaining node_info through RPC: {err:?}")
+            })?;
+        let network_info =
+            self.rpc_actions.network_info().await.inspect_err(|err| {
+                error!("Error while obtaining network_info through RPC: {err:?}")
+            })?;
+
         self.service_data.listen_addr = Some(
             network_info
                 .listeners

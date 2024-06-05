@@ -53,7 +53,10 @@ impl<'a> ServiceStateActions for DaemonService<'a> {
         let (address, port) = self
             .service_data
             .endpoint
-            .ok_or_else(|| Error::DaemonEndpointNotSet)
+            .ok_or_else(|| {
+                error!("Daemon endpoint not set in the service_data");
+                Error::DaemonEndpointNotSet
+            })
             .map(|e| (e.ip().to_string(), e.port().to_string()))?;
         let install_ctx = ServiceInstallCtx {
             args: vec![

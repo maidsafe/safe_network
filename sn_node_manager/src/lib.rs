@@ -76,6 +76,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
     }
 
     pub async fn start(&mut self) -> Result<()> {
+        info!("Starting the {} service", self.service.name());
         if ServiceStatus::Running == self.service.status() {
             // The last time we checked the service was running, but it doesn't mean it's actually
             // running at this point in time. If it is running, we don't need to do anything. If it
@@ -85,6 +86,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 .service_control
                 .is_service_process_running(self.service.pid().unwrap())
             {
+                debug!("The {} service is already running", self.service.name());
                 if self.verbosity != VerbosityLevel::Minimal {
                     println!("The {} service is already running", self.service.name());
                 }
@@ -118,15 +120,23 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 );
             }
             Err(sn_service_management::error::Error::ServiceProcessNotFound(_)) => {
+                error!("The '{}' service has failed to start because ServiceProcessNotFound when fetching PID", self.service.name());
                 return Err(eyre!(
                     "The '{}' service has failed to start",
                     self.service.name()
                 ));
             }
-            Err(e) => return Err(e.into()),
+            Err(err) => {
+                error!("Failed to start service, because PID could not be obtained: {err}");
+                return Err(err.into());
+            }
         }
 
         self.service.on_start().await?;
+        info!(
+            "Service {} has been started successfully",
+            self.service.name()
+        );
 
         if self.verbosity != VerbosityLevel::Minimal {
             println!("{} Started {} service", "✓".green(), self.service.name());
@@ -154,8 +164,13 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
     }
 
     pub async fn stop(&mut self) -> Result<()> {
+        info!("Stopping the {} service", self.service.name());
         match self.service.status() {
             ServiceStatus::Added => {
+                debug!(
+                    "The {} service has not been started since it was installed",
+                    self.service.name()
+                );
                 if self.verbosity != VerbosityLevel::Minimal {
                     println!(
                         "Service {} has not been started since it was installed",
@@ -165,6 +180,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 Ok(())
             }
             ServiceStatus::Removed => {
+                debug!("The {} service has been removed", self.service.name());
                 if self.verbosity != VerbosityLevel::Minimal {
                     println!("Service {} has been removed", self.service.name());
                 }
@@ -189,13 +205,16 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                         );
                     }
                 } else if self.verbosity != VerbosityLevel::Minimal {
+                    debug!("Service {name} was already stopped");
                     println!("{} Service {} was already stopped", "✓".green(), name);
                 }
 
                 self.service.on_stop().await?;
+                info!("Service {name} has been stopped successfully.");
                 Ok(())
             }
             ServiceStatus::Stopped => {
+                debug!("Service {} was already stopped", self.service.name());
                 if self.verbosity != VerbosityLevel::Minimal {
                     println!(
                         "{} Service {} was already stopped",
@@ -215,12 +234,20 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                     .pid()
                     .ok_or_eyre("Could not obtain PID for running node")?,
             ) {
+                error!(
+                    "Service {} is already running. Stop it before removing it",
+                    self.service.name()
+                );
                 return Err(eyre!("A running service cannot be removed")
                     .suggestion("Stop the node first then try again"));
             }
             // If the node wasn't actually running, we should give the user an opportunity to
             // check why it may have failed before removing everything.
             self.service.on_stop().await?;
+            error!(
+                "The service: {} was marked as running but it had actually stopped",
+                self.service.name()
+            );
             return Err(
                 eyre!("This service was marked as running but it had actually stopped")
                     .suggestion("You may want to check the logs for errors before removing it")
@@ -232,31 +259,47 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
             .service_control
             .uninstall(&self.service.name(), self.service.is_user_mode())
         {
-            Ok(()) => {}
-            Err(e) => match e {
+            Ok(()) => {
+                debug!("Service {} has been uninstalled", self.service.name());
+            }
+            Err(err) => match err {
                 ServiceError::ServiceRemovedManually(name) => {
+                    warn!("The user appears to have removed the {name} service manually",);
                     // The user has deleted the service definition file, which the service manager
                     // crate treats as an error. We then return our own error type, which allows us
                     // to handle it here and just proceed with removing the service from the
                     // registry.
                     println!("The user appears to have removed the {name} service manually");
                 }
-                _ => return Err(e.into()),
+                _ => {
+                    error!("Error uninstalling the service: {err}");
+                    return Err(err.into());
+                }
             },
         }
 
         if !keep_directories {
+            debug!(
+                "Removing data and log directories for service: {}",
+                self.service.name()
+            );
             // It's possible the user deleted either of these directories manually.
             // We can just proceed with removing the service from the registry.
             if self.service.data_dir_path().exists() {
+                debug!("Removing data_dir: {:?}", self.service.data_dir_path());
                 std::fs::remove_dir_all(self.service.data_dir_path())?;
             }
             if self.service.log_dir_path().exists() {
+                debug!("Removing log_dir: {:?}", self.service.log_dir_path());
                 std::fs::remove_dir_all(self.service.log_dir_path())?;
             }
         }
 
         self.service.on_remove();
+        info!(
+            "Service {} has been removed successfully.",
+            self.service.name()
+        );
 
         if self.verbosity != VerbosityLevel::Minimal {
             println!(
@@ -275,9 +318,14 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
             && (current_version == options.target_version
                 || options.target_version < current_version)
         {
+            info!(
+                "The service {} is already at the latest version. No upgrade is required.",
+                self.service.name()
+            );
             return Ok(UpgradeResult::NotRequired);
         }
 
+        debug!("Stopping the service and copying the binary");
         self.stop().await?;
         std::fs::copy(options.clone().target_bin_path, self.service.bin_path())?;
 
@@ -292,13 +340,14 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         if options.start_service {
             match self.start().await {
                 Ok(()) => {}
-                Err(e) => {
+                Err(err) => {
                     self.service
                         .set_version(&options.target_version.to_string());
+                    info!("The service has been upgraded but could not be started: {err}");
                     return Ok(UpgradeResult::UpgradedButNotStarted(
                         current_version.to_string(),
                         options.target_version.to_string(),
-                        e.to_string(),
+                        err.to_string(),
                     ));
                 }
             }
@@ -457,12 +506,20 @@ pub async fn refresh_node_registry(
     if print_refresh_message {
         println!("Refreshing the node registry...");
     }
+    info!("Refreshing the node registry");
 
     for node in &mut node_registry.nodes {
         // The `status` command can run before a node is started and therefore before its wallet
         // exists.
         match HotWallet::try_load_from(&node.data_dir_path) {
-            Ok(wallet) => node.reward_balance = Some(wallet.balance()),
+            Ok(wallet) => {
+                node.reward_balance = Some(wallet.balance());
+                trace!(
+                    "Wallet balance for node {}: {}",
+                    node.service_name,
+                    wallet.balance()
+                );
+            }
             Err(_) => node.reward_balance = None,
         }
 
@@ -472,6 +529,10 @@ pub async fn refresh_node_registry(
                 // First we can try the PID we have now. If there is still a process running with
                 // that PID, we know the node is still running.
                 if service_control.is_service_process_running(pid) {
+                    debug!(
+                        "The process for node {} is still running at PID {pid}",
+                        node.service_name
+                    );
                     match rpc_client.network_info().await {
                         Ok(info) => {
                             node.connected_peers = Some(info.connected_peers);
@@ -485,13 +546,22 @@ pub async fn refresh_node_registry(
                     // service has been configured to restart on failures, it's possible that a new
                     // process has been launched and hence we would have a new PID. We can use the
                     // RPC service to try and retrieve it.
+                    debug!(
+                        "The process for node {} has died. Attempting to retrieve new PID",
+                        node.service_name
+                    );
                     match rpc_client.node_info().await {
                         Ok(info) => {
                             node.pid = Some(info.pid);
+                            debug!("New PID for node {} is= {:?}", node.service_name, node.pid);
                         }
                         Err(_) => {
                             // Finally, if there was an error communicating with the RPC client, we
                             // can assume that this node is actually stopped.
+                            debug!(
+                                "Failed to retrieve new PID for node {}. Assuming it's stopped",
+                                node.service_name
+                            );
                             node.status = ServiceStatus::Stopped;
                             node.pid = None;
                         }

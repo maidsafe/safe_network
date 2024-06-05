@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::error::{Error, Result};
-
 use service_manager::{
     ServiceInstallCtx, ServiceLabel, ServiceLevel, ServiceManager, ServiceStartCtx, ServiceStopCtx,
     ServiceUninstallCtx,
@@ -44,7 +43,11 @@ impl ServiceControl for ServiceController {
     fn create_service_user(&self, username: &str) -> Result<()> {
         use std::process::Command;
 
-        let output = Command::new("id").arg("-u").arg(username).output()?;
+        let output = Command::new("id")
+            .arg("-u")
+            .arg(username)
+            .output()
+            .inspect_err(|err| error!("Failed to execute id -u: {err:?}"))?;
         if output.status.success() {
             println!("The {username} user already exists");
             return Ok(());
@@ -52,12 +55,14 @@ impl ServiceControl for ServiceController {
 
         let useradd_exists = Command::new("which")
             .arg("useradd")
-            .output()?
+            .output()
+            .inspect_err(|err| error!("Failed to execute which useradd: {err:?}"))?
             .status
             .success();
         let adduser_exists = Command::new("which")
             .arg("adduser")
-            .output()?
+            .output()
+            .inspect_err(|err| error!("Failed to execute which adduser: {err:?}"))?
             .status
             .success();
 
@@ -67,22 +72,27 @@ impl ServiceControl for ServiceController {
                 .arg("-s")
                 .arg("/bin/bash")
                 .arg(username)
-                .output()?
+                .output()
+                .inspect_err(|err| error!("Failed to execute useradd: {err:?}"))?
         } else if adduser_exists {
             Command::new("adduser")
                 .arg("-s")
                 .arg("/bin/busybox")
                 .arg("-D")
                 .arg(username)
-                .output()?
+                .output()
+                .inspect_err(|err| error!("Failed to execute adduser: {err:?}"))?
         } else {
+            error!("Neither useradd nor adduser is available. ServiceUserAccountCreationFailed");
             return Err(Error::ServiceUserAccountCreationFailed);
         };
 
         if !output.status.success() {
+            error!("Failed to create {username} user account: {output:?}");
             return Err(Error::ServiceUserAccountCreationFailed);
         }
         println!("Created {username} user account for running the service");
+        info!("Created {username} user account for running the service");
         Ok(())
     }
 
@@ -95,8 +105,10 @@ impl ServiceControl for ServiceController {
             .arg(".")
             .arg("-list")
             .arg("/Users")
-            .output()?;
-        let output_str = str::from_utf8(&output.stdout)?;
+            .output()
+            .inspect_err(|err| error!("Failed to execute dscl: {err:?}"))?;
+        let output_str = str::from_utf8(&output.stdout)
+            .inspect_err(|err| error!("Error while converting output to utf8: {err:?}"))?;
         if output_str.lines().any(|line| line == username) {
             return Ok(());
         }
@@ -106,8 +118,10 @@ impl ServiceControl for ServiceController {
             .arg("-list")
             .arg("/Users")
             .arg("UniqueID")
-            .output()?;
-        let output_str = str::from_utf8(&output.stdout)?;
+            .output()
+            .inspect_err(|err| error!("Failed to execute dscl: {err:?}"))?;
+        let output_str = str::from_utf8(&output.stdout)
+            .inspect_err(|err| error!("Error while converting output to utf8: {err:?}"))?;
         let mut max_id = 0;
 
         for line in output_str.lines() {
@@ -135,8 +149,13 @@ impl ServiceControl for ServiceController {
             format!("dscl . -create /Users/{} PrimaryGroupID 20", username),
         ];
         for cmd in commands {
-            let status = Command::new("sh").arg("-c").arg(&cmd).status()?;
+            let status = Command::new("sh")
+                .arg("-c")
+                .arg(&cmd)
+                .status()
+                .inspect_err(|err| error!("Error while executing dscl command: {err:?}"))?;
             if !status.success() {
+                error!("The command {cmd} failed to execute. ServiceUserAccountCreationFailed");
                 return Err(Error::ServiceUserAccountCreationFailed);
             }
         }
@@ -160,6 +179,7 @@ impl ServiceControl for ServiceController {
         let socket = TcpListener::bind(addr)?;
         let port = socket.local_addr()?.port();
         drop(socket);
+        trace!("Got available port: {port}");
 
         Ok(port)
     }
@@ -172,60 +192,90 @@ impl ServiceControl for ServiceController {
                 if bin_path == path {
                     // There does not seem to be any easy way to get the process ID from the `Pid`
                     // type. Probably something to do with representing it in a cross-platform way.
+                    trace!("Found process {bin_path:?} with PID: {pid}");
                     return Ok(pid.to_string().parse::<u32>()?);
                 }
             }
         }
+        error!("Process not found: {bin_path:?}. PID could not be retrieved");
         Err(Error::ServiceProcessNotFound(
             bin_path.to_string_lossy().to_string(),
         ))
     }
 
     fn install(&self, install_ctx: ServiceInstallCtx, user_mode: bool) -> Result<()> {
-        let mut manager = <dyn ServiceManager>::native()?;
+        debug!("Installing service: {install_ctx:?}");
+        let mut manager = <dyn ServiceManager>::native()
+            .inspect_err(|err| error!("Could not get native ServiceManage: {err:?}"))?;
         if user_mode {
-            manager.set_level(ServiceLevel::User)?;
+            manager
+                .set_level(ServiceLevel::User)
+                .inspect_err(|err| error!("Could not set service to user mode: {err:?}"))?;
         }
-        manager.install(install_ctx)?;
+        manager
+            .install(install_ctx)
+            .inspect_err(|err| error!("Error while installing service: {err:?}"))?;
         Ok(())
     }
 
     fn start(&self, service_name: &str, user_mode: bool) -> Result<()> {
+        debug!("Starting service: {service_name}");
         let label: ServiceLabel = service_name.parse()?;
-        let mut manager = <dyn ServiceManager>::native()?;
+        let mut manager = <dyn ServiceManager>::native()
+            .inspect_err(|err| error!("Could not get native ServiceManage: {err:?}"))?;
         if user_mode {
-            manager.set_level(ServiceLevel::User)?;
+            manager
+                .set_level(ServiceLevel::User)
+                .inspect_err(|err| error!("Could not set service to user mode: {err:?}"))?;
         }
-        manager.start(ServiceStartCtx { label })?;
+        manager
+            .start(ServiceStartCtx { label })
+            .inspect_err(|err| error!("Error while starting service: {err:?}"))?;
         Ok(())
     }
 
     fn stop(&self, service_name: &str, user_mode: bool) -> Result<()> {
+        debug!("Stopping service: {service_name}");
         let label: ServiceLabel = service_name.parse()?;
-        let mut manager = <dyn ServiceManager>::native()?;
+        let mut manager = <dyn ServiceManager>::native()
+            .inspect_err(|err| error!("Could not get native ServiceManage: {err:?}"))?;
         if user_mode {
-            manager.set_level(ServiceLevel::User)?;
+            manager
+                .set_level(ServiceLevel::User)
+                .inspect_err(|err| error!("Could not set service to user mode: {err:?}"))?;
         }
-        manager.stop(ServiceStopCtx { label })?;
+        manager
+            .stop(ServiceStopCtx { label })
+            .inspect_err(|err| error!("Error while stopping service: {err:?}"))?;
+
         Ok(())
     }
 
     fn uninstall(&self, service_name: &str, user_mode: bool) -> Result<()> {
+        debug!("Uninstalling service: {service_name}");
         let label: ServiceLabel = service_name.parse()?;
-        let mut manager = <dyn ServiceManager>::native()?;
+        let mut manager = <dyn ServiceManager>::native()
+            .inspect_err(|err| error!("Could not get native ServiceManage: {err:?}"))?;
+
         if user_mode {
-            manager.set_level(ServiceLevel::User)?;
+            manager
+                .set_level(ServiceLevel::User)
+                .inspect_err(|err| error!("Could not set service to user mode: {err:?}"))?;
         }
         match manager.uninstall(ServiceUninstallCtx { label }) {
             Ok(()) => Ok(()),
             Err(e) => match e.kind() {
                 std::io::ErrorKind::NotFound => {
+                    error!("Error while uninstall service, service file might have been removed manually: {service_name}");
                     // In this case the user has removed the service definition file manually,
                     // which the service manager crate treats as an error. We can propagate the
                     // it to the caller and they can decide how to handle it.
                     Err(Error::ServiceRemovedManually(service_name.to_string()))
                 }
-                _ => Err(e.into()),
+                _ => {
+                    error!("Error while uninstalling service: {e:?}");
+                    Err(e.into())
+                }
             },
         }
     }
@@ -234,6 +284,7 @@ impl ServiceControl for ServiceController {
     ///
     /// This is wrapped mainly just for unit testing.
     fn wait(&self, delay: u64) {
+        trace!("Waiting for {delay} milliseconds");
         std::thread::sleep(std::time::Duration::from_millis(delay));
     }
 }

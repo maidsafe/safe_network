@@ -40,6 +40,7 @@ pub async fn join(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Joining Local Network");
     }
+    info!("Joining local network");
 
     let local_node_reg_path = &get_local_node_registry_path()?;
     let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
@@ -68,9 +69,15 @@ pub async fn join(
     // is running.
     let peers = match get_peers_from_args(peers).await {
         Ok(peers) => Some(peers),
-        Err(e) => match e {
-            sn_peers_acquisition::error::Error::PeersNotObtained => None,
-            _ => return Err(e.into()),
+        Err(err) => match err {
+            sn_peers_acquisition::error::Error::PeersNotObtained => {
+                warn!("PeersNotObtained, peers is set to None");
+                None
+            }
+            _ => {
+                error!("Failed to obtain peers: {err:?}");
+                return Err(err.into());
+            }
         },
     };
     let options = LocalNetworkOptions {
@@ -93,11 +100,13 @@ pub fn kill(keep_directories: bool, verbosity: VerbosityLevel) -> Result<()> {
     let local_reg_path = &get_local_node_registry_path()?;
     let local_node_registry = NodeRegistry::load(local_reg_path)?;
     if local_node_registry.nodes.is_empty() {
+        info!("No local network is currently running, cannot kill it");
         println!("No local network is currently running");
     } else {
         if verbosity != VerbosityLevel::Minimal {
             print_banner("Killing Local Network");
         }
+        info!("Kill local network");
         kill_network(&local_node_registry, keep_directories)?;
         std::fs::remove_file(local_reg_path)?;
     }
@@ -122,7 +131,8 @@ pub async fn run(
     // In the clean case, the node registry must be loaded *after* the existing network has
     // been killed, which clears it out.
     let local_node_reg_path = &get_local_node_registry_path()?;
-    let mut local_node_registry = if clean {
+    let mut local_node_registry: NodeRegistry = if clean {
+        debug!("Clean set to true, removing client, node dir and killing the network.");
         let client_data_path = dirs_next::data_dir()
             .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
             .join("safe")
@@ -135,6 +145,7 @@ pub async fn run(
     } else {
         let local_node_registry = NodeRegistry::load(local_node_reg_path)?;
         if !local_node_registry.nodes.is_empty() {
+            error!("A local network is already running, cannot run a new one");
             return Err(eyre!("A local network is already running")
                 .suggestion("Use the kill command to destroy the network then try again"));
         }
@@ -144,6 +155,7 @@ pub async fn run(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Launching Local Network");
     }
+    info!("Launching local network");
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
     let faucet_path = get_bin_path(

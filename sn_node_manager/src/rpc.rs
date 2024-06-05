@@ -31,7 +31,10 @@ pub async fn restart_node_service(
         .nodes
         .iter_mut()
         .find(|node| node.peer_id.is_some_and(|id| id == peer_id))
-        .ok_or_eyre(format!("Could not find the provided PeerId: {peer_id:?}"))?;
+        .ok_or_eyre({
+            error!("Could not find the provided PeerId: {peer_id:?}");
+            format!("Could not find the provided PeerId: {peer_id:?}")
+        })?;
     let current_node_clone = current_node_mut.clone();
 
     let rpc_client = RpcClient::from_socket_addr(current_node_mut.rpc_socket_addr);
@@ -45,6 +48,10 @@ pub async fn restart_node_service(
 
     let service_control = ServiceController {};
     if retain_peer_id {
+        debug!(
+            "Retaining the peer id: {peer_id:?} for the node: {:?}",
+            current_node_clone.service_name
+        );
         // reuse the same port and root dir to retain peer id.
         service_control
             .uninstall(&current_node_clone.service_name, false)
@@ -82,6 +89,7 @@ pub async fn restart_node_service(
         })?;
         service_manager.start().await?;
     } else {
+        debug!("Starting a new node since retain peer id is false.");
         // else start a new node instance.
         let new_node_number = nodes_len + 1;
         let new_service_name = format!("safenode{new_node_number}");
@@ -102,17 +110,22 @@ pub async fn restart_node_service(
 
         create_owned_dir(
             log_dir_path.clone(),
-            current_node_clone
-                .user
-                .as_ref()
-                .ok_or_else(|| eyre!("The user must be set in the RPC context"))?,
+            current_node_clone.user.as_ref().ok_or_else(|| {
+                error!("The user must be set in the RPC context");
+                eyre!("The user must be set in the RPC context")
+            })?,
         )
         .map_err(|err| {
+            error!(
+                "Error while creating owned dir for {:?}: {err:?}",
+                current_node_clone.user
+            );
             eyre!(
                 "Error while creating owned dir for {:?}: {err:?}",
                 current_node_clone.user
             )
         })?;
+        debug!("Created data dir: {data_dir_path:?} for the new node");
         create_owned_dir(
             data_dir_path.clone(),
             current_node_clone
@@ -128,6 +141,7 @@ pub async fn restart_node_service(
         })?;
         // example path "safenode_path":"/var/safenode-manager/services/safenode18/safenode"
         let safenode_path = {
+            debug!("Copying safenode binary");
             let mut safenode_path = current_node_clone.safenode_path.clone();
             let safenode_file_name = safenode_path
                 .file_name()

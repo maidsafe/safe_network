@@ -45,6 +45,10 @@ pub async fn download_and_get_upgrade_bin_path(
     verbosity: VerbosityLevel,
 ) -> Result<(PathBuf, Version)> {
     if let Some(path) = custom_bin_path {
+        debug!(
+            "Using the supplied custom binary at {}",
+            path.to_string_lossy()
+        );
         println!(
             "Using the supplied custom binary at {}",
             path.to_string_lossy()
@@ -55,6 +59,7 @@ pub async fn download_and_get_upgrade_bin_path(
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
     if let Some(version) = version {
+        debug!("Downloading provided version {version} of {release_type}");
         let (upgrade_bin_path, version) = download_and_extract_release(
             release_type,
             None,
@@ -66,6 +71,7 @@ pub async fn download_and_get_upgrade_bin_path(
         .await?;
         Ok((upgrade_bin_path, Version::parse(&version)?))
     } else if let Some(url) = url {
+        debug!("Downloading {release_type} from url: {url}");
         let (upgrade_bin_path, version) = download_and_extract_release(
             release_type,
             Some(url),
@@ -77,9 +83,12 @@ pub async fn download_and_get_upgrade_bin_path(
         .await?;
         Ok((upgrade_bin_path, Version::parse(&version)?))
     } else {
-        println!("Retrieving latest version of {}...", release_type);
+        println!("Retrieving latest version of {release_type}...");
+        debug!("Retrieving latest version of {release_type}...");
         let latest_version = release_repo.get_latest_version(&release_type).await?;
         println!("Latest version is {latest_version}");
+        debug!("Download latest version {latest_version} of {release_type}");
+
         let (upgrade_bin_path, _) = download_and_extract_release(
             release_type,
             None,
@@ -137,13 +146,16 @@ pub async fn get_bin_path(
     verbosity: VerbosityLevel,
 ) -> Result<PathBuf> {
     if build {
+        debug!("Obtaining bin path for {release_type:?} by building");
         build_binary(&release_type)?;
         Ok(PathBuf::from("target")
             .join("release")
             .join(release_type.to_string()))
     } else if let Some(path) = path {
+        debug!("Using the supplied custom binary for {release_type:?}: {path:?}");
         Ok(path)
     } else {
+        debug!("Downloading {release_type:?} binary with version {version:?}");
         let (download_path, _) = download_and_extract_release(
             release_type,
             None,
@@ -158,6 +170,7 @@ pub async fn get_bin_path(
 }
 
 fn build_binary(bin_type: &ReleaseType) -> Result<()> {
+    debug!("Building {bin_type} binary");
     let mut args = vec!["build", "--release"];
     let bin_name = bin_type.to_string();
     args.push("--bin");
@@ -203,6 +216,7 @@ fn build_binary(bin_type: &ReleaseType) -> Result<()> {
         .output()?;
 
     if !build_result.status.success() {
+        error!("Failed to build binaries {bin_name}");
         return Err(eyre!("Failed to build binaries"));
     }
 
