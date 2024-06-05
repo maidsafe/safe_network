@@ -116,6 +116,30 @@ impl Client {
         Ok(dag)
     }
 
+    /// Crawls the Spend Dag from a set of given SpendAddresses recursively
+    /// following descendants all the way to UTXOs
+    /// Returns all the UTXOs reached
+    pub async fn crawl_to_next_utxos(
+        &self,
+        from: BTreeSet<SpendAddress>,
+        spend_processing: Sender<SignedSpend>,
+    ) -> WalletResult<BTreeSet<SpendAddress>> {
+        let tasks: Vec<_> = from
+            .iter()
+            .map(|a| self.spend_dag_crawl_from(*a, spend_processing.clone()))
+            .collect();
+        let res = futures::future::join_all(tasks).await;
+        let mut new_utxos = BTreeSet::new();
+        for r in res.into_iter() {
+            match r {
+                Ok(utxos) => new_utxos.extend(utxos),
+                Err(e) => return Err(e),
+            }
+        }
+
+        Ok(new_utxos)
+    }
+
     /// Crawls the Spend Dag from a given SpendAddress recursively
     /// following descendants all the way to UTXOs
     /// Returns the UTXOs reached

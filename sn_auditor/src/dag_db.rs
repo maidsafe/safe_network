@@ -21,6 +21,7 @@ use std::fmt::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use tokio::sync::mpsc::Sender;
 use tokio::sync::RwLock;
 
 pub const SPEND_DAG_FILENAME: &str = "spend_dag";
@@ -168,7 +169,6 @@ impl SpendDagDb {
     }
 
     /// Dump DAG to disk
-    #[cfg(feature = "dag-collection")]
     pub async fn dump(&self) -> Result<()> {
         std::fs::create_dir_all(&self.path)?;
         let dag_path = self.path.join(SPEND_DAG_FILENAME);
@@ -250,72 +250,62 @@ impl SpendDagDb {
                 continue;
             }
 
-            #[cfg(not(feature = "dag-collection"))]
-            {
-                if let Some(sender) = spend_processing.clone() {
-                    // crawl DAG
-                    let tasks: Vec<_> = addrs_to_get
-                        .iter()
-                        .map(|a| client.spend_dag_crawl_from(*a, sender.clone()))
-                        .collect();
-                    let res = futures::future::join_all(tasks).await;
-                    let mut new_utxos = BTreeSet::new();
-                    for (r, a) in res.into_iter().zip(addrs_to_get) {
-                        match r {
-                            Ok(utxos) => new_utxos.extend(utxos),
-                            Err(e) => error!("Failed to crawl DAG from {a:?} : {e}"),
-                        }
-                    }
+            let new_utxos = if cfg!(feature = "dag-collection") {
+                self.crawl_and_generate_local_dag(
+                    addrs_to_get,
+                    spend_processing.clone(),
+                    client.clone(),
+                )
+                .await
+            } else if let Some(sender) = spend_processing.clone() {
+                client.crawl_to_next_utxos(addrs_to_get, sender).await?
+            } else {
+                panic!("There is no point in running the auditor if we are not collecting the DAG or collecting data through crawling. Please enable the `dag-collection` feature or provide beta program related arguments.");
+            };
 
-                    // update utxos
-                    utxo_addresses.extend(
-                        new_utxos
-                            .into_iter()
-                            .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
-                    );
-                } else {
-                    panic!("There is no point in running the auditor if we are not collecting the DAG or collecting data through crawling. Please enable the `dag-collection` feature or provide beta program related arguments.");
-                }
-            }
-
-            #[cfg(feature = "dag-collection")]
-            {
-                // get a copy of the current DAG
-                let mut dag = { self.dag.clone().read().await.clone() };
-
-                // update it
-                client
-                    .spend_dag_continue_from(&mut dag, addrs_to_get, spend_processing.clone(), true)
-                    .await;
-
-                // update utxos
-                let new_utxos = dag.get_utxos();
-                utxo_addresses.extend(
-                    new_utxos
-                        .into_iter()
-                        .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
-                );
-
-                // write updates to local DAG and save to disk
-                let mut dag_w_handle = self.dag.write().await;
-                *dag_w_handle = dag;
-                std::mem::drop(dag_w_handle);
-                if let Err(e) = self.dump().await {
-                    error!("Failed to dump DAG: {e}");
-                }
-
-                // update and save svg to file in a background thread so we don't block
-                #[cfg(feature = "svg-dag")]
-                {
-                    let self_clone = self.clone();
-                    tokio::spawn(async move {
-                        if let Err(e) = self_clone.dump_dag_svg().await {
-                            error!("Failed to dump DAG svg: {e}");
-                        }
-                    });
-                }
-            }
+            utxo_addresses.extend(
+                new_utxos
+                    .into_iter()
+                    .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
+            );
         }
+    }
+
+    async fn crawl_and_generate_local_dag(
+        &self,
+        from: BTreeSet<SpendAddress>,
+        spend_processing: Option<Sender<SignedSpend>>,
+        client: Client,
+    ) -> BTreeSet<SpendAddress> {
+        // get a copy of the current DAG
+        let mut dag = { self.dag.clone().read().await.clone() };
+
+        // update it
+        client
+            .spend_dag_continue_from(&mut dag, from, spend_processing.clone(), true)
+            .await;
+        let new_utxos = dag.get_utxos();
+
+        // write updates to local DAG and save to disk
+        let mut dag_w_handle = self.dag.write().await;
+        *dag_w_handle = dag;
+        std::mem::drop(dag_w_handle);
+        if let Err(e) = self.dump().await {
+            error!("Failed to dump DAG: {e}");
+        }
+
+        // update and save svg to file in a background thread so we don't block
+        #[cfg(feature = "svg-dag")]
+        {
+            let self_clone = self.clone();
+            tokio::spawn(async move {
+                if let Err(e) = self_clone.dump_dag_svg().await {
+                    error!("Failed to dump DAG svg: {e}");
+                }
+            });
+        }
+
+        new_utxos
     }
 
     /// Process each spend and update beta rewards data
