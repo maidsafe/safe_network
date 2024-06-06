@@ -1089,7 +1089,10 @@ mod tests {
         let result = service_manager.start().await;
         match result {
             Ok(_) => panic!("This test should have resulted in an error"),
-            Err(e) => assert_eq!("The 'safenode1' service has failed to start", e.to_string()),
+            Err(e) => assert_eq!(
+                "The PID of the process was not found after starting it.",
+                e.to_string()
+            ),
         }
 
         Ok(())
@@ -3553,7 +3556,10 @@ mod tests {
         let result = service_manager.remove(false).await;
         match result {
             Ok(_) => panic!("This test should result in an error"),
-            Err(e) => assert_eq!("A running service cannot be removed", e.to_string()),
+            Err(e) => assert_eq!(
+                "The service(s) is already running: [\"safenode1\"]",
+                e.to_string()
+            ),
         }
 
         Ok(())
@@ -3616,7 +3622,7 @@ mod tests {
         match result {
             Ok(_) => panic!("This test should result in an error"),
             Err(e) => assert_eq!(
-                "This service was marked as running but it had actually stopped",
+                "The service status is not as expected. Expected: Running",
                 e.to_string()
             ),
         }
