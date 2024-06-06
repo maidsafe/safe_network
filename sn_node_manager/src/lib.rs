@@ -256,12 +256,15 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
             }
             Err(err) => match err {
                 ServiceError::ServiceRemovedManually(name) => {
-                    warn!("The user appears to have removed the {name} service manually",);
+                    warn!("The user appears to have removed the {name} service manually. Skipping the error.",);
                     // The user has deleted the service definition file, which the service manager
                     // crate treats as an error. We then return our own error type, which allows us
                     // to handle it here and just proceed with removing the service from the
                     // registry.
                     println!("The user appears to have removed the {name} service manually");
+                }
+                ServiceError::ServiceDoesNotExists(name) => {
+                    warn!("The service {name} has most probably been removed already, it does not exists. Skipping the error.");
                 }
                 _ => {
                     error!("Error uninstalling the service: {err}");

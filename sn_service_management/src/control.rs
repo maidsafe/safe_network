@@ -264,19 +264,26 @@ impl ServiceControl for ServiceController {
         }
         match manager.uninstall(ServiceUninstallCtx { label }) {
             Ok(()) => Ok(()),
-            Err(e) => match e.kind() {
-                std::io::ErrorKind::NotFound => {
+            Err(err) => {
+                if std::io::ErrorKind::NotFound == err.kind() {
                     error!("Error while uninstall service, service file might have been removed manually: {service_name}");
                     // In this case the user has removed the service definition file manually,
                     // which the service manager crate treats as an error. We can propagate the
                     // it to the caller and they can decide how to handle it.
                     Err(Error::ServiceRemovedManually(service_name.to_string()))
+                } else if err.raw_os_error() == Some(267) {
+                    // This requires the unstable io_error_more feature, use raw code for now
+                    // else if err.kind() == std::io::ErrorKind::NotADirectory {}
+
+                    // This happens on windows when the service has been already cleared, but was not updated
+                    // in the registry. Happens when the Service application (in windows) is open while calling
+                    // 'remove' or 'reset'.
+                    Err(Error::ServiceDoesNotExists(service_name.to_string()))
+                } else {
+                    error!("Error while uninstalling service: {err:?}");
+                    Err(err.into())
                 }
-                _ => {
-                    error!("Error while uninstalling service: {e:?}");
-                    Err(e.into())
-                }
-            },
+            }
         }
     }
 
