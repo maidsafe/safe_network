@@ -45,6 +45,10 @@ jobs:
         run: cargo build --release --bin faucet --features gifting
         timeout-minutes: 30
 
+      - name: Build auditor binary with dag collection
+        run: cargo build --release --bin sn_auditor --features dag-collection
+        timeout-minutes: 30
+
       - name: Build tests
         run: cargo test --release -p sn_node --test data_with_churn --test verify_routing_table --no-run
         timeout-minutes: 30
@@ -308,6 +312,16 @@ jobs:
           ./target/release/safe --log-output-dest=data-dir wallet audit --dot --sk-str 49113d2083f57a976076adbe85decb75115820de1e6e74b47e0429338cef124a > spend_dag_and_statistics.txt
           echo "=============================================================================="
           cat spend_dag_and_statistics.txt
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+        if: always()
+
+      - name: Crawl DAG from genesis with auditor
+        run: |
+          ./target/release/sn_auditor --log-output-dest=data-dir -k 49113d2083f57a976076adbe85decb75115820de1e6e74b47e0429338cef124a > auditor_output.txt
+          echo "=============================================================================="
+          cat auditor_output.txt
         env:
           SN_LOG: "all"
         timeout-minutes: 5
