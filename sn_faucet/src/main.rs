@@ -21,7 +21,7 @@ use sn_client::{
     Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver,
 };
 use sn_logging::{Level, LogBuilder, LogOutputDest};
-use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
+use sn_peers_acquisition::PeersArgs;
 use sn_transfers::{get_faucet_data_dir, HotWallet, MainPubkey, NanoTokens, Transfer};
 use std::{path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
@@ -31,7 +31,7 @@ use tracing::{debug, error, info};
 async fn main() -> Result<()> {
     let opt = Opt::parse();
 
-    let bootstrap_peers = get_peers_from_args(opt.peers).await?;
+    let bootstrap_peers = opt.peers.get_peers().await?;
     let bootstrap_peers = if bootstrap_peers.is_empty() {
         // empty vec is returned if `local-discovery` flag is provided
         None

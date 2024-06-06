@@ -16,7 +16,7 @@ use crate::{
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use semver::Version;
-use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
+use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::{ServiceControl, ServiceController},
@@ -28,7 +28,7 @@ use std::path::PathBuf;
 pub async fn add(
     env_variables: Option<Vec<(String, String)>>,
     log_dir_path: Option<PathBuf>,
-    peers: PeersArgs,
+    peers_args: PeersArgs,
     src_path: Option<PathBuf>,
     url: Option<String>,
     version: Option<String>,
@@ -74,7 +74,7 @@ pub async fn add(
     info!("Adding faucet service");
     add_faucet(
         AddFaucetServiceOptions {
-            bootstrap_peers: get_peers_from_args(peers).await?,
+            bootstrap_peers: peers_args.get_peers().await?,
             env_variables,
             faucet_src_bin_path,
             faucet_install_bin_path: PathBuf::from("/usr/local/bin/faucet"),

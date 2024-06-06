@@ -30,7 +30,6 @@ use sn_client::transfers::bls_secret_from_hex;
 use sn_client::{Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver};
 #[cfg(feature = "metrics")]
 use sn_logging::{metrics::init_metrics, Level, LogBuilder, LogFormat};
-use sn_peers_acquisition::get_peers_from_args;
 use std::{io, path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 
@@ -101,7 +100,7 @@ async fn main() -> Result<()> {
     println!("Instantiating a SAFE client...");
     let secret_key = get_client_secret_key(&client_data_dir_path)?;
 
-    let bootstrap_peers = get_peers_from_args(opt.peers).await?;
+    let bootstrap_peers = opt.peers.get_peers().await?;
 
     println!(
         "Connecting to the network with {} peers",

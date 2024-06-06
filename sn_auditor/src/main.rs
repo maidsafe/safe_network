@@ -18,7 +18,6 @@ use color_eyre::eyre::{eyre, Result};
 use dag_db::SpendDagDb;
 use sn_client::Client;
 use sn_logging::{Level, LogBuilder, LogFormat, LogOutputDest};
-use sn_peers_acquisition::get_peers_from_args;
 use sn_peers_acquisition::PeersArgs;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
@@ -138,8 +137,8 @@ fn logging_init(
     Ok(log_builder)
 }
 
-async fn connect_to_network(peers: PeersArgs) -> Result<Client> {
-    let bootstrap_peers = get_peers_from_args(peers).await?;
+async fn connect_to_network(peers_args: PeersArgs) -> Result<Client> {
+    let bootstrap_peers = peers_args.get_peers().await?;
     println!(
         "Connecting to the network with {} bootstrap peers",
         bootstrap_peers.len(),
