@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717662895335,
+  "lastUpdate": 1717662897210,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "d34eaa4dcc72e4f1150e594b0379f6bed29de07b",
-          "message": "ci: dont pass token to action for branch switch",
-          "timestamp": "2024-02-22T12:36:55+01:00",
-          "tree_id": "4f31f4722a663c89cef8854278789fde23aadf35",
-          "url": "https://github.com/maidsafe/safe_network/commit/d34eaa4dcc72e4f1150e594b0379f6bed29de07b"
-        },
-        "date": 1708602544220,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 192,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "931ef5d26282ee25a1a95cbdb5e99cf44a30bd21",
           "message": "chore: cleanup version in node_manager after experimentation",
           "timestamp": "2024-02-23T12:08:59+01:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "8d54d95aa023771ebb79043467ecd060566ce3e3",
+          "message": "chore(manager): add logging for node manager and service management",
+          "timestamp": "2024-06-06T07:48:31Z",
+          "tree_id": "ac10a050da74e137c6e59946a30dc5d7992c58b7",
+          "url": "https://github.com/maidsafe/safe_network/commit/8d54d95aa023771ebb79043467ecd060566ce3e3"
+        },
+        "date": 1717662896567,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
