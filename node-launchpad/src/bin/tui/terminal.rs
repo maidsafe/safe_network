@@ -8,6 +8,8 @@
 
 use clap::Parser;
 use color_eyre::eyre::{eyre, Result};
+#[cfg(target_os = "windows")]
+use sn_node_manager::config::is_running_as_root;
 use std::{path::PathBuf, process::Command};
 use which::which;
 
@@ -24,24 +26,12 @@ pub(crate) enum TerminalType {
     WindowsTerminal(PathBuf),
     Xterm(PathBuf),
 }
-
-#[cfg(not(windows))]
-pub(crate) fn is_running_root() -> bool {
-    use nix::unistd::geteuid;
-    geteuid().is_root()
-}
-
-#[cfg(windows)]
-pub(crate) fn is_running_root() -> bool {
-    // Example: Attempt to read from a typically restricted system directory
-    std::fs::read_dir("C:\\Windows\\System32\\config").is_ok()
-}
-
 pub(crate) fn detect_and_setup_terminal() -> Result<TerminalType> {
-    if !is_running_root() {
-        #[cfg(target_os = "windows")]
+    #[cfg(target_os = "windows")]
+    if !is_running_as_root() {
         {
             // todo: There is no terminal to show this error message when double clicking on the exe.
+            error!("Admin privileges required to run on Windows. Exiting.");
             color_eyre::eyre::bail!("Admin privileges required to run");
         }
     }
@@ -86,6 +76,7 @@ fn get_available_linux_terminal() -> Result<TerminalType> {
 }
 
 pub(crate) fn launch_terminal(terminal_type: &TerminalType) -> Result<()> {
+    info!("Launching terminal: {terminal_type:?}");
     let launchpad_path = std::env::current_exe()?;
 
     match terminal_type {

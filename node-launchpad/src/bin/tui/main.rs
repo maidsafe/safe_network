@@ -8,6 +8,9 @@
 
 mod terminal;
 
+#[macro_use]
+extern crate tracing;
+
 use clap::Parser;
 use color_eyre::eyre::Result;
 use node_launchpad::{
@@ -15,6 +18,8 @@ use node_launchpad::{
     config::configure_winsw,
     utils::{initialize_logging, initialize_panic_handler, version},
 };
+#[cfg(target_os = "windows")]
+use sn_node_manager::config::is_running_as_root;
 use sn_peers_acquisition::PeersArgs;
 use std::{env, path::PathBuf};
 use tokio::task::LocalSet;
@@ -51,12 +56,10 @@ pub struct Cli {
 }
 
 async fn tokio_main() -> Result<()> {
-    initialize_logging()?;
-
     initialize_panic_handler()?;
-
     let args = Cli::parse();
 
+    info!("Starting app with args: {args:?}");
     let mut app = App::new(
         args.tick_rate,
         args.frame_rate,
@@ -74,14 +77,28 @@ fn is_running_in_terminal() -> bool {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    initialize_logging()?;
     configure_winsw().await?;
 
     if !is_running_in_terminal() {
+        info!("Running in non-terminal mode. Launching terminal.");
         // If we weren't already running in a terminal, this process returns early, having spawned
         // a new process that launches a terminal.
         let terminal_type = terminal::detect_and_setup_terminal()?;
-        terminal::launch_terminal(&terminal_type)?;
+        terminal::launch_terminal(&terminal_type)
+            .inspect_err(|err| error!("Error while launching terminal: {err:?}"))?;
         return Ok(());
+    } else {
+        // Windows spawns the terminal directly, so the check for root has to happen here as well.
+        debug!("Running inside a terminal!");
+        #[cfg(target_os = "windows")]
+        if !is_running_as_root() {
+            {
+                // todo: There is no terminal to show this error message when double clicking on the exe.
+                error!("Admin privileges required to run on Windows. Exiting.");
+                color_eyre::eyre::bail!("Admin privileges required to run on Windows. Exiting.");
+            }
+        }
     }
 
     // Construct a local task set that can run `!Send` futures.

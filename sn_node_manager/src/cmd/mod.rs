@@ -27,16 +27,6 @@ use std::{
     process::{Command, Stdio},
 };
 
-#[cfg(unix)]
-pub fn is_running_as_root() -> bool {
-    users::get_effective_uid() == 0
-}
-
-#[cfg(windows)]
-pub fn is_running_as_root() -> bool {
-    true
-}
-
 pub async fn download_and_get_upgrade_bin_path(
     custom_bin_path: Option<PathBuf>,
     release_type: ReleaseType,

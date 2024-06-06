@@ -40,7 +40,6 @@ json5 = "0.4.1"
 lazy_static = "1.4.0"
 libc = "0.2.148"
 log = "0.4.20"
-nix = { version = "0.28.0", features = ["user"] }
 pretty_assertions = "1.4.0"
 prometheus-parse = "0.2.5"
 rand = "0.8.5"

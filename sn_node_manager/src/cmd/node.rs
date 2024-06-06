@@ -8,13 +8,13 @@
 
 #![allow(clippy::too_many_arguments)]
 
-use super::{download_and_get_upgrade_bin_path, is_running_as_root, print_upgrade_summary};
+use super::{download_and_get_upgrade_bin_path, print_upgrade_summary};
 use crate::{
     add_services::{
         add_node,
         config::{AddNodeServiceOptions, PortRange},
     },
-    config,
+    config::{self, is_running_as_root},
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
