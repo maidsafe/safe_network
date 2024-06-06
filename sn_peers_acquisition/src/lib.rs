@@ -81,7 +81,30 @@ impl PeersArgs {
     /// Note: the current behaviour is that `--peer` and `SAFE_PEERS` will be combined. Some tests
     /// currently rely on this. We will change it soon.
     pub async fn get_peers(self) -> Result<Vec<Multiaddr>> {
+        self.get_peers_inner(false).await
+    }
+
+    /// Gets the peers based on the arguments provided.
+    ///
+    /// If the `--first` flag is used, no peers will be provided.
+    ///
+    /// Otherwise, peers are obtained in the following order of precedence:
+    /// * The `--peer` argument.
+    /// * The `SAFE_PEERS` environment variable.
+    /// * Using the `local-discovery` feature, which will return an empty peer list.
+    ///
+    /// This will not fetch the peers from network-contacts even if the `network-contacts` feature is enabled. Use
+    /// get_peers() instead.
+    ///
+    /// Note: the current behaviour is that `--peer` and `SAFE_PEERS` will be combined. Some tests
+    /// currently rely on this. We will change it soon.
+    pub async fn get_peers_exclude_network_contacts(self) -> Result<Vec<Multiaddr>> {
+        self.get_peers_inner(true).await
+    }
+
+    async fn get_peers_inner(self, skip_network_contacts: bool) -> Result<Vec<Multiaddr>> {
         if self.first {
+            info!("First node in a new network");
             return Ok(vec![]);
         }
 
@@ -93,6 +116,9 @@ impl PeersArgs {
             info!(
             "The `local-discovery` feature is enabled, so peers will be discovered through mDNS."
         );
+            return Ok(vec![]);
+        } else if skip_network_contacts {
+            info!("Skipping network contacts");
             return Ok(vec![]);
         } else if cfg!(feature = "network-contacts") {
             self.get_network_contacts().await?
