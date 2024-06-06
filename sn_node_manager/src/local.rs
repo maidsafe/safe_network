@@ -55,6 +55,7 @@ impl Launcher for LocalSafeLauncher {
     }
 
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32> {
+        info!("Launching the faucet server...");
         let args = vec![
             "--peer".to_string(),
             genesis_multiaddr.to_string(),
@@ -104,7 +105,8 @@ impl Launcher for LocalSafeLauncher {
             .args(args)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
-            .spawn()?;
+            .spawn()
+            .inspect_err(|err| error!("Error while spawning node process: {err:?}"))?;
 
         Ok(())
     }
@@ -130,6 +132,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
         // faucet is not `None`, the pid also must have a value.
         if let Some(process) = system.process(Pid::from(faucet.pid.unwrap() as usize)) {
             process.kill();
+            debug!("Faucet has been killed");
             println!("{} Killed faucet", "✓".green());
         }
     }
@@ -140,12 +143,14 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
         .join("test_faucet");
     if faucet_data_path.is_dir() {
         std::fs::remove_dir_all(faucet_data_path)?;
+        debug!("Removed faucet data directory");
     }
     let genesis_data_path = dirs_next::data_dir()
         .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
         .join("safe")
         .join("test_genesis");
     if genesis_data_path.is_dir() {
+        debug!("Removed genesis data directory");
         std::fs::remove_dir_all(genesis_data_path)?;
     }
 
@@ -159,6 +164,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
             // anything anyway.
             if let Some(process) = system.process(Pid::from(pid as usize)) {
                 process.kill();
+                debug!("Killed node: {} ({})", node.service_name, pid);
                 println!("  {} Killed process", "✓".green());
             }
         }
@@ -167,6 +173,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
             // At this point we don't allow path overrides, so deleting the data directory will clear
             // the log directory also.
             std::fs::remove_dir_all(&node.data_dir_path)?;
+            debug!("Removed node data directory: {:?}", node.data_dir_path);
             println!(
                 "  {} Removed {}",
                 "✓".green(),
@@ -196,6 +203,8 @@ pub async fn run_network(
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
 ) -> Result<()> {
+    info!("Running local network");
+
     let launcher = LocalSafeLauncher {
         safenode_bin_path: options.safenode_bin_path.to_path_buf(),
         faucet_bin_path: options.faucet_bin_path.to_path_buf(),
@@ -274,6 +283,7 @@ pub async fn run_network(
     }
 
     if !options.skip_validation {
+        debug!("Waiting for 10 seconds before validating the network...");
         println!("Waiting for 10 seconds before validating the network...");
         std::thread::sleep(std::time::Duration::from_secs(10));
         validate_network(node_registry, bootstrap_peers.clone()).await?;
@@ -315,6 +325,7 @@ pub async fn run_node(
     launcher: &dyn Launcher,
     rpc_client: &dyn RpcActions,
 ) -> Result<NodeServiceData> {
+    info!("Launching node {}...", run_options.number);
     println!("Launching node {}...", run_options.number);
     launcher.launch_node(
         run_options.owner.clone(),
@@ -391,6 +402,7 @@ async fn validate_network(node_registry: &mut NodeRegistry, peers: Vec<Multiaddr
         let net_info = rpc_client.network_info().await?;
         let peers = net_info.connected_peers;
         let peer_id = node.peer_id.ok_or_eyre("The PeerId was not set")?;
+        debug!("Node {peer_id} has {} peers", peers.len());
         println!("Node {peer_id} has {} peers", peers.len());
 
         // Look for peers that are not supposed to be present in the network. This can happen if
@@ -404,6 +416,7 @@ async fn validate_network(node_registry: &mut NodeRegistry, peers: Vec<Multiaddr
             for invalid_peer in invalid_peers.iter() {
                 println!("Invalid peer found: {}", invalid_peer);
             }
+            error!("Network validation failed: {invalid_peers:?}");
             return Err(eyre!("Network validation failed",));
         }
     }

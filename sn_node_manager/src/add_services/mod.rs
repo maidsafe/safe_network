@@ -50,12 +50,14 @@ pub async fn add_node(
     if options.genesis {
         if let Some(count) = options.count {
             if count > 1 {
+                error!("A genesis node can only be added as a single node");
                 return Err(eyre!("A genesis node can only be added as a single node"));
             }
         }
 
         let genesis_node = node_registry.nodes.iter().find(|n| n.genesis);
         if genesis_node.is_some() {
+            error!("A genesis node already exists");
             return Err(eyre!("A genesis node already exists"));
         }
     }
@@ -65,6 +67,7 @@ pub async fn add_node(
             PortRange::Single(_) => {
                 let count = options.count.unwrap_or(1);
                 if count != 1 {
+                    error!("The number of services to add ({count}) does not match the number of ports (1)");
                     return Err(eyre!(
                         "The number of services to add ({count}) does not match the number of ports (1)"
                     ));
@@ -74,6 +77,7 @@ pub async fn add_node(
                 let port_count = end - start + 1;
                 let service_count = options.count.unwrap_or(1);
                 if port_count != service_count {
+                    error!("The number of services to add ({service_count}) does not match the number of ports ({port_count})");
                     return Err(eyre!(
                         "The number of services to add ({service_count}) does not match the number of ports ({port_count})"
                     ));
@@ -97,7 +101,10 @@ pub async fn add_node(
     let safenode_file_name = options
         .safenode_src_path
         .file_name()
-        .ok_or_else(|| eyre!("Could not get filename from the safenode download path"))?
+        .ok_or_else(|| {
+            error!("Could not get filename from the safenode download path");
+            eyre!("Could not get filename from the safenode download path")
+        })?
         .to_string_lossy()
         .to_string();
 
@@ -139,6 +146,7 @@ pub async fn add_node(
     let mut rpc_port = get_start_port_if_applicable(options.rpc_port);
 
     while node_number <= target_node_count {
+        trace!("Adding node with node_number {node_number}");
         let rpc_free_port = if let Some(port) = rpc_port {
             port
         } else {
@@ -178,13 +186,16 @@ pub async fn add_node(
             };
 
         if let Some(user) = &options.user {
+            debug!("Creating data_dir and log_dirs with user {user}");
             create_owned_dir(service_data_dir_path.clone(), user)?;
             create_owned_dir(service_log_dir_path.clone(), user)?;
         } else {
+            debug!("Creating data_dir and log_dirs without user");
             std::fs::create_dir_all(service_data_dir_path.clone())?;
             std::fs::create_dir_all(service_log_dir_path.clone())?;
         }
 
+        debug!("Copying safenode binary to {service_safenode_path:?}");
         std::fs::copy(
             options.safenode_src_path.clone(),
             service_safenode_path.clone(),
@@ -210,6 +221,10 @@ pub async fn add_node(
                     options.home_network = true;
                 }
             }
+            debug!(
+                "Auto-setting NAT flags: upnp={}, home_network={}",
+                options.upnp, options.home_network
+            );
         }
 
         let install_ctx = InstallNodeServiceCtxBuilder {
@@ -235,6 +250,7 @@ pub async fn add_node(
 
         match service_control.install(install_ctx, options.user_mode) {
             Ok(()) => {
+                info!("Successfully added service {service_name}");
                 added_service_data.push((
                     service_name.clone(),
                     service_safenode_path.to_string_lossy().into_owned(),
@@ -274,6 +290,7 @@ pub async fn add_node(
                 node_registry.save()?;
             }
             Err(e) => {
+                error!("Failed to add service {service_name}: {e}");
                 failed_service_data.push((service_name.clone(), e.to_string()));
             }
         }
@@ -285,7 +302,14 @@ pub async fn add_node(
     }
 
     if options.delete_safenode_src {
+        debug!("Deleting safenode binary file");
         std::fs::remove_file(options.safenode_src_path)?;
+    }
+
+    if !added_service_data.is_empty() {
+        info!("{} services has been added", added_service_data.len());
+    } else if !failed_service_data.is_empty() {
+        error!("Failed to add {} service(s)", failed_service_data.len());
     }
 
     if !added_service_data.is_empty() && verbosity != VerbosityLevel::Minimal {
@@ -333,14 +357,23 @@ pub fn add_auditor(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if node_registry.auditor.is_some() {
+        error!("An Auditor service has already been created");
         return Err(eyre!("An Auditor service has already been created"));
     }
 
+    debug!(
+        "Creating log directory at {:?} as user {:?}",
+        install_options.service_log_dir_path, install_options.user
+    );
     create_owned_dir(
         install_options.service_log_dir_path.clone(),
         &install_options.user,
     )?;
 
+    debug!(
+        "Copying auditor binary file to {:?}",
+        install_options.auditor_install_bin_path
+    );
     std::fs::copy(
         install_options.auditor_src_bin_path.clone(),
         install_options.auditor_install_bin_path.clone(),
@@ -368,6 +401,7 @@ pub fn add_auditor(
                 user: install_options.user.clone(),
                 version: install_options.version,
             });
+            info!("Auditor service has been added successfully");
             println!("Auditor service added {}", "✓".green());
             if verbosity != VerbosityLevel::Minimal {
                 println!(
@@ -380,11 +414,13 @@ pub fn add_auditor(
                 );
             }
             println!("[!] Note: the service has not been started");
+            debug!("Removing auditor binary file");
             std::fs::remove_file(install_options.auditor_src_bin_path)?;
             node_registry.save()?;
             Ok(())
         }
         Err(e) => {
+            error!("Failed to add auditor service: {e}");
             println!("Failed to add auditor service: {e}");
             Err(e.into())
         }
@@ -400,9 +436,14 @@ pub fn add_daemon(
     service_control: &dyn ServiceControl,
 ) -> Result<()> {
     if node_registry.daemon.is_some() {
+        error!("A safenodemand service has already been created");
         return Err(eyre!("A safenodemand service has already been created"));
     }
 
+    debug!(
+        "Copying daemon binary file to {:?}",
+        options.daemon_install_bin_path
+    );
     std::fs::copy(
         options.daemon_src_bin_path.clone(),
         options.daemon_install_bin_path.clone(),
@@ -435,6 +476,7 @@ pub fn add_daemon(
                 version: options.version,
             };
             node_registry.daemon = Some(daemon);
+            info!("Daemon service has been added successfully");
             println!("Daemon service added {}", "✓".green());
             println!("[!] Note: the service has not been started");
             node_registry.save()?;
@@ -442,6 +484,7 @@ pub fn add_daemon(
             Ok(())
         }
         Err(e) => {
+            error!("Failed to add daemon service: {e}");
             println!("Failed to add daemon service: {e}");
             Err(e.into())
         }
@@ -461,14 +504,22 @@ pub fn add_faucet(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if node_registry.faucet.is_some() {
+        error!("A faucet service has already been created");
         return Err(eyre!("A faucet service has already been created"));
     }
 
+    debug!(
+        "Creating log directory at {:?} as user {:?}",
+        install_options.service_log_dir_path, install_options.user
+    );
     create_owned_dir(
         install_options.service_log_dir_path.clone(),
         &install_options.user,
     )?;
-
+    debug!(
+        "Copying faucet binary file to {:?}",
+        install_options.faucet_install_bin_path
+    );
     std::fs::copy(
         install_options.faucet_src_bin_path.clone(),
         install_options.faucet_install_bin_path.clone(),
@@ -497,6 +548,7 @@ pub fn add_faucet(
                 user: install_options.user.clone(),
                 version: install_options.version,
             });
+            info!("Faucet service has been added successfully");
             println!("Faucet service added {}", "✓".green());
             if verbosity != VerbosityLevel::Minimal {
                 println!(
@@ -518,6 +570,7 @@ pub fn add_faucet(
             Ok(())
         }
         Err(e) => {
+            error!("Failed to add faucet service: {e}");
             println!("Failed to add faucet service: {e}");
             Err(e.into())
         }
@@ -557,12 +610,14 @@ fn check_port_availability(port_option: &PortRange, nodes: &[NodeServiceData]) -
     match port_option {
         PortRange::Single(port) => {
             if all_ports.iter().any(|p| *p == *port) {
+                error!("Port {port} is being used by another service");
                 return Err(eyre!("Port {port} is being used by another service"));
             }
         }
         PortRange::Range(start, end) => {
             for i in *start..=*end {
                 if all_ports.iter().any(|p| *p == i) {
+                    error!("Port {i} is being used by another service");
                     return Err(eyre!("Port {i} is being used by another service"));
                 }
             }

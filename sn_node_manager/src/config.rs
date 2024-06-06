@@ -29,13 +29,16 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
 
     let path = if is_running_as_root() {
         let path = PathBuf::from("/var/safenode-manager/");
+        debug!("Running as root, creating node_manager_path and setting perms if path doesn't exists: {path:?}");
         std::fs::create_dir_all(&path)?;
         let mut perm = std::fs::metadata(&path)?.permissions();
         perm.set_mode(0o755); // set permissions to rwxr-xr-x
         std::fs::set_permissions(&path, perm)?;
         path
     } else {
-        get_user_safenode_data_dir()?
+        let path = get_user_safenode_data_dir()?;
+        debug!("Running as non-root, node_manager_path is: {path:?}");
+        path
     };
 
     if is_running_as_root() && !path.exists() {
@@ -52,6 +55,8 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
 pub fn get_node_manager_path() -> Result<PathBuf> {
     use std::path::Path;
     let path = Path::new("C:\\ProgramData\\safenode-manager");
+    debug!("Running as root, creating node_manager_path at: {path:?}");
+
     if !path.exists() {
         std::fs::create_dir_all(path)?;
     }
@@ -65,6 +70,7 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
     let path = get_node_manager_path()?;
     let node_registry_path = path.join("node_registry.json");
     if is_running_as_root() && !node_registry_path.exists() {
+        debug!("Running as root and node_registry_path doesn't exist, creating node_registry_path and setting perms at: {node_registry_path:?}");
         std::fs::OpenOptions::new()
             .write(true)
             .create(true)
@@ -81,6 +87,7 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
         perm.set_mode(0o777);
         std::fs::set_permissions(node_registry_path.clone(), perm)?;
     }
+    debug!("Node registry path is: {node_registry_path:?}");
 
     Ok(node_registry_path)
 }
@@ -92,6 +99,8 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
     if !path.exists() {
         std::fs::create_dir_all(path)?;
     }
+    debug!("Node registry path is: {path:?}");
+
     Ok(path.join("node_registry.json"))
 }
 
@@ -106,11 +115,21 @@ pub fn get_service_data_dir_path(
     owner: Option<String>,
 ) -> Result<PathBuf> {
     let path = match custom_path {
-        Some(p) => p,
-        None => match owner.is_some() {
-            true => PathBuf::from("/var/safenode-manager/services"),
-            false => get_user_safenode_data_dir()?,
-        },
+        Some(p) => {
+            debug!("Using custom path for service data dir: {p:?}");
+            p
+        }
+        None => {
+            if owner.is_some() {
+                let path = PathBuf::from("/var/safenode-manager/services");
+                debug!("Using default path for service data dir: {path:?}");
+                path
+            } else {
+                let path = get_user_safenode_data_dir()?;
+                debug!("Using user mode service data dir: {path:?}");
+                path
+            }
+        }
     };
     if let Some(owner) = owner {
         create_owned_dir(path.clone(), &owner)?;
@@ -124,8 +143,15 @@ pub fn get_service_data_dir_path(
     _owner: Option<String>,
 ) -> Result<PathBuf> {
     let path = match custom_path {
-        Some(p) => p,
-        None => PathBuf::from("C:\\ProgramData\\safenode\\data"),
+        Some(p) => {
+            debug!("Using custom path for service data dir: {p:?}");
+            p
+        }
+        None => {
+            let path = PathBuf::from("C:\\ProgramData\\safenode\\data");
+            debug!("Using default path for service data dir: {path:?}");
+            path
+        }
     };
     std::fs::create_dir_all(&path)?;
     Ok(path)
@@ -143,11 +169,21 @@ pub fn get_service_log_dir_path(
     owner: Option<String>,
 ) -> Result<PathBuf> {
     let path = match custom_path {
-        Some(p) => p,
-        None => match owner.is_some() {
-            true => PathBuf::from("/var/log").join(bin_type.to_string()),
-            false => get_user_safenode_data_dir()?,
-        },
+        Some(p) => {
+            debug!("Using custom path for service log dir: {p:?}");
+            p
+        }
+        None => {
+            if owner.is_some() {
+                let path = PathBuf::from("/var/log").join(bin_type.to_string());
+                debug!("Using default path for service log dir: {path:?}");
+                path
+            } else {
+                let path = get_user_safenode_data_dir()?;
+                debug!("Using user mode service log dir: {path:?}");
+                path
+            }
+        }
     };
     if let Some(owner) = owner {
         create_owned_dir(path.clone(), &owner)?;
@@ -162,10 +198,17 @@ pub fn get_service_log_dir_path(
     _owner: Option<String>,
 ) -> Result<PathBuf> {
     let path = match custom_path {
-        Some(p) => p,
-        None => PathBuf::from("C:\\ProgramData")
-            .join(bin_type.to_string())
-            .join("logs"),
+        Some(p) => {
+            debug!("Using custom path for service log dir: {p:?}");
+            p
+        }
+        None => {
+            let path = PathBuf::from("C:\\ProgramData")
+                .join(bin_type.to_string())
+                .join("logs");
+            debug!("Using default path for service log dir: {path:?}");
+            path
+        }
     };
     std::fs::create_dir_all(&path)?;
     Ok(path)
@@ -173,6 +216,7 @@ pub fn get_service_log_dir_path(
 
 #[cfg(unix)]
 pub fn create_owned_dir(path: PathBuf, owner: &str) -> Result<()> {
+    debug!("Creating owned dir and setting permissions: {path:?} with owner: {owner}");
     use nix::unistd::{chown, Gid, Uid};
     use std::os::unix::fs::PermissionsExt;
     use users::get_user_by_name;
@@ -181,7 +225,10 @@ pub fn create_owned_dir(path: PathBuf, owner: &str) -> Result<()> {
     let permissions = std::fs::Permissions::from_mode(0o755);
     std::fs::set_permissions(&path, permissions)?;
 
-    let user = get_user_by_name(owner).ok_or_else(|| eyre!("User '{owner}' does not exist"))?;
+    let user = get_user_by_name(owner).ok_or_else(|| {
+        error!("User '{owner}' does not exist");
+        eyre!("User '{owner}' does not exist")
+    })?;
     let uid = Uid::from_raw(user.uid());
     let gid = Gid::from_raw(user.primary_group_id());
     chown(&path, Some(uid), Some(gid))?;
@@ -190,6 +237,7 @@ pub fn create_owned_dir(path: PathBuf, owner: &str) -> Result<()> {
 
 #[cfg(windows)]
 pub fn create_owned_dir(path: PathBuf, _owner: &str) -> Result<()> {
+    debug!("Creating owned dir: {path:?}");
     std::fs::create_dir_all(path)?;
     Ok(())
 }
@@ -207,7 +255,10 @@ pub fn is_running_as_root() -> bool {
 
 pub fn get_user_safenode_data_dir() -> Result<PathBuf> {
     Ok(dirs_next::data_dir()
-        .ok_or_else(|| eyre!("Could not obtain user data directory"))?
+        .ok_or_else(|| {
+            error!("Failed to get data_dir");
+            eyre!("Could not obtain user data directory")
+        })?
         .join("safe")
         .join("node"))
 }

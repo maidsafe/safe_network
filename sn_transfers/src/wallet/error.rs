@@ -43,6 +43,9 @@ pub enum Error {
     /// Failed to fetch spend from network
     #[error("Failed to fetch spend from network: {0}")]
     FailedToGetSpend(String),
+    /// Failed to send spend for processing
+    #[error("Failed to send spend for processing: {0}")]
+    SpendProcessing(String),
     /// Failed to parse bytes into a bls key
     #[error("Unconfirmed transactions still persist even after retries")]
     UnconfirmedTxAfterRetries,
