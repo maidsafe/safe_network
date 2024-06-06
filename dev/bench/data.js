@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717662897210,
+  "lastUpdate": 1717662899212,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "d34eaa4dcc72e4f1150e594b0379f6bed29de07b",
-          "message": "ci: dont pass token to action for branch switch",
-          "timestamp": "2024-02-22T12:36:55+01:00",
-          "tree_id": "4f31f4722a663c89cef8854278789fde23aadf35",
-          "url": "https://github.com/maidsafe/safe_network/commit/d34eaa4dcc72e4f1150e594b0379f6bed29de07b"
-        },
-        "date": 1708602546611,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5819,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33471,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "931ef5d26282ee25a1a95cbdb5e99cf44a30bd21",
           "message": "chore: cleanup version in node_manager after experimentation",
           "timestamp": "2024-02-23T12:08:59+01:00",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34933,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "8d54d95aa023771ebb79043467ecd060566ce3e3",
+          "message": "chore(manager): add logging for node manager and service management",
+          "timestamp": "2024-06-06T07:48:31Z",
+          "tree_id": "ac10a050da74e137c6e59946a30dc5d7992c58b7",
+          "url": "https://github.com/maidsafe/safe_network/commit/8d54d95aa023771ebb79043467ecd060566ce3e3"
+        },
+        "date": 1717662898619,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7972,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 38131,
             "unit": "ms"
           },
           {
