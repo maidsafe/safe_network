@@ -222,8 +222,10 @@ impl SpendDagDb {
         let spend_processing = if let Some(sk) = self.encryption_sk.clone() {
             let (tx, mut rx) = tokio::sync::mpsc::channel(SPENDS_PROCESSING_BUFFER_SIZE);
             tokio::spawn(async move {
-                while let Some(spend) = rx.recv().await {
-                    self_clone.beta_background_process_spend(spend, &sk).await;
+                while let Some((spend, utxos_for_further_track)) = rx.recv().await {
+                    self_clone
+                        .beta_background_process_spend(spend, &sk, utxos_for_further_track)
+                        .await;
                 }
             });
             Some(tx)
@@ -232,14 +234,20 @@ impl SpendDagDb {
             None
         };
 
+        let mut addrs_to_get = BTreeSet::new();
+
         loop {
             // get current utxos to fetch
             let now = Instant::now();
-            let utxos_to_fetch;
-            (utxo_addresses, utxos_to_fetch) = utxo_addresses
-                .into_iter()
-                .partition(|(_address, time_stamp)| *time_stamp > now);
-            let addrs_to_get = utxos_to_fetch.keys().cloned().collect::<BTreeSet<_>>();
+
+            // Always track new outputs first
+            if addrs_to_get.is_empty() {
+                let utxos_to_fetch;
+                (utxo_addresses, utxos_to_fetch) = utxo_addresses
+                    .into_iter()
+                    .partition(|(_address, time_stamp)| *time_stamp > now);
+                addrs_to_get.extend(utxos_to_fetch.keys().cloned().collect::<BTreeSet<_>>());
+            }
 
             if addrs_to_get.is_empty() {
                 debug!(
@@ -250,31 +258,40 @@ impl SpendDagDb {
                 continue;
             }
 
-            let new_utxos = if cfg!(feature = "dag-collection") {
-                self.crawl_and_generate_local_dag(
-                    addrs_to_get,
-                    spend_processing.clone(),
-                    client.clone(),
-                )
-                .await
+            if cfg!(feature = "dag-collection") {
+                let new_utxos = self
+                    .crawl_and_generate_local_dag(
+                        addrs_to_get.clone(),
+                        spend_processing.clone(),
+                        client.clone(),
+                    )
+                    .await;
+                addrs_to_get.clear();
+                utxo_addresses.extend(
+                    new_utxos
+                        .into_iter()
+                        .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
+                );
             } else if let Some(sender) = spend_processing.clone() {
-                client.crawl_to_next_utxos(addrs_to_get, sender).await?
+                let (reattempt_addrs, new_utxos) =
+                    client.crawl_to_next_utxos(&addrs_to_get, sender).await?;
+                utxo_addresses.extend(
+                    reattempt_addrs
+                        .into_iter()
+                        .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
+                );
+                addrs_to_get.clear();
+                addrs_to_get.extend(new_utxos);
             } else {
                 panic!("There is no point in running the auditor if we are not collecting the DAG or collecting data through crawling. Please enable the `dag-collection` feature or provide beta program related arguments.");
             };
-
-            utxo_addresses.extend(
-                new_utxos
-                    .into_iter()
-                    .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
-            );
         }
     }
 
     async fn crawl_and_generate_local_dag(
         &self,
         from: BTreeSet<SpendAddress>,
-        spend_processing: Option<Sender<SignedSpend>>,
+        spend_processing: Option<Sender<(SignedSpend, u64)>>,
         client: Client,
     ) -> BTreeSet<SpendAddress> {
         // get a copy of the current DAG
@@ -309,13 +326,16 @@ impl SpendDagDb {
     }
 
     /// Process each spend and update beta rewards data
-    pub async fn beta_background_process_spend(&self, spend: SignedSpend, sk: &SecretKey) {
+    pub async fn beta_background_process_spend(
+        &self,
+        spend: SignedSpend,
+        sk: &SecretKey,
+        utxos_for_further_track: u64,
+    ) {
         let mut beta_tracking = self.beta_tracking.write().await;
         beta_tracking.processed_spends += 1;
         beta_tracking.total_accumulated_utxo += spend.spend.spent_tx.outputs.len() as u64;
-        // TODO: currently all royalty and payment_forward output will be tracked
-        //       correct this metrics once this got optimized
-        beta_tracking.total_on_track_utxo += spend.spend.spent_tx.outputs.len() as u64;
+        beta_tracking.total_on_track_utxo += utxos_for_further_track;
 
         // check for beta rewards reason
         let user_name_hash = match spend.reason().get_sender_hash(sk) {
@@ -331,15 +351,15 @@ impl SpendDagDb {
         let beta_participants_read = self.beta_participants.read().await;
 
         if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
-            trace!("Got forwarded reward from {user_name} of {amount} at {addr:?}");
+            trace!("Got forwarded reward {amount} from {user_name} of {amount} at {addr:?}");
             beta_tracking
                 .forwarded_payments
                 .entry(user_name.to_owned())
                 .or_default()
                 .insert((addr, amount));
         } else {
-            warn!("Found a forwarded reward for an unknown participant at {addr:?}: {user_name_hash:?}");
-            eprintln!("Found a forwarded reward for an unknown participant at {addr:?}: {user_name_hash:?}");
+            warn!("Found a forwarded reward {amount} for an unknown participant at {addr:?}: {user_name_hash:?}");
+            eprintln!("Found a forwarded reward {amount} for an unknown participant at {addr:?}: {user_name_hash:?}");
             beta_tracking
                 .forwarded_payments
                 .entry(format!("unknown participant: {user_name_hash:?}"))

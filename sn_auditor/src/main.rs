@@ -204,8 +204,10 @@ async fn initialize_background_spend_dag_collection(
         .map_err(|e| eyre!("Could not create SpendDag Db: {e}"))?;
 
     // optional force restart from genesis and merge into our current DAG
-    if force_from_genesis {
+    // feature guard to prevent a mis-use of opt
+    if force_from_genesis && cfg!(feature = "dag-collection") {
         println!("Forcing DAG to be updated from genesis...");
+        warn!("Forcing DAG to be updated from genesis...");
         let mut d = dag.clone();
         let mut genesis_dag = client
             .new_dag_with_genesis_only()

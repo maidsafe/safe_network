@@ -11,7 +11,8 @@ use crate::{Client, Error, SpendDag};
 use futures::{future::join_all, StreamExt};
 use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{
-    SignedSpend, SpendAddress, WalletError, WalletResult, GENESIS_SPEND_UNIQUE_KEY,
+    SignedSpend, SpendAddress, SpendReason, WalletError, WalletResult, GENESIS_SPEND_UNIQUE_KEY,
+    NETWORK_ROYALTIES_PK,
 };
 use std::collections::BTreeSet;
 use tokio::sync::mpsc::Sender;
@@ -61,7 +62,7 @@ impl Client {
     pub async fn spend_dag_build_from(
         &self,
         spend_addr: SpendAddress,
-        spend_processing: Option<Sender<SignedSpend>>,
+        spend_processing: Option<Sender<(SignedSpend, u64)>>,
         verify: bool,
     ) -> WalletResult<SpendDag> {
         let (tx, mut rx) = tokio::sync::mpsc::channel(SPENDS_PROCESSING_BUFFER_SIZE);
@@ -86,8 +87,9 @@ impl Client {
                     );
                     dag.insert(addr, spend.clone());
                     if let Some(sender) = &spend_processing {
+                        let outputs = spend.spend.spent_tx.outputs.len() as u64;
                         sender
-                            .send(spend)
+                            .send((spend, outputs))
                             .await
                             .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
                     }
@@ -127,28 +129,51 @@ impl Client {
         Ok(dag)
     }
 
-    /// Crawls the Spend Dag from a set of given SpendAddresses recursively
-    /// following descendants all the way to UTXOs
-    /// Returns all the UTXOs reached
+    /// Get spends for a set of given SpendAddresses
+    /// Notifies the UTXOs that need to be further tracked down.
+    /// returns: (addresses_for_reattempt, new_utxos_for_furthertracking)
     pub async fn crawl_to_next_utxos(
         &self,
-        from: BTreeSet<SpendAddress>,
-        spend_processing: Sender<SignedSpend>,
-    ) -> WalletResult<BTreeSet<SpendAddress>> {
-        let tasks: Vec<_> = from
-            .iter()
-            .map(|a| self.spend_dag_crawl_from(*a, spend_processing.clone()))
-            .collect();
-        let res = futures::future::join_all(tasks).await;
+        from: &BTreeSet<SpendAddress>,
+        spend_processing: Sender<(SignedSpend, u64)>,
+    ) -> WalletResult<(BTreeSet<SpendAddress>, BTreeSet<SpendAddress>)> {
+        let spends = join_all(from.iter().map(|&address| {
+            let client_clone = self.clone();
+            async move { (client_clone.crawl_spend(address).await, address) }
+        }))
+        .await;
+
+        let mut failed_utxos = BTreeSet::new();
         let mut new_utxos = BTreeSet::new();
-        for r in res.into_iter() {
-            match r {
-                Ok(utxos) => new_utxos.extend(utxos),
-                Err(e) => return Err(e),
-            }
+
+        for (result, address) in spends {
+            let spend = match result {
+                InternalGetNetworkSpend::Spend(s) => *s,
+                InternalGetNetworkSpend::DoubleSpend(_s1, _s2) => {
+                    warn!("Detected double spend regarding {address:?}");
+                    continue;
+                }
+                InternalGetNetworkSpend::NotFound => {
+                    let _ = failed_utxos.insert(address);
+                    continue;
+                }
+                InternalGetNetworkSpend::Error(e) => {
+                    warn!("Got a fetching error {e:?}");
+                    continue;
+                }
+            };
+
+            let for_further_track = beta_track_analyze_spend(&spend);
+
+            spend_processing
+                .send((spend, for_further_track.len() as u64))
+                .await
+                .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
+
+            new_utxos.extend(for_further_track);
         }
 
-        Ok(new_utxos)
+        Ok((failed_utxos, new_utxos))
     }
 
     /// Crawls the Spend Dag from a given SpendAddress recursively
@@ -410,7 +435,7 @@ impl Client {
         &self,
         dag: &mut SpendDag,
         utxos: BTreeSet<SpendAddress>,
-        spend_processing: Option<Sender<SignedSpend>>,
+        spend_processing: Option<Sender<(SignedSpend, u64)>>,
         verify: bool,
     ) {
         let main_dag_src = dag.source();
@@ -446,7 +471,7 @@ impl Client {
     pub async fn spend_dag_continue_from_utxos(
         &self,
         dag: &mut SpendDag,
-        spend_processing: Option<Sender<SignedSpend>>,
+        spend_processing: Option<Sender<(SignedSpend, u64)>>,
         verify: bool,
     ) {
         let utxos = dag.get_utxos();
@@ -479,5 +504,43 @@ impl Client {
                 InternalGetNetworkSpend::Error(e)
             }
         }
+    }
+}
+
+/// Helper function to analyze spend for beta_tracking optimization.
+/// returns the new_utxos that needs to be further tracked.
+fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<SpendAddress> {
+    // Filter out royalty outputs
+    let royalty_pubkeys: BTreeSet<_> = spend
+        .spend
+        .network_royalties
+        .iter()
+        .map(|derivation_idx| NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+        .collect();
+
+    let new_utxos: BTreeSet<_> = spend
+        .spend
+        .spent_tx
+        .outputs
+        .iter()
+        .filter_map(|output| {
+            if !royalty_pubkeys.contains(&output.unique_pubkey) {
+                Some(SpendAddress::from_unique_pubkey(&output.unique_pubkey))
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if let SpendReason::BetaRewardTracking(_) = spend.reason() {
+        // Do not track down forwarded payment further
+        Default::default()
+    } else {
+        trace!(
+            "Spend original has {} outputs, tracking {} of them.",
+            spend.spend.spent_tx.outputs.len(),
+            new_utxos.len()
+        );
+        new_utxos
     }
 }
