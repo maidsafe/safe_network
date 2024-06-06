@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{download_and_get_upgrade_bin_path, is_running_as_root, print_upgrade_summary};
+use super::{download_and_get_upgrade_bin_path, print_upgrade_summary};
 use crate::{
     add_services::{add_faucet, config::AddFaucetServiceOptions},
-    config,
+    config::{self, is_running_as_root},
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, ServiceManager, VerbosityLevel,
 };

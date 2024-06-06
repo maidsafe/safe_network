@@ -6,10 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::is_running_as_root;
 use crate::{
     add_services::{add_daemon, config::AddDaemonServiceOptions},
-    config,
+    config::{self, is_running_as_root},
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, ServiceManager, VerbosityLevel,
 };

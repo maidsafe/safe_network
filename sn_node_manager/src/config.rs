@@ -244,13 +244,14 @@ pub fn create_owned_dir(path: PathBuf, _owner: &str) -> Result<()> {
 
 #[cfg(unix)]
 pub fn is_running_as_root() -> bool {
-    users::get_effective_uid() == 0
+    use nix::unistd::geteuid;
+    geteuid().is_root()
 }
 
 #[cfg(windows)]
 pub fn is_running_as_root() -> bool {
-    // The Windows implementation for this will be much more complex.
-    true
+    // Example: Attempt to read from a typically restricted system directory
+    std::fs::read_dir("C:\\Windows\\System32\\config").is_ok()
 }
 
 pub fn get_user_safenode_data_dir() -> Result<PathBuf> {
