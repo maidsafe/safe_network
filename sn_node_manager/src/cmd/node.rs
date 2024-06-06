@@ -106,18 +106,19 @@ pub async fn add(
     // Handle the `PeersNotObtained` error to make the `--peer` argument optional for the node
     // manager.
     //
-    // Since we don't use the `network-contacts` feature in the node manager, the `PeersNotObtained`
-    // error should occur when no `--peer` arguments were used. If the `safenode` binary we're using
-    // has `network-contacts` enabled (which is the case for released binaries), it's fine if the
-    // service definition doesn't call `safenode` with a `--peer` argument.
-    //
-    // It's simpler to not use the `network-contacts` feature in the node manager, because it can
-    // return a huge peer list, and that's been problematic for service definition files.
+    // Since any application making use of the node manager can enable the `network-contacts` feature on
+    // sn_peers_acquisition, we might end up getting having a huge peer list, and that's problematic for
+    // service definition files.
+    // Thus make use of get_peers_exclude_network_contacts() instead of get_peers() to make sure we only
+    // parse the --peers and SAFE_PEERS env var.
+
+    // If the `safenode` binary we're using has `network-contacts` enabled (which is the case for released binaries),
+    // it's fine if the service definition doesn't call `safenode` with a `--peer` argument.
     let is_first = peers_args.first;
-    let bootstrap_peers = match peers_args.get_peers().await {
-        Ok(p) => {
-            info!("Obtained peers of length {}", p.len());
-            p
+    let bootstrap_peers = match peers_args.get_peers_exclude_network_contacts().await {
+        Ok(peers) => {
+            info!("Obtained peers of length {}", peers.len());
+            peers
         }
         Err(err) => match err {
             sn_peers_acquisition::error::Error::PeersNotObtained => {
