@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717665487458,
+  "lastUpdate": 1717665608961,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "931ef5d26282ee25a1a95cbdb5e99cf44a30bd21",
-          "message": "chore: cleanup version in node_manager after experimentation",
-          "timestamp": "2024-02-23T12:08:59+01:00",
-          "tree_id": "6d018051a2b1518bd40847caee6049c087645306",
-          "url": "https://github.com/maidsafe/safe_network/commit/931ef5d26282ee25a1a95cbdb5e99cf44a30bd21"
-        },
-        "date": 1708687578620,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "c31c006adf30f3ef927f31686ab265faebe11e3d",
           "message": "ci: allow  as suffix for bumper and treat as non-suffixed",
           "timestamp": "2024-02-23T15:02:46+01:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 80,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": true,
+          "id": "e06d7e1c06a45813b7ccf0c2f7c03147d323aaf9",
+          "message": "fix: sleep less as some UTXOs are false alerts",
+          "timestamp": "2024-06-06T08:30:39Z",
+          "tree_id": "b9883cd661f82d0bf1ad025d9021be8ada924cda",
+          "url": "https://github.com/maidsafe/safe_network/commit/e06d7e1c06a45813b7ccf0c2f7c03147d323aaf9"
+        },
+        "date": 1717665608131,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 55,
             "unit": "MB"
           }
         ]
