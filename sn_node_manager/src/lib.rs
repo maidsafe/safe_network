@@ -12,6 +12,7 @@ extern crate tracing;
 pub mod add_services;
 pub mod cmd;
 pub mod config;
+pub mod error;
 pub mod helpers;
 pub mod local;
 pub mod rpc;
@@ -35,10 +36,7 @@ impl From<u8> for VerbosityLevel {
     }
 }
 
-use color_eyre::{
-    eyre::{eyre, OptionExt},
-    Help, Result,
-};
+use crate::error::{Error, Result};
 use colored::Colorize;
 use semver::Version;
 use sn_service_management::{
@@ -121,10 +119,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
             }
             Err(sn_service_management::error::Error::ServiceProcessNotFound(_)) => {
                 error!("The '{}' service has failed to start because ServiceProcessNotFound when fetching PID", self.service.name());
-                return Err(eyre!(
-                    "The '{}' service has failed to start",
-                    self.service.name()
-                ));
+                return Err(Error::PidNotFoundAfterStarting);
             }
             Err(err) => {
                 error!("Failed to start service, because PID could not be obtained: {err}");
@@ -187,7 +182,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 Ok(())
             }
             ServiceStatus::Running => {
-                let pid = self.service.pid().ok_or_eyre("The PID was not set")?;
+                let pid = self.service.pid().ok_or(Error::PidNotSet)?;
                 let name = self.service.name();
 
                 if self.service_control.is_service_process_running(pid) {
@@ -229,30 +224,27 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
 
     pub async fn remove(&mut self, keep_directories: bool) -> Result<()> {
         if let ServiceStatus::Running = self.service.status() {
-            if self.service_control.is_service_process_running(
-                self.service
-                    .pid()
-                    .ok_or_eyre("Could not obtain PID for running node")?,
-            ) {
+            if self
+                .service_control
+                .is_service_process_running(self.service.pid().ok_or(Error::PidNotSet)?)
+            {
                 error!(
                     "Service {} is already running. Stop it before removing it",
                     self.service.name()
                 );
-                return Err(eyre!("A running service cannot be removed")
-                    .suggestion("Stop the node first then try again"));
-            }
-            // If the node wasn't actually running, we should give the user an opportunity to
-            // check why it may have failed before removing everything.
-            self.service.on_stop().await?;
-            error!(
-                "The service: {} was marked as running but it had actually stopped",
+                return Err(Error::ServiceAlreadyRunning(vec![self.service.name()]));
+            } else {
+                // If the node wasn't actually running, we should give the user an opportunity to
+                // check why it may have failed before removing everything.
+                self.service.on_stop().await?;
+                error!(
+                "The service: {} was marked as running but it had actually stopped. You may want to check the logs for errors before removing it. To remove the service, run the command again.",
                 self.service.name()
             );
-            return Err(
-                eyre!("This service was marked as running but it had actually stopped")
-                    .suggestion("You may want to check the logs for errors before removing it")
-                    .suggestion("To remove the service, run the command again."),
-            );
+                return Err(Error::ServiceStatusMismatch {
+                    expected: ServiceStatus::Running,
+                });
+            }
         }
 
         match self
@@ -485,13 +477,28 @@ pub async fn status_report(
         }
     }
 
-    if fail
-        && node_registry
+    if fail {
+        let non_running_services = node_registry
             .nodes
             .iter()
-            .any(|n| n.status != ServiceStatus::Running)
-    {
-        return Err(eyre!("One or more nodes are not in a running state"));
+            .filter_map(|n| {
+                if n.status != ServiceStatus::Running {
+                    Some(n.service_name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<String>>();
+        if non_running_services.is_empty() {
+            info!("Fail is set to true, but all services are running.");
+        } else {
+            error!(
+                "One or more nodes are not in a running state: {non_running_services:?}
+            "
+            );
+
+            return Err(Error::ServiceNotRunning(non_running_services));
+        }
     }
 
     Ok(())
@@ -617,6 +624,7 @@ mod tests {
     use assert_fs::prelude::*;
     use assert_matches::assert_matches;
     use async_trait::async_trait;
+    use color_eyre::eyre::Result;
     use libp2p_identity::PeerId;
     use mockall::{mock, predicate::*};
     use predicates::prelude::*;

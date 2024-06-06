@@ -21,7 +21,6 @@ pub mod safenode_manager_proto {
     tonic::include_proto!("safenode_manager_proto");
 }
 
-use crate::error::{Error, Result};
 use async_trait::async_trait;
 use auditor::AuditorServiceData;
 use libp2p::Multiaddr;
@@ -34,6 +33,7 @@ use std::{
 };
 
 pub use daemon::{DaemonService, DaemonServiceData};
+pub use error::{Error, Result};
 pub use faucet::{FaucetService, FaucetServiceData};
 pub use node::{NodeService, NodeServiceData};
 

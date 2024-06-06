@@ -6948,6 +6948,7 @@ dependencies = [
  "sn_service_management",
  "sn_transfers",
  "sysinfo",
+ "thiserror",
  "tokio",
  "tonic 0.6.2",
  "tracing",
