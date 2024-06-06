@@ -18,7 +18,7 @@ use libp2p::{identity::Keypair, PeerId};
 use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
-use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
+use sn_peers_acquisition::PeersArgs;
 use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl};
 use std::{
     env,
@@ -190,7 +190,7 @@ fn main() -> Result<()> {
         init_logging(&opt, keypair.public().to_peer_id())?;
 
     let rt = Runtime::new()?;
-    let bootstrap_peers = rt.block_on(get_peers_from_args(opt.peers))?;
+    let bootstrap_peers = rt.block_on(opt.peers.get_peers())?;
     let msg = format!(
         "Running {} v{}",
         env!("CARGO_BIN_NAME"),

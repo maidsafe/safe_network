@@ -67,67 +67,69 @@ pub struct PeersArgs {
     pub network_contacts_url: Option<Url>,
 }
 
-/// Gets the peers based on the arguments provided.
-///
-/// If the `--first` flag is used, no peers will be provided.
-///
-/// Otherwise, peers are obtained in the following order of precedence:
-/// * The `--peer` argument.
-/// * The `SAFE_PEERS` environment variable.
-/// * Using the `local-discovery` feature, which will return an empty peer list.
-/// * Using the `network-contacts` feature, which will download the peer list from a file on S3.
-///
-/// Note: the current behaviour is that `--peer` and `SAFE_PEERS` will be combined. Some tests
-/// currently rely on this. We will change it soon.
-pub async fn get_peers_from_args(args: PeersArgs) -> Result<Vec<Multiaddr>> {
-    if args.first {
-        return Ok(vec![]);
-    }
+impl PeersArgs {
+    /// Gets the peers based on the arguments provided.
+    ///
+    /// If the `--first` flag is used, no peers will be provided.
+    ///
+    /// Otherwise, peers are obtained in the following order of precedence:
+    /// * The `--peer` argument.
+    /// * The `SAFE_PEERS` environment variable.
+    /// * Using the `local-discovery` feature, which will return an empty peer list.
+    /// * Using the `network-contacts` feature, which will download the peer list from a file on S3.
+    ///
+    /// Note: the current behaviour is that `--peer` and `SAFE_PEERS` will be combined. Some tests
+    /// currently rely on this. We will change it soon.
+    pub async fn get_peers(self) -> Result<Vec<Multiaddr>> {
+        if self.first {
+            return Ok(vec![]);
+        }
 
-    let mut peers = if !args.peers.is_empty() {
-        info!("Using peers supplied with the --peer argument(s) or SAFE_PEERS");
-        args.peers
-    } else if cfg!(feature = "local-discovery") {
-        info!("No peers given");
-        info!(
+        let mut peers = if !self.peers.is_empty() {
+            info!("Using peers supplied with the --peer argument(s) or SAFE_PEERS");
+            self.peers
+        } else if cfg!(feature = "local-discovery") {
+            info!("No peers given");
+            info!(
             "The `local-discovery` feature is enabled, so peers will be discovered through mDNS."
         );
-        return Ok(vec![]);
-    } else if cfg!(feature = "network-contacts") {
-        get_network_contacts(&args).await?
-    } else {
-        vec![]
-    };
+            return Ok(vec![]);
+        } else if cfg!(feature = "network-contacts") {
+            self.get_network_contacts().await?
+        } else {
+            vec![]
+        };
 
-    if peers.is_empty() {
-        error!("Peers not obtained through any available options");
-        return Err(Error::PeersNotObtained);
-    };
+        if peers.is_empty() {
+            error!("Peers not obtained through any available options");
+            return Err(Error::PeersNotObtained);
+        };
 
-    // Randomly sort peers before we return them to avoid overly hitting any one peer
-    let mut rng = thread_rng();
-    peers.shuffle(&mut rng);
+        // Randomly sort peers before we return them to avoid overly hitting any one peer
+        let mut rng = thread_rng();
+        peers.shuffle(&mut rng);
 
-    Ok(peers)
-}
+        Ok(peers)
+    }
 
-// should not be reachable, but needed for the compiler to be happy.
-#[allow(clippy::unused_async)]
-#[cfg(not(feature = "network-contacts"))]
-async fn get_network_contacts(_args: &PeersArgs) -> Result<Vec<Multiaddr>> {
-    Ok(vec![])
-}
+    // should not be reachable, but needed for the compiler to be happy.
+    #[allow(clippy::unused_async)]
+    #[cfg(not(feature = "network-contacts"))]
+    async fn get_network_contacts(&self) -> Result<Vec<Multiaddr>> {
+        Ok(vec![])
+    }
 
-#[cfg(feature = "network-contacts")]
-async fn get_network_contacts(args: &PeersArgs) -> Result<Vec<Multiaddr>> {
-    let url = args
-        .network_contacts_url
-        .clone()
-        .unwrap_or(Url::parse(NETWORK_CONTACTS_URL.as_str())?);
+    #[cfg(feature = "network-contacts")]
+    async fn get_network_contacts(&self) -> Result<Vec<Multiaddr>> {
+        let url = self
+            .network_contacts_url
+            .clone()
+            .unwrap_or(Url::parse(NETWORK_CONTACTS_URL.as_str())?);
 
-    info!("Trying to fetch the bootstrap peers from {url}");
+        info!("Trying to fetch the bootstrap peers from {url}");
 
-    get_bootstrap_peers_from_url(url).await
+        get_bootstrap_peers_from_url(url).await
+    }
 }
 
 /// Parse strings like `1.2.3.4:1234` and `/ip4/1.2.3.4/tcp/1234` into a multiaddr.

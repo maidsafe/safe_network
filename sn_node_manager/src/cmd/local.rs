@@ -15,7 +15,7 @@ use crate::{
 };
 use color_eyre::{eyre::eyre, Help, Report, Result};
 use sn_logging::LogFormat;
-use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
+use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::ServiceController, get_local_node_registry_path, NodeRegistry,
@@ -33,7 +33,7 @@ pub async fn join(
     log_format: Option<LogFormat>,
     owner: Option<String>,
     owner_prefix: Option<String>,
-    peers: PeersArgs,
+    peers_args: PeersArgs,
     skip_validation: bool,
     verbosity: VerbosityLevel,
 ) -> Result<(), Report> {
@@ -67,7 +67,7 @@ pub async fn join(
 
     // If no peers are obtained we will attempt to join the existing local network, if one
     // is running.
-    let peers = match get_peers_from_args(peers).await {
+    let peers = match peers_args.get_peers().await {
         Ok(peers) => Some(peers),
         Err(err) => match err {
             sn_peers_acquisition::error::Error::PeersNotObtained => {

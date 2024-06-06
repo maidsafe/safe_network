@@ -23,7 +23,7 @@ use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
 use sn_logging::LogFormat;
-use sn_peers_acquisition::{get_peers_from_args, PeersArgs};
+use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::{ServiceControl, ServiceController},
@@ -49,7 +49,7 @@ pub async fn add(
     metrics_port: Option<PortRange>,
     node_port: Option<PortRange>,
     owner: Option<String>,
-    peers: PeersArgs,
+    peers_args: PeersArgs,
     rpc_address: Option<Ipv4Addr>,
     rpc_port: Option<PortRange>,
     src_path: Option<PathBuf>,
@@ -113,8 +113,8 @@ pub async fn add(
     //
     // It's simpler to not use the `network-contacts` feature in the node manager, because it can
     // return a huge peer list, and that's been problematic for service definition files.
-    let is_first = peers.first;
-    let bootstrap_peers = match get_peers_from_args(peers).await {
+    let is_first = peers_args.first;
+    let bootstrap_peers = match peers_args.get_peers().await {
         Ok(p) => {
             info!("Obtained peers of length {}", p.len());
             p
