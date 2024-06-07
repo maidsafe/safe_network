@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717721717175,
+  "lastUpdate": 1717721718741,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30621,45 +30621,6 @@ window.BENCHMARK_DATA = {
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
           },
-          "distinct": false,
-          "id": "64e77ca71f311cbaf5d66892269df5bc07f18b9f",
-          "message": "chore(deps): bump actions/cache from 4.0.0 to 4.0.1\n\nBumps [actions/cache](https://github.com/actions/cache) from 4.0.0 to 4.0.1.\n- [Release notes](https://github.com/actions/cache/releases)\n- [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md)\n- [Commits](https://github.com/actions/cache/compare/v4.0.0...v4.0.1)\n\n---\nupdated-dependencies:\n- dependency-name: actions/cache\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2024-03-04T12:05:09Z",
-          "tree_id": "f7a6531886e2257972381951a6eee68ed582e40e",
-          "url": "https://github.com/maidsafe/safe_network/commit/64e77ca71f311cbaf5d66892269df5bc07f18b9f"
-        },
-        "date": 1709557464099,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6456,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36249,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
           "distinct": true,
           "id": "ff291dd13b7384d7d121640c53fe07662b7c81c6",
           "message": "chore(deps): bump mio from 0.8.10 to 0.8.11\n\nBumps [mio](https://github.com/tokio-rs/mio) from 0.8.10 to 0.8.11.\n- [Release notes](https://github.com/tokio-rs/mio/releases)\n- [Changelog](https://github.com/tokio-rs/mio/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/tokio-rs/mio/compare/v0.8.10...v0.8.11)\n\n---\nupdated-dependencies:\n- dependency-name: mio\n  dependency-type: indirect\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 39138,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5b8d342552fc1880d4ee2415c03dcef1eb2a6dc7",
+          "message": "chore(auditor): cherry-pick from PR 1777 for beta-tracking performance improve",
+          "timestamp": "2024-06-07T00:05:13Z",
+          "tree_id": "6a95fbafc14bcde0ebf253ea56a2d82bf2e1d6af",
+          "url": "https://github.com/maidsafe/safe_network/commit/5b8d342552fc1880d4ee2415c03dcef1eb2a6dc7"
+        },
+        "date": 1717721718358,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7139,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32258,
             "unit": "ms"
           },
           {
