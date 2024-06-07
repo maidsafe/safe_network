@@ -106,10 +106,13 @@ build-release-artifacts arch:
   mkdir artifacts
   cargo clean
 
+  echo "Using the keys: GENESIS_PK=$GENESIS_PK, FOUNDATION_PK=$FOUNDATION_PK, NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK, PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK"
+  cross_container_opts="--env GENESIS_PK=$GENESIS_PK,GENESIS_SK=$GENESIS_SK,FOUNDATION_PK=$FOUNDATION_PK,NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK,PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK"
   if [[ -n "${NETWORK_VERSION_MODE+x}" ]]; then
     echo "The NETWORK_VERSION_MODE variable is set to $NETWORK_VERSION_MODE"
-    export CROSS_CONTAINER_OPTS="--env NETWORK_VERSION_MODE=$NETWORK_VERSION_MODE"
+    cross_container_opts="$cross_container_opts,NETWORK_VERSION_MODE=$NETWORK_VERSION_MODE"
   fi
+    export CROSS_CONTAINER_OPTS=$cross_container_opts
 
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
     cargo install cross

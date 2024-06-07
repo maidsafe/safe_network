@@ -21,6 +21,8 @@ on:
         required: false
         default: ""
 
+# During the build step, the env variable has to be manually sent to the containers for cross platform builds.
+# Update the Justfile as well.
 env:
   RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
   JUST_BIN_URL: https://github.com/casey/just/releases/download/1.25.2/just-1.25.2-x86_64-unknown-linux-musl.tar.gz
