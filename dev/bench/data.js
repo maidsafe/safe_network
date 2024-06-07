@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717722391018,
+  "lastUpdate": 1717722392778,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "b03009f43bdf4178d94f11feb5a2a0af8bbe3855",
-          "message": "ci: dont auto bump versions",
-          "timestamp": "2024-03-11T02:15:12+01:00",
-          "tree_id": "1790f12705bb04fb512dadaa55901f1f9f120e60",
-          "url": "https://github.com/maidsafe/safe_network/commit/b03009f43bdf4178d94f11feb5a2a0af8bbe3855"
-        },
-        "date": 1710120774495,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 211,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "maciej@robotix-lozinski.pl",
             "name": "loziniak",
             "username": "loziniak"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "4994dfb7aa1ffae7caebb732f29b91a927deca02",
+          "message": "fix(test): update the node_manager tests to use the new error messages",
+          "timestamp": "2024-06-07T00:09:23Z",
+          "tree_id": "327ed17954393be515955d79c01b9d8b0a52885f",
+          "url": "https://github.com/maidsafe/safe_network/commit/4994dfb7aa1ffae7caebb732f29b91a927deca02"
+        },
+        "date": 1717722392174,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
