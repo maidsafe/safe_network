@@ -824,6 +824,7 @@ impl InnerUploader {
             let mut cost_map = BTreeMap::new();
             let mut current_batch = vec![];
 
+            let mut got_a_previous_force_payment = false;
             while let Some(payment) = make_payment_receiver.recv().await {
                 let make_payments = if let Some((item, quote)) = payment {
                     let xorname = item.xorname();
@@ -831,15 +832,34 @@ impl InnerUploader {
 
                     current_batch.push((xorname, quote.clone()));
                     let _ = cost_map.insert(xorname, (quote.1, quote.2, quote.0.to_bytes()));
-                    cost_map.len() >= batch_size
+                    cost_map.len() >= batch_size || got_a_previous_force_payment
                 } else {
                     // using None to indicate as all paid.
                     let make_payments = !cost_map.is_empty();
-                    trace!("Got a forced forced round of make payment. make_payments: {make_payments:?}");
+                    trace!("Got a forced forced round of make payment.");
+                    // Note: There can be a mismatch of ordering between the main loop and the make payment loop because
+                    // the instructions are sent via a task(channel.send().await). And there is no guarantee for the
+                    // order to come in the same order as they were sent.
+                    //
+                    // We cannot just disobey the instruction inside the child loop, as the mainloop would be expecting
+                    // a result back for a particular instruction.
+                    if !make_payments {
+                        got_a_previous_force_payment = true;
+                        warn!(
+                            "We were told to force make payment, but cost_map is empty, so we can't do that just yet. Waiting for a task to insert a quote into cost_map"
+                        )
+                    }
+
                     make_payments
                 };
 
                 if make_payments {
+                    // reset force_make_payment
+                    if got_a_previous_force_payment {
+                        info!("A task inserted a quote into cost_map, so we can now make a forced round of payment!");
+                        got_a_previous_force_payment = false;
+                    }
+
                     let result = match wallet_client.pay_for_records(&cost_map, verify_store).await
                     {
                         Ok((storage_cost, royalty_fees)) => {
