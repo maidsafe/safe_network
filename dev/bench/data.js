@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717719616019,
+  "lastUpdate": 1717719618164,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4875a0126d4a2c72053616e2f06e1dae146a2e1f",
-          "message": "ci: fix scheduled alpha release checkout etc",
-          "timestamp": "2024-02-26T14:23:51+01:00",
-          "tree_id": "362a00748d6026309650d198816bdd8ed1e88f46",
-          "url": "https://github.com/maidsafe/safe_network/commit/4875a0126d4a2c72053616e2f06e1dae146a2e1f"
-        },
-        "date": 1708954877156,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6357,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36123,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "49699333+dependabot[bot]@users.noreply.github.com",
             "name": "dependabot[bot]",
             "username": "dependabot[bot]"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35383,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "124182355+cobite@users.noreply.github.com",
+            "name": "Cobite",
+            "username": "cobite"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "9f56fdf485ab78a58fd53ce98b7750cdfdf78824",
+          "message": "Updated peers\n\nUpdated Peers",
+          "timestamp": "2024-06-07T09:06:10+09:00",
+          "tree_id": "cc3f818b4a1fa3c0c96da429d7bb96ea2416e5f2",
+          "url": "https://github.com/maidsafe/safe_network/commit/9f56fdf485ab78a58fd53ce98b7750cdfdf78824"
+        },
+        "date": 1717719617518,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7956,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 39138,
             "unit": "ms"
           },
           {
