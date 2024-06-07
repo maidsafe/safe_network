@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717719618164,
+  "lastUpdate": 1717721596823,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": false,
-          "id": "64e77ca71f311cbaf5d66892269df5bc07f18b9f",
-          "message": "chore(deps): bump actions/cache from 4.0.0 to 4.0.1\n\nBumps [actions/cache](https://github.com/actions/cache) from 4.0.0 to 4.0.1.\n- [Release notes](https://github.com/actions/cache/releases)\n- [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md)\n- [Commits](https://github.com/actions/cache/compare/v4.0.0...v4.0.1)\n\n---\nupdated-dependencies:\n- dependency-name: actions/cache\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2024-03-04T12:05:09Z",
-          "tree_id": "f7a6531886e2257972381951a6eee68ed582e40e",
-          "url": "https://github.com/maidsafe/safe_network/commit/64e77ca71f311cbaf5d66892269df5bc07f18b9f"
-        },
-        "date": 1709557347110,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2508071054866414,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.7755391704160832,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.19522352154051,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.9967521749887,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5b8d342552fc1880d4ee2415c03dcef1eb2a6dc7",
+          "message": "chore(auditor): cherry-pick from PR 1777 for beta-tracking performance improve",
+          "timestamp": "2024-06-07T00:05:13Z",
+          "tree_id": "6a95fbafc14bcde0ebf253ea56a2d82bf2e1d6af",
+          "url": "https://github.com/maidsafe/safe_network/commit/5b8d342552fc1880d4ee2415c03dcef1eb2a6dc7"
+        },
+        "date": 1717721591415,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.229475452010899,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6836394953608118,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.70215529443932,
             "unit": "MiB/s"
           }
         ]
