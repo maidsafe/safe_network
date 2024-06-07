@@ -102,6 +102,12 @@ lazy_static! {
             Err(err) => panic!("Failed to parse network royalties PK: {err:?}"),
         }
     };
+    pub static ref DEFAULT_NETWORK_ROYALTIES_PK: MainPubkey = {
+        match MainPubkey::from_hex(DEFAULT_NETWORK_ROYALTIES_STR) {
+            Ok(pk) => pk,
+            Err(err) => panic!("Failed to parse default network royalties PK: {err:?}"),
+        }
+    };
 }
 
 lazy_static! {
