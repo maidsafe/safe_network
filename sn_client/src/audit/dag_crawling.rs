@@ -11,8 +11,8 @@ use crate::{Client, Error, SpendDag};
 use futures::{future::join_all, StreamExt};
 use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{
-    SignedSpend, SpendAddress, SpendReason, WalletError, WalletResult, GENESIS_SPEND_UNIQUE_KEY,
-    NETWORK_ROYALTIES_PK,
+    SignedSpend, SpendAddress, SpendReason, WalletError, WalletResult,
+    DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
 };
 use std::collections::BTreeSet;
 use tokio::sync::mpsc::Sender;
@@ -517,6 +517,12 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<SpendAddress> {
         .iter()
         .map(|derivation_idx| NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
         .collect();
+    let default_royalty_pubkeys: BTreeSet<_> = spend
+        .spend
+        .network_royalties
+        .iter()
+        .map(|derivation_idx| DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+        .collect();
 
     let new_utxos: BTreeSet<_> = spend
         .spend
@@ -524,6 +530,9 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<SpendAddress> {
         .outputs
         .iter()
         .filter_map(|output| {
+            if default_royalty_pubkeys.contains(&output.unique_pubkey) {
+                return None;
+            }
             if !royalty_pubkeys.contains(&output.unique_pubkey) {
                 Some(SpendAddress::from_unique_pubkey(&output.unique_pubkey))
             } else {
