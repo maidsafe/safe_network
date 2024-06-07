@@ -34,7 +34,7 @@ use futures::future::Either;
 use futures::StreamExt;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-use libp2p::Transport as _;
+use libp2p::{swarm::behaviour::toggle::Toggle, Transport as _};
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
@@ -187,7 +187,7 @@ pub enum VerificationKind {
 #[behaviour(to_swarm = "NodeEvent")]
 pub(super) struct NodeBehaviour {
     #[cfg(feature = "upnp")]
-    pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
+    pub(super) upnp: Toggle<libp2p::upnp::tokio::Behaviour>,
     pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
     pub(super) kademlia: kad::Behaviour<UnifiedRecordStore>,
     #[cfg(feature = "local-discovery")]
@@ -195,7 +195,7 @@ pub(super) struct NodeBehaviour {
     pub(super) identify: libp2p::identify::Behaviour,
     pub(super) dcutr: libp2p::dcutr::Behaviour,
     pub(super) relay_client: libp2p::relay::client::Behaviour,
-    pub(super) relay_server: libp2p::relay::Behaviour,
+    pub(super) relay_server: Toggle<libp2p::relay::Behaviour>,
 }
 
 #[derive(Debug)]
@@ -215,6 +215,7 @@ pub struct NetworkBuilder {
     metrics_server_port: Option<u16>,
     #[cfg(feature = "upnp")]
     upnp: bool,
+    relay_server: bool,
 }
 
 impl NetworkBuilder {
@@ -234,6 +235,7 @@ impl NetworkBuilder {
             metrics_server_port: None,
             #[cfg(feature = "upnp")]
             upnp: false,
+            relay_server: true,
         }
     }
 
@@ -270,6 +272,10 @@ impl NetworkBuilder {
     #[cfg(feature = "upnp")]
     pub fn upnp(&mut self, upnp: bool) {
         self.upnp = upnp;
+    }
+
+    pub fn relay_server(&mut self, enabled: bool) {
+        self.relay_server = enabled;
     }
 
     /// Creates a new `SwarmDriver` instance, along with a `Network` handle
@@ -334,6 +340,7 @@ impl NetworkBuilder {
         let listen_addr = self.listen_addr;
         #[cfg(feature = "upnp")]
         let upnp = self.upnp;
+        let relay_server = self.relay_server;
 
         let (network, events_receiver, mut swarm_driver) = self.build(
             kad_cfg,
@@ -343,6 +350,7 @@ impl NetworkBuilder {
             IDENTIFY_NODE_VERSION_STR.to_string(),
             #[cfg(feature = "upnp")]
             upnp,
+            relay_server,
         )?;
 
         // Listen on the provided address
@@ -396,12 +404,14 @@ impl NetworkBuilder {
             IDENTIFY_CLIENT_VERSION_STR.to_string(),
             #[cfg(feature = "upnp")]
             false,
+            false,
         )?;
 
         Ok((network, net_event_recv, driver))
     }
 
     /// Private helper to create the network components with the provided config and req/res behaviour
+    #[allow(clippy::too_many_arguments)]
     fn build(
         self,
         kad_cfg: kad::Config,
@@ -410,6 +420,7 @@ impl NetworkBuilder {
         req_res_protocol: ProtocolSupport,
         identify_version: String,
         #[cfg(feature = "upnp")] upnp: bool,
+        relay_server: bool,
     ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
@@ -543,15 +554,20 @@ impl NetworkBuilder {
             })
             .boxed();
 
-        let relay_server = {
+        let relay_server = if relay_server {
+            debug!("Enabling relay server behavior");
             let relay_server_cfg = relay::Config {
                 max_reservations: 1024,      // the number of home nodes that we can support
                 max_circuits: 32_000, // total max number of relayed connections we can support
                 max_circuits_per_peer: 1024, // max number of relayed connections per peer
                 ..Default::default()
             };
-            libp2p::relay::Behaviour::new(peer_id, relay_server_cfg)
-        };
+            Some(libp2p::relay::Behaviour::new(peer_id, relay_server_cfg))
+        } else {
+            debug!("Disabling relay server behavior");
+            None
+        }
+        .into();
 
         let behaviour = NodeBehaviour {
             relay_client: relay_behaviour,

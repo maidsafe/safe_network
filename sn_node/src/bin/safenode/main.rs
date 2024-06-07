@@ -79,6 +79,10 @@ struct Opt {
     #[clap(long, default_value_t = false)]
     upnp: bool,
 
+    /// Disable relay server functionality. Peers wil not be able to use this server as a relay.
+    #[clap(long, default_value_t = false)]
+    no_relay_server: bool,
+
     /// Specify the logging output destination.
     ///
     /// Valid values are "stdout", "data-dir", or a custom path.
@@ -220,6 +224,7 @@ fn main() -> Result<()> {
             opt.owner.clone(),
             #[cfg(feature = "upnp")]
             opt.upnp,
+            !opt.no_relay_server,
         );
         node_builder.is_behind_home_network = opt.home_network;
         #[cfg(feature = "open-metrics")]

@@ -83,10 +83,12 @@ pub struct NodeBuilder {
     owner: Option<String>,
     #[cfg(feature = "upnp")]
     upnp: bool,
+    relay_server: bool,
 }
 
 impl NodeBuilder {
     /// Instantiate the builder
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         keypair: Keypair,
         addr: SocketAddr,
@@ -95,6 +97,7 @@ impl NodeBuilder {
         root_dir: PathBuf,
         owner: Option<String>,
         #[cfg(feature = "upnp")] upnp: bool,
+        relay_server: bool,
     ) -> Self {
         Self {
             keypair,
@@ -108,6 +111,7 @@ impl NodeBuilder {
             owner,
             #[cfg(feature = "upnp")]
             upnp,
+            relay_server,
         }
     }
 
@@ -162,9 +166,9 @@ impl NodeBuilder {
         network_builder.metrics_server_port(self.metrics_server_port);
         network_builder.initial_peers(self.initial_peers.clone());
         network_builder.is_behind_home_network(self.is_behind_home_network);
-
         #[cfg(feature = "upnp")]
         network_builder.upnp(self.upnp);
+        network_builder.relay_server(self.relay_server);
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
