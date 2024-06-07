@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717722394781,
+  "lastUpdate": 1717798418114,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "2525b3f7267ad8142de40e2bd6dd6b49dc1597b9",
-          "message": "chore: fix logging logic",
-          "timestamp": "2024-03-11T01:15:29Z",
-          "tree_id": "4abcefa65bce70572347d96f4dd118a0f54014b5",
-          "url": "https://github.com/maidsafe/safe_network/commit/2525b3f7267ad8142de40e2bd6dd6b49dc1597b9"
-        },
-        "date": 1710122091606,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.296826618604453,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.83741646044926,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.65595160076887,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.90665531934426,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "12b0e690835e647817b2317f182659135320f40c",
+          "message": "fix(release): cross should use the passed in keys",
+          "timestamp": "2024-06-08T07:01:47+09:00",
+          "tree_id": "323dc9b778a6c045a3a9bd78d31f3d90ca5d0e49",
+          "url": "https://github.com/maidsafe/safe_network/commit/12b0e690835e647817b2317f182659135320f40c"
+        },
+        "date": 1717798412763,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.271423739447129,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6921788319198932,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.91314275886158,
             "unit": "MiB/s"
           }
         ]
