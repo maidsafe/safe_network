@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717806522378,
+  "lastUpdate": 1717806524035,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fb309bf4977623196660261ccaf637e0993e05a3",
-          "message": "chore(api): make logging::Error public\n\nit's public in other crates, it makes error handling easier.",
-          "timestamp": "2024-03-11T01:15:43Z",
-          "tree_id": "0ceb828a58c2550e6b445b934f094cdc884f6c02",
-          "url": "https://github.com/maidsafe/safe_network/commit/fb309bf4977623196660261ccaf637e0993e05a3"
-        },
-        "date": 1710122386838,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5976,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34765,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33970,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "60422736e68c4f618cd2f056f7aaa43e459c55a8",
+          "message": "fix(uploader): fix for mismatched ordering of instructions",
+          "timestamp": "2024-06-08T09:13:59+09:00",
+          "tree_id": "e96a511a8b4a51e023050e9c76c2100e25a64bdf",
+          "url": "https://github.com/maidsafe/safe_network/commit/60422736e68c4f618cd2f056f7aaa43e459c55a8"
+        },
+        "date": 1717806523697,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7515,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34432,
             "unit": "ms"
           },
           {
