@@ -14,7 +14,9 @@ use color_eyre::eyre::{bail, eyre, Result};
 use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use sn_client::transfers::{Hash, NanoTokens, SignedSpend, SpendAddress};
+use sn_client::transfers::{
+    Hash, NanoTokens, SignedSpend, SpendAddress, DEFAULT_PAYMENT_FORWARD_SK,
+};
 use sn_client::{Client, SpendDag, SpendDagGet};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
@@ -356,8 +358,24 @@ impl SpendDagDb {
                 .or_default()
                 .insert((addr, amount));
         } else {
+            // check with default key
+            if let Some(default_user_name_hash) =
+                spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
+            {
+                if let Some(user_name) = beta_participants_read.get(&default_user_name_hash) {
+                    warn!("With default key, got forwarded reward {amount} from {user_name} of {amount} at {addr:?}");
+                    println!("With default key, got forwarded reward {amount} from {user_name} of {amount} at {addr:?}");
+                    beta_tracking
+                        .forwarded_payments
+                        .entry(user_name.to_owned())
+                        .or_default()
+                        .insert((addr, amount));
+                    return;
+                }
+            }
+
             warn!("Found a forwarded reward {amount} for an unknown participant at {addr:?}: {user_name_hash:?}");
-            eprintln!("Found a forwarded reward {amount} for an unknown participant at {addr:?}: {user_name_hash:?}");
+            println!("Found a forwarded reward {amount} for an unknown participant at {addr:?}: {user_name_hash:?}");
             beta_tracking
                 .forwarded_payments
                 .entry(format!("unknown participant: {user_name_hash:?}"))

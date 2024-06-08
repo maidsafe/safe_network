@@ -37,6 +37,7 @@ pub use wallet::{
     QUOTE_EXPIRATION_SECS, WALLET_DIR_NAME,
 };
 
+use bls::SecretKey;
 use lazy_static::lazy_static;
 
 /// The following PKs shall be updated to match its correspondent SKs before the formal release
@@ -47,6 +48,9 @@ const DEFAULT_FOUNDATION_PK_STR: &str = "8f73b97377f30bed96df1c92daf9f21b4a82c86
 const DEFAULT_NETWORK_ROYALTIES_STR: &str = "b4243ec9ceaec374ef992684cd911b209758c5de53d1e406b395bc37ebc8ce50e68755ea6d32da480ae927e1af4ddadb"; // DevSkim: ignore DS173237
 /// Public key where payment forward to be targeted.
 const DEFAULT_PAYMENT_FORWARD_STR: &str = "a585839f0502713a0ed6a327f3bd0c301f9e8fe298c93dd00ed7869d8e6804244f0d3014e90df45cd344a7ccd702865c"; // DevSkim: ignore DS173237
+/// Default secrect key where payment forward to be targeted, for backward compatible purpose only.
+const DEFAULT_PAYMENT_FORWARD_SK_STR: &str =
+    "49113d2083f57a976076adbe85decb75115820de1e6e74b47e0429338cef124a"; // DevSkim: ignore DS173237
 
 lazy_static! {
     pub static ref FOUNDATION_PK: MainPubkey = {
@@ -124,6 +128,12 @@ lazy_static! {
         match MainPubkey::from_hex(&runtime_key) {
             Ok(pk) => pk,
             Err(err) => panic!("Failed to parse payment forward PK: {err:?}"),
+        }
+    };
+    pub static ref DEFAULT_PAYMENT_FORWARD_SK: SecretKey = {
+        match SecretKey::from_hex(DEFAULT_PAYMENT_FORWARD_SK_STR) {
+            Ok(sk) => sk,
+            Err(err) => panic!("Failed to parse default payment forward SK: {err:?}"),
         }
     };
 }
