@@ -13,8 +13,8 @@ use libp2p::{
 use rand::Rng;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
-const MAX_CONCURRENT_RELAY_CONNECTIONS: usize = 3;
-const MAX_POTENTIAL_CANDIDATES: usize = 15;
+const MAX_CONCURRENT_RELAY_CONNECTIONS: usize = 2;
+const MAX_POTENTIAL_CANDIDATES: usize = 1000;
 
 pub(crate) fn is_a_relayed_peer(addrs: &HashSet<Multiaddr>) -> bool {
     addrs

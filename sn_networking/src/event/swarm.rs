@@ -167,8 +167,13 @@ impl SwarmDriver {
 
                         let has_relayed = is_a_relayed_peer(&addrs);
 
+                        let is_bootstrap_peer = self
+                            .bootstrap_peers
+                            .iter()
+                            .any(|(_ilog2, peers)| peers.contains(&peer_id));
+
                         // Do not use an `already relayed` peer as `potential relay candidate`.
-                        if !has_relayed {
+                        if !has_relayed && !is_bootstrap_peer {
                             self.relay_manager.add_potential_candidates(
                                 &peer_id,
                                 &addrs,
