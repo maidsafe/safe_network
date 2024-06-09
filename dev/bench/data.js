@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717968528101,
+  "lastUpdate": 1717968649479,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "48429a5f6ea4cdd07ba355ab8aa675b60ea3a50c",
-          "message": "refactor(service): make the add node naming more explicit",
-          "timestamp": "2024-03-11T05:56:56Z",
-          "tree_id": "5c373d816ff7401aa8a7b1e2e58e53d2084eac92",
-          "url": "https://github.com/maidsafe/safe_network/commit/48429a5f6ea4cdd07ba355ab8aa675b60ea3a50c"
-        },
-        "date": 1710139471201,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f5475dfbe47541339e2be80a0c52d115ae211cd7",
+          "message": "feat(networking): dont add bootstrap ndoes as relay candidates\n\nIncrease the potential pool of candidates",
+          "timestamp": "2024-06-10T06:10:02+09:00",
+          "tree_id": "d041769007b47ac7a3654d9cb4d30616be027d84",
+          "url": "https://github.com/maidsafe/safe_network/commit/f5475dfbe47541339e2be80a0c52d115ae211cd7"
+        },
+        "date": 1717968648646,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 105,
             "unit": "MB"
           }
         ]
