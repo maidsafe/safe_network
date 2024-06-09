@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717806524035,
+  "lastUpdate": 1717968528101,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "48429a5f6ea4cdd07ba355ab8aa675b60ea3a50c",
-          "message": "refactor(service): make the add node naming more explicit",
-          "timestamp": "2024-03-11T05:56:56Z",
-          "tree_id": "5c373d816ff7401aa8a7b1e2e58e53d2084eac92",
-          "url": "https://github.com/maidsafe/safe_network/commit/48429a5f6ea4cdd07ba355ab8aa675b60ea3a50c"
-        },
-        "date": 1710139364293,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.303373074449162,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8492813782698017,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.85756823088565,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.476139086408075,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "f5475dfbe47541339e2be80a0c52d115ae211cd7",
+          "message": "feat(networking): dont add bootstrap ndoes as relay candidates\n\nIncrease the potential pool of candidates",
+          "timestamp": "2024-06-10T06:10:02+09:00",
+          "tree_id": "d041769007b47ac7a3654d9cb4d30616be027d84",
+          "url": "https://github.com/maidsafe/safe_network/commit/f5475dfbe47541339e2be80a0c52d115ae211cd7"
+        },
+        "date": 1717968522112,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2291251125521003,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6458100213178044,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.92254447106584,
             "unit": "MiB/s"
           }
         ]
