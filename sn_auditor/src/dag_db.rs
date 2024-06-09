@@ -226,12 +226,33 @@ impl SpendDagDb {
         // beta rewards processing
         let self_clone = self.clone();
         let spend_processing = if let Some(sk) = self.encryption_sk.clone() {
-            let (tx, mut rx) = tokio::sync::mpsc::channel(SPENDS_PROCESSING_BUFFER_SIZE);
+            let (tx, mut rx) = tokio::sync::mpsc::channel::<(SignedSpend, u64, bool)>(SPENDS_PROCESSING_BUFFER_SIZE);
             tokio::spawn(async move {
-                while let Some((spend, utxos_for_further_track)) = rx.recv().await {
-                    self_clone
-                        .beta_background_process_spend(spend, &sk, utxos_for_further_track)
-                        .await;
+                let mut double_spends = BTreeSet::new();
+
+                while let Some((spend, utxos_for_further_track, is_double_spend)) = rx.recv().await
+                {
+                    if is_double_spend {
+                        self_clone
+                            .beta_background_process_double_spend(
+                                spend.clone(),
+                                &sk,
+                                utxos_for_further_track,
+                            )
+                            .await;
+
+                        // For double_spend, only credit the owner first time
+                        // The performance track only count the received spend & utxos once.
+                        if double_spends.insert(spend.address()) {
+                            self_clone
+                                .beta_background_process_spend(spend, &sk, utxos_for_further_track)
+                                .await;
+                        }
+                    } else {
+                        self_clone
+                            .beta_background_process_spend(spend, &sk, utxos_for_further_track)
+                            .await;
+                    }
                 }
             });
             Some(tx)
@@ -295,7 +316,7 @@ impl SpendDagDb {
     async fn crawl_and_generate_local_dag(
         &self,
         from: BTreeSet<SpendAddress>,
-        spend_processing: Option<Sender<(SignedSpend, u64)>>,
+        spend_processing: Option<Sender<(SignedSpend, u64, bool)>>,
         client: Client,
     ) -> BTreeSet<SpendAddress> {
         // get a copy of the current DAG
@@ -383,6 +404,41 @@ impl SpendDagDb {
                 .entry(format!("unknown participant: {user_name_hash:?}"))
                 .or_default()
                 .insert((addr, amount));
+        }
+    }
+
+    async fn beta_background_process_double_spend(
+        &self,
+        spend: SignedSpend,
+        sk: &SecretKey,
+        _utxos_for_further_track: u64,
+    ) {
+        let user_name_hash = match spend.reason().get_sender_hash(sk) {
+            Some(n) => n,
+            None => {
+                return;
+            }
+        };
+
+        let addr = spend.address();
+
+        let beta_participants_read = self.beta_participants.read().await;
+
+        if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
+            println!("Found double spend from {user_name} at {addr:?}");
+        } else {
+            if let Some(default_user_name_hash) =
+                spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
+            {
+                if let Some(user_name) = beta_participants_read.get(&default_user_name_hash) {
+                    println!("Found double spend from {user_name} at {addr:?} using default key");
+                    return;
+                }
+            }
+
+            println!(
+                "Found double spend from an unknown participant {user_name_hash:?} at {addr:?}"
+            );
         }
     }
 

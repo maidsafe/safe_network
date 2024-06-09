@@ -66,7 +66,7 @@ impl Client {
     pub async fn spend_dag_build_from(
         &self,
         spend_addr: SpendAddress,
-        spend_processing: Option<Sender<(SignedSpend, u64)>>,
+        spend_processing: Option<Sender<(SignedSpend, u64, bool)>>,
         verify: bool,
     ) -> WalletResult<SpendDag> {
         let (tx, mut rx) = tokio::sync::mpsc::channel(SPENDS_PROCESSING_BUFFER_SIZE);
@@ -93,7 +93,7 @@ impl Client {
                     if let Some(sender) = &spend_processing {
                         let outputs = spend.spend.spent_tx.outputs.len() as u64;
                         sender
-                            .send((spend, outputs))
+                            .send((spend, outputs, false))
                             .await
                             .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
                     }
@@ -139,7 +139,7 @@ impl Client {
     pub async fn crawl_to_next_utxos(
         &self,
         addrs_to_get: &mut BTreeSet<SpendAddress>,
-        sender: Sender<(SignedSpend, u64)>,
+        sender: Sender<(SignedSpend, u64, bool)>,
         reattempt_interval: Duration,
     ) -> WalletResult<BTreeMap<SpendAddress, Instant>> {
         let mut failed_utxos = BTreeMap::new();
@@ -159,13 +159,29 @@ impl Client {
                     InternalGetNetworkSpend::Spend(spend) => {
                         let for_further_track = beta_track_analyze_spend(&spend);
                         let _ = sender
-                            .send((*spend, for_further_track.len() as u64))
+                            .send((*spend, for_further_track.len() as u64, false))
                             .await
                             .map_err(|e| WalletError::SpendProcessing(e.to_string()));
                         addrs_to_get.extend(for_further_track);
                     }
-                    InternalGetNetworkSpend::DoubleSpend(_spends) => {
-                        warn!("Detected double spend regarding {address:?}");
+                    InternalGetNetworkSpend::DoubleSpend(spends) => {
+                        warn!(
+                            "Detected double spend regarding {address:?} - {:?}",
+                            spends.len()
+                        );
+                        for (i, spend) in spends.iter().enumerate() {
+                            warn!("double spend entry {i} reason {:?}, amount {}, inputs: {}, outputs: {}, royties: {}, {:?} - {:?}",
+                                spend.spend.reason, spend.spend.amount, spend.spend.spent_tx.inputs.len(), spend.spend.spent_tx.outputs.len(),
+                                spend.spend.network_royalties.len(), spend.spend.spent_tx.inputs, spend.spend.spent_tx.outputs);
+
+                            let for_further_track = beta_track_analyze_spend(spend);
+                            addrs_to_get.extend(for_further_track);
+
+                            let _ = sender
+                                .send((spend.clone(), 0, true))
+                                .await
+                                .map_err(|e| WalletError::SpendProcessing(e.to_string()));
+                        }
                     }
                     InternalGetNetworkSpend::NotFound => {
                         let _ = failed_utxos.insert(address, Instant::now() + reattempt_interval);
@@ -446,7 +462,7 @@ impl Client {
         &self,
         dag: &mut SpendDag,
         utxos: BTreeSet<SpendAddress>,
-        spend_processing: Option<Sender<(SignedSpend, u64)>>,
+        spend_processing: Option<Sender<(SignedSpend, u64, bool)>>,
         verify: bool,
     ) {
         let main_dag_src = dag.source();
@@ -482,7 +498,7 @@ impl Client {
     pub async fn spend_dag_continue_from_utxos(
         &self,
         dag: &mut SpendDag,
-        spend_processing: Option<Sender<(SignedSpend, u64)>>,
+        spend_processing: Option<Sender<(SignedSpend, u64, bool)>>,
         verify: bool,
     ) {
         let utxos = dag.get_utxos();
