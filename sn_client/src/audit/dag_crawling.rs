@@ -14,8 +14,11 @@ use sn_transfers::{
     SignedSpend, SpendAddress, SpendReason, WalletError, WalletResult, GENESIS_SPEND_UNIQUE_KEY,
     NETWORK_ROYALTIES_PK,
 };
-use std::collections::BTreeSet;
-use tokio::sync::mpsc::Sender;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    time::{Duration, Instant},
+};
+use tokio::{sync::mpsc::Sender, task::JoinSet};
 
 const SPENDS_PROCESSING_BUFFER_SIZE: usize = 4096;
 
@@ -129,51 +132,51 @@ impl Client {
         Ok(dag)
     }
 
-    /// Get spends for a set of given SpendAddresses
-    /// Notifies the UTXOs that need to be further tracked down.
-    /// returns: (addresses_for_reattempt, new_utxos_for_furthertracking)
+    /// Get spends from a set of given SpendAddresses
+    /// Recursivly fetching till reached frontline of the DAG tree.
+    /// Return with UTXOs for re-attempt (with insertion time stamp)
     pub async fn crawl_to_next_utxos(
         &self,
-        from: &BTreeSet<SpendAddress>,
-        spend_processing: Sender<(SignedSpend, u64)>,
-    ) -> WalletResult<(BTreeSet<SpendAddress>, BTreeSet<SpendAddress>)> {
-        let spends = join_all(from.iter().map(|&address| {
-            let client_clone = self.clone();
-            async move { (client_clone.crawl_spend(address).await, address) }
-        }))
-        .await;
+        addrs_to_get: &mut BTreeSet<SpendAddress>,
+        sender: Sender<(SignedSpend, u64)>,
+        reattempt_interval: Duration,
+    ) -> WalletResult<BTreeMap<SpendAddress, Instant>> {
+        let mut failed_utxos = BTreeMap::new();
+        let mut tasks = JoinSet::new();
 
-        let mut failed_utxos = BTreeSet::new();
-        let mut new_utxos = BTreeSet::new();
-
-        for (result, address) in spends {
-            let spend = match result {
-                InternalGetNetworkSpend::Spend(s) => *s,
-                InternalGetNetworkSpend::DoubleSpend(_s1, _s2) => {
-                    warn!("Detected double spend regarding {address:?}");
-                    continue;
+        while !addrs_to_get.is_empty() || !tasks.is_empty() {
+            while tasks.len() < 32 && !addrs_to_get.is_empty() {
+                if let Some(addr) = addrs_to_get.pop_first() {
+                    let client_clone = self.clone();
+                    let _ =
+                        tasks.spawn(async move { (client_clone.crawl_spend(addr).await, addr) });
                 }
-                InternalGetNetworkSpend::NotFound => {
-                    let _ = failed_utxos.insert(address);
-                    continue;
+            }
+
+            if let Some(Ok((result, address))) = tasks.join_next().await {
+                match result {
+                    InternalGetNetworkSpend::Spend(spend) => {
+                        let for_further_track = beta_track_analyze_spend(&spend);
+                        let _ = sender
+                            .send((*spend, for_further_track.len() as u64))
+                            .await
+                            .map_err(|e| WalletError::SpendProcessing(e.to_string()));
+                        addrs_to_get.extend(for_further_track);
+                    }
+                    InternalGetNetworkSpend::DoubleSpend(_s1, _s2) => {
+                        warn!("Detected double spend regarding {address:?}");
+                    }
+                    InternalGetNetworkSpend::NotFound => {
+                        let _ = failed_utxos.insert(address, Instant::now() + reattempt_interval);
+                    }
+                    InternalGetNetworkSpend::Error(e) => {
+                        warn!("Got a fetching error {e:?}");
+                    }
                 }
-                InternalGetNetworkSpend::Error(e) => {
-                    warn!("Got a fetching error {e:?}");
-                    continue;
-                }
-            };
-
-            let for_further_track = beta_track_analyze_spend(&spend);
-
-            spend_processing
-                .send((spend, for_further_track.len() as u64))
-                .await
-                .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
-
-            new_utxos.extend(for_further_track);
+            }
         }
 
-        Ok((failed_utxos, new_utxos))
+        Ok(failed_utxos)
     }
 
     /// Crawls the Spend Dag from a given SpendAddress recursively

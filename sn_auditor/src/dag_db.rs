@@ -34,7 +34,7 @@ lazy_static! {
     /// time in seconds UTXOs are refetched in DAG crawl
     static ref UTXO_REATTEMPT_INTERVAL: Duration = Duration::from_secs(
         std::env::var("UTXO_REATTEMPT_INTERVAL")
-            .unwrap_or("3600".to_string())
+            .unwrap_or("1800".to_string())
             .parse::<u64>()
             .unwrap_or(300)
     );
@@ -237,17 +237,14 @@ impl SpendDagDb {
         let mut addrs_to_get = BTreeSet::new();
 
         loop {
-            // get current utxos to fetch
+            // `addrs_to_get` is always empty when reaching this point
+            // get expired utxos for the further fetch
+            let utxos_to_fetch;
             let now = Instant::now();
-
-            // Always track new outputs first
-            if addrs_to_get.is_empty() {
-                let utxos_to_fetch;
-                (utxo_addresses, utxos_to_fetch) = utxo_addresses
-                    .into_iter()
-                    .partition(|(_address, time_stamp)| *time_stamp > now);
-                addrs_to_get.extend(utxos_to_fetch.keys().cloned().collect::<BTreeSet<_>>());
-            }
+            (utxo_addresses, utxos_to_fetch) = utxo_addresses
+                .into_iter()
+                .partition(|(_address, time_stamp)| *time_stamp > now);
+            addrs_to_get.extend(utxos_to_fetch.keys().cloned().collect::<BTreeSet<_>>());
 
             if addrs_to_get.is_empty() {
                 debug!(
@@ -273,15 +270,16 @@ impl SpendDagDb {
                         .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
                 );
             } else if let Some(sender) = spend_processing.clone() {
-                let (reattempt_addrs, new_utxos) =
-                    client.crawl_to_next_utxos(&addrs_to_get, sender).await?;
-                utxo_addresses.extend(
-                    reattempt_addrs
-                        .into_iter()
-                        .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
-                );
-                addrs_to_get.clear();
-                addrs_to_get.extend(new_utxos);
+                if let Ok(reattempt_addrs) = client
+                    .crawl_to_next_utxos(
+                        &mut addrs_to_get,
+                        sender.clone(),
+                        *UTXO_REATTEMPT_INTERVAL,
+                    )
+                    .await
+                {
+                    utxo_addresses.extend(reattempt_addrs);
+                }
             } else {
                 panic!("There is no point in running the auditor if we are not collecting the DAG or collecting data through crawling. Please enable the `dag-collection` feature or provide beta program related arguments.");
             };
