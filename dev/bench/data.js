@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718043643626,
+  "lastUpdate": 1718043645468,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "63b88778c3191efbb56229063243366c941bf5f9",
-          "message": "ci: fix windows linker issues when running unit tests amongst e2e",
-          "timestamp": "2024-03-13T03:35:48+01:00",
-          "tree_id": "d6adb328ccb3c3b42df5b5dd3fee3a7703afcd14",
-          "url": "https://github.com/maidsafe/safe_network/commit/63b88778c3191efbb56229063243366c941bf5f9"
-        },
-        "date": 1710298187749,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 204,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "a00d2537d9b7453fa4410a069a4d03d0f8969b3b",
           "message": "ci: remove release schedule for now",
           "timestamp": "2024-03-13T03:37:01+01:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "a338f012ed375035839af8e38a249f07043c48a0",
+          "message": "chore: remove some useless logs",
+          "timestamp": "2024-06-10T17:14:56Z",
+          "tree_id": "dbf8d91f6bafa0ebe72bc832738e5e874e5738d4",
+          "url": "https://github.com/maidsafe/safe_network/commit/a338f012ed375035839af8e38a249f07043c48a0"
+        },
+        "date": 1718043644850,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 190,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
