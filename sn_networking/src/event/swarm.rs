@@ -569,6 +569,16 @@ impl SwarmDriver {
                             if port == our_port {
                                 info!(%address, "external address: new candidate has the same configured port, adding it.");
                                 self.swarm.add_external_address(address);
+
+                                if tracing::level_enabled!(tracing::Level::TRACE) {
+                                    let all_external_addresses =
+                                        self.swarm.external_addresses().collect_vec();
+                                    let all_listeners = self.swarm.listeners().collect_vec();
+                                    trace!("All our listeners: {all_listeners:?}");
+                                    trace!(
+                                        "All our external addresses: {all_external_addresses:?}"
+                                    );
+                                }
                             } else {
                                 info!(%address, %our_port, "external address: new candidate has a different port, not adding it.");
                             }
@@ -577,10 +587,6 @@ impl SwarmDriver {
                         trace!("external address: listen port not set. This has to be set if you're running a node");
                     }
                 }
-                let all_external_addresses = self.swarm.external_addresses().collect_vec();
-                let all_listeners = self.swarm.listeners().collect_vec();
-                trace!("All our listeners: {all_listeners:?}");
-                trace!("All our external addresses: {all_external_addresses:?}");
             }
             SwarmEvent::ExternalAddrConfirmed { address } => {
                 event_string = "ExternalAddrConfirmed";
@@ -677,7 +683,6 @@ impl SwarmDriver {
                 shall_removed.len(),
                 self.live_connected_peers.len()
             );
-            trace!(?self.relay_manager);
 
             for (connection_id, peer_id) in shall_removed {
                 let _ = self.live_connected_peers.remove(&connection_id);

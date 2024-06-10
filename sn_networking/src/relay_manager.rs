@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::driver::{BadNodes, NodeBehaviour};
+use itertools::Itertools;
 use libp2p::{
     core::transport::ListenerId, multiaddr::Protocol, Multiaddr, PeerId, StreamProtocol, Swarm,
 };
@@ -205,6 +206,13 @@ impl RelayManager {
         peer_id: &PeerId,
         swarm: &mut Swarm<NodeBehaviour>,
     ) {
+        if tracing::level_enabled!(tracing::Level::TRACE) {
+            let all_external_addresses = swarm.external_addresses().collect_vec();
+            let all_listeners = swarm.listeners().collect_vec();
+            trace!("All our listeners: {all_listeners:?}");
+            trace!("All our external addresses: {all_external_addresses:?}");
+        }
+
         match self.waiting_for_reservation.remove(peer_id) {
             Some(addr) => {
                 info!("Successfully made reservation with {peer_id:?} on {addr:?}. Adding the addr to external address.");
