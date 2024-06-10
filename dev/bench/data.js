@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718027636711,
+  "lastUpdate": 1718029364758,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "952f1b1bd6f05bbe9529580850a56bd6a572b0f5",
-          "message": "fix(test): use unqiue dir during test",
-          "timestamp": "2024-03-12T13:36:14Z",
-          "tree_id": "e9ee1d081c740c906811e2e00d126feff87cf401",
-          "url": "https://github.com/maidsafe/safe_network/commit/952f1b1bd6f05bbe9529580850a56bd6a572b0f5"
-        },
-        "date": 1710254403893,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2914469269209312,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8413561188882126,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.45328800899262,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.90695952038038,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "5d672023aa29c320778b6f793cc5b6046ee5ac93",
+          "message": "fix(manager): store node port inside during start",
+          "timestamp": "2024-06-10T13:38:33Z",
+          "tree_id": "072c6ebfe0097d9bf0074312b237c917b0dda9c1",
+          "url": "https://github.com/maidsafe/safe_network/commit/5d672023aa29c320778b6f793cc5b6046ee5ac93"
+        },
+        "date": 1718029358489,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2840333558596548,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7343404238049105,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.42193807800307,
             "unit": "MiB/s"
           }
         ]
