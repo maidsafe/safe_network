@@ -77,7 +77,7 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             args.push(OsString::from(node_port.to_string()));
         }
         if let Some(metrics_port) = self.service_data.metrics_port {
-            args.push(OsString::from("--metrics-port"));
+            args.push(OsString::from("--metrics-server-port"));
             args.push(OsString::from(metrics_port.to_string()));
         }
 
