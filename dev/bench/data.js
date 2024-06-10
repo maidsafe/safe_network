@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1717969492221,
+  "lastUpdate": 1718026211936,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": true,
-          "id": "b5db038120cccbfce81cdc7129808bdfcee14f92",
-          "message": "refactor(cli): chunk-mgr to report files chunked/uploaded rather than bailing out",
-          "timestamp": "2024-03-11T14:28:37Z",
-          "tree_id": "6ed0ae0257a1f77faec2badc9f3959ff5d1e0597",
-          "url": "https://github.com/maidsafe/safe_network/commit/b5db038120cccbfce81cdc7129808bdfcee14f92"
-        },
-        "date": 1710170153084,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2696423546914177,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8455060875770237,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.4145650448753,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.796794780825245,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "994c66e8de31729bbd230a2859cfdc1002183f10",
+          "message": "fix(manager): use the correct metrics port argument name",
+          "timestamp": "2024-06-10T12:39:17Z",
+          "tree_id": "e1a07a4a1229ea42a55450b98403122440951992",
+          "url": "https://github.com/maidsafe/safe_network/commit/994c66e8de31729bbd230a2859cfdc1002183f10"
+        },
+        "date": 1718026206346,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2746516112751773,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.694786007213661,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.04669260454733,
             "unit": "MiB/s"
           }
         ]
