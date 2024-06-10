@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718050711028,
+  "lastUpdate": 1718050712885,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a00d2537d9b7453fa4410a069a4d03d0f8969b3b",
-          "message": "ci: remove release schedule for now",
-          "timestamp": "2024-03-13T03:37:01+01:00",
-          "tree_id": "8f0b20430725903ff18d87854819084d3e8b5c09",
-          "url": "https://github.com/maidsafe/safe_network/commit/a00d2537d9b7453fa4410a069a4d03d0f8969b3b"
-        },
-        "date": 1710298205925,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 199,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "84156b3340dc65e015f1f1b0217713eaca3be7e3",
+          "message": "feat(auditor): recognize payment forwards with default key",
+          "timestamp": "2024-06-10T19:26:00Z",
+          "tree_id": "34258f2a9c7a38fe2541fe16976172a33f8a6afc",
+          "url": "https://github.com/maidsafe/safe_network/commit/84156b3340dc65e015f1f1b0217713eaca3be7e3"
+        },
+        "date": 1718050712235,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 202,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 88,
             "unit": "MB"
           }
         ]
