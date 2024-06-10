@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718039933932,
+  "lastUpdate": 1718043517085,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "63b88778c3191efbb56229063243366c941bf5f9",
-          "message": "ci: fix windows linker issues when running unit tests amongst e2e",
-          "timestamp": "2024-03-13T03:35:48+01:00",
-          "tree_id": "d6adb328ccb3c3b42df5b5dd3fee3a7703afcd14",
-          "url": "https://github.com/maidsafe/safe_network/commit/63b88778c3191efbb56229063243366c941bf5f9"
-        },
-        "date": 1710298078945,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3092075520094082,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8518665822673768,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.617946544421095,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.02732729149163,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "a338f012ed375035839af8e38a249f07043c48a0",
+          "message": "chore: remove some useless logs",
+          "timestamp": "2024-06-10T17:14:56Z",
+          "tree_id": "dbf8d91f6bafa0ebe72bc832738e5e874e5738d4",
+          "url": "https://github.com/maidsafe/safe_network/commit/a338f012ed375035839af8e38a249f07043c48a0"
+        },
+        "date": 1718043511310,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2570024642327844,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.640768846504726,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.87627385798042,
             "unit": "MiB/s"
           }
         ]
