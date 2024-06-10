@@ -90,9 +90,17 @@ async fn upload_initial_data(client: &Client, root_dir: &Path) -> Result<()> {
 
     let reqwest_client = ReqwestClient::new();
 
-    let mut uploaded_books = vec![];
+    let mut uploaded_books: Vec<(String, String)> = if uploaded_books_file.exists() {
+        let file = File::open(&uploaded_books_file)?;
+        serde_json::from_reader(file)?
+    } else {
+        vec![]
+    };
 
-    for book_id in 1..u16::MAX as u32 {
+    println!("Previous upload state restored");
+    info!("Previous upload state restored");
+
+    for book_id in state.max_seen()..u16::MAX as u32 {
         if state.has_seen(book_id) {
             println!("Already seen book ID: {book_id}");
             info!("Already seen book ID: {book_id}");
@@ -106,11 +114,18 @@ async fn upload_initial_data(client: &Client, root_dir: &Path) -> Result<()> {
 
                 let fname = format!("{book_id}.book");
                 let fpath = temp_dir.join(fname.clone());
-                let mut dest = fs::File::create(fpath.clone()).await?;
-                dest.write_all(&data).await?;
 
-                state.mark_seen(book_id);
-                state.save_to_file(&state_file)?;
+                match mark_download_progress(book_id, &fpath, data, &mut state, &state_file).await {
+                    Ok(_) => {
+                        println!("Marked download progress book ID: {book_id} completed");
+                        info!("Marked download progress book ID: {book_id} completed");
+                    }
+                    Err(err) => {
+                        println!("When marking download progress book ID: {book_id}, encountered error {err:?}");
+                        error!("When marking download progress book ID: {book_id}, encountered error {err:?}");
+                        continue;
+                    }
+                }
 
                 match upload_downloaded_book(client, root_dir, fpath).await {
                     Ok(head_addresses) => {
@@ -120,8 +135,18 @@ async fn upload_initial_data(client: &Client, root_dir: &Path) -> Result<()> {
                         // There shall be just one
                         for head_address in head_addresses {
                             uploaded_books.push((fname.clone(), head_address.to_hex()));
-                            let file = File::create(uploaded_books_file.clone())?;
-                            serde_json::to_writer(file, &uploaded_books)?;
+
+                            match mark_upload_progress(&uploaded_books_file, &uploaded_books) {
+                                Ok(_) => {
+                                    println!("Marked upload progress book ID: {book_id} completed");
+                                    info!("Marked upload progress book ID: {book_id} completed");
+                                }
+                                Err(err) => {
+                                    println!("When marking upload progress book ID: {book_id}, encountered error {err:?}");
+                                    error!("When marking upload progress book ID: {book_id}, encountered error {err:?}");
+                                    continue;
+                                }
+                            }
                         }
                     }
                     Err(err) => {
@@ -139,6 +164,29 @@ async fn upload_initial_data(client: &Client, root_dir: &Path) -> Result<()> {
         }
     }
 
+    Ok(())
+}
+
+#[cfg(feature = "initial-data")]
+async fn mark_download_progress(
+    book_id: u32,
+    fpath: &Path,
+    data: Vec<u8>,
+    state: &mut State,
+    state_file: &Path,
+) -> Result<()> {
+    let mut dest = fs::File::create(fpath).await?;
+    dest.write_all(&data).await?;
+
+    state.mark_seen(book_id);
+    state.save_to_file(state_file)?;
+    Ok(())
+}
+
+#[cfg(feature = "initial-data")]
+fn mark_upload_progress(fpath: &Path, uploaded_books: &Vec<(String, String)>) -> Result<()> {
+    let file = File::create(fpath)?;
+    serde_json::to_writer(file, &uploaded_books)?;
     Ok(())
 }
 

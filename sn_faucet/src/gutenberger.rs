@@ -46,7 +46,18 @@ impl State {
     }
 
     pub(crate) fn has_seen(&self, book_id: u32) -> bool {
+        if book_id == 0 && self.seen_books.is_empty() {
+            return true;
+        }
         self.seen_books.contains(&book_id)
+    }
+
+    pub(crate) fn max_seen(&self) -> u32 {
+        if let Some(result) = self.seen_books.iter().max() {
+            *result
+        } else {
+            0
+        }
     }
 }
 
