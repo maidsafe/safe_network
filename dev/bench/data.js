@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718043647505,
+  "lastUpdate": 1718050590988,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "a00d2537d9b7453fa4410a069a4d03d0f8969b3b",
-          "message": "ci: remove release schedule for now",
-          "timestamp": "2024-03-13T03:37:01+01:00",
-          "tree_id": "8f0b20430725903ff18d87854819084d3e8b5c09",
-          "url": "https://github.com/maidsafe/safe_network/commit/a00d2537d9b7453fa4410a069a4d03d0f8969b3b"
-        },
-        "date": 1710298096460,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2725825578665244,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8562424905692065,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.586599475839705,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.87627385798042,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "84156b3340dc65e015f1f1b0217713eaca3be7e3",
+          "message": "feat(auditor): recognize payment forwards with default key",
+          "timestamp": "2024-06-10T19:26:00Z",
+          "tree_id": "34258f2a9c7a38fe2541fe16976172a33f8a6afc",
+          "url": "https://github.com/maidsafe/safe_network/commit/84156b3340dc65e015f1f1b0217713eaca3be7e3"
+        },
+        "date": 1718050584168,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2502540747576911,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.673360917930256,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.27518175436324,
             "unit": "MiB/s"
           }
         ]
