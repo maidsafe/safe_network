@@ -146,10 +146,27 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         self.service_data.listen_addr = Some(
             network_info
                 .listeners
-                .into_iter()
+                .iter()
+                .cloned()
                 .map(|addr| addr.with(Protocol::P2p(node_info.peer_id)))
                 .collect(),
         );
+
+        for addr in &network_info.listeners {
+            if let Some(port) = get_port_from_multiaddr(addr) {
+                debug!(
+                    "Found safenode port for {}: {port}",
+                    self.service_data.service_name
+                );
+                self.service_data.node_port = Some(port);
+                break;
+            }
+        }
+
+        if self.service_data.node_port.is_none() {
+            error!("Could not find safenode port. This will cause the node to have a different port during upgrade");
+        }
+
         self.service_data.pid = Some(node_info.pid);
         self.service_data.peer_id = Some(node_info.peer_id);
         self.service_data.status = ServiceStatus::Running;
