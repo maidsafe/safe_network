@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718039806068,
+  "lastUpdate": 1718039930862,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "8fa8f22d9d2a3b54e34b5ec695163235471292d1",
-          "message": "refactor: reorganise command processing\n\nThe code in the `main` module of the node manager was becoming unwieldy and difficult to navigate,\nso I've refactored it into a few different modules.\n\nThere are absolutely no functional changes here.\n\nClippy was complaining about some functions having too many arguments, so I suppressed those\nwarnings. These are just utility functions, and adding new structs just to encapsulate a few\narguments would have been tedious and overkill.",
-          "timestamp": "2024-03-13T00:39:09Z",
-          "tree_id": "5a8a853755daa9eea61da986222e62f393e477b0",
-          "url": "https://github.com/maidsafe/safe_network/commit/8fa8f22d9d2a3b54e34b5ec695163235471292d1"
-        },
-        "date": 1710293307749,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "ba57a35f451c3bfc11c197909bb62dcbf636d5d0",
+          "message": "chore(auditor): further improve auditor performance",
+          "timestamp": "2024-06-10T16:32:43Z",
+          "tree_id": "6faa3aaaa6e28609c9c550b43741a63a34df7855",
+          "url": "https://github.com/maidsafe/safe_network/commit/ba57a35f451c3bfc11c197909bb62dcbf636d5d0"
+        },
+        "date": 1718039930501,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
