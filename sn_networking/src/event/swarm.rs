@@ -167,8 +167,14 @@ impl SwarmDriver {
 
                         let has_relayed = is_a_relayed_peer(&addrs);
 
+                        let is_bootstrap_peer = self
+                            .bootstrap_peers
+                            .iter()
+                            .any(|(_ilog2, peers)| peers.contains(&peer_id));
+
                         // Do not use an `already relayed` peer as `potential relay candidate`.
-                        if !has_relayed {
+                        if !has_relayed && !is_bootstrap_peer {
+                            debug!("Adding candidate relay server {peer_id:?}, it's not a bootstrap node");
                             self.relay_manager.add_potential_candidates(
                                 &peer_id,
                                 &addrs,
@@ -573,8 +579,8 @@ impl SwarmDriver {
                 }
                 let all_external_addresses = self.swarm.external_addresses().collect_vec();
                 let all_listeners = self.swarm.listeners().collect_vec();
-                debug!("All our listeners: {all_listeners:?}");
-                debug!("All our external addresses: {all_external_addresses:?}");
+                trace!("All our listeners: {all_listeners:?}");
+                trace!("All our external addresses: {all_external_addresses:?}");
             }
             SwarmEvent::ExternalAddrConfirmed { address } => {
                 event_string = "ExternalAddrConfirmed";
