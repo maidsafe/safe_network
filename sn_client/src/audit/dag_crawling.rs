@@ -170,7 +170,9 @@ impl Client {
                         let _ = failed_utxos.insert(address, Instant::now() + reattempt_interval);
                     }
                     InternalGetNetworkSpend::Error(e) => {
-                        warn!("Got a fetching error {e:?}");
+                        warn!("Fetching spend {address:?} result in error {e:?}");
+                        // Error of `NotEnoughCopies` could be re-attempted and succeed eventually.
+                        let _ = failed_utxos.insert(address, Instant::now() + reattempt_interval);
                     }
                 }
             }
