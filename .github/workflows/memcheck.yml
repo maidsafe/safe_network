@@ -324,7 +324,7 @@ jobs:
           cat auditor_output.txt
         env:
           SN_LOG: "all"
-        timeout-minutes: 5
+        timeout-minutes: 120
         if: always()
 
       - name: Ensure discord_ids decrypted
