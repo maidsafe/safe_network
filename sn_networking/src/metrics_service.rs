@@ -127,7 +127,7 @@ impl<T> Service<T> for MakeMetricService {
     }
 
     fn call(&mut self, _: T) -> Self::Future {
-        let reg = self.reg.clone();
+        let reg = Arc::clone(&self.reg);
         let fut = async move { Ok(MetricService { reg }) };
         Box::pin(fut)
     }

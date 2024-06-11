@@ -39,6 +39,7 @@ uninlined_format_args = "warn"
 unicode_not_nfc = "warn"
 unused_async = "warn"
 unwrap_used = "warn"
+clone_on_ref_ptr = "warn"
 
 [profile.release]
 debug = 0
