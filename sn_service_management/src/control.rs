@@ -168,8 +168,7 @@ impl ServiceControl for ServiceController {
     }
 
     fn is_service_process_running(&self, pid: u32) -> bool {
-        let mut system = System::new_all();
-        system.refresh_all();
+        let system = System::new_all();
         system.process(Pid::from(pid as usize)).is_some()
     }
 
@@ -185,8 +184,7 @@ impl ServiceControl for ServiceController {
     }
 
     fn get_process_pid(&self, bin_path: &Path) -> Result<u32> {
-        let mut system = System::new_all();
-        system.refresh_all();
+        let system = System::new_all();
         for (pid, process) in system.processes() {
             if let Some(path) = process.exe() {
                 if bin_path == path {
