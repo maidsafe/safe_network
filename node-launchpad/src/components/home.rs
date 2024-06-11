@@ -22,7 +22,9 @@ use rand::seq::SliceRandom;
 use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{config::get_node_registry_path, VerbosityLevel};
 use sn_peers_acquisition::{get_bootstrap_peers_from_url, PeersArgs};
-use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
+use sn_service_management::{
+    control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
+};
 use std::{
     path::PathBuf,
     time::{Duration, Instant},
@@ -67,7 +69,7 @@ pub enum LockRegistryState {
 }
 
 impl Home {
-    pub fn new(
+    pub async fn new(
         allocated_disk_space: usize,
         discord_username: &str,
         peers_args: PeersArgs,
@@ -89,6 +91,14 @@ impl Home {
             discord_username: discord_username.to_string(),
             safenode_path,
         };
+
+        let now = Instant::now();
+        debug!("Refreshing node registry states on startup");
+        let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+        sn_node_manager::refresh_node_registry(&mut node_registry, &ServiceController {}, false)
+            .await?;
+        node_registry.save()?;
+        debug!("Node registry states refreshed in {:?}", now.elapsed());
         home.load_node_registry_and_update_states()?;
 
         Ok(home)
@@ -571,20 +581,6 @@ impl Component for Home {
 
         Ok(())
     }
-}
-
-fn refresh_node_registry() -> Result<()> {
-    let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-    let node_services = node_registry
-        .nodes
-        .into_iter()
-        .filter(|node| node.status != ServiceStatus::Removed)
-        .collect();
-    info!(
-        "Loaded node registry. Running nodes: {:?}",
-        node_services.len()
-    );
-    Ok(())
 }
 
 fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
