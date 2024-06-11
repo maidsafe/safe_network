@@ -53,6 +53,8 @@ pub trait RpcActions: Sync {
 
 pub struct RpcClient {
     endpoint: String,
+    max_attempts: u8,
+    retry_delay: Duration,
 }
 
 impl RpcClient {
@@ -62,12 +64,24 @@ impl RpcClient {
     pub fn new(endpoint: &str) -> Self {
         Self {
             endpoint: endpoint.to_string(),
+            max_attempts: Self::MAX_CONNECTION_RETRY_ATTEMPTS,
+            retry_delay: Self::CONNECTION_RETRY_DELAY_SEC,
         }
     }
 
     pub fn from_socket_addr(socket: SocketAddr) -> Self {
         let endpoint = format!("https://{socket}");
-        Self { endpoint }
+        Self::new(&endpoint)
+    }
+
+    /// Set the maximum number of retry attempts when connecting to the RPC endpoint. Default is 5.
+    pub fn set_max_attempts(&mut self, max_retry_attempts: u8) {
+        self.max_attempts = max_retry_attempts;
+    }
+
+    /// Set the delay between retry attempts when connecting to the RPC endpoint. Default is 1 second.
+    pub fn set_retry_delay(&mut self, retry_delay: Duration) {
+        self.retry_delay = retry_delay;
     }
 
     // Connect to the RPC endpoint with retry
@@ -78,14 +92,13 @@ impl RpcClient {
                 Ok(rpc_client) => break Ok(rpc_client),
                 Err(_) => {
                     attempts += 1;
-                    tokio::time::sleep(Self::CONNECTION_RETRY_DELAY_SEC).await;
-                    if attempts >= Self::MAX_CONNECTION_RETRY_ATTEMPTS {
+                    tokio::time::sleep(self.retry_delay).await;
+                    if attempts >= self.max_attempts {
                         return Err(Error::RpcConnectionError(self.endpoint.clone()));
                     }
                     error!(
                         "Could not connect to RPC endpoint {:?}. Retrying {attempts}/{}",
-                        self.endpoint,
-                        Self::MAX_CONNECTION_RETRY_ATTEMPTS
+                        self.endpoint, self.max_attempts
                     );
                 }
             }
