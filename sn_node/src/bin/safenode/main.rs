@@ -225,6 +225,7 @@ fn main() -> Result<()> {
         #[cfg(feature = "open-metrics")]
         let mut node_builder = node_builder;
         // if enable flag is provided or only if the port is specified then enable the server by setting Some()
+        #[cfg(feature = "open-metrics")]
         let metrics_server_port = if opt.enable_metrics_server || opt.metrics_server_port != 0 {
             Some(opt.metrics_server_port)
         } else {
