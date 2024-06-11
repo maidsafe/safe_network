@@ -439,7 +439,7 @@ impl Node {
                 event_header = "NewListenAddr";
                 if !cfg!(feature = "local-discovery") {
                     let network = self.network.clone();
-                    let peers = self.initial_peers.clone();
+                    let peers = Arc::clone(&self.initial_peers);
                     let _handle = spawn(async move {
                         for addr in &*peers {
                             if let Err(err) = network.dial(addr.clone()).await {
