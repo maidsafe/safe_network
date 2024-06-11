@@ -39,7 +39,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(
+    pub async fn new(
         tick_rate: f64,
         frame_rate: f64,
         peers_args: PeersArgs,
@@ -52,7 +52,8 @@ impl App {
             &app_data.discord_username,
             peers_args,
             safenode_path,
-        )?;
+        )
+        .await?;
         let config = Config::new()?;
         let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
         let manage_nodes = ManageNodes::new(app_data.nodes_to_start)?;

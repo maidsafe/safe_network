@@ -65,7 +65,8 @@ async fn tokio_main() -> Result<()> {
         args.frame_rate,
         args.peers,
         args.safenode_path,
-    )?;
+    )
+    .await?;
     app.run().await?;
 
     Ok(())
