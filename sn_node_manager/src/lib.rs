@@ -40,10 +40,8 @@ use crate::error::{Error, Result};
 use colored::Colorize;
 use semver::Version;
 use sn_service_management::{
-    control::ServiceControl,
-    error::Error as ServiceError,
-    rpc::{RpcActions, RpcClient},
-    NodeRegistry, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
+    control::ServiceControl, error::Error as ServiceError, rpc::RpcClient, NodeRegistry,
+    NodeService, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
     UpgradeResult,
 };
 use sn_transfers::HotWallet;
@@ -533,24 +531,29 @@ pub async fn refresh_node_registry(
             Err(_) => node.reward_balance = None,
         }
 
-        let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        if let ServiceStatus::Running = node.status {
-            if let Some(pid) = node.pid {
+        let mut rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+        rpc_client.set_max_attempts(1);
+        let service = NodeService::new(node, Box::new(rpc_client));
+        refresh_single_node(service, service_control).await?;
+    }
+    Ok(())
+}
+
+async fn refresh_single_node<'a>(
+    mut service: NodeService<'a>,
+    service_control: &dyn ServiceControl,
+) -> Result<()> {
+    match &service.service_data.status {
+        ServiceStatus::Running => {
+            if let Some(pid) = service.service_data.pid {
                 // First we can try the PID we have now. If there is still a process running with
                 // that PID, we know the node is still running.
                 if service_control.is_service_process_running(pid) {
                     debug!(
-                        "The process for node {} is still running at PID {pid}",
-                        node.service_name
+                        "The process for node {} is still running at PID {pid}. Calling on_start() for the service.",
+                        service.service_data.service_name
                     );
-                    match rpc_client.network_info().await {
-                        Ok(info) => {
-                            node.connected_peers = Some(info.connected_peers);
-                        }
-                        Err(_) => {
-                            node.connected_peers = None;
-                        }
-                    }
+                    service.on_start().await?;
                 } else {
                     // The process with the PID we had has died at some point. However, if the
                     // service has been configured to restart on failures, it's possible that a new
@@ -558,36 +561,44 @@ pub async fn refresh_node_registry(
                     // RPC service to try and retrieve it.
                     debug!(
                         "The process for node {} has died. Attempting to retrieve new PID",
-                        node.service_name
+                        service.service_data.service_name
                     );
-                    match rpc_client.node_info().await {
-                        Ok(info) => {
-                            node.pid = Some(info.pid);
-                            debug!("New PID for node {} is= {:?}", node.service_name, node.pid);
-                        }
-                        Err(_) => {
-                            // Finally, if there was an error communicating with the RPC client, we
-                            // can assume that this node is actually stopped.
-                            debug!(
-                                "Failed to retrieve new PID for node {}. Assuming it's stopped",
-                                node.service_name
-                            );
-                            node.status = ServiceStatus::Stopped;
-                            node.pid = None;
-                        }
-                    }
-                    match rpc_client.network_info().await {
-                        Ok(info) => {
-                            node.connected_peers = Some(info.connected_peers);
-                        }
-                        Err(_) => {
-                            node.connected_peers = None;
-                        }
+                    if service.rpc_actions.node_info().await.is_ok() {
+                        debug!(
+                            "New PID for node {} is= {:?}. Calling on_start() for the service",
+                            service.service_data.service_name, service.service_data.pid
+                        );
+                        service.on_start().await?;
+                    } else {
+                        // Finally, if there was an error communicating with the RPC client, we
+                        // can assume that this node is actually stopped.
+                        debug!(
+                            "Failed to retrieve new PID for node {}. Calling on_stop() for the service.",
+                            service.service_data.service_name
+                        );
+                        service.on_stop().await?;
                     }
                 }
             }
         }
+        // If the service was manually started by an user, we'd want to make sure that we sync our state.
+        status => {
+            if service.rpc_actions.node_info().await.is_ok() {
+                debug!(
+                    "New PID for {} node (status: {status:?}) is= {:?}. Calling on_start() for the service",
+                    service.service_data.service_name, service.service_data.pid
+                );
+                service.on_start().await?;
+            } else {
+                // If there was an error, we can assume that the node is at the same state.
+                debug!(
+                    "Failed to retrieve new PID for node {}. Not changing state",
+                    service.service_data.service_name
+                );
+            }
+        }
     }
+
     Ok(())
 }
 

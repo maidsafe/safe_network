@@ -573,6 +573,20 @@ impl Component for Home {
     }
 }
 
+fn refresh_node_registry() -> Result<()> {
+    let node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
+    let node_services = node_registry
+        .nodes
+        .into_iter()
+        .filter(|node| node.status != ServiceStatus::Removed)
+        .collect();
+    info!(
+        "Loaded node registry. Running nodes: {:?}",
+        node_services.len()
+    );
+    Ok(())
+}
+
 fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     tokio::task::spawn_local(async move {
         if let Err(err) =
