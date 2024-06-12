@@ -28,11 +28,11 @@ pub(super) const GENESIS_CASHNOTE_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u
 /// The derivation index for the genesis Spend.
 const GENESIS_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0u8; 32]);
 
-/// Default genesis SK for testing purpose. Be sure to pass the correct `GENESIS_PK` value via env.
+/// Default genesis SK for testing purpose. Be sure to pass the correct `GENESIS_SK` value via env for release.
 const DEFAULT_LIVE_GENESIS_SK: &str =
     "23746be7fa5df26c3065eb7aa26860981e435c1853cafafe472417bc94f340e9"; // DevSkim: ignore DS173237
 
-/// Default genesis PK for tsting purposes. Be sure to pass the correct `GENESIS_SK` value via env when to use.
+/// Default genesis PK for testing purposes. Be sure to pass the correct `GENESIS_PK` value via env for release.
 const DEFAULT_LIVE_GENESIS_PK: &str = "9934c21469a68415e6b06a435709e16bff6e92bf302aeb0ea9199d2d06a55f1b1a21e155853d3f94ae31f8f313f886ee"; // DevSkim: ignore DS173237
 
 /// Based on the given store cost, it calculates what's the expected amount to be paid as network royalties.
