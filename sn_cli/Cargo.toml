@@ -59,7 +59,7 @@ rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = ["derive"] }
 sn_build_info = { path = "../sn_build_info", version = "0.1.8" }
 sn_client = { path = "../sn_client", version = "0.107.8" }
-sn_logging = { path = "../sn_logging", version = "0.2.28" }
+sn_logging = { path = "../sn_logging", version = "0.2.29" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.3.5" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.4" }
 tempfile = "3.6.0"
