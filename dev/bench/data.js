@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718156652058,
+  "lastUpdate": 1718156687458,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": true,
-          "id": "cdc574b88cf26fff46e80396322fc80bd2c2cf15",
-          "message": "refactor: store test utils under a new crate",
-          "timestamp": "2024-03-13T13:43:42Z",
-          "tree_id": "0b30dfa7852bcc56950a0454d9d84bb2c59bb0d7",
-          "url": "https://github.com/maidsafe/safe_network/commit/cdc574b88cf26fff46e80396322fc80bd2c2cf15"
-        },
-        "date": 1710341002235,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2c08cc787ac402cde047913f621a321fd40e211c",
+          "message": "feat(auditor): skip royalty track using default key",
+          "timestamp": "2024-06-12T00:54:10Z",
+          "tree_id": "60d8611448df5b92bf33973758e131dc190b4803",
+          "url": "https://github.com/maidsafe/safe_network/commit/2c08cc787ac402cde047913f621a321fd40e211c"
+        },
+        "date": 1718156686949,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
