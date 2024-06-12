@@ -34,6 +34,13 @@ pub async fn fund_faucet_from_genesis_wallet(
 
     info!("funding faucet from genesis...");
 
+    // Confirm Genesis not used yet
+    if client.is_genesis_spend_present().await {
+        warn!("Faucet can't get funded from genesis, genesis is already spent!");
+        println!("Faucet can't get funded from genesis, genesis is already spent!");
+        panic!("Faucet can't get funded from genesis, genesis is already spent!");
+    }
+
     println!("Initiating genesis...");
     debug!("Initiating genesis...");
     let genesis_wallet = load_genesis_wallet()?;

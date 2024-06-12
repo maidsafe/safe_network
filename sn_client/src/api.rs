@@ -38,6 +38,7 @@ use sn_protocol::{
 use sn_registers::{Permissions, SignedRegister};
 use sn_transfers::{
     CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend, TransferError,
+    GENESIS_SPEND_UNIQUE_KEY,
 };
 #[cfg(target_arch = "wasm32")]
 use std::path::PathBuf;
@@ -955,6 +956,23 @@ impl Client {
             },
         )
         .await
+    }
+
+    /// Try to confirm the Genesis spend doesn't present in the network yet.
+    /// It shall be quick, and any signle returned copy shall consider as error.
+    pub async fn is_genesis_spend_present(&self) -> bool {
+        let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
+        self.try_fetch_spend_from_network(
+            genesis_addr,
+            GetRecordCfg {
+                get_quorum: Quorum::One,
+                retry_strategy: None,
+                target_record: None,
+                expected_holders: Default::default(),
+            },
+        )
+        .await
+        .is_ok()
     }
 
     async fn try_fetch_spend_from_network(
