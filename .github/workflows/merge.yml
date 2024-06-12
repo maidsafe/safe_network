@@ -723,6 +723,108 @@ jobs:
             exit 1
           fi
 
+  faucet_test:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Faucet test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: install ripgrep
+        shell: bash
+        run: sudo apt-get install -y ripgrep
+
+      - name: Build binaries
+        run: cargo build --release --bin safenode --bin safe
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features gifting
+        timeout-minutes: 30
+
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          interval: 2000
+          node-path: target/release/safenode
+          faucet-path: target/release/faucet
+          platform: ubuntu-latest
+          build: true
+
+      - name: Check we're _not_ warned about using default genesis
+        run: |
+          if rg "USING DEFAULT" "${{ matrix.safe_path }}"/*/*/logs; then
+            exit 1
+          fi
+        shell: bash
+
+      - name: Move built binaries and clear out target dir
+        shell: bash
+        run: |
+          mv target/release/faucet ~/faucet
+          mv target/release/safe ~/safe
+          rm -rf target
+
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+          fi
+
+      - name: Create and fund a wallet first time
+        run: |
+          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > first.txt
+          cat first.txt
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+
+      - name: Build faucet binary again without the gifting feature
+        run: cargo build --release --bin faucet
+        timeout-minutes: 30
+
+      - name: Start up a faucet in server mode
+        run: |
+          ls -l /home/runner/.local/share
+          ls -l /home/runner/.local/share/safe
+          rm -rf /home/runner/.local/share/safe/test_faucet
+          rm -rf /home/runner/.local/share/safe/test_genesis
+          rm -rf /home/runner/.local/share/safe/client
+          target/release/faucet server &
+          sleep 60
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+
+      - name: check there is no upload happens
+        shell: bash
+        run: |
+          if grep -r "NanoTokens(10) }, Output" $NODE_DATA_PATH
+          then
+            echo "We find ongoing upload !"
+            exit 1
+          fi
+        env:
+          NODE_DATA_PATH: /home/runner/.local/share/safe/node
+        timeout-minutes: 1
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          platform: ubuntu-latest
+          log_file_prefix: safe_test_logs_faucet
+
   large_file_upload_test:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: Large file upload
