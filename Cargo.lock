@@ -4674,7 +4674,7 @@ dependencies = [
 
 [[package]]
 name = "node-launchpad"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "atty",
  "better-panic",
@@ -6979,7 +6979,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.1.25"
+version = "0.1.26"
 dependencies = [
  "blsttc",
  "clap",
@@ -7020,7 +7020,7 @@ dependencies = [
 
 [[package]]
 name = "sn_cli"
-version = "0.93.7"
+version = "0.93.8"
 dependencies = [
  "aes 0.7.5",
  "base64 0.22.1",
@@ -7061,7 +7061,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.107.8"
+version = "0.107.9"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -7146,7 +7146,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.4.28"
+version = "0.4.29"
 dependencies = [
  "assert_fs",
  "base64 0.22.1",
@@ -7259,7 +7259,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.108.3"
+version = "0.108.4"
 dependencies = [
  "assert_fs",
  "assert_matches",
@@ -7401,7 +7401,7 @@ dependencies = [
 
 [[package]]
 name = "sn_service_management"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "async-trait",
  "dirs-next",
