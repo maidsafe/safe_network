@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_faucet"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.4.28"
+version = "0.4.29"
 
 [features]
 default = ["initial-data"]
@@ -38,8 +38,8 @@ minreq = { version = "2.11.0", features = ["https-rustls"], optional = true }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 sn_build_info = { path = "../sn_build_info", version = "0.1.8" }
-sn_cli = { path = "../sn_cli", version = "0.93.7" }
-sn_client = { path = "../sn_client", version = "0.107.8" }
+sn_cli = { path = "../sn_cli", version = "0.93.8" }
+sn_client = { path = "../sn_client", version = "0.107.9" }
 sn_logging = { path = "../sn_logging", version = "0.2.29" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.3.5" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.4" }
