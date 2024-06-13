@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "sn_service_management"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.3.6"
+version = "0.3.7"
 
 [dependencies]
 async-trait = "0.1"

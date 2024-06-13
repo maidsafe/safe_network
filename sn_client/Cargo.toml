@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.107.8"
+version = "0.107.9"
 
 [features]
 default = []
@@ -69,7 +69,7 @@ dirs-next = "~2.0.0"
 # add rand to libp2p
 libp2p-identity = { version = "0.2.7", features = ["rand"] }
 sn_client = { path = "../sn_client", features = ["test-utils"] }
-sn_logging = { path = "../sn_logging", version = "0.2.27" }
+sn_logging = { path = "../sn_logging", version = "0.2.29" }
 sn_registers = { path = "../sn_registers", version = "0.3.13", features = [
     "test-utils",
 ] }
