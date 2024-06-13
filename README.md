@@ -32,6 +32,12 @@ At build time the following env vars can be set to override default keys (** and
 - `NETWORK_ROYALTIES_PK` - The foundation public key to use for receiving network royalties.
 - `PAYMENT_FORWARD_PK` - The public key to use for payment forwarding for the beta network collection.
 
+When you start a network there are a few scripts to aid with basic processes:
+
+- `resources/scripts/claim-genesis.sh` which will claim the genesis tokens for a wallet on a launched network (if you have set up the foundation wallet locally by adding a `client/account_secret` and regenerating the wallet or directly adding the `client/wallet/main_secret_key` itself).
+- `resources/scripts/make-wallets.sh` which if you have a wallet with a balance will create a number of wallets with another balance. eg `resources/scripts/make-wallets.sh 5 1` will make 5 wallets with 1 token.
+- `resources/scripts/upload-random-data` will use the existing `client` to upload random data to the network.
+
 - [Client](https://github.com/maidsafe/safe_network/blob/main/sn_client/README.md) The client APIs
   allowing use of the SafeNetwork to users and developers.
 - [Registers](https://github.com/maidsafe/safe_network/blob/main/sn_registers/README.md) The CRDT
