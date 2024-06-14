@@ -124,13 +124,13 @@ impl Component for ResetNodesPopup {
             Direction::Vertical,
             [
                 // for the prompt text
-                Constraint::Length(4),
+                Constraint::Length(3),
                 // for the input
                 Constraint::Length(2),
                 // for the text
-                Constraint::Length(3),
+                Constraint::Length(5),
                 // gap
-                Constraint::Length(3),
+                Constraint::Length(1),
                 // for the buttons
                 Constraint::Length(1),
             ],
@@ -161,7 +161,10 @@ impl Component for ResetNodesPopup {
         );
         f.render_widget(input, layer_two[1]);
 
+        #[cfg(not(windows))]
         let text = Paragraph::new("  This will clear out all the nodes and all \n  the stored data. You should still keep all\n  your earned rewards.");
+        #[cfg(windows)]
+        let text = Paragraph::new("  This will clear out all the nodes and all \n  the stored data. You should still keep all\n  your earned rewards.\n  Note: This will REBOOT your machine. Please\n  make sure you have saved all your work.");
         f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
 
         let dash = Block::new()

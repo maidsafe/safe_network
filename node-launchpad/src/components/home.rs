@@ -321,6 +321,14 @@ impl Component for Home {
                 self.lock_registry = None;
                 self.load_node_registry_and_update_states()?;
 
+                #[cfg(windows)]
+                {
+                    info!("Reset completed on windows, REBOOTING system");
+                    if let Err(err) = system_shutdown::force_reboot() {
+                        error!("Error while rebooting system: {err:?}");
+                    }
+                }
+
                 if trigger_start_node {
                     debug!("Reset nodes completed. Triggering start nodes.");
                     return Ok(Some(Action::HomeActions(HomeActions::StartNodes)));
