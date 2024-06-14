@@ -782,8 +782,49 @@ jobs:
 
       - name: Create and fund a wallet first time
         run: |
-          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > first.txt
+          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
+          echo "----------"
           cat first.txt
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+
+      - name: Create and fund a wallet second time
+        run: |
+          ls -l /home/runner/.local/share
+          ls -l /home/runner/.local/share/safe
+          rm -rf /home/runner/.local/share/safe/test_faucet
+          rm -rf /home/runner/.local/share/safe/test_genesis
+          rm -rf /home/runner/.local/share/safe/client
+          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
+          echo "----------"
+          cat second.txt
+          if grep "genesis is already spent" second.txt; then
+            echo "Duplicated faucet rejected"
+          else
+            echo "Duplicated faucet not rejected!"
+            exit 1
+          fi
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+
+      - name: Create and fund a wallet with different keypair
+        run: |
+          ls -l /home/runner/.local/share
+          ls -l /home/runner/.local/share/safe
+          rm -rf /home/runner/.local/share/safe/test_faucet
+          rm -rf /home/runner/.local/share/safe/test_genesis
+          rm -rf /home/runner/.local/share/safe/client
+          GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>different.txt
+          echo "----------"
+          cat different.txt
+          if grep "wallet balance: 0.000000000" different.txt; then
+            echo "Faucet with different genesis key rejected"
+          else
+            echo "Faucet with different genesis key not rejected!"
+            exit 1
+          fi
         env:
           SN_LOG: "all"
         timeout-minutes: 5
