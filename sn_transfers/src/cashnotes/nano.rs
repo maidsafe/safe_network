@@ -117,7 +117,6 @@ impl Display for NanoTokens {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::u64;
 
     #[test]
     fn from_str() -> Result<()> {
