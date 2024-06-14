@@ -381,6 +381,12 @@ impl SwarmDriver {
                     connection_id,
                     (peer_id, Instant::now() + Duration::from_secs(60)),
                 );
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics
+                        .connected_peers
+                        .set(self.live_connected_peers.len() as i64);
+                }
 
                 if endpoint.is_dialer() {
                     self.dialed_peers.push(peer_id);
@@ -396,6 +402,12 @@ impl SwarmDriver {
                 event_string = "ConnectionClosed";
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
                 let _ = self.live_connected_peers.remove(&connection_id);
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics
+                        .connected_peers
+                        .set(self.live_connected_peers.len() as i64);
+                }
             }
             SwarmEvent::OutgoingConnectionError {
                 connection_id,
@@ -445,7 +457,7 @@ impl SwarmDriver {
                                         .any(|(_ilog2, peers)| peers.contains(&failed_peer_id));
 
                                     if is_bootstrap_peer
-                                        && self.connected_peers < self.bootstrap_peers.len()
+                                        && self.peers_in_rt < self.bootstrap_peers.len()
                                     {
                                         warn!("OutgoingConnectionError: On bootstrap peer {failed_peer_id:?}, while still in bootstrap mode, ignoring");
                                         there_is_a_serious_issue = false;
@@ -514,7 +526,7 @@ impl SwarmDriver {
                         .kademlia
                         .remove_peer(&failed_peer_id)
                     {
-                        self.connected_peers = self.connected_peers.saturating_sub(1);
+                        self.peers_in_rt = self.peers_in_rt.saturating_sub(1);
 
                         self.handle_cmd(SwarmCmd::RecordNodeIssue {
                             peer_id: failed_peer_id,
@@ -523,7 +535,7 @@ impl SwarmDriver {
 
                         self.send_event(NetworkEvent::PeerRemoved(
                             *dead_peer.node.key.preimage(),
-                            self.connected_peers,
+                            self.peers_in_rt,
                         ));
 
                         self.log_kbuckets(&failed_peer_id);
@@ -687,6 +699,12 @@ impl SwarmDriver {
             for (connection_id, peer_id) in shall_removed {
                 let _ = self.live_connected_peers.remove(&connection_id);
                 let result = self.swarm.close_connection(connection_id);
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics
+                        .connected_peers
+                        .set(self.live_connected_peers.len() as i64);
+                }
                 trace!("Removed outdated connection {connection_id:?} to {peer_id:?} with result: {result:?}");
             }
         }
