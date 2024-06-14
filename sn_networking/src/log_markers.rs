@@ -16,6 +16,7 @@ use strum::Display;
 /// Changing these log markers is a breaking change.
 #[derive(Debug, Clone, Display, Copy)]
 pub enum Marker<'a> {
+    #[allow(dead_code)]
     /// Close records held (Used in VDash)
     CloseRecordsLen(&'a usize),
     /// Store cost

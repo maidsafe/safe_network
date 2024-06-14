@@ -151,10 +151,8 @@ impl HotWallet {
         std::fs::create_dir_all(&wallet_dir)?;
         // Create the new wallet for this key
         store_new_keypair(&wallet_dir, &key)?;
-        let unconfirmed_spend_requests = match get_unconfirmed_spend_requests(&wallet_dir)? {
-            Some(unconfirmed_spend_requests) => unconfirmed_spend_requests,
-            None => Default::default(),
-        };
+        let unconfirmed_spend_requests =
+            (get_unconfirmed_spend_requests(&wallet_dir)?).unwrap_or_default();
         let watchonly_wallet = WatchOnlyWallet::load_from(&wallet_dir, key.main_pubkey())?;
 
         Ok(Self {
@@ -667,10 +665,8 @@ impl HotWallet {
                 }
             }
         };
-        let unconfirmed_spend_requests = match get_unconfirmed_spend_requests(wallet_dir)? {
-            Some(unconfirmed_spend_requests) => unconfirmed_spend_requests,
-            None => Default::default(),
-        };
+        let unconfirmed_spend_requests =
+            (get_unconfirmed_spend_requests(wallet_dir)?).unwrap_or_default();
         let watchonly_wallet = WatchOnlyWallet::load_from(wallet_dir, key.main_pubkey())?;
 
         Ok(Self {
