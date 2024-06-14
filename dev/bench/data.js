@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718372664191,
+  "lastUpdate": 1718372666703,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "28fdac6b671db13296c74c61985a66a61e022d1e",
-          "message": "chore(deps): remove version from local dev deps",
-          "timestamp": "2024-03-14T12:43:30+01:00",
-          "tree_id": "da1794d5bbc32320c0687c6ed520748584aa7ee6",
-          "url": "https://github.com/maidsafe/safe_network/commit/28fdac6b671db13296c74c61985a66a61e022d1e"
-        },
-        "date": 1710417696384,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 198,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "d68f6f056aa1ab07e692ea607c69c8756c788662",
+          "message": "feat: add scripts for random uploads and wallet generation",
+          "timestamp": "2024-06-14T12:54:53Z",
+          "tree_id": "8785c1e177867d82bb5e47d44aa0ddb803b84529",
+          "url": "https://github.com/maidsafe/safe_network/commit/d68f6f056aa1ab07e692ea607c69c8756c788662"
+        },
+        "date": 1718372665717,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 194,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
