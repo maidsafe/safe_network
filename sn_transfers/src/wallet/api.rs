@@ -120,3 +120,49 @@ impl WalletApi {
         Ok(payments)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::{MainSecretKey, NanoTokens, PaymentQuote, Transfer};
+
+    #[test]
+    fn payment_selective() -> Result<()> {
+        let root_dir = std::env::temp_dir();
+        let wallet_api = WalletApi::new_from_wallet_dir(&root_dir);
+
+        let mut rng = bls::rand::thread_rng();
+        let chunk_name = XorName::random(&mut rng);
+
+        let transfer = Transfer::NetworkRoyalties(vec![]);
+
+        let recipient_1 = MainSecretKey::random().main_pubkey();
+        let payment_details_1 = PaymentDetails {
+            recipient: recipient_1,
+            peer_id_bytes: vec![],
+            transfer: (transfer.clone(), NanoTokens::zero()),
+            royalties: (transfer.clone(), NanoTokens::zero()),
+            quote: PaymentQuote::zero(),
+        };
+        let _ = wallet_api.insert_payment_transaction(chunk_name, payment_details_1);
+
+        let recipient_2 = MainSecretKey::random().main_pubkey();
+        let payment_details_2 = PaymentDetails {
+            recipient: recipient_2,
+            peer_id_bytes: vec![],
+            transfer: (transfer.clone(), NanoTokens::zero()),
+            royalties: (transfer, NanoTokens::zero()),
+            quote: PaymentQuote::zero(),
+        };
+        let _ = wallet_api.insert_payment_transaction(chunk_name, payment_details_2.clone());
+
+        let recent_payment = wallet_api.get_recent_payment(&chunk_name)?;
+        assert_eq!(payment_details_2.recipient, recent_payment.recipient);
+
+        let recent_payment = wallet_api.get_recent_payment(&chunk_name)?;
+        assert_eq!(payment_details_2.recipient, recent_payment.recipient);
+
+        Ok(())
+    }
+}
