@@ -669,6 +669,59 @@ impl WalletClient {
         }
     }
 
+    /// This is a blocking loop in cas there is pending transaction.
+    /// It will keeps resending the unconfirmed spend infinitely but explictly.
+    /// Function will only return on success (all unconfirmed spend uploaded),
+    /// or user chose to manualy, but safely, terminate the procedure.
+    pub async fn resend_pending_transaction_blocking_loop(&mut self) -> WalletResult<()> {
+        if !self.wallet.unconfirmed_spend_requests_exist() {
+            return Ok(());
+        }
+        // Wallet shall be all clear to progress forward.
+        while self.wallet.unconfirmed_spend_requests_exist() {
+            info!("Pre-Unconfirmed transactions dected, sending again after 30 seconds...");
+            println!("Pre-Unconfirmed transactions exist, sending again after 30 seconds...");
+            println!("It's safe to terminate the work, but do remember to retain the unconfirmed_spend file during wallet update.");
+            println!("Otherwise, you are in risk to make the wallet corrupted.");
+            // Longer wait as the network will already in heavy duty situation,
+            // hence try not to give it further burden with short intervaled re-puts.
+            sleep(Duration::from_secs(30)).await;
+
+            // Before re-sending, take a peek of un-confirmed spends first
+            // Helping user having a better view of what's happening.
+            let unconfirmed_spends_addrs: Vec<_> = self
+                .wallet
+                .unconfirmed_spend_requests()
+                .iter()
+                .map(|s| SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey))
+                .collect();
+            for addr in unconfirmed_spends_addrs {
+                match self.client.peek_a_spend(addr).await {
+                    Ok(_) => {
+                        info!("Unconfirmed Spend {addr:?} is find having at least one copy in the network !");
+                        println!(
+                            "Unconfirmed Spend {addr:?} is find at least one copy in the network !"
+                        );
+                    }
+                    Err(err) => {
+                        info!(
+                            "Unconfirmed Spend {addr:?} has no copy in the network yet {err:?} !"
+                        );
+                        println!(
+                            "Unconfirmed Spend {addr:?} has no copy in the network yet {err:?} !"
+                        );
+                    }
+                }
+            }
+
+            self.resend_pending_transactions(true).await;
+        }
+        info!("Wallet is now all cleared, OK to progress further.");
+        println!("Wallet is now all cleared, OK to progress further.");
+        eprintln!("WARNING: Closing the client now could corrupt the wallet !");
+        Ok(())
+    }
+
     /// Try resending failed transactions multiple times until it succeeds or until we reach max attempts.
     async fn resend_pending_transaction_until_success(
         &mut self,

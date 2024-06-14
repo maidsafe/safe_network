@@ -945,6 +945,22 @@ impl Client {
         .await
     }
 
+    /// Try to peek a spend by just fetching one copy of it.
+    /// Useful to help decide whether a re-put is necessary, or a spend exists already
+    /// (client side verification).
+    pub async fn peek_a_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
+        self.try_fetch_spend_from_network(
+            address,
+            GetRecordCfg {
+                get_quorum: Quorum::One,
+                retry_strategy: None,
+                target_record: None,
+                expected_holders: Default::default(),
+            },
+        )
+        .await
+    }
+
     /// This is a similar funcation to `get_spend_from_network` to get a spend from network.
     /// Just using different `RetryStrategy` to improve the performance during crawling.
     pub async fn crawl_spend_from_network(&self, address: SpendAddress) -> Result<SignedSpend> {
@@ -964,17 +980,7 @@ impl Client {
     /// It shall be quick, and any signle returned copy shall consider as error.
     pub async fn is_genesis_spend_present(&self) -> bool {
         let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
-        self.try_fetch_spend_from_network(
-            genesis_addr,
-            GetRecordCfg {
-                get_quorum: Quorum::One,
-                retry_strategy: None,
-                target_record: None,
-                expected_holders: Default::default(),
-            },
-        )
-        .await
-        .is_ok()
+        self.peek_a_spend(genesis_addr).await.is_ok()
     }
 
     async fn try_fetch_spend_from_network(
