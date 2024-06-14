@@ -149,7 +149,7 @@ pub(crate) async fn files_cmds(
                 return Err(
                     eyre!("Both the name and address must be supplied if either are used")
                         .suggestion(
-                        "Please run the command again in the form 'files upload <name> <address>'",
+                        "Please run the command again in the form 'files download <name> <address>'",
                     ),
                 );
             }
