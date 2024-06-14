@@ -589,7 +589,7 @@ impl NetworkBuilder {
             listen_port: self.listen_addr.map(|addr| addr.port()),
             is_client,
             is_behind_home_network: self.is_behind_home_network,
-            connected_peers: 0,
+            peers_in_rt: 0,
             bootstrap,
             relay_manager,
             close_group: Default::default(),
@@ -637,7 +637,7 @@ pub struct SwarmDriver {
     pub(crate) is_behind_home_network: bool,
     /// The port that was set by the user
     pub(crate) listen_port: Option<u16>,
-    pub(crate) connected_peers: usize,
+    pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) relay_manager: RelayManager,
     /// The peers that are closer to our PeerId. Includes self.
