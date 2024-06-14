@@ -614,7 +614,7 @@ impl NodeRecordStore {
             })
             .count();
 
-        Marker::CloseRecordsLen(&relevant_records_len).log();
+        Marker::CloseRecordsLen(relevant_records_len).log();
         relevant_records_len
     }
 

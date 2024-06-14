@@ -18,7 +18,8 @@ use strum::Display;
 pub enum Marker<'a> {
     #[allow(dead_code)]
     /// Close records held (Used in VDash)
-    CloseRecordsLen(&'a usize),
+    #[allow(dead_code)]
+    CloseRecordsLen(usize),
     /// Store cost
     StoreCost {
         /// Cost
