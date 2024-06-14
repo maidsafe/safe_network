@@ -860,6 +860,10 @@ impl InnerUploader {
                         got_a_previous_force_payment = false;
                     }
 
+                    let _ = wallet_client
+                        .resend_pending_transaction_blocking_loop()
+                        .await;
+
                     let result = match wallet_client.pay_for_records(&cost_map, verify_store).await
                     {
                         Ok((storage_cost, royalty_fees)) => {
