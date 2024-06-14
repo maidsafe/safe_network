@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718361961148,
+  "lastUpdate": 1718362081292,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "224624a274288d7a3241d5d0b4af61c09286688b",
-          "message": "ci: fix the call to sn_client tests on nightly.\n\npackage, not bin",
-          "timestamp": "2024-03-14T01:27:26+01:00",
-          "tree_id": "a1bbfa4159a16708e5972d30a66d2bce2353c410",
-          "url": "https://github.com/maidsafe/safe_network/commit/224624a274288d7a3241d5d0b4af61c09286688b"
-        },
-        "date": 1710376829803,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "c631fd34c9187580303dc74f02467ada25277ac2",
           "message": "fix: require rpc from proto",
           "timestamp": "2024-03-14T06:58:16+01:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "52f3b1fb89fc772cca8eaa1d56c85715d96ee184",
+          "message": "chore: clippy fixes for rust 1.79",
+          "timestamp": "2024-06-14T09:50:30Z",
+          "tree_id": "e7582406822295942ad8fe473b93195e38734284",
+          "url": "https://github.com/maidsafe/safe_network/commit/52f3b1fb89fc772cca8eaa1d56c85715d96ee184"
+        },
+        "date": 1718362080646,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 53,
             "unit": "MB"
           }
         ]
