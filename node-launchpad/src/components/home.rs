@@ -22,9 +22,7 @@ use rand::seq::SliceRandom;
 use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{config::get_node_registry_path, VerbosityLevel};
 use sn_peers_acquisition::{get_bootstrap_peers_from_url, PeersArgs};
-use sn_service_management::{
-    control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
-};
+use sn_service_management::{NodeRegistry, NodeServiceData, ServiceStatus};
 use std::{
     path::PathBuf,
     time::{Duration, Instant},
@@ -92,13 +90,10 @@ impl Home {
             safenode_path,
         };
 
-        let now = Instant::now();
         debug!("Refreshing node registry states on startup");
         let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-        sn_node_manager::refresh_node_registry(&mut node_registry, &ServiceController {}, false)
-            .await?;
+        sn_node_manager::refresh_node_registry(&mut node_registry, false).await?;
         node_registry.save()?;
-        debug!("Node registry states refreshed in {:?}", now.elapsed());
         home.load_node_registry_and_update_states()?;
 
         Ok(home)

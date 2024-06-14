@@ -45,6 +45,7 @@ impl App {
         peers_args: PeersArgs,
         safenode_path: Option<PathBuf>,
     ) -> Result<Self> {
+        println!("Refreshing node states. This can take a couple seconds");
         let app_data = AppData::load()?;
 
         let home = Home::new(

@@ -200,14 +200,7 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
     if !json {
         print_banner("Local Network");
     }
-    status_report(
-        &mut local_node_registry,
-        &ServiceController {},
-        details,
-        json,
-        fail,
-    )
-    .await?;
+    status_report(&mut local_node_registry, details, json, fail).await?;
     local_node_registry.save()?;
     Ok(())
 }

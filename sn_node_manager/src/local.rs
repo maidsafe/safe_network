@@ -452,6 +452,7 @@ mod tests {
         pub RpcClient {}
         #[async_trait]
         impl RpcActions for RpcClient {
+            async fn is_endpoint_active(&self) -> bool;
             async fn node_info(&self) -> RpcResult<NodeInfo>;
             async fn network_info(&self) -> RpcResult<NetworkInfo>;
             async fn record_addresses(&self) -> RpcResult<Vec<RecordAddress>>;

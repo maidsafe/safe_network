@@ -42,6 +42,7 @@ pub struct RecordAddress {
 
 #[async_trait]
 pub trait RpcActions: Sync {
+    async fn is_endpoint_active(&self) -> bool;
     async fn node_info(&self) -> Result<NodeInfo>;
     async fn network_info(&self) -> Result<NetworkInfo>;
     async fn record_addresses(&self) -> Result<Vec<RecordAddress>>;
@@ -108,6 +109,9 @@ impl RpcClient {
 
 #[async_trait]
 impl RpcActions for RpcClient {
+    async fn is_endpoint_active(&self) -> bool {
+        SafeNodeClient::connect(self.endpoint.clone()).await.is_ok()
+    }
     async fn node_info(&self) -> Result<NodeInfo> {
         let mut client = self.connect_with_retry().await?;
         let response = client
