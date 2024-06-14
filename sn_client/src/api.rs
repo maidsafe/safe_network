@@ -863,8 +863,9 @@ impl Client {
         let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
         let network_address = NetworkAddress::from_spend_address(cash_note_addr);
 
-        trace!("Sending spend {unique_pubkey:?} to the network via put_record, with addr of {cash_note_addr:?}");
         let key = network_address.to_record_key();
+        let pretty_key = PrettyPrintRecordKey::from(&key);
+        trace!("Sending spend {unique_pubkey:?} to the network via put_record, with addr of {cash_note_addr:?} - {pretty_key:?}");
         let record_kind = RecordKind::Spend;
         let record = Record {
             key,
@@ -886,9 +887,10 @@ impl Client {
             (None, Default::default())
         };
 
+        // When there is retry on Put side, no need to have a retry on Get
         let verification_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
-            retry_strategy: Some(RetryStrategy::Balanced),
+            retry_strategy: None,
             target_record: record_to_verify,
             expected_holders,
         };
