@@ -61,7 +61,7 @@ impl SpendReason {
     }
 }
 
-const MAX_CIPHER_SIZE: usize = std::u8::MAX as usize;
+const MAX_CIPHER_SIZE: usize = u8::MAX as usize;
 const DERIVATION_INDEX_SIZE: usize = 32;
 const HASH_SIZE: usize = 32;
 const CHECK_SUM_SIZE: usize = 8;

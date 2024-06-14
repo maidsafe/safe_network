@@ -440,13 +440,10 @@ impl SpendDagDb {
             let mut beta_tracking = self.beta_tracking.write().await;
             for (hash, p) in new_participants {
                 let unkown_str = format!("unknown participant: {hash:?}");
-                let mut payments = if let Some(prev_payments) =
-                    beta_tracking.forwarded_payments.remove(&unkown_str)
-                {
-                    prev_payments
-                } else {
-                    BTreeSet::new()
-                };
+                let mut payments = beta_tracking
+                    .forwarded_payments
+                    .remove(&unkown_str)
+                    .unwrap_or_default();
 
                 if let Some(existing) = beta_tracking
                     .forwarded_payments
