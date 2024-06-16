@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718548191062,
+  "lastUpdate": 1718548193276,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": false,
-          "id": "68c06d307518170c6c881d1e0e3ba080540a454d",
-          "message": "chore: name change to spawn events handler",
-          "timestamp": "2024-03-14T13:00:18Z",
-          "tree_id": "bb5ef71afcc3f3cf7b357b7e50a1c74b44b49b8f",
-          "url": "https://github.com/maidsafe/safe_network/commit/68c06d307518170c6c881d1e0e3ba080540a454d"
-        },
-        "date": 1710425574498,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 203,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "293741+willief@users.noreply.github.com",
+            "name": "Southside",
+            "username": "willief"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "2984c98044f2743aee164fef5befa09876ae8df8",
+          "message": "fix(sn_cli): correct a misleading error msg in sn_cli/src/bin/subcommands/files.rs\n\nExisting error message referred to \"files upload\"\nThis changes the error to refer to \"files download\"",
+          "timestamp": "2024-06-16T23:09:38+09:00",
+          "tree_id": "49d4797e66d64bc3416b540e1f71bdaa5de5c72d",
+          "url": "https://github.com/maidsafe/safe_network/commit/2984c98044f2743aee164fef5befa09876ae8df8"
+        },
+        "date": 1718548192511,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 186,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
