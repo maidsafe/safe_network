@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use sn_client::transfers::{
     Hash, NanoTokens, SignedSpend, SpendAddress, DEFAULT_PAYMENT_FORWARD_SK,
 };
+use sn_client::transfers::{DEFAULT_NETWORK_ROYALTIES_PK, NETWORK_ROYALTIES_PK};
 use sn_client::{Client, SpendDag, SpendDagGet};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
@@ -61,6 +62,7 @@ pub struct SpendDagDb {
     dag: Arc<RwLock<SpendDag>>,
     beta_tracking: Arc<RwLock<BetaTracking>>,
     beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
+    utxo_addresses: Arc<RwLock<BTreeMap<SpendAddress, (Instant, NanoTokens)>>>,
     encryption_sk: Option<SecretKey>,
 }
 
@@ -70,10 +72,16 @@ struct BetaTracking {
     processed_spends: u64,
     total_accumulated_utxo: u64,
     total_on_track_utxo: u64,
+    total_royalties: BTreeMap<SpendAddress, u64>,
 }
 
 /// Map of Discord usernames to their tracked forwarded payments
 type ForwardedPayments = BTreeMap<String, BTreeSet<(SpendAddress, NanoTokens)>>;
+
+type UtxoStatus = (
+    BTreeMap<SpendAddress, (Instant, NanoTokens)>,
+    BTreeMap<SpendAddress, (Instant, NanoTokens)>,
+);
 
 #[derive(Clone, Serialize, Deserialize)]
 struct SpendJsonResponse {
@@ -115,6 +123,7 @@ impl SpendDagDb {
             dag: Arc::new(RwLock::new(dag)),
             beta_tracking: Arc::new(RwLock::new(Default::default())),
             beta_participants: Arc::new(RwLock::new(BTreeMap::new())),
+            utxo_addresses: Arc::new(RwLock::new(BTreeMap::new())),
             encryption_sk,
         })
     }
@@ -137,6 +146,7 @@ impl SpendDagDb {
             dag: Arc::new(RwLock::new(dag)),
             beta_tracking: Arc::new(RwLock::new(Default::default())),
             beta_participants: Arc::new(RwLock::new(BTreeMap::new())),
+            utxo_addresses: Arc::new(RwLock::new(BTreeMap::new())),
             encryption_sk,
         })
     }
@@ -217,16 +227,19 @@ impl SpendDagDb {
 
         // init utxos to fetch
         let start_dag = { Arc::clone(&self.dag).read().await.clone() };
-        let mut utxo_addresses: BTreeMap<SpendAddress, Instant> = start_dag
-            .get_utxos()
-            .into_iter()
-            .map(|a| (a, Instant::now()))
-            .collect();
+        {
+            let mut utxo_addresses = self.utxo_addresses.write().await;
+            for addr in start_dag.get_utxos().iter() {
+                let _ = utxo_addresses.insert(*addr, (Instant::now(), NanoTokens::zero()));
+            }
+        }
 
         // beta rewards processing
         let self_clone = self.clone();
         let spend_processing = if let Some(sk) = self.encryption_sk.clone() {
-            let (tx, mut rx) = tokio::sync::mpsc::channel::<(SignedSpend, u64, bool)>(SPENDS_PROCESSING_BUFFER_SIZE);
+            let (tx, mut rx) = tokio::sync::mpsc::channel::<(SignedSpend, u64, bool)>(
+                SPENDS_PROCESSING_BUFFER_SIZE,
+            );
             tokio::spawn(async move {
                 let mut double_spends = BTreeSet::new();
 
@@ -266,12 +279,19 @@ impl SpendDagDb {
         loop {
             // `addrs_to_get` is always empty when reaching this point
             // get expired utxos for the further fetch
-            let utxos_to_fetch;
-            let now = Instant::now();
-            (utxo_addresses, utxos_to_fetch) = utxo_addresses
-                .into_iter()
-                .partition(|(_address, time_stamp)| *time_stamp > now);
-            addrs_to_get.extend(utxos_to_fetch.keys().cloned().collect::<BTreeSet<_>>());
+            {
+                let now = Instant::now();
+                let mut utxo_addresses = self.utxo_addresses.write().await;
+                let mut utxos_to_fetch = BTreeSet::new();
+                utxo_addresses.retain(|address, (time_stamp, amount)| {
+                    let not_expired = *time_stamp > now;
+                    if !not_expired {
+                        let _ = utxos_to_fetch.insert((*address, *amount));
+                    }
+                    not_expired
+                });
+                addrs_to_get.extend(utxos_to_fetch);
+            }
 
             if addrs_to_get.is_empty() {
                 debug!(
@@ -285,17 +305,23 @@ impl SpendDagDb {
             if cfg!(feature = "dag-collection") {
                 let new_utxos = self
                     .crawl_and_generate_local_dag(
-                        addrs_to_get.clone(),
+                        addrs_to_get.iter().map(|(addr, _amount)| *addr).collect(),
                         spend_processing.clone(),
                         client.clone(),
                     )
                     .await;
                 addrs_to_get.clear();
-                utxo_addresses.extend(
-                    new_utxos
-                        .into_iter()
-                        .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
-                );
+
+                let mut utxo_addresses = self.utxo_addresses.write().await;
+                utxo_addresses.extend(new_utxos.into_iter().map(|a| {
+                    (
+                        a,
+                        (
+                            Instant::now() + *UTXO_REATTEMPT_INTERVAL,
+                            NanoTokens::zero(),
+                        ),
+                    )
+                }));
             } else if let Some(sender) = spend_processing.clone() {
                 if let Ok(reattempt_addrs) = client
                     .crawl_to_next_utxos(
@@ -305,6 +331,7 @@ impl SpendDagDb {
                     )
                     .await
                 {
+                    let mut utxo_addresses = self.utxo_addresses.write().await;
                     utxo_addresses.extend(reattempt_addrs);
                 }
             } else {
@@ -361,6 +388,61 @@ impl SpendDagDb {
         beta_tracking.processed_spends += 1;
         beta_tracking.total_accumulated_utxo += spend.spend.spent_tx.outputs.len() as u64;
         beta_tracking.total_on_track_utxo += utxos_for_further_track;
+
+        // Collect royalties
+        let royalty_pubkeys: BTreeSet<_> = spend
+            .spend
+            .network_royalties
+            .iter()
+            .map(|derivation_idx| NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+            .collect();
+        let default_royalty_pubkeys: BTreeSet<_> = spend
+            .spend
+            .network_royalties
+            .iter()
+            .map(|derivation_idx| DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+            .collect();
+        let mut royalties = BTreeMap::new();
+        for output in spend.spend.spent_tx.outputs.iter() {
+            if default_royalty_pubkeys.contains(&output.unique_pubkey)
+                || royalty_pubkeys.contains(&output.unique_pubkey)
+            {
+                let _ = royalties.insert(
+                    SpendAddress::from_unique_pubkey(&output.unique_pubkey),
+                    output.amount.as_nano(),
+                );
+            }
+        }
+
+        if royalties.len() > (spend.spend.spent_tx.outputs.len() - 1) / 2 {
+            eprintln!(
+                "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
+                spend.spend.unique_pubkey,
+                royalties.len(),
+                spend.spend.amount.as_nano(),
+                spend.spend.reason
+            );
+            eprintln!(
+                "Incorreect royalty spend has {} royalties, {:?} - {:?}",
+                spend.spend.network_royalties.len(),
+                spend.spend.spent_tx.inputs,
+                spend.spend.spent_tx.outputs
+            );
+            warn!(
+                "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
+                spend.spend.unique_pubkey,
+                royalties.len(),
+                spend.spend.amount.as_nano(),
+                spend.spend.reason
+            );
+            warn!(
+                "Incorreect royalty spend has {} royalties, {:?} - {:?}",
+                spend.spend.network_royalties.len(),
+                spend.spend.spent_tx.inputs,
+                spend.spend.spent_tx.outputs
+            );
+        }
+        beta_tracking.total_royalties.extend(royalties);
 
         // check for beta rewards reason
         let user_name_hash = match spend.reason().get_sender_hash(sk) {
@@ -457,6 +539,8 @@ impl SpendDagDb {
     pub(crate) async fn beta_program_json(&self) -> Result<(String, String)> {
         let r_handle = Arc::clone(&self.beta_tracking);
         let beta_tracking = r_handle.read().await;
+        let r_utxo_handler = Arc::clone(&self.utxo_addresses);
+        let utxo_addresses = r_utxo_handler.read().await;
         let mut rewards_output = vec![];
         let mut total_hits = 0_u64;
         let mut total_amount = 0_u64;
@@ -471,10 +555,49 @@ impl SpendDagDb {
             rewards_output.push((participant.clone(), total_rewards));
         }
         let json = serde_json::to_string_pretty(&rewards_output)?;
-        let tracking_performance = format!("processed_spends: {}\ntotal_accumulated_utxo:{}\ntotal_on_track_utxo:{}\nskipped_utxo:{}\nrepeated_utxo:{}\ntotal_hits:{}\ntotal_amount:{}",
+
+        let mut tracking_performance = format!("processed_spends: {}\ntotal_accumulated_utxo:{}\ntotal_on_track_utxo:{}\nskipped_utxo:{}\nrepeated_utxo:{}\ntotal_hits:{}\ntotal_amount:{}",
             beta_tracking.processed_spends, beta_tracking.total_accumulated_utxo, beta_tracking.total_on_track_utxo, beta_tracking.total_accumulated_utxo - beta_tracking.total_on_track_utxo,
-            beta_tracking.total_on_track_utxo - beta_tracking.processed_spends, total_hits, total_amount
+            utxo_addresses.len(), total_hits, total_amount
             );
+
+        tracking_performance = format!(
+            "{tracking_performance}\ntotal_royalties hits: {}",
+            beta_tracking.total_royalties.len()
+        );
+        let total_royalties = beta_tracking.total_royalties.values().sum::<u64>();
+        tracking_performance =
+            format!("{tracking_performance}\ntotal_royalties amount: {total_royalties}");
+
+        // UTXO amount that greater than 100000 nanos shall be considered as `change`
+        // which indicates the `wallet balance`
+        let (big_utxos, small_utxos): UtxoStatus = utxo_addresses
+            .iter()
+            .partition(|(_address, (_time_stamp, amount))| amount.as_nano() > 100000);
+
+        let total_big_utxo_amount = big_utxos
+            .iter()
+            .map(|(_addr, (_time, amount))| amount.as_nano())
+            .sum::<u64>();
+        tracking_performance =
+            format!("{tracking_performance}\ntotal_big_utxo_amount: {total_big_utxo_amount}");
+
+        let total_small_utxo_amount = small_utxos
+            .iter()
+            .map(|(_addr, (_time, amount))| amount.as_nano())
+            .sum::<u64>();
+        tracking_performance =
+            format!("{tracking_performance}\ntotal_small_utxo_amount: {total_small_utxo_amount}");
+
+        for (addr, (_time, amount)) in big_utxos.iter() {
+            tracking_performance =
+                format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
+        }
+        for (addr, (_time, amount)) in small_utxos.iter() {
+            tracking_performance =
+                format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
+        }
+
         Ok((json, tracking_performance))
     }
 
