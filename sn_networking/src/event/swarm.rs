@@ -526,19 +526,13 @@ impl SwarmDriver {
                         .kademlia
                         .remove_peer(&failed_peer_id)
                     {
-                        self.peers_in_rt = self.peers_in_rt.saturating_sub(1);
+                        self.update_on_peer_removal(*dead_peer.node.key.preimage());
 
                         self.handle_cmd(SwarmCmd::RecordNodeIssue {
                             peer_id: failed_peer_id,
                             issue: crate::NodeIssue::ConnectionIssue,
                         })?;
 
-                        self.send_event(NetworkEvent::PeerRemoved(
-                            *dead_peer.node.key.preimage(),
-                            self.peers_in_rt,
-                        ));
-
-                        self.log_kbuckets(&failed_peer_id);
                         let _ = self.check_for_change_in_our_close_group();
                     }
                 }

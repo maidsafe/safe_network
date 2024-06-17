@@ -8,7 +8,7 @@
 
 use crate::{
     driver::PendingGetClosestType, get_quorum_value, GetRecordCfg, GetRecordError, NetworkError,
-    NetworkEvent, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    Result, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::kad::{
@@ -245,26 +245,19 @@ impl SwarmDriver {
             } => {
                 event_string = "kad_event::RoutingUpdated";
                 if is_new_peer {
-                    self.peers_in_rt = self.peers_in_rt.saturating_add(1);
-
-                    info!("New peer added to routing table: {peer:?}, now we have #{} connected peers", self.peers_in_rt);
-                    self.log_kbuckets(&peer);
+                    self.update_on_peer_addition(peer);
 
                     // This should only happen once
                     if self.bootstrap.notify_new_peer() {
                         info!("Performing the first bootstrap");
                         self.trigger_network_discovery();
                     }
-                    self.send_event(NetworkEvent::PeerAdded(peer, self.peers_in_rt));
                 }
 
                 info!("kad_event::RoutingUpdated {:?}: {peer:?}, is_new_peer: {is_new_peer:?} old_peer: {old_peer:?}", self.peers_in_rt);
-                if old_peer.is_some() {
-                    self.peers_in_rt = self.peers_in_rt.saturating_sub(1);
-
+                if let Some(old_peer) = old_peer {
                     info!("Evicted old peer on new peer join: {old_peer:?}");
-                    self.send_event(NetworkEvent::PeerRemoved(peer, self.peers_in_rt));
-                    self.log_kbuckets(&peer);
+                    self.update_on_peer_removal(old_peer);
                 }
                 let _ = self.check_for_change_in_our_close_group();
             }

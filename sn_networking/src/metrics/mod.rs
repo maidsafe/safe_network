@@ -30,6 +30,7 @@ pub(crate) struct NetworkMetrics {
     // metrics from sn_networking
     pub(crate) estimated_network_size: Gauge,
     pub(crate) connected_peers: Gauge,
+    pub(crate) peers_in_routing_table: Gauge,
     pub(crate) records_stored: Gauge,
     pub(crate) store_cost: Gauge,
     #[cfg(feature = "upnp")]
@@ -64,6 +65,12 @@ impl NetworkMetrics {
             "estimated_network_size",
             "The estimated number of nodes in the network calculated by the peers in our RT",
             estimated_network_size.clone(),
+        );
+        let peers_in_routing_table = Gauge::default();
+        sub_registry.register(
+            "peers_in_routing_table",
+            "The total number of peers in our routing table",
+            peers_in_routing_table.clone(),
         );
         let store_cost = Gauge::default();
         sub_registry.register(
@@ -100,6 +107,7 @@ impl NetworkMetrics {
             records_stored,
             estimated_network_size,
             connected_peers,
+            peers_in_routing_table,
             store_cost,
             #[cfg(feature = "upnp")]
             upnp_events,
