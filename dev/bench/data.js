@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718603848256,
+  "lastUpdate": 1718603965951,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": true,
-          "id": "fb9191c1d1b431e080890b4049a5e99b19308be1",
-          "message": "fix(test): make tweaks to wan nightly tests",
-          "timestamp": "2024-03-14T14:29:06Z",
-          "tree_id": "e63a2351c243c4ff09fbe4766a38095bcc38056e",
-          "url": "https://github.com/maidsafe/safe_network/commit/fb9191c1d1b431e080890b4049a5e99b19308be1"
-        },
-        "date": 1710429561549,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 53,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "13a6d8aecba82298e14cde80ca36270e833675e2",
+          "message": "fix(networking): use default Relay config from libp2p\n\nThis is much more conservative and should help relay load on machines",
+          "timestamp": "2024-06-17T05:13:04Z",
+          "tree_id": "5722bbcea829b74bcfd914c9b51f451808809921",
+          "url": "https://github.com/maidsafe/safe_network/commit/13a6d8aecba82298e14cde80ca36270e833675e2"
+        },
+        "date": 1718603965701,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 69,
             "unit": "MB"
           }
         ]
