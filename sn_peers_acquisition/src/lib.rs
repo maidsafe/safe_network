@@ -163,13 +163,15 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
     // Parse valid IPv4 socket address, e.g. `1.2.3.4:1234`.
     if let Ok(addr) = addr.parse::<std::net::SocketAddrV4>() {
         let start_addr = Multiaddr::from(*addr.ip());
-        // Start with an address into a `/ip4/<ip>/udp/<port>/quic-v1` multiaddr.
+
+        // Turn the address into a `/ip4/<ip>/udp/<port>/quic-v1` multiaddr.
+        #[cfg(not(feature = "websockets"))]
         let multiaddr = start_addr
             .with(Protocol::Udp(addr.port()))
             .with(Protocol::QuicV1);
 
-        #[cfg(all(feature = "websockets", feature = "wasm32"))]
         // Turn the address into a `/ip4/<ip>/udp/<port>/websocket-websys-v1` multiaddr.
+        #[cfg(feature = "websockets")]
         let multiaddr = start_addr
             .with(Protocol::Tcp(addr.port()))
             .with(Protocol::Ws("/".into()));
