@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718586424095,
+  "lastUpdate": 1718586426067,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "42360f07333e925a19af6d0eaa58c2bec06c5f2c",
-          "message": "fix(ci): build packages separately to bypass feature unification process",
-          "timestamp": "2024-03-14T13:39:53Z",
-          "tree_id": "46545226be557a3e8f9cd06b88ee41070d606de8",
-          "url": "https://github.com/maidsafe/safe_network/commit/42360f07333e925a19af6d0eaa58c2bec06c5f2c"
-        },
-        "date": 1710427110512,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6017,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34789,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 30818,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": true,
+          "id": "55b3af1817133612de49fcb6ffc7e21cc87fffb5",
+          "message": "feat(uploader): block uploader when there is unconfirmed spend",
+          "timestamp": "2024-06-17T00:19:57Z",
+          "tree_id": "93c39e9c86b442abca61aafdd8b1982ffc5dd23a",
+          "url": "https://github.com/maidsafe/safe_network/commit/55b3af1817133612de49fcb6ffc7e21cc87fffb5"
+        },
+        "date": 1718586425494,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7614,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34711,
             "unit": "ms"
           },
           {
