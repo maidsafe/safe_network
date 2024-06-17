@@ -343,9 +343,9 @@ impl SwarmDriver {
     /// Accumulates the GetRecord query results
     /// If we get enough responses (quorum) for a record with the same content hash:
     /// - we return the Record after comparing with the target record. This might return RecordDoesNotMatch if the
-    /// check fails.
+    ///   check fails.
     /// - if multiple content hashes are found, we return a SplitRecord Error
-    /// And then we stop the kad query as we are done here.
+    ///   And then we stop the kad query as we are done here.
     fn accumulate_get_record_found(
         &mut self,
         query_id: QueryId,
@@ -488,7 +488,7 @@ impl SwarmDriver {
     /// If we get a Timeout:
     /// - return a QueryTimeout if we get a split record (?) if we have multiple content hashes.
     /// - if the quorum is satisfied, we return the record after comparing it with the target record. This might return
-    /// RecordDoesNotMatch if the check fails.
+    ///   RecordDoesNotMatch if the check fails.
     /// - else we return q QueryTimeout error.
     fn handle_get_record_error(
         &mut self,
