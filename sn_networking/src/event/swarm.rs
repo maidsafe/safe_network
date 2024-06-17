@@ -384,8 +384,11 @@ impl SwarmDriver {
                 #[cfg(feature = "open-metrics")]
                 if let Some(metrics) = &self.network_metrics {
                     metrics
-                        .connected_peers
+                        .open_connections
                         .set(self.live_connected_peers.len() as i64);
+                    metrics
+                        .connected_peers
+                        .set(self.swarm.connected_peers().count() as i64);
                 }
 
                 if endpoint.is_dialer() {
@@ -405,8 +408,11 @@ impl SwarmDriver {
                 #[cfg(feature = "open-metrics")]
                 if let Some(metrics) = &self.network_metrics {
                     metrics
-                        .connected_peers
+                        .open_connections
                         .set(self.live_connected_peers.len() as i64);
+                    metrics
+                        .connected_peers
+                        .set(self.swarm.connected_peers().count() as i64);
                 }
             }
             SwarmEvent::OutgoingConnectionError {
@@ -700,8 +706,11 @@ impl SwarmDriver {
                 #[cfg(feature = "open-metrics")]
                 if let Some(metrics) = &self.network_metrics {
                     metrics
-                        .connected_peers
+                        .open_connections
                         .set(self.live_connected_peers.len() as i64);
+                    metrics
+                        .connected_peers
+                        .set(self.swarm.connected_peers().count() as i64);
                 }
                 trace!("Removed outdated connection {connection_id:?} to {peer_id:?} with result: {result:?}");
             }

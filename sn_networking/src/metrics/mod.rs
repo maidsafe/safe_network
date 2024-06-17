@@ -28,8 +28,9 @@ pub(crate) struct NetworkMetrics {
     libp2p_metrics: Libp2pMetrics,
 
     // metrics from sn_networking
-    pub(crate) estimated_network_size: Gauge,
     pub(crate) connected_peers: Gauge,
+    pub(crate) estimated_network_size: Gauge,
+    pub(crate) open_connections: Gauge,
     pub(crate) peers_in_routing_table: Gauge,
     pub(crate) records_stored: Gauge,
     pub(crate) store_cost: Gauge,
@@ -65,6 +66,12 @@ impl NetworkMetrics {
             "estimated_network_size",
             "The estimated number of nodes in the network calculated by the peers in our RT",
             estimated_network_size.clone(),
+        );
+        let open_connections = Gauge::default();
+        sub_registry.register(
+            "open_connections",
+            "The number of active connections to other peers",
+            open_connections.clone(),
         );
         let peers_in_routing_table = Gauge::default();
         sub_registry.register(
@@ -107,6 +114,7 @@ impl NetworkMetrics {
             records_stored,
             estimated_network_size,
             connected_peers,
+            open_connections,
             peers_in_routing_table,
             store_cost,
             #[cfg(feature = "upnp")]
