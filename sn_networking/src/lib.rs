@@ -965,6 +965,11 @@ pub(crate) fn send_swarm_cmd(swarm_cmd_sender: Sender<SwarmCmd>, cmd: SwarmCmd) 
     let capacity = swarm_cmd_sender.capacity();
 
     if capacity == 0 {
+        if cmd.can_be_dropped_safely() {
+            warn!("Dropping {cmd:?} as we're at max capacity");
+            return;
+        }
+
         error!(
             "SwarmCmd channel is full. Await capacity to send: {:?}",
             cmd

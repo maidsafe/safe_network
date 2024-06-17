@@ -181,6 +181,39 @@ pub enum SwarmCmd {
     FetchCompleted(RecordKey),
 }
 
+impl SwarmCmd {
+    /// Check if the command can be dropped safely in times of high load.
+    pub(crate) fn can_be_dropped_safely(&self) -> bool {
+        match self {
+            SwarmCmd::Dial { .. } => true,
+            SwarmCmd::DialWithOpts { .. } => true,
+            SwarmCmd::GetAllLocalPeers { .. } => false,
+            SwarmCmd::GetKBuckets { .. } => true,
+            SwarmCmd::GetClosestKLocalPeers { .. } => false,
+            SwarmCmd::GetClosestPeersToAddressFromNetwork { .. } => true,
+            SwarmCmd::GetCloseGroupLocalPeers { .. } => false,
+            SwarmCmd::GetSwarmLocalState { .. } => false,
+            SwarmCmd::SendRequest { .. } => true,
+            SwarmCmd::SendResponse { .. } => true,
+            SwarmCmd::RecordStoreHasKey { .. } => true,
+            SwarmCmd::GetAllLocalRecordAddresses { .. } => true,
+            SwarmCmd::GetNetworkRecord { .. } => true,
+            SwarmCmd::GetLocalStoreCost { .. } => true,
+            SwarmCmd::PaymentReceived => false,
+            SwarmCmd::GetLocalRecord { .. } => true,
+            SwarmCmd::PutRecord { .. } => false,
+            SwarmCmd::PutRecordTo { .. } => false,
+            SwarmCmd::PutLocalRecord { .. } => false,
+            SwarmCmd::RemoveFailedLocalRecord { .. } => false,
+            SwarmCmd::AddLocalRecordAsStored { .. } => false,
+            SwarmCmd::TriggerIntervalReplication => true,
+            SwarmCmd::RecordNodeIssue { .. } => false,
+            SwarmCmd::IsPeerShunned { .. } => true,
+            SwarmCmd::QuoteVerification { .. } => false,
+            SwarmCmd::FetchCompleted { .. } => false,
+        }
+    }
+}
 /// Debug impl for SwarmCmd to avoid printing full Record, instead only RecodKey
 /// and RecordKind are printed.
 impl Debug for SwarmCmd {
