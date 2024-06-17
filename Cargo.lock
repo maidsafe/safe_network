@@ -6979,7 +6979,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.1.26"
+version = "0.2.1"
 dependencies = [
  "blsttc",
  "clap",
@@ -7203,7 +7203,7 @@ dependencies = [
 
 [[package]]
 name = "sn_metrics"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "clap",
  "color-eyre",
