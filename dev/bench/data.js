@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718626691706,
+  "lastUpdate": 1718626693835,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": false,
-          "id": "397e7caa4456ffe3aebff83c98b07dba7c301eec",
-          "message": "feat(manager): display download path",
-          "timestamp": "2024-03-16T20:46:10Z",
-          "tree_id": "9e9f91b9dae1073e0adace421bdc18c368df81a2",
-          "url": "https://github.com/maidsafe/safe_network/commit/397e7caa4456ffe3aebff83c98b07dba7c301eec"
-        },
-        "date": 1710624704816,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6327,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33901,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 32871,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e06121a39e9ddf72730b61c14d4ae0f1c0937cb2",
+          "message": "chore: update crate versions for crates.io sync",
+          "timestamp": "2024-06-17T21:03:28+09:00",
+          "tree_id": "a6984ab4f36ec440dc20fc407ff7d9c713dc513d",
+          "url": "https://github.com/maidsafe/safe_network/commit/e06121a39e9ddf72730b61c14d4ae0f1c0937cb2"
+        },
+        "date": 1718626693122,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7774,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35133,
             "unit": "ms"
           },
           {
