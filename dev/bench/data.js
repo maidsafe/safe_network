@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718605593915,
+  "lastUpdate": 1718605710849,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": true,
-          "id": "b22cfe55d2ecb4da0f47c2f9efb1b91b4909d441",
-          "message": "test(acc-packet): adding test for acc-packet moved to a different location on disk",
-          "timestamp": "2024-03-14T17:26:23Z",
-          "tree_id": "25b8ab8102f2eec2d53db67bc68fdc775914102b",
-          "url": "https://github.com/maidsafe/safe_network/commit/b22cfe55d2ecb4da0f47c2f9efb1b91b4909d441"
-        },
-        "date": 1710439975917,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 69,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "cde9e4f3b829c4b65df867d3ff297ee2b65fa90e",
+          "message": "ci: remove outdated workflow option for provider",
+          "timestamp": "2024-06-17T15:14:36+09:00",
+          "tree_id": "5a859b1eaa9161ba3fa221962635d36a94f80ef0",
+          "url": "https://github.com/maidsafe/safe_network/commit/cde9e4f3b829c4b65df867d3ff297ee2b65fa90e"
+        },
+        "date": 1718605710582,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
