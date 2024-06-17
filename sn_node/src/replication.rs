@@ -65,12 +65,16 @@ impl Node {
                     trace!(
                         "Can not fetch record {pretty_key:?} from node {holder:?}, fetching from the network"
                     );
+
+                    // Here we don't care about how many nodes are storing this record...
                     let get_cfg = GetRecordCfg {
                         get_quorum: Quorum::One,
                         retry_strategy: None,
                         target_record: None,
                         expected_holders: Default::default(),
                     };
+                    // But this can error out with SplitRecord and so keep retrying so we do not replicate
+                    // DoubleSpendAttempted Spends here!
                     node.network.get_record_from_network(key, &get_cfg).await?
                 };
 

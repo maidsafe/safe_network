@@ -363,6 +363,9 @@ impl Node {
 
         // validate the signed spends against the network and the local knowledge
         debug!("Validating spends for {pretty_key:?} with unique key: {unique_pubkey:?}");
+
+        // In here we are expecting to have at most 2 spends for the same unique_pubkey
+        // This could push out original valid spends if there is a double spend.
         let (spend1, maybe_spend2) = match self
             .signed_spends_to_keep(spends_for_key.clone(), *unique_pubkey)
             .await
