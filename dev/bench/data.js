@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718616350301,
+  "lastUpdate": 1718626563988,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": false,
-          "id": "397e7caa4456ffe3aebff83c98b07dba7c301eec",
-          "message": "feat(manager): display download path",
-          "timestamp": "2024-03-16T20:46:10Z",
-          "tree_id": "9e9f91b9dae1073e0adace421bdc18c368df81a2",
-          "url": "https://github.com/maidsafe/safe_network/commit/397e7caa4456ffe3aebff83c98b07dba7c301eec"
-        },
-        "date": 1710624594613,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.3130516875747695,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8403380293023137,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.2594509285373,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.38040396740767,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e06121a39e9ddf72730b61c14d4ae0f1c0937cb2",
+          "message": "chore: update crate versions for crates.io sync",
+          "timestamp": "2024-06-17T21:03:28+09:00",
+          "tree_id": "a6984ab4f36ec440dc20fc407ff7d9c713dc513d",
+          "url": "https://github.com/maidsafe/safe_network/commit/e06121a39e9ddf72730b61c14d4ae0f1c0937cb2"
+        },
+        "date": 1718626558323,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1745314263486994,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6242588700235465,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.61511053985326,
             "unit": "MiB/s"
           }
         ]
