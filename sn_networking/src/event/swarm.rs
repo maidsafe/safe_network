@@ -636,12 +636,16 @@ impl SwarmDriver {
             }
         }
         if let Some(to_be_removed_bootstrap) = shall_removed {
-            trace!("Bootstrap node {to_be_removed_bootstrap:?} to be replaced by peer {peer_id:?}");
-            let _entry = self
+            info!("Bootstrap node {to_be_removed_bootstrap:?} to be replaced by peer {peer_id:?}");
+            let entry = self
                 .swarm
                 .behaviour_mut()
                 .kademlia
                 .remove_peer(&to_be_removed_bootstrap);
+            if let Some(removed_peer) = entry {
+                self.update_on_peer_removal(*removed_peer.node.key.preimage());
+                let _ = self.check_for_change_in_our_close_group();
+            }
         }
     }
 
