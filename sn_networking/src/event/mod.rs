@@ -333,6 +333,16 @@ impl SwarmDriver {
                 .set(estimated_network_size as i64);
         }
 
+        // Just to warn if our tracking goes out of sync with libp2p. Can happen if someone forgets to call
+        // update_on_peer_addition or update_on_peer_removal when adding or removing a peer.
+        // Only log every 10th peer to avoid spamming the logs.
+        if total_peers % 10 == 0 && total_peers != self.peers_in_rt {
+            warn!(
+                "Total peers in routing table: {}, but kbucket table has {total_peers} peers",
+                self.peers_in_rt
+            );
+        }
+
         info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}, estimated network size: {estimated_network_size:?}");
     }
 
