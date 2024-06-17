@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718628945050,
+  "lastUpdate": 1718628946624,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "75967394ebaed6ff2963934f95bf6c7bab3f42dd",
-          "message": "fix(node): get_closest error not trigger bad_node report",
-          "timestamp": "2024-03-18T10:55:00Z",
-          "tree_id": "69d6e87ea96a3fe95d150c6d0c463159f0d467af",
-          "url": "https://github.com/maidsafe/safe_network/commit/75967394ebaed6ff2963934f95bf6c7bab3f42dd"
-        },
-        "date": 1710763059490,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5780,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33224,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 31691,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "22ae1147d594906808903e280755ecea593bc6d5",
+          "message": "refactor: fix manual_unwrap_or_default\n\nclippy lint in nightly",
+          "timestamp": "2024-06-17T12:04:26Z",
+          "tree_id": "af8dccc2edda4a7a768e547ebe525f7de641a5cf",
+          "url": "https://github.com/maidsafe/safe_network/commit/22ae1147d594906808903e280755ecea593bc6d5"
+        },
+        "date": 1718628946311,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7134,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 33782,
             "unit": "ms"
           },
           {
