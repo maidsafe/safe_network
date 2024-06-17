@@ -37,7 +37,7 @@ pub(crate) fn encrypt_from_path(path: &Path, output_dir: &Path) -> Result<(Chunk
 
     for chunk in additional_chunks.iter() {
         encrypted_chunks.push(*chunk.name());
-        let file_path = output_dir.join(&hex::encode(chunk.name()));
+        let file_path = output_dir.join(hex::encode(chunk.name()));
         let mut output_file = File::create(file_path)?;
         output_file.write_all(&chunk.value)?;
     }
@@ -78,7 +78,7 @@ pub(crate) fn encrypt_large(
     // Pack the datamap into chunks that under the same output folder as well.
     let (data_map_chunk, additional_chunks) = pack_data_map(data_map)?;
     for chunk in additional_chunks.iter() {
-        let file_path = output_dir.join(&hex::encode(chunk.name()));
+        let file_path = output_dir.join(hex::encode(chunk.name()));
         encrypted_chunks.push((*chunk.name(), file_path.to_path_buf()));
         let mut output_file = File::create(file_path)?;
         output_file.write_all(&chunk.value)?;

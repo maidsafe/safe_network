@@ -388,7 +388,7 @@ fn store_chunks_task(
 
             let chunk_name = XorName::from_content(&random_bytes);
 
-            let file_path = temp_dir.path().join(&hex::encode(chunk_name));
+            let file_path = temp_dir.path().join(hex::encode(chunk_name));
             let mut chunk_file =
                 File::create(&file_path).expect("failed to create temp chunk file");
             chunk_file
