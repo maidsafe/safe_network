@@ -36,8 +36,10 @@ impl Network {
             .inputs
             .iter()
             .map(|input| input.unique_pubkey);
+        // This will error with double spend... Is that wanted?
+        // I think so here as _this spend_ is now invalid
         let tasks: Vec<_> = parent_keys
-            .map(|a| self.get_spend(SpendAddress::from_unique_pubkey(&a)))
+            .map(|a| self.get_valid_spend(SpendAddress::from_unique_pubkey(&a)))
             .collect();
         let parent_spends: BTreeSet<SignedSpend> = join_all(tasks)
             .await

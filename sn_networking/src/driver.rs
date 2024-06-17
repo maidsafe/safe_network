@@ -122,6 +122,10 @@ pub struct GetRecordCfg {
     pub get_quorum: Quorum,
     /// If enabled, the provided `RetryStrategy` is used to retry if a GET attempt fails.
     pub retry_strategy: Option<RetryStrategy>,
+    /// If disabled, we error out if any double spend is found.
+    /// If enabled all double spends found are accumulated and returned.
+    /// This is useful for the client to decide if they want to retry the operation.
+    pub accumulate_spend_attempts: bool,
     /// Only return if we fetch the provided record.
     pub target_record: Option<Record>,
     /// Logs if the record was not fetched from the provided set of peers.

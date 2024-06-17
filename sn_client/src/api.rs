@@ -21,7 +21,7 @@ use libp2p::{
 use prometheus_client::registry::Registry;
 use rand::{thread_rng, Rng};
 use sn_networking::{
-    get_signed_spend_from_record, multiaddr_is_global,
+    get_solitary_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
     GetRecordCfg, GetRecordError, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg,
     VerificationKind, CLOSE_GROUP_SIZE,
@@ -460,6 +460,7 @@ impl Client {
             Some(RetryStrategy::Quick)
         };
         let get_cfg = GetRecordCfg {
+            accumulate_spend_attempts: false,
             get_quorum,
             retry_strategy,
             target_record: None,
@@ -654,6 +655,7 @@ impl Client {
                 get_quorum: Quorum::N(
                     NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
                 ),
+                accumulate_spend_attempts: false,
                 retry_strategy,
                 target_record: None, // Not used since we use ChunkProof
                 expected_holders: Default::default(),
@@ -738,6 +740,7 @@ impl Client {
         };
 
         let get_cfg = GetRecordCfg {
+            accumulate_spend_attempts: false,
             get_quorum: Quorum::One,
             retry_strategy: Some(retry_strategy.unwrap_or(RetryStrategy::Quick)),
             target_record: None,
@@ -889,6 +892,7 @@ impl Client {
 
         // When there is retry on Put side, no need to have a retry on Get
         let verification_cfg = GetRecordCfg {
+            accumulate_spend_attempts: true,
             get_quorum: Quorum::Majority,
             retry_strategy: None,
             target_record: record_to_verify,
@@ -933,11 +937,12 @@ impl Client {
     /// # }
     /// ```
     pub async fn get_spend_from_network(&self, address: SpendAddress) -> Result<SignedSpend> {
-        self.try_fetch_spend_from_network(
+        self.try_fetch_solitary_spend_from_network(
             address,
             GetRecordCfg {
                 get_quorum: Quorum::Majority,
                 retry_strategy: Some(RetryStrategy::Balanced),
+                accumulate_spend_attempts: false,
                 target_record: None,
                 expected_holders: Default::default(),
             },
@@ -949,11 +954,12 @@ impl Client {
     /// Useful to help decide whether a re-put is necessary, or a spend exists already
     /// (client side verification).
     pub async fn peek_a_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
-        self.try_fetch_spend_from_network(
+        self.try_fetch_solitary_spend_from_network(
             address,
             GetRecordCfg {
                 get_quorum: Quorum::One,
                 retry_strategy: None,
+                accumulate_spend_attempts: true,
                 target_record: None,
                 expected_holders: Default::default(),
             },
@@ -964,11 +970,12 @@ impl Client {
     /// This is a similar funcation to `get_spend_from_network` to get a spend from network.
     /// Just using different `RetryStrategy` to improve the performance during crawling.
     pub async fn crawl_spend_from_network(&self, address: SpendAddress) -> Result<SignedSpend> {
-        self.try_fetch_spend_from_network(
+        self.try_fetch_solitary_spend_from_network(
             address,
             GetRecordCfg {
                 get_quorum: Quorum::Majority,
                 retry_strategy: None,
+                accumulate_spend_attempts: true,
                 target_record: None,
                 expected_holders: Default::default(),
             },
@@ -983,7 +990,8 @@ impl Client {
         self.peek_a_spend(genesis_addr).await.is_ok()
     }
 
-    async fn try_fetch_spend_from_network(
+    /// Gets a spend or returns error if DoubleSpendAttempt is detected.
+    async fn try_fetch_solitary_spend_from_network(
         &self,
         address: SpendAddress,
         get_cfg: GetRecordCfg,
@@ -1003,7 +1011,7 @@ impl Client {
             PrettyPrintRecordKey::from(&record.key)
         );
 
-        let signed_spend = get_signed_spend_from_record(&address, &record)?;
+        let signed_spend = get_solitary_signed_spend_from_record(&address, &record)?;
 
         // check addr
         let spend_addr = SpendAddress::from_unique_pubkey(signed_spend.unique_pubkey());

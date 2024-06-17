@@ -33,6 +33,7 @@ impl Network {
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
             retry_strategy: None,
+            accumulate_spend_attempts: true,
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -48,11 +49,12 @@ impl Network {
     /// We know it must be there, and has to be fetched from Quorum::All
     ///
     /// If we get a quorum error, we increase the RetryStrategy
-    pub async fn get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
+    pub async fn get_valid_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let mut get_cfg = GetRecordCfg {
             get_quorum: Quorum::All,
             retry_strategy: Some(RetryStrategy::Quick),
+            accumulate_spend_attempts: false,
             target_record: None,
             expected_holders: Default::default(),
         };
@@ -85,7 +87,7 @@ impl Network {
             PrettyPrintRecordKey::from(&record.key)
         );
 
-        get_signed_spend_from_record(&address, &record)
+        get_solitary_signed_spend_from_record(&address, &record)
     }
 
     /// This function is used to receive a Transfer and turn it back into spendable CashNotes.
@@ -130,7 +132,7 @@ impl Network {
         let mut tasks = JoinSet::new();
         for addr in parent_addrs.clone() {
             let self_clone = self.clone();
-            let _ = tasks.spawn(async move { self_clone.get_spend(addr).await });
+            let _ = tasks.spawn(async move { self_clone.get_valid_spend(addr).await });
         }
         let mut parent_spends = BTreeSet::new();
         while let Some(result) = tasks.join_next().await {
@@ -188,7 +190,7 @@ impl Network {
                 }
                 let self_clone = self.clone();
                 let addr = SpendAddress::from_unique_pubkey(input_key);
-                let _ = tasks.spawn(async move { self_clone.get_spend(addr).await });
+                let _ = tasks.spawn(async move { self_clone.get_valid_spend(addr).await });
             }
             while let Some(result) = tasks.join_next().await {
                 let signed_spend = result
@@ -231,8 +233,8 @@ pub fn get_raw_signed_spends_from_record(record: &Record) -> Result<Vec<SignedSp
 }
 
 /// Get the signed spend out of a record.
-/// Double spends are returned as an error
-pub fn get_signed_spend_from_record(
+/// Double spend attempts are returned as an error
+pub fn get_solitary_signed_spend_from_record(
     address: &SpendAddress,
     record: &Record,
 ) -> Result<SignedSpend> {

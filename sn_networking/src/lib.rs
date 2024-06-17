@@ -40,7 +40,7 @@ pub use self::{
     error::{GetRecordError, NetworkError},
     event::{MsgResponder, NetworkEvent},
     record_store::{calculate_cost_for_records, NodeRecordStore},
-    transfers::{get_raw_signed_spends_from_record, get_signed_spend_from_record},
+    transfers::{get_raw_signed_spends_from_record, get_solitary_signed_spend_from_record},
 };
 
 use self::{cmd::SwarmCmd, error::Result};
@@ -507,6 +507,8 @@ impl Network {
                         warn!("No holder of record '{pretty_key:?}' found.");
                     }
                     Err(GetRecordError::SplitRecord { .. }) => {
+                        // if get_record_cfg.acc {
+                        // }
                         error!("Encountered a split record for {pretty_key:?}.");
                     }
                     Err(GetRecordError::QueryTimeout) => {

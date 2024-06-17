@@ -68,6 +68,7 @@ impl Node {
 
                     // Here we don't care about how many nodes are storing this record...
                     let get_cfg = GetRecordCfg {
+                        accumulate_spend_attempts: true,
                         get_quorum: Quorum::One,
                         retry_strategy: None,
                         target_record: None,

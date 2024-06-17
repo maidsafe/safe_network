@@ -959,7 +959,7 @@ impl Client {
             let pk = cn.unique_pubkey();
             let addr = SpendAddress::from_unique_pubkey(&pk);
             let self_clone = self.network.clone();
-            let _ = tasks.spawn(async move { self_clone.get_spend(addr).await });
+            let _ = tasks.spawn(async move { self_clone.get_valid_spend(addr).await });
         }
         while let Some(result) = tasks.join_next().await {
             let res = result.map_err(|e| WalletError::FailedToGetSpend(format!("{e}")))?;

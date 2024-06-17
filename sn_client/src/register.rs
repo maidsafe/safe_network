@@ -844,6 +844,7 @@ impl ClientRegister {
         let verification_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
             retry_strategy: Some(RetryStrategy::Balanced),
+            accumulate_spend_attempts: false,
             target_record: record_to_verify,
             expected_holders,
         };
