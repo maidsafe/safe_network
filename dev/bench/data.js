@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718626563988,
+  "lastUpdate": 1718626689924,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "maciej@robotix-lozinski.pl",
-            "name": "loziniak",
-            "username": "loziniak"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": false,
-          "id": "397e7caa4456ffe3aebff83c98b07dba7c301eec",
-          "message": "feat(manager): display download path",
-          "timestamp": "2024-03-16T20:46:10Z",
-          "tree_id": "9e9f91b9dae1073e0adace421bdc18c368df81a2",
-          "url": "https://github.com/maidsafe/safe_network/commit/397e7caa4456ffe3aebff83c98b07dba7c301eec"
-        },
-        "date": 1710624701834,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/7bfeffd0624fb4bfacc2d644df5643ae9b640ec4"
         },
         "date": 1718616344959,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "e06121a39e9ddf72730b61c14d4ae0f1c0937cb2",
+          "message": "chore: update crate versions for crates.io sync",
+          "timestamp": "2024-06-17T21:03:28+09:00",
+          "tree_id": "a6984ab4f36ec440dc20fc407ff7d9c713dc513d",
+          "url": "https://github.com/maidsafe/safe_network/commit/e06121a39e9ddf72730b61c14d4ae0f1c0937cb2"
+        },
+        "date": 1718626689402,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
