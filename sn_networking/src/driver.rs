@@ -544,12 +544,7 @@ impl NetworkBuilder {
             .boxed();
 
         let relay_server = {
-            let relay_server_cfg = relay::Config {
-                max_reservations: 1024,      // the number of home nodes that we can support
-                max_circuits: 32_000, // total max number of relayed connections we can support
-                max_circuits_per_peer: 1024, // max number of relayed connections per peer
-                ..Default::default()
-            };
+            let relay_server_cfg = relay::Config::default();
             libp2p::relay::Behaviour::new(peer_id, relay_server_cfg)
         };
 
