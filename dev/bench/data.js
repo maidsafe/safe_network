@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718626693835,
+  "lastUpdate": 1718628754431,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "75e125675b95107781135311479bc94ba4c56550",
-          "message": "feat: support a port range on the `add` command\n\nPreviously we would not allow a custom port to be specified if more than one service was being\nadded. However, without autonat, people still need to open ports manually on their router, so the\nnode services they add will need to match this port range. Without the ability to specify a range,\nthey'd need to add the services one by one.",
-          "timestamp": "2024-03-18T02:14:02Z",
-          "tree_id": "d29caf619ed61b6ab5a7b61fb21d65f10339c28a",
-          "url": "https://github.com/maidsafe/safe_network/commit/75e125675b95107781135311479bc94ba4c56550"
-        },
-        "date": 1710730697317,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2842057318553513,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.841511497280972,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 59.14525794082793,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.61511053985326,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5da8ca2118dce01c9d1539009c5f2123e1a2b889",
+          "message": "refactor: fix nonexisting feature\n\nThe `wasm32` is not a feature. It was probably supposed to be the target architecture.",
+          "timestamp": "2024-06-17T12:04:03Z",
+          "tree_id": "9dd60227f7abb3242d43ad574581d2922cf8ebd3",
+          "url": "https://github.com/maidsafe/safe_network/commit/5da8ca2118dce01c9d1539009c5f2123e1a2b889"
+        },
+        "date": 1718628748775,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2423386095278703,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.672537394892529,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.98802967567584,
             "unit": "MiB/s"
           }
         ]
