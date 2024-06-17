@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718616345777,
+  "lastUpdate": 1718616347934,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "e4646093c7393886bc71de14dc7bd5c774cd08bb",
-          "message": "feat: provide `faucet upgrade` command\n\nUses the generic service manager to provide a `faucet upgrade` command, which will be used during\nthe general upgrade process to either upgrade or downgrade the faucet.\n\nSome code was common between the node and faucet upgrades, so that was refactored to be shared\nbetween the two.\n\nAlso clarifies some of the language used on the command documentation.",
-          "timestamp": "2024-03-14T23:56:52Z",
-          "tree_id": "13b8597d102c3f071f352c50cdc2d0e010929320",
-          "url": "https://github.com/maidsafe/safe_network/commit/e4646093c7393886bc71de14dc7bd5c774cd08bb"
-        },
-        "date": 1710463441435,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 204,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "maciej@robotix-lozinski.pl",
             "name": "loziniak",
             "username": "loziniak"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "7bfeffd0624fb4bfacc2d644df5643ae9b640ec4",
+          "message": "style(protocol): ignore clone_on_ref_ptr",
+          "timestamp": "2024-06-17T08:27:18Z",
+          "tree_id": "623d6579ec2c195664dd591e79e927095beb72a7",
+          "url": "https://github.com/maidsafe/safe_network/commit/7bfeffd0624fb4bfacc2d644df5643ae9b640ec4"
+        },
+        "date": 1718616347133,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
