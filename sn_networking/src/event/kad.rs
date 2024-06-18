@@ -7,15 +7,19 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    driver::PendingGetClosestType, get_quorum_value, GetRecordCfg, GetRecordError, NetworkError,
-    NetworkEvent, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    driver::PendingGetClosestType, get_quorum_value, get_raw_signed_spends_from_record,
+    GetRecordCfg, GetRecordError, NetworkError, NetworkEvent, Result, SwarmDriver,
+    CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::kad::{
     self, GetClosestPeersError, InboundRequest, PeerRecord, ProgressStep, QueryId, QueryResult,
     QueryStats, Record, K_VALUE,
 };
-use sn_protocol::PrettyPrintRecordKey;
+use sn_protocol::{
+    storage::{try_serialize_record, RecordKind},
+    PrettyPrintRecordKey,
+};
 use std::{
     collections::{hash_map::Entry, HashSet},
     time::Instant,
@@ -402,9 +406,45 @@ impl SwarmDriver {
                     Self::send_record_after_checking_target(sender, peer_record.record, &cfg)?;
                 } else {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
-                    sender
-                        .send(Err(GetRecordError::SplitRecord { result_map }))
-                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+
+                    // Ensure we're not expecting a concrete record.
+                    if cfg.accumulate_spend_attempts && cfg.target_record.is_none() {
+                        let mut all_found_spends = vec![];
+                        for (_record_hash, (record, _peers)) in result_map {
+                            match get_raw_signed_spends_from_record(&record) {
+                                Ok(spends_here) => {
+                                    all_found_spends.extend(spends_here);
+                                }
+                                Err(NetworkError::RecordKindMismatch(record_kind)) => {
+                                    trace!("For record {pretty_key:?} task {query_id:?}, found record with kind {record_kind:?} instead of spend record");
+                                }
+                                Err(error) => {
+                                    error!("Unexpected error when trying to accumulate spend atttempts: {error:?}");
+                                }
+                            }
+                        }
+
+                        if all_found_spends.is_empty() {
+                            warn!("For record {pretty_key:?} task {query_id:?}, found no spend records");
+                        } else {
+                            let bytes = try_serialize_record(&all_found_spends, RecordKind::Spend)?;
+
+                            let new_accumualted_record = Record {
+                                key: peer_record.record.key,
+                                value: bytes.to_vec(),
+                                publisher: None,
+                                expires: None,
+                            };
+                            sender
+                                .send(Ok(new_accumualted_record))
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                        }
+                    } else {
+                        warn!("Unexpected split record. If checking spends, you may want to `accumulate_spend_attempts` in the GetRecordCfg.");
+                        sender
+                            .send(Err(GetRecordError::SplitRecord { result_map }))
+                            .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                    }
                 }
 
                 // Stop the query; possibly stops more nodes from being queried.

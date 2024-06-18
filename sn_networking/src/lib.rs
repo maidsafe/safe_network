@@ -507,8 +507,6 @@ impl Network {
                         warn!("No holder of record '{pretty_key:?}' found.");
                     }
                     Err(GetRecordError::SplitRecord { .. }) => {
-                        // if get_record_cfg.acc {
-                        // }
                         error!("Encountered a split record for {pretty_key:?}.");
                     }
                     Err(GetRecordError::QueryTimeout) => {
@@ -518,6 +516,7 @@ impl Network {
 
                 // if we don't want to retry, throw permanent error
                 if cfg.retry_strategy.is_none() {
+                    // TODO this is where to decide if we just return accumulated record eg
                     if let Err(e) = result {
                         return Err(BackoffError::Permanent(NetworkError::from(e)));
                     }
