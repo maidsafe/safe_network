@@ -173,7 +173,7 @@ impl SwarmDriver {
                             .any(|(_ilog2, peers)| peers.contains(&peer_id));
 
                         // Do not use an `already relayed` peer as `potential relay candidate`.
-                        if !has_relayed && !is_bootstrap_peer {
+                        if !has_relayed && !is_bootstrap_peer && !self.is_client {
                             debug!("Adding candidate relay server {peer_id:?}, it's not a bootstrap node");
                             self.relay_manager.add_potential_candidates(
                                 &peer_id,
