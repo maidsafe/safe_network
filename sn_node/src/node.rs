@@ -233,7 +233,7 @@ impl Node {
         let node_copy = self.clone();
         #[cfg(all(feature = "reward-forward", feature = "open-metrics"))]
         let _handle = spawn(async move {
-            let root_dir = node_copy.network.root_dir_path;
+            let root_dir = node_copy.network.root_dir_path().clone();
             let balance = read_forwarded_balance_value(&root_dir);
 
             if let Some(ref node_metrics) = node_copy.node_metrics {
@@ -662,7 +662,7 @@ impl Node {
             Query::GetStoreCost(address) => {
                 trace!("Got GetStoreCost request for {address:?}");
                 let record_key = address.to_record_key();
-                let self_id = *network.peer_id;
+                let self_id = network.peer_id();
 
                 let store_cost = network.get_local_storecost(record_key.clone()).await;
 
@@ -699,7 +699,7 @@ impl Node {
             Query::GetReplicatedRecord { requester, key } => {
                 trace!("Got GetReplicatedRecord from {requester:?} regarding {key:?}");
 
-                let our_address = NetworkAddress::from_peer(*network.peer_id);
+                let our_address = NetworkAddress::from_peer(network.peer_id());
                 let mut result = Err(ProtocolError::ReplicatedRecordNotFound {
                     holder: Box::new(our_address.clone()),
                     key: Box::new(key.clone()),
@@ -742,7 +742,7 @@ impl Node {
                     };
 
                 QueryResponse::CheckNodeInProblem {
-                    reporter_address: NetworkAddress::from_peer(*network.peer_id),
+                    reporter_address: NetworkAddress::from_peer(network.peer_id()),
                     target_address,
                     is_in_trouble,
                 }
@@ -843,7 +843,7 @@ impl Node {
         let mut spend_requests = vec![];
         {
             // load wallet
-            let mut wallet = HotWallet::load_from(&network.root_dir_path)?;
+            let mut wallet = HotWallet::load_from(network.root_dir_path())?;
             let balance = wallet.balance();
 
             if !balance.is_zero() {
@@ -912,7 +912,7 @@ impl Node {
         }
 
         // write the balance to a file
-        let balance_file_path = network.root_dir_path.join(FORWARDED_BALANCE_FILE_NAME);
+        let balance_file_path = network.root_dir_path().join(FORWARDED_BALANCE_FILE_NAME);
         let old_balance = read_forwarded_balance_value(&balance_file_path);
         let updated_balance = old_balance + total_forwarded_amount;
         trace!("Updating forwarded balance to {updated_balance}");

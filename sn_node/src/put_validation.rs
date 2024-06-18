@@ -490,7 +490,7 @@ impl Node {
         trace!("Validating record payment for {pretty_key}");
 
         // load wallet
-        let mut wallet = HotWallet::load_from(&self.network.root_dir_path)?;
+        let mut wallet = HotWallet::load_from(self.network.root_dir_path())?;
         let old_balance = wallet.balance().as_nano();
 
         // unpack transfer

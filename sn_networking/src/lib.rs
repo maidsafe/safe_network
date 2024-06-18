@@ -155,26 +155,68 @@ pub fn sort_peers_by_key<'a, T>(
 #[derive(Clone)]
 /// API to interact with the underlying Swarm
 pub struct Network {
-    pub swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
-    pub peer_id: Arc<PeerId>,
-    pub root_dir_path: Arc<PathBuf>,
-    keypair: Arc<Keypair>,
+    inner: Arc<NetworkInner>,
+}
+
+/// The actual implementation of the Network. The other is just a wrapper around this, so that we don't expose
+/// the Arc from the interface.
+struct NetworkInner {
+    swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+    peer_id: PeerId,
+    root_dir_path: PathBuf,
+    keypair: Keypair,
 }
 
 impl Network {
+    pub fn new(
+        swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+        peer_id: PeerId,
+        root_dir_path: PathBuf,
+        keypair: Keypair,
+    ) -> Self {
+        Self {
+            inner: Arc::new(NetworkInner {
+                swarm_cmd_sender,
+                peer_id,
+                root_dir_path,
+                keypair,
+            }),
+        }
+    }
+
+    /// Returns the `PeerId` of the instance.
+    pub fn peer_id(&self) -> PeerId {
+        self.inner.peer_id
+    }
+
+    /// Returns the `Keypair` of the instance.
+    pub fn keypair(&self) -> &Keypair {
+        &self.inner.keypair
+    }
+
+    /// Returns the root directory path of the instance.
+    pub fn root_dir_path(&self) -> &PathBuf {
+        &self.inner.root_dir_path
+    }
+
+    /// Get the sender to send a `SwarmCmd` to the underlying `Swarm`.
+    pub(crate) fn swarm_cmd_sender(&self) -> &mpsc::Sender<SwarmCmd> {
+        &self.inner.swarm_cmd_sender
+    }
+
     /// Signs the given data with the node's keypair.
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
-        self.keypair.sign(msg).map_err(NetworkError::from)
+        self.keypair().sign(msg).map_err(NetworkError::from)
     }
 
     /// Verifies a signature for the given data and the node's public key.
     pub fn verify(&self, msg: &[u8], sig: &[u8]) -> bool {
-        self.keypair.public().verify(msg, sig)
+        self.keypair().public().verify(msg, sig)
     }
 
     /// Returns the protobuf serialised PublicKey to allow messaging out for share.
     pub fn get_pub_key(&self) -> Vec<u8> {
-        self.keypair.public().encode_protobuf()
+        self.keypair().public().encode_protobuf()
     }
 
     /// Dial the given peer at the given address.
@@ -776,7 +818,7 @@ impl Network {
 
     // Helper to send SwarmCmd
     fn send_swarm_cmd(&self, cmd: SwarmCmd) {
-        send_swarm_cmd(self.swarm_cmd_sender.clone(), cmd);
+        send_swarm_cmd(self.swarm_cmd_sender().clone(), cmd);
     }
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
@@ -799,7 +841,7 @@ impl Network {
         // ensure we're not including self here
         if client {
             // remove our peer id from the calculations here:
-            closest_peers.retain(|&x| x != *self.peer_id);
+            closest_peers.retain(|&x| x != self.peer_id());
         }
         if tracing::level_enabled!(tracing::Level::TRACE) {
             let close_peers_pretty_print: Vec<_> = closest_peers
