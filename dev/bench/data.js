@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718692440947,
+  "lastUpdate": 1718692560454,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "421b42ef26525f7520ed8846f5cb85fd03d23b27",
-          "message": "refactor: remove churn example from node manager",
-          "timestamp": "2024-03-19T00:31:49Z",
-          "tree_id": "4d47c5becec325f4f42c3150a8a12316ecafa631",
-          "url": "https://github.com/maidsafe/safe_network/commit/421b42ef26525f7520ed8846f5cb85fd03d23b27"
-        },
-        "date": 1710810975200,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "5ff2218ad0aec5f2f33665e11fb545c4d7fea266",
+          "message": "chore(network): disable adding relay candidates for clients",
+          "timestamp": "2024-06-18T05:49:40Z",
+          "tree_id": "b72d180e7eb4c9b148da44bae42fc24c3187b2eb",
+          "url": "https://github.com/maidsafe/safe_network/commit/5ff2218ad0aec5f2f33665e11fb545c4d7fea266"
+        },
+        "date": 1718692559451,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
