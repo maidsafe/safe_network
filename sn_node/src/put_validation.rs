@@ -350,7 +350,7 @@ impl Node {
         // if we have no spends to verify, return early
         let unique_pubkey = match spends_for_key.as_slice() {
             [] => {
-                warn!("Found no valid spends to verify uppon validation for {pretty_key:?}");
+                warn!("Found no valid spends to verify upon validation for {pretty_key:?}");
                 return Err(Error::InvalidRequest(format!(
                     "No spends to verify when validating {pretty_key:?}"
                 )));
@@ -633,12 +633,8 @@ impl Node {
             "Validating before storing spend at {spend_addr:?} with unique key: {unique_pubkey}"
         );
 
-        // if we already have a double spend locally, no need to check the rest
         let local_spends = self.get_local_spends(spend_addr).await?;
-        if let [a, b, ..] = local_spends.as_slice() {
-            debug!("Got a double spend locally already, skipping check for: {unique_pubkey:?}");
-            return Ok((a.to_owned(), Some(b.to_owned())));
-        }
+        let mut all_verified_spends = BTreeSet::from_iter(local_spends.into_iter());
 
         // get spends from the network at the address for that unique pubkey
         let network_spends = match self.network.get_raw_spends(spend_addr).await {
@@ -672,26 +668,15 @@ impl Node {
         }
 
         // collect spends until we have a double spend or until we have all the results
-        let mut all_verified_spends = BTreeSet::from_iter(local_spends.into_iter());
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((spend, Ok(()))) => {
                     info!("Successfully verified {spend:?}");
                     let _inserted = all_verified_spends.insert(spend);
-
-                    // exit early if we have a double spend
-                    if let [a, b, ..] = all_verified_spends
-                        .iter()
-                        .collect::<Vec<&SignedSpend>>()
-                        .as_slice()
-                    {
-                        debug!("Got a double spend for {unique_pubkey:?}");
-                        return Ok(((*a).clone(), Some((*b).clone())));
-                    }
                 }
                 Ok((spend, Err(e))) => {
                     // an error here most probably means the received spend is invalid
-                    warn!("Skipping spend {spend:?} as an error occured during validation: {e:?}");
+                    warn!("Skipping spend {spend:?} as an error occurred during validation: {e:?}");
                 }
                 Err(e) => {
                     let s =
@@ -711,6 +696,10 @@ impl Node {
             [a] => {
                 debug!("Got a single valid spend for {unique_pubkey:?}");
                 Ok((a.to_owned(), None))
+            }
+            [a, b] => {
+                warn!("Got a double spend for {unique_pubkey:?}");
+                Ok((a.to_owned(), Some(b.to_owned())))
             }
             _ => {
                 debug!(
