@@ -68,7 +68,7 @@ pub struct RunningNode {
 impl RunningNode {
     /// Returns this node's `PeerId`
     pub fn peer_id(&self) -> PeerId {
-        *self.network.peer_id
+        self.network.peer_id()
     }
 
     /// Returns the root directory path for the node.
@@ -80,12 +80,12 @@ impl RunningNode {
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>
     #[allow(rustdoc::invalid_html_tags)]
     pub fn root_dir_path(&self) -> PathBuf {
-        (*self.network.root_dir_path).clone()
+        self.network.root_dir_path().clone()
     }
 
     /// Returns the wallet balance of the node
     pub fn get_node_wallet_balance(&self) -> Result<NanoTokens> {
-        let wallet = HotWallet::load_from(&self.network.root_dir_path)?;
+        let wallet = HotWallet::load_from(self.network.root_dir_path())?;
         Ok(wallet.balance())
     }
 

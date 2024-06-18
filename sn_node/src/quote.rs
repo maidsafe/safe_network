@@ -86,7 +86,7 @@ pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, 
     // Do nothing if self is not one of the quoters.
     if let Some((_, self_quote)) = quotes
         .iter()
-        .find(|(peer_id, _quote)| *peer_id == *network.peer_id)
+        .find(|(peer_id, _quote)| *peer_id == network.peer_id())
     {
         let target_address =
             NetworkAddress::from_chunk_address(ChunkAddress::new(self_quote.content));
@@ -95,7 +95,7 @@ pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, 
                 .iter()
                 .filter(|(peer_id, quote)| {
                     let is_same_target = quote.content == self_quote.content;
-                    let is_not_self = *peer_id != *network.peer_id;
+                    let is_not_self = *peer_id != network.peer_id();
                     let is_not_zero_quote = quote.cost != NanoTokens::zero();
 
                     let time_gap = Duration::from_secs(10);

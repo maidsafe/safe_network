@@ -428,7 +428,7 @@ pub fn build_unconnected_client(root_dir: PathBuf) -> Result<Client> {
     let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), true, root_dir);
     let (network, ..) = network_builder.build_client()?;
     let client = Client {
-        network: network.clone(),
+        network,
         events_broadcaster: Default::default(),
         signer: Arc::new(SecretKey::random()),
     };

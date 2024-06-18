@@ -61,7 +61,6 @@ use std::{
     net::SocketAddr,
     num::NonZeroUsize,
     path::PathBuf,
-    sync::Arc,
 };
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Duration;
@@ -610,16 +609,9 @@ impl NetworkBuilder {
             quotes_history: Default::default(),
         };
 
-        Ok((
-            Network {
-                swarm_cmd_sender,
-                peer_id: Arc::new(peer_id),
-                root_dir_path: Arc::new(self.root_dir),
-                keypair: Arc::new(self.keypair),
-            },
-            network_event_receiver,
-            swarm_driver,
-        ))
+        let network = Network::new(swarm_cmd_sender, peer_id, self.root_dir, self.keypair);
+
+        Ok((network, network_event_receiver, swarm_driver))
     }
 }
 

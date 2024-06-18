@@ -32,7 +32,7 @@ impl Node {
     ) -> Result<()> {
         for (holder, key) in keys_to_fetch {
             let node = self.clone();
-            let requester = NetworkAddress::from_peer(*self.network.peer_id);
+            let requester = NetworkAddress::from_peer(self.network.peer_id());
             let _handle: JoinHandle<Result<()>> = spawn(async move {
                 let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
                 trace!("Fetching record {pretty_key:?} from node {holder:?}");
@@ -143,7 +143,7 @@ impl Node {
             };
 
             // remove ourself from these calculations
-            closest_k_peers.retain(|peer_id| peer_id != &*network.peer_id);
+            closest_k_peers.retain(|peer_id| peer_id != &network.peer_id());
 
             let data_addr = NetworkAddress::from_record_key(&paid_key);
 
@@ -161,7 +161,7 @@ impl Node {
                 }
             };
 
-            let our_peer_id = *network.peer_id;
+            let our_peer_id = network.peer_id();
             let our_address = NetworkAddress::from_peer(our_peer_id);
             #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
             let keys = vec![(data_addr.clone(), record_type.clone())];
