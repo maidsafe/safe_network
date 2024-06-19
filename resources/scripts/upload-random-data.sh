@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Target rate of 1.5mb/s
+
 # Function to check if the `safe` command exists, and install it if not
 check_and_install_safe() {
   if ! command -v safe &> /dev/null; then
@@ -14,7 +16,7 @@ check_and_install_safe() {
 # Function to generate a 10MB file of random data
 generate_random_data_file() {
   tmpfile=$(mktemp)
-  dd if=/dev/urandom of="$tmpfile" bs=10M count=1 iflag=fullblock &> /dev/null
+  dd if=/dev/urandom of="$tmpfile" bs=2M count=1 iflag=fullblock &> /dev/null
 
   echo "Generated random data file at $tmpfile"
 
@@ -39,10 +41,13 @@ generate_random_data_file() {
 check_and_install_safe
 
 # Example usage
-total_files=100  # Total number of files to generate and upload
+total_files=10000  # Total number of files to generate and upload
 
 # Loop to generate and upload random data files
 for i in $(seq 1 $total_files); do
+  date +"%A, %B %d, %Y %H:%M:%S"
   echo "Generating and uploading file $i of $total_files..."
   generate_random_data_file
+
+  safe wallet balance
 done
