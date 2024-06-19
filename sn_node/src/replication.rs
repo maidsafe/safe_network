@@ -32,7 +32,7 @@ impl Node {
     ) -> Result<()> {
         for (holder, key) in keys_to_fetch {
             let node = self.clone();
-            let requester = NetworkAddress::from_peer(self.network.peer_id());
+            let requester = NetworkAddress::from_peer(self.network().peer_id());
             let _handle: JoinHandle<Result<()>> = spawn(async move {
                 let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
                 trace!("Fetching record {pretty_key:?} from node {holder:?}");
@@ -40,7 +40,7 @@ impl Node {
                     requester,
                     key: NetworkAddress::from_record_key(&key),
                 });
-                let record_opt = if let Ok(resp) = node.network.send_request(req, holder).await {
+                let record_opt = if let Ok(resp) = node.network().send_request(req, holder).await {
                     match resp {
                         Response::Query(QueryResponse::GetReplicatedRecord(result)) => match result
                         {
@@ -71,7 +71,9 @@ impl Node {
                         target_record: None,
                         expected_holders: Default::default(),
                     };
-                    node.network.get_record_from_network(key, &get_cfg).await?
+                    node.network()
+                        .get_record_from_network(key, &get_cfg)
+                        .await?
                 };
 
                 trace!(
@@ -95,7 +97,7 @@ impl Node {
         paid_key: RecordKey,
         record_type: RecordType,
     ) {
-        let network = self.network.clone();
+        let network = self.network().clone();
 
         let _handle = spawn(async move {
             let start = std::time::Instant::now();
