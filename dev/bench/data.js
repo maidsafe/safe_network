@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718776432422,
+  "lastUpdate": 1718776551705,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": true,
-          "id": "eae2c2a12bdf72ef410fd9cf40c51c32ec8735f5",
-          "message": "test(cli): adding automated test for metadata chunk encryption",
-          "timestamp": "2024-03-19T19:04:45Z",
-          "tree_id": "98606573d1da8fd5c5f7add05cda045f3f04a1ad",
-          "url": "https://github.com/maidsafe/safe_network/commit/eae2c2a12bdf72ef410fd9cf40c51c32ec8735f5"
-        },
-        "date": 1710878072514,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "42510941b1782bbaa0796840e7a969fcbb76974b",
+          "message": "chore: update uploader script",
+          "timestamp": "2024-06-19T05:08:40Z",
+          "tree_id": "35e1d19f1532513cca3b05b664dcbc3eb1342447",
+          "url": "https://github.com/maidsafe/safe_network/commit/42510941b1782bbaa0796840e7a969fcbb76974b"
+        },
+        "date": 1718776551073,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
