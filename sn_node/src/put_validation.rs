@@ -34,7 +34,7 @@ impl Node {
         // Notify replication_fetcher to mark the attempt as completed.
         // Send the notification earlier to avoid it got skipped due to:
         // the record becomes stored during the fetch because of other interleaved process.
-        self.network.notify_fetch_completed(record.key.clone());
+        self.network().notify_fetch_completed(record.key.clone());
 
         match record_header.kind {
             RecordKind::ChunkWithPayment => {
@@ -233,7 +233,7 @@ impl Node {
         }
 
         let present_locally = self
-            .network
+            .network()
             .is_record_key_present_locally(&data_key)
             .await?;
 
@@ -266,11 +266,11 @@ impl Node {
 
         // finally store the Record directly into the local storage
         trace!("Storing chunk {chunk_name:?} as Record locally");
-        self.network.put_local_record(record);
+        self.network().put_local_record(record);
 
         self.record_metrics(Marker::ValidChunkRecordPutFromNetwork(&pretty_key));
 
-        self.events_channel
+        self.events_channel()
             .broadcast(crate::NodeEvent::ChunkStored(chunk_addr));
 
         Ok(CmdOk::StoredSuccessfully)
@@ -287,7 +287,7 @@ impl Node {
 
         // check if the Register is present locally
         let key = NetworkAddress::from_register_address(*reg_addr).to_record_key();
-        let present_locally = self.network.is_record_key_present_locally(&key).await?;
+        let present_locally = self.network().is_record_key_present_locally(&key).await?;
         let pretty_key = PrettyPrintRecordKey::from(&key);
 
         // check register and merge if needed
@@ -295,7 +295,7 @@ impl Node {
             Some(reg) => reg,
             None => {
                 // Notify replication_fetcher to mark the attempt as completed.
-                self.network.notify_fetch_completed(key.clone());
+                self.network().notify_fetch_completed(key.clone());
                 return Ok(CmdOk::DataAlreadyPresent);
             }
         };
@@ -310,7 +310,7 @@ impl Node {
         let content_hash = XorName::from_content(&record.value);
 
         debug!("Storing register {reg_addr:?} as Record locally");
-        self.network.put_local_record(record);
+        self.network().put_local_record(record);
 
         self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));
 
@@ -387,7 +387,7 @@ impl Node {
             publisher: None,
             expires: None,
         };
-        self.network.put_local_record(record);
+        self.network().put_local_record(record);
         debug!(
             "Successfully stored validated spends with key: {unique_pubkey:?} at {pretty_key:?}"
         );
@@ -421,7 +421,7 @@ impl Node {
         for transfer in transfers {
             match transfer {
                 Transfer::Encrypted(_) => match self
-                    .network
+                    .network()
                     .verify_and_unpack_transfer(&transfer, wallet)
                     .await
                 {
@@ -434,7 +434,7 @@ impl Node {
                 },
                 Transfer::NetworkRoyalties(cashnote_redemptions) => {
                     match self
-                        .network
+                        .network()
                         .verify_cash_notes_redemptions(royalties_pk, &cashnote_redemptions)
                         .await
                     {
@@ -486,7 +486,7 @@ impl Node {
         trace!("Validating record payment for {pretty_key}");
 
         // load wallet
-        let mut wallet = HotWallet::load_from(self.network.root_dir_path())?;
+        let mut wallet = HotWallet::load_from(self.network().root_dir_path())?;
         let old_balance = wallet.balance().as_nano();
 
         // unpack transfer
@@ -498,7 +498,7 @@ impl Node {
         trace!("Received payment of {received_fee:?} for {pretty_key}");
 
         // Notify `record_store` that the node received a payment.
-        self.network.notify_payment_received();
+        self.network().notify_payment_received();
 
         // deposit the CashNotes in our wallet
         wallet.deposit_and_store_to_disk(&cash_notes)?;
@@ -509,7 +509,7 @@ impl Node {
         );
 
         #[cfg(feature = "open-metrics")]
-        if let Some(node_metrics) = &self.node_metrics {
+        if let Some(node_metrics) = self.node_metrics() {
             let _ = node_metrics
                 .current_reward_wallet_balance
                 .set(new_balance as i64);
@@ -522,7 +522,7 @@ impl Node {
 
         // check if the quote is valid
         let storecost = payment.quote.cost;
-        verify_quote_for_storecost(&self.network, payment.quote, address)?;
+        verify_quote_for_storecost(self.network(), payment.quote, address)?;
         trace!("Payment quote valid for record {pretty_key}");
 
         // Let's check payment is sufficient both for our store cost and for network royalties
@@ -566,7 +566,7 @@ impl Node {
         let key = NetworkAddress::from_register_address(*reg_addr).to_record_key();
 
         // get local register
-        let maybe_record = self.network.get_local_record(&key).await?;
+        let maybe_record = self.network().get_local_record(&key).await?;
         let record = match maybe_record {
             Some(r) => r,
             None => {
@@ -596,7 +596,7 @@ impl Node {
         // get the local spends
         let record_key = NetworkAddress::from_spend_address(addr).to_record_key();
         debug!("Checking for local spends with key: {record_key:?}");
-        let local_record = match self.network.get_local_record(&record_key).await? {
+        let local_record = match self.network().get_local_record(&record_key).await? {
             Some(r) => r,
             None => {
                 debug!("Spend is not present locally: {record_key:?}");
@@ -637,7 +637,7 @@ impl Node {
         let mut all_verified_spends = BTreeSet::from_iter(local_spends.into_iter());
 
         // get spends from the network at the address for that unique pubkey
-        let network_spends = match self.network.get_raw_spends(spend_addr).await {
+        let network_spends = match self.network().get_raw_spends(spend_addr).await {
             Ok(spends) => spends,
             Err(NetworkError::GetRecordError(GetRecordError::RecordNotFound)) => vec![],
             Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
@@ -662,7 +662,7 @@ impl Node {
         for s in signed_spends.into_iter().chain(network_spends.into_iter()) {
             let self_clone = self.clone();
             let _ = tasks.spawn(async move {
-                let res = self_clone.network.verify_spend(&s).await;
+                let res = self_clone.network().verify_spend(&s).await;
                 (s, res)
             });
         }
