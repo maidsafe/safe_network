@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718782587201,
+  "lastUpdate": 1718782588845,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "329d326a0bb018d013572cb1ad71c8049e26f2f1",
-          "message": "chore: run `safenodemand` service as root\n\nCreating a user for running the `safenodemand` service doesn't make as much sense because the user\nmust have root access. We can leave it up to the user to create an account and set it up for\npasswordless sudo, then provide an optional `--user` argument. For now we don't have this, and just\ngo with root.",
-          "timestamp": "2024-03-19T20:55:22Z",
-          "tree_id": "fdab391fd92f016c55d0ab915dd795602eb8f4a8",
-          "url": "https://github.com/maidsafe/safe_network/commit/329d326a0bb018d013572cb1ad71c8049e26f2f1"
-        },
-        "date": 1710882650036,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6222,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35523,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33881,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "380765a80844b5dd43788c5eb0aba1910db539e8",
+          "message": "chore: update naming for clarity around replication",
+          "timestamp": "2024-06-19T06:49:38Z",
+          "tree_id": "a36f8b1541d8caae2d31b356a8b585bd4245c0d8",
+          "url": "https://github.com/maidsafe/safe_network/commit/380765a80844b5dd43788c5eb0aba1910db539e8"
+        },
+        "date": 1718782588427,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7260,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32109,
             "unit": "ms"
           },
           {
