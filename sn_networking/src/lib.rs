@@ -87,6 +87,9 @@ pub const CLOSE_GROUP_SIZE: usize = 5;
 /// that a replication of the record shall be sent/accepted to/by the peer.
 pub const REPLICATION_PEERS_COUNT: usize = CLOSE_GROUP_SIZE + 2;
 
+/// The maximum number of double spend attempts to store inside a record.
+pub const MAX_DOUBLE_SPEND_ATTEMPTS_PER_RECORD: usize = 50;
+
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
 pub const fn close_group_majority() -> usize {

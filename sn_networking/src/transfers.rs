@@ -236,21 +236,22 @@ pub fn get_signed_spend_from_record(
     address: &SpendAddress,
     record: &Record,
 ) -> Result<SignedSpend> {
-    match get_raw_signed_spends_from_record(record)?.as_slice() {
-        [one, two, ..] => {
-            warn!("Found double spend for {address:?}");
-            Err(NetworkError::DoubleSpendAttempt(
-                Box::new(one.to_owned()),
-                Box::new(two.to_owned()),
-            ))
+    let spends = get_raw_signed_spends_from_record(record)?;
+    match spends.as_slice() {
+        [] => {
+            error!("Found no spend for {address:?}");
+            Err(NetworkError::NoSpendFoundInsideRecord(*address))
         }
         [one] => {
             trace!("Spend get for address: {address:?} successful");
             Ok(one.clone())
         }
-        _ => {
-            trace!("Found no spend for {address:?}");
-            Err(NetworkError::NoSpendFoundInsideRecord(*address))
+        _double_spends => {
+            warn!(
+                "Found double spend(s) of len {} for {address:?}",
+                spends.len()
+            );
+            Err(NetworkError::DoubleSpendAttempt(spends))
         }
     }
 }

@@ -138,8 +138,8 @@ pub enum NetworkError {
     // ---------- Spend Errors
     #[error("Spend not found: {0:?}")]
     NoSpendFoundInsideRecord(SpendAddress),
-    #[error("A double spend was detected. Two diverging signed spends: {0:?}, {1:?}")]
-    DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>),
+    #[error("Double spend(s) was detected. The signed spends are: {0:?}")]
+    DoubleSpendAttempt(Vec<SignedSpend>),
 
     // ---------- Store Error
     #[error("No Store Cost Responses")]
