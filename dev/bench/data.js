@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718782588845,
+  "lastUpdate": 1718796639595,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "501f05abaa2de0aa127bbe0f1673c2dacc7ce72b",
-          "message": "feat: improve parallelisation with buffered streams",
-          "timestamp": "2024-03-20T06:35:22Z",
-          "tree_id": "f1a4abf6e73a2973f19466b93d65e4afcf6cf3ff",
-          "url": "https://github.com/maidsafe/safe_network/commit/501f05abaa2de0aa127bbe0f1673c2dacc7ce72b"
-        },
-        "date": 1710919252189,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2758853513984025,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8345027208803406,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.3880749763171,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.060964545681145,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "bf8b74cd9409a18107cbf4a2478d107951a727b5",
+          "message": "chore(node): store Arc<NodeInner> to reduce some refrence counting",
+          "timestamp": "2024-06-19T10:46:48Z",
+          "tree_id": "6dac4922ee19e527c6fb5bda54a4dc5d79dd909e",
+          "url": "https://github.com/maidsafe/safe_network/commit/bf8b74cd9409a18107cbf4a2478d107951a727b5"
+        },
+        "date": 1718796632713,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1821605317360058,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6367393454224954,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.82587977240981,
             "unit": "MiB/s"
           }
         ]
