@@ -24,7 +24,7 @@ const SPENDS_PROCESSING_BUFFER_SIZE: usize = 4096;
 
 enum InternalGetNetworkSpend {
     Spend(Box<SignedSpend>),
-    DoubleSpend(Box<SignedSpend>, Box<SignedSpend>),
+    DoubleSpend(Vec<SignedSpend>),
     NotFound,
     Error(Error),
 }
@@ -33,17 +33,18 @@ impl Client {
     pub async fn new_dag_with_genesis_only(&self) -> WalletResult<SpendDag> {
         let genesis_addr = SpendAddress::from_unique_pubkey(&GENESIS_SPEND_UNIQUE_KEY);
         let mut dag = SpendDag::new(genesis_addr);
-        let genesis_spend = match self.get_spend_from_network(genesis_addr).await {
-            Ok(s) => s,
-            Err(Error::Network(NetworkError::DoubleSpendAttempt(spend1, spend2))) => {
-                let addr = spend1.address();
-                println!("Double spend detected at Genesis: {addr:?}");
-                dag.insert(genesis_addr, *spend2);
-                *spend1
+        match self.get_spend_from_network(genesis_addr).await {
+            Ok(spend) => {
+                dag.insert(genesis_addr, spend);
+            }
+            Err(Error::Network(NetworkError::DoubleSpendAttempt(spends))) => {
+                println!("Double spend detected at Genesis: {genesis_addr:?}");
+                for spend in spends.into_iter() {
+                    dag.insert(genesis_addr, spend);
+                }
             }
             Err(e) => return Err(WalletError::FailedToGetSpend(e.to_string())),
         };
-        dag.insert(genesis_addr, genesis_spend);
 
         Ok(dag)
     }
@@ -163,7 +164,7 @@ impl Client {
                             .map_err(|e| WalletError::SpendProcessing(e.to_string()));
                         addrs_to_get.extend(for_further_track);
                     }
-                    InternalGetNetworkSpend::DoubleSpend(_s1, _s2) => {
+                    InternalGetNetworkSpend::DoubleSpend(_spends) => {
                         warn!("Detected double spend regarding {address:?}");
                     }
                     InternalGetNetworkSpend::NotFound => {
@@ -193,14 +194,27 @@ impl Client {
         let mut utxos = BTreeSet::new();
 
         // get first spend
-        let first_spend = match self.crawl_spend(spend_addr).await {
-            InternalGetNetworkSpend::Spend(s) => *s,
-            InternalGetNetworkSpend::DoubleSpend(s1, s2) => {
+        let mut txs_to_follow = match self.crawl_spend(spend_addr).await {
+            InternalGetNetworkSpend::Spend(spend) => {
+                let spend = *spend;
+                let txs = BTreeSet::from_iter([spend.spend.spent_tx.clone()]);
+
                 spend_processing
-                    .send(*s2)
+                    .send(spend)
                     .await
                     .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
-                *s1
+                txs
+            }
+            InternalGetNetworkSpend::DoubleSpend(spends) => {
+                let mut txs = BTreeSet::new();
+                for spend in spends.into_iter() {
+                    txs.insert(spend.spend.spent_tx.clone());
+                    spend_processing
+                        .send(spend)
+                        .await
+                        .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
+                }
+                txs
             }
             InternalGetNetworkSpend::NotFound => {
                 // the cashnote was not spent yet, so it's an UTXO
@@ -212,13 +226,8 @@ impl Client {
                 return Err(WalletError::FailedToGetSpend(e.to_string()));
             }
         };
-        spend_processing
-            .send(first_spend.clone())
-            .await
-            .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
 
         // use iteration instead of recursion to avoid stack overflow
-        let mut txs_to_follow = BTreeSet::from_iter([first_spend.spend.spent_tx]);
         let mut known_tx = BTreeSet::new();
         let mut gen: u32 = 0;
         let start = std::time::Instant::now();
@@ -260,18 +269,15 @@ impl Client {
                             .await
                             .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
                     }
-                    InternalGetNetworkSpend::DoubleSpend(s1, s2) => {
-                        info!("Fetched double spend at {addr:?} from network, following both...");
-                        next_gen_tx.insert(s1.spend.spent_tx.clone());
-                        next_gen_tx.insert(s2.spend.spent_tx.clone());
-                        spend_processing
-                            .send(*s1.clone())
-                            .await
-                            .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
-                        spend_processing
-                            .send(*s2.clone())
-                            .await
-                            .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
+                    InternalGetNetworkSpend::DoubleSpend(spends) => {
+                        info!("Fetched double spend(s) of len {} at {addr:?} from network, following all of them.", spends.len());
+                        for s in spends.into_iter() {
+                            next_gen_tx.insert(s.spend.spent_tx.clone());
+                            spend_processing
+                                .send(s.clone())
+                                .await
+                                .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
+                        }
                     }
                     InternalGetNetworkSpend::NotFound => {
                         info!("Reached UTXO at {addr:?}");
@@ -360,8 +366,8 @@ impl Client {
                         InternalGetNetworkSpend::Spend(s) => {
                             spends.insert(*s);
                         }
-                        InternalGetNetworkSpend::DoubleSpend(s1, s2) => {
-                            spends.extend([*s1, *s2]);
+                        InternalGetNetworkSpend::DoubleSpend(s) => {
+                            spends.extend(s.into_iter());
                         }
                         InternalGetNetworkSpend::NotFound => {
                             return Err(WalletError::FailedToGetSpend(format!(
@@ -498,9 +504,9 @@ impl Client {
                 debug!("DAG crawling: spend at {spend_addr:?} not found on the network");
                 InternalGetNetworkSpend::NotFound
             }
-            Err(Error::Network(NetworkError::DoubleSpendAttempt(s1, s2))) => {
-                debug!("DAG crawling: got a double spend at {spend_addr:?} on the network");
-                InternalGetNetworkSpend::DoubleSpend(s1, s2)
+            Err(Error::Network(NetworkError::DoubleSpendAttempt(spends))) => {
+                debug!("DAG crawling: got a double spend(s) of len {} at {spend_addr:?} on the network", spends.len());
+                InternalGetNetworkSpend::DoubleSpend(spends)
             }
             Err(e) => {
                 debug!(

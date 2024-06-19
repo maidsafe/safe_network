@@ -9,6 +9,7 @@
 use crate::{
     driver::PendingGetClosestType, get_quorum_value, get_raw_signed_spends_from_record,
     GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    MAX_DOUBLE_SPEND_ATTEMPTS_PER_RECORD,
 };
 use itertools::Itertools;
 use libp2p::kad::{
@@ -414,7 +415,7 @@ impl SwarmDriver {
                         info!("For record {pretty_key:?} task {query_id:?}, found split record for a spend, accumulated and sending them as a single record");
                         let accumulated_spends = accumulated_spends
                             .into_iter()
-                            .take(2)
+                            .take(MAX_DOUBLE_SPEND_ATTEMPTS_PER_RECORD)
                             .collect::<Vec<SignedSpend>>();
 
                         let bytes = try_serialize_record(&accumulated_spends, RecordKind::Spend)?;

@@ -8,7 +8,10 @@
 
 use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
-use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
+use sn_networking::{
+    get_raw_signed_spends_from_record, GetRecordError, NetworkError,
+    MAX_DOUBLE_SPEND_ATTEMPTS_PER_RECORD,
+};
 use sn_protocol::{
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
@@ -370,7 +373,7 @@ impl Node {
 
         // validate the signed spends against the network and the local knowledge
         debug!("Validating spends for {pretty_key:?} with unique key: {unique_pubkey:?}");
-        let (spend1, maybe_spend2) = match self
+        let validated_spends = match self
             .signed_spends_to_keep(spends_for_key.clone(), *unique_pubkey)
             .await
         {
@@ -380,12 +383,11 @@ impl Node {
                 return Err(e);
             }
         };
-        let validated_spends = maybe_spend2
-            .clone()
-            .map(|spend2| vec![spend1.clone(), spend2])
-            .unwrap_or_else(|| vec![spend1.clone()]);
-        let len = validated_spends.len();
-        debug!("Got {len} validated spends with key: {unique_pubkey:?} at {pretty_key:?}");
+
+        debug!(
+            "Got {} validated spends with key: {unique_pubkey:?} at {pretty_key:?}",
+            validated_spends.len()
+        );
 
         // store the record into the local storage
         let record = Record {
@@ -401,8 +403,8 @@ impl Node {
 
         // Just log the double spend attempt. DoubleSpend error during PUT is not used and would just lead to
         // RecordRejected marker (which is incorrect, since we store double spends).
-        if maybe_spend2.is_some() {
-            warn!("Got a double spend for the Spend PUT with unique_pubkey {unique_pubkey}");
+        if validated_spends.len() > 1 {
+            warn!("Got double spend(s) of len {} for the Spend PUT with unique_pubkey {unique_pubkey}", validated_spends.len());
         }
 
         self.record_metrics(Marker::ValidSpendRecordPutFromNetwork(&pretty_key));
@@ -631,7 +633,7 @@ impl Node {
         &self,
         signed_spends: Vec<SignedSpend>,
         unique_pubkey: UniquePubkey,
-    ) -> Result<(SignedSpend, Option<SignedSpend>)> {
+    ) -> Result<Vec<SignedSpend>> {
         let spend_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
         debug!(
             "Validating before storing spend at {spend_addr:?} with unique key: {unique_pubkey}"
@@ -691,28 +693,22 @@ impl Node {
             }
         }
 
-        // return the single unique spend to store
-        match all_verified_spends
+        let verified_spends = all_verified_spends
             .into_iter()
-            .collect::<Vec<SignedSpend>>()
-            .as_slice()
-        {
-            [a] => {
-                debug!("Got a single valid spend for {unique_pubkey:?}");
-                Ok((a.to_owned(), None))
-            }
-            [a, b] => {
-                warn!("Got a double spend for {unique_pubkey:?}");
-                Ok((a.to_owned(), Some(b.to_owned())))
-            }
-            _ => {
-                debug!(
-                    "No valid spends found while validating Spend PUT. Who is sending us garbage?"
-                );
-                Err(Error::InvalidRequest(format!(
-                    "Found no valid spends while validating Spend PUT for {unique_pubkey:?}"
-                )))
-            }
+            .take(MAX_DOUBLE_SPEND_ATTEMPTS_PER_RECORD)
+            .collect::<Vec<SignedSpend>>();
+
+        if verified_spends.is_empty() {
+            debug!("No valid spends found while validating Spend PUT. Who is sending us garbage?");
+            Err(Error::InvalidRequest(format!(
+                "Found no valid spends while validating Spend PUT for {unique_pubkey:?}"
+            )))
+        } else if verified_spends.len() > 1 {
+            warn!("Got a double spend for {unique_pubkey:?}");
+            Ok(verified_spends)
+        } else {
+            debug!("Got a single valid spend for {unique_pubkey:?}");
+            Ok(verified_spends)
         }
     }
 }
