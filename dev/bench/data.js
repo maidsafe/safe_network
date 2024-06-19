@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718796639595,
+  "lastUpdate": 1718796764832,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "501f05abaa2de0aa127bbe0f1673c2dacc7ce72b",
-          "message": "feat: improve parallelisation with buffered streams",
-          "timestamp": "2024-03-20T06:35:22Z",
-          "tree_id": "f1a4abf6e73a2973f19466b93d65e4afcf6cf3ff",
-          "url": "https://github.com/maidsafe/safe_network/commit/501f05abaa2de0aa127bbe0f1673c2dacc7ce72b"
-        },
-        "date": 1710919359653,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "49699333+dependabot[bot]@users.noreply.github.com",
             "name": "dependabot[bot]",
             "username": "dependabot[bot]"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 50,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "bf8b74cd9409a18107cbf4a2478d107951a727b5",
+          "message": "chore(node): store Arc<NodeInner> to reduce some refrence counting",
+          "timestamp": "2024-06-19T10:46:48Z",
+          "tree_id": "6dac4922ee19e527c6fb5bda54a4dc5d79dd909e",
+          "url": "https://github.com/maidsafe/safe_network/commit/bf8b74cd9409a18107cbf4a2478d107951a727b5"
+        },
+        "date": 1718796764175,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
             "unit": "MB"
           }
         ]
