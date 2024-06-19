@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
         ("sn_networking".to_string(), Level::DEBUG),
         ("safe".to_string(), Level::TRACE),
         ("sn_build_info".to_string(), Level::TRACE),
-        ("sn_cli".to_string(), Level::TRACE),
+        ("autonomi".to_string(), Level::TRACE),
         ("sn_client".to_string(), Level::TRACE),
         ("sn_logging".to_string(), Level::TRACE),
         ("sn_peers_acquisition".to_string(), Level::TRACE),
