@@ -276,7 +276,7 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
             ("safenodemand".to_string(), Level::TRACE),
             // libs
             ("sn_build_info".to_string(), Level::TRACE),
-            ("sn_cli".to_string(), Level::TRACE),
+            ("autonomi".to_string(), Level::TRACE),
             ("sn_client".to_string(), Level::TRACE),
             ("sn_faucet".to_string(), Level::TRACE),
             ("sn_logging".to_string(), Level::TRACE),
