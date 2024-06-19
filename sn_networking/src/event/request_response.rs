@@ -208,6 +208,8 @@ impl SwarmDriver {
         //        fetch them if close enough to us
         //   2, For those keys that we have and supposed to be held by the sender as well:
         //        start chunk_proof check against a randomly selected chunk type record to the sender
+        //   3, For those spends that we have that differ in the hash, we fetch the other version
+        //         and update our local copy.
 
         // For fetching, only handle those non-exist and in close range keys
         let keys_to_store =
@@ -272,7 +274,7 @@ impl SwarmDriver {
                 if let Some((_, local_record_type)) = local {
                     let not_same_type = local_record_type != record_type;
                     if not_same_type {
-                        // Shall only happens for Register
+                        // Shall only happens for Register, or DoubleSpendAttempts
                         info!("Record {addr:?} has different type: local {local_record_type:?}, incoming {record_type:?}");
                     }
                     not_same_type

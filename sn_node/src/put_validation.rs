@@ -86,7 +86,9 @@ impl Node {
                 let record_key = record.key.clone();
                 let value_to_hash = record.value.clone();
                 let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
-                let result = self.validate_and_store_spends(spends, &record_key).await;
+                let result = self
+                    .validate_merge_and_store_spends(spends, &record_key)
+                    .await;
                 if result.is_ok() {
                     Marker::ValidSpendPutFromClient(&PrettyPrintRecordKey::from(&record_key)).log();
                     let content_hash = XorName::from_content(&value_to_hash);
@@ -162,8 +164,8 @@ impl Node {
     }
 
     /// Store a pre-validated, and already paid record to the RecordStore
-    pub(crate) async fn store_prepaid_record(&self, record: Record) -> Result<CmdOk> {
-        trace!("Storing prepaid record {:?}", record.key);
+    pub(crate) async fn store_replicated_in_record(&self, record: Record) -> Result<CmdOk> {
+        trace!("Storing record which was replicated to us {:?}", record.key);
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
             // A separate flow handles payment for chunks and registers
@@ -193,7 +195,8 @@ impl Node {
             RecordKind::Spend => {
                 let record_key = record.key.clone();
                 let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
-                self.validate_and_store_spends(spends, &record_key).await
+                self.validate_merge_and_store_spends(spends, &record_key)
+                    .await
             }
             RecordKind::Register => {
                 let register = try_deserialize_record::<SignedRegister>(&record)?;
@@ -322,7 +325,8 @@ impl Node {
     }
 
     /// Validate and store `Vec<SignedSpend>` to the RecordStore
-    pub(crate) async fn validate_and_store_spends(
+    /// If we already have a spend at this address, the Vec is extended and stored.
+    pub(crate) async fn validate_merge_and_store_spends(
         &self,
         signed_spends: Vec<SignedSpend>,
         record_key: &RecordKey,
