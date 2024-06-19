@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718761263292,
+  "lastUpdate": 1718761381231,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "c10dac94df3126b24183b10516f461689dba316d",
-          "message": "fix(ci): include all targets and features during build test",
-          "timestamp": "2024-03-19T16:01:35Z",
-          "tree_id": "50eb2c97f802749bec400f1704450441bb8a1b33",
-          "url": "https://github.com/maidsafe/safe_network/commit/c10dac94df3126b24183b10516f461689dba316d"
-        },
-        "date": 1710867460577,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 56,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 56,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "58defbca6f78a51267b9a94c2b41a8990d0938d1",
+          "message": "fix(network): accumulate spends by default if split",
+          "timestamp": "2024-06-19T00:53:50Z",
+          "tree_id": "2be049ec06e7e2f01d5fa2f6c94948bc7548c025",
+          "url": "https://github.com/maidsafe/safe_network/commit/58defbca6f78a51267b9a94c2b41a8990d0938d1"
+        },
+        "date": 1718761380644,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
             "unit": "MB"
           }
         ]
