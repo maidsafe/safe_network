@@ -153,7 +153,7 @@ async fn data_availability_during_churn() -> Result<()> {
 
         create_registers_task(
             client.clone(),
-            content.clone(),
+            Arc::clone(&content),
             churn_period,
             paying_wallet_dir.path().to_path_buf(),
         );
@@ -161,8 +161,8 @@ async fn data_availability_during_churn() -> Result<()> {
         create_cash_note_task(
             client.clone(),
             transfers_wallet,
-            content.clone(),
-            cash_notes.clone(),
+            Arc::clone(&content),
+            Arc::clone(&cash_notes),
             churn_period,
         );
     }
@@ -173,13 +173,13 @@ async fn data_availability_during_churn() -> Result<()> {
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
     store_chunks_task(
         client.clone(),
-        content.clone(),
+        Arc::clone(&content),
         churn_period,
         paying_wallet_dir.path().to_path_buf(),
     );
 
     // Spawn a task to churn nodes
-    churn_nodes_task(churn_count.clone(), test_duration, churn_period);
+    churn_nodes_task(Arc::clone(&churn_count), test_duration, churn_period);
 
     // Shared bucket where we keep track of the content which erred when creating/storing/fetching.
     // We remove them from this bucket if we are then able to query/fetch them successfully.
@@ -192,9 +192,9 @@ async fn data_availability_during_churn() -> Result<()> {
     // Spawn a task to randomly query/fetch the content we create/store
     query_content_task(
         client.clone(),
-        content.clone(),
-        content_erred.clone(),
-        cash_notes.clone(),
+        Arc::clone(&content),
+        Arc::clone(&content_erred),
+        Arc::clone(&cash_notes),
         churn_period,
         paying_wallet_dir.path().to_path_buf(),
     );
@@ -203,9 +203,9 @@ async fn data_availability_during_churn() -> Result<()> {
     // and mark them as failures if they effectivelly cannot be retrieved.
     retry_query_content_task(
         client.clone(),
-        content_erred.clone(),
-        failures.clone(),
-        cash_notes.clone(),
+        Arc::clone(&content_erred),
+        Arc::clone(&failures),
+        Arc::clone(&cash_notes),
         churn_period,
         paying_wallet_dir.path().to_path_buf(),
     );
@@ -249,9 +249,9 @@ async fn data_availability_during_churn() -> Result<()> {
     for net_addr in content.iter() {
         let client = client.clone();
         let net_addr = net_addr.clone();
-        let cash_notes = cash_notes.clone();
+        let cash_notes = Arc::clone(&cash_notes);
 
-        let failures = failures.clone();
+        let failures = Arc::clone(&failures);
         let wallet_dir = paying_wallet_dir.to_path_buf().clone();
         let handle = tokio::spawn(async move {
             final_retry_query_content(
@@ -388,7 +388,7 @@ fn store_chunks_task(
 
             let chunk_name = XorName::from_content(&random_bytes);
 
-            let file_path = temp_dir.path().join(&hex::encode(chunk_name));
+            let file_path = temp_dir.path().join(hex::encode(chunk_name));
             let mut chunk_file =
                 File::create(&file_path).expect("failed to create temp chunk file");
             chunk_file
@@ -467,7 +467,7 @@ fn query_content_task(
             trace!("Querying content (bucket index: {index}) at {net_addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match query_content(&client, &root_dir, &net_addr, cash_notes.clone()).await {
+            match query_content(&client, &root_dir, &net_addr, Arc::clone(&cash_notes)).await {
                 Ok(_) => {
                     let _ = content_erred.write().await.remove(&net_addr);
                 }
@@ -548,7 +548,7 @@ fn retry_query_content_task(
                 println!("Querying erred content at {net_addr}, attempt: #{attempts} ...");
                 info!("Querying erred content at {net_addr}, attempt: #{attempts} ...");
                 if let Err(last_err) =
-                    query_content(&client, &wallet_dir, &net_addr, cash_notes.clone()).await
+                    query_content(&client, &wallet_dir, &net_addr, Arc::clone(&cash_notes)).await
                 {
                     println!("Erred content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                     warn!("Erred content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
@@ -586,7 +586,7 @@ async fn final_retry_query_content(
         println!("Final querying content at {net_addr}, attempt: #{attempts} ...");
         debug!("Final querying content at {net_addr}, attempt: #{attempts} ...");
         if let Err(last_err) =
-            query_content(client, wallet_dir, &net_addr, cash_notes.clone()).await
+            query_content(client, wallet_dir, &net_addr, Arc::clone(&cash_notes)).await
         {
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
                 println!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");

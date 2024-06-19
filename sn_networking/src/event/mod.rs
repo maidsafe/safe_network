@@ -259,6 +259,38 @@ impl SwarmDriver {
         }
     }
 
+    /// Update state on addition of a peer to the routing table.
+    pub(crate) fn update_on_peer_addition(&mut self, added_peer: PeerId) {
+        self.peers_in_rt = self.peers_in_rt.saturating_add(1);
+        info!(
+            "New peer added to routing table: {added_peer:?}, now we have #{} connected peers",
+            self.peers_in_rt
+        );
+        self.log_kbuckets(&added_peer);
+        self.send_event(NetworkEvent::PeerAdded(added_peer, self.peers_in_rt));
+
+        #[cfg(feature = "open-metrics")]
+        if let Some(metrics) = &self.network_metrics {
+            metrics.peers_in_routing_table.set(self.peers_in_rt as i64);
+        }
+    }
+
+    /// Update state on removal of a peer from the routing table.
+    pub(crate) fn update_on_peer_removal(&mut self, removed_peer: PeerId) {
+        self.peers_in_rt = self.peers_in_rt.saturating_sub(1);
+        info!(
+            "Peer removed from routing table: {removed_peer:?}, now we have #{} connected peers",
+            self.peers_in_rt
+        );
+        self.log_kbuckets(&removed_peer);
+        self.send_event(NetworkEvent::PeerRemoved(removed_peer, self.peers_in_rt));
+
+        #[cfg(feature = "open-metrics")]
+        if let Some(metrics) = &self.network_metrics {
+            metrics.peers_in_routing_table.set(self.peers_in_rt as i64);
+        }
+    }
+
     /// Logs the kbuckets also records the bucket info.
     pub(crate) fn log_kbuckets(&mut self, peer: &PeerId) {
         let distance = NetworkAddress::from_peer(self.self_peer_id)
@@ -299,6 +331,16 @@ impl SwarmDriver {
             let _ = metrics
                 .estimated_network_size
                 .set(estimated_network_size as i64);
+        }
+
+        // Just to warn if our tracking goes out of sync with libp2p. Can happen if someone forgets to call
+        // update_on_peer_addition or update_on_peer_removal when adding or removing a peer.
+        // Only log every 10th peer to avoid spamming the logs.
+        if total_peers % 10 == 0 && total_peers != self.peers_in_rt {
+            warn!(
+                "Total peers in routing table: {}, but kbucket table has {total_peers} peers",
+                self.peers_in_rt
+            );
         }
 
         info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}, estimated network size: {estimated_network_size:?}");

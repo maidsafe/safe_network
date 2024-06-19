@@ -36,7 +36,7 @@ impl SwarmDriver {
     ) -> Option<Interval> {
         let (should_bootstrap, new_interval) = self
             .bootstrap
-            .should_we_bootstrap(self.connected_peers as u32, current_bootstrap_interval)
+            .should_we_bootstrap(self.peers_in_rt as u32, current_bootstrap_interval)
             .await;
         if should_bootstrap {
             self.trigger_network_discovery();

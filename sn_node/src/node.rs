@@ -23,7 +23,7 @@ use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
 use sn_networking::{
-    close_group_majority, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
+    close_group_majority, Instant, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
     SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use sn_protocol::{
@@ -67,6 +67,9 @@ const CHUNK_PROOF_VERIFY_RETRY_INTERVAL: Duration = Duration::from_secs(15);
 #[cfg(feature = "reward-forward")]
 /// Track the forward balance by storing the balance in a file. This is useful to restore the balance between restarts.
 const FORWARDED_BALANCE_FILE_NAME: &str = "forwarded_balance";
+
+/// Interval to update the nodes uptime metric
+const UPTIME_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
@@ -277,6 +280,10 @@ impl Node {
             let mut balance_forward_interval = tokio::time::interval(balance_forward_time);
             let _ = balance_forward_interval.tick().await; // first tick completes immediately
 
+            let mut uptime_metrics_update_interval =
+                tokio::time::interval(UPTIME_METRICS_UPDATE_INTERVAL);
+            let _ = uptime_metrics_update_interval.tick().await; // first tick completes immediately
+
             loop {
                 let peers_connected = &peers_connected;
 
@@ -284,7 +291,7 @@ impl Node {
                     net_event = network_event_receiver.recv() => {
                         match net_event {
                             Some(event) => {
-                                let start = std::time::Instant::now();
+                                let start = Instant::now();
                                 let event_string = format!("{event:?}");
 
                                 self.handle_network_event(event, peers_connected);
@@ -300,7 +307,7 @@ impl Node {
                     }
                     // runs every replication_interval time
                     _ = replication_interval.tick() => {
-                        let start = std::time::Instant::now();
+                        let start = Instant::now();
                         trace!("Periodic replication triggered");
                         let network = self.network.clone();
                         self.record_metrics(Marker::IntervalReplicationTriggered);
@@ -312,7 +319,7 @@ impl Node {
                     }
                     // runs every bad_nodes_check_time time
                     _ = bad_nodes_check_interval.tick() => {
-                        let start = std::time::Instant::now();
+                        let start = Instant::now();
                         trace!("Periodic bad_nodes check triggered");
                         let network = self.network.clone();
                         self.record_metrics(Marker::IntervalBadNodesCheckTriggered);
@@ -332,7 +339,7 @@ impl Node {
                     _ = balance_forward_interval.tick() => {
                         if cfg!(feature = "reward-forward") {
                             if let Some(ref owner) = self.owner {
-                                let start = std::time::Instant::now();
+                                let start = Instant::now();
                                 trace!("Periodic balance forward triggered");
                                 let network = self.network.clone();
                                 let forwarding_reason = owner.clone();
@@ -350,6 +357,12 @@ impl Node {
                                 });
                             }
 
+                        }
+                    }
+                    _ = uptime_metrics_update_interval.tick() => {
+                        #[cfg(feature = "open-metrics")]
+                        if let Some(node_metrics) = &self.node_metrics {
+                            let _ = node_metrics.uptime.set(node_metrics.started_instant.elapsed().as_secs() as i64);
                         }
                     }
                     node_cmd = cmds_receiver.recv() => {
@@ -380,7 +393,7 @@ impl Node {
     /// Handle a network event.
     /// Spawns a thread for any likely long running tasks
     fn handle_network_event(&self, event: NetworkEvent, peers_connected: &Arc<AtomicUsize>) {
-        let start = std::time::Instant::now();
+        let start = Instant::now();
         let event_string = format!("{event:?}");
         let event_header;
         trace!("Handling NetworkEvent {event_string:?}");
@@ -439,7 +452,7 @@ impl Node {
                 event_header = "NewListenAddr";
                 if !cfg!(feature = "local-discovery") {
                     let network = self.network.clone();
-                    let peers = self.initial_peers.clone();
+                    let peers = Arc::clone(&self.initial_peers);
                     let _handle = spawn(async move {
                         for addr in &*peers {
                             if let Err(err) = network.dial(addr.clone()).await {

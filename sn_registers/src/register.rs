@@ -676,7 +676,7 @@ mod tests {
                 replicas.push(replica);
             }
 
-            Ok((replicas, owner_sk.clone()))
+            Ok((replicas, Arc::clone(&owner_sk)))
         })
     }
 

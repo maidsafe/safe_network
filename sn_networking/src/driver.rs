@@ -544,12 +544,7 @@ impl NetworkBuilder {
             .boxed();
 
         let relay_server = {
-            let relay_server_cfg = relay::Config {
-                max_reservations: 1024,      // the number of home nodes that we can support
-                max_circuits: 32_000, // total max number of relayed connections we can support
-                max_circuits_per_peer: 1024, // max number of relayed connections per peer
-                ..Default::default()
-            };
+            let relay_server_cfg = relay::Config::default();
             libp2p::relay::Behaviour::new(peer_id, relay_server_cfg)
         };
 
@@ -589,7 +584,7 @@ impl NetworkBuilder {
             listen_port: self.listen_addr.map(|addr| addr.port()),
             is_client,
             is_behind_home_network: self.is_behind_home_network,
-            connected_peers: 0,
+            peers_in_rt: 0,
             bootstrap,
             relay_manager,
             close_group: Default::default(),
@@ -637,7 +632,7 @@ pub struct SwarmDriver {
     pub(crate) is_behind_home_network: bool,
     /// The port that was set by the user
     pub(crate) listen_port: Option<u16>,
-    pub(crate) connected_peers: usize,
+    pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) relay_manager: RelayManager,
     /// The peers that are closer to our PeerId. Includes self.

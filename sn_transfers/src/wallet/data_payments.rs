@@ -142,10 +142,7 @@ impl PaymentQuote {
                 .as_secs()
                 .to_le_bytes(),
         );
-        let serialised_quoting_metrics = match rmp_serde::to_vec(quoting_metrics) {
-            Ok(quoting_metrics_vec) => quoting_metrics_vec,
-            Err(_err) => vec![],
-        };
+        let serialised_quoting_metrics = rmp_serde::to_vec(quoting_metrics).unwrap_or_default();
         bytes.extend_from_slice(&serialised_quoting_metrics);
         bytes
     }

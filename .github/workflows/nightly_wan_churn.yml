@@ -45,7 +45,6 @@ jobs:
           subnet-id: subnet-018f2ab26755df7f9
           node-count: 20
           vm-count: 5
-          provider: digital-ocean
           testnet-name: NightlyChurnE2E
           public-rpc: true
           safe-network-user: maidsafe

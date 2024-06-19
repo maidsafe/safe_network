@@ -525,7 +525,6 @@ jobs:
           subnet-id: subnet-018f2ab26755df7f9
           node-count: 20
           vm-count: 1
-          provider: digital-ocean
           testnet-name: NightlyDataLocationTest
           safe-network-user: maidsafe
           safe-network-branch: main

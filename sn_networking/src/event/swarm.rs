@@ -173,7 +173,7 @@ impl SwarmDriver {
                             .any(|(_ilog2, peers)| peers.contains(&peer_id));
 
                         // Do not use an `already relayed` peer as `potential relay candidate`.
-                        if !has_relayed && !is_bootstrap_peer {
+                        if !has_relayed && !is_bootstrap_peer && !self.is_client {
                             debug!("Adding candidate relay server {peer_id:?}, it's not a bootstrap node");
                             self.relay_manager.add_potential_candidates(
                                 &peer_id,
@@ -381,6 +381,15 @@ impl SwarmDriver {
                     connection_id,
                     (peer_id, Instant::now() + Duration::from_secs(60)),
                 );
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics
+                        .open_connections
+                        .set(self.live_connected_peers.len() as i64);
+                    metrics
+                        .connected_peers
+                        .set(self.swarm.connected_peers().count() as i64);
+                }
 
                 if endpoint.is_dialer() {
                     self.dialed_peers.push(peer_id);
@@ -396,6 +405,15 @@ impl SwarmDriver {
                 event_string = "ConnectionClosed";
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
                 let _ = self.live_connected_peers.remove(&connection_id);
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics
+                        .open_connections
+                        .set(self.live_connected_peers.len() as i64);
+                    metrics
+                        .connected_peers
+                        .set(self.swarm.connected_peers().count() as i64);
+                }
             }
             SwarmEvent::OutgoingConnectionError {
                 connection_id,
@@ -445,7 +463,7 @@ impl SwarmDriver {
                                         .any(|(_ilog2, peers)| peers.contains(&failed_peer_id));
 
                                     if is_bootstrap_peer
-                                        && self.connected_peers < self.bootstrap_peers.len()
+                                        && self.peers_in_rt < self.bootstrap_peers.len()
                                     {
                                         warn!("OutgoingConnectionError: On bootstrap peer {failed_peer_id:?}, while still in bootstrap mode, ignoring");
                                         there_is_a_serious_issue = false;
@@ -514,19 +532,13 @@ impl SwarmDriver {
                         .kademlia
                         .remove_peer(&failed_peer_id)
                     {
-                        self.connected_peers = self.connected_peers.saturating_sub(1);
+                        self.update_on_peer_removal(*dead_peer.node.key.preimage());
 
                         self.handle_cmd(SwarmCmd::RecordNodeIssue {
                             peer_id: failed_peer_id,
                             issue: crate::NodeIssue::ConnectionIssue,
                         })?;
 
-                        self.send_event(NetworkEvent::PeerRemoved(
-                            *dead_peer.node.key.preimage(),
-                            self.connected_peers,
-                        ));
-
-                        self.log_kbuckets(&failed_peer_id);
                         let _ = self.check_for_change_in_our_close_group();
                     }
                 }
@@ -630,12 +642,16 @@ impl SwarmDriver {
             }
         }
         if let Some(to_be_removed_bootstrap) = shall_removed {
-            trace!("Bootstrap node {to_be_removed_bootstrap:?} to be replaced by peer {peer_id:?}");
-            let _entry = self
+            info!("Bootstrap node {to_be_removed_bootstrap:?} to be replaced by peer {peer_id:?}");
+            let entry = self
                 .swarm
                 .behaviour_mut()
                 .kademlia
                 .remove_peer(&to_be_removed_bootstrap);
+            if let Some(removed_peer) = entry {
+                self.update_on_peer_removal(*removed_peer.node.key.preimage());
+                let _ = self.check_for_change_in_our_close_group();
+            }
         }
     }
 
@@ -687,6 +703,15 @@ impl SwarmDriver {
             for (connection_id, peer_id) in shall_removed {
                 let _ = self.live_connected_peers.remove(&connection_id);
                 let result = self.swarm.close_connection(connection_id);
+                #[cfg(feature = "open-metrics")]
+                if let Some(metrics) = &self.network_metrics {
+                    metrics
+                        .open_connections
+                        .set(self.live_connected_peers.len() as i64);
+                    metrics
+                        .connected_peers
+                        .set(self.swarm.connected_peers().count() as i64);
+                }
                 trace!("Removed outdated connection {connection_id:?} to {peer_id:?} with result: {result:?}");
             }
         }

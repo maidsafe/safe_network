@@ -477,10 +477,10 @@ async fn startup_server(client: Client) -> Result<()> {
     let gift_client = client.clone();
     let donation_client = client.clone();
     let donation_addr_client = client.clone();
-    let donation_semaphore = semaphore.clone();
-    let donation_addr_semaphore = semaphore.clone();
+    let donation_semaphore = Arc::clone(&semaphore);
+    let donation_addr_semaphore = Arc::clone(&semaphore);
     #[cfg(feature = "distribution")]
-    let semaphore_dist = semaphore.clone();
+    let semaphore_dist = Arc::clone(&semaphore);
 
     // GET /distribution/address=address&wallet=wallet&signature=signature
     #[cfg(feature = "distribution")]
@@ -492,7 +492,7 @@ async fn startup_server(client: Client) -> Result<()> {
             query
         })
         .and_then(move |query| {
-            let semaphore = semaphore_dist.clone();
+            let semaphore = Arc::clone(&semaphore_dist);
             let client = client.clone();
             respond_to_distribution_request(client, query, balances.clone(), semaphore)
         });
@@ -506,7 +506,7 @@ async fn startup_server(client: Client) -> Result<()> {
         })
         .and_then(move |key| {
             let client = gift_client.clone();
-            let semaphore = semaphore.clone();
+            let semaphore = Arc::clone(&semaphore);
 
             respond_to_gift_request(client, key, semaphore)
         });
@@ -515,7 +515,7 @@ async fn startup_server(client: Client) -> Result<()> {
     let donation_addr = warp::get().and(warp::path("donate")).and_then(move || {
         debug!("Donation address request");
         let client = donation_addr_client.clone();
-        let semaphore = donation_addr_semaphore.clone();
+        let semaphore = Arc::clone(&donation_addr_semaphore);
 
         respond_to_donate_request(client, String::new(), semaphore)
     });
@@ -529,7 +529,7 @@ async fn startup_server(client: Client) -> Result<()> {
         })
         .and_then(move |transfer| {
             let client = donation_client.clone();
-            let semaphore = donation_semaphore.clone();
+            let semaphore = Arc::clone(&donation_semaphore);
 
             respond_to_donate_request(client, transfer, semaphore)
         });

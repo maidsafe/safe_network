@@ -8,7 +8,7 @@
 
 use crate::{
     driver::PendingGetClosestType, get_quorum_value, GetRecordCfg, GetRecordError, NetworkError,
-    NetworkEvent, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    Result, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::kad::{
@@ -245,26 +245,19 @@ impl SwarmDriver {
             } => {
                 event_string = "kad_event::RoutingUpdated";
                 if is_new_peer {
-                    self.connected_peers = self.connected_peers.saturating_add(1);
-
-                    info!("New peer added to routing table: {peer:?}, now we have #{} connected peers", self.connected_peers);
-                    self.log_kbuckets(&peer);
+                    self.update_on_peer_addition(peer);
 
                     // This should only happen once
                     if self.bootstrap.notify_new_peer() {
                         info!("Performing the first bootstrap");
                         self.trigger_network_discovery();
                     }
-                    self.send_event(NetworkEvent::PeerAdded(peer, self.connected_peers));
                 }
 
-                info!("kad_event::RoutingUpdated {:?}: {peer:?}, is_new_peer: {is_new_peer:?} old_peer: {old_peer:?}", self.connected_peers);
-                if old_peer.is_some() {
-                    self.connected_peers = self.connected_peers.saturating_sub(1);
-
+                info!("kad_event::RoutingUpdated {:?}: {peer:?}, is_new_peer: {is_new_peer:?} old_peer: {old_peer:?}", self.peers_in_rt);
+                if let Some(old_peer) = old_peer {
                     info!("Evicted old peer on new peer join: {old_peer:?}");
-                    self.send_event(NetworkEvent::PeerRemoved(peer, self.connected_peers));
-                    self.log_kbuckets(&peer);
+                    self.update_on_peer_removal(old_peer);
                 }
                 let _ = self.check_for_change_in_our_close_group();
             }
@@ -343,9 +336,9 @@ impl SwarmDriver {
     /// Accumulates the GetRecord query results
     /// If we get enough responses (quorum) for a record with the same content hash:
     /// - we return the Record after comparing with the target record. This might return RecordDoesNotMatch if the
-    /// check fails.
+    ///   check fails.
     /// - if multiple content hashes are found, we return a SplitRecord Error
-    /// And then we stop the kad query as we are done here.
+    ///   And then we stop the kad query as we are done here.
     fn accumulate_get_record_found(
         &mut self,
         query_id: QueryId,
@@ -488,7 +481,7 @@ impl SwarmDriver {
     /// If we get a Timeout:
     /// - return a QueryTimeout if we get a split record (?) if we have multiple content hashes.
     /// - if the quorum is satisfied, we return the record after comparing it with the target record. This might return
-    /// RecordDoesNotMatch if the check fails.
+    ///   RecordDoesNotMatch if the check fails.
     /// - else we return q QueryTimeout error.
     fn handle_get_record_error(
         &mut self,

@@ -17,6 +17,7 @@ use prometheus_client::{
     },
     registry::Registry,
 };
+use sn_networking::Instant;
 
 #[derive(Clone)]
 pub(crate) struct NodeMetrics {
@@ -35,6 +36,10 @@ pub(crate) struct NodeMetrics {
     // wallet
     pub(crate) current_reward_wallet_balance: Gauge,
     pub(crate) total_forwarded_rewards: Gauge,
+
+    // to track the uptime of the node.
+    pub(crate) started_instant: Instant,
+    pub(crate) uptime: Gauge,
 }
 
 #[derive(EncodeLabelSet, Hash, Clone, Eq, PartialEq, Debug)]
@@ -109,6 +114,13 @@ impl NodeMetrics {
             total_forwarded_rewards.clone(),
         );
 
+        let uptime = Gauge::default();
+        sub_registry.register(
+            "uptime",
+            "The uptime of the node in seconds",
+            uptime.clone(),
+        );
+
         Self {
             put_record_ok,
             put_record_err,
@@ -118,6 +130,8 @@ impl NodeMetrics {
             peer_removed_from_routing_table,
             current_reward_wallet_balance,
             total_forwarded_rewards,
+            started_instant: Instant::now(),
+            uptime,
         }
     }
 
