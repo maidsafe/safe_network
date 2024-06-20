@@ -36,7 +36,9 @@ pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 pub use self::{
     cmd::{NodeIssue, SwarmLocalState},
-    driver::{GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind},
+    driver::{
+        GetRecordCfg, NetworkBuilder, PutRecordCfg, SwarmDriver, VerificationKind, MAX_PACKET_SIZE,
+    },
     error::{GetRecordError, NetworkError},
     event::{MsgResponder, NetworkEvent},
     record_store::{calculate_cost_for_records, NodeRecordStore},
@@ -86,9 +88,6 @@ pub const CLOSE_GROUP_SIZE: usize = 5;
 /// The count of peers that will be considered as close to a record target,
 /// that a replication of the record shall be sent/accepted to/by the peer.
 pub const REPLICATION_PEERS_COUNT: usize = CLOSE_GROUP_SIZE + 2;
-
-/// The maximum number of double spend attempts to store inside a record.
-pub const MAX_DOUBLE_SPEND_ATTEMPTS_PER_RECORD: usize = 50;
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
