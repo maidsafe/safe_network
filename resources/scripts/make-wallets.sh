@@ -12,14 +12,21 @@ print_in_box() {
 }
 
 # Check for correct number of arguments
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <number_of_wallets> <amount_per_wallet>"
+if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+    echo "Usage: $0 <number_of_wallets> <amount_per_wallet> [contact_peer]"
     exit 1
 fi
 
 # Get the input arguments
 NUM_WALLETS=$1
 AMOUNT_PER_WALLET=$2
+CONTACT_PEER="${3:-}"
+
+# Prepare contact peer argument
+CONTACT_PEER_ARG=""
+if [ -n "$CONTACT_PEER" ]; then
+    CONTACT_PEER_ARG="--peer $CONTACT_PEER"
+fi
 
 # Define directories relative to the current working directory
 APP_DIR=$(pwd)
@@ -61,7 +68,7 @@ for ((i=1; i<=NUM_WALLETS; i++)); do
 
     # Step 8: Send tokens to the new address
     echo "New address is: $new_address"
-    transfer_output=$(safe wallet send "$AMOUNT_PER_WALLET" "$new_address")
+    transfer_output=$(safe $CONTACT_PEER_ARG wallet send "$AMOUNT_PER_WALLET" "$new_address")
     echo "Transfer output is: $transfer_output"
 
     # Extract the transfer note
@@ -79,7 +86,7 @@ for ((i=1; i<=NUM_WALLETS; i++)); do
     mv "$NEW_CLIENT_DIR" "$CLIENT_DIR"
 
     # Step 11: Receive the funds using the transfer note
-    safe wallet receive "$transfer_note"
+    safe $CONTACT_PEER_ARG wallet receive "$transfer_note"
 
     # Step 12: Rename the client directories back to their original names
     mv "$CLIENT_DIR" "$NEW_CLIENT_DIR"
