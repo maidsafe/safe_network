@@ -79,10 +79,8 @@ impl Node {
                 trace!(
                     "Got Replication Record {pretty_key:?} from network, validating and storing it"
                 );
-                let result = node.store_replicated_in_record(record).await?;
-                trace!(
-                    "Completed storing Replication Record {pretty_key:?} from network, result: {result:?}"
-                );
+                node.store_replicated_in_record(record).await?;
+                trace!("Completed storing Replication Record {pretty_key:?} from network.");
 
                 Ok(())
             });

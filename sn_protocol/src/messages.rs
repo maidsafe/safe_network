@@ -20,7 +20,7 @@ pub use self::{
     node_id::NodeId,
     query::Query,
     register::RegisterCmd,
-    response::{CmdOk, CmdResponse, QueryResponse},
+    response::{CmdResponse, QueryResponse},
 };
 
 use super::NetworkAddress;
