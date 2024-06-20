@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718873665076,
+  "lastUpdate": 1718896275728,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "e3d04a8dadd2cf0ebe3e609ba17147c4805ddf42",
-          "message": "chore(node): reduce bad_nodes check resource usage",
-          "timestamp": "2024-03-20T22:04:20Z",
-          "tree_id": "eeb9c05fc9c8f47dd22f6bc2386aa2079d515d2e",
-          "url": "https://github.com/maidsafe/safe_network/commit/e3d04a8dadd2cf0ebe3e609ba17147c4805ddf42"
-        },
-        "date": 1710975057480,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1778225929145107,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6705391119899564,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 52.14838584084198,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.21277904976132,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "78fcb7cccb823bac4c3a20f8b736e6f410e24505",
+          "message": "refactor(network): remove unusued CmdOk type",
+          "timestamp": "2024-06-20T14:22:28Z",
+          "tree_id": "20214eeea57741934de3defc3eed04c5426cca18",
+          "url": "https://github.com/maidsafe/safe_network/commit/78fcb7cccb823bac4c3a20f8b736e6f410e24505"
+        },
+        "date": 1718896269919,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2272961999624608,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6593288372881574,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.791206076723405,
             "unit": "MiB/s"
           }
         ]
