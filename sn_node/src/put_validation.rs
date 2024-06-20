@@ -9,8 +9,7 @@
 use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
 use sn_networking::{
-    get_raw_signed_spends_from_record, GetRecordError, NetworkError,
-    MAX_DOUBLE_SPEND_ATTEMPTS_PER_RECORD,
+    get_raw_signed_spends_from_record, GetRecordError, NetworkError, MAX_PACKET_SIZE,
 };
 use sn_protocol::{
     storage::{
@@ -27,6 +26,12 @@ use sn_transfers::{
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 use xor_name::XorName;
+
+/// The maximum number of double spend attempts to store that we got from PUTs
+const MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_FROM_PUTS: usize = 15;
+
+/// The maximum number of double spend attempts to store inside a record
+const MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_PER_RECORD: usize = 30;
 
 impl Node {
     /// Validate a record and it's payment, and store the record to the RecordStore
@@ -93,7 +98,7 @@ impl Node {
                 let value_to_hash = record.value.clone();
                 let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
                 let result = self
-                    .validate_merge_and_store_spends(spends, &record_key)
+                    .validate_merge_and_store_spends(spends, &record_key, true)
                     .await;
                 if result.is_ok() {
                     Marker::ValidSpendPutFromClient(&PrettyPrintRecordKey::from(&record_key)).log();
@@ -201,7 +206,7 @@ impl Node {
             RecordKind::Spend => {
                 let record_key = record.key.clone();
                 let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
-                self.validate_merge_and_store_spends(spends, &record_key)
+                self.validate_merge_and_store_spends(spends, &record_key, false)
                     .await
             }
             RecordKind::Register => {
@@ -336,6 +341,7 @@ impl Node {
         &self,
         signed_spends: Vec<SignedSpend>,
         record_key: &RecordKey,
+        from_put: bool,
     ) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(record_key);
         debug!("Validating spends before storage at {pretty_key:?}");
@@ -374,7 +380,7 @@ impl Node {
         // validate the signed spends against the network and the local knowledge
         debug!("Validating spends for {pretty_key:?} with unique key: {unique_pubkey:?}");
         let validated_spends = match self
-            .signed_spends_to_keep(spends_for_key.clone(), *unique_pubkey)
+            .signed_spends_to_keep(spends_for_key.clone(), *unique_pubkey, from_put)
             .await
         {
             Ok(s) => s,
@@ -622,17 +628,18 @@ impl Node {
     }
 
     /// Determine which spends our node should keep and store
-    /// - checks if we already have local copies and trusts them to be valid
-    /// - downloads spends from the network as well
-    /// - verifies incoming spends before trusting them
-    /// - ignores received invalid spends
-    /// - returns the valid spends to store
-    /// - returns max 2 spends to store
-    /// - if we have more than 2 valid spends, returns the first 2
+    /// - if our local copy has reached the len/size limits, we don't store anymore from kad::PUT and return the local copy
+    /// - else if the request is from replication OR if limit not reached during kad::PUT, then:
+    /// - trust local spends
+    /// - downloads spends from the network
+    /// - verifies incoming spend + network spends and ignores the invalid ones.
+    /// - orders all the verified spends from local + incoming + network
+    /// - returns a maximum of MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_PER_RECORD spends
     async fn signed_spends_to_keep(
         &self,
         signed_spends: Vec<SignedSpend>,
         unique_pubkey: UniquePubkey,
+        from_put: bool,
     ) -> Result<Vec<SignedSpend>> {
         let spend_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
         debug!(
@@ -640,6 +647,22 @@ impl Node {
         );
 
         let local_spends = self.get_local_spends(spend_addr).await?;
+        let size_of_local_spends = try_serialize_record(&local_spends, RecordKind::Spend)?
+            .to_vec()
+            .len();
+        let max_spend_len_reached =
+            local_spends.len() >= MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_FROM_PUTS;
+        let max_spend_size_reached = {
+            // todo: limit size of a single signed spend to < max_packet_size/2
+            let size_limit = size_of_local_spends >= MAX_PACKET_SIZE / 2;
+            // just so that we can store the double spend
+            size_limit && local_spends.len() > 1
+        };
+
+        if (max_spend_len_reached || max_spend_size_reached) && from_put {
+            info!("We already have {MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_FROM_PUTS} spends locally or have maximum size of spends, skipping spends received via PUT for {unique_pubkey:?}");
+            return Ok(local_spends);
+        }
         let mut all_verified_spends = BTreeSet::from_iter(local_spends.into_iter());
 
         // get spends from the network at the address for that unique pubkey
@@ -693,9 +716,11 @@ impl Node {
             }
         }
 
+        // todo: should we also check the size of spends here? Maybe just limit the size of a single
+        // SignedSpend to < max_packet_size/2 so that we can store atleast 2 of them.
         let verified_spends = all_verified_spends
             .into_iter()
-            .take(MAX_DOUBLE_SPEND_ATTEMPTS_PER_RECORD)
+            .take(MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_PER_RECORD)
             .collect::<Vec<SignedSpend>>();
 
         if verified_spends.is_empty() {

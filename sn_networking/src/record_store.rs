@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
+use crate::driver::MAX_PACKET_SIZE;
 use crate::target_arch::{spawn, Instant};
 use crate::CLOSE_GROUP_SIZE;
 use crate::{cmd::SwarmCmd, event::NetworkEvent, log_markers::Marker, send_swarm_cmd};
@@ -109,7 +110,7 @@ impl Default for NodeRecordStoreConfig {
             storage_dir: historic_quote_dir.clone(),
             historic_quote_dir,
             max_records: MAX_RECORDS_COUNT,
-            max_value_bytes: 65 * 1024,
+            max_value_bytes: MAX_PACKET_SIZE,
         }
     }
 }
