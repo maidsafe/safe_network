@@ -178,12 +178,7 @@ pub async fn balance(
     }
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(
-        &mut node_registry,
-        &ServiceController {},
-        verbosity != VerbosityLevel::Minimal,
-    )
-    .await?;
+    refresh_node_registry(&mut node_registry, verbosity != VerbosityLevel::Minimal).await?;
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
@@ -221,12 +216,7 @@ pub async fn remove(
     info!("Removing safe node services with keep_dirs=({keep_directories}) for: {peer_ids:?}, {service_names:?}");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(
-        &mut node_registry,
-        &ServiceController {},
-        verbosity != VerbosityLevel::Minimal,
-    )
-    .await?;
+    refresh_node_registry(&mut node_registry, verbosity != VerbosityLevel::Minimal).await?;
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
@@ -305,12 +295,7 @@ pub async fn start(
     );
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(
-        &mut node_registry,
-        &ServiceController {},
-        verbosity != VerbosityLevel::Minimal,
-    )
-    .await?;
+    refresh_node_registry(&mut node_registry, verbosity != VerbosityLevel::Minimal).await?;
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
@@ -358,14 +343,7 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
         if !json && !details {
             print_banner("Safenode Services");
         }
-        status_report(
-            &mut node_registry,
-            &ServiceController {},
-            details,
-            json,
-            fail,
-        )
-        .await?;
+        status_report(&mut node_registry, details, json, fail).await?;
         node_registry.save()?;
     }
     Ok(())
@@ -382,12 +360,7 @@ pub async fn stop(
     info!("Stopping safenode services for: {peer_ids:?}, {service_names:?}");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(
-        &mut node_registry,
-        &ServiceController {},
-        verbosity != VerbosityLevel::Minimal,
-    )
-    .await?;
+    refresh_node_registry(&mut node_registry, verbosity != VerbosityLevel::Minimal).await?;
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
@@ -455,12 +428,7 @@ pub async fn upgrade(
     .await?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    refresh_node_registry(
-        &mut node_registry,
-        &ServiceController {},
-        verbosity != VerbosityLevel::Minimal,
-    )
-    .await?;
+    refresh_node_registry(&mut node_registry, verbosity != VerbosityLevel::Minimal).await?;
 
     debug!(
         "listen addresses for nodes[0]: {:?}",

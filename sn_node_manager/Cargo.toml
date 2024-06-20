@@ -35,6 +35,7 @@ clap = { version = "4.4.6", features = ["derive", "env"] }
 colored = "2.0.4"
 color-eyre = "~0.6"
 dirs-next = "2.0.0"
+futures = "0.3.28"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 libp2p = { version = "0.53", features = [] }
 libp2p-identity = { version = "0.2.7", features = ["rand"] }

@@ -6929,6 +6929,7 @@ dependencies = [
  "color-eyre",
  "colored",
  "dirs-next",
+ "futures",
  "indicatif",
  "libp2p",
  "libp2p-identity",

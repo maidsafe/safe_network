@@ -18,6 +18,8 @@ pub mod local;
 pub mod rpc;
 pub mod rpc_client;
 
+const MAX_NODES_TO_QUERY_DURING_REFRESH: usize = 50;
+
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum VerbosityLevel {
     Minimal,
@@ -38,13 +40,17 @@ impl From<u8> for VerbosityLevel {
 
 use crate::error::{Error, Result};
 use colored::Colorize;
+use futures::StreamExt;
 use semver::Version;
 use sn_service_management::{
-    control::ServiceControl, error::Error as ServiceError, rpc::RpcClient, NodeRegistry,
-    NodeService, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
+    control::ServiceControl,
+    error::Error as ServiceError,
+    rpc::{RpcActions, RpcClient},
+    NodeRegistry, NodeService, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
     UpgradeResult,
 };
 use sn_transfers::HotWallet;
+use std::time::Instant;
 use tracing::debug;
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
@@ -363,12 +369,11 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
 
 pub async fn status_report(
     node_registry: &mut NodeRegistry,
-    service_control: &dyn ServiceControl,
     detailed_view: bool,
     output_json: bool,
     fail: bool,
 ) -> Result<()> {
-    refresh_node_registry(node_registry, service_control, !output_json).await?;
+    refresh_node_registry(node_registry, !output_json).await?;
 
     if output_json {
         let json = serde_json::to_string_pretty(&node_registry.to_status_summary())?;
@@ -507,18 +512,34 @@ pub async fn status_report(
 
 pub async fn refresh_node_registry(
     node_registry: &mut NodeRegistry,
-    service_control: &dyn ServiceControl,
     print_refresh_message: bool,
 ) -> Result<()> {
+    let now = Instant::now();
     // This message is useful for users, but needs to be suppressed when a JSON output is requested.
     if print_refresh_message {
         println!("Refreshing the node registry...");
     }
     info!("Refreshing the node registry");
 
-    for node in &mut node_registry.nodes {
-        // The `status` command can run before a node is started and therefore before its wallet
-        // exists.
+    let rpc_clients = node_registry
+        .nodes
+        .iter()
+        .enumerate()
+        .map(|(idx, node)| (idx, RpcClient::from_socket_addr(node.rpc_socket_addr)))
+        .collect::<Vec<_>>();
+
+    let mut node_status = futures::stream::iter(rpc_clients)
+        .map(|(idx, rpc_client)| async move {
+            let is_running = rpc_client.is_endpoint_active().await;
+            (idx, is_running)
+        })
+        .buffer_unordered(MAX_NODES_TO_QUERY_DURING_REFRESH);
+
+    while let Some((idx, is_running)) = node_status.next().await {
+        let Some(node) = node_registry.nodes.get_mut(idx) else {
+            error!("Node with index {idx} not found in the registry. Something went wrong");
+            continue;
+        };
         match HotWallet::try_load_from(&node.data_dir_path) {
             Ok(wallet) => {
                 node.reward_balance = Some(wallet.balance());
@@ -530,69 +551,45 @@ pub async fn refresh_node_registry(
             }
             Err(_) => node.reward_balance = None,
         }
-
         let mut rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         rpc_client.set_max_attempts(1);
         let service = NodeService::new(node, Box::new(rpc_client));
-        refresh_single_node(service, service_control).await?;
+        refresh_single_node(service, is_running).await?;
     }
+    debug!("Node registry states refreshed in {:?}", now.elapsed());
+
     Ok(())
 }
 
-async fn refresh_single_node<'a>(
-    mut service: NodeService<'a>,
-    service_control: &dyn ServiceControl,
-) -> Result<()> {
+async fn refresh_single_node(mut service: NodeService<'_>, is_running: bool) -> Result<()> {
     match &service.service_data.status {
         ServiceStatus::Running => {
-            if let Some(pid) = service.service_data.pid {
-                // First we can try the PID we have now. If there is still a process running with
-                // that PID, we know the node is still running.
-                if service_control.is_service_process_running(pid) {
-                    debug!(
-                        "The process for node {} is still running at PID {pid}. Calling on_start() for the service.",
-                        service.service_data.service_name
-                    );
-                    service.on_start().await?;
-                } else {
-                    // The process with the PID we had has died at some point. However, if the
-                    // service has been configured to restart on failures, it's possible that a new
-                    // process has been launched and hence we would have a new PID. We can use the
-                    // RPC service to try and retrieve it.
-                    debug!(
-                        "The process for node {} has died. Attempting to retrieve new PID",
-                        service.service_data.service_name
-                    );
-                    if service.rpc_actions.node_info().await.is_ok() {
-                        debug!(
-                            "New PID for node {} is= {:?}. Calling on_start() for the service",
-                            service.service_data.service_name, service.service_data.pid
-                        );
-                        service.on_start().await?;
-                    } else {
-                        // Finally, if there was an error communicating with the RPC client, we
-                        // can assume that this node is actually stopped.
-                        debug!(
-                            "Failed to retrieve new PID for node {}. Calling on_stop() for the service.",
-                            service.service_data.service_name
-                        );
-                        service.on_stop().await?;
-                    }
-                }
+            if is_running {
+                debug!(
+                    "Node {} is still active. Calling on_start() for the service.",
+                    service.service_data.service_name,
+                );
+                service.on_start().await?;
+            } else {
+                debug!(
+                    "Node {} in Running state is not actually running. Calling on_stop() for the service.",
+                    service.service_data.service_name
+                );
+                service.on_stop().await?;
             }
         }
         // If the service was manually started by an user, we'd want to make sure that we sync our state.
         status => {
-            if service.rpc_actions.node_info().await.is_ok() {
+            if is_running {
                 debug!(
-                    "New PID for {} node (status: {status:?}) is= {:?}. Calling on_start() for the service",
-                    service.service_data.service_name, service.service_data.pid
+                    "Node {} with status: {status:?} is actually running. Calling on_start() for the service",
+                    service.service_data.service_name
                 );
                 service.on_start().await?;
             } else {
                 // If there was an error, we can assume that the node is at the same state.
                 debug!(
-                    "Failed to retrieve new PID for node {}. Not changing state",
+                    "Node {} is not running atm. Not changing state",
                     service.service_data.service_name
                 );
             }
@@ -662,6 +659,7 @@ mod tests {
         pub RpcClient {}
         #[async_trait]
         impl RpcActions for RpcClient {
+            async fn is_endpoint_active(&self) -> bool;
             async fn node_info(&self) -> ServiceControlResult<NodeInfo>;
             async fn network_info(&self) -> ServiceControlResult<NetworkInfo>;
             async fn record_addresses(&self) -> ServiceControlResult<Vec<RecordAddress>>;
