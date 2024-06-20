@@ -30,6 +30,14 @@ pub(crate) struct Cmd {
 
     #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
     verbose: u8,
+
+    /// Output debug-level logging to stderr.
+    #[clap(long, conflicts_with = "trace")]
+    debug: bool,
+
+    /// Output trace-level logging to stderr.
+    #[clap(long, conflicts_with = "debug")]
+    trace: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -868,7 +876,17 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Cmd::parse();
     let verbosity = VerbosityLevel::from(args.verbose);
-    let _log_handles = get_log_builder()?.initialize()?;
+
+    let _log_handle = if args.debug || args.trace {
+        let level = if args.debug {
+            Level::DEBUG
+        } else {
+            Level::TRACE
+        };
+        get_log_builder(level)?.initialize()?.1
+    } else {
+        None
+    };
 
     configure_winsw(verbosity).await?;
 
@@ -1138,25 +1156,15 @@ async fn main() -> Result<()> {
     }
 }
 
-fn get_log_builder() -> Result<LogBuilder> {
+fn get_log_builder(level: Level) -> Result<LogBuilder> {
     let logging_targets = vec![
-        ("sn_node_manager".to_string(), Level::TRACE),
-        ("safenode_manager".to_string(), Level::TRACE),
-        ("safenodemand".to_string(), Level::TRACE),
-        ("sn_service_management".to_string(), Level::TRACE),
+        ("sn_node_manager".to_string(), level),
+        ("safenode_manager".to_string(), level),
+        ("safenodemand".to_string(), level),
+        ("sn_service_management".to_string(), level),
     ];
-    let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-
-    let output_dest = dirs_next::data_dir()
-        .ok_or_else(|| eyre!("Could not obtain user data directory"))?
-        .join("safe")
-        .join("safenode-manager")
-        .join("logs")
-        .join(format!("log_{timestamp}"));
-
     let mut log_builder = LogBuilder::new(logging_targets);
-    log_builder.output_dest(sn_logging::LogOutputDest::Path(output_dest));
-    // disabled by default, as it can interfere with status cmd.
+    log_builder.output_dest(sn_logging::LogOutputDest::Stderr);
     log_builder.print_updates_to_stdout(false);
     Ok(log_builder)
 }
