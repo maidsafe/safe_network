@@ -3,13 +3,9 @@ Vagrant.configure("2") do |config|
   config.vm.provider :libvirt do |libvirt|
     libvirt.memory = 4096
   end
+  config.vm.network :public_network, :name => "default"
   config.vm.synced_folder "..",
     "/vagrant",
-    type: "9p",
-    accessmode: "mapped",
-    mount_options: ['rw', 'trans=virtio', 'version=9p2000.L']
-  config.vm.synced_folder "../target",
-    "/target",
     type: "9p",
     accessmode: "mapped",
     mount_options: ['rw', 'trans=virtio', 'version=9p2000.L']
