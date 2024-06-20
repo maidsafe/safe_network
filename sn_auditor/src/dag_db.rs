@@ -139,7 +139,7 @@ impl SpendDagDb {
 
     /// Get info about a single spend in JSON format
     pub async fn spend_json(&self, address: SpendAddress) -> Result<String> {
-        let dag_ref = self.dag.clone();
+        let dag_ref = Arc::clone(&self.dag);
         let r_handle = dag_ref.read().await;
         let spend = r_handle.get_spend(&address);
         let faults = r_handle.get_spend_faults(&address);
@@ -174,7 +174,7 @@ impl SpendDagDb {
     pub async fn dump(&self) -> Result<()> {
         std::fs::create_dir_all(&self.path)?;
         let dag_path = self.path.join(SPEND_DAG_FILENAME);
-        let dag_ref = self.dag.clone();
+        let dag_ref = Arc::clone(&self.dag);
         let r_handle = dag_ref.read().await;
         r_handle.dump_to_file(dag_path)?;
         Ok(())
@@ -195,7 +195,7 @@ impl SpendDagDb {
         info!("Dumping DAG to svg...");
         std::fs::create_dir_all(&self.path)?;
         let svg_path = self.path.join(SPEND_DAG_SVG_FILENAME);
-        let dag_ref = self.dag.clone();
+        let dag_ref = Arc::clone(&self.dag);
         let r_handle = dag_ref.read().await;
         let svg = dag_to_svg(&r_handle)?;
         std::fs::write(svg_path.clone(), svg)?;
@@ -212,7 +212,7 @@ impl SpendDagDb {
         };
 
         // init utxos to fetch
-        let start_dag = { self.dag.clone().read().await.clone() };
+        let start_dag = { Arc::clone(&self.dag).read().await.clone() };
         let mut utxo_addresses: BTreeMap<SpendAddress, Instant> = start_dag
             .get_utxos()
             .into_iter()
@@ -295,7 +295,7 @@ impl SpendDagDb {
         client: Client,
     ) -> BTreeSet<SpendAddress> {
         // get a copy of the current DAG
-        let mut dag = { self.dag.clone().read().await.clone() };
+        let mut dag = { Arc::clone(&self.dag).read().await.clone() };
 
         // update it
         client
@@ -397,7 +397,7 @@ impl SpendDagDb {
     /// including total rewards for each participant.
     /// Also returns the current tracking performance in readable format.
     pub(crate) async fn beta_program_json(&self) -> Result<(String, String)> {
-        let r_handle = self.beta_tracking.clone();
+        let r_handle = Arc::clone(&self.beta_tracking);
         let beta_tracking = r_handle.read().await;
         let mut rewards_output = vec![];
         let mut total_hits = 0_u64;
