@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718858360251,
+  "lastUpdate": 1718858362225,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": false,
-          "id": "aedcd98fc808cc2e8837352f2fc6c921c90687fb",
-          "message": "chore(deps): bump actions/cache from 4.0.1 to 4.0.2\n\nBumps [actions/cache](https://github.com/actions/cache) from 4.0.1 to 4.0.2.\n- [Release notes](https://github.com/actions/cache/releases)\n- [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md)\n- [Commits](https://github.com/actions/cache/compare/v4.0.1...v4.0.2)\n\n---\nupdated-dependencies:\n- dependency-name: actions/cache\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2024-03-20T17:07:39Z",
-          "tree_id": "9de943bc7da1d4adb50f56dd359ccf66ce97e0ca",
-          "url": "https://github.com/maidsafe/safe_network/commit/aedcd98fc808cc2e8837352f2fc6c921c90687fb"
-        },
-        "date": 1710957812216,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 181,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "af1280844d13f341b8e3535c8526fc012883e3ce",
+          "message": "chore(logging): update the sn_cli lib name",
+          "timestamp": "2024-06-20T03:52:26Z",
+          "tree_id": "66a9c1b7ad77d1a2617efaac459f2104a77920ce",
+          "url": "https://github.com/maidsafe/safe_network/commit/af1280844d13f341b8e3535c8526fc012883e3ce"
+        },
+        "date": 1718858361525,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 198,
             "unit": "MB"
           },
           {
