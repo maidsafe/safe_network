@@ -10,7 +10,6 @@ use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result
 use libp2p::kad::{Record, RecordKey};
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
-    messages::CmdOk,
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
         SpendAddress,
@@ -28,7 +27,7 @@ use xor_name::XorName;
 
 impl Node {
     /// Validate a record and it's payment, and store the record to the RecordStore
-    pub(crate) async fn validate_and_store_record(&self, record: Record) -> Result<CmdOk> {
+    pub(crate) async fn validate_and_store_record(&self, record: Record) -> Result<()> {
         let record_header = RecordHeader::from_record(&record)?;
 
         // Notify replication_fetcher to mark the attempt as completed.
@@ -57,7 +56,11 @@ impl Node {
                     // we eagery retry replicaiton as it seems like other nodes are having trouble
                     // did not manage to get this chunk as yet
                     self.replicate_valid_fresh_record(record_key, RecordType::Chunk);
-                    return Ok(CmdOk::DataAlreadyPresent);
+                    trace!(
+                        "Chunk with addr {:?} already exists: {already_exists}, payment extracted.",
+                        chunk.network_address()
+                    );
+                    return Ok(());
                 }
 
                 // Finally before we store, lets bail for any payment issues
@@ -164,7 +167,7 @@ impl Node {
     }
 
     /// Store a pre-validated, and already paid record to the RecordStore
-    pub(crate) async fn store_replicated_in_record(&self, record: Record) -> Result<CmdOk> {
+    pub(crate) async fn store_replicated_in_record(&self, record: Record) -> Result<()> {
         trace!("Storing record which was replicated to us {:?}", record.key);
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
@@ -182,12 +185,12 @@ impl Node {
                 let already_exists = self
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
-                trace!(
-                    "Chunk with addr {:?} already exists?: {already_exists}",
-                    chunk.network_address()
-                );
                 if already_exists {
-                    return Ok(CmdOk::DataAlreadyPresent);
+                    trace!(
+                        "Chunk with addr {:?} already exists?: {already_exists}, do nothing",
+                        chunk.network_address()
+                    );
+                    return Ok(());
                 }
 
                 self.store_chunk(&chunk)
@@ -253,7 +256,7 @@ impl Node {
     }
 
     /// Store a `Chunk` to the RecordStore
-    pub(crate) fn store_chunk(&self, chunk: &Chunk) -> Result<CmdOk> {
+    pub(crate) fn store_chunk(&self, chunk: &Chunk) -> Result<()> {
         let chunk_name = *chunk.name();
         let chunk_addr = *chunk.address();
 
@@ -276,7 +279,7 @@ impl Node {
         self.events_channel()
             .broadcast(crate::NodeEvent::ChunkStored(chunk_addr));
 
-        Ok(CmdOk::StoredSuccessfully)
+        Ok(())
     }
 
     /// Validate and store a `Register` to the RecordStore
@@ -284,7 +287,7 @@ impl Node {
         &self,
         register: SignedRegister,
         with_payment: bool,
-    ) -> Result<CmdOk> {
+    ) -> Result<()> {
         let reg_addr = register.address();
         debug!("Validating and storing register {reg_addr:?}");
 
@@ -299,7 +302,7 @@ impl Node {
             None => {
                 // Notify replication_fetcher to mark the attempt as completed.
                 self.network().notify_fetch_completed(key.clone());
-                return Ok(CmdOk::DataAlreadyPresent);
+                return Ok(());
             }
         };
 
@@ -321,7 +324,7 @@ impl Node {
             self.replicate_valid_fresh_record(key, RecordType::NonChunk(content_hash));
         }
 
-        Ok(CmdOk::StoredSuccessfully)
+        Ok(())
     }
 
     /// Validate and store `Vec<SignedSpend>` to the RecordStore
@@ -330,7 +333,7 @@ impl Node {
         &self,
         signed_spends: Vec<SignedSpend>,
         record_key: &RecordKey,
-    ) -> Result<CmdOk> {
+    ) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(record_key);
         debug!("Validating spends before storage at {pretty_key:?}");
 
@@ -396,17 +399,14 @@ impl Node {
             "Successfully stored validated spends with key: {unique_pubkey:?} at {pretty_key:?}"
         );
 
-        // report double spends
-        if let Some(spend2) = maybe_spend2 {
+        // Just log the double spend attempt. DoubleSpend error during PUT is not used and would just lead to
+        // RecordRejected marker (which is incorrect, since we store double spends).
+        if maybe_spend2.is_some() {
             warn!("Got a double spend for the Spend PUT with unique_pubkey {unique_pubkey}");
-            return Err(NetworkError::DoubleSpendAttempt(
-                Box::new(spend1),
-                Box::new(spend2),
-            ))?;
         }
 
         self.record_metrics(Marker::ValidSpendRecordPutFromNetwork(&pretty_key));
-        Ok(CmdOk::StoredSuccessfully)
+        Ok(())
     }
 
     /// Gets CashNotes out of Transfers, this includes network verifications of the Transfers

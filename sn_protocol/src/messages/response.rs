@@ -117,10 +117,3 @@ pub enum CmdResponse {
     /// Response to the considered as bad notification
     PeerConsideredAsBad(Result<()>),
 }
-
-/// The Ok variant of a CmdResponse
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum CmdOk {
-    StoredSuccessfully,
-    DataAlreadyPresent,
-}
