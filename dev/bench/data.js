@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718873661187,
+  "lastUpdate": 1718873663035,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "56a70313a4a53f8ad07de1e1f76f14069021465d",
-          "message": "feat(cli): have CLI folders cmds to act on current directory by default",
-          "timestamp": "2024-03-20T17:22:17Z",
-          "tree_id": "da251f5611495bcfedc0e963b2d9471f3cbbf9ca",
-          "url": "https://github.com/maidsafe/safe_network/commit/56a70313a4a53f8ad07de1e1f76f14069021465d"
-        },
-        "date": 1710958441731,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 202,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "02310626666d28768cf3546b41a88c87340d5dbc",
+          "message": "style(auditor): add workspace lints to auditor",
+          "timestamp": "2024-06-20T08:00:15Z",
+          "tree_id": "194b44e8fd03600b26dc5c24291cc92f020c9cff",
+          "url": "https://github.com/maidsafe/safe_network/commit/02310626666d28768cf3546b41a88c87340d5dbc"
+        },
+        "date": 1718873662418,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 187,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
