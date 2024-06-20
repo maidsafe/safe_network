@@ -29,6 +29,7 @@ pub use tracing_core::Level;
 
 #[derive(Debug, Clone)]
 pub enum LogOutputDest {
+    Stderr,
     Stdout,
     Path(PathBuf),
 }
@@ -87,6 +88,7 @@ impl LogOutputDest {
 impl std::fmt::Display for LogOutputDest {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
+            LogOutputDest::Stderr => write!(f, "stderr"),
             LogOutputDest::Stdout => write!(f, "stdout"),
             LogOutputDest::Path(p) => write!(f, "{}", p.to_string_lossy()),
         }
@@ -136,7 +138,7 @@ impl LogBuilder {
     pub fn new(default_logging_targets: Vec<(String, Level)>) -> Self {
         Self {
             default_logging_targets,
-            output_dest: LogOutputDest::Stdout,
+            output_dest: LogOutputDest::Stderr,
             format: LogFormat::Default,
             max_uncompressed_log_files: None,
             max_compressed_log_files: None,

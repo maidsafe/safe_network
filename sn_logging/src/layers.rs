@@ -118,6 +118,12 @@ impl TracingLayers {
                     .event_format(LogFormatter)
                     .boxed()
             }
+            LogOutputDest::Stderr => tracing_fmt::layer()
+                .with_ansi(false)
+                .with_target(false)
+                .event_format(LogFormatter)
+                .with_writer(std::io::stderr)
+                .boxed(),
             LogOutputDest::Path(path) => {
                 std::fs::create_dir_all(path)?;
                 if print_updates_to_stdout {
