@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1718858362225,
+  "lastUpdate": 1718858364488,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": false,
-          "id": "aedcd98fc808cc2e8837352f2fc6c921c90687fb",
-          "message": "chore(deps): bump actions/cache from 4.0.1 to 4.0.2\n\nBumps [actions/cache](https://github.com/actions/cache) from 4.0.1 to 4.0.2.\n- [Release notes](https://github.com/actions/cache/releases)\n- [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md)\n- [Commits](https://github.com/actions/cache/compare/v4.0.1...v4.0.2)\n\n---\nupdated-dependencies:\n- dependency-name: actions/cache\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2024-03-20T17:07:39Z",
-          "tree_id": "9de943bc7da1d4adb50f56dd359ccf66ce97e0ca",
-          "url": "https://github.com/maidsafe/safe_network/commit/aedcd98fc808cc2e8837352f2fc6c921c90687fb"
-        },
-        "date": 1710957813942,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6315,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 37181,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34747,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "af1280844d13f341b8e3535c8526fc012883e3ce",
+          "message": "chore(logging): update the sn_cli lib name",
+          "timestamp": "2024-06-20T03:52:26Z",
+          "tree_id": "66a9c1b7ad77d1a2617efaac459f2104a77920ce",
+          "url": "https://github.com/maidsafe/safe_network/commit/af1280844d13f341b8e3535c8526fc012883e3ce"
+        },
+        "date": 1718858363873,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 9367,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 46623,
             "unit": "ms"
           },
           {
