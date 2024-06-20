@@ -2,6 +2,17 @@
 
 # Target rate of 1.5mb/s
 
+
+# Get the input argument
+CONTACT_PEER="${1:-}"
+
+# Prepare contact peer argument
+CONTACT_PEER_ARG=""
+if [ -n "$CONTACT_PEER" ]; then
+    CONTACT_PEER_ARG="--peer $CONTACT_PEER"
+fi
+
+
 # Function to check if the `safe` command exists, and install it if not
 check_and_install_safe() {
   if ! command -v safe &> /dev/null; then
@@ -21,8 +32,7 @@ generate_random_data_file() {
   echo "Generated random data file at $tmpfile"
 
   # Upload the random data file using SAFE CLI
-  safe files upload "$tmpfile"
-  # cat $tmpfile
+  safe $CONTACT_PEER_ARG files upload "$tmpfile"
   if [ $? -eq 0 ]; then
     echo "Successfully uploaded $tmpfile using SAFE CLI"
   else
@@ -40,6 +50,12 @@ generate_random_data_file() {
 # Check and install 'safe' if necessary
 check_and_install_safe
 
+# Check for correct number of arguments
+if [ "$#" -gt 1 ]; then
+    echo "Usage: $0 [contact_peer]"
+    exit 1
+fi
+
 # Example usage
 total_files=10000  # Total number of files to generate and upload
 
@@ -49,5 +65,5 @@ for i in $(seq 1 $total_files); do
   echo "Generating and uploading file $i of $total_files..."
   generate_random_data_file
 
-  safe wallet balance
+  safe $CONTACT_PEER_ARG wallet balance
 done
