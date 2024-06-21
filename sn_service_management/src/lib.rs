@@ -86,7 +86,7 @@ pub trait ServiceStateActions {
     fn name(&self) -> String;
     fn pid(&self) -> Option<u32>;
     fn on_remove(&mut self);
-    async fn on_start(&mut self) -> Result<()>;
+    async fn on_start(&mut self, pid: Option<u32>, full_refresh: bool) -> Result<()>;
     async fn on_stop(&mut self) -> Result<()>;
     fn set_version(&mut self, version: &str);
     fn status(&self) -> ServiceStatus;
@@ -114,11 +114,14 @@ pub struct NodeRegistry {
 
 impl NodeRegistry {
     pub fn save(&self) -> Result<()> {
-        debug!("Saving node registry to: {:?}", self.save_path);
+        debug!(
+            "Saving node registry to {}",
+            self.save_path.to_string_lossy()
+        );
         let path = Path::new(&self.save_path);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).inspect_err(|err| {
-                error!("Error while creating node registry parent {parent:?}: {err:?}")
+                error!("Error creating node registry parent {parent:?}: {err:?}")
             })?;
         }
 
@@ -145,14 +148,14 @@ impl NodeRegistry {
                 save_path: path.to_path_buf(),
             });
         }
-        debug!("Loading node registry from: {path:?}");
+        debug!("Loading node registry from {}", path.to_string_lossy());
 
         let mut file = std::fs::File::open(path)
-            .inspect_err(|err| error!("Error while opening node registry: {err:?}"))?;
+            .inspect_err(|err| error!("Error opening node registry: {err:?}"))?;
 
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .inspect_err(|err| error!("Error while reading node registry: {err:?}"))?;
+            .inspect_err(|err| error!("Error reading node registry: {err:?}"))?;
 
         // It's possible for the file to be empty if the user runs a `status` command before any
         // services were added.
@@ -174,7 +177,7 @@ impl NodeRegistry {
 
     pub fn from_json(json: &str) -> Result<Self> {
         let registry = serde_json::from_str(json)
-            .inspect_err(|err| error!("Error while deserializing node registry: {err:?}"))?;
+            .inspect_err(|err| error!("Error deserializing node registry: {err:?}"))?;
         Ok(registry)
     }
 
@@ -196,9 +199,8 @@ pub fn get_local_node_registry_path() -> Result<PathBuf> {
         .join("safe")
         .join("local_node_registry.json");
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).inspect_err(|err| {
-            error!("Error while creating node registry parent {parent:?}: {err:?}")
-        })?;
+        std::fs::create_dir_all(parent)
+            .inspect_err(|err| error!("Error creating node registry parent {parent:?}: {err:?}"))?;
     }
     Ok(path)
 }

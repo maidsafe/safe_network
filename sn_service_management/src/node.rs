@@ -133,47 +133,74 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         self.service_data.status = ServiceStatus::Removed;
     }
 
-    async fn on_start(&mut self) -> Result<()> {
-        let node_info =
-            self.rpc_actions.node_info().await.inspect_err(|err| {
-                error!("Error while obtaining node_info through RPC: {err:?}")
-            })?;
-        let network_info =
-            self.rpc_actions.network_info().await.inspect_err(|err| {
-                error!("Error while obtaining network_info through RPC: {err:?}")
-            })?;
+    async fn on_start(&mut self, pid: Option<u32>, full_refresh: bool) -> Result<()> {
+        let (connected_peers, pid, peer_id) = if full_refresh {
+            debug!(
+                "Performing full refresh for {}",
+                self.service_data.service_name
+            );
+            let node_info = self
+                .rpc_actions
+                .node_info()
+                .await
+                .inspect_err(|err| error!("Error obtaining node_info via RPC: {err:?}"))?;
+            let network_info = self
+                .rpc_actions
+                .network_info()
+                .await
+                .inspect_err(|err| error!("Error obtaining network_info via RPC: {err:?}"))?;
 
-        self.service_data.listen_addr = Some(
-            network_info
-                .listeners
-                .iter()
-                .cloned()
-                .map(|addr| addr.with(Protocol::P2p(node_info.peer_id)))
-                .collect(),
-        );
-
-        for addr in &network_info.listeners {
-            if let Some(port) = get_port_from_multiaddr(addr) {
-                debug!(
-                    "Found safenode port for {}: {port}",
-                    self.service_data.service_name
-                );
-                self.service_data.node_port = Some(port);
-                break;
+            self.service_data.listen_addr = Some(
+                network_info
+                    .listeners
+                    .iter()
+                    .cloned()
+                    .map(|addr| addr.with(Protocol::P2p(node_info.peer_id)))
+                    .collect(),
+            );
+            for addr in &network_info.listeners {
+                if let Some(port) = get_port_from_multiaddr(addr) {
+                    debug!(
+                        "Found safenode port for {}: {port}",
+                        self.service_data.service_name
+                    );
+                    self.service_data.node_port = Some(port);
+                    break;
+                }
             }
-        }
 
-        if self.service_data.node_port.is_none() {
-            error!("Could not find safenode port. This will cause the node to have a different port during upgrade");
-        }
+            if self.service_data.node_port.is_none() {
+                error!("Could not find safenode port");
+                error!("This will cause the node to have a different port during upgrade");
+            }
 
-        self.service_data.pid = Some(node_info.pid);
-        self.service_data.peer_id = Some(node_info.peer_id);
+            (
+                Some(network_info.connected_peers),
+                pid,
+                Some(node_info.peer_id),
+            )
+        } else {
+            debug!(
+                "Performing partial refresh for {}",
+                self.service_data.service_name
+            );
+            debug!("Previously assigned data will be used");
+            (
+                self.service_data.connected_peers.clone(),
+                pid,
+                self.service_data.peer_id,
+            )
+        };
+
+        self.service_data.connected_peers = connected_peers;
+        self.service_data.peer_id = peer_id;
+        self.service_data.pid = pid;
         self.service_data.status = ServiceStatus::Running;
         Ok(())
     }
 
     async fn on_stop(&mut self) -> Result<()> {
+        debug!("Marking {} as stopped", self.service_data.service_name);
         self.service_data.pid = None;
         self.service_data.status = ServiceStatus::Stopped;
         self.service_data.connected_peers = None;

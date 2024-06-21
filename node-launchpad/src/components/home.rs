@@ -95,8 +95,13 @@ impl Home {
         let now = Instant::now();
         debug!("Refreshing node registry states on startup");
         let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-        sn_node_manager::refresh_node_registry(&mut node_registry, &ServiceController {}, false)
-            .await?;
+        sn_node_manager::refresh_node_registry(
+            &mut node_registry,
+            &ServiceController {},
+            false,
+            true,
+        )
+        .await?;
         node_registry.save()?;
         debug!("Node registry states refreshed in {:?}", now.elapsed());
         home.load_node_registry_and_update_states()?;

@@ -15,7 +15,7 @@ use std::{
     net::{SocketAddr, TcpListener},
     path::Path,
 };
-use sysinfo::{Pid, System};
+use sysinfo::System;
 
 /// A thin wrapper around the `service_manager::ServiceManager`, which makes our own testing
 /// easier.
@@ -29,7 +29,6 @@ pub trait ServiceControl: Sync {
     fn get_available_port(&self) -> Result<u16>;
     fn install(&self, install_ctx: ServiceInstallCtx, user_mode: bool) -> Result<()>;
     fn get_process_pid(&self, path: &Path) -> Result<u32>;
-    fn is_service_process_running(&self, pid: u32) -> bool;
     fn start(&self, service_name: &str, user_mode: bool) -> Result<()>;
     fn stop(&self, service_name: &str, user_mode: bool) -> Result<()>;
     fn uninstall(&self, service_name: &str, user_mode: bool) -> Result<()>;
@@ -167,11 +166,6 @@ impl ServiceControl for ServiceController {
         Ok(())
     }
 
-    fn is_service_process_running(&self, pid: u32) -> bool {
-        let system = System::new_all();
-        system.process(Pid::from(pid as usize)).is_some()
-    }
-
     fn get_available_port(&self) -> Result<u16> {
         let addr: SocketAddr = "127.0.0.1:0".parse()?;
 
@@ -184,6 +178,10 @@ impl ServiceControl for ServiceController {
     }
 
     fn get_process_pid(&self, bin_path: &Path) -> Result<u32> {
+        debug!(
+            "Searching for process with binary at {}",
+            bin_path.to_string_lossy()
+        );
         let system = System::new_all();
         for (pid, process) in system.processes() {
             if let Some(path) = process.exe() {
@@ -195,7 +193,10 @@ impl ServiceControl for ServiceController {
                 }
             }
         }
-        error!("Process not found: {bin_path:?}. PID could not be retrieved");
+        error!(
+            "No process was located with a path at {}",
+            bin_path.to_string_lossy()
+        );
         Err(Error::ServiceProcessNotFound(
             bin_path.to_string_lossy().to_string(),
         ))

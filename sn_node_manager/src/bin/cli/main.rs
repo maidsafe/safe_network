@@ -1158,6 +1158,7 @@ async fn main() -> Result<()> {
 
 fn get_log_builder(level: Level) -> Result<LogBuilder> {
     let logging_targets = vec![
+        ("sn_peers_acquisition".to_string(), level),
         ("sn_node_manager".to_string(), level),
         ("safenode_manager".to_string(), level),
         ("safenodemand".to_string(), level),
