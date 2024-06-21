@@ -75,12 +75,14 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         info!("Starting the {} service", self.service.name());
         if ServiceStatus::Running == self.service.status() {
             // The last time we checked the service was running, but it doesn't mean it's actually
-            // running at this point in time. If it is running, we don't need to do anything. If it
-            // stopped because of a fault, we will drop to the code below and attempt to start it
-            // again.
+            // running now. If it is running, we don't need to do anything. If it stopped because
+            // of a fault, we will drop to the code below and attempt to start it again.
+            // We use `get_process_pid` because it searches for the process with the service binary
+            // path, and this path is unique to each service.
             if self
                 .service_control
-                .is_service_process_running(self.service.pid().unwrap())
+                .get_process_pid(&self.service.bin_path())
+                .is_ok()
             {
                 debug!("The {} service is already running", self.service.name());
                 if self.verbosity != VerbosityLevel::Minimal {
@@ -114,6 +116,11 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                     self.service.name(),
                     pid
                 );
+                self.service.on_start(Some(pid), true).await?;
+                info!(
+                    "Service {} has been started successfully",
+                    self.service.name()
+                );
             }
             Err(sn_service_management::error::Error::ServiceProcessNotFound(_)) => {
                 error!("The '{}' service has failed to start because ServiceProcessNotFound when fetching PID", self.service.name());
@@ -125,15 +132,8 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
             }
         }
 
-        self.service.on_start().await?;
-        info!(
-            "Service {} has been started successfully",
-            self.service.name()
-        );
-
         if self.verbosity != VerbosityLevel::Minimal {
             println!("{} Started {} service", "✓".green(), self.service.name());
-
             println!(
                 "  - PID: {}",
                 self.service
@@ -183,7 +183,11 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 let pid = self.service.pid().ok_or(Error::PidNotSet)?;
                 let name = self.service.name();
 
-                if self.service_control.is_service_process_running(pid) {
+                if self
+                    .service_control
+                    .get_process_pid(&self.service.bin_path())
+                    .is_ok()
+                {
                     if self.verbosity != VerbosityLevel::Minimal {
                         println!("Attempting to stop {}...", name);
                     }
@@ -224,7 +228,8 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         if let ServiceStatus::Running = self.service.status() {
             if self
                 .service_control
-                .is_service_process_running(self.service.pid().ok_or(Error::PidNotSet)?)
+                .get_process_pid(&self.service.bin_path())
+                .is_ok()
             {
                 error!(
                     "Service {} is already running. Stop it before removing it",
@@ -273,17 +278,17 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
 
         if !keep_directories {
             debug!(
-                "Removing data and log directories for service: {}",
+                "Removing data and log directories for {}",
                 self.service.name()
             );
             // It's possible the user deleted either of these directories manually.
             // We can just proceed with removing the service from the registry.
             if self.service.data_dir_path().exists() {
-                debug!("Removing data_dir: {:?}", self.service.data_dir_path());
+                debug!("Removing data directory {:?}", self.service.data_dir_path());
                 std::fs::remove_dir_all(self.service.data_dir_path())?;
             }
             if self.service.log_dir_path().exists() {
-                debug!("Removing log_dir: {:?}", self.service.log_dir_path());
+                debug!("Removing log directory {:?}", self.service.log_dir_path());
                 std::fs::remove_dir_all(self.service.log_dir_path())?;
             }
         }
@@ -368,7 +373,7 @@ pub async fn status_report(
     output_json: bool,
     fail: bool,
 ) -> Result<()> {
-    refresh_node_registry(node_registry, service_control, !output_json).await?;
+    refresh_node_registry(node_registry, service_control, !output_json, true).await?;
 
     if output_json {
         let json = serde_json::to_string_pretty(&node_registry.to_status_summary())?;
@@ -505,12 +510,23 @@ pub async fn status_report(
     Ok(())
 }
 
+/// Refreshes the status of the node registry's services.
+///
+/// At a minimum, the refresh determines if each service is running. It does that by trying to find
+/// a process whose binary path matches the path of the binary for the service. Since each service
+/// uses its own binary, the path is a unique identifer. So you can know if any *particular*
+/// service is running or not.
+///
+/// A full refresh uses the RPC client to connect to the node's RPC service to determine things
+/// like the number of connected peers.
 pub async fn refresh_node_registry(
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     print_refresh_message: bool,
+    full_refresh: bool,
 ) -> Result<()> {
-    // This message is useful for users, but needs to be suppressed when a JSON output is requested.
+    // This message is useful for users, but needs to be suppressed when a JSON output is
+    // requested.
     if print_refresh_message {
         println!("Refreshing the node registry...");
     }
@@ -533,47 +549,34 @@ pub async fn refresh_node_registry(
 
         let mut rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         rpc_client.set_max_attempts(1);
-        let service = NodeService::new(node, Box::new(rpc_client));
-        refresh_single_node(service, service_control).await?;
-    }
-    Ok(())
-}
-
-async fn refresh_single_node<'a>(
-    mut service: NodeService<'a>,
-    service_control: &dyn ServiceControl,
-) -> Result<()> {
-    match &service.service_data.status {
-        ServiceStatus::Running => {
-            if let Some(pid) = service.service_data.pid {
-                // First we can try the PID we have now. If there is still a process running with
-                // that PID, we know the node is still running.
-                if service_control.is_service_process_running(pid) {
-                    debug!(
-                        "The process for node {} is still running at PID {pid}. Calling on_start() for the service.",
-                        service.service_data.service_name
-                    );
-                    service.on_start().await?;
-                } else {
-                    // The process with the PID we had has died at some point. However, if the
-                    // service has been configured to restart on failures, it's possible that a new
-                    // process has been launched and hence we would have a new PID. We can use the
-                    // RPC service to try and retrieve it.
-                    debug!(
-                        "The process for node {} has died. Attempting to retrieve new PID",
-                        service.service_data.service_name
-                    );
-                    if service.rpc_actions.node_info().await.is_ok() {
+        let mut service = NodeService::new(node, Box::new(rpc_client));
+        match service_control.get_process_pid(&service.bin_path()) {
+            Ok(pid) => {
+                debug!(
+                    "{} is running with PID {pid}",
+                    service.service_data.service_name
+                );
+                service.on_start(Some(pid), full_refresh).await?;
+            }
+            Err(_) => {
+                match service.status() {
+                    ServiceStatus::Added => {
+                        // If the service is still at `Added` status, there hasn't been an attempt
+                        // to start it since it was installed. It's useful to keep this status
+                        // rather than setting it to `STOPPED`, so that the user can differentiate.
                         debug!(
-                            "New PID for node {} is= {:?}. Calling on_start() for the service",
-                            service.service_data.service_name, service.service_data.pid
+                            "{} has not been started since it was installed",
+                            service.service_data.service_name
                         );
-                        service.on_start().await?;
-                    } else {
-                        // Finally, if there was an error communicating with the RPC client, we
-                        // can assume that this node is actually stopped.
+                    }
+                    ServiceStatus::Removed => {
+                        // In the case of the service being removed, we want to retain that state
+                        // and not have it marked `STOPPED`.
+                        debug!("{} has been removed", service.service_data.service_name);
+                    }
+                    _ => {
                         debug!(
-                            "Failed to retrieve new PID for node {}. Calling on_stop() for the service.",
+                            "Failed to retrieve PID for {}",
                             service.service_data.service_name
                         );
                         service.on_stop().await?;
@@ -581,24 +584,7 @@ async fn refresh_single_node<'a>(
                 }
             }
         }
-        // If the service was manually started by an user, we'd want to make sure that we sync our state.
-        status => {
-            if service.rpc_actions.node_info().await.is_ok() {
-                debug!(
-                    "New PID for {} node (status: {status:?}) is= {:?}. Calling on_start() for the service",
-                    service.service_data.service_name, service.service_data.pid
-                );
-                service.on_start().await?;
-            } else {
-                // If there was an error, we can assume that the node is at the same state.
-                debug!(
-                    "Failed to retrieve new PID for node {}. Not changing state",
-                    service.service_data.service_name
-                );
-            }
-        }
     }
-
     Ok(())
 }
 
@@ -679,7 +665,6 @@ mod tests {
             fn get_available_port(&self) -> ServiceControlResult<u16>;
             fn install(&self, install_ctx: ServiceInstallCtx, user_mode: bool) -> ServiceControlResult<()>;
             fn get_process_pid(&self, bin_path: &Path) -> ServiceControlResult<u32>;
-            fn is_service_process_running(&self, pid: u32) -> bool;
             fn start(&self, service_name: &str, user_mode: bool) -> ServiceControlResult<()>;
             fn stop(&self, service_name: &str, user_mode: bool) -> ServiceControlResult<()>;
             fn uninstall(&self, service_name: &str, user_mode: bool) -> ServiceControlResult<()>;
@@ -708,7 +693,7 @@ mod tests {
                 "/var/safenode-manager/services/safenode1/safenode",
             )))
             .times(1)
-            .returning(|_| Ok(100));
+            .returning(|_| Ok(1000));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -725,7 +710,9 @@ mod tests {
             .times(1)
             .returning(|| {
                 Ok(NetworkInfo {
-                    connected_peers: Vec::new(),
+                    connected_peers: vec![PeerId::from_str(
+                        "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
+                    )?],
                     listeners: Vec::new(),
                 })
             });
@@ -765,6 +752,12 @@ mod tests {
 
         service_manager.start().await?;
 
+        assert_eq!(
+            service_manager.service.service_data.connected_peers,
+            Some(vec![PeerId::from_str(
+                "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
+            )?,])
+        );
         assert_eq!(service_manager.service.service_data.pid, Some(1000));
         assert_eq!(
             service_manager.service.service_data.peer_id,
@@ -801,7 +794,7 @@ mod tests {
                 "/var/safenode-manager/services/safenode1/safenode",
             )))
             .times(1)
-            .returning(|_| Ok(100));
+            .returning(|_| Ok(1000));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -881,10 +874,12 @@ mod tests {
         let mock_rpc_client = MockRpcClient::new();
 
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(100));
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
@@ -944,10 +939,17 @@ mod tests {
         let mut mock_rpc_client = MockRpcClient::new();
 
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
             .times(1)
-            .returning(|_| false);
+            .returning(|_| {
+                Err(ServiceError::ServiceProcessNotFound(
+                    "Could not find process at '/var/safenode-manager/services/safenode1/safenode'"
+                        .to_string(),
+                ))
+            });
         mock_service_control
             .expect_start()
             .with(eq("safenode1"), eq(false))
@@ -964,7 +966,7 @@ mod tests {
                 "/var/safenode-manager/services/safenode1/safenode",
             )))
             .times(1)
-            .returning(|_| Ok(100));
+            .returning(|_| Ok(1000));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -1200,10 +1202,12 @@ mod tests {
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(100));
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
@@ -1403,10 +1407,12 @@ mod tests {
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(100));
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
@@ -1473,10 +1479,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -1510,7 +1516,7 @@ mod tests {
             .expect_get_process_pid()
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| Ok(100));
+            .returning(|_| Ok(2000));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -1690,10 +1696,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -1727,7 +1733,7 @@ mod tests {
             .expect_get_process_pid()
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| Ok(100));
+            .returning(|_| Ok(2000));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -1838,10 +1844,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -1987,10 +1993,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -2110,10 +2116,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(true))
@@ -2147,7 +2153,7 @@ mod tests {
             .expect_get_process_pid()
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| Ok(100));
+            .returning(|_| Ok(2000));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2258,10 +2264,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -2408,10 +2414,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -2563,10 +2569,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -2713,10 +2719,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -2864,10 +2870,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -3018,10 +3024,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -3172,10 +3178,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -3326,10 +3332,10 @@ mod tests {
 
         // before binary upgrade
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
             .with(eq("safenode1"), eq(false))
@@ -3524,10 +3530,12 @@ mod tests {
     async fn remove_should_return_an_error_if_attempting_to_remove_a_running_node() -> Result<()> {
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
             .times(1)
-            .returning(|_| true);
+            .returning(|_| Ok(1000));
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
@@ -3589,10 +3597,17 @@ mod tests {
 
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
-            .expect_is_service_process_running()
-            .with(eq(1000))
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
             .times(1)
-            .returning(|_| false);
+            .returning(|_| {
+                Err(ServiceError::ServiceProcessNotFound(
+                    "Could not find process at '/var/safenode-manager/services/safenode1/safenode'"
+                        .to_string(),
+                ))
+            });
 
         let mut service_data = NodeServiceData {
             auto_restart: false,

@@ -60,7 +60,6 @@ mock! {
         fn get_available_port(&self) -> ServiceControlResult<u16>;
         fn install(&self, install_ctx: ServiceInstallCtx, user_mode: bool) -> ServiceControlResult<()>;
         fn get_process_pid(&self, bin_path: &Path) -> ServiceControlResult<u32>;
-        fn is_service_process_running(&self, pid: u32) -> bool;
         fn start(&self, service_name: &str, user_mode: bool) -> ServiceControlResult<()>;
         fn stop(&self, service_name: &str, user_mode: bool) -> ServiceControlResult<()>;
         fn uninstall(&self, service_name: &str, user_mode: bool) -> ServiceControlResult<()>;

@@ -307,7 +307,7 @@ pub async fn add_node(
     }
 
     if !added_service_data.is_empty() {
-        info!("{} services has been added", added_service_data.len());
+        info!("Added {} services", added_service_data.len());
     } else if !failed_service_data.is_empty() {
         error!("Failed to add {} service(s)", failed_service_data.len());
     }
@@ -316,7 +316,6 @@ pub async fn add_node(
         println!("Services Added:");
         for install in added_service_data.iter() {
             println!(" {} {}", "✓".green(), install.0);
-
             println!("    - Safenode path: {}", install.1);
             println!("    - Data path: {}", install.2);
             println!("    - Log path: {}", install.3);

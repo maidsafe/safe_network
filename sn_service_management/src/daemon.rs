@@ -101,15 +101,8 @@ impl<'a> ServiceStateActions for DaemonService<'a> {
         self.service_data.status = ServiceStatus::Removed;
     }
 
-    async fn on_start(&mut self) -> Result<()> {
-        // get_process_pid causes errors for the daemon. Maybe because it is being run as root?
-        if let Ok(pid) = self
-            .service_control
-            .get_process_pid(&self.service_data.daemon_path)
-        {
-            self.service_data.pid = Some(pid);
-        }
-
+    async fn on_start(&mut self, pid: Option<u32>, _full_refresh: bool) -> Result<()> {
+        self.service_data.pid = pid;
         self.service_data.status = ServiceStatus::Running;
         Ok(())
     }

@@ -182,6 +182,7 @@ pub async fn balance(
         &mut node_registry,
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
+        false,
     )
     .await?;
 
@@ -225,6 +226,7 @@ pub async fn remove(
         &mut node_registry,
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
+        false,
     )
     .await?;
 
@@ -309,12 +311,13 @@ pub async fn start(
         &mut node_registry,
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
+        false,
     )
     .await?;
 
     let service_indices = get_services_for_ops(&node_registry, peer_ids, service_names)?;
     if service_indices.is_empty() {
-        info!("Service indices is empty, no services were eligible to be started");
+        info!("No services are eligible to be started");
         // This could be the case if all services are at `Removed` status.
         if verbosity != VerbosityLevel::Minimal {
             println!("No services were eligible to be started");
@@ -386,6 +389,7 @@ pub async fn stop(
         &mut node_registry,
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
+        false,
     )
     .await?;
 
@@ -459,6 +463,7 @@ pub async fn upgrade(
         &mut node_registry,
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
+        false,
     )
     .await?;
 

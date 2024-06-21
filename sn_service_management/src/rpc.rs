@@ -88,8 +88,15 @@ impl RpcClient {
     async fn connect_with_retry(&self) -> Result<SafeNodeClient<tonic::transport::Channel>> {
         let mut attempts = 0;
         loop {
+            debug!(
+                "Attempting connection to node RPC endpoint at {}...",
+                self.endpoint
+            );
             match SafeNodeClient::connect(self.endpoint.clone()).await {
-                Ok(rpc_client) => break Ok(rpc_client),
+                Ok(rpc_client) => {
+                    debug!("Connection successful");
+                    break Ok(rpc_client);
+                }
                 Err(_) => {
                     attempts += 1;
                     tokio::time::sleep(self.retry_delay).await;
