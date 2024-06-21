@@ -128,6 +128,7 @@ pub enum WalletCmds {
         #[clap(long, name = "sk_str")]
         sk_str: Option<String>,
     },
+    Status,
 }
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
@@ -194,6 +195,12 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             Ok(())
         }
         WalletCmds::Sign { tx, force } => sign_transaction(tx, root_dir, *force),
+        WalletCmds::Status => {
+            let mut wallet = WalletApiHelper::load_from(root_dir)?;
+            println!("{}", wallet.balance());
+            wallet.status();
+            Ok(())
+        }
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
     }
 }

@@ -12,6 +12,7 @@ pub(crate) mod hot_wallet;
 pub(crate) mod wo_wallet;
 
 use sn_client::transfers::{CashNote, HotWallet, MainPubkey, NanoTokens, WatchOnlyWallet};
+use sn_protocol::storage::SpendAddress;
 
 use color_eyre::Result;
 use std::{collections::BTreeSet, io::Read, path::Path};
@@ -37,6 +38,42 @@ impl WalletApiHelper {
         match self {
             Self::WatchOnlyWallet(w) => w.balance(),
             Self::HotWallet(w) => w.balance(),
+        }
+    }
+
+    pub fn status(&mut self) {
+        match self {
+            Self::WatchOnlyWallet(_) => {}
+            Self::HotWallet(w) => {
+                println!("Unconfirmed spends are:");
+                for spend in w.unconfirmed_spend_requests().iter() {
+                    let address = SpendAddress::from_unique_pubkey(&spend.spend.unique_pubkey);
+                    println!(
+                        "Unconfirmed spend {address:?} - {:?}, hex_str: {:?}",
+                        spend.spend.unique_pubkey,
+                        address.to_hex()
+                    );
+                    println!("reason {:?}, amount {}, inputs: {}, outputs: {}, royalties: {}, {:?} - {:?}",
+                            spend.spend.reason, spend.spend.amount, spend.spend.spent_tx.inputs.len(), spend.spend.spent_tx.outputs.len(),
+                            spend.spend.network_royalties.len(), spend.spend.spent_tx.inputs, spend.spend.spent_tx.outputs);
+                    println!("Inputs in hex str:");
+                    for input in spend.spend.spent_tx.inputs.iter() {
+                        let address = SpendAddress::from_unique_pubkey(&input.unique_pubkey);
+                        println!("Input spend {}", address.to_hex());
+                    }
+                    println!("parent_tx inputs in hex str:");
+                    for input in spend.spend.parent_tx.inputs.iter() {
+                        let address = SpendAddress::from_unique_pubkey(&input.unique_pubkey);
+                        println!("parent_tx input spend {}", address.to_hex());
+                    }
+                }
+                println!("Available cash notes are:");
+                if let Ok(available_cnrs) = w.available_cash_notes() {
+                    for (cnr, _key) in available_cnrs.0.iter() {
+                        println!("{cnr:?}");
+                    }
+                }
+            }
         }
     }
 
