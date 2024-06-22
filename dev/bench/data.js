@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719041610617,
+  "lastUpdate": 1719041729217,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "882c0a2656b18cc47d18e196e2ab87f004f3c3be",
-          "message": "chore: remove Cargo.lock",
-          "timestamp": "2024-03-21T07:59:48Z",
-          "tree_id": "725fa929e4cda5f193aaa652ebb6d8f08b9f7a59",
-          "url": "https://github.com/maidsafe/safe_network/commit/882c0a2656b18cc47d18e196e2ab87f004f3c3be"
-        },
-        "date": 1711011058012,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/78fcb7cccb823bac4c3a20f8b736e6f410e24505"
         },
         "date": 1718896394893,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "ec2494a5c4fffcba0f72c7efe71c3017214aacab",
+          "message": "fix(network): store limited number of double spends from kad::put",
+          "timestamp": "2024-06-22T06:43:13Z",
+          "tree_id": "cb666834453ba94e6603b2426034e7916f7ca2a7",
+          "url": "https://github.com/maidsafe/safe_network/commit/ec2494a5c4fffcba0f72c7efe71c3017214aacab"
+        },
+        "date": 1719041728864,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
