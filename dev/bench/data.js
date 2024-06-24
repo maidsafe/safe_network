@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719208074582,
+  "lastUpdate": 1719208076397,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "777a132479c24acd218fc0b8adbdb8ccdb5a797a",
-          "message": "docs: clarify version number usage\n\nThis was also requested by the community. People were attempting to use a 'v' prefix.",
-          "timestamp": "2024-03-21T19:43:45Z",
-          "tree_id": "8aa4a0b2e9a30468205a9987397a1d02837d394a",
-          "url": "https://github.com/maidsafe/safe_network/commit/777a132479c24acd218fc0b8adbdb8ccdb5a797a"
-        },
-        "date": 1711053281246,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6187,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33793,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 33089,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "e1c3cd93ef657cd2bcbdf47cd7fbb67a9ad7b6cc",
+          "message": "feat: add optional contact peer to upload-random-data",
+          "timestamp": "2024-06-24T05:02:08Z",
+          "tree_id": "c3d923ab0bb7219d164a71121000d37519758db9",
+          "url": "https://github.com/maidsafe/safe_network/commit/e1c3cd93ef657cd2bcbdf47cd7fbb67a9ad7b6cc"
+        },
+        "date": 1719208075887,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7356,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 31547,
             "unit": "ms"
           },
           {
