@@ -18,7 +18,7 @@ use tracing::info;
 
 #[tokio::test]
 async fn cash_note_transfer_multiple_sequential_succeed() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("sequential_transfer");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("sequential_transfer", true);
 
     let first_wallet_dir = TempDir::new()?;
 

@@ -518,7 +518,7 @@ mod tests {
     #[tokio::test]
     async fn token_distribute_to_user() -> Result<()> {
         let _log_guards =
-            LogBuilder::init_single_threaded_tokio_test("token_distribute_to_user test");
+            LogBuilder::init_single_threaded_tokio_test("token_distribute_to_user test", true);
 
         let amount = NanoTokens::from(10);
 

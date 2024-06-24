@@ -236,9 +236,8 @@ impl TracingLayers {
 
 /// Parses the logging targets from the env variable (SN_LOG). The crates should be given as a CSV, for e.g.,
 /// `export SN_LOG = libp2p=DEBUG, tokio=INFO, all, sn_client=ERROR`
-/// If any custom keyword is encountered in the CSV, for e.g., VERBOSE_SN_LOGS ('all'), then they will override some
-/// of the value that you might have provided, `sn_client=ERROR` in the above example will be ignored and
-/// instead will be set to `TRACE` since `all` keyword is provided.
+/// Custom keywords will take less precedence if the same target has been manually specified in the CSV.
+/// `sn_client=ERROR` in the above example will be used instead of the TRACE level set by "all" keyword.
 fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> {
     let mut targets = BTreeMap::new();
     let mut contains_keyword_all_sn_logs = false;
@@ -263,40 +262,46 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
         targets.insert(crate_name.to_string(), get_log_level_from_str(log_level)?);
     }
 
-    // dealing with keywords
-    let networking_log_level = if contains_keyword_all_sn_logs {
-        ("sn_networking".to_string(), Level::TRACE)
-    } else {
-        ("sn_networking".to_string(), Level::DEBUG)
-    };
-    if contains_keyword_all_sn_logs || contains_keyword_verbose_sn_logs {
-        // extend will overwrite values inside `targets`
-        targets.extend(vec![
-            networking_log_level,
-            // bins
-            ("faucet".to_string(), Level::TRACE),
-            ("safenode".to_string(), Level::TRACE),
-            ("safenode_rpc_client".to_string(), Level::TRACE),
-            ("safe".to_string(), Level::TRACE),
-            ("safenode_manager".to_string(), Level::TRACE),
-            ("safenodemand".to_string(), Level::TRACE),
-            // libs
-            ("sn_build_info".to_string(), Level::TRACE),
-            ("autonomi".to_string(), Level::TRACE),
-            ("sn_client".to_string(), Level::TRACE),
-            ("sn_faucet".to_string(), Level::TRACE),
-            ("sn_logging".to_string(), Level::TRACE),
-            ("sn_node".to_string(), Level::TRACE),
-            ("sn_node_manager".to_string(), Level::TRACE),
-            ("sn_node_rpc_client".to_string(), Level::TRACE),
-            ("sn_peers_acquisition".to_string(), Level::TRACE),
-            ("sn_protocol".to_string(), Level::TRACE),
-            ("sn_registers".to_string(), Level::INFO),
-            ("sn_service_management".to_string(), Level::TRACE),
-            ("sn_transfers".to_string(), Level::TRACE),
-        ]);
-    }
-    Ok(targets.into_iter().collect())
+    let mut to_be_overriden_targets =
+        if contains_keyword_all_sn_logs || contains_keyword_verbose_sn_logs {
+            let mut t = BTreeMap::from_iter(vec![
+                // bins
+                ("faucet".to_string(), Level::TRACE),
+                ("safenode".to_string(), Level::TRACE),
+                ("safenode_rpc_client".to_string(), Level::TRACE),
+                ("safe".to_string(), Level::TRACE),
+                ("safenode_manager".to_string(), Level::TRACE),
+                ("safenodemand".to_string(), Level::TRACE),
+                // libs
+                ("sn_build_info".to_string(), Level::TRACE),
+                ("autonomi".to_string(), Level::TRACE),
+                ("sn_client".to_string(), Level::TRACE),
+                ("sn_faucet".to_string(), Level::TRACE),
+                ("sn_logging".to_string(), Level::TRACE),
+                ("sn_node".to_string(), Level::TRACE),
+                ("sn_node_manager".to_string(), Level::TRACE),
+                ("sn_node_rpc_client".to_string(), Level::TRACE),
+                ("sn_peers_acquisition".to_string(), Level::TRACE),
+                ("sn_protocol".to_string(), Level::TRACE),
+                ("sn_registers".to_string(), Level::INFO),
+                ("sn_service_management".to_string(), Level::TRACE),
+                ("sn_transfers".to_string(), Level::TRACE),
+            ]);
+
+            // Override sn_networking if it was not specified.
+            if !t.contains_key("sn_networking") {
+                if contains_keyword_all_sn_logs {
+                    t.insert("sn_networking".to_string(), Level::TRACE)
+                } else {
+                    t.insert("sn_networking".to_string(), Level::DEBUG)
+                };
+            }
+            t
+        } else {
+            Default::default()
+        };
+    to_be_overriden_targets.extend(targets);
+    Ok(to_be_overriden_targets.into_iter().collect())
 }
 
 fn get_log_level_from_str(log_level: &str) -> Result<Level> {

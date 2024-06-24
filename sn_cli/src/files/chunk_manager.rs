@@ -590,7 +590,7 @@ mod tests {
 
     #[test]
     fn chunked_files_should_be_written_to_artifacts_dir() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager", true);
         let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
         let artifacts_dir = manager.artifacts_dir.clone();
         let _ = create_random_files(&random_files_dir, 1, 1)?;
@@ -665,7 +665,7 @@ mod tests {
 
     #[test]
     fn no_datamap_chunked_files_should_be_written_to_artifacts_dir_when_not_public() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager", true);
         let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
         let artifacts_dir = manager.artifacts_dir.clone();
         let _ = create_random_files(&random_files_dir, 1, 1)?;
@@ -742,7 +742,7 @@ mod tests {
 
     #[test]
     fn chunks_should_be_removed_from_artifacts_dir_if_marked_as_completed() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager", true);
         let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 1, 1)?;
@@ -792,7 +792,7 @@ mod tests {
 
     #[test]
     fn marking_all_chunks_as_completed_should_not_remove_the_dir() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager", true);
         let (_tmp_dir, mut manager, _, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
@@ -835,7 +835,7 @@ mod tests {
 
     #[test]
     fn mark_none_and_resume() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager", true);
         let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
@@ -862,7 +862,7 @@ mod tests {
 
     #[test]
     fn mark_one_chunk_and_resume() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager", true);
         let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
@@ -910,7 +910,7 @@ mod tests {
 
     #[test]
     fn mark_all_and_resume() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager", true);
         let (_tmp_dir, mut manager, root_dir, random_files_dir) = init_manager()?;
 
         let _ = create_random_files(&random_files_dir, 5, 5)?;
@@ -941,7 +941,7 @@ mod tests {
 
     #[test]
     fn absence_of_metadata_file_should_re_chunk_the_entire_file() -> Result<()> {
-        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager");
+        let _log_guards = LogBuilder::init_single_threaded_tokio_test("chunk_manager", true);
         let (_tmp_dir, mut manager, _root_dir, random_files_dir) = init_manager()?;
 
         let mut random_files = create_random_files(&random_files_dir, 1, 1)?;

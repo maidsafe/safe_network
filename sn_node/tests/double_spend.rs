@@ -21,9 +21,7 @@ use tracing::info;
 
 #[tokio::test]
 async fn cash_note_transfer_double_spend_fail() -> Result<()> {
-    let _log_guards =
-        LogBuilder::init_single_threaded_tokio_test("cash_note_transfer_double_spend");
-
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("double_spend", true);
     // create 1 wallet add money from faucet
     let first_wallet_dir = TempDir::new()?;
 
@@ -86,7 +84,7 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
 
 #[tokio::test]
 async fn genesis_double_spend_fail() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("genesis_double_spend");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("double_spend", true);
 
     // create a client and an unused wallet to make sure some money already exists in the system
     let first_wallet_dir = TempDir::new()?;
