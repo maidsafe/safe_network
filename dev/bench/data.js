@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719041732391,
+  "lastUpdate": 1719190343437,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "2fae77fdf37757f8b06f866334eddbe4dcfdafa7",
-          "message": "fix(manager): store exclusive reference to service data instead of cloning",
-          "timestamp": "2024-03-21T15:28:18Z",
-          "tree_id": "a64e59d7d0a8b56c1e85c7da52013948161342c5",
-          "url": "https://github.com/maidsafe/safe_network/commit/2fae77fdf37757f8b06f866334eddbe4dcfdafa7"
-        },
-        "date": 1711037981773,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.298933733024301,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8465737585663027,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 59.13967577341231,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.4471201382761,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "30bfd66e906a7a74ed5305766a3147e83c17307c",
+          "message": "feat: node registry refresh searches for pids\n\nThe node registry refresh is changed to determine if each service process is running by searching\nfor processes that have a binary running at a particular path. Since each node service has its own\ncopy of the binary, it is uniquely identified by the location of that binary.\n\nThe refresh is split into partial or full. In the partial case, we will only attempt to find the PID\nby searching for a process by its binary path. If it is found, we set the new PID for the service\nand set its status to `RUNNING`; if it's not found, we set the status to `STOPPED`. This mechanism\nshould be robust against user interference, e.g., if they manually start/stop processes by whatever\nmeans. For a full refresh, we also connect to the node's RPC service to get information about\nconnected peers and listeners.\n\nWe will use partial refresh for commands like `start` and `stop`, to help us determine whether we\nshould attempt to start/stop services that were already running or not. These commands will\npotentially operate over lots of services so we will avoid the RPC connections here.\n\nFull refresh will be used when the `status` command runs.\n\nFinally, I have also reassigned the connected peers data, and added/updated some of the log\ninformation which I found useful to have during my testing.",
+          "timestamp": "2024-06-23T23:59:25Z",
+          "tree_id": "6908ebe16f763672a8d6b807dfbb42ec9e8c859e",
+          "url": "https://github.com/maidsafe/safe_network/commit/30bfd66e906a7a74ed5305766a3147e83c17307c"
+        },
+        "date": 1719190337786,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.256324072021623,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.668397548985043,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.83113624908126,
             "unit": "MiB/s"
           }
         ]
