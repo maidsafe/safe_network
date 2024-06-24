@@ -26,7 +26,7 @@ use tempfile::tempdir;
 /// 1. Chunk: if cost =0, then chunk is present in the network.
 #[tokio::test]
 async fn chunk_that_already_exists_in_the_network_should_return_zero_store_cost() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -54,7 +54,7 @@ async fn chunk_that_already_exists_in_the_network_should_return_zero_store_cost(
 /// 2. Chunk: if cost !=0, then make payment upload to the network.
 #[tokio::test]
 async fn chunk_should_be_paid_for_and_uploaded_if_cost_is_not_zero() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -87,7 +87,7 @@ async fn chunk_should_be_paid_for_and_uploaded_if_cost_is_not_zero() -> Result<(
 /// 3. Register: if GET register = ok, then merge and push the register.
 #[tokio::test]
 async fn register_should_be_merged_and_pushed_if_it_already_exists_in_the_network() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -112,7 +112,7 @@ async fn register_should_be_merged_and_pushed_if_it_already_exists_in_the_networ
 /// 4. Register: if Get register = err, then get store cost and upload.
 #[tokio::test]
 async fn register_should_be_paid_and_uploaded_if_it_does_not_exists() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -150,7 +150,7 @@ async fn register_should_be_paid_and_uploaded_if_it_does_not_exists() -> Result<
 /// and then uploaded.
 #[tokio::test]
 async fn chunks_should_perform_repayment_if_the_upload_fails_multiple_times() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -192,7 +192,7 @@ async fn chunks_should_perform_repayment_if_the_upload_fails_multiple_times() ->
 /// and then uploaded.
 #[tokio::test]
 async fn registers_should_perform_repayment_if_the_upload_fails_multiple_times() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -235,7 +235,7 @@ async fn registers_should_perform_repayment_if_the_upload_fails_multiple_times()
 /// 1. Registers: Multiple PushRegisterErr should result in Error::SequentialNetworkErrors
 #[tokio::test]
 async fn register_upload_should_error_out_if_there_are_multiple_push_failures() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -267,7 +267,7 @@ async fn register_upload_should_error_out_if_there_are_multiple_push_failures() 
 /// 2. Chunk: Multiple errors during get store cost should result in Error::SequentialNetworkErrors
 #[tokio::test]
 async fn chunk_should_error_out_if_there_are_multiple_errors_during_get_store_cost() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -303,7 +303,7 @@ async fn chunk_should_error_out_if_there_are_multiple_errors_during_get_store_co
 #[tokio::test]
 async fn register_should_error_out_if_there_are_multiple_errors_during_get_store_cost() -> Result<()>
 {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -339,7 +339,7 @@ async fn register_should_error_out_if_there_are_multiple_errors_during_get_store
 /// 4. Chunk: Multiple errors during make payment should result in Error::SequentialUploadPaymentError
 #[tokio::test]
 async fn chunk_should_error_out_if_there_are_multiple_errors_during_make_payment() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -375,7 +375,7 @@ async fn chunk_should_error_out_if_there_are_multiple_errors_during_make_payment
 #[tokio::test]
 async fn register_should_error_out_if_there_are_multiple_errors_during_make_payment() -> Result<()>
 {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 
@@ -411,7 +411,7 @@ async fn register_should_error_out_if_there_are_multiple_errors_during_make_paym
 // 6: Chunks + Registers: if the number of repayments exceed a threshold, it should return MaximumRepaymentsReached error.
 #[tokio::test]
 async fn maximum_repayment_error_should_be_triggered_during_get_store_cost() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader");
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
     let temp_dir = tempdir()?;
     let (mut inner_uploader, task_result_rx) = get_inner_uploader(temp_dir.path().to_path_buf())?;
 

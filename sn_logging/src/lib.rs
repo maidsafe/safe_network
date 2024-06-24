@@ -216,8 +216,9 @@ impl LogBuilder {
     /// Refer here for more details: <https://github.com/tokio-rs/tracing/discussions/1626>
     pub fn init_single_threaded_tokio_test(
         test_file_name: &str,
+        disable_networking_logs: bool,
     ) -> (Option<WorkerGuard>, DefaultGuard) {
-        let layers = Self::get_test_layers(test_file_name);
+        let layers = Self::get_test_layers(test_file_name, disable_networking_logs);
         let log_guard = tracing_subscriber::registry()
             .with(layers.layers)
             .set_default();
@@ -234,8 +235,11 @@ impl LogBuilder {
     /// subscriber.init() should be used under multi threaded tokio context. If you have 1+ multithreaded tokio tests under
     /// the same integration test, this might result in loss of logs. Hence use .init() (instead of .try_init()) to panic
     /// if called more than once.
-    pub fn init_multi_threaded_tokio_test(test_file_name: &str) -> Option<WorkerGuard> {
-        let layers = Self::get_test_layers(test_file_name);
+    pub fn init_multi_threaded_tokio_test(
+        test_file_name: &str,
+        disable_networking_logs: bool,
+    ) -> Option<WorkerGuard> {
+        let layers = Self::get_test_layers(test_file_name, disable_networking_logs);
         tracing_subscriber::registry()
         .with(layers.layers)
         .try_init()
@@ -247,9 +251,16 @@ impl LogBuilder {
     /// Initialize just the fmt_layer for testing purposes.
     ///
     /// Also overwrites the SN_LOG variable to log everything including the test_file_name
-    fn get_test_layers(test_file_name: &str) -> TracingLayers {
+    fn get_test_layers(test_file_name: &str, disable_networking_logs: bool) -> TracingLayers {
         // overwrite SN_LOG
-        std::env::set_var("SN_LOG", format!("{test_file_name}=TRACE,all"));
+        if disable_networking_logs {
+            std::env::set_var(
+                "SN_LOG",
+                format!("{test_file_name}=TRACE,all,sn_networking=WARN,all"),
+            );
+        } else {
+            std::env::set_var("SN_LOG", format!("{test_file_name}=TRACE,all"));
+        }
 
         let output_dest = match dirs_next::data_dir() {
             Some(dir) => {
