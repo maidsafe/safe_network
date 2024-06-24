@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719242136492,
+  "lastUpdate": 1719242138092,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "c0887b2162f5d247576ece7e16461fc8eb1611c6",
-          "message": "fix(register): permissions verification was not being made by some Register APIs",
-          "timestamp": "2024-03-21T21:10:12Z",
-          "tree_id": "e5fa9e35ee320495aeb43a0bd10f3b47630fb643",
-          "url": "https://github.com/maidsafe/safe_network/commit/c0887b2162f5d247576ece7e16461fc8eb1611c6"
-        },
-        "date": 1711058735158,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 198,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 187,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "7d2f3de10617f98f59da6869e60efcff4b7f9cdf",
+          "message": "test(node): poisoning old spend should not affect descendants",
+          "timestamp": "2024-06-24T14:19:08Z",
+          "tree_id": "253bcd015a93773d09fb9bc31aebe240053d8493",
+          "url": "https://github.com/maidsafe/safe_network/commit/7d2f3de10617f98f59da6869e60efcff4b7f9cdf"
+        },
+        "date": 1719242137848,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 190,
             "unit": "MB"
           },
           {
