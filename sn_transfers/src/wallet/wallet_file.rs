@@ -23,6 +23,7 @@ const WALLET_FILE_NAME: &str = "wallet";
 const WALLET_LOCK_FILE_NAME: &str = "wallet.lock";
 const CASHNOTES_DIR_NAME: &str = "cash_notes";
 const UNCONFIRMED_TX_NAME: &str = "unconfirmed_spend_requests";
+const CONFIRMED_SPENDS_DIR_NAME: &str = "confirmed_spends";
 
 /// Writes the `KeyLessWallet` to the specified path.
 pub(super) fn store_wallet(wallet_dir: &Path, wallet: &KeyLessWallet) -> Result<()> {
@@ -59,8 +60,18 @@ pub(super) fn store_unconfirmed_spend_requests(
 /// Remove the `unconfirmed_spend_requests` from the specified path.
 pub(super) fn remove_unconfirmed_spend_requests(
     wallet_dir: &Path,
-    _unconfirmed_spend_requests: &BTreeSet<SignedSpend>,
+    unconfirmed_spend_requests: &BTreeSet<SignedSpend>,
 ) -> Result<()> {
+    // Flush out spends to dedicated dir first
+    let spends_dir = wallet_dir.join(CONFIRMED_SPENDS_DIR_NAME);
+    fs::create_dir_all(&spends_dir)?;
+    for spend in unconfirmed_spend_requests.iter() {
+        let spend_hex_name = spend.address().to_hex();
+        let spend_file_path = spends_dir.join(&spend_hex_name);
+        debug!("Writing spend to: {spend_file_path:?}");
+        fs::write(spend_file_path, &spend.to_bytes())?;
+    }
+
     let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFIRMED_TX_NAME);
 
     debug!("Removing unconfirmed_spend_requests from {unconfirmed_spend_requests_path:?}");
