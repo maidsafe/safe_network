@@ -45,6 +45,7 @@ pub struct Home {
     action_sender: Option<UnboundedSender<Action>>,
     config: Config,
     // state
+    launchpad_version_str: String,
     node_services: Vec<NodeServiceData>,
     is_nat_status_determined: bool,
     error_while_running_nat_detection: usize,
@@ -75,11 +76,13 @@ impl Home {
         peers_args: PeersArgs,
         safenode_path: Option<PathBuf>,
     ) -> Result<Self> {
+        let version_str = env!("CARGO_PKG_VERSION");
         let mut home = Self {
             peers_args,
             action_sender: Default::default(),
             config: Default::default(),
             active: true,
+            launchpad_version_str: version_str.to_string(),
             node_services: Default::default(),
             is_nat_status_determined: false,
             error_while_running_nat_detection: 0,
@@ -394,10 +397,14 @@ impl Component for Home {
             vec![Constraint::Min(40), Constraint::Fill(20)],
         )
         .split(layer_zero[0]);
+
         f.render_widget(
-            Paragraph::new("Autonomi Node Launchpad")
-                .alignment(Alignment::Left)
-                .fg(LIGHT_PERIWINKLE),
+            Paragraph::new(format!(
+                "Autonomi Node Launchpad (v{})",
+                self.launchpad_version_str
+            ))
+            .alignment(Alignment::Left)
+            .fg(LIGHT_PERIWINKLE),
             layer_one_header[0],
         );
         let discord_user_name_text = if self.discord_username.is_empty() {
@@ -493,8 +500,9 @@ impl Component for Home {
                 }
                 let peer_id = peer_id.map(|p| p.to_string()).unwrap_or("-".to_string());
                 let status = format!("{:?}", n.status);
+                let version = format!("v{}", n.version);
 
-                let row = vec![n.service_name.clone(), peer_id, status];
+                let row = vec![n.service_name.clone(), peer_id, version, status];
                 let row_style = if n.status == ServiceStatus::Running {
                     Style::default().fg(EUCALYPTUS)
                 } else {
@@ -522,6 +530,7 @@ impl Component for Home {
             let node_widths = [
                 Constraint::Max(15),
                 Constraint::Min(30),
+                Constraint::Max(20),
                 Constraint::Max(10),
             ];
             let table = Table::new(node_rows, node_widths)
