@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719190464280,
+  "lastUpdate": 1719207954317,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "777a132479c24acd218fc0b8adbdb8ccdb5a797a",
-          "message": "docs: clarify version number usage\n\nThis was also requested by the community. People were attempting to use a 'v' prefix.",
-          "timestamp": "2024-03-21T19:43:45Z",
-          "tree_id": "8aa4a0b2e9a30468205a9987397a1d02837d394a",
-          "url": "https://github.com/maidsafe/safe_network/commit/777a132479c24acd218fc0b8adbdb8ccdb5a797a"
-        },
-        "date": 1711053169443,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2726753585986383,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.847205052616224,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.286452399830814,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.83113624908126,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "e1c3cd93ef657cd2bcbdf47cd7fbb67a9ad7b6cc",
+          "message": "feat: add optional contact peer to upload-random-data",
+          "timestamp": "2024-06-24T05:02:08Z",
+          "tree_id": "c3d923ab0bb7219d164a71121000d37519758db9",
+          "url": "https://github.com/maidsafe/safe_network/commit/e1c3cd93ef657cd2bcbdf47cd7fbb67a9ad7b6cc"
+        },
+        "date": 1719207948516,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2162337070128593,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6805186089233055,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.014545568394226,
             "unit": "MiB/s"
           }
         ]
