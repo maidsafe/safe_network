@@ -47,7 +47,7 @@ strip = "debuginfo"
 
 
 [workspace.metadata.release]
-pre-release-commit-message = "chore: release"
+pre-release-commit-message = "chore(release): release commit, tags, deps and changelog updates"
 publish = false
 push = false
 tag = false
