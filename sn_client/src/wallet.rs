@@ -669,6 +669,17 @@ impl WalletClient {
         }
     }
 
+    /// Resend previous confirmed spend.
+    async fn resend_confirmed_spend(&mut self, spend_addr: &SpendAddress) {
+        if let Ok(Some(spend)) = self.wallet.get_confirmed_spend(*spend_addr) {
+            let spend_vec = vec![spend];
+            let _ = self.client.send_spends(spend_vec.iter(), true).await;
+        } else {
+            warn!("Cann't find confirmed spend of {spend_addr:?}");
+            println!("Cann't find confirmed spend of {spend_addr:?}");
+        }
+    }
+
     /// This is a blocking loop in cas there is pending transaction.
     /// It will keeps resending the unconfirmed spend infinitely but explictly.
     /// Function will only return on success (all unconfirmed spend uploaded),
@@ -689,12 +700,23 @@ impl WalletClient {
 
             // Before re-sending, take a peek of un-confirmed spends first
             // Helping user having a better view of what's happening.
-            let unconfirmed_spends_addrs: Vec<_> = self
+            let spends_to_check: BTreeMap<SpendAddress, BTreeSet<SpendAddress>> = self
                 .wallet
                 .unconfirmed_spend_requests()
                 .iter()
-                .map(|s| SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey))
+                .map(|s| {
+                    let parent_spends: BTreeSet<_> = s
+                        .spend
+                        .parent_tx
+                        .inputs
+                        .iter()
+                        .map(|i| SpendAddress::from_unique_pubkey(&i.unique_pubkey))
+                        .collect();
+                    (s.address(), parent_spends)
+                })
                 .collect();
+            let unconfirmed_spends_addrs: Vec<_> = spends_to_check.keys().copied().collect();
+
             for addr in unconfirmed_spends_addrs {
                 match self.client.peek_a_spend(addr).await {
                     Ok(_) => {
@@ -710,6 +732,29 @@ impl WalletClient {
                         println!(
                             "Unconfirmed Spend {addr:?} has no copy in the network yet {err:?} !"
                         );
+                        // For those that still not even have one copy in network yet
+                        // Check it's parent's status in network
+                        if let Some(parent_spends) = spends_to_check.get(&addr) {
+                            for parent_addr in parent_spends.iter() {
+                                match self.client.peek_a_spend(*parent_addr).await {
+                                    Ok(_) => {
+                                        info!("Parent {parent_addr:?} of unconfirmed Spend {addr:?} is find having at least one copy in the network !");
+                                        println!("Parent {parent_addr:?} of unconfirmed Spend {addr:?} is find having at least one copy in the network !");
+                                    }
+                                    Err(err) => {
+                                        warn!(
+                                            "Parent {parent_addr:?} of unconfirmed Spend {addr:?} has no copy in the network yet {err:?} !"
+                                        );
+                                        println!(
+                                            "Parent {parent_addr:?} of unconfirmed Spend {addr:?} has no copy in the network yet {err:?} !"
+                                        );
+                                        // In theory, it shall be traversed back to re-send all ancestors.
+                                        // However, in practical, only track back one generation is enough.
+                                        self.resend_confirmed_spend(parent_addr).await;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

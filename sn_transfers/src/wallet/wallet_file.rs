@@ -79,6 +79,24 @@ pub(super) fn remove_unconfirmed_spend_requests(
     Ok(())
 }
 
+/// Returns `Some(SignedSpend)` or None if spend doesn't exist.
+pub(super) fn get_confirmed_spend(
+    wallet_dir: &Path,
+    spend_addr: SpendAddress,
+) -> Result<Option<SignedSpend>> {
+    let spends_dir = wallet_dir.join(CONFIRMED_SPENDS_DIR_NAME);
+    let spend_hex_name = spend_addr.to_hex();
+    let spend_file_path = spends_dir.join(spend_hex_name);
+    if !spend_file_path.is_file() {
+        return Ok(None);
+    }
+
+    let file = fs::File::open(&spend_file_path)?;
+    let confirmed_spend = rmp_serde::from_read(&file)?;
+
+    Ok(Some(confirmed_spend))
+}
+
 /// Returns `Some(Vec<SpendRequest>)` or None if file doesn't exist.
 pub(super) fn get_unconfirmed_spend_requests(
     wallet_dir: &Path,

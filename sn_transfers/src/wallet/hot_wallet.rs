@@ -11,8 +11,8 @@ use super::{
     data_payments::{PaymentDetails, PaymentQuote},
     keys::{get_main_key_from_disk, store_new_keypair},
     wallet_file::{
-        get_unconfirmed_spend_requests, load_created_cash_note, remove_cash_notes,
-        remove_unconfirmed_spend_requests, store_created_cash_notes,
+        get_confirmed_spend, get_unconfirmed_spend_requests, load_created_cash_note,
+        remove_cash_notes, remove_unconfirmed_spend_requests, store_created_cash_notes,
         store_unconfirmed_spend_requests,
     },
     watch_only::WatchOnlyWallet,
@@ -23,8 +23,8 @@ use crate::{
     cashnotes::UnsignedTransfer,
     transfers::{CashNotesAndSecretKey, OfflineTransfer},
     CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey,
-    NanoTokens, SignedSpend, Spend, SpendReason, Transaction, Transfer, UniquePubkey, WalletError,
-    NETWORK_ROYALTIES_PK,
+    NanoTokens, SignedSpend, Spend, SpendAddress, SpendReason, Transaction, Transfer, UniquePubkey,
+    WalletError, NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -107,6 +107,11 @@ impl HotWallet {
             self.watchonly_wallet.wallet_dir(),
             self.unconfirmed_spend_requests(),
         )
+    }
+
+    /// Get confirmed spend from disk.
+    pub fn get_confirmed_spend(&mut self, spend_addr: SpendAddress) -> Result<Option<SignedSpend>> {
+        get_confirmed_spend(self.watchonly_wallet.wallet_dir(), spend_addr)
     }
 
     /// Remove unconfirmed_spend_requests from disk.
