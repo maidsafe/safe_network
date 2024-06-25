@@ -57,6 +57,10 @@ use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
 /// This is the max time it should take. Minimum interval at any node will be half this
 pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 450;
 
+/// Interval used for bad node checks and reward forwarding.
+/// This is the max time it should take. Minimum interval at any node will be half this
+const STANDARD_PERIODIC_INTERVAL_MAX_S: u64 = 45;
+
 /// Max number of attempts that chunk proof verification will be carried out against certain target,
 /// before classifying peer as a bad peer.
 const MAX_CHUNK_PROOF_VERIFY_ATTEMPTS: usize = 3;
@@ -299,9 +303,8 @@ impl Node {
             let _ = replication_interval.tick().await; // first tick completes immediately
 
             // use a random timeout to ensure not sync when transmit messages.
-            let bad_nodes_check_interval: u64 = 5 * rng.gen_range(
-                PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
-            );
+            let bad_nodes_check_interval: u64 = 5 * rng
+                .gen_range(STANDARD_PERIODIC_INTERVAL_MAX_S / 2..STANDARD_PERIODIC_INTERVAL_MAX_S);
             let bad_nodes_check_time = Duration::from_secs(bad_nodes_check_interval);
             debug!("BadNodesCheck interval set to {bad_nodes_check_time:?}");
 
@@ -313,7 +316,7 @@ impl Node {
             // use a random timeout to ensure not sync when transmit messages.
             let balance_forward_interval: u64 = 10
                 * rng.gen_range(
-                    PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
+                    STANDARD_PERIODIC_INTERVAL_MAX_S / 2..STANDARD_PERIODIC_INTERVAL_MAX_S,
                 );
             let balance_forward_time = Duration::from_secs(balance_forward_interval);
             debug!(
