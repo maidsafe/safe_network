@@ -881,7 +881,7 @@ impl SwarmDriver {
 
         let now = Instant::now();
         self.replication_targets
-            .retain(|_peer_id, timestamp| *timestamp < now);
+            .retain(|_peer_id, timestamp| *timestamp > now);
         // Only carry out replication to peer that not replicated to it recently
         replicate_targets.retain(|peer_id| !self.replication_targets.contains_key(peer_id));
         if replicate_targets.is_empty() {
