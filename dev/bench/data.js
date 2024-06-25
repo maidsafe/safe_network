@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719320708947,
+  "lastUpdate": 1719320712078,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "rmctiernan@protonmail.com",
-            "name": "RMcTn",
-            "username": "RMcTn"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "f9acc4ed69e64ca79a005836428b824563130c66",
-          "message": "docs: fix wrong command in usage example",
-          "timestamp": "2024-03-24T12:17:47Z",
-          "tree_id": "1698379e4d1b8887410827a87c3e5b34bf964d30",
-          "url": "https://github.com/maidsafe/safe_network/commit/f9acc4ed69e64ca79a005836428b824563130c66"
-        },
-        "date": 1711285843554,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6960,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 40537,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 36404,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "489df9f63605b9c362cf42e2c87fdbed9553fc6d",
+          "message": "feat: add script to compare two dags user lists",
+          "timestamp": "2024-06-25T12:18:25Z",
+          "tree_id": "efb3bb8c8e725b335f4386595cc8b2796f0399fa",
+          "url": "https://github.com/maidsafe/safe_network/commit/489df9f63605b9c362cf42e2c87fdbed9553fc6d"
+        },
+        "date": 1719320711515,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7500,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35517,
             "unit": "ms"
           },
           {
