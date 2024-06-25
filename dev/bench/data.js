@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719320706901,
+  "lastUpdate": 1719320708947,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "rmctiernan@protonmail.com",
-            "name": "RMcTn",
-            "username": "RMcTn"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "f9acc4ed69e64ca79a005836428b824563130c66",
-          "message": "docs: fix wrong command in usage example",
-          "timestamp": "2024-03-24T12:17:47Z",
-          "tree_id": "1698379e4d1b8887410827a87c3e5b34bf964d30",
-          "url": "https://github.com/maidsafe/safe_network/commit/f9acc4ed69e64ca79a005836428b824563130c66"
-        },
-        "date": 1711285840683,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 201,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 87,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "489df9f63605b9c362cf42e2c87fdbed9553fc6d",
+          "message": "feat: add script to compare two dags user lists",
+          "timestamp": "2024-06-25T12:18:25Z",
+          "tree_id": "efb3bb8c8e725b335f4386595cc8b2796f0399fa",
+          "url": "https://github.com/maidsafe/safe_network/commit/489df9f63605b9c362cf42e2c87fdbed9553fc6d"
+        },
+        "date": 1719320708410,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
