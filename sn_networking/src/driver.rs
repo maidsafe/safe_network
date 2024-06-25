@@ -613,6 +613,7 @@ impl NetworkBuilder {
             bad_nodes: Default::default(),
             bad_nodes_ongoing_verifications: Default::default(),
             quotes_history: Default::default(),
+            replication_targets: Default::default(),
         };
 
         let network = Network::new(swarm_cmd_sender, peer_id, self.root_dir, self.keypair);
@@ -663,6 +664,7 @@ pub struct SwarmDriver {
     pub(crate) bad_nodes: BadNodes,
     pub(crate) bad_nodes_ongoing_verifications: BTreeSet<PeerId>,
     pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
+    pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
 }
 
 impl SwarmDriver {
