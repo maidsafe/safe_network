@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719305196395,
+  "lastUpdate": 1719320585916,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "rmctiernan@protonmail.com",
-            "name": "RMcTn",
-            "username": "RMcTn"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "f9acc4ed69e64ca79a005836428b824563130c66",
-          "message": "docs: fix wrong command in usage example",
-          "timestamp": "2024-03-24T12:17:47Z",
-          "tree_id": "1698379e4d1b8887410827a87c3e5b34bf964d30",
-          "url": "https://github.com/maidsafe/safe_network/commit/f9acc4ed69e64ca79a005836428b824563130c66"
-        },
-        "date": 1711285716174,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.263590319498701,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.7777521221124724,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.910493765155984,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.27583507850171,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "489df9f63605b9c362cf42e2c87fdbed9553fc6d",
+          "message": "feat: add script to compare two dags user lists",
+          "timestamp": "2024-06-25T12:18:25Z",
+          "tree_id": "efb3bb8c8e725b335f4386595cc8b2796f0399fa",
+          "url": "https://github.com/maidsafe/safe_network/commit/489df9f63605b9c362cf42e2c87fdbed9553fc6d"
+        },
+        "date": 1719320580009,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.233273960396475,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6396195456676823,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.09165619816954,
             "unit": "MiB/s"
           }
         ]
