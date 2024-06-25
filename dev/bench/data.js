@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719277578389,
+  "lastUpdate": 1719298747903,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "859fa367839ec88a59692aa9e0ea245270379796",
-          "message": "fix: attach binaries to node manager release\n\nThe crate name was specified as `sn_node_manager` rather than `sn-node-manager`.\n\nAlso disable the `sn_service_management` crate from being released on Github. At the same time I\narranged the crates in the config file alphabetically, just because it makes them a bit easier to\nfind.",
-          "timestamp": "2024-03-22T20:45:03Z",
-          "tree_id": "f755a9c36ecd60467aa7f1fccde5d934267ee790",
-          "url": "https://github.com/maidsafe/safe_network/commit/859fa367839ec88a59692aa9e0ea245270379796"
-        },
-        "date": 1711143419554,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2967974545272734,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.817682808018521,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.79417001294233,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.9679201846814,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "8de2dbd52a43233276983b4281a48bad7b5ac5ed",
+          "message": "docs(client): remove api calls chapter\n\nPrefer the docs that are generated with `///`. (docs.rs)\n\nCloses #751",
+          "timestamp": "2024-06-25T06:14:57Z",
+          "tree_id": "633dcd8778dbaf6c4eec06bc678dda0faec181b7",
+          "url": "https://github.com/maidsafe/safe_network/commit/8de2dbd52a43233276983b4281a48bad7b5ac5ed"
+        },
+        "date": 1719298742115,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2301997921042314,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6747878458675638,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.738841266727974,
             "unit": "MiB/s"
           }
         ]
