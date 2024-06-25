@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719305194793,
+  "lastUpdate": 1719305196395,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "fd951287b557bc091c8e91278b59b0b98888a293",
-          "message": "fix(register): shortcut permissions check when anyone can write to Register",
-          "timestamp": "2024-03-23T13:49:24Z",
-          "tree_id": "82ecdc2d278dfed709ae91591139d28abab86dab",
-          "url": "https://github.com/maidsafe/safe_network/commit/fd951287b557bc091c8e91278b59b0b98888a293"
-        },
-        "date": 1711205476686,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6593,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36329,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "rmctiernan@protonmail.com",
             "name": "RMcTn",
             "username": "RMcTn"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34358,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "b5e3220e97870f735b29c76a944b404fa45fb5ec",
+          "message": "feat(cli): resend confirmed spends if necessary",
+          "timestamp": "2024-06-25T07:55:59Z",
+          "tree_id": "10dfb9c898c1f4f7df938e788740149f65f76f40",
+          "url": "https://github.com/maidsafe/safe_network/commit/b5e3220e97870f735b29c76a944b404fa45fb5ec"
+        },
+        "date": 1719305196072,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 7791,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 36404,
             "unit": "ms"
           },
           {
