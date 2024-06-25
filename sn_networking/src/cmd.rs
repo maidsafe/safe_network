@@ -30,6 +30,7 @@ use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Debug,
+    time::Duration,
 };
 use tokio::sync::oneshot;
 use xor_name::XorName;
@@ -37,6 +38,9 @@ use xor_name::XorName;
 use crate::target_arch::Instant;
 
 const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
+
+// Shall be synced with `sn_node::PERIODIC_REPLICATION_INTERVAL_MAX_S`
+const REPLICATION_TIMEOUT: Duration = Duration::from_secs(45);
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeIssue {
@@ -869,11 +873,20 @@ impl SwarmDriver {
             .map(|key| key.into_preimage());
 
         // Only grab the closest nodes within the REPLICATE_RANGE
-        let replicate_targets = closest_k_peers
+        let mut replicate_targets = closest_k_peers
             .into_iter()
             // add some leeway to allow for divergent knowledge
             .take(REPLICATION_PEERS_COUNT)
             .collect::<Vec<_>>();
+
+        let now = Instant::now();
+        self.replication_targets
+            .retain(|_peer_id, timestamp| *timestamp < now);
+        // Only carry out replication to peer that not replicated to it recently
+        replicate_targets.retain(|peer_id| !self.replication_targets.contains_key(peer_id));
+        if replicate_targets.is_empty() {
+            return Ok(());
+        }
 
         let all_records: Vec<_> = self
             .swarm
@@ -902,6 +915,9 @@ impl SwarmDriver {
                     .send_request(&peer_id, request.clone());
                 trace!("Sending request {request_id:?} to peer {peer_id:?}");
                 let _ = self.pending_requests.insert(request_id, None);
+                let _ = self
+                    .replication_targets
+                    .insert(peer_id, now + REPLICATION_TIMEOUT);
             }
             trace!("Pending Requests now: {:?}", self.pending_requests.len());
         }
