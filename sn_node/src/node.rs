@@ -55,7 +55,7 @@ use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any node will be half this
-pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
+pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 450;
 
 /// Max number of attempts that chunk proof verification will be carried out against certain target,
 /// before classifying peer as a bad peer.
