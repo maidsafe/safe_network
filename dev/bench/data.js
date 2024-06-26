@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719401447510,
+  "lastUpdate": 1719401449698,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5",
-          "message": "feat: use Arc inside Client, Network to reduce clone cost",
-          "timestamp": "2024-03-25T01:42:02Z",
-          "tree_id": "b059d36220e9b7d6501cad5248d5a4b9be014e79",
-          "url": "https://github.com/maidsafe/safe_network/commit/eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5"
-        },
-        "date": 1711333581581,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 188,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "27cc5d2870e7b3a8685d9a579ed9bba422c7a767",
+          "message": "feat: add architecture decision record for identify interval",
+          "timestamp": "2024-06-26T10:33:04Z",
+          "tree_id": "c96d9e134ba50277e3394169cdfbf707fe9a0a93",
+          "url": "https://github.com/maidsafe/safe_network/commit/27cc5d2870e7b3a8685d9a579ed9bba422c7a767"
+        },
+        "date": 1719401448926,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 192,
             "unit": "MB"
           },
           {
