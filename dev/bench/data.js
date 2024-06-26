@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719401449698,
+  "lastUpdate": 1719401452076,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5",
-          "message": "feat: use Arc inside Client, Network to reduce clone cost",
-          "timestamp": "2024-03-25T01:42:02Z",
-          "tree_id": "b059d36220e9b7d6501cad5248d5a4b9be014e79",
-          "url": "https://github.com/maidsafe/safe_network/commit/eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5"
-        },
-        "date": 1711333583731,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6260,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36449,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35517,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "27cc5d2870e7b3a8685d9a579ed9bba422c7a767",
+          "message": "feat: add architecture decision record for identify interval",
+          "timestamp": "2024-06-26T10:33:04Z",
+          "tree_id": "c96d9e134ba50277e3394169cdfbf707fe9a0a93",
+          "url": "https://github.com/maidsafe/safe_network/commit/27cc5d2870e7b3a8685d9a579ed9bba422c7a767"
+        },
+        "date": 1719401451279,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6723,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 30988,
             "unit": "ms"
           },
           {
