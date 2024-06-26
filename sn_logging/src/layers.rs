@@ -41,10 +41,10 @@ pub struct ReloadHandle(pub(crate) Handle<Box<dyn Filter<Registry> + Send + Sync
 
 impl ReloadHandle {
     /// Modify the log level to the provided CSV value
-    /// Example input: `libp2p=DEBUG, tokio=INFO, all, sn_client=ERROR`
-    /// If any custom keyword is encountered in the CSV, for e.g., VERBOSE_SN_LOGS ('all'), then they will override some
-    /// of the value that you might have provided, `sn_client=ERROR` in the above example will be ignored and
-    /// instead will be set to `TRACE` since `all` keyword is provided.
+    /// Example input: `libp2p=DEBUG,tokio=INFO,all,sn_client=ERROR`
+    ///
+    /// Custom keywords will take less precedence if the same target has been manually specified in the CSV.
+    /// `sn_client=ERROR` in the above example will be used instead of the TRACE level set by "all" keyword.
     pub fn modify_log_level(&self, logging_value: &str) -> Result<()> {
         let targets: Vec<(String, Level)> = get_logging_targets(logging_value)?;
         self.0.modify(|old_filter| {

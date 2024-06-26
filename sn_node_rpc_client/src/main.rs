@@ -69,9 +69,10 @@ enum Cmd {
     /// Update the node's log levels.
     #[clap(name = "log")]
     Log {
-        /// Change the log level of the safenode.
+        /// Change the log level of the safenode. This accepts a comma-separated list of log levels for different modules
+        /// or specific keywords like "all" or "v".
         ///
-        /// Example: --level SN_LOG=all,RUST_LOG=libp2p=debug
+        /// Example: --level libp2p=DEBUG,tokio=INFO,all,sn_client=ERROR
         #[clap(name = "level", long)]
         log_level: String,
     },
