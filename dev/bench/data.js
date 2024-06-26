@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719320712078,
+  "lastUpdate": 1719401326904,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5",
-          "message": "feat: use Arc inside Client, Network to reduce clone cost",
-          "timestamp": "2024-03-25T01:42:02Z",
-          "tree_id": "b059d36220e9b7d6501cad5248d5a4b9be014e79",
-          "url": "https://github.com/maidsafe/safe_network/commit/eda113cdf5bb9a486ec76162b3e6d9e8dfd14ab5"
-        },
-        "date": 1711333467842,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2974364920630181,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8512183665723383,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.596509942888204,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.09165619816954,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "27cc5d2870e7b3a8685d9a579ed9bba422c7a767",
+          "message": "feat: add architecture decision record for identify interval",
+          "timestamp": "2024-06-26T10:33:04Z",
+          "tree_id": "c96d9e134ba50277e3394169cdfbf707fe9a0a93",
+          "url": "https://github.com/maidsafe/safe_network/commit/27cc5d2870e7b3a8685d9a579ed9bba422c7a767"
+        },
+        "date": 1719401320499,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2400768036533631,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6487901771248845,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.345899054817096,
             "unit": "MiB/s"
           }
         ]
