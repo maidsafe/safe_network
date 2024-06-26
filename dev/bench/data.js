@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719414480147,
+  "lastUpdate": 1719414481706,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "9a32e28ae10636842c374187155b6d332e3b13f0",
-          "message": "chore(node): optimization to reduce logging",
-          "timestamp": "2024-03-25T12:09:53Z",
-          "tree_id": "0d06f968f7da63f6b058e9de32d4a1ae922a09fd",
-          "url": "https://github.com/maidsafe/safe_network/commit/9a32e28ae10636842c374187155b6d332e3b13f0"
-        },
-        "date": 1711371537050,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 195,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 88,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 191,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "bf6695aeb284bb28f3a6ea26bb1800f0dd4fb44c",
+          "message": "fix(launchpad): make sure the correct primary path is used\n- when dealing with unix, every mount point would start with '/', so\ninstead find the point that ends with '/'. This would be our primary\npartition.",
+          "timestamp": "2024-06-26T14:10:11Z",
+          "tree_id": "936529995a1855c53531adc957ed6e547ef62d16",
+          "url": "https://github.com/maidsafe/safe_network/commit/bf6695aeb284bb28f3a6ea26bb1800f0dd4fb44c"
+        },
+        "date": 1719414481347,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 199,
             "unit": "MB"
           },
           {
