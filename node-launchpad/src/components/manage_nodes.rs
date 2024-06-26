@@ -53,11 +53,20 @@ impl ManageNodes {
 
     fn get_available_space_b() -> Result<usize> {
         let disks = Disks::new_with_refreshed_list();
+        if tracing::level_enabled!(tracing::Level::DEBUG) {
+            for disk in disks.list() {
+                let res = disk.mount_point().ends_with(Self::get_mount_point());
+                debug!(
+                    "Disk: {disk:?} ends with '{:?}': {res:?}",
+                    Self::get_mount_point()
+                );
+            }
+        }
 
         let available_space_b = disks
             .list()
             .iter()
-            .find(|disk| disk.mount_point().starts_with(Self::get_mount_point()))
+            .find(|disk| disk.mount_point().ends_with(Self::get_mount_point()))
             .context("Cannot find the primary disk")?
             .available_space() as usize;
 
