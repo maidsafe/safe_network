@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719401969880,
+  "lastUpdate": 1719414362169,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "9a32e28ae10636842c374187155b6d332e3b13f0",
-          "message": "chore(node): optimization to reduce logging",
-          "timestamp": "2024-03-25T12:09:53Z",
-          "tree_id": "0d06f968f7da63f6b058e9de32d4a1ae922a09fd",
-          "url": "https://github.com/maidsafe/safe_network/commit/9a32e28ae10636842c374187155b6d332e3b13f0"
-        },
-        "date": 1711371421407,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2743696357804404,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8411986113919798,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.5879804392801,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.56345062690293,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "bf6695aeb284bb28f3a6ea26bb1800f0dd4fb44c",
+          "message": "fix(launchpad): make sure the correct primary path is used\n- when dealing with unix, every mount point would start with '/', so\ninstead find the point that ends with '/'. This would be our primary\npartition.",
+          "timestamp": "2024-06-26T14:10:11Z",
+          "tree_id": "936529995a1855c53531adc957ed6e547ef62d16",
+          "url": "https://github.com/maidsafe/safe_network/commit/bf6695aeb284bb28f3a6ea26bb1800f0dd4fb44c"
+        },
+        "date": 1719414356400,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2234542415270457,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.668936264831396,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.231189840974984,
             "unit": "MiB/s"
           }
         ]
