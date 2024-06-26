@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719401966803,
+  "lastUpdate": 1719401968284,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "5c26f7e23bbaba5c64e63ffaefca7b184513db4c",
-          "message": "feat(client): make publish register as an associated function",
-          "timestamp": "2024-03-25T10:03:04Z",
-          "tree_id": "ee7629657af8e37004b8b13bad579b82ef85b395",
-          "url": "https://github.com/maidsafe/safe_network/commit/5c26f7e23bbaba5c64e63ffaefca7b184513db4c"
-        },
-        "date": 1711363768377,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 196,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 192,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "ba7e2524f445091b20a887e822805945ce5cbe61",
+          "message": "chore(logging): update docs for changing log levels",
+          "timestamp": "2024-06-26T10:41:28Z",
+          "tree_id": "8cdbad8e64c9014c1be72e655324b992bd6189cf",
+          "url": "https://github.com/maidsafe/safe_network/commit/ba7e2524f445091b20a887e822805945ce5cbe61"
+        },
+        "date": 1719401967952,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 191,
             "unit": "MB"
           },
           {
