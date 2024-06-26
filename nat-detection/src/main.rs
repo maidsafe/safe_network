@@ -35,7 +35,7 @@ const RETRY_INTERVAL: Duration = Duration::from_secs(10);
 /// - 11: Public under UPnP
 /// - 12: Private or Unknown NAT
 #[derive(Debug, Parser)]
-#[clap(version, author)]
+#[clap(version, author, verbatim_doc_comment)]
 struct Opt {
     /// Port to listen on.
     ///
