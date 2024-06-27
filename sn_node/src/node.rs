@@ -45,6 +45,7 @@ use tokio::{
     sync::{broadcast, mpsc::Receiver},
     task::{spawn, JoinHandle},
 };
+use xor_name::XorName;
 
 #[cfg(feature = "reward-forward")]
 use libp2p::kad::{Quorum, Record};
@@ -78,6 +79,7 @@ pub struct NodeBuilder {
     initial_peers: Vec<Multiaddr>,
     local: bool,
     root_dir: PathBuf,
+    sybil: Option<XorName>,
     #[cfg(feature = "open-metrics")]
     /// Set to Some to enable the metrics server
     metrics_server_port: Option<u16>,
@@ -98,6 +100,7 @@ impl NodeBuilder {
         root_dir: PathBuf,
         owner: Option<String>,
         #[cfg(feature = "upnp")] upnp: bool,
+        sybil: Option<XorName>,
     ) -> Self {
         Self {
             keypair,
@@ -105,6 +108,7 @@ impl NodeBuilder {
             initial_peers,
             local,
             root_dir,
+            sybil,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: None,
             is_behind_home_network: false,
@@ -168,6 +172,8 @@ impl NodeBuilder {
 
         #[cfg(feature = "upnp")]
         network_builder.upnp(self.upnp);
+
+        network_builder.set_sybil_mode(self.sybil);
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
@@ -368,9 +374,24 @@ impl Node {
                         let network = self.network().clone();
                         self.record_metrics(Marker::IntervalBadNodesCheckTriggered);
 
+                        // we also spawn a task to check for sybil peers
+                        let network = self.network.clone();
+                        let _handle = spawn(async move {
+                            network.perform_sybil_attack_check().await;
+                            info!(">>> Checking for sybil peers took {:?}", start.elapsed());
+                        });
+
+                        let network = self.network.clone();
                         let _handle = spawn(async move {
                             Self::try_bad_nodes_check(network, rolling_index).await;
                             trace!("Periodic bad_nodes check took {:?}", start.elapsed());
+                        });
+
+                        // we also spawn a task to check for sybil peers
+                        let network = self.network.clone();
+                        let _handle = spawn(async move {
+                            network.perform_sybil_attack_check().await;
+                            info!(">>> Checking for sybil peers took {:?}", start.elapsed());
                         });
 
                         if rolling_index == 511 {

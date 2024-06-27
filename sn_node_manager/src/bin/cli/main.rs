@@ -212,6 +212,14 @@ pub enum SubCmd {
         /// The binary will be downloaded.
         #[clap(long)]
         version: Option<String>,
+        /// Set to have the node/s joining to act as sybil nodes eclipsing a specified CID/address.
+        ///
+        /// A hex-encoded xorname shall be provided to have nodes to eclipse the content at such address
+        /// by dropping any provider record, as well as queries, targeting such address.
+        /// This can be used for testing sybil defense and detection using an address which belongs to
+        /// only test content so real users content is not affected.
+        #[clap(long, name = "CID's xorname")]
+        sybil: Option<String>,
     },
     #[clap(subcommand)]
     Auditor(AuditorSubCmd),
@@ -1033,6 +1041,7 @@ async fn main() -> Result<()> {
             LocalSubCmd::Join {
                 build,
                 count,
+                sybil,
                 faucet_path,
                 faucet_version,
                 interval,

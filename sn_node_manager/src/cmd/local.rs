@@ -21,10 +21,12 @@ use sn_service_management::{
     control::ServiceController, get_local_node_registry_path, NodeRegistry,
 };
 use std::path::PathBuf;
+use xor_name::XOR_NAME_LEN;
 
 pub async fn join(
     build: bool,
     count: u16,
+    sybil: Option<String>,
     faucet_path: Option<PathBuf>,
     faucet_version: Option<String>,
     interval: u64,
@@ -41,6 +43,20 @@ pub async fn join(
         print_banner("Joining Local Network");
     }
     info!("Joining local network");
+
+    println!("====================================================");
+    println!("               Joining Local Network                ");
+    let sybil = if let Some(xorname_str) = sybil {
+        let bytes = hex::decode(xorname_str)?;
+        let mut arr = [0u8; XOR_NAME_LEN];
+        arr.copy_from_slice(&bytes);
+        let xorname = xor_name::XorName(arr);
+        println!("** WITH SYBIL NODE/s TO ECLIPSE XorName: {xorname} **");
+        Some(xorname)
+    } else {
+        None
+    };
+    println!("====================================================");
 
     let local_node_reg_path = &get_local_node_registry_path()?;
     let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
@@ -87,6 +103,7 @@ pub async fn join(
         node_count: count,
         owner,
         owner_prefix,
+        sybil,
         peers,
         safenode_bin_path: node_path,
         skip_validation,
@@ -184,6 +201,7 @@ pub async fn run(
         node_count: count,
         owner,
         owner_prefix,
+        sybil: None,
         peers: None,
         safenode_bin_path: node_path,
         skip_validation,

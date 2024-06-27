@@ -39,6 +39,7 @@ pub trait Launcher {
         rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
         log_format: Option<LogFormat>,
+        sybil: Option<xor_name::XorName>,
     ) -> Result<()>;
     fn wait(&self, delay: u64);
 }
@@ -75,6 +76,7 @@ impl Launcher for LocalSafeLauncher {
         rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
         log_format: Option<LogFormat>,
+        sybil: Option<xor_name::XorName>,
     ) -> Result<()> {
         let mut args = Vec::new();
 
@@ -100,6 +102,10 @@ impl Launcher for LocalSafeLauncher {
         args.push("--local".to_string());
         args.push("--rpc".to_string());
         args.push(rpc_socket_addr.to_string());
+        if let Some(xorname) = sybil {
+            args.push("--sybil".to_string());
+            args.push(hex::encode(xorname));
+        }
 
         Command::new(self.safenode_bin_path.clone())
             .args(args)
@@ -192,6 +198,7 @@ pub struct LocalNetworkOptions {
     pub node_count: u16,
     pub owner: Option<String>,
     pub owner_prefix: Option<String>,
+    pub sybil: Option<xor_name::XorName>,
     pub peers: Option<Vec<Multiaddr>>,
     pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
@@ -236,6 +243,7 @@ pub async fn run_network(
                 log_format: options.log_format,
                 number,
                 owner,
+                sybil: None,
                 rpc_socket_addr,
                 version: get_bin_version(&launcher.get_safenode_path())?,
             },
@@ -266,6 +274,7 @@ pub async fn run_network(
                 log_format: options.log_format,
                 number,
                 owner,
+                sybil: options.sybil,
                 rpc_socket_addr,
                 version: get_bin_version(&launcher.get_safenode_path())?,
             },
@@ -316,6 +325,7 @@ pub struct RunNodeOptions {
     pub log_format: Option<LogFormat>,
     pub number: u16,
     pub owner: Option<String>,
+    pub sybil: Option<xor_name::XorName>,
     pub rpc_socket_addr: SocketAddr,
     pub version: String,
 }
@@ -332,6 +342,7 @@ pub async fn run_node(
         run_options.rpc_socket_addr,
         run_options.bootstrap_peers.clone(),
         run_options.log_format,
+        run_options.sybil,
     )?;
     launcher.wait(run_options.interval);
 
@@ -516,6 +527,7 @@ mod tests {
                 log_format: None,
                 number: 1,
                 owner: None,
+                sybil: None,
                 rpc_socket_addr,
                 version: "0.100.12".to_string(),
             },

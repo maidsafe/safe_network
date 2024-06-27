@@ -379,6 +379,8 @@ impl SwarmDriver {
                     .payment_received();
             }
             SwarmCmd::GetLocalRecord { key, sender } => {
+                // TODO: eclipse content if sybil was set, if sybil xorname set is close to the key ....?
+
                 cmd_string = "GetLocalRecord";
                 let record = self
                     .swarm
@@ -394,6 +396,8 @@ impl SwarmDriver {
                 sender,
                 quorum,
             } => {
+                // TODO: eclipse content if sybil was set, if sybil xorname set is close to the key ....?
+
                 cmd_string = "PutRecord";
                 let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
                 trace!(
@@ -446,6 +450,8 @@ impl SwarmDriver {
                 }
             }
             SwarmCmd::PutLocalRecord { record } => {
+                // TODO: eclipse content if sybil was set, if sybil xorname set is close to the key ....?
+
                 cmd_string = "PutLocalRecord";
                 let key = record.key.clone();
                 let record_key = PrettyPrintRecordKey::from(&key);

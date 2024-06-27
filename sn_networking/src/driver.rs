@@ -217,6 +217,7 @@ pub struct NetworkBuilder {
     metrics_server_port: Option<u16>,
     #[cfg(feature = "upnp")]
     upnp: bool,
+    sybil: Option<XorName>,
 }
 
 impl NetworkBuilder {
@@ -236,6 +237,7 @@ impl NetworkBuilder {
             metrics_server_port: None,
             #[cfg(feature = "upnp")]
             upnp: false,
+            sybil: None,
         }
     }
 
@@ -272,6 +274,10 @@ impl NetworkBuilder {
     #[cfg(feature = "upnp")]
     pub fn upnp(&mut self, upnp: bool) {
         self.upnp = upnp;
+    }
+
+    pub fn set_sybil_mode(&mut self, sybil: Option<XorName>) {
+        self.sybil = sybil;
     }
 
     /// Creates a new `SwarmDriver` instance, along with a `Network` handle
@@ -596,6 +602,7 @@ impl NetworkBuilder {
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
+            sybil: self.sybil,
             cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
@@ -639,6 +646,8 @@ pub struct SwarmDriver {
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,
+
+    sybil: Option<XorName>,
 
     cmd_receiver: mpsc::Receiver<SwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
