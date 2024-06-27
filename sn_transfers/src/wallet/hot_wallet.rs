@@ -50,6 +50,11 @@ pub struct HotWallet {
 }
 
 impl HotWallet {
+    #[cfg(feature = "test-utils")]
+    pub fn key(&self) -> &MainSecretKey {
+        &self.key
+    }
+
     pub fn api(&self) -> &WalletApi {
         self.watchonly_wallet.api()
     }
@@ -565,6 +570,16 @@ impl HotWallet {
         );
 
         Ok((storage_cost, royalties_fees))
+    }
+
+    #[cfg(feature = "test-utils")]
+    pub fn test_update_local_wallet(
+        &mut self,
+        transfer: OfflineTransfer,
+        exclusive_access: WalletExclusiveAccess,
+        insert_into_pending_spends: bool,
+    ) -> Result<()> {
+        self.update_local_wallet(transfer, exclusive_access, insert_into_pending_spends)
     }
 
     fn update_local_wallet(
