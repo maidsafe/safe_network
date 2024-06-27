@@ -12,6 +12,7 @@ version = "0.18.7"
 
 [features]
 reward-forward = []
+test-utils = []
 
 [dependencies]
 bls = { package = "blsttc", version = "8.0.1" }
