@@ -28,8 +28,8 @@ use std::{
 use tokio::sync::mpsc;
 use tracing::*;
 
-const MAX_WALLETS: usize = 30;
-const MAX_CYCLES: usize = 5;
+const MAX_WALLETS: usize = 10;
+const MAX_CYCLES: usize = 8;
 const AMOUNT_PER_RECIPIENT: NanoTokens = NanoTokens::from(1000);
 /// The chance for an attack to happen. 1 in X chance.
 /// The attack can one of these:
@@ -46,7 +46,10 @@ enum WalletAction {
         cashnotes: Vec<CashNote>,
         to: (NanoTokens, MainPubkey, DerivationIndex),
     },
-    ReceiveCashNotes(Vec<CashNote>),
+    ReceiveCashNotes {
+        from: usize,
+        cashnotes: Vec<CashNote>,
+    },
 }
 
 enum WalletTaskResult {
@@ -134,7 +137,7 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
             let illicit_spend = rng.gen::<u32>() % ONE_IN_X_CHANCE_FOR_AN_ATTACK == 0;
 
             if illicit_spend {
-                let tx = get_tx_to_replay(id, &state)?;
+                let tx = get_tx_to_attack(id, &state)?;
                 if let Some(tx) = tx {
                     let mut input_cash_notes = Vec::new();
                     for input in &tx.inputs {
@@ -145,11 +148,23 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
                         *status = SpendStatus::Poisoned;
                         input_cash_notes.push(cashnote.clone());
                     }
+                    info!(
+                        "Wallet {id} is attempting a double spend. Marking inputs {:?} as Poisoned",
+                        input_cash_notes
+                            .iter()
+                            .map(|c| c.unique_pubkey())
+                            .collect_vec()
+                    );
+                    //gotta make sure the amount adds up to the input, else not all cashnotes will be utilized
+                    let mut input_total_amount = 0;
+                    for cashnote in &input_cash_notes {
+                        input_total_amount += cashnote.value()?.as_nano();
+                    }
                     action_sender
                         .send(WalletAction::DoubleSpend {
                             cashnotes: input_cash_notes,
                             to: (
-                                AMOUNT_PER_RECIPIENT,
+                                NanoTokens::from(input_total_amount),
                                 state.main_pubkeys[&id],
                                 DerivationIndex::random(&mut rng),
                             ),
@@ -300,6 +315,7 @@ async fn inner_handle_action(
                 wallet.address(),
                 SpendReason::default(),
             )?;
+            info!("TestWallet {our_id} double spending transfer: {transfer:?}");
 
             client
                 .send_spends(transfer.all_spend_requests.iter(), false)
@@ -307,10 +323,10 @@ async fn inner_handle_action(
 
             Ok(WalletTaskResult::DoubleSpendSuccess { id: our_id })
         }
-        WalletAction::ReceiveCashNotes(cash_notes) => {
-            info!("TestWallet {our_id} receiving cash note");
-            wallet.deposit_and_store_to_disk(&cash_notes)?;
-            let our_cash_notes = cash_notes
+        WalletAction::ReceiveCashNotes { from, cashnotes } => {
+            info!("TestWallet {our_id} receiving cash note from wallet {from}");
+            wallet.deposit_and_store_to_disk(&cashnotes)?;
+            let our_cash_notes = cashnotes
                 .into_iter()
                 .filter_map(|c| {
                     // the same filter used inside the deposit fn
@@ -395,11 +411,15 @@ async fn handle_wallet_task_result(
                     .main_pubkeys_inverse
                     .get(cashnote.main_pubkey())
                     .ok_or_eyre("Recipient for cashnote not found")?;
-                state
+                let sender = state
                     .action_senders
                     .get(recipient_id)
-                    .ok_or_eyre("Recipient action sender not found")?
-                    .send(WalletAction::ReceiveCashNotes(vec![cashnote]))
+                    .ok_or_eyre("Recipient action sender not found")?;
+                sender
+                    .send(WalletAction::ReceiveCashNotes {
+                        from: id,
+                        cashnotes: vec![cashnote],
+                    })
                     .await?;
                 // track the task
                 pending_task_tracker
@@ -446,8 +466,6 @@ async fn handle_wallet_task_result(
 }
 
 async fn verify_wallets(state: &State, client: Client) -> Result<()> {
-    println!("Verifying all wallets");
-    info!("Verifying all wallets");
     for (id, spends) in state.cashnotes_per_wallet.iter() {
         println!("Verifying wallet {id}");
         info!("TestWallet {id} verifying {} spends", spends.len());
@@ -606,7 +624,7 @@ fn get_recipients(our_id: usize, state: &State) -> Vec<MainPubkey> {
     recipients
 }
 
-fn get_tx_to_replay(our_id: usize, state: &State) -> Result<Option<Transaction>> {
+fn get_tx_to_attack(our_id: usize, state: &State) -> Result<Option<Transaction>> {
     let mut rng = rand::thread_rng();
     let Some(our_transactions) = state.outbound_transactions_per_wallet.get(&our_id) else {
         info!("TestWallet {our_id} has no outbound transactions yet. Skipping attack");
@@ -618,9 +636,10 @@ fn get_tx_to_replay(our_id: usize, state: &State) -> Result<Option<Transaction>>
         return Ok(None);
     }
 
-    if !find_all_poisonable_spends(our_transactions, state).is_empty() {
-        let random_tx = our_transactions
-            .iter()
+    let poisonable_tx = find_all_poisonable_spends(our_transactions, state)?;
+    if !poisonable_tx.is_empty() {
+        let random_tx = poisonable_tx
+            .into_iter()
             .choose(&mut rng)
             .ok_or_eyre("Cannot choose a random tx")?;
 
@@ -638,22 +657,29 @@ fn get_tx_to_replay(our_id: usize, state: &State) -> Result<Option<Transaction>>
 fn find_all_poisonable_spends<'a>(
     our_transactions: &'a BTreeSet<Transaction>,
     state: &State,
-) -> Vec<&'a Transaction> {
+) -> Result<Vec<&'a Transaction>> {
     let mut poisonable_tx = Vec::new();
     for tx in our_transactions {
-        let mut all_outputs_spent = true;
+        let mut utxo_found = false;
         for output in &tx.outputs {
-            if let Some((SpendStatus::Utxo, _cashnote)) =
-                state.cashnote_tracker.get(output.unique_pubkey())
-            {
-                all_outputs_spent = false;
+            let (status, _) = state
+                .cashnote_tracker
+                .get(output.unique_pubkey())
+                .ok_or_eyre(format!(
+                    "Output {} not found in cashnote tracker",
+                    output.unique_pubkey()
+                ))?;
+
+            if let SpendStatus::Utxo = *status {
+                utxo_found = true;
+                break;
             }
         }
-        if all_outputs_spent {
+        if !utxo_found {
             poisonable_tx.push(tx);
         }
     }
-    poisonable_tx
+    Ok(poisonable_tx)
 }
 
 impl PendingTasksTracker {
