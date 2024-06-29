@@ -9,7 +9,7 @@
 use crate::{Network, NetworkError, Result};
 use futures::future::join_all;
 use sn_transfers::{is_genesis_spend, SignedSpend, SpendAddress, TransferError};
-use std::{collections::BTreeSet, iter::Iterator};
+use std::collections::BTreeSet;
 
 #[derive(Debug)]
 pub enum SpendVerificationOk {
@@ -29,7 +29,7 @@ impl Network {
         let mut result = SpendVerificationOk::Valid;
         let unique_key = spend.unique_pubkey();
         debug!("Verifying spend {unique_key}");
-        spend.verify(spend.spent_tx_hash())?;
+        spend.verify()?;
 
         // genesis does not have parents so we end here
         if is_genesis_spend(spend) {
@@ -38,18 +38,14 @@ impl Network {
         }
 
         // get its parents
-        let parent_keys = spend
-            .spend
-            .parent_tx
-            .inputs
-            .iter()
-            .map(|input| input.unique_pubkey);
+        let parent_keys = spend.spend.ancestors.clone();
         let tasks: Vec<_> = parent_keys
+            .iter()
             .map(|parent| async move {
                 let spend = self
-                    .get_spend(SpendAddress::from_unique_pubkey(&parent))
+                    .get_spend(SpendAddress::from_unique_pubkey(parent))
                     .await;
-                (parent, spend)
+                (*parent, spend)
             })
             .collect();
         let mut parent_spends = BTreeSet::new();

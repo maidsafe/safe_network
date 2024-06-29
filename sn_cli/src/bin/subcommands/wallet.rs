@@ -53,18 +53,22 @@ impl WalletApiHelper {
                         spend.spend.unique_pubkey,
                         address.to_hex()
                     );
-                    println!("reason {:?}, amount {}, inputs: {}, outputs: {}, royalties: {}, {:?} - {:?}",
-                            spend.spend.reason, spend.spend.amount, spend.spend.spent_tx.inputs.len(), spend.spend.spent_tx.outputs.len(),
-                            spend.spend.network_royalties.len(), spend.spend.spent_tx.inputs, spend.spend.spent_tx.outputs);
+                    println!(
+                        "reason {:?}, amount {}, inputs: {}, outputs: {}",
+                        spend.spend.reason,
+                        spend.spend.amount(),
+                        spend.spend.ancestors.len(),
+                        spend.spend.descendants.len()
+                    );
                     println!("Inputs in hex str:");
-                    for input in spend.spend.spent_tx.inputs.iter() {
-                        let address = SpendAddress::from_unique_pubkey(&input.unique_pubkey);
+                    for input in spend.spend.ancestors.iter() {
+                        let address = SpendAddress::from_unique_pubkey(input);
                         println!("Input spend {}", address.to_hex());
                     }
-                    println!("parent_tx inputs in hex str:");
-                    for input in spend.spend.parent_tx.inputs.iter() {
-                        let address = SpendAddress::from_unique_pubkey(&input.unique_pubkey);
-                        println!("parent_tx input spend {}", address.to_hex());
+                    println!("Outputs in hex str:");
+                    for (output, (amount, purpose)) in spend.spend.descendants.iter() {
+                        let address = SpendAddress::from_unique_pubkey(output);
+                        println!("Output {} with {amount} and {purpose:?}", address.to_hex());
                     }
                 }
                 println!("Available cash notes are:");
@@ -91,10 +95,9 @@ impl WalletApiHelper {
         let cash_notes = vec![cash_note.clone()];
 
         let spent_unique_pubkeys: BTreeSet<_> = cash_note
-            .parent_tx
-            .inputs
+            .parent_spends
             .iter()
-            .map(|input| input.unique_pubkey())
+            .map(|spend| spend.unique_pubkey())
             .collect();
 
         match self {

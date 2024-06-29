@@ -17,7 +17,7 @@ use sn_networking::{GetRecordError, PayeeQuote};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
     CashNote, DerivationIndex, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
-    SignedSpend, SpendAddress, Transaction, Transfer, UniquePubkey, WalletError, WalletResult,
+    SignedSpend, SpendAddress, Transfer, UniquePubkey, WalletError, WalletResult,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -344,14 +344,13 @@ impl WalletClient {
     async fn send_signed_spends(
         &mut self,
         signed_spends: BTreeSet<SignedSpend>,
-        tx: Transaction,
         change_id: UniquePubkey,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
         verify_store: bool,
     ) -> WalletResult<CashNote> {
         let created_cash_notes =
             self.wallet
-                .prepare_signed_transfer(signed_spends, tx, change_id, output_details)?;
+                .prepare_signed_transfer(signed_spends, change_id, output_details)?;
 
         // send to network
         if let Err(error) = self
@@ -707,10 +706,9 @@ impl WalletClient {
                 .map(|s| {
                     let parent_spends: BTreeSet<_> = s
                         .spend
-                        .parent_tx
-                        .inputs
+                        .ancestors
                         .iter()
-                        .map(|i| SpendAddress::from_unique_pubkey(&i.unique_pubkey))
+                        .map(SpendAddress::from_unique_pubkey)
                         .collect();
                     (s.address(), parent_spends)
                 })
@@ -1182,7 +1180,6 @@ pub async fn send(
 /// * from - [HotWallet],
 /// * client - [Client],
 /// * signed_spends - [BTreeSet]<[SignedSpend]>,
-/// * transaction - [Transaction],
 /// * change_id - [UniquePubkey],
 /// * output_details - [BTreeMap]<[UniquePubkey], ([MainPubkey], [DerivationIndex])>,
 /// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
@@ -1199,19 +1196,17 @@ pub async fn send(
 /// # async fn main() -> Result<(),Error>{
 /// use std::collections::{BTreeMap, BTreeSet};
 /// use tracing::error;
-/// use sn_transfers::{Transaction, Transfer, UniquePubkey};
+/// use sn_transfers::UniquePubkey;
 /// let client = Client::new(SecretKey::random(), None, None, None).await?;
 /// # let tmp_path = TempDir::new()?.path().to_owned();
 /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-/// let transaction = Transaction {inputs: Vec::new(),outputs: Vec::new(),};
 /// let secret_key = UniquePubkey::new(SecretKey::random().public_key());
 ///
-/// println!("Broadcasting the transaction to the network...");
+/// println!("Broadcasting the signed_spends to the network...");
 ///  let cash_note = sn_client::broadcast_signed_spends(
 ///     wallet,
 ///     &client,
 ///     BTreeSet::default(),
-///     transaction,
 ///     secret_key,
 ///     BTreeMap::new(),
 ///     true
@@ -1224,9 +1219,8 @@ pub async fn broadcast_signed_spends(
     from: HotWallet,
     client: &Client,
     signed_spends: BTreeSet<SignedSpend>,
-    tx: Transaction,
     change_id: UniquePubkey,
-    output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
     verify_store: bool,
 ) -> WalletResult<CashNote> {
     let mut wallet_client = WalletClient::new(client.clone(), from);
@@ -1241,7 +1235,7 @@ pub async fn broadcast_signed_spends(
     }
 
     let new_cash_note = wallet_client
-        .send_signed_spends(signed_spends, tx, change_id, output_details, verify_store)
+        .send_signed_spends(signed_spends, change_id, output_details, verify_store)
         .await
         .map_err(|err| {
             error!("Could not send signed spends, err: {err:?}");

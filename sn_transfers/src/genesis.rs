@@ -10,13 +10,13 @@ use super::wallet::HotWallet;
 
 use crate::{
     wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey,
-    NanoTokens, Output, SignedSpend, SpendReason, Transaction, TransactionBuilder,
-    TransferError as CashNoteError, UniquePubkey,
+    NanoTokens, SignedSpend, SpendReason, TransactionBuilder, TransferError as CashNoteError,
+    UniquePubkey,
 };
 
 use bls::SecretKey;
 use lazy_static::lazy_static;
-use std::{fmt::Debug, path::PathBuf};
+use std::{collections::BTreeSet, fmt::Debug, path::PathBuf};
 use thiserror::Error;
 
 /// Number of tokens in the Genesis CashNote.
@@ -25,8 +25,10 @@ use thiserror::Error;
 /// thus creating a total of 1,288,490,189,000,000,000 available units.
 pub(super) const GENESIS_CASHNOTE_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 
-/// The derivation index for the genesis Spend.
-const GENESIS_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0u8; 32]);
+/// The input derivation index for the genesis Spend.
+pub const GENESIS_INPUT_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0u8; 32]);
+/// The output derivation index for the genesis Spend.
+pub const GENESIS_OUTPUT_DERIVATION_INDEX: DerivationIndex = DerivationIndex([1u8; 32]);
 
 /// Default genesis SK for testing purpose. Be sure to pass the correct `GENESIS_SK` value via env for release.
 const DEFAULT_LIVE_GENESIS_SK: &str =
@@ -89,22 +91,7 @@ lazy_static! {
 
 lazy_static! {
     /// This is the unique key for the genesis Spend
-    pub static ref GENESIS_SPEND_UNIQUE_KEY: UniquePubkey = GENESIS_PK.new_unique_pubkey(&GENESIS_DERIVATION_INDEX);
-}
-
-lazy_static! {
-    pub static ref GENESIS_CASHNOTE_PARENT_TX: Transaction = {
-        let mut tx = Transaction::empty();
-        tx.inputs = vec![Input {
-            unique_pubkey: *GENESIS_SPEND_UNIQUE_KEY,
-            amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
-        }];
-        tx.outputs = vec![Output {
-            unique_pubkey: *GENESIS_SPEND_UNIQUE_KEY,
-            amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
-        }];
-        tx
-    };
+    pub static ref GENESIS_SPEND_UNIQUE_KEY: UniquePubkey = GENESIS_PK.new_unique_pubkey(&GENESIS_OUTPUT_DERIVATION_INDEX);
 }
 
 lazy_static! {
@@ -145,18 +132,18 @@ pub fn get_genesis_sk() -> MainSecretKey {
     }
 }
 
-/// Return if provided Transaction is genesis parent tx.
-pub fn is_genesis_parent_tx(parent_tx: &Transaction) -> bool {
-    parent_tx == &*GENESIS_CASHNOTE_PARENT_TX
-}
-
 /// Return if provided Spend is genesis spend.
 pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
+    info!(
+        "Testing genesis against genesis_input {:?} genesis_output {:?} {GENESIS_CASHNOTE_AMOUNT:?}, {:?}",
+        GENESIS_PK.new_unique_pubkey(&GENESIS_INPUT_DERIVATION_INDEX),
+        GENESIS_PK.new_unique_pubkey(&GENESIS_OUTPUT_DERIVATION_INDEX),
+        spend.spend
+    );
     let bytes = spend.spend.to_bytes_for_signing();
     spend.spend.unique_pubkey == *GENESIS_SPEND_UNIQUE_KEY
         && GENESIS_SPEND_UNIQUE_KEY.verify(&spend.derived_key_sig, bytes)
-        && is_genesis_parent_tx(&spend.spend.parent_tx)
-        && spend.spend.amount == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
+        && spend.spend.amount() == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
 }
 
 pub fn load_genesis_wallet() -> Result<HotWallet, Error> {
@@ -211,30 +198,31 @@ pub fn create_first_cash_note_from_key(
 ) -> GenesisResult<CashNote> {
     let main_pubkey = first_cash_note_key.main_pubkey();
     debug!("genesis cashnote main_pubkey: {:?}", main_pubkey);
-    let derived_key = first_cash_note_key.derive_key(&GENESIS_DERIVATION_INDEX);
+    let derived_key = first_cash_note_key.derive_key(&GENESIS_INPUT_DERIVATION_INDEX);
 
-    // Use the same key as the input and output of Genesis Tx.
-    // The src tx is empty as this is the first CashNote.
+    // Use the same key as the input, but different key as output of Genesis Tx.
     let genesis_input = Input {
         unique_pubkey: derived_key.unique_pubkey(),
         amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
     };
 
     let reason = SpendReason::default();
+    let mut parent_spends = BTreeSet::new();
+    let _ = parent_spends.insert(derived_key.unique_pubkey());
 
     let cash_note_builder = TransactionBuilder::default()
         .add_input(
             genesis_input,
-            Some(derived_key),
-            Transaction::empty(),
-            GENESIS_DERIVATION_INDEX,
+            Some(derived_key.clone()),
+            GENESIS_INPUT_DERIVATION_INDEX,
+            parent_spends,
         )
         .add_output(
             NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
             main_pubkey,
-            GENESIS_DERIVATION_INDEX,
+            GENESIS_OUTPUT_DERIVATION_INDEX,
         )
-        .build(reason, vec![]);
+        .build(reason);
 
     // build the output CashNotes
     let output_cash_notes = cash_note_builder.build_without_verifying().map_err(|err| {
@@ -299,7 +287,6 @@ mod tests {
                 "genesis_cn.unique_pubkey: {:?}",
                 genesis_cn.unique_pubkey().to_hex()
             );
-            println!("genesis_cn.parent_tx: {:?}", genesis_cn.parent_tx.to_hex());
         }
     }
 }

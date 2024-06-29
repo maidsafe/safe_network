@@ -11,8 +11,8 @@ use crate::{Client, Error, SpendDag};
 use futures::{future::join_all, StreamExt};
 use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{
-    SignedSpend, SpendAddress, SpendReason, WalletError, WalletResult,
-    DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
+    OutputPurpose, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError, WalletResult,
+    GENESIS_SPEND_UNIQUE_KEY,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -91,7 +91,7 @@ impl Client {
                     );
                     dag.insert(addr, spend.clone());
                     if let Some(sender) = &spend_processing {
-                        let outputs = spend.spend.spent_tx.outputs.len() as u64;
+                        let outputs = spend.spend.descendants.len() as u64;
                         sender
                             .send((spend, outputs))
                             .await
@@ -194,27 +194,27 @@ impl Client {
         let mut utxos = BTreeSet::new();
 
         // get first spend
-        let mut txs_to_follow = match self.crawl_spend(spend_addr).await {
+        let mut descendants_to_follow = match self.crawl_spend(spend_addr).await {
             InternalGetNetworkSpend::Spend(spend) => {
                 let spend = *spend;
-                let txs = BTreeSet::from_iter([spend.spend.spent_tx.clone()]);
+                let descendants_to_follow = spend.spend.descendants.clone();
 
                 spend_processing
                     .send(spend)
                     .await
                     .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
-                txs
+                descendants_to_follow
             }
             InternalGetNetworkSpend::DoubleSpend(spends) => {
-                let mut txs = BTreeSet::new();
+                let mut descendants_to_follow = BTreeMap::new();
                 for spend in spends.into_iter() {
-                    txs.insert(spend.spend.spent_tx.clone());
+                    descendants_to_follow.extend(spend.spend.descendants.clone());
                     spend_processing
                         .send(spend)
                         .await
                         .map_err(|e| WalletError::SpendProcessing(e.to_string()))?;
                 }
-                txs
+                descendants_to_follow
             }
             InternalGetNetworkSpend::NotFound => {
                 // the cashnote was not spent yet, so it's an UTXO
@@ -228,24 +228,19 @@ impl Client {
         };
 
         // use iteration instead of recursion to avoid stack overflow
-        let mut known_tx = BTreeSet::new();
+        let mut known_descendants: BTreeSet<UniquePubkey> = BTreeSet::new();
         let mut gen: u32 = 0;
         let start = std::time::Instant::now();
 
-        while !txs_to_follow.is_empty() {
-            let mut next_gen_tx = BTreeSet::new();
+        while !descendants_to_follow.is_empty() {
+            let mut next_gen_descendants = BTreeMap::new();
 
             // list up all descendants
             let mut addrs = vec![];
-            for descendant_tx in txs_to_follow.iter() {
-                let descendant_tx_hash = descendant_tx.hash();
-                let descendant_keys = descendant_tx
-                    .outputs
-                    .iter()
-                    .map(|output| output.unique_pubkey);
-                let addrs_to_follow = descendant_keys.map(|k| SpendAddress::from_unique_pubkey(&k));
-                info!("Gen {gen} - Following descendant Tx : {descendant_tx_hash:?}");
-                addrs.extend(addrs_to_follow);
+            for (descendant, (_amount, _purpose)) in descendants_to_follow.iter() {
+                let addrs_to_follow = SpendAddress::from_unique_pubkey(descendant);
+                info!("Gen {gen} - Following descendant : {descendant:?}");
+                addrs.push(addrs_to_follow);
             }
 
             // get all spends in parallel
@@ -255,7 +250,7 @@ impl Client {
             info!(
                 "Gen {gen} - Getting {} spends from {} txs in batches of: {}",
                 addrs.len(),
-                txs_to_follow.len(),
+                descendants_to_follow.len(),
                 crate::MAX_CONCURRENT_TASKS,
             );
 
@@ -263,7 +258,7 @@ impl Client {
             while let Some((get_spend, addr)) = stream.next().await {
                 match get_spend {
                     InternalGetNetworkSpend::Spend(spend) => {
-                        next_gen_tx.insert(spend.spend.spent_tx.clone());
+                        next_gen_descendants.extend(spend.spend.descendants.clone());
                         spend_processing
                             .send(*spend.clone())
                             .await
@@ -272,7 +267,7 @@ impl Client {
                     InternalGetNetworkSpend::DoubleSpend(spends) => {
                         info!("Fetched double spend(s) of len {} at {addr:?} from network, following all of them.", spends.len());
                         for s in spends.into_iter() {
-                            next_gen_tx.insert(s.spend.spent_tx.clone());
+                            next_gen_descendants.extend(s.spend.descendants.clone());
                             spend_processing
                                 .send(s.clone())
                                 .await
@@ -289,11 +284,13 @@ impl Client {
                 }
             }
 
-            // only follow tx we haven't already gathered
-            known_tx.extend(txs_to_follow.iter().map(|tx| tx.hash()));
-            txs_to_follow = next_gen_tx
+            // only follow descendants we haven't already gathered
+            let followed_descendants: BTreeSet<UniquePubkey> =
+                descendants_to_follow.keys().copied().collect();
+            known_descendants.extend(followed_descendants);
+            descendants_to_follow = next_gen_descendants
                 .into_iter()
-                .filter(|tx| !known_tx.contains(&tx.hash()))
+                .filter(|(key, (_, _))| !known_descendants.contains(key))
                 .collect();
 
             // go on to next gen
@@ -337,24 +334,22 @@ impl Client {
         }
 
         // use iteration instead of recursion to avoid stack overflow
-        let mut txs_to_verify = BTreeSet::from_iter([new_spend.spend.parent_tx]);
+        let mut ancestors_to_verify = new_spend.spend.ancestors.clone();
         let mut depth = 0;
-        let mut known_txs = BTreeSet::new();
+        let mut known_ancestors = BTreeSet::new();
         let start = std::time::Instant::now();
 
-        while !txs_to_verify.is_empty() {
-            let mut next_gen_tx = BTreeSet::new();
+        while !ancestors_to_verify.is_empty() {
+            let mut next_gen_ancestors = BTreeSet::new();
 
-            for parent_tx in txs_to_verify {
-                let parent_tx_hash = parent_tx.hash();
-                let parent_keys = parent_tx.inputs.iter().map(|input| input.unique_pubkey);
-                let addrs_to_verify = parent_keys.map(|k| SpendAddress::from_unique_pubkey(&k));
-                debug!("Depth {depth} - checking parent Tx : {parent_tx_hash:?} with inputs: {addrs_to_verify:?}");
+            for ancestor in ancestors_to_verify {
+                let addrs_to_verify = vec![SpendAddress::from_unique_pubkey(&ancestor)];
+                debug!("Depth {depth} - checking parent : {ancestor:?} - {addrs_to_verify:?}");
 
                 // get all parent spends in parallel
                 let tasks: Vec<_> = addrs_to_verify
-                    .clone()
-                    .map(|a| self.crawl_spend(a))
+                    .iter()
+                    .map(|a| self.crawl_spend(*a))
                     .collect();
                 let mut spends = BTreeSet::new();
                 for (spend_get, a) in join_all(tasks)
@@ -382,47 +377,49 @@ impl Client {
                     }
                 }
                 let spends_len = spends.len();
-                debug!("Depth {depth} - Got {spends_len} spends for parent Tx: {parent_tx_hash:?}");
-                trace!("Spends for {parent_tx_hash:?} - {spends:?}");
+                debug!("Depth {depth} - Got {spends_len} spends for parent: {addrs_to_verify:?}");
+                trace!("Spends for {addrs_to_verify:?} - {spends:?}");
 
-                // check if we reached the genesis Tx
-                known_txs.insert(parent_tx_hash);
-                if parent_tx == *sn_transfers::GENESIS_CASHNOTE_PARENT_TX
-                    && spends
-                        .iter()
-                        .all(|s| s.spend.unique_pubkey == *sn_transfers::GENESIS_SPEND_UNIQUE_KEY)
+                // check if we reached the genesis spend
+                known_ancestors.extend(addrs_to_verify.clone());
+                if spends
+                    .iter()
+                    .all(|s| s.spend.unique_pubkey == *sn_transfers::GENESIS_SPEND_UNIQUE_KEY)
                     && spends.len() == 1
                 {
-                    debug!("Depth {depth} - reached genesis Tx on one branch: {parent_tx_hash:?}");
+                    debug!(
+                        "Depth {depth} - reached genesis spend on one branch: {addrs_to_verify:?}"
+                    );
                     continue;
                 }
 
                 // add spends to the dag
                 for (spend, addr) in spends.clone().into_iter().zip(addrs_to_verify) {
-                    let spend_parent_tx = spend.spend.parent_tx.clone();
-                    let is_new_spend = dag.insert(addr, spend);
+                    let is_new_spend = dag.insert(addr, spend.clone());
 
                     // no need to check this spend's parents if it was already in the DAG
                     if is_new_spend {
-                        next_gen_tx.insert(spend_parent_tx);
+                        next_gen_ancestors.extend(spend.spend.ancestors.clone());
                     }
                 }
             }
 
             // only verify parents we haven't already verified
-            txs_to_verify = next_gen_tx
+            ancestors_to_verify = next_gen_ancestors
                 .into_iter()
-                .filter(|tx| !known_txs.contains(&tx.hash()))
+                .filter(|ancestor| {
+                    !known_ancestors.contains(&SpendAddress::from_unique_pubkey(ancestor))
+                })
                 .collect();
 
             depth += 1;
             let elapsed = start.elapsed();
-            let n = known_txs.len();
+            let n = known_ancestors.len();
             info!("Now at depth {depth} - Collected spends from {n} transactions in {elapsed:?}");
         }
 
         let elapsed = start.elapsed();
-        let n = known_txs.len();
+        let n = known_ancestors.len();
         info!("Collected the DAG branch all the way to known spends or genesis! Through {depth} generations, collecting spends from {n} transactions in {elapsed:?}");
 
         // verify the DAG
@@ -521,33 +518,15 @@ impl Client {
 /// Helper function to analyze spend for beta_tracking optimization.
 /// returns the new_utxos that needs to be further tracked.
 fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<SpendAddress> {
-    // Filter out royalty outputs
-    let royalty_pubkeys: BTreeSet<_> = spend
-        .spend
-        .network_royalties
-        .iter()
-        .map(|derivation_idx| NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
-        .collect();
-    let default_royalty_pubkeys: BTreeSet<_> = spend
-        .spend
-        .network_royalties
-        .iter()
-        .map(|derivation_idx| DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
-        .collect();
-
     let new_utxos: BTreeSet<_> = spend
         .spend
-        .spent_tx
-        .outputs
+        .descendants
         .iter()
-        .filter_map(|output| {
-            if default_royalty_pubkeys.contains(&output.unique_pubkey) {
-                return None;
-            }
-            if !royalty_pubkeys.contains(&output.unique_pubkey) {
-                Some(SpendAddress::from_unique_pubkey(&output.unique_pubkey))
-            } else {
+        .filter_map(|(key, (_amount, purpose))| {
+            if let OutputPurpose::RoyaltyFee(_) = purpose {
                 None
+            } else {
+                Some(SpendAddress::from_unique_pubkey(key))
             }
         })
         .collect();
@@ -558,7 +537,7 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<SpendAddress> {
     } else {
         trace!(
             "Spend original has {} outputs, tracking {} of them.",
-            spend.spend.spent_tx.outputs.len(),
+            spend.spend.descendants.len(),
             new_utxos.len()
         );
         new_utxos

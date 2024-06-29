@@ -855,12 +855,42 @@ jobs:
 
       - name: Create and fund a wallet first time
         run: |
-          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
+          address=$(~/safe --log-output-dest=data-dir wallet address | tail -n 1)
+          echo "-----------------------------------"
+          ~/faucet --log-output-dest=data-dir send 100000000 $address > first_faucet.txt
+          echo "-----------------------------------"
+          cat first_faucet.txt
+          echo "==================================="
+          cat first_faucet.txt | tail -n 1 1>first.txt
           echo "----------"
           cat first.txt
         env:
           SN_LOG: "all"
         timeout-minutes: 5
+
+      - name: Move faucet log to the working folder
+        run: |
+          echo "SAFE_DATA_PATH has: "
+          ls -l $SAFE_DATA_PATH
+          echo "test_faucet foder has: "
+          ls -l $SAFE_DATA_PATH/test_faucet
+          echo "logs folder has: "
+          ls -l $SAFE_DATA_PATH/test_faucet/logs
+          mv $SAFE_DATA_PATH/test_faucet/logs/faucet.log ./faucet_log.log
+        env:
+          SN_LOG: "all"
+          SAFE_DATA_PATH: /home/runner/.local/share/safe
+        continue-on-error: true
+        if: always()
+        timeout-minutes: 1
+
+      - name: Upload faucet log
+        uses: actions/upload-artifact@main
+        with:
+          name: faucet_test_first_faucet_log
+          path: faucet_log.log
+        continue-on-error: true
+        if: always()
 
       - name: Create and fund a wallet second time
         run: |

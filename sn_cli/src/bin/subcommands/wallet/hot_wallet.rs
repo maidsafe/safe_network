@@ -312,28 +312,15 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     let unsigned_transfer: UnsignedTransfer = rmp_serde::from_slice(&hex::decode(tx)?)?;
 
     println!("The unsigned transaction has been successfully decoded:");
-    let mut spent_tx = None;
     for (i, (spend, _)) in unsigned_transfer.spends.iter().enumerate() {
         println!("\nSpending input #{i}:");
         println!("\tKey: {}", spend.unique_pubkey.to_hex());
-        println!("\tAmount: {}", spend.amount);
-        if let Some(ref tx) = spent_tx {
-            if tx != &spend.spent_tx {
-                bail!("Transaction seems corrupted, not all Spends (inputs) refer to the same transaction");
-            }
-        } else {
-            spent_tx = Some(spend.spent_tx.clone());
-        }
-    }
+        println!("\tAmount: {}", spend.amount());
 
-    if let Some(ref tx) = spent_tx {
-        for (i, output) in tx.outputs.iter().enumerate() {
-            println!("\nOutput #{i}:");
-            println!("\tKey: {}", output.unique_pubkey.to_hex());
-            println!("\tAmount: {}", output.amount);
+        for (descendant, (amount, _purpose)) in spend.descendants.iter() {
+            println!("\tOutput Key: {}", descendant.to_hex());
+            println!("\tAmount: {amount}");
         }
-    } else {
-        bail!("Transaction is corrupted, no transaction information found.");
     }
 
     if !force {
@@ -352,7 +339,7 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     let signed_spends = wallet.sign(unsigned_transfer.spends);
 
     for signed_spend in signed_spends.iter() {
-        if let Err(err) = signed_spend.verify(signed_spend.spent_tx_hash()) {
+        if let Err(err) = signed_spend.verify() {
             bail!("Signature or transaction generated is invalid: {err:?}");
         }
     }

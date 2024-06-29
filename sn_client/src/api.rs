@@ -1016,7 +1016,7 @@ impl Client {
         }
 
         // check spend
-        match signed_spend.verify(signed_spend.spent_tx_hash()) {
+        match signed_spend.verify() {
             Ok(()) => {
                 trace!("Verified signed spend got from network for {address:?}");
                 Ok(signed_spend.clone())
