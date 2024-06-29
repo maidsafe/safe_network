@@ -409,7 +409,7 @@ impl SpendDagDb {
     ) {
         let mut beta_tracking = self.beta_tracking.write().await;
         beta_tracking.processed_spends += 1;
-        beta_tracking.total_accumulated_utxo += spend.spend.spent_tx.outputs.len() as u64;
+        beta_tracking.total_accumulated_utxo += spend.spend.descendants.len() as u64;
         beta_tracking.total_on_track_utxo += utxos_for_further_track;
 
         // Collect royalties
@@ -471,7 +471,7 @@ impl SpendDagDb {
         let amount = spend.spend.amount;
 
         // check for beta rewards reason
-        let user_name_hash = match spend.reason().get_sender_hash(sk) {
+        let user_name_hash = match spend.reason().decrypt_discord_cypher(sk) {
             Some(n) => n,
             None => {
                 if let Some(default_user_name_hash) =
@@ -493,6 +493,8 @@ impl SpendDagDb {
         };
 
         // add to local rewards
+        let addr = spend.address();
+        let amount = spend.spend.amount();
         let beta_participants_read = self.beta_participants.read().await;
 
         if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
@@ -504,8 +506,9 @@ impl SpendDagDb {
                 .insert((addr, amount));
         } else {
             // check with default key
-            if let Some(default_user_name_hash) =
-                spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
+            if let Some(default_user_name_hash) = spend
+                .reason()
+                .decrypt_discord_cypher(&DEFAULT_PAYMENT_FORWARD_SK)
             {
                 if let Some(user_name) = beta_participants_read.get(&default_user_name_hash) {
                     warn!("With default key, got forwarded reward from {user_name} of {amount} at {addr:?}");

@@ -205,10 +205,9 @@ impl Transaction {
             return Err(TransferError::UniquePubkeyNotUniqueInTx);
         }
 
-        // Verify that each signed spend is valid and was spent in this transaction
-        let spent_tx_hash = self.hash();
+        // Verify that each signed spend is valid.
         for s in signed_spends {
-            s.verify(spent_tx_hash)?;
+            s.verify()?;
         }
 
         // Verify that the transaction is balanced

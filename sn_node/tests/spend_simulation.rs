@@ -369,17 +369,9 @@ async fn inner_handle_action(
             )?;
             let recipient_cash_notes = transfer.cash_notes_for_recipient.clone();
             let change = transfer.change_cash_note.clone();
+            let transaction = transfer.build_transaction();
 
             wallet.test_update_local_wallet(transfer, exclusive_access, true)?;
-
-            // the parent tx for all the recipient cash notes should be the same.
-            let transaction = recipient_cash_notes
-                .iter()
-                .map(|c| c.parent_tx.clone())
-                .collect::<BTreeSet<_>>();
-            if transaction.len() != 1 {
-                bail!("{our_id}: Transactions should have the same parent tx");
-            }
 
             client
                 .send_spends(wallet.unconfirmed_spend_requests().iter(), true)
@@ -393,10 +385,7 @@ async fn inner_handle_action(
                 id: our_id,
                 recipient_cash_notes,
                 change_cash_note: change,
-                transaction: transaction
-                    .into_iter()
-                    .next()
-                    .expect("Should've bailed earlier"),
+                transaction,
             })
         }
         // todo: we don't track the double spend tx. Track if needed.
@@ -742,19 +731,23 @@ async fn init_state(count: usize) -> Result<(Client, State)> {
 
 /// Returns random recipients to send tokens to.
 /// Random recipient of random lengths are chosen.
-fn get_recipients(our_id: WalletId, state: &State) -> Vec<MainPubkey> {
+fn get_recipients(our_id: WalletId, state: &State) -> Vec<(MainPubkey, WalletId)> {
     let mut recipients = Vec::new();
 
     let mut random_number = our_id;
     while random_number == our_id {
         random_number = WalletId(rand::thread_rng().gen_range(0..state.main_pubkeys.len()));
     }
-    recipients.push(state.main_pubkeys[&random_number]);
+    recipients.push((state.main_pubkeys[&random_number], random_number));
 
     while random_number.0 % 4 != 0 {
         random_number = WalletId(rand::thread_rng().gen_range(0..state.main_pubkeys.len()));
-        if random_number != our_id {
-            recipients.push(state.main_pubkeys[&random_number]);
+        if random_number != our_id
+            && !recipients
+                .iter()
+                .any(|(_, existing_id)| *existing_id == random_number)
+        {
+            recipients.push((state.main_pubkeys[&random_number], random_number));
         }
     }
 
