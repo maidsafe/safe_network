@@ -12,34 +12,37 @@ use xor_name::XorName;
 
 use crate::{DerivationIndex, Hash, Result, TransferError};
 
-const CUSTOM_SPEND_REASON_SIZE: usize = 64;
+const CUSTOM_OUTPUT_PURPOSE_SIZE: usize = 64;
 
 /// The attached metadata or reason for which a Spend was spent
 #[derive(Default, Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub enum SpendReason {
+pub enum OutputPurpose {
     #[default]
     None,
     /// Reference to network data
     NetworkData(XorName),
     /// Custom field for any application data
-    Custom(#[serde(with = "serde_bytes")] [u8; CUSTOM_SPEND_REASON_SIZE]),
+    Custom(#[serde(with = "serde_bytes")] [u8; CUSTOM_OUTPUT_PURPOSE_SIZE]),
+    /// For Network Royalty Fee
+    RoyaltyFee(DerivationIndex),
 
     /// Beta only feature to track rewards
     /// Discord username encrypted to the Foundation's pubkey with a random nonce
     BetaRewardTracking(DiscordNameCipher),
 }
 
-impl SpendReason {
+impl OutputPurpose {
     pub fn hash(&self) -> Hash {
         match self {
             Self::None => Hash::default(),
             Self::NetworkData(xor_name) => Hash::hash(xor_name),
             Self::Custom(bytes) => Hash::hash(bytes),
+            Self::RoyaltyFee(derivation_index) => Hash::hash(&derivation_index.0),
             Self::BetaRewardTracking(cypher) => Hash::hash(&cypher.cipher),
         }
     }
 
-    pub fn create_reward_tracking_reason(input_str: &str) -> Result<Self> {
+    pub fn create_reward_tracking_purpose(input_str: &str) -> Result<Self> {
         let input_pk = crate::PAYMENT_FORWARD_PK.public_key();
         Ok(Self::BetaRewardTracking(DiscordNameCipher::create(
             input_str, input_pk,
@@ -106,6 +109,10 @@ impl DiscordName {
     }
 
     fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        if bytes.len() < CONTENT_SIZE {
+            return Err(TransferError::OutputPurposeTooShort);
+        }
+
         let mut hash_bytes = [0; HASH_SIZE];
         hash_bytes.copy_from_slice(&bytes[0..HASH_SIZE]);
         let hash = Hash::from(hash_bytes.to_owned());

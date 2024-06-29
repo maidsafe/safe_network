@@ -12,9 +12,9 @@ use bls::SecretKey;
 use eyre::{eyre, Result};
 use sn_transfers::{
     get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens,
-    OfflineTransfer, SignedSpend, SpendAddress, SpendReason, GENESIS_CASHNOTE, GENESIS_PK,
+    OfflineTransfer, SignedSpend, SpendAddress, SpendReason, GENESIS_CASHNOTE,
+    GENESIS_OUTPUT_DERIVATION_INDEX,
 };
-use xor_name::XorName;
 
 pub struct MockWallet {
     pub sk: MainSecretKey,
@@ -29,17 +29,15 @@ pub struct MockNetwork {
 
 impl MockNetwork {
     pub fn genesis() -> Result<Self> {
-        let mut rng = rand::thread_rng();
-        let placeholder = SpendAddress::new(XorName::random(&mut rng));
         let mut net = MockNetwork {
-            genesis_spend: placeholder,
+            genesis_spend: SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey()),
             spends: BTreeSet::new(),
             wallets: BTreeMap::new(),
         };
 
         // create genesis wallet
         let genesis_cn = GENESIS_CASHNOTE.clone();
-        let genesis_pk = *GENESIS_PK;
+        let genesis_pk = *GENESIS_CASHNOTE.main_pubkey();
         net.wallets.insert(
             genesis_pk,
             MockWallet {
@@ -47,23 +45,6 @@ impl MockNetwork {
                 cn: vec![genesis_cn],
             },
         );
-
-        // spend genesis
-        let everything = GENESIS_CASHNOTE
-            .value()
-            .map_err(|e| eyre!("invalid genesis cashnote: {e}"))?
-            .as_nano();
-        let spent_addrs = net
-            .send(&genesis_pk, &genesis_pk, everything)
-            .map_err(|e| eyre!("failed to send genesis: {e}"))?;
-        net.genesis_spend = match spent_addrs.as_slice() {
-            [one] => *one,
-            _ => {
-                return Err(eyre!(
-                    "Expected Genesis spend to be unique but got {spent_addrs:?}"
-                ))
-            }
-        };
 
         Ok(net)
     }
@@ -81,7 +62,11 @@ impl MockNetwork {
 
         if balance > 0 {
             let genesis_pk = GENESIS_CASHNOTE.main_pubkey();
-            self.send(genesis_pk, &owner_pk, balance)
+
+            let genesis_sk_main_pubkey = get_genesis_sk().main_pubkey();
+
+            println!("Sending {balance} from genesis {genesis_pk:?} to {owner_pk:?}");
+            self.send(&genesis_sk_main_pubkey, &owner_pk, balance, false)
                 .map_err(|e| eyre!("failed to get money from genesis: {e}"))?;
         }
         Ok(owner_pk)
@@ -92,6 +77,7 @@ impl MockNetwork {
         from: &MainPubkey,
         to: &MainPubkey,
         amount: u64,
+        is_genesis: bool,
     ) -> Result<Vec<SpendAddress>> {
         let mut rng = rand::thread_rng();
         let from_wallet = self
@@ -111,10 +97,17 @@ impl MockNetwork {
             .map(|cn| Ok((cn.clone(), Some(cn.derived_key(&from_wallet.sk)?))))
             .collect::<Result<_>>()
             .map_err(|e| eyre!("could not get cashnotes for transfer: {e}"))?;
+
+        let derivation_index = if is_genesis {
+            GENESIS_OUTPUT_DERIVATION_INDEX
+        } else {
+            DerivationIndex::random(&mut rng)
+        };
+
         let recipient = vec![(
             NanoTokens::from(amount),
             to_wallet.sk.main_pubkey(),
-            DerivationIndex::random(&mut rng),
+            derivation_index,
         )];
         let transfer = OfflineTransfer::new(
             cash_notes_with_keys,
@@ -132,7 +125,15 @@ impl MockNetwork {
                 .iter()
                 .any(|s| s.unique_pubkey() == &cn.unique_pubkey())
         });
-        updated_from_wallet_cns.extend(transfer.change_cash_note);
+        if let Some(ref change_cn) = transfer.change_cash_note {
+            if !updated_from_wallet_cns
+                .iter()
+                .any(|cn| cn.unique_pubkey() == change_cn.unique_pubkey())
+            {
+                updated_from_wallet_cns.extend(transfer.change_cash_note);
+            }
+        }
+
         self.wallets
             .entry(*from)
             .and_modify(|w| w.cn = updated_from_wallet_cns);
