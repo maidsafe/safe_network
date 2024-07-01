@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719823709290,
+  "lastUpdate": 1719839844470,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d9ec7688da70ef480770e345c4d4e0028487e679",
-          "message": "feat(networking): add NodeIssue for tracking bad node shunning",
-          "timestamp": "2024-03-26T03:18:38Z",
-          "tree_id": "143854e787c3b32755e1824e332498d636fa81db",
-          "url": "https://github.com/maidsafe/safe_network/commit/d9ec7688da70ef480770e345c4d4e0028487e679"
-        },
-        "date": 1711425403339,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.316759948549704,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.8661103904206364,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 59.43862827942358,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.09194741400831,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "8b0d0a415d64e7c2cf0f1eb2590cf136103fbfa6",
+          "message": "feat(node): check for double payment from client",
+          "timestamp": "2024-07-01T12:27:58Z",
+          "tree_id": "035d7a8b7b3efe6cb4d9b5c828d046e02f98a025",
+          "url": "https://github.com/maidsafe/safe_network/commit/8b0d0a415d64e7c2cf0f1eb2590cf136103fbfa6"
+        },
+        "date": 1719839838007,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.0743523420363836,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.3863799484986097,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 46.85066475771385,
             "unit": "MiB/s"
           }
         ]
