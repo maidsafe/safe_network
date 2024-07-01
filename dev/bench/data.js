@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719848990036,
+  "lastUpdate": 1719849108359,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "8e780665d8b3758b151fc9029f112021690df835",
-          "message": "feat(transfers): enable client to check if a quote has expired",
-          "timestamp": "2024-03-26T05:48:28Z",
-          "tree_id": "dd4658ebc336632ea0903b184f1bb8538c0ce455",
-          "url": "https://github.com/maidsafe/safe_network/commit/8e780665d8b3758b151fc9029f112021690df835"
-        },
-        "date": 1711434522829,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/8b0d0a415d64e7c2cf0f1eb2590cf136103fbfa6"
         },
         "date": 1719839994303,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "823ae09bdbf99ad2afd5a5a24ea25ef14f83d87e",
+          "message": "docs(nat-detection): doc formatting",
+          "timestamp": "2024-07-01T15:00:42Z",
+          "tree_id": "9e82bb606c7e4c7742fe2bee3d170b1903f4c179",
+          "url": "https://github.com/maidsafe/safe_network/commit/823ae09bdbf99ad2afd5a5a24ea25ef14f83d87e"
+        },
+        "date": 1719849108010,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
