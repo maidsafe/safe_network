@@ -17,7 +17,6 @@ use rand::{seq::SliceRandom, thread_rng};
 #[cfg(feature = "network-contacts")]
 use sn_networking::version::get_network_version;
 use tracing::*;
-#[cfg(feature = "network-contacts")]
 use url::Url;
 
 #[cfg(feature = "network-contacts")]
@@ -30,9 +29,8 @@ lazy_static! {
     };
 }
 
-#[cfg(feature = "network-contacts")]
-// The maximum number of retries to be performed while trying to fetch the network contacts file.
-const MAX_NETWORK_CONTACTS_GET_RETRIES: usize = 3;
+// The maximum number of retries to be performed while trying to get peers from a URL.
+const MAX_RETRIES_ON_GET_PEERS_FROM_URL: usize = 3;
 
 /// The name of the environment variable that can be used to pass peers to the node.
 pub const SAFE_PEERS_ENV: &str = "SAFE_PEERS";
@@ -154,7 +152,7 @@ impl PeersArgs {
 
         info!("Trying to fetch the bootstrap peers from {url}");
 
-        get_bootstrap_peers_from_url(url).await
+        get_peers_from_url(url).await
     }
 }
 
@@ -188,11 +186,8 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
     Err(Error::InvalidPeerAddr)
 }
 
-#[cfg(feature = "network-contacts")]
-/// Get bootstrap peers from the Network contacts file stored in the given URL.
-///
-/// If URL is not provided, the addresses are fetched from the default NETWORK_CONTACTS_URL
-pub async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
+/// Get and parse a list of peers from a URL. The URL should contain one multiaddr per line.
+pub async fn get_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
     let mut retries = 0;
 
     loop {
@@ -203,7 +198,7 @@ pub async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
                 let mut multi_addresses = Vec::new();
                 if response.status().is_success() {
                     let text = response.text().await?;
-                    trace!("Got bootstrap peers from {url}: {text}");
+                    trace!("Got peers from url: {url}: {text}");
                     // example of contacts file exists in resources/network-contacts-examples
                     for addr in text.split('\n') {
                         // ignore empty/last lines
@@ -215,7 +210,7 @@ pub async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
                         multi_addresses.push(parse_peer_addr(addr)?);
                     }
                     if !multi_addresses.is_empty() {
-                        trace!("Successfully got bootstrap peers from URL {multi_addresses:?}");
+                        trace!("Successfully got peers from URL {multi_addresses:?}");
                         return Ok(multi_addresses);
                     } else {
                         return Err(Error::NoMultiAddrObtainedFromNetworkContacts(
@@ -224,25 +219,27 @@ pub async fn get_bootstrap_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
                     }
                 } else {
                     retries += 1;
-                    if retries >= MAX_NETWORK_CONTACTS_GET_RETRIES {
-                        return Err(Error::NetworkContactsUnretrievable(
+                    if retries >= MAX_RETRIES_ON_GET_PEERS_FROM_URL {
+                        return Err(Error::FailedToObtainPeersFromUrl(
                             url.to_string(),
-                            MAX_NETWORK_CONTACTS_GET_RETRIES,
+                            MAX_RETRIES_ON_GET_PEERS_FROM_URL,
                         ));
                     }
                 }
             }
             Err(_) => {
                 retries += 1;
-                if retries >= MAX_NETWORK_CONTACTS_GET_RETRIES {
-                    return Err(Error::NetworkContactsUnretrievable(
+                if retries >= MAX_RETRIES_ON_GET_PEERS_FROM_URL {
+                    return Err(Error::FailedToObtainPeersFromUrl(
                         url.to_string(),
-                        MAX_NETWORK_CONTACTS_GET_RETRIES,
+                        MAX_RETRIES_ON_GET_PEERS_FROM_URL,
                     ));
                 }
             }
         }
-        trace!("Failed to get bootstrap peers from URL, retrying {retries}/{MAX_NETWORK_CONTACTS_GET_RETRIES}");
+        trace!(
+            "Failed to get peers from URL, retrying {retries}/{MAX_RETRIES_ON_GET_PEERS_FROM_URL}"
+        );
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
 }

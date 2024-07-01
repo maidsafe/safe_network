@@ -11,6 +11,8 @@ use crate::{
 };
 use color_eyre::eyre::{bail, OptionExt, Result};
 use libp2p::Multiaddr;
+use rand::seq::SliceRandom;
+use sn_peers_acquisition::get_peers_from_url;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{NatDetectionStatus, NodeRegistry};
 use std::{
@@ -19,14 +21,28 @@ use std::{
     process::{Command, Stdio},
 };
 
+const NAT_DETECTION_SERVERS_LIST_URL: &str =
+    "https://sn-testnet.s3.eu-west-2.amazonaws.com/nat-detection-servers";
+
 pub async fn run_nat_detection(
-    servers: Vec<Multiaddr>,
+    servers: Option<Vec<Multiaddr>>,
     force_run: bool,
     path: Option<PathBuf>,
     url: Option<String>,
     version: Option<String>,
     verbosity: VerbosityLevel,
 ) -> Result<()> {
+    let servers = match servers {
+        Some(servers) => servers,
+        None => {
+            let servers = get_peers_from_url(NAT_DETECTION_SERVERS_LIST_URL.parse()?).await?;
+
+            servers
+                .choose_multiple(&mut rand::thread_rng(), 10)
+                .cloned()
+                .collect::<Vec<_>>()
+        }
+    };
     info!("Running nat detection with servers: {servers:?}");
     let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
 
