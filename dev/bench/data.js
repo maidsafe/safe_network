@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719823707804,
+  "lastUpdate": 1719823709290,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "a86a49a182c52b4b58aec502163a104b7178eee1",
-          "message": "feat: remove gossip code\n\nBREAKING CHANGE: remove gossip as royalties will be collected via DAG",
-          "timestamp": "2024-03-26T09:59:09+09:00",
-          "tree_id": "94cf54d1548132205579ff0bebf1d2e574f0a8d9",
-          "url": "https://github.com/maidsafe/safe_network/commit/a86a49a182c52b4b58aec502163a104b7178eee1"
-        },
-        "date": 1711415541339,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6736,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 38525,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "d9ec7688da70ef480770e345c4d4e0028487e679",
           "message": "feat(networking): add NodeIssue for tracking bad node shunning",
           "timestamp": "2024-03-26T03:18:38Z",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 29455,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "c81344290068498d99e804e400a0cdca9b4ae216",
+          "message": "fix(manager): use default nat detection server list if none is provided",
+          "timestamp": "2024-07-01T07:57:47Z",
+          "tree_id": "5f6cb0e328ec04f0ce96b4ee19e8b063842b415a",
+          "url": "https://github.com/maidsafe/safe_network/commit/c81344290068498d99e804e400a0cdca9b4ae216"
+        },
+        "date": 1719823709045,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6100,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 29197,
             "unit": "ms"
           },
           {
