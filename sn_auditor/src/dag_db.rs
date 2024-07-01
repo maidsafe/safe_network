@@ -444,17 +444,32 @@ impl SpendDagDb {
         }
         beta_tracking.total_royalties.extend(royalties);
 
+        let addr = spend.address();
+        let amount = spend.spend.amount;
+
         // check for beta rewards reason
         let user_name_hash = match spend.reason().get_sender_hash(sk) {
             Some(n) => n,
             None => {
-                return;
+                if let Some(default_user_name_hash) =
+                    spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
+                {
+                    warn!("With default key, got forwarded reward of {amount} at {addr:?}");
+                    println!("With default key, got forwarded reward of {amount} at {addr:?}");
+                    default_user_name_hash
+                } else {
+                    warn!(
+                        "Can't descrypt discord_id from {addr:?} with compile key nor default key"
+                    );
+                    println!(
+                        "Can't descrypt discord_id from {addr:?} with compile key nor default key"
+                    );
+                    return;
+                }
             }
         };
 
         // add to local rewards
-        let addr = spend.address();
-        let amount = spend.spend.amount;
         let beta_participants_read = self.beta_participants.read().await;
 
         if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
@@ -470,7 +485,8 @@ impl SpendDagDb {
                 spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
             {
                 if let Some(user_name) = beta_participants_read.get(&default_user_name_hash) {
-                    warn!("With default key, got forwarded reward {amount} from {user_name} of {amount} at {addr:?}");
+                    warn!("With default key, got forwarded reward from {user_name} of {amount} at {addr:?}");
+                    println!("With default key, got forwarded reward from {user_name} of {amount} at {addr:?}");
                     beta_tracking
                         .forwarded_payments
                         .entry(user_name.to_owned())
