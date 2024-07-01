@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719839996399,
+  "lastUpdate": 1719839998112,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d9ec7688da70ef480770e345c4d4e0028487e679",
-          "message": "feat(networking): add NodeIssue for tracking bad node shunning",
-          "timestamp": "2024-03-26T03:18:38Z",
-          "tree_id": "143854e787c3b32755e1824e332498d636fa81db",
-          "url": "https://github.com/maidsafe/safe_network/commit/d9ec7688da70ef480770e345c4d4e0028487e679"
-        },
-        "date": 1711425518909,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5970,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33922,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "8b0d0a415d64e7c2cf0f1eb2590cf136103fbfa6",
+          "message": "feat(node): check for double payment from client",
+          "timestamp": "2024-07-01T12:27:58Z",
+          "tree_id": "035d7a8b7b3efe6cb4d9b5c828d046e02f98a025",
+          "url": "https://github.com/maidsafe/safe_network/commit/8b0d0a415d64e7c2cf0f1eb2590cf136103fbfa6"
+        },
+        "date": 1719839997763,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 8863,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 45155,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
