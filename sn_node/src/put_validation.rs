@@ -503,9 +503,28 @@ impl Node {
 
         // unpack transfer
         trace!("Unpacking incoming Transfers for record {pretty_key}");
-        let (received_fee, cash_notes, royalties_cash_notes_r) = self
+        let (received_fee, mut cash_notes, royalties_cash_notes_r) = self
             .cash_notes_from_transfers(payment.transfers, &wallet, pretty_key.clone())
             .await?;
+
+        // check for cash notes that we have already spent
+        // this can happen in cases where the client retries a failed PUT after we have already used the cash note
+        cash_notes.retain(|cash_note| {
+            let spend_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
+            let already_spent = matches!(wallet.get_confirmed_spend(spend_addr), Ok(Some(_spend)));
+            if already_spent {
+                warn!(
+                    "Double spend {} detected for record payment {pretty_key}",
+                    cash_note.unique_pubkey()
+                );
+            }
+            // retain the `CashNote` if it's not already spent
+            !already_spent
+        });
+        if cash_notes.is_empty() {
+            info!("All incoming cash notes were already spent, no need to further process");
+            return Err(Error::ReusedPayment);
+        }
 
         trace!("Received payment of {received_fee:?} for {pretty_key}");
 

@@ -71,6 +71,8 @@ pub enum Error {
         paid: NanoTokens,
         expected: NanoTokens,
     },
+    #[error("A payment we received contains cash notes already confirmed to be spent")]
+    ReusedPayment,
 
     // ---------- Initialize Errors
     #[error("Failed to generate a reward key")]
