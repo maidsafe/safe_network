@@ -39,6 +39,7 @@ indicatif = { version = "0.17.5", features = ["tokio"] }
 libp2p = { version = "0.53", features = [] }
 libp2p-identity = { version = "0.2.7", features = ["rand"] }
 prost = { version = "0.9" }
+rand = "0.8.5"
 semver = "1.0.20"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

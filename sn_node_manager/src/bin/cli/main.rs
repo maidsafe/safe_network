@@ -673,13 +673,14 @@ pub enum NatDetectionSubCmd {
         /// Useful for running NAT detection using a custom built binary.
         #[clap(long)]
         path: Option<PathBuf>,
-        /// Provide NAT servers in the form of a multiaddr or an address/port pair.
+        /// Provide NAT servers in the form of a multiaddr or an address/port pair. If no servers are provided,
+        /// the default servers will be used.
         ///
         /// We attempt to establish connections to these servers to determine our own NAT status.
         ///
         /// The argument can be used multiple times.
-        #[clap(long, required = true, value_delimiter = ',')]
-        servers: Vec<Multiaddr>,
+        #[clap(long, value_delimiter = ',')]
+        servers: Option<Vec<Multiaddr>>,
         /// Provide a NAT detection binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.

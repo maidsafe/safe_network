@@ -18,10 +18,9 @@ use crate::{
     },
 };
 use color_eyre::eyre::{OptionExt, Result};
-use rand::seq::SliceRandom;
 use ratatui::{prelude::*, widgets::*};
 use sn_node_manager::{config::get_node_registry_path, VerbosityLevel};
-use sn_peers_acquisition::{get_bootstrap_peers_from_url, PeersArgs};
+use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{
     control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
 };
@@ -34,8 +33,6 @@ use tokio::sync::mpsc::UnboundedSender;
 
 const NODE_START_INTERVAL: usize = 10;
 const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
-const NAT_DETECTION_SERVERS_LIST_URL: &str =
-    "https://sn-testnet.s3.eu-west-2.amazonaws.com/nat-detection-servers";
 /// If nat detection fails for more than 3 times, we don't want to waste time running during every node start.
 const MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION: usize = 3;
 
@@ -613,14 +610,8 @@ fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
 }
 
 async fn run_nat_detection_process() -> Result<()> {
-    let servers = get_bootstrap_peers_from_url(NAT_DETECTION_SERVERS_LIST_URL.parse()?).await?;
-    let servers = servers
-        .choose_multiple(&mut rand::thread_rng(), 10)
-        .cloned()
-        .collect::<Vec<_>>();
-    info!("Running nat detection with servers: {servers:?}");
     sn_node_manager::cmd::nat_detection::run_nat_detection(
-        servers,
+        None,
         true,
         None,
         None,
