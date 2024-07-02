@@ -9,8 +9,18 @@ on:
         required: true
         default: main
 
+# Copied from `release.yml`
+# During the build step, the env variable has to be manually sent to the containers for cross platform builds.
+# Update the Justfile as well.
 env:
+  RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
   JUST_BIN_URL: https://github.com/casey/just/releases/download/1.25.2/just-1.25.2-x86_64-unknown-linux-musl.tar.gz
+  WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
+  GENESIS_PK: ${{ secrets.STABLE_GENESIS_PK }}
+  GENESIS_SK: ${{ secrets.STABLE_GENESIS_SK }}
+  FOUNDATION_PK: ${{ secrets.STABLE_FOUNDATION_PK }}
+  NETWORK_ROYALTIES_PK: ${{ secrets.STABLE_NETWORK_ROYALTIES_PK }}
+  PAYMENT_FORWARD_PK: ${{ secrets.STABLE_REWARD_FORWARDING_PK }}
 
 jobs:
   build:
@@ -36,9 +46,10 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
       - uses: dtolnay/rust-toolchain@stable
-      # It's quite slow to install just by building it, but here we need a cross-platform solution.
+      # cargo-binstall will try and use pre-built binaries if they are available (also speeds up installing `cross`)
+      - uses: cargo-bins/cargo-binstall@main
       - shell: bash
-        run: cargo install just
+        run: cargo binstall --no-confirm just
 
       - shell: bash
         run: just build-release-artifacts "${{ matrix.target }}"
