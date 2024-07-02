@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719934400360,
+  "lastUpdate": 1719934401767,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "9fc56fbb0e0a4ce18c649ac9cd18d0b7f59310f1",
-          "message": "chore: refresh node registry before commands\n\nThe node registry is updated to the best of our ability before we run the `start`, `stop`, `remove`\nor `upgrade` commands.\n\nHere is an example of why this should apply. If we start a service, the node registry now stores the\nPID for the process that is started by the service. It's possible for a user to kill the process\noutside of both the node manager and the OS service infrastructure. However, our service definitions\nhave a restart policy, meaning when the user kills the process, the service infrastructure will\nstart another one. In this scenario, the node registry now has a PID for a dead process. So if we\nthen use the node manager to try and stop the service, it determines there is no process with the\ndead PID, and declares the service has already been stopped.\n\nThe solution is to refresh the registry and get the most up-to-date status before running any of the\ncontrol commands.",
-          "timestamp": "2024-03-26T12:09:06Z",
-          "tree_id": "7d94347c525c29aa26163421c6e884489bbac400",
-          "url": "https://github.com/maidsafe/safe_network/commit/9fc56fbb0e0a4ce18c649ac9cd18d0b7f59310f1"
-        },
-        "date": 1711457533813,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 186,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "19fb1cb2cb3ece2a84ada5d127e7792c6542ad04",
+          "message": "feat(network)!: include PKs in the version str\n\nBREAKING CHANGE: this will make new launched network incompatible with\nold client or node.",
+          "timestamp": "2024-07-02T16:19:11+01:00",
+          "tree_id": "6b0748b9873d0e2a0c20b95cf23075c763c8e533",
+          "url": "https://github.com/maidsafe/safe_network/commit/19fb1cb2cb3ece2a84ada5d127e7792c6542ad04"
+        },
+        "date": 1719934401415,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 199,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
