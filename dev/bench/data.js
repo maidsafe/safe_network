@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719954145969,
+  "lastUpdate": 1719954147431,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "5556bbb1543970686e9925bc3873d2f3c1f4c8e4",
-          "message": "fix(cli): files should be chunked before checking if the chunks are empty",
-          "timestamp": "2024-03-26T13:29:04Z",
-          "tree_id": "bcb45120d53a42a8a2e88fc1f7844f5597d639e6",
-          "url": "https://github.com/maidsafe/safe_network/commit/5556bbb1543970686e9925bc3873d2f3c1f4c8e4"
-        },
-        "date": 1711462149254,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 189,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "0200e71f2598e59136cd07c45d85b58bcfdee631",
+          "message": "chore: remove unused var",
+          "timestamp": "2024-07-02T21:47:32+01:00",
+          "tree_id": "342383a1a56063973e05b3199fcadef686924a1f",
+          "url": "https://github.com/maidsafe/safe_network/commit/0200e71f2598e59136cd07c45d85b58bcfdee631"
+        },
+        "date": 1719954147136,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
