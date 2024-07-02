@@ -334,7 +334,7 @@ impl SpendDagDb {
     ) {
         let mut beta_tracking = self.beta_tracking.write().await;
         beta_tracking.processed_spends += 1;
-        beta_tracking.total_accumulated_utxo += spend.spend.spent_tx.outputs.len() as u64;
+        beta_tracking.total_accumulated_utxo += spend.spend.descendants.len() as u64;
         beta_tracking.total_on_track_utxo += utxos_for_further_track;
 
         // check for beta rewards reason
@@ -347,7 +347,7 @@ impl SpendDagDb {
 
         // add to local rewards
         let addr = spend.address();
-        let amount = spend.spend.amount;
+        let amount = spend.spend.amount();
         let beta_participants_read = self.beta_participants.read().await;
 
         if let Some(user_name) = beta_participants_read.get(&user_name_hash) {

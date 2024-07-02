@@ -9,8 +9,7 @@
 use crate::{
     cashnotes::{CashNoteBuilder, UnsignedTransfer},
     rng, CashNote, DerivationIndex, DerivedSecretKey, Input, MainPubkey, NanoTokens, Result,
-    SignedSpend, SpendReason, Transaction, TransactionBuilder, TransferError, UniquePubkey,
-    NETWORK_ROYALTIES_PK,
+    SignedSpend, SpendReason, TransactionBuilder, TransferError, UniquePubkey,
 };
 
 use serde::{Deserialize, Serialize};
@@ -25,9 +24,6 @@ pub type CashNotesAndSecretKey = Vec<(CashNote, Option<DerivedSecretKey>)>;
 /// of tokens from one or more cash_notes, into one or more new cash_notes.
 #[derive(custom_debug::Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OfflineTransfer {
-    /// This is the transaction where all the below
-    /// spends were made and cash_notes created.
-    pub tx: Transaction,
     /// The cash_notes that were created containing
     /// the tokens sent to respective recipient.
     #[debug(skip)]
@@ -43,12 +39,10 @@ pub struct OfflineTransfer {
 impl OfflineTransfer {
     pub fn from_transaction(
         signed_spends: BTreeSet<SignedSpend>,
-        tx: Transaction,
         change_id: UniquePubkey,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
     ) -> Result<Self> {
-        let cash_note_builder =
-            CashNoteBuilder::new(tx.clone(), output_details, signed_spends.clone());
+        let cash_note_builder = CashNoteBuilder::new(output_details, signed_spends.clone());
 
         // Perform validations of input tx and signed spends,
         // as well as building the output CashNotes.
@@ -69,7 +63,6 @@ impl OfflineTransfer {
         });
 
         Ok(Self {
-            tx,
             cash_notes_for_recipient: created_cash_notes,
             change_cash_note,
             all_spend_requests: signed_spends.into_iter().collect(),
@@ -154,18 +147,10 @@ pub fn create_unsigned_transfer(
         change: (change_amount, change_to),
     };
 
-    // gather the network_royalties derivation indexes
-    let network_royalties: Vec<DerivationIndex> = selected_inputs
-        .recipients
-        .iter()
-        .filter(|(_, main_pubkey, _)| *main_pubkey == *NETWORK_ROYALTIES_PK)
-        .map(|(_, _, derivation_index)| *derivation_index)
-        .collect();
-
-    let (tx_builder, _src_txs, change_id) = create_transaction_builder_with(selected_inputs)?;
+    let (tx_builder, change_id) = create_transaction_builder_with(selected_inputs)?;
 
     // Get the unsigned Spends.
-    tx_builder.build_unsigned_transfer(reason_hash, network_royalties, change_id)
+    tx_builder.build_unsigned_transfer(reason_hash, change_id)
 }
 
 /// Select the necessary number of cash_notes from those that we were passed.
@@ -231,18 +216,13 @@ fn select_inputs(
 
 fn create_transaction_builder_with(
     selected_inputs: TransferInputs,
-) -> Result<(
-    TransactionBuilder,
-    BTreeMap<crate::UniquePubkey, Transaction>,
-    crate::UniquePubkey,
-)> {
+) -> Result<(TransactionBuilder, crate::UniquePubkey)> {
     let TransferInputs {
         change: (change, change_to),
         ..
     } = selected_inputs;
 
     let mut inputs = vec![];
-    let mut src_txs = BTreeMap::new();
     for (cash_note, derived_key) in selected_inputs.cash_notes_to_spend {
         let token = match cash_note.value() {
             Ok(token) => token,
@@ -258,10 +238,9 @@ fn create_transaction_builder_with(
         inputs.push((
             input,
             derived_key,
-            cash_note.parent_tx.clone(),
             cash_note.derivation_index,
+            cash_note.unique_pubkey(),
         ));
-        let _ = src_txs.insert(cash_note.unique_pubkey(), cash_note.parent_tx);
     }
 
     // Build the transaction and create change cash_note if needed
@@ -275,7 +254,7 @@ fn create_transaction_builder_with(
         tx_builder = tx_builder.add_output(change, change_to, derivation_index);
     }
 
-    Ok((tx_builder, src_txs, change_id))
+    Ok((tx_builder, change_id))
 }
 
 /// The tokens of the input cash_notes will be transfered to the
@@ -288,37 +267,16 @@ fn create_offline_transfer_with(
     selected_inputs: TransferInputs,
     input_reason: SpendReason,
 ) -> Result<OfflineTransfer> {
-    // gather the network_royalties derivation indexes
-    let network_royalties: Vec<DerivationIndex> = selected_inputs
-        .recipients
-        .iter()
-        .filter(|(_, main_pubkey, _)| *main_pubkey == *NETWORK_ROYALTIES_PK)
-        .map(|(_, _, derivation_index)| *derivation_index)
-        .collect();
-
-    let (tx_builder, src_txs, change_id) = create_transaction_builder_with(selected_inputs)?;
+    let (tx_builder, change_id) = create_transaction_builder_with(selected_inputs)?;
 
     // Finalize the tx builder to get the cash_note builder.
-    let cash_note_builder = tx_builder.build(input_reason, network_royalties);
-
-    let tx = cash_note_builder.spent_tx.clone();
+    let cash_note_builder = tx_builder.build(input_reason);
 
     let signed_spends: BTreeMap<_, _> = cash_note_builder
         .signed_spends()
         .into_iter()
         .map(|spend| (spend.unique_pubkey(), spend))
         .collect();
-
-    // We must have a source transaction for each signed spend (i.e. the tx where the cash_note was created).
-    // These are required to upload the spends to the network.
-    if !signed_spends
-        .iter()
-        .all(|(unique_pubkey, _)| src_txs.contains_key(*unique_pubkey))
-    {
-        return Err(TransferError::CashNoteReissueFailed(
-            "Not all signed spends could be matched to a source cash_note transaction.".to_string(),
-        ));
-    }
 
     let mut all_spend_requests = vec![];
     for (_, signed_spend) in signed_spends.into_iter() {
@@ -344,7 +302,6 @@ fn create_offline_transfer_with(
     });
 
     Ok(OfflineTransfer {
-        tx,
         cash_notes_for_recipient: created_cash_notes,
         change_cash_note,
         all_spend_requests,

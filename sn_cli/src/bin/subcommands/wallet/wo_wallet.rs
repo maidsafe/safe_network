@@ -27,6 +27,12 @@ use std::{
 };
 use walkdir::WalkDir;
 
+type SignedTx = (
+    BTreeSet<SignedSpend>,
+    BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
+    UniquePubkey,
+);
+
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
@@ -249,42 +255,24 @@ async fn broadcast_signed_spends(
     verify_store: bool,
     force: bool,
 ) -> Result<()> {
-    let (signed_spends, output_details, change_id): (
-        BTreeSet<SignedSpend>,
-        BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
-        UniquePubkey,
-    ) = rmp_serde::from_slice(&hex::decode(signed_tx)?)?;
+    let (signed_spends, output_details, change_id): SignedTx =
+        rmp_serde::from_slice(&hex::decode(signed_tx)?)?;
 
     println!("The signed transaction has been successfully decoded:");
-    let mut transaction = None;
     for (i, signed_spend) in signed_spends.iter().enumerate() {
         println!("\nSpending input #{i}:");
         println!("\tKey: {}", signed_spend.unique_pubkey().to_hex());
         println!("\tAmount: {}", signed_spend.token());
-        let linked_tx = signed_spend.spent_tx();
-        if let Some(ref tx) = transaction {
-            if tx != &linked_tx {
-                bail!("Transaction seems corrupted, not all Spends (inputs) refer to the same transaction");
-            }
-        } else {
-            transaction = Some(linked_tx);
-        }
 
-        if let Err(err) = signed_spend.verify(signed_spend.spent_tx_hash()) {
+        if let Err(err) = signed_spend.verify() {
             bail!("Transaction is invalid: {err:?}");
         }
-    }
 
-    let tx = if let Some(tx) = transaction {
-        for (i, output) in tx.outputs.iter().enumerate() {
-            println!("\nOutput #{i}:");
-            println!("\tKey: {}", output.unique_pubkey.to_hex());
-            println!("\tAmount: {}", output.amount);
+        for (descendant, (amount, _purpose)) in signed_spend.spend.descendants.iter() {
+            println!("\tOutput Key: {}", descendant.to_hex());
+            println!("\tAmount: {amount}");
         }
-        tx
-    } else {
-        bail!("Transaction is corrupted, no transaction information found.");
-    };
+    }
 
     if !force {
         println!(
@@ -301,7 +289,7 @@ async fn broadcast_signed_spends(
     }
 
     println!("Broadcasting the transaction to the network...");
-    let transfer = OfflineTransfer::from_transaction(signed_spends, tx, change_id, output_details)?;
+    let transfer = OfflineTransfer::from_transaction(signed_spends, change_id, output_details)?;
 
     // return the first CashNote (assuming there is only one because we only sent to one recipient)
     let cash_note = match &transfer.cash_notes_for_recipient[..] {

@@ -12,7 +12,8 @@ use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 use sn_transfers::{
-    is_genesis_spend, CashNoteRedemption, Hash, NanoTokens, SignedSpend, SpendAddress,
+    is_genesis_spend, CashNoteRedemption, Hash, NanoTokens, OutputPurpose, SignedSpend,
+    SpendAddress,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -170,8 +171,8 @@ impl SpendDag {
         };
 
         // link to descendants
-        for descendant in spend.spend.spent_tx.outputs.iter() {
-            let descendant_addr = SpendAddress::from_unique_pubkey(&descendant.unique_pubkey);
+        for (descendant, (amount, _purpose)) in spend.spend.descendants.iter() {
+            let descendant_addr = SpendAddress::from_unique_pubkey(descendant);
 
             // add descendant if not already in dag
             let spends_at_addr = self.spends.entry(descendant_addr).or_insert_with(|| {
@@ -182,8 +183,7 @@ impl SpendDag {
             // link to descendant
             for idx in spends_at_addr.indexes() {
                 let descendant_idx = NodeIndex::new(idx);
-                self.dag
-                    .update_edge(new_node_idx, descendant_idx, descendant.amount);
+                self.dag.update_edge(new_node_idx, descendant_idx, *amount);
             }
         }
 
@@ -194,8 +194,8 @@ impl SpendDag {
 
         // link to ancestors
         const PENDING_AMOUNT: NanoTokens = NanoTokens::from(0);
-        for ancestor in spend.spend.parent_tx.inputs.iter() {
-            let ancestor_addr = SpendAddress::from_unique_pubkey(&ancestor.unique_pubkey);
+        for ancestor in spend.spend.ancestors.iter() {
+            let ancestor_addr = SpendAddress::from_unique_pubkey(ancestor);
 
             // add ancestor if not already in dag
             let spends_at_addr = self.spends.entry(ancestor_addr).or_insert_with(|| {
@@ -214,26 +214,28 @@ impl SpendDag {
                     let ancestor_idx = NodeIndex::new(*idx);
                     let ancestor_given_amount = ancestor_spend
                         .spend
-                        .spent_tx
-                        .outputs
+                        .descendants
                         .iter()
-                        .find(|o| o.unique_pubkey == spend.spend.unique_pubkey)
-                        .map(|o| o.amount)
+                        .find(|(descendant, (_amount, _purpose))| {
+                            **descendant == spend.spend.unique_pubkey
+                        })
+                        .map(|(_descendant, (amount, _purpose))| *amount)
                         .unwrap_or(PENDING_AMOUNT);
                     self.dag
                         .update_edge(ancestor_idx, new_node_idx, ancestor_given_amount);
                 }
                 DagEntry::DoubleSpend(multiple_ancestors) => {
                     for (ancestor_spend, ancestor_idx) in multiple_ancestors {
-                        if ancestor_spend.spend.spent_tx.hash() == spend.spend.parent_tx.hash() {
+                        if ancestor_spend.address() == spend.address() {
                             let ancestor_idx = NodeIndex::new(*ancestor_idx);
                             let ancestor_given_amount = ancestor_spend
                                 .spend
-                                .spent_tx
-                                .outputs
+                                .descendants
                                 .iter()
-                                .find(|o| o.unique_pubkey == spend.spend.unique_pubkey)
-                                .map(|o| o.amount)
+                                .find(|(descendant, (_amount, _purpose))| {
+                                    **descendant == spend.spend.unique_pubkey
+                                })
+                                .map(|(_descendant, (amount, _purpose))| *amount)
                                 .unwrap_or(PENDING_AMOUNT);
                             self.dag
                                 .update_edge(ancestor_idx, new_node_idx, ancestor_given_amount);
@@ -308,7 +310,7 @@ impl SpendDag {
                         format!("{sender_hash:?}")
                     };
                     let holders = statistics.entry(sender).or_default();
-                    holders.push(signed_spend.spend.amount);
+                    holders.push(signed_spend.spend.amount());
                 }
             }
         }
@@ -404,9 +406,11 @@ impl SpendDag {
         let spends = self.all_spends();
         let mut royalties = Vec::new();
         for s in spends {
-            for derivation_idx in s.spend.network_royalties.iter() {
-                let spend_addr = SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey);
-                royalties.push(CashNoteRedemption::new(*derivation_idx, spend_addr));
+            for (_descendant, (_amount, purpose)) in s.spend.descendants.iter() {
+                if let OutputPurpose::RoyaltyFee(derivation_index) = purpose {
+                    let spend_addr = SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey);
+                    royalties.push(CashNoteRedemption::new(*derivation_index, spend_addr));
+                }
             }
         }
         Ok(royalties)
@@ -439,8 +443,8 @@ impl SpendDag {
         let addr = spend.address();
         let mut ancestors = BTreeSet::new();
         let mut faults = BTreeSet::new();
-        for input in spend.spend.parent_tx.inputs.iter() {
-            let ancestor_addr = SpendAddress::from_unique_pubkey(&input.unique_pubkey);
+        for ancestor in spend.spend.ancestors.iter() {
+            let ancestor_addr = SpendAddress::from_unique_pubkey(ancestor);
             match self.spends.get(&ancestor_addr) {
                 Some(DagEntry::Spend(ancestor_spend, _)) => {
                     ancestors.insert(*ancestor_spend.clone());
@@ -457,7 +461,7 @@ impl SpendDag {
                     });
                     let actual_ancestor: Vec<_> = multiple_ancestors
                         .iter()
-                        .filter(|(s, _)| s.spend.spent_tx.hash() == spend.spend.parent_tx.hash())
+                        .filter(|(s, _)| s.address() == spend.address())
                         .map(|(s, _)| s.clone())
                         .collect();
                     match actual_ancestor.as_slice() {
@@ -498,11 +502,11 @@ impl SpendDag {
             };
             let (spends, indexes) = (dag_entry.spends(), dag_entry.indexes());
 
-            // get descendants via Tx data
-            let descendants_via_tx: BTreeSet<SpendAddress> = spends
+            // get descendants via spend
+            let descendants_via_spend: BTreeSet<SpendAddress> = spends
                 .into_iter()
-                .flat_map(|s| s.spend.spent_tx.outputs.to_vec())
-                .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
+                .flat_map(|s| s.spend.descendants.keys())
+                .map(SpendAddress::from_unique_pubkey)
                 .collect();
 
             // get descendants via DAG
@@ -516,14 +520,14 @@ impl SpendDag {
                 .collect();
 
             // report inconsistencies
-            if descendants_via_dag != descendants_via_tx.iter().collect() {
+            if descendants_via_dag != descendants_via_spend.iter().collect() {
                 if matches!(dag_entry, DagEntry::NotGatheredYet(_)) {
                     debug!("Spend at {current_addr:?} was not gathered yet and has children refering to it, continuing traversal through those children...");
                 } else {
                     warn!("Incoherent DAG at: {current_addr:?}");
                     return Err(DagError::IncoherentDag(
                         *current_addr,
-                        format!("descendants via DAG: {descendants_via_dag:?} do not match descendants via TX: {descendants_via_tx:?}")
+                        format!("descendants via DAG: {descendants_via_dag:?} do not match descendants via spend: {descendants_via_spend:?}")
                     ));
                 }
             }
@@ -574,10 +578,11 @@ impl SpendDag {
         for spend in spends {
             let gathered_descendants = spend
                 .spend
-                .spent_tx
-                .outputs
+                .descendants
                 .iter()
-                .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
+                .map(|(descendant, (_amount, _purpose))| {
+                    SpendAddress::from_unique_pubkey(descendant)
+                })
                 .filter_map(|a| self.spends.get(&a))
                 .filter_map(|s| {
                     if matches!(s, DagEntry::NotGatheredYet(_)) {
@@ -663,8 +668,8 @@ impl SpendDag {
                 recorded_faults.insert(SpendFault::DoubleSpend(*addr));
                 let direct_descendants: BTreeSet<SpendAddress> = spends
                     .iter()
-                    .flat_map(|s| s.spend.spent_tx.outputs.iter())
-                    .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
+                    .flat_map(|s| s.spend.descendants.keys())
+                    .map(SpendAddress::from_unique_pubkey)
                     .collect();
                 debug!("Making the direct descendants of the double spend at {addr:?} as faulty: {direct_descendants:?}");
                 for a in direct_descendants.iter() {
@@ -709,14 +714,11 @@ impl SpendDag {
         Ok(recorded_faults)
     }
 
-    /// Verifies a single transaction and returns resulting errors and DAG poisoning spread
+    /// Verifies a single spend and returns resulting errors and DAG poisoning spread
     fn verify_parent_tx(&self, spend: &SignedSpend) -> Result<BTreeSet<SpendFault>, DagError> {
         let addr = spend.address();
         let mut recorded_faults = BTreeSet::new();
-        debug!(
-            "Verifying transaction {} at: {addr:?}",
-            spend.spend.parent_tx.hash().to_hex()
-        );
+        debug!("Verifying spend at: {addr:?}");
 
         // skip if spend matches genesis
         if is_genesis_spend(spend) {
@@ -743,11 +745,7 @@ impl SpendDag {
         recorded_faults.extend(faults);
 
         // verify the tx
-        if let Err(e) = spend
-            .spend
-            .parent_tx
-            .verify_against_inputs_spent(&ancestor_spends)
-        {
+        if let Err(e) = spend.verify_parent_spends(&ancestor_spends) {
             warn!("Parent Tx verfication failed for spend at: {addr:?}: {e}");
             recorded_faults.insert(SpendFault::InvalidTransaction(addr, format!("{e}")));
             let poison = format!("ancestor transaction was poisoned at: {addr:?}: {e}");
@@ -765,11 +763,11 @@ impl SpendDag {
         poison: String,
     ) -> Result<BTreeSet<SpendFault>, DagError> {
         let mut recorded_faults = BTreeSet::new();
-        let spent_tx = spend.spent_tx();
-        let direct_descendants = spent_tx
-            .outputs
+        let direct_descendants = spend
+            .spend
+            .descendants
             .iter()
-            .map(|o| SpendAddress::from_unique_pubkey(&o.unique_pubkey))
+            .map(|(descendant, (_amount, _purpose))| SpendAddress::from_unique_pubkey(descendant))
             .collect::<BTreeSet<_>>();
         let mut all_descendants = direct_descendants
             .iter()

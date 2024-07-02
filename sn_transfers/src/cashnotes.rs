@@ -11,19 +11,21 @@ mod builder;
 mod cashnote;
 mod hash;
 mod nano;
+mod output_purpose;
 mod signed_spend;
 mod spend_reason;
 mod transaction;
 mod unique_keys;
 
 pub(crate) use builder::{CashNoteBuilder, TransactionBuilder};
-pub(crate) use transaction::{Input, Output};
+pub(crate) use transaction::Input;
 
 pub use address::SpendAddress;
 pub use builder::UnsignedTransfer;
 pub use cashnote::CashNote;
 pub use hash::Hash;
 pub use nano::NanoTokens;
+pub use output_purpose::OutputPurpose;
 pub use signed_spend::{SignedSpend, Spend};
 pub use spend_reason::SpendReason;
 pub use transaction::Transaction;
@@ -32,8 +34,31 @@ pub use unique_keys::{DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretK
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::TransferError;
-    use transaction::Output;
+    use crate::{cashnotes::output_purpose::OutputPurpose, TransferError};
+
+    use std::collections::{BTreeMap, BTreeSet};
+
+    fn generate_parent_spends(
+        derived_sk: DerivedSecretKey,
+        amount: u64,
+        output: UniquePubkey,
+    ) -> BTreeSet<SignedSpend> {
+        let mut descendants = BTreeMap::new();
+        let _ = descendants.insert(output, (NanoTokens::from(amount), OutputPurpose::default()));
+        let spend = Spend {
+            unique_pubkey: derived_sk.unique_pubkey(),
+            reason: SpendReason::default(),
+            ancestors: BTreeSet::new(),
+            descendants,
+        };
+        let mut parent_spends = BTreeSet::new();
+        let derived_key_sig = derived_sk.sign(&spend.to_bytes_for_signing());
+        let _ = parent_spends.insert(SignedSpend {
+            spend,
+            derived_key_sig,
+        });
+        parent_spends
+    }
 
     #[test]
     fn from_hex_should_deserialize_a_hex_encoded_string_to_a_cashnote() -> Result<(), TransferError>
@@ -43,14 +68,16 @@ pub(crate) mod tests {
         let main_key = MainSecretKey::random_from_rng(&mut rng);
         let derivation_index = DerivationIndex::random(&mut rng);
         let derived_key = main_key.derive_key(&derivation_index);
-        let tx = Transaction {
-            inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-        };
+
+        let parent_spends = generate_parent_spends(
+            main_key.derive_key(&DerivationIndex::random(&mut rng)),
+            amount,
+            derived_key.unique_pubkey(),
+        );
+
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
-            parent_tx: tx,
-            parent_spends: Default::default(),
+            parent_spends,
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -70,14 +97,16 @@ pub(crate) mod tests {
         let main_key = MainSecretKey::random_from_rng(&mut rng);
         let derivation_index = DerivationIndex::random(&mut rng);
         let derived_key = main_key.derive_key(&derivation_index);
-        let tx = Transaction {
-            inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-        };
+
+        let parent_spends = generate_parent_spends(
+            main_key.derive_key(&DerivationIndex::random(&mut rng)),
+            amount,
+            derived_key.unique_pubkey(),
+        );
+
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
-            parent_tx: tx,
-            parent_spends: Default::default(),
+            parent_spends,
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -100,15 +129,15 @@ pub(crate) mod tests {
         let derivation_index = DerivationIndex::random(&mut rng);
         let derived_key = main_key.derive_key(&derivation_index);
 
-        let tx = Transaction {
-            inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-        };
+        let parent_spends = generate_parent_spends(
+            main_key.derive_key(&DerivationIndex::random(&mut rng)),
+            amount,
+            derived_key.unique_pubkey(),
+        );
 
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
-            parent_tx: tx,
-            parent_spends: Default::default(),
+            parent_spends,
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
@@ -125,20 +154,13 @@ pub(crate) mod tests {
     #[test]
     fn test_cashnote_without_inputs_fails_verification() -> Result<(), TransferError> {
         let mut rng = crate::rng::from_seed([0u8; 32]);
-        let amount = 100;
 
         let main_key = MainSecretKey::random_from_rng(&mut rng);
         let derivation_index = DerivationIndex::random(&mut rng);
         let derived_key = main_key.derive_key(&derivation_index);
 
-        let tx = Transaction {
-            inputs: vec![],
-            outputs: vec![Output::new(derived_key.unique_pubkey(), amount)],
-        };
-
         let cashnote = CashNote {
             unique_pubkey: derived_key.unique_pubkey(),
-            parent_tx: tx,
             parent_spends: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,

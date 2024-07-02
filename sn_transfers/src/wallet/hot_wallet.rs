@@ -23,8 +23,8 @@ use crate::{
     cashnotes::UnsignedTransfer,
     transfers::{CashNotesAndSecretKey, OfflineTransfer},
     CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey,
-    NanoTokens, SignedSpend, Spend, SpendAddress, SpendReason, Transaction, Transfer, UniquePubkey,
-    WalletError, NETWORK_ROYALTIES_PK,
+    NanoTokens, SignedSpend, Spend, SpendAddress, SpendReason, Transfer, UniquePubkey, WalletError,
+    NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -352,12 +352,10 @@ impl HotWallet {
     pub fn prepare_signed_transfer(
         &mut self,
         signed_spends: BTreeSet<SignedSpend>,
-        tx: Transaction,
         change_id: UniquePubkey,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
     ) -> Result<Vec<CashNote>> {
-        let transfer =
-            OfflineTransfer::from_transaction(signed_spends, tx, change_id, output_details)?;
+        let transfer = OfflineTransfer::from_transaction(signed_spends, change_id, output_details)?;
 
         let created_cash_notes = transfer.cash_notes_for_recipient.clone();
 
@@ -575,10 +573,9 @@ impl HotWallet {
     ) -> Result<()> {
         // First of all, update client local state.
         let spent_unique_pubkeys: BTreeSet<_> = transfer
-            .tx
-            .inputs
+            .all_spend_requests
             .iter()
-            .map(|input| input.unique_pubkey())
+            .map(|s| s.unique_pubkey())
             .collect();
 
         self.watchonly_wallet

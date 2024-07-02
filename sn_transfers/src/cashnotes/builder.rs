@@ -7,32 +7,26 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    spend_reason::SpendReason,
-    transaction::{Output, Transaction},
-    CashNote, DerivationIndex, DerivedSecretKey, Input, MainPubkey, NanoTokens, SignedSpend, Spend,
+    output_purpose::OutputPurpose, spend_reason::SpendReason, transaction::Output, CashNote,
+    DerivationIndex, DerivedSecretKey, Input, MainPubkey, NanoTokens, SignedSpend, Spend,
     UniquePubkey,
 };
 
-use crate::{Result, TransferError};
+use crate::Result;
 
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
-pub type InputSrcTx = Transaction;
-
 /// Unsigned Transfer
 #[derive(custom_debug::Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct UnsignedTransfer {
-    /// This is the transaction where all the below
-    /// spends were made and cash_notes created.
-    pub tx: Transaction,
     /// The unsigned spends with their corresponding owner's key derivation index.
     pub spends: BTreeSet<(Spend, DerivationIndex)>,
     /// The cash_note holding surplus tokens after
     /// spending the necessary input cash_notes.
     pub change_id: UniquePubkey,
     /// Information for aggregating signed spends and generating the final CashNote outputs.
-    pub output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    pub output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
 }
 
 /// A builder to create a Transaction from
@@ -41,22 +35,24 @@ pub struct UnsignedTransfer {
 pub struct TransactionBuilder {
     inputs: Vec<Input>,
     outputs: Vec<Output>,
-    input_details: BTreeMap<UniquePubkey, (Option<DerivedSecretKey>, InputSrcTx, DerivationIndex)>,
-    output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    input_details:
+        BTreeMap<UniquePubkey, (Option<DerivedSecretKey>, DerivationIndex, UniquePubkey)>,
+    output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
 }
 
 impl TransactionBuilder {
-    /// Add an input given a the Input, the input's derived_key and the input's src transaction
+    /// Add an input:
+    ///   the input's derived_key and derivation_index, the spend contains the input as one of its output
     pub fn add_input(
         mut self,
         input: Input,
         derived_key: Option<DerivedSecretKey>,
-        input_src_tx: InputSrcTx,
         derivation_index: DerivationIndex,
+        input_src_spend: UniquePubkey,
     ) -> Self {
         self.input_details.insert(
             *input.unique_pubkey(),
-            (derived_key, input_src_tx, derivation_index),
+            (derived_key, derivation_index, input_src_spend),
         );
         self.inputs.push(input);
         self
@@ -65,10 +61,17 @@ impl TransactionBuilder {
     /// Add an input given an iterator over the Input, the input's derived_key and the input's src transaction
     pub fn add_inputs(
         mut self,
-        inputs: impl IntoIterator<Item = (Input, Option<DerivedSecretKey>, InputSrcTx, DerivationIndex)>,
+        inputs: impl IntoIterator<
+            Item = (
+                Input,
+                Option<DerivedSecretKey>,
+                DerivationIndex,
+                UniquePubkey,
+            ),
+        >,
     ) -> Self {
-        for (input, derived_key, input_src_tx, derivation_index) in inputs.into_iter() {
-            self = self.add_input(input, derived_key, input_src_tx, derivation_index);
+        for (input, derived_key, derivation_index, input_src_spend) in inputs.into_iter() {
+            self = self.add_input(input, derived_key, derivation_index, input_src_spend);
         }
         self
     }
@@ -83,7 +86,7 @@ impl TransactionBuilder {
         let unique_pubkey = main_pubkey.new_unique_pubkey(&derivation_index);
 
         self.output_details
-            .insert(unique_pubkey, (main_pubkey, derivation_index));
+            .insert(unique_pubkey, (main_pubkey, derivation_index, token));
         let output = Output::new(unique_pubkey, token.as_nano());
         self.outputs.push(output);
 
@@ -102,27 +105,30 @@ impl TransactionBuilder {
     }
 
     /// Build the Transaction by signing the inputs. Return a CashNoteBuilder.
-    pub fn build(
-        self,
-        reason: SpendReason,
-        network_royalties: Vec<DerivationIndex>,
-    ) -> CashNoteBuilder {
-        let spent_tx = Transaction {
-            inputs: self.inputs,
-            outputs: self.outputs,
-        };
+    pub fn build(self, reason: SpendReason) -> CashNoteBuilder {
         let mut signed_spends = BTreeSet::new();
-        for input in &spent_tx.inputs {
-            if let Some((Some(derived_key), input_src_tx, _)) =
+
+        let mut descendants = BTreeMap::new();
+        for output in self.outputs.iter() {
+            // TODO: use proper OutputPurpose
+            let _ = descendants.insert(
+                output.unique_pubkey,
+                (output.amount, OutputPurpose::default()),
+            );
+        }
+
+        for input in &self.inputs {
+            if let Some((Some(derived_key), _, input_src_spend)) =
                 self.input_details.get(&input.unique_pubkey)
             {
+                let mut ancestors = BTreeSet::new();
+                let _ = ancestors.insert(*input_src_spend);
+
                 let spend = Spend {
                     unique_pubkey: *input.unique_pubkey(),
-                    spent_tx: spent_tx.clone(),
                     reason: reason.clone(),
-                    amount: input.amount,
-                    parent_tx: input_src_tx.clone(),
-                    network_royalties: network_royalties.clone(),
+                    ancestors,
+                    descendants: descendants.clone(),
                 };
                 let derived_key_sig = derived_key.sign(&spend.to_bytes_for_signing());
                 signed_spends.insert(SignedSpend {
@@ -132,39 +138,42 @@ impl TransactionBuilder {
             }
         }
 
-        CashNoteBuilder::new(spent_tx, self.output_details, signed_spends)
+        CashNoteBuilder::new(self.output_details, signed_spends)
     }
 
     /// Build the UnsignedTransfer which contains the generated (unsigned) Spends.
     pub fn build_unsigned_transfer(
         self,
         reason: SpendReason,
-        network_royalties: Vec<DerivationIndex>,
         change_id: UniquePubkey,
     ) -> Result<UnsignedTransfer> {
-        let tx = Transaction {
-            inputs: self.inputs,
-            outputs: self.outputs,
-        };
+        let mut descendants = BTreeMap::new();
+        for output in self.outputs.iter() {
+            // TODO: use proper OutputPurpose
+            let _ = descendants.insert(
+                output.unique_pubkey,
+                (output.amount, OutputPurpose::default()),
+            );
+        }
         let mut spends = BTreeSet::new();
-        for input in &tx.inputs {
-            if let Some((_, input_src_tx, derivation_index)) =
+        for input in &self.inputs {
+            if let Some((_, derivation_index, input_src_spend)) =
                 self.input_details.get(&input.unique_pubkey)
             {
+                let mut ancestors = BTreeSet::new();
+                let _ = ancestors.insert(*input_src_spend);
+
                 let spend = Spend {
                     unique_pubkey: *input.unique_pubkey(),
-                    spent_tx: tx.clone(),
                     reason: reason.clone(),
-                    amount: input.amount,
-                    parent_tx: input_src_tx.clone(),
-                    network_royalties: network_royalties.clone(),
+                    ancestors,
+                    descendants: descendants.clone(),
                 };
                 spends.insert((spend, *derivation_index));
             }
         }
 
         Ok(UnsignedTransfer {
-            tx,
             spends,
             change_id,
             output_details: self.output_details,
@@ -175,20 +184,17 @@ impl TransactionBuilder {
 /// A Builder for aggregating SignedSpends and generating the final CashNote outputs.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CashNoteBuilder {
-    pub spent_tx: Transaction,
-    pub output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+    pub output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
     pub signed_spends: BTreeSet<SignedSpend>,
 }
 
 impl CashNoteBuilder {
     /// Create a new CashNoteBuilder.
     pub fn new(
-        spent_tx: Transaction,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
+        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
         signed_spends: BTreeSet<SignedSpend>,
     ) -> Self {
         Self {
-            spent_tx,
             output_details,
             signed_spends,
         }
@@ -200,16 +206,8 @@ impl CashNoteBuilder {
         self.signed_spends.iter().collect()
     }
 
-    /// Build the output CashNotes, verifying the transaction and SignedSpends.
-    ///
-    /// See TransactionVerifier::verify() for a description of
-    /// verifier requirements.
+    /// Build the output CashNotes
     pub fn build(self) -> Result<Vec<(CashNote, NanoTokens)>> {
-        // Verify the tx, along with signed spends.
-        // Note that we do this just once for entire tx, not once per output CashNote.
-        self.spent_tx
-            .verify_against_inputs_spent(self.signed_spends.iter())?;
-
         // Build output CashNotes.
         self.build_output_cashnotes()
     }
@@ -221,26 +219,20 @@ impl CashNoteBuilder {
 
     // Private helper to build output CashNotes.
     fn build_output_cashnotes(self) -> Result<Vec<(CashNote, NanoTokens)>> {
-        self.spent_tx
-            .outputs
-            .iter()
-            .map(|output| {
-                let (main_pubkey, derivation_index) = self
-                    .output_details
-                    .get(&output.unique_pubkey)
-                    .ok_or(TransferError::UniquePubkeyNotFound)?;
-
-                Ok((
+        Ok(self
+            .output_details
+            .values()
+            .map(|(main_pubkey, derivation_index, amount)| {
+                (
                     CashNote {
                         unique_pubkey: main_pubkey.new_unique_pubkey(derivation_index),
-                        parent_tx: self.spent_tx.clone(),
                         parent_spends: self.signed_spends.clone(),
                         main_pubkey: *main_pubkey,
                         derivation_index: *derivation_index,
                     },
-                    output.amount,
-                ))
+                    *amount,
+                )
             })
-            .collect()
+            .collect())
     }
 }

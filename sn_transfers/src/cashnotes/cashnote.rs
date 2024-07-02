@@ -8,7 +8,7 @@
 
 use super::{
     DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
-    Transaction, UniquePubkey,
+    UniquePubkey,
 };
 
 use crate::{Result, TransferError};
@@ -61,9 +61,6 @@ pub struct CashNote {
     /// The unique public key of this CashNote. It is unique, and there can never
     /// be another CashNote with the same public key. It used in SignedSpends.
     pub unique_pubkey: UniquePubkey,
-    /// The transaction where this CashNote was created.
-    #[debug(skip)]
-    pub parent_tx: Transaction,
     /// The transaction's input's SignedSpends
     pub parent_spends: BTreeSet<SignedSpend>,
     /// This is the MainPubkey of the owner of this CashNote
@@ -112,19 +109,20 @@ impl CashNote {
 
     /// Return the value in NanoTokens for this CashNote.
     pub fn value(&self) -> Result<NanoTokens> {
-        Ok(self
-            .parent_tx
-            .outputs
-            .iter()
-            .find(|o| &self.unique_pubkey() == o.unique_pubkey())
-            .ok_or(TransferError::OutputNotFound)?
-            .amount)
+        let mut total_amount: u64 = 0;
+        for p in self.parent_spends.iter() {
+            if let Some(amount) = p.spend.get_output_amount(&self.unique_pubkey()) {
+                total_amount += amount.as_nano();
+            } else {
+                return Err(TransferError::OutputNotFound);
+            }
+        }
+        Ok(NanoTokens::from(total_amount))
     }
 
     /// Generate the hash of this CashNote
     pub fn hash(&self) -> Hash {
         let mut sha3 = Sha3::v256();
-        sha3.update(self.parent_tx.hash().as_ref());
         sha3.update(&self.main_pubkey.to_bytes());
         sha3.update(&self.derivation_index.0);
 
@@ -141,25 +139,17 @@ impl CashNote {
     ///
     /// A CashNote recipient should call this immediately upon receipt.
     ///
-    /// important: this will verify there is a matching transaction provided
-    /// for each SignedSpend, although this does not check if the CashNote has been spent.
+    /// important: this does not check if the CashNote has been spent.
     /// For that, one must query the spentbook nodes.
     ///
     /// Note that the spentbook nodes cannot perform this check.  Only the CashNote
     /// recipient (private key holder) can.
-    ///
-    /// see TransactionVerifier::verify() for a description of
-    /// verifier requirements.
     pub fn verify(&self, main_key: &MainSecretKey) -> Result<(), TransferError> {
-        self.parent_tx
-            .verify_against_inputs_spent(self.parent_spends.iter())?;
-
         let unique_pubkey = self.derived_key(main_key)?.unique_pubkey();
         if !self
-            .parent_tx
-            .outputs
+            .parent_spends
             .iter()
-            .any(|o| unique_pubkey.eq(o.unique_pubkey()))
+            .all(|p| p.spend.get_output_amount(&unique_pubkey).is_some())
         {
             return Err(TransferError::CashNoteCiphersNotPresentInTransactionOutput);
         }
