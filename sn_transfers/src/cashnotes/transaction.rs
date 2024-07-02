@@ -65,23 +65,23 @@ impl Output {
     }
 }
 
-#[derive(Clone, Default, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Clone, Default, Serialize, Deserialize, Hash, PartialEq, Eq, Debug)]
 pub struct Transaction {
     pub inputs: Vec<Input>,
     pub outputs: Vec<Output>,
 }
 
-/// debug method for Transaction which does not print the full content
-impl std::fmt::Debug for Transaction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // use self.hash to avoid printing the full content
-        f.debug_struct("Transaction")
-            .field("inputs", &self.inputs.len())
-            .field("outputs", &self.outputs.len())
-            .field("hash", &self.hash())
-            .finish()
-    }
-}
+// /// debug method for Transaction which does not print the full content
+// impl std::fmt::Debug for Transaction {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         // use self.hash to avoid printing the full content
+//         f.debug_struct("Transaction")
+//             .field("inputs", &self.inputs.len())
+//             .field("outputs", &self.outputs.len())
+//             .field("hash", &self.hash())
+//             .finish()
+//     }
+// }
 
 impl PartialOrd for Transaction {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
