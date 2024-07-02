@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719956516828,
+  "lastUpdate": 1719956519527,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "56add190d3edc9ca9b88232054955067c4b5e872",
-          "message": "fix(test): use tempfile lib instead of stdlib to create temp dirs",
-          "timestamp": "2024-03-26T14:44:12Z",
-          "tree_id": "5e1e291d68c4289405fc85bc63f6264e459335bd",
-          "url": "https://github.com/maidsafe/safe_network/commit/56add190d3edc9ca9b88232054955067c4b5e872"
-        },
-        "date": 1711466926230,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3609,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 15906,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 27713,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "998de439e0d794b8e3c2690be877a4949aa03f4c",
+          "message": "ci: use `cargo binstall` in release workflow\n\nThis change was applied to the testing workflow but not the main release workflow. Aligning the two\nnow.",
+          "timestamp": "2024-07-02T22:27:08+01:00",
+          "tree_id": "3a71a5e7fff925e753d89b54d67799efad6bc338",
+          "url": "https://github.com/maidsafe/safe_network/commit/998de439e0d794b8e3c2690be877a4949aa03f4c"
+        },
+        "date": 1719956518466,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6854,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 32360,
             "unit": "ms"
           },
           {
