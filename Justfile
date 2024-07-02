@@ -107,15 +107,16 @@ build-release-artifacts arch:
   cargo clean
 
   echo "Using the keys: GENESIS_PK=$GENESIS_PK, FOUNDATION_PK=$FOUNDATION_PK, NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK, PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK"
-  cross_container_opts="--env GENESIS_PK=$GENESIS_PK,GENESIS_SK=$GENESIS_SK,FOUNDATION_PK=$FOUNDATION_PK,NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK,PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK"
+  cross_container_opts="--env GENESIS_PK=$GENESIS_PK --env GENESIS_SK=$GENESIS_SK --env FOUNDATION_PK=$FOUNDATION_PK --env NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK --env PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK"
   if [[ -n "${NETWORK_VERSION_MODE+x}" ]]; then
     echo "The NETWORK_VERSION_MODE variable is set to $NETWORK_VERSION_MODE"
-    cross_container_opts="$cross_container_opts,NETWORK_VERSION_MODE=$NETWORK_VERSION_MODE"
+    cross_container_opts="$cross_container_opts --env NETWORK_VERSION_MODE=$NETWORK_VERSION_MODE"
   fi
-    export CROSS_CONTAINER_OPTS=$cross_container_opts
+  export CROSS_CONTAINER_OPTS=$cross_container_opts
 
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
-    cargo install cross
+    echo "Passing to cross CROSS_CONTAINER_OPTS=$CROSS_CONTAINER_OPTS"
+    cargo binstall --no-confirm cross
     cross build --release --target $arch --bin faucet --features=distribution
     cross build --release --target $arch --bin nat-detection
     cross build --release --target $arch --bin node-launchpad
