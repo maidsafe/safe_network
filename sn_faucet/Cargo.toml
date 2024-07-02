@@ -11,7 +11,7 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.4.29"
 
 [features]
-default = ["initial-data"]
+default = ["gifting"]
 distribution = ["base64", "bitcoin", "minreq"]
 gifting = []
 initial-data = ["reqwest", "futures"]
