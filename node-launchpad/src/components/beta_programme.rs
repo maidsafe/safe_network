@@ -195,13 +195,13 @@ impl Component for BetaProgramme {
                     Direction::Vertical,
                     [
                         // for the prompt text
-                        Constraint::Length(3),
+                        Constraint::Length(2),
                         // for the input
                         Constraint::Length(2),
                         // for the text
-                        Constraint::Length(3),
+                        Constraint::Length(5),
                         // gap
-                        Constraint::Length(3),
+                        Constraint::Length(2),
                         // for the buttons
                         Constraint::Length(1),
                     ],
@@ -231,7 +231,10 @@ impl Component for BetaProgramme {
                 );
                 f.render_widget(input, layer_two[1]);
 
-                let text = Paragraph::new("  Changing your Username will reset all nodes,\n  and any Nanos left on this device will be\n  lost.");
+                #[cfg(not(windows))]
+                let text = Paragraph::new("  Changing your Username will RESET all nodes,\n  and any nanos left on this device will be\n  lost.\n");
+                #[cfg(windows)]
+                let text = Paragraph::new("  Changing your Username will RESET all nodes,\n  and any nanos left on this device will be\n  lost.\n  Note: This will REBOOT your machine. Please\n  make sure you have saved all your work.");
                 f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
 
                 let dash = Block::new()
