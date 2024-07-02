@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719924013045,
+  "lastUpdate": 1719924133833,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "3312d7686b22cc76f71ded373eb90ab82a6cc8ab",
-          "message": "fix(test): generate unique temp dir to avoid read outdated data",
-          "timestamp": "2024-03-26T10:59:54Z",
-          "tree_id": "46b5508ccc1d03281c413bc8833f39a1cd86d75b",
-          "url": "https://github.com/maidsafe/safe_network/commit/3312d7686b22cc76f71ded373eb90ab82a6cc8ab"
-        },
-        "date": 1711453717361,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/823ae09bdbf99ad2afd5a5a24ea25ef14f83d87e"
         },
         "date": 1719849108010,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "b71785c6f0b25cbe335ea462896882442e3eb776",
+          "message": "chore: update release bump message",
+          "timestamp": "2024-07-02T13:20:29+01:00",
+          "tree_id": "eb9220ab0a0d0f3956668b32b06ab73b3d6059ee",
+          "url": "https://github.com/maidsafe/safe_network/commit/b71785c6f0b25cbe335ea462896882442e3eb776"
+        },
+        "date": 1719924132806,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
