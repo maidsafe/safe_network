@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1719930576223,
+  "lastUpdate": 1719930694155,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "558056f8b04b84543e2002f172dd9a560d07e378",
-          "message": "chore: fix typo",
-          "timestamp": "2024-03-26T11:42:24Z",
-          "tree_id": "ffec0cae4d448793633a742a6655102d6380457b",
-          "url": "https://github.com/maidsafe/safe_network/commit/558056f8b04b84543e2002f172dd9a560d07e378"
-        },
-        "date": 1711456580489,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 52,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "f13b60a4f4d145916c63adcd67aa522dee664954",
+          "message": "chore(faucet): enable gifting by default and disable initial-data feature",
+          "timestamp": "2024-07-02T15:17:13+01:00",
+          "tree_id": "7ffa8386d6378c8ec414c9feb186f374e74df071",
+          "url": "https://github.com/maidsafe/safe_network/commit/f13b60a4f4d145916c63adcd67aa522dee664954"
+        },
+        "date": 1719930693827,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 50,
             "unit": "MB"
           }
         ]
