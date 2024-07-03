@@ -13,6 +13,7 @@ use crate::{DerivationIndex, Result, Signature, SpendAddress, TransferError};
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::collections::BTreeSet;
 
 /// SignedSpend's are constructed when a CashNote is logged to the spentbook.
 #[derive(Debug, Clone, PartialOrd, Ord, Serialize, Deserialize)]
@@ -150,23 +151,55 @@ impl SignedSpend {
     }
 
     /// Verify the parents of this Spend, making sure the input parent_spends are ancestors of self.
-    /// - verifies that the parent_spends where spent in our spend's parent_tx
+    /// - Also handles the case of parent double spends.
+    /// - verifies that the parent_spends where spent in our spend's parent_tx.
     /// - verifies the parent_tx against the parent_spends
     pub fn verify_parent_spends<'a, T>(&self, parent_spends: T) -> Result<()>
     where
-        T: IntoIterator<Item = &'a SignedSpend> + Clone,
+        T: IntoIterator<Item = &'a BTreeSet<SignedSpend>> + Clone,
     {
         let unique_key = self.unique_pubkey();
         trace!("Verifying parent_spends for {unique_key}");
 
         // Check that the parent where all spent to our parent_tx
         let tx_our_cash_note_was_created_in = self.parent_tx_hash();
-        for p in parent_spends.clone().into_iter() {
-            let tx_parent_was_spent_in = p.spent_tx_hash();
-            if tx_our_cash_note_was_created_in != tx_parent_was_spent_in {
-                return Err(TransferError::InvalidParentSpend(format!(
-                    "Parent spend was spent in another transaction. Expected: {tx_our_cash_note_was_created_in:?} Got: {tx_parent_was_spent_in:?}"
-                )));
+        let mut actual_parent_spends = BTreeSet::new();
+        for parents in parent_spends.clone().into_iter() {
+            if parents.is_empty() {
+                error!("No parent spend provided for {unique_key}");
+                return Err(TransferError::InvalidParentSpend(
+                    "Parent is empty".to_string(),
+                ));
+            }
+            let parent_unique_key = parents
+                .iter()
+                .map(|p| *p.unique_pubkey())
+                .collect::<BTreeSet<_>>();
+            if parent_unique_key.len() > 1 {
+                error!("While verifying parents of {unique_key}, found a parent double spend, but it contained more than one unique_pubkey. This is invalid. Erroring out.");
+                return Err(TransferError::InvalidParentSpend("Invalid parent double spend. More than one unique_pubkey in the parent double spend.".to_string()));
+            }
+
+            // if parent is a double spend, get the actual parent among the parent double spends
+            // We cannot have more than 1 parent double spend with same tx hash.
+            let actual_parent = parents
+                .iter()
+                .find(|p| p.spent_tx_hash() == tx_our_cash_note_was_created_in)
+                .cloned();
+
+            match actual_parent {
+                Some(actual_parent) => {
+                    actual_parent_spends.insert(actual_parent);
+                }
+                None => {
+                    let tx_parent_was_spent_in = parents
+                        .iter()
+                        .map(|p| p.spent_tx_hash())
+                        .collect::<Vec<_>>();
+                    return Err(TransferError::InvalidParentSpend(format!(
+                        "Parent spend was spent in another transaction. Expected: {tx_our_cash_note_was_created_in:?} Got: {tx_parent_was_spent_in:?}"
+                    )));
+                }
             }
         }
 
@@ -174,7 +207,7 @@ impl SignedSpend {
         if let Err(e) = self
             .spend
             .parent_tx
-            .verify_against_inputs_spent(parent_spends)
+            .verify_against_inputs_spent(actual_parent_spends.iter())
         {
             return Err(TransferError::InvalidParentSpend(format!(
                 "Parent Tx verification failed: {e:?}"
