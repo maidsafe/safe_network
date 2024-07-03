@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720014620584,
+  "lastUpdate": 1720014737866,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11717,35 +11717,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "392b48c92864695a952383fecf6816c5eadd40f7",
-          "message": "chore(node): reduce bad_node check concureent queries",
-          "timestamp": "2024-03-26T22:04:54Z",
-          "tree_id": "268f3f73d3f5483ce9956cc4f2cd6ce7f413b096",
-          "url": "https://github.com/maidsafe/safe_network/commit/392b48c92864695a952383fecf6816c5eadd40f7"
-        },
-        "date": 1711493053361,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 46,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "3d62ab0c64801730a7c1445dfe70ae5a4f5183aa",
           "message": "fix(node): fetching new data shall not cause timed_out immediately",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 55,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "distinct": false,
+          "id": "01ee874aa6e5d723aa03023b5be51b7dbc97119c",
+          "message": "fix: update based on comments",
+          "timestamp": "2024-07-03T13:01:07Z",
+          "tree_id": "ade84438c1f15e039094d511b4bd6a80323d73df",
+          "url": "https://github.com/maidsafe/safe_network/commit/01ee874aa6e5d723aa03023b5be51b7dbc97119c"
+        },
+        "date": 1720014736888,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
