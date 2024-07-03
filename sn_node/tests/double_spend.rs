@@ -339,7 +339,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     info!("Verifying the transfers from B -> C wallet...");
     let cash_notes_for_c: Vec<_> = transfer_to_c.cash_notes_for_recipient.clone();
     client.verify_cashnote(&cash_notes_for_c[0]).await?;
-    wallet_c.deposit_and_store_to_disk(&cash_notes_for_c)?; // store inside c
+    wallet_c.deposit_and_store_to_disk(&cash_notes_for_c.clone())?; // store inside c
 
     // Try to double spend from A -> X
     let wallet_dir_x = TempDir::new()?;
@@ -362,7 +362,11 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         .await?;
     info!("Verifying the transfers from A -> X wallet... It should error out.");
     let cash_notes_for_x: Vec<_> = transfer_to_x.cash_notes_for_recipient.clone();
-    assert!(client.verify_cashnote(&cash_notes_for_x[0]).await.is_err()); // the old spend has been poisoned
+    let result = client.verify_cashnote(&cash_notes_for_x[0]).await;
+    info!("Got result while verifying double spend from A -> X: {result:?}");
+    assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
+        assert!(str.starts_with("Network Error Double spend(s) was detected"));
+    }); // poisoned
 
     // Try to double spend from B -> Y
     let wallet_dir_y = TempDir::new()?;
@@ -387,17 +391,23 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     let cash_notes_for_y: Vec<_> = transfer_to_y.cash_notes_for_recipient.clone();
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
     info!("Got result while verifying double spend from B -> Y: {result:?}");
-    assert!(result.is_err());
+    assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
+        assert!(str.starts_with("Network Error Double spend(s) was detected"));
+    });
 
     info!("Verifying the original cashnote of A -> B");
     let result = client.verify_cashnote(&cash_notes_for_b[0]).await;
     info!("Got result while verifying the original spend from A -> B: {result:?}");
-    assert!(result.is_err());
+    assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
+        assert!(str.starts_with("Network Error Double spend(s) was detected"));
+    });
 
     info!("Verifying the original cashnote of B -> C");
     let result = client.verify_cashnote(&cash_notes_for_c[0]).await;
     info!("Got result while verifying the original spend from B -> C: {result:?}");
-    assert!(result.is_err());
+    assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
+        assert!(str.starts_with("Network Error Double spend(s) was detected"));
+    });
 
     Ok(())
 }

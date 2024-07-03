@@ -22,7 +22,7 @@ use sn_protocol::{
 use sn_registers::SignedRegister;
 use sn_transfers::{
     calculate_royalties_fee, CashNote, CashNoteRedemption, HotWallet, NanoTokens, Payment,
-    SignedSpend, Transfer, UniquePubkey, WalletError, NETWORK_ROYALTIES_PK,
+    SignedSpend, Transfer, TransferError, UniquePubkey, WalletError, NETWORK_ROYALTIES_PK,
 };
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
@@ -743,8 +743,8 @@ impl Node {
 
         if parent_is_a_double_spend && all_verified_spends.len() == 1 {
             warn!("Parent is a double spend for {unique_pubkey:?}, ignoring this spend");
-            return Err(Error::InvalidRequest(format!(
-                "Parent is a double spend for {unique_pubkey:?}, ignoring this spend."
+            return Err(Error::Transfers(TransferError::InvalidParentSpend(
+                format!("Parent is a double spend for {unique_pubkey:?}"),
             )));
         } else if parent_is_a_double_spend && all_verified_spends.len() > 1 {
             warn!("Parent is a double spend for {unique_pubkey:?}, but we're also a double spend. So storing our double spend attempt.");
