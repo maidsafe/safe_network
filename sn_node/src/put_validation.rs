@@ -9,7 +9,8 @@
 use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
 use sn_networking::{
-    get_raw_signed_spends_from_record, GetRecordError, NetworkError, MAX_PACKET_SIZE,
+    get_raw_signed_spends_from_record, GetRecordError, NetworkError, SpendVerificationOk,
+    MAX_PACKET_SIZE,
 };
 use sn_protocol::{
     storage::{
@@ -705,6 +706,7 @@ impl Node {
             }
         };
 
+        let mut parent_is_a_double_spend = false;
         // check the received spends and the spends got from the network
         let mut tasks = JoinSet::new();
         for s in signed_spends.into_iter().chain(network_spends.into_iter()) {
@@ -718,8 +720,12 @@ impl Node {
         // collect spends until we have a double spend or until we have all the results
         while let Some(res) = tasks.join_next().await {
             match res {
-                Ok((spend, Ok(()))) => {
-                    info!("Successfully verified {spend:?}");
+                Ok((spend, Ok(spend_verification_ok))) => {
+                    info!("Successfully verified {spend:?} with result: {spend_verification_ok:?}");
+                    if let SpendVerificationOk::ParentDoubleSpend = spend_verification_ok {
+                        // the parent is a double spend, but we will store it incase our spend is also a double spend.
+                        parent_is_a_double_spend = true;
+                    }
                     let _inserted = all_verified_spends.insert(spend);
                 }
                 Ok((spend, Err(e))) => {
@@ -733,6 +739,15 @@ impl Node {
                     return Err(Error::JoinErrorInAsyncThread(s))?;
                 }
             }
+        }
+
+        if parent_is_a_double_spend && all_verified_spends.len() == 1 {
+            warn!("Parent is a double spend for {unique_pubkey:?}, ignoring this spend");
+            return Err(Error::InvalidRequest(format!(
+                "Parent is a double spend for {unique_pubkey:?}, ignoring this spend."
+            )));
+        } else if parent_is_a_double_spend && all_verified_spends.len() > 1 {
+            warn!("Parent is a double spend for {unique_pubkey:?}, but we're also a double spend. So storing our double spend attempt.");
         }
 
         // todo: should we also check the size of spends here? Maybe just limit the size of a single
