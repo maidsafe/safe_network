@@ -562,41 +562,49 @@ impl SwarmDriver {
             SwarmEvent::NewExternalAddrCandidate { address } => {
                 event_string = "NewExternalAddrCandidate";
 
-                if !self.swarm.external_addresses().any(|addr| addr == &address)
-                    && !self.is_client
-                    // If we are behind a home network, then our IP is returned here. We should be only having
-                    // relay server as our external address
-                    // todo: can our relay address be reported here? If so, maybe we should add them.
-                    && !self.is_behind_home_network
-                {
-                    debug!(%address, "external address: new candidate");
+                if !self.swarm.external_addresses().any(|addr| addr == &address) {
+                    // If we are on a home network, our external address is useless, so care only for our relay address.
+                    if self.is_behind_home_network {
+                        // If we are behind a relay, we effectively have our external address looking like this:
+                        // `/ip4/1.2.3.4/udp/1234/quic-v1/p2p/QmRelay/p2p-circuit/p2p/QmSelf`
+                        let our_suffix = Multiaddr::empty()
+                            .with(Protocol::P2pCircuit) // `/p2p-circuit`
+                            .with(Protocol::P2p(*self.swarm.local_peer_id())); // `/p2p/QmSelf`
 
-                    // Identify will let us know when we have a candidate. (Peers will tell us what address they see us as.)
-                    // We manually confirm this to be our externally reachable address, though in theory it's possible we
-                    // are not actually reachable. This event returns addresses with ports that were not set by the user,
-                    // so we must not add those ports as they will not be forwarded.
-                    // Setting this will also switch kad to server mode if it's not already in it.
-                    if let Some(our_port) = self.listen_port {
-                        if let Some(port) = get_port_from_multiaddr(&address) {
-                            if port == our_port {
-                                info!(%address, "external address: new candidate has the same configured port, adding it.");
-                                self.swarm.add_external_address(address);
+                        if address.ends_with(&our_suffix) {
+                            debug!(%address, "external address: new candidate, our relay address");
+                            self.swarm.add_external_address(address);
+                        }
+                    } else if !self.is_client {
+                        debug!(%address, "external address: new candidate");
 
-                                if tracing::level_enabled!(tracing::Level::TRACE) {
-                                    let all_external_addresses =
-                                        self.swarm.external_addresses().collect_vec();
-                                    let all_listeners = self.swarm.listeners().collect_vec();
-                                    trace!("All our listeners: {all_listeners:?}");
-                                    trace!(
+                        // Identify will let us know when we have a candidate. (Peers will tell us what address they see us as.)
+                        // We manually confirm this to be our externally reachable address, though in theory it's possible we
+                        // are not actually reachable. This event returns addresses with ports that were not set by the user,
+                        // so we must not add those ports as they will not be forwarded.
+                        // Setting this will also switch kad to server mode if it's not already in it.
+                        if let Some(our_port) = self.listen_port {
+                            if let Some(port) = get_port_from_multiaddr(&address) {
+                                if port == our_port {
+                                    info!(%address, "external address: new candidate has the same configured port, adding it.");
+                                    self.swarm.add_external_address(address);
+
+                                    if tracing::level_enabled!(tracing::Level::TRACE) {
+                                        let all_external_addresses =
+                                            self.swarm.external_addresses().collect_vec();
+                                        let all_listeners = self.swarm.listeners().collect_vec();
+                                        trace!("All our listeners: {all_listeners:?}");
+                                        trace!(
                                         "All our external addresses: {all_external_addresses:?}"
                                     );
+                                    }
+                                } else {
+                                    info!(%address, %our_port, "external address: new candidate has a different port, not adding it.");
                                 }
-                            } else {
-                                info!(%address, %our_port, "external address: new candidate has a different port, not adding it.");
                             }
+                        } else {
+                            trace!("external address: listen port not set. This has to be set if you're running a node");
                         }
-                    } else {
-                        trace!("external address: listen port not set. This has to be set if you're running a node");
                     }
                 }
             }
