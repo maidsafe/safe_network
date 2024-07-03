@@ -181,7 +181,6 @@ impl SignedSpend {
             }
 
             // if parent is a double spend, get the actual parent among the parent double spends
-            // We cannot have more than 1 parent double spend with same tx hash.
             let actual_parent = parents
                 .iter()
                 .find(|p| p.spent_tx_hash() == tx_our_cash_note_was_created_in)
