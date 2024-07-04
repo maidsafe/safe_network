@@ -8,6 +8,10 @@ on:
         type: string
         required: true
         default: main
+      tag:
+        description: The tag to build.
+        type: string
+        required: false
 
 # Copied from `release.yml`
 # During the build step, the env variable has to be manually sent to the containers for cross platform builds.
@@ -43,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ inputs.tag || inputs.branch }}
       - uses: dtolnay/rust-toolchain@stable
       # cargo-binstall will try and use pre-built binaries if they are available and also speeds up
       # installing `cross`
