@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720102571288,
+  "lastUpdate": 1720102573420,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "3d62ab0c64801730a7c1445dfe70ae5a4f5183aa",
-          "message": "fix(node): fetching new data shall not cause timed_out immediately",
-          "timestamp": "2024-03-26T22:07:00Z",
-          "tree_id": "7ec78f8ef8efcaa330fd62813575533fc210aa3e",
-          "url": "https://github.com/maidsafe/safe_network/commit/3d62ab0c64801730a7c1445dfe70ae5a4f5183aa"
-        },
-        "date": 1711493192599,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 198,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 197,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "a243dd3a8a5740834581ff34b2897e2a89d71e0c",
+          "message": "fix: remove requirement from branch input",
+          "timestamp": "2024-07-04T14:55:10+01:00",
+          "tree_id": "06cdf8d050b216cb7e68150746a0010f3448cc89",
+          "url": "https://github.com/maidsafe/safe_network/commit/a243dd3a8a5740834581ff34b2897e2a89d71e0c"
+        },
+        "date": 1720102572623,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 199,
             "unit": "MB"
           },
           {
