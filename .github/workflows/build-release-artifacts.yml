@@ -6,12 +6,9 @@ on:
       branch:
         description: The branch to build.
         type: string
-        required: true
-        default: main
       tag:
         description: The tag to build.
         type: string
-        required: false
 
 # Copied from `release.yml`
 # During the build step, the env variable has to be manually sent to the containers for cross platform builds.
