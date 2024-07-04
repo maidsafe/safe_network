@@ -379,12 +379,18 @@ upload-release-assets-to-s3 bin_name:
   cd deploy/{{bin_name}}
   for file in *.zip *.tar.gz; do
     dest="s3://$bucket/$file"
-    if aws s3 ls "$dest" > /dev/null 2>&1; then
-      echo "$dest already exists. This suggests an error somewhere."
-      echo "If you intentionally want to overwrite, remove the file and run the workflow again."
-      exit 1
-    else
+    if [[ "$file" == *latest* ]]; then
+      echo "Allowing overwrite for 'latest' version..."
       aws s3 cp "$file" "$dest" --acl public-read
+    else
+      if aws s3 ls "$dest" > /dev/null 2>&1; then
+        echo "$dest already exists. This suggests an error somewhere."
+        echo "If you intentionally want to overwrite, remove the file and run the workflow again."
+        exit 1
+      else
+        aws s3 cp "$file" "$dest" --acl public-read
+        echo "$dest uploaded."
+      fi
     fi
   done
 
