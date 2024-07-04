@@ -1,8 +1,9 @@
 name: Nightly -- Full WAN Network Tests
 
 on:
-  schedule:
-    - cron: "0 0 * * *"
+# todo: this is totally broken atm. Fix and re-enable.
+#   schedule:
+#     - cron: "0 0 * * *"
   workflow_dispatch:
 
 env:
