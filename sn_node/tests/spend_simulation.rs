@@ -22,6 +22,7 @@ use sn_transfers::{
 };
 use std::{
     collections::{btree_map::Entry, BTreeMap, BTreeSet},
+    fmt::Display,
     path::PathBuf,
     time::Duration,
 };
@@ -32,10 +33,6 @@ const MAX_WALLETS: usize = 50;
 const MAX_CYCLES: usize = 10;
 const AMOUNT_PER_RECIPIENT: NanoTokens = NanoTokens::from(1000);
 /// The chance for an attack to happen. 1 in X chance.
-/// The attack can be one of these:
-/// 1. A double spend of a transaction whose outputs are partially spent / partially UTXO
-/// 2. A double spend of an entire transaction
-/// 3. Poisoning of a transaction whose outputs are all spent.
 const ONE_IN_X_CHANCE_FOR_AN_ATTACK: u32 = 2;
 
 enum WalletAction {
@@ -47,27 +44,27 @@ enum WalletAction {
         to: (NanoTokens, MainPubkey, DerivationIndex),
     },
     ReceiveCashNotes {
-        from: usize,
+        from: WalletId,
         cashnotes: Vec<CashNote>,
     },
 }
 
 enum WalletTaskResult {
     Error {
-        id: usize,
+        id: WalletId,
         err: String,
     },
     DoubleSpendSuccess {
-        id: usize,
+        id: WalletId,
     },
     SendSuccess {
-        id: usize,
+        id: WalletId,
         recipient_cash_notes: Vec<CashNote>,
         change_cash_note: Option<CashNote>,
         transaction: Transaction,
     },
     ReceiveSuccess {
-        id: usize,
+        id: WalletId,
         received_cash_note: Vec<CashNote>,
     },
 }
@@ -77,31 +74,57 @@ enum SpendStatus {
     Utxo,
     Spent,
     Poisoned,
-    // DoubleSpend,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Hash)]
+struct WalletId(usize);
+
+impl Display for WalletId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "WalletId({})", self.0)
+    }
 }
 
 #[derive(custom_debug::Debug)]
+/// The state of all the wallets and the transactions that they've performed.
 struct State {
-    // immutable
+    // ========= immutable =========
     #[debug(skip)]
-    action_senders: BTreeMap<usize, mpsc::Sender<WalletAction>>,
-    all_wallets: BTreeMap<usize, TempDir>,
-    main_pubkeys: BTreeMap<usize, MainPubkey>,
-    main_pubkeys_inverse: BTreeMap<MainPubkey, usize>,
-    // mut
+    /// Sender to send actions to the wallets
+    action_senders: BTreeMap<WalletId, mpsc::Sender<WalletAction>>,
+    /// The TempDir for each wallet. This has to be held until the end of the test.
+    all_wallets: BTreeMap<WalletId, TempDir>,
+    /// The main pubkeys of all the wallets.
+    main_pubkeys: BTreeMap<WalletId, MainPubkey>,
+    /// The map from MainPubKey to WalletId. This is used to get wallets when we only have the cashnote in hand.
+    main_pubkeys_inverse: BTreeMap<MainPubkey, WalletId>,
+    // ========= mutable =========
+    /// The map from UniquePubkey of the cashnote to the actual cashnote and its status.
     cashnote_tracker: BTreeMap<UniquePubkey, (SpendStatus, CashNote)>,
-    cashnotes_per_wallet: BTreeMap<usize, Vec<UniquePubkey>>,
-    outbound_transactions_per_wallet: BTreeMap<usize, BTreeSet<Transaction>>,
+    /// The map from WalletId to the cashnotes that it has ever received.
+    cashnotes_per_wallet: BTreeMap<WalletId, Vec<UniquePubkey>>,
+    /// The map from WalletId to the outbound transactions that it has ever sent.
+    outbound_transactions_per_wallet: BTreeMap<WalletId, BTreeSet<Transaction>>,
 }
 
 #[derive(Debug, Default)]
 struct PendingTasksTracker {
-    pending_send_results: Vec<usize>,
-    pending_receive_results: Vec<usize>,
+    pending_send_results: Vec<WalletId>,
+    pending_receive_results: Vec<WalletId>,
 }
 
+/// This test aims to make sure the PUT validation of nodes are working as expected. We perform valid spends and also
+/// illicit spends and finally verify them to make sure the network processed the spends as expected.
+/// The illicit spends can be of these types:
+/// 1. A double spend of a transaction whose outputs are partially spent / partially UTXO
+/// 2. A double spend of a transcation whose outputs are all UTXO.
+/// 3. Poisoning of a transaction whose outputs are all spent.
+///
+/// The test works by having a main loop that sends actions to all the wallets. These are then processed by the wallets
+/// in parallel. The wallets send back the results of the actions to the main loop, this is then tracked and the whole
+/// cycle is repeated until the max cycles are reached.
 #[tokio::test]
-async fn cash_note_transfer_double_spend_fail() -> Result<()> {
+async fn spend_simulation() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("spend_simulation", true);
 
     let (client, mut state) = init_state(MAX_WALLETS).await?;
@@ -215,7 +238,7 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
 }
 
 fn handle_action_per_wallet(
-    our_id: usize,
+    our_id: WalletId,
     wallet_dir: PathBuf,
     client: Client,
     mut action_rx: mpsc::Receiver<WalletAction>,
@@ -245,7 +268,7 @@ fn handle_action_per_wallet(
 }
 
 async fn inner_handle_action(
-    our_id: usize,
+    our_id: WalletId,
     client: Client,
     action: WalletAction,
     wallet: &mut HotWallet,
@@ -523,6 +546,7 @@ async fn init_state(count: usize) -> Result<(Client, State)> {
 
     for i in 0..count {
         let wallet_dir = TempDir::new()?;
+        let i = WalletId(i);
         state
             .main_pubkeys
             .insert(i, get_wallet(wallet_dir.path()).address());
@@ -594,17 +618,17 @@ async fn init_state(count: usize) -> Result<(Client, State)> {
 
 /// Returns random recipients to send tokens to.
 /// Random recipient of random lengths are chosen.
-fn get_recipients(our_id: usize, state: &State) -> Vec<MainPubkey> {
+fn get_recipients(our_id: WalletId, state: &State) -> Vec<MainPubkey> {
     let mut recipients = Vec::new();
 
     let mut random_number = our_id;
     while random_number != our_id {
-        random_number = rand::thread_rng().gen_range(0..state.main_pubkeys.len());
+        random_number = WalletId(rand::thread_rng().gen_range(0..state.main_pubkeys.len()));
     }
     recipients.push(state.main_pubkeys[&random_number]);
 
-    while random_number % 4 != 0 {
-        random_number = rand::thread_rng().gen_range(0..state.main_pubkeys.len());
+    while random_number.0 % 4 != 0 {
+        random_number = WalletId(rand::thread_rng().gen_range(0..state.main_pubkeys.len()));
         if random_number != our_id {
             recipients.push(state.main_pubkeys[&random_number]);
         }
@@ -614,7 +638,7 @@ fn get_recipients(our_id: usize, state: &State) -> Vec<MainPubkey> {
     recipients
 }
 
-fn get_tx_to_attack(our_id: usize, state: &State) -> Result<Option<Transaction>> {
+fn get_tx_to_attack(our_id: WalletId, state: &State) -> Result<Option<Transaction>> {
     let mut rng = rand::thread_rng();
     let Some(our_transactions) = state.outbound_transactions_per_wallet.get(&our_id) else {
         info!("TestWallet {our_id} has no outbound transactions yet. Skipping attack");
@@ -677,7 +701,7 @@ impl PendingTasksTracker {
         self.pending_send_results.is_empty() && self.pending_receive_results.is_empty()
     }
 
-    fn send_task_completed(&mut self, id: usize) {
+    fn send_task_completed(&mut self, id: WalletId) {
         let pos = self
             .pending_send_results
             .iter()
@@ -686,7 +710,7 @@ impl PendingTasksTracker {
         self.pending_send_results.remove(pos);
     }
 
-    fn receive_task_completed(&mut self, id: usize) {
+    fn receive_task_completed(&mut self, id: WalletId) {
         let pos = self
             .pending_receive_results
             .iter()
