@@ -378,7 +378,14 @@ upload-release-assets-to-s3 bin_name:
 
   cd deploy/{{bin_name}}
   for file in *.zip *.tar.gz; do
-    aws s3 cp "$file" "s3://$bucket/$file" --acl public-read
+    dest="s3://$bucket/$file"
+    if aws s3 ls "$dest" > /dev/null 2>&1; then
+      echo "$dest already exists. This suggests an error somewhere."
+      echo "If you intentionally want to overwrite, remove the file and run the workflow again."
+      exit 1
+    else
+      aws s3 cp "$file" "$dest" --acl public-read
+    fi
   done
 
 node-man-integration-tests:
