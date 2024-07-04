@@ -169,8 +169,8 @@ jobs:
         continue-on-error: true
 
       - name: Build testing executable
-        run: cargo test --release -p sn_node --test sequential_transfers --test storage_payments --test double_spend --no-run
-        timeout-minutes: 30
+        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
+        timeout-minutes: 40
 
       - name: Start a WAN network
         uses: maidsafe/sn-testnet-action@main
@@ -199,7 +199,7 @@ jobs:
           echo "Peer is $SAFE_PEERS"
           echo "Deployment inventory is $SN_INVENTORY"
 
-      - name: execute the spend test
+      - name: execute the sequential transfers test
         run: cargo test --release -p sn_node --test sequential_transfers -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
@@ -211,8 +211,13 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 45
 
-      - name: execute the storage payment tests
+      - name: execute the double spend tests
         run: cargo test --release -p sn_node --test double_spend -- --nocapture --test-threads=1
+        timeout-minutes: 45
+
+
+      - name: execute the spend simulation tests
+        run: cargo test --release -p sn_node --test spend_simulation -- --nocapture --test-threads=1
         timeout-minutes: 45
 
       - name: Small wait to allow reward receipt
