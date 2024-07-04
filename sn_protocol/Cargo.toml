@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "sn_protocol"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.17.4"
+version = "0.17.5-alpha.1"
 
 [features]
 default = []
@@ -27,8 +27,8 @@ rmp-serde = "1.1.1"
 serde = { version = "1.0.133", features = [ "derive", "rc" ]}
 serde_json = "1.0"
 sha2 = "0.10.7"
-sn_transfers = { path = "../sn_transfers", version = "0.18.7" }
-sn_registers = { path = "../sn_registers", version = "0.3.14" }
+sn_transfers = { path = "../sn_transfers", version = "0.18.8-alpha.1" }
+sn_registers = { path = "../sn_registers", version = "0.3.15-alpha.1" }
 thiserror = "1.0.23"
 tiny-keccak = { version = "~2.0.2", features = [ "sha3" ] }
 tracing = { version = "~0.1.26" }
