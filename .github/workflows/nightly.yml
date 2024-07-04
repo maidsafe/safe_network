@@ -203,7 +203,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -220,7 +220,7 @@ jobs:
           platform: ${{ matrix.os }}
           build: true
 
-      - name: execute the spend test
+      - name: execute the sequential transfers test
         run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
@@ -234,8 +234,14 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
-      - name: execute the storage payment tests
+      - name: execute the double spend tests
         run: cargo test --release -p sn_node --features="local-discovery" --test double_spend -- --nocapture --test-threads=1
+        env:
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 25
+
+      - name: execute the spend simulation test
+        run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture --test-threads=1
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
