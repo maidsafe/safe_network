@@ -33,7 +33,9 @@ impl Network {
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
             retry_strategy: None,
-            // This should not be set.
+            // This should not be set here. This function is used as a quick check to find the spends around the key during
+            // validation. The returned records might possibly be double spend attempt and the record will not match
+            // what we will have in hand.
             target_record: None,
             expected_holders: Default::default(),
         };
