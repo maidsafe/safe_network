@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720181851785,
+  "lastUpdate": 1720181853709,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "176848ebf94f17e9119e1e2fd06647a890bae55a",
-          "message": "refactor(cli): moving binary target related files onto src/bin dir",
-          "timestamp": "2024-03-27T11:15:07Z",
-          "tree_id": "7ee77d05e9528cc02d34cb8fb8d89c618a318251",
-          "url": "https://github.com/maidsafe/safe_network/commit/176848ebf94f17e9119e1e2fd06647a890bae55a"
-        },
-        "date": 1711541360237,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3133,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 13877,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 29761,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "0ae7c0fb712bc0adfee6ba118467be5ee2ff857d",
+          "message": "ci: allow overwrite for 'latest' version\n\nWe don't want to allow explicitly versioned binaries to be overwritten, but we do need to\naccommodate this for the 'latest' version.",
+          "timestamp": "2024-07-05T12:56:09+01:00",
+          "tree_id": "2c2948f254c10c486cb2012301427eda7206d667",
+          "url": "https://github.com/maidsafe/safe_network/commit/0ae7c0fb712bc0adfee6ba118467be5ee2ff857d"
+        },
+        "date": 1720181853419,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6662,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 30905,
             "unit": "ms"
           },
           {
