@@ -45,21 +45,26 @@ impl Network {
             .iter()
             .map(|input| input.unique_pubkey);
         let tasks: Vec<_> = parent_keys
-            .map(|a| self.get_spend(SpendAddress::from_unique_pubkey(&a)))
+            .map(|parent| async move {
+                let spend = self
+                    .get_spend(SpendAddress::from_unique_pubkey(&parent))
+                    .await;
+                (parent, spend)
+            })
             .collect();
         let mut parent_spends = BTreeSet::new();
-        for parent_spend in join_all(tasks).await {
+        for (parent_key, parent_spend) in join_all(tasks).await {
             match parent_spend {
                 Ok(parent_spend) => {
                     parent_spends.insert(BTreeSet::from_iter([parent_spend]));
                 }
                 Err(NetworkError::DoubleSpendAttempt(attempts)) => {
-                    warn!("While verifying {unique_key:?}, a double spend attempt detected for the parent {attempts:?}. Continuing verification.");
+                    warn!("While verifying {unique_key:?}, a double spend attempt ({attempts:?}) detected for the parent with pub key {parent_key:?} . Continuing verification.");
                     parent_spends.insert(BTreeSet::from_iter(attempts));
                     result = SpendVerificationOk::ParentDoubleSpend;
                 }
                 Err(e) => {
-                    let s = format!("Failed to get parent spend of {unique_key}: {e}");
+                    let s = format!("Failed to get parent spend of {unique_key} parent pubkey: {parent_key:?} error: {e}");
                     warn!("{}", s);
                     return Err(NetworkError::Transfer(TransferError::InvalidParentSpend(s)));
                 }

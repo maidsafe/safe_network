@@ -33,6 +33,7 @@ impl Network {
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
             retry_strategy: None,
+            // This should not be set.
             target_record: None,
             expected_holders: Default::default(),
         };
