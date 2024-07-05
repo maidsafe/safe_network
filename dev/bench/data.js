@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720117420712,
+  "lastUpdate": 1720181727970,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "176848ebf94f17e9119e1e2fd06647a890bae55a",
-          "message": "refactor(cli): moving binary target related files onto src/bin dir",
-          "timestamp": "2024-03-27T11:15:07Z",
-          "tree_id": "7ee77d05e9528cc02d34cb8fb8d89c618a318251",
-          "url": "https://github.com/maidsafe/safe_network/commit/176848ebf94f17e9119e1e2fd06647a890bae55a"
-        },
-        "date": 1711541247423,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.8601529794944358,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.294599644180543,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.05089283696509,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.6543158131193,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "0ae7c0fb712bc0adfee6ba118467be5ee2ff857d",
+          "message": "ci: allow overwrite for 'latest' version\n\nWe don't want to allow explicitly versioned binaries to be overwritten, but we do need to\naccommodate this for the 'latest' version.",
+          "timestamp": "2024-07-05T12:56:09+01:00",
+          "tree_id": "2c2948f254c10c486cb2012301427eda7206d667",
+          "url": "https://github.com/maidsafe/safe_network/commit/0ae7c0fb712bc0adfee6ba118467be5ee2ff857d"
+        },
+        "date": 1720181722285,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2066116167463579,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6523856097233498,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.145289138443545,
             "unit": "MiB/s"
           }
         ]
