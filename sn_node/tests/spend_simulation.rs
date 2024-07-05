@@ -226,6 +226,11 @@ async fn spend_simulation() -> Result<()> {
             handle_wallet_task_result(&mut state, result, &mut pending_task_results).await?;
         }
 
+        // Since it is a tiny network, it will be overwhelemed during the verification of things and will lead to a lot
+        // of Query Timeouts & huge number of pending Get requests. So let them settle.
+        println!("Cycle {cycle} completed. Sleeping for 5s before next cycle.");
+        tokio::time::sleep(Duration::from_secs(5)).await;
+
         cycle += 1;
     }
 
