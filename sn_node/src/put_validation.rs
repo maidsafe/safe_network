@@ -700,6 +700,23 @@ impl Node {
                 }
                 spends
             }
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
+                record,
+                got,
+                ..
+            })) => {
+                info!(
+                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network"
+                );
+                match get_raw_signed_spends_from_record(&record) {
+                    Ok(spends) => spends,
+                    Err(err) => {
+                        warn!("Ignoring invalid record received from the network for spend: {unique_pubkey:?}: {err}");
+                        vec![]
+                    }
+                }
+            }
+
             Err(e) => {
                 warn!("Continuing without network spends as failed to get spends from the network for {unique_pubkey:?}: {e}");
                 vec![]
