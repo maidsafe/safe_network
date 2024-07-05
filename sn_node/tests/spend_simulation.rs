@@ -29,7 +29,7 @@ use std::{
 use tokio::sync::mpsc;
 use tracing::*;
 
-const MAX_WALLETS: usize = 50;
+const MAX_WALLETS: usize = 30;
 const MAX_CYCLES: usize = 10;
 const AMOUNT_PER_RECIPIENT: NanoTokens = NanoTokens::from(1000);
 /// The chance for an attack to happen. 1 in X chance.
