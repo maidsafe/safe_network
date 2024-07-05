@@ -16,7 +16,8 @@ use itertools::Itertools;
 use sn_logging::LogBuilder;
 use sn_networking::NetworkError;
 use sn_transfers::{
-    get_genesis_sk, rng, DerivationIndex, HotWallet, NanoTokens, OfflineTransfer, SpendReason, WalletError, GENESIS_CASHNOTE
+    get_genesis_sk, rng, DerivationIndex, HotWallet, NanoTokens, OfflineTransfer, SpendReason,
+    WalletError, GENESIS_CASHNOTE,
 };
 use std::time::Duration;
 use tracing::*;
@@ -518,13 +519,20 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
     });
 
     // the original A should still be present as one of the double spends
-    let res = client.get_spend_from_network(original_a_spend.address()).await;
-    assert_matches!(res, Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(_))));
+    let res = client
+        .get_spend_from_network(original_a_spend.address())
+        .await;
+    assert_matches!(
+        res,
+        Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(
+            _
+        )))
+    );
     if let Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(spends))) = res {
         assert!(spends.iter().contains(original_a_spend))
     }
 
-    // Try to double spend A -> 10 different random keys
+    // Try to double spend A -> n different random keys
     for _ in 0..20 {
         println!("Spamming double spends on A");
         let wallet_dir_y = TempDir::new()?;
@@ -554,8 +562,15 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         });
 
         // the original A should still be present as one of the double spends
-        let res = client.get_spend_from_network(original_a_spend.address()).await;
-        assert_matches!(res, Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(_))));
+        let res = client
+            .get_spend_from_network(original_a_spend.address())
+            .await;
+        assert_matches!(
+            res,
+            Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(
+                _
+            )))
+        );
         if let Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(spends))) = res {
             assert!(spends.iter().contains(original_a_spend))
         }
