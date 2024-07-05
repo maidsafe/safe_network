@@ -300,7 +300,7 @@ jobs:
           build: true
 
       - name: execute the spend simulation test
-        run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture --test-threads=1
+        run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25

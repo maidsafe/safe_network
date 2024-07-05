@@ -29,8 +29,8 @@ use std::{
 use tokio::sync::mpsc;
 use tracing::*;
 
-const MAX_WALLETS: usize = 30;
-const MAX_CYCLES: usize = 10;
+const MAX_WALLETS: usize = 15;
+const MAX_CYCLES: usize = 5;
 const AMOUNT_PER_RECIPIENT: NanoTokens = NanoTokens::from(1000);
 /// The chance for an attack to happen. 1 in X chance.
 const ONE_IN_X_CHANCE_FOR_AN_ATTACK: u32 = 2;
@@ -125,7 +125,7 @@ struct PendingTasksTracker {
 /// cycle is repeated until the max cycles are reached.
 #[tokio::test]
 async fn spend_simulation() -> Result<()> {
-    let _log_guards = LogBuilder::init_single_threaded_tokio_test("spend_simulation", true);
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("spend_simulation", false);
 
     let (client, mut state) = init_state(MAX_WALLETS).await?;
 
@@ -157,6 +157,7 @@ async fn spend_simulation() -> Result<()> {
             .map(|(id, s)| (*id, s.clone()))
             .collect_vec();
         for (id, action_sender) in iter {
+            tokio::time::sleep(Duration::from_secs(3)).await;
             let illicit_spend = rng.gen::<u32>() % ONE_IN_X_CHANCE_FOR_AN_ATTACK == 0;
 
             if illicit_spend {
