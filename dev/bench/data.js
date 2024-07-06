@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720256119841,
+  "lastUpdate": 1720256237807,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "279e8d79fb08112402472d487f7c527fbfa05d75",
-          "message": "chore(node): refactor pricing metrics",
-          "timestamp": "2024-03-27T11:33:17Z",
-          "tree_id": "513fd9a64967713dd4bf354f8500ba641fa5355e",
-          "url": "https://github.com/maidsafe/safe_network/commit/279e8d79fb08112402472d487f7c527fbfa05d75"
-        },
-        "date": 1711542116913,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 48,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 57,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "45ca228e05420fc94d80c8bb5f65cdf171149e6c",
+          "message": "fix(test): do not overwhelm the nodes and the client",
+          "timestamp": "2024-07-06T08:06:40Z",
+          "tree_id": "057ebd202f333db3a87174a86d04135e3230fc6f",
+          "url": "https://github.com/maidsafe/safe_network/commit/45ca228e05420fc94d80c8bb5f65cdf171149e6c"
+        },
+        "date": 1720256236956,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 64,
             "unit": "MB"
           }
         ]
