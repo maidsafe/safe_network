@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720445018019,
+  "lastUpdate": 1720445019579,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "0c564fa5644d1dd57c4a95fa804de0f942b2ad08",
-          "message": "feat(faucet): rate limit based upon wallet locks",
-          "timestamp": "2024-03-27T13:07:03Z",
-          "tree_id": "8b15a85318f4ff1f35faf761e2cc8853f0a606be",
-          "url": "https://github.com/maidsafe/safe_network/commit/0c564fa5644d1dd57c4a95fa804de0f942b2ad08"
-        },
-        "date": 1711547488100,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3643,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 16571,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 30282,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "dab2bba53f581936cf159e1f64e055e485f3f372",
+          "message": "fix(networking): prevent double /p2p/ in our addr\n\nSometimes when we start listening via a relay server, we would start\nadding our own address that included a double `/p2p/<peer ID>` to our\nexternal addresses.",
+          "timestamp": "2024-07-08T12:38:46Z",
+          "tree_id": "d227d97e7643832471065af1d259affc76f0b175",
+          "url": "https://github.com/maidsafe/safe_network/commit/dab2bba53f581936cf159e1f64e055e485f3f372"
+        },
+        "date": 1720445019243,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6202,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 29966,
             "unit": "ms"
           },
           {
