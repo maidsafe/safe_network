@@ -64,18 +64,13 @@ jobs:
   # This job isn't necessary, but it's useful for debugging the packaging process for the real release
   # workflow, just in case any issues are ever encountered there.
   package:
-    name: publish and release
+    name: package artifacts
     runs-on: ubuntu-latest
     needs: [build]
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: eu-west-2
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: "0"
-          token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+          ref: ${{ inputs.tag || inputs.branch }}
       - uses: actions/download-artifact@master
         with:
           name: safe_network-x86_64-pc-windows-msvc
@@ -100,22 +95,12 @@ jobs:
         with:
           name: safe_network-aarch64-unknown-linux-musl
           path: artifacts/aarch64-unknown-linux-musl/release
-      # It's possible to `cargo install` just, but it's very slow to compile on GHA infra.
-      # Therefore we just pull the binary from the Github Release.
-      - name: install just
-        shell: bash
-        run: |
-          curl -L -O $JUST_BIN_URL
-          mkdir just
-          tar xvf just-1.25.2-x86_64-unknown-linux-musl.tar.gz -C just
-          rm just-1.25.2-x86_64-unknown-linux-musl.tar.gz
-          sudo mv just/just /usr/local/bin
-          rm -rf just
-          sudo apt-get install -y tree
+      - uses: cargo-bins/cargo-binstall@main
+      - shell: bash
+        run: cargo binstall --no-confirm just
       - name: package artifacts
         shell: bash
         run: |
-          tree artifacts
           just package-release-assets "faucet"
           just package-release-assets "nat-detection"
           just package-release-assets "node-launchpad"
