@@ -58,6 +58,21 @@ pub enum Error {
     /// Main secret key not found when loading wallet from path
     #[error("Main secret key not found: {0:#?}")]
     MainSecretKeyNotFound(std::path::PathBuf),
+    /// Encrypted main secret key not found when loading wallet from path
+    #[error("Encrypted main secret key not found: {0:#?}")]
+    EncryptedMainSecretKeyNotFound(std::path::PathBuf),
+    /// Failed to serialize encrypted secret key
+    #[error("Failed to serialize encrypted secret key: {0}")]
+    FailedToSerializeEncryptedKey(String),
+    /// Failed to deserialize encrypted secret key
+    #[error("Failed to deserialize encrypted secret key: {0}")]
+    FailedToDeserializeEncryptedKey(String),
+    /// Failed to encrypt a secret key
+    #[error("Failed to encrypt secret key: {0}")]
+    FailedToEncryptKey(String),
+    /// Failed to decrypt a secret key
+    #[error("Failed to encrypt secret key: {0}")]
+    FailedToDecryptKey(String),
     /// Failed to parse bytes into a bls key
     #[error("Failed to parse bls key")]
     FailedToParseBlsKey,
