@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720468331771,
+  "lastUpdate": 1720468450543,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "213deb8aece3c03a52a52cafae72b380cf9faf88",
-          "message": "ci: fix references to node manager crate",
-          "timestamp": "2024-03-27T18:50:29Z",
-          "tree_id": "857a59ea86ac0fd9efcfcf7823e87114d5ec7f22",
-          "url": "https://github.com/maidsafe/safe_network/commit/213deb8aece3c03a52a52cafae72b380cf9faf88"
-        },
-        "date": 1711566161482,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/dab2bba53f581936cf159e1f64e055e485f3f372"
         },
         "date": 1720445016305,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "00bd81c4b4371ed53873a5b1346a3b668d94f845",
+          "message": "Merge pull request #1950 from maidsafe/stable-2024-07-08\n\nchore(release): stable 2024-07-08",
+          "timestamp": "2024-07-08T20:39:55+01:00",
+          "tree_id": "4998b92b9714e3e16aec76eb2264dd78d649294b",
+          "url": "https://github.com/maidsafe/safe_network/commit/00bd81c4b4371ed53873a5b1346a3b668d94f845"
+        },
+        "date": 1720468449620,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
