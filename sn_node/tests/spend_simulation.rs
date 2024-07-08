@@ -628,7 +628,7 @@ fn get_recipients(our_id: WalletId, state: &State) -> Vec<MainPubkey> {
     let mut recipients = Vec::new();
 
     let mut random_number = our_id;
-    while random_number != our_id {
+    while random_number == our_id {
         random_number = WalletId(rand::thread_rng().gen_range(0..state.main_pubkeys.len()));
     }
     recipients.push(state.main_pubkeys[&random_number]);
