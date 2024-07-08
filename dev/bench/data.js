@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720441316219,
+  "lastUpdate": 1720444898636,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "0c564fa5644d1dd57c4a95fa804de0f942b2ad08",
-          "message": "feat(faucet): rate limit based upon wallet locks",
-          "timestamp": "2024-03-27T13:07:03Z",
-          "tree_id": "8b15a85318f4ff1f35faf761e2cc8853f0a606be",
-          "url": "https://github.com/maidsafe/safe_network/commit/0c564fa5644d1dd57c4a95fa804de0f942b2ad08"
-        },
-        "date": 1711547375385,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.8347968810524875,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.194899896030478,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.373953826223804,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.40196901515755,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "dab2bba53f581936cf159e1f64e055e485f3f372",
+          "message": "fix(networking): prevent double /p2p/ in our addr\n\nSometimes when we start listening via a relay server, we would start\nadding our own address that included a double `/p2p/<peer ID>` to our\nexternal addresses.",
+          "timestamp": "2024-07-08T12:38:46Z",
+          "tree_id": "d227d97e7643832471065af1d259affc76f0b175",
+          "url": "https://github.com/maidsafe/safe_network/commit/dab2bba53f581936cf159e1f64e055e485f3f372"
+        },
+        "date": 1720444892846,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2390863177580511,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.678992000182111,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.37001418318139,
             "unit": "MiB/s"
           }
         ]
