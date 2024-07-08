@@ -32,6 +32,8 @@ tracing = { version = "~0.1.26" }
 walkdir = "~2.5.0"
 xor_name = "5.0.0"
 rayon = "1.8.0"
+ring = "0.17.8"
+tempfile = "3.10.1"
 
 [dev-dependencies]
 tokio = { version = "1.32.0", features = ["macros", "rt"] }
