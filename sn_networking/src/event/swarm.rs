@@ -310,7 +310,7 @@ impl SwarmDriver {
             }
 
             SwarmEvent::NewListenAddr {
-                address,
+                mut address,
                 listener_id,
             } => {
                 event_string = "new listen addr";
@@ -327,7 +327,10 @@ impl SwarmDriver {
                 };
 
                 let local_peer_id = *self.swarm.local_peer_id();
-                let address = address.with(Protocol::P2p(local_peer_id));
+                // Make sure the address ends with `/p2p/<local peer ID>`. In case of relay, `/p2p` is already there.
+                if address.iter().last() != Some(Protocol::P2p(local_peer_id)) {
+                    address.push(Protocol::P2p(local_peer_id));
+                }
 
                 // Trigger server mode if we're not a client and we should not add our own address if we're behind
                 // home network.
