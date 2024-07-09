@@ -798,14 +798,8 @@ impl Node {
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((spend, Ok(_descendant))) => {
+                    trace!("Spend {spend:?} has a live descendant");
                     let _inserted = live_spends.insert(spend);
-                    if live_spends.len() > 1 {
-                        let array: Vec<_> = live_spends.clone().into_iter().collect();
-                        if let [one, two] = array.as_slice() {
-                            warn!("Got two live spends {one:?} and {two:?}, things are messed up!");
-                            return Ok((one.to_owned().clone(), two.to_owned().clone()));
-                        }
-                    }
                 }
                 Ok((spend, Err(NetworkError::GetRecordError(GetRecordError::RecordNotFound)))) => {
                     trace!("Spend {spend:?} descendant was not found, continuing...");
@@ -823,8 +817,7 @@ impl Node {
             }
         }
 
-        // less than 2 live spends were found, order by is live,
-        // then position in BTreeSet and take first two
+        // order by live or not live, then order in the BTreeSet and take first 2
         let not_live_spends: BTreeSet<_> = many_spends
             .iter()
             .filter(|s| !live_spends.contains(s))
