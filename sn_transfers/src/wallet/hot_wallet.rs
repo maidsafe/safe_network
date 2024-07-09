@@ -74,8 +74,11 @@ impl HotWallet {
 
     /// Reloads the wallet from disk. If the wallet secret key is encrypted, you'll need to specify the password.
     fn reload(&mut self) -> Result<()> {
-        // TODO: prompt user for a wallet password if wallet is encrypted, use authentication manager
-        let wallet = Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None, None)?;
+        // Password needed to decrypt wallet if it is encrypted
+        let opt_password = self.authentication_manager.authenticate()?;
+
+        let wallet =
+            Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None, opt_password)?;
 
         if *wallet.key.secret_key() != *self.key.secret_key() {
             return Err(WalletError::CurrentAndLoadedKeyMismatch(
@@ -86,6 +89,11 @@ impl HotWallet {
         // if it's a matching key, we can overwrite our wallet
         *self = wallet;
         Ok(())
+    }
+
+    /// Saves the password for decrypting an encrypted wallet for a certain amount of time.
+    pub fn authenticate_with_password(&mut self, password: String) -> Result<()> {
+        self.authentication_manager.set_password(password)
     }
 
     /// Locks the wallet and returns exclusive access to the wallet
@@ -173,7 +181,7 @@ impl HotWallet {
             key,
             watchonly_wallet,
             unconfirmed_spend_requests,
-            authentication_manager: Default::default(),
+            authentication_manager: AuthenticationManager::new(wallet_dir),
         })
     }
 
@@ -668,7 +676,7 @@ impl HotWallet {
     fn load_from_path_and_key(
         wallet_dir: &Path,
         main_key: Option<MainSecretKey>,
-        main_key_password: Option<&str>,
+        main_key_password: Option<String>,
     ) -> Result<Self> {
         let key = match get_main_key_from_disk(wallet_dir, main_key_password) {
             Ok(key) => {
@@ -702,7 +710,7 @@ impl HotWallet {
             key,
             watchonly_wallet,
             unconfirmed_spend_requests,
-            authentication_manager: Default::default(),
+            authentication_manager: AuthenticationManager::new(wallet_dir.to_path_buf()),
         })
     }
 }
@@ -712,6 +720,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::HotWallet;
+    use crate::wallet::authentication::AuthenticationManager;
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
         wallet::{
@@ -758,7 +767,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-            authentication_manager: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         assert_eq!(main_pubkey, deposit_only.address());
@@ -786,7 +795,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-            authentication_manager: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![])?;
@@ -812,7 +821,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-            authentication_manager: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis])?;
@@ -834,7 +843,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-            authentication_manager: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         local_wallet.deposit_and_store_to_disk(&vec![genesis])?;
@@ -858,7 +867,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
-            authentication_manager: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis_0.clone()])?;
