@@ -43,14 +43,14 @@ pub(crate) fn store_new_keypair(
 /// Returns sn_transfers::MainSecretKey or None if file doesn't exist. It assumes it's hex-encoded.
 pub(super) fn get_main_key_from_disk(
     wallet_dir: &Path,
-    password: Option<&str>,
+    password: Option<String>,
 ) -> Result<MainSecretKey> {
     // If a valid `main_secret_key.encrypted` file is found, use it
     if EncryptedSecretKey::file_exists(wallet_dir) {
         let encrypted_secret_key = EncryptedSecretKey::from_file(wallet_dir)?;
         let password = password.ok_or(Error::EncryptedMainSecretKeyRequiresPassword)?;
 
-        encrypted_secret_key.decrypt(password)
+        encrypted_secret_key.decrypt(&password)
     } else {
         // Else try a `main_secret_key` file
         let path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);

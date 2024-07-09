@@ -23,6 +23,7 @@ pub(crate) enum WalletApiHelper {
     HotWallet(HotWallet),
 }
 
+// TODO: if any action yields an authentication error, call the authenticate function and try again.
 impl WalletApiHelper {
     pub fn watch_only_from_pk(main_pk: MainPubkey, root_dir: &Path) -> Result<Self> {
         let wallet = watch_only_wallet_from_pk(main_pk, root_dir)?;
@@ -152,6 +153,20 @@ impl WalletApiHelper {
             Self::HotWallet(w) => w.try_load_cash_notes()?,
         }
         Ok(())
+    }
+
+    /// Authenticate with password for encrypted wallet.
+    fn authenticate(&mut self) -> Result<()> {
+        match self {
+            WalletApiHelper::WatchOnlyWallet(_) => Ok(()),
+            WalletApiHelper::HotWallet(w) => {
+                print!("Wallet password: ");
+                let mut input = String::new();
+                std::io::stdin().read_to_string(&mut input)?;
+                w.authenticate_with_password(input)?;
+                Ok(())
+            }
+        }
     }
 }
 
