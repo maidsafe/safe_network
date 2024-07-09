@@ -85,6 +85,10 @@ pub enum TransferError {
     TransferDeserializationFailed,
     #[error("The OutputPurpose bearing an invlalid length")]
     OutputPurposeTooShort,
+    #[error("Multiple inputs from different keys without a middle-addr")]
+    MultipleInputsWithoutMiddleAddr,
+    #[error("Multiple inputs from different keys without a middle payment")]
+    MultipleInputsWithoutMiddlePayment,
 
     #[error("Bls error: {0}")]
     Blsttc(#[from] bls::error::Error),

@@ -134,12 +134,6 @@ pub fn get_genesis_sk() -> MainSecretKey {
 
 /// Return if provided Spend is genesis spend.
 pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
-    info!(
-        "Testing genesis against genesis_input {:?} genesis_output {:?} {GENESIS_CASHNOTE_AMOUNT:?}, {:?}",
-        GENESIS_PK.new_unique_pubkey(&GENESIS_INPUT_DERIVATION_INDEX),
-        GENESIS_PK.new_unique_pubkey(&GENESIS_OUTPUT_DERIVATION_INDEX),
-        spend.spend
-    );
     let bytes = spend.spend.to_bytes_for_signing();
     spend.spend.unique_pubkey == *GENESIS_SPEND_UNIQUE_KEY
         && GENESIS_SPEND_UNIQUE_KEY.verify(&spend.derived_key_sig, bytes)
