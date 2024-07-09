@@ -61,6 +61,9 @@ pub enum Error {
     /// Encrypted main secret key not found when loading wallet from path
     #[error("Encrypted main secret key not found: {0:#?}")]
     EncryptedMainSecretKeyNotFound(std::path::PathBuf),
+    /// Encrypted main secret key requires a password to decrypt
+    #[error("Encrypted main secret key requires a password")]
+    EncryptedMainSecretKeyRequiresPassword,
     /// Failed to serialize encrypted secret key
     #[error("Failed to serialize encrypted secret key: {0}")]
     FailedToSerializeEncryptedKey(String),
@@ -113,4 +116,11 @@ pub enum Error {
     /// I/O error
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
+
+    /// Hot wallet is password protected
+    #[error("Hot wallet password required")]
+    HotWalletPasswordRequired,
+    /// Hot wallet password is only valid for a certain time until the user has to provide it again
+    #[error("Hot wallet password expired")]
+    HotWalletPasswordExpired,
 }

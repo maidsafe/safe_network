@@ -18,6 +18,7 @@ use super::{
     watch_only::WatchOnlyWallet,
     Error, Result,
 };
+use crate::wallet::authentication::AuthenticationManager;
 use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
@@ -47,6 +48,8 @@ pub struct HotWallet {
     /// These have not yet been successfully sent to the network
     /// and need to be, to reach network validity.
     unconfirmed_spend_requests: BTreeSet<SignedSpend>,
+    /// Approves or disapproves certain actions
+    authentication_manager: AuthenticationManager,
 }
 
 impl HotWallet {
@@ -69,9 +72,10 @@ impl HotWallet {
         self.watchonly_wallet.store(exclusive_access)
     }
 
-    /// reloads the wallet from disk.
+    /// Reloads the wallet from disk. If the wallet secret key is encrypted, you'll need to specify the password.
     fn reload(&mut self) -> Result<()> {
-        let wallet = Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None)?;
+        // TODO: prompt user for a wallet password if wallet is encrypted, use authentication manager
+        let wallet = Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None, None)?;
 
         if *wallet.key.secret_key() != *self.key.secret_key() {
             return Err(WalletError::CurrentAndLoadedKeyMismatch(
@@ -150,7 +154,7 @@ impl HotWallet {
         // This creates the received_cash_notes dir if it doesn't exist.
         std::fs::create_dir_all(&wallet_dir)?;
         // This creates the main_key file if it doesn't exist.
-        Self::load_from_path_and_key(&wallet_dir, Some(main_key))
+        Self::load_from_path_and_key(&wallet_dir, Some(main_key), None)
     }
 
     /// Creates a serialized wallet for a path and main key.
@@ -160,7 +164,7 @@ impl HotWallet {
         // This creates the received_cash_notes dir if it doesn't exist.
         std::fs::create_dir_all(&wallet_dir)?;
         // Create the new wallet for this key
-        store_new_keypair(&wallet_dir, &key)?;
+        store_new_keypair(&wallet_dir, &key, None)?;
         let unconfirmed_spend_requests =
             (get_unconfirmed_spend_requests(&wallet_dir)?).unwrap_or_default();
         let watchonly_wallet = WatchOnlyWallet::load_from(&wallet_dir, key.main_pubkey())?;
@@ -169,6 +173,7 @@ impl HotWallet {
             key,
             watchonly_wallet,
             unconfirmed_spend_requests,
+            authentication_manager: Default::default(),
         })
     }
 
@@ -181,14 +186,14 @@ impl HotWallet {
     /// Tries to loads a serialized wallet from a path, bailing out if it doesn't exist.
     pub fn try_load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        Self::load_from_path_and_key(&wallet_dir, None)
+        Self::load_from_path_and_key(&wallet_dir, None, None)
     }
 
     /// Loads a serialized wallet from a given path, no additional element will
     /// be added to the provided path and strictly taken as the wallet files location.
     pub fn load_from_path(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
         std::fs::create_dir_all(wallet_dir)?;
-        Self::load_from_path_and_key(wallet_dir, main_key)
+        Self::load_from_path_and_key(wallet_dir, main_key, None)
     }
 
     pub fn address(&self) -> MainPubkey {
@@ -660,8 +665,12 @@ impl HotWallet {
 
     /// Loads a serialized wallet from a path.
     // TODO: what's the behaviour here if path has stored key and we pass one in?
-    fn load_from_path_and_key(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
-        let key = match get_main_key_from_disk(wallet_dir) {
+    fn load_from_path_and_key(
+        wallet_dir: &Path,
+        main_key: Option<MainSecretKey>,
+        main_key_password: Option<&str>,
+    ) -> Result<Self> {
+        let key = match get_main_key_from_disk(wallet_dir, main_key_password) {
             Ok(key) => {
                 if let Some(passed_key) = main_key {
                     if key.secret_key() != passed_key.secret_key() {
@@ -673,7 +682,7 @@ impl HotWallet {
             }
             Err(error) => {
                 if let Some(key) = main_key {
-                    store_new_keypair(wallet_dir, &key)?;
+                    store_new_keypair(wallet_dir, &key, None)?;
                     key
                 } else {
                     error!(
@@ -693,6 +702,7 @@ impl HotWallet {
             key,
             watchonly_wallet,
             unconfirmed_spend_requests,
+            authentication_manager: Default::default(),
         })
     }
 }
@@ -748,6 +758,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: Default::default(),
         };
 
         assert_eq!(main_pubkey, deposit_only.address());
@@ -775,6 +786,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: Default::default(),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![])?;
@@ -800,6 +812,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: Default::default(),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis])?;
@@ -821,6 +834,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: Default::default(),
         };
 
         local_wallet.deposit_and_store_to_disk(&vec![genesis])?;
@@ -844,6 +858,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: Default::default(),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis_0.clone()])?;

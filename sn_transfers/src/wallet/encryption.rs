@@ -78,6 +78,12 @@ impl EncryptedSecretKey {
         Ok(encrypted_secret_key)
     }
 
+    /// Returns whether a `main_secret_key.encrypted` file exists.
+    pub fn file_exists(wallet_dir: &Path) -> bool {
+        let path = wallet_dir.join(ENCRYPTED_MAIN_SECRET_KEY_FILENAME);
+        path.is_file()
+    }
+
     /// Decrypt an encrypted secret key using the password.
     pub fn decrypt(&self, password: &str) -> Result<MainSecretKey> {
         let salt = hex::decode(&self.salt)

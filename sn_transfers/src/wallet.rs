@@ -53,6 +53,7 @@
 //!
 
 mod api;
+mod authentication;
 mod data_payments;
 mod encryption;
 mod error;
