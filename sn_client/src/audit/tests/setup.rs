@@ -114,6 +114,7 @@ impl MockNetwork {
             recipient,
             from_wallet.sk.main_pubkey(),
             SpendReason::default(),
+            None,
         )
         .map_err(|e| eyre!("failed to create transfer: {}", e))?;
         let spends = transfer.all_spend_requests;

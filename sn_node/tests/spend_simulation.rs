@@ -357,15 +357,19 @@ async fn inner_handle_action(
             info!(
                 "{our_id} Available CashNotes for local send: {:?}",
                 available_cash_notes
-                    .iter()
-                    .map(|(c, _)| c.unique_pubkey())
-                    .collect_vec()
             );
+            let mut rng = &mut rand::rngs::OsRng;
+            let derivation_index = DerivationIndex::random(&mut rng);
             let transfer = OfflineTransfer::new(
                 available_cash_notes,
                 recipients,
                 wallet.address(),
                 SpendReason::default(),
+                Some((
+                    wallet.key().main_pubkey(),
+                    derivation_index,
+                    wallet.key().derive_key(&derivation_index),
+                )),
             )?;
             let recipient_cash_notes = transfer.cash_notes_for_recipient.clone();
             let change = transfer.change_cash_note.clone();
@@ -411,6 +415,7 @@ async fn inner_handle_action(
                 vec![to],
                 wallet.address(),
                 SpendReason::default(),
+                None,
             )?;
             info!("{our_id} double spending transfer: {transfer:?}");
 
@@ -486,11 +491,12 @@ async fn handle_wallet_task_result(
             // mark the input cashnotes as spent
             info!("{id} marking inputs {:?} as spent", transaction.inputs);
             for input in &transaction.inputs {
-                let (status, _cashnote) = state
-                    .cashnote_tracker
-                    .get_mut(&input.unique_pubkey)
-                    .ok_or_eyre("Input spend not tracked")?;
-                *status = SpendStatus::Spent;
+                // Transaction may contains the `middle payment`
+                if let Some((status, _cashnote)) =
+                    state.cashnote_tracker.get_mut(&input.unique_pubkey)
+                {
+                    *status = SpendStatus::Spent;
+                }
             }
 
             // track the change cashnote that is stored by our wallet.
@@ -694,6 +700,7 @@ async fn init_state(count: usize) -> Result<(Client, State)> {
         recipients,
         first_wallet.address(),
         reason.clone(),
+        None,
     )?;
 
     info!("Sending transfer for all wallets and verifying them");
