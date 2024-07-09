@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::error::{Error, Result};
+use crate::wallet::encryption::{encrypt_secret_key, EncryptedSecretKey};
 use crate::{MainPubkey, MainSecretKey};
 use hex::{decode, encode};
 use std::path::Path;
@@ -17,26 +18,52 @@ const MAIN_SECRET_KEY_FILENAME: &str = "main_secret_key";
 const MAIN_PUBKEY_FILENAME: &str = "main_pubkey";
 
 /// Writes the public address and main key (hex-encoded) to different locations at disk.
-pub(crate) fn store_new_keypair(wallet_dir: &Path, main_key: &MainSecretKey) -> Result<()> {
-    let secret_key_path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
-    let public_key_path = wallet_dir.join(MAIN_PUBKEY_FILENAME);
-    std::fs::write(secret_key_path, encode(main_key.to_bytes()))?;
-    std::fs::write(public_key_path, encode(main_key.main_pubkey().to_bytes()))
-        .map_err(|e| Error::FailedToHexEncodeKey(e.to_string()))?;
+pub(crate) fn store_new_keypair(
+    wallet_dir: &Path,
+    main_key: &MainSecretKey,
+    encryption_password: Option<&str>,
+) -> Result<()> {
+    // Save the public key as plain hex text in `main_pubkey` file
+    store_new_pubkey(wallet_dir, &main_key.main_pubkey())?;
+
+    // If encryption_password is provided, the secret key will be encrypted with the password
+    if let Some(password) = encryption_password {
+        let encrypted_key = encrypt_secret_key(main_key, password)?;
+        // Save the encrypted secret key in `main_secret_key.encrypted` file
+        encrypted_key.save_to_file(wallet_dir)?;
+    } else {
+        // Save secret key as plain hex text in `main_secret_key` file
+        let secret_key_path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
+        std::fs::write(secret_key_path, encode(main_key.to_bytes()))?;
+    }
+
     Ok(())
 }
 
 /// Returns sn_transfers::MainSecretKey or None if file doesn't exist. It assumes it's hex-encoded.
-pub(super) fn get_main_key_from_disk(wallet_dir: &Path) -> Result<MainSecretKey> {
-    let path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
-    if !path.is_file() {
-        return Err(Error::MainSecretKeyNotFound(path));
+pub(super) fn get_main_key_from_disk(
+    wallet_dir: &Path,
+    password: Option<&str>,
+) -> Result<MainSecretKey> {
+    // If a valid `main_secret_key.encrypted` file is found, use it
+    if EncryptedSecretKey::file_exists(wallet_dir) {
+        let encrypted_secret_key = EncryptedSecretKey::from_file(wallet_dir)?;
+        let password = password.ok_or(Error::EncryptedMainSecretKeyRequiresPassword)?;
+
+        encrypted_secret_key.decrypt(password)
+    } else {
+        // Else try a `main_secret_key` file
+        let path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
+
+        if !path.is_file() {
+            return Err(Error::MainSecretKeyNotFound(path));
+        }
+
+        let secret_hex_bytes = std::fs::read(&path)?;
+        let secret = bls_secret_from_hex(secret_hex_bytes)?;
+
+        Ok(MainSecretKey::new(secret))
     }
-
-    let secret_hex_bytes = std::fs::read(&path)?;
-    let secret = bls_secret_from_hex(secret_hex_bytes)?;
-
-    Ok(MainSecretKey::new(secret))
 }
 
 /// Writes the public address (hex-encoded) to disk.
@@ -82,8 +109,8 @@ mod test {
         let main_key = MainSecretKey::random();
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
-        store_new_keypair(&root_dir, &main_key)?;
-        let secret_result = get_main_key_from_disk(&root_dir)?;
+        store_new_keypair(&root_dir, &main_key, None)?;
+        let secret_result = get_main_key_from_disk(&root_dir, None)?;
         assert_eq!(secret_result.main_pubkey(), main_key.main_pubkey());
         Ok(())
     }
