@@ -92,15 +92,19 @@ impl SpendDagDb {
         client: Client,
         encryption_sk: Option<SecretKey>,
     ) -> Result<Self> {
+        if !path.exists() {
+            debug!("Creating directory {path:?}...");
+            std::fs::create_dir_all(&path)?;
+        }
         let dag_path = path.join(SPEND_DAG_FILENAME);
         info!("Loading DAG from {dag_path:?}...");
         let dag = match SpendDag::load_from_file(&dag_path) {
             Ok(d) => {
-                println!("Found a local spend DAG file");
+                info!("Found a local spend DAG file");
                 d
             }
             Err(_) => {
-                println!("Found no local spend DAG file, starting from Genesis");
+                info!("Found no local spend DAG file, starting from Genesis");
                 client.new_dag_with_genesis_only().await?
             }
         };
@@ -232,7 +236,7 @@ impl SpendDagDb {
             });
             Some(tx)
         } else {
-            eprintln!("Foundation secret key not set! Beta rewards will not be processed.");
+            warn!("Foundation secret key not set! Beta rewards will not be processed.");
             None
         };
 
@@ -364,7 +368,6 @@ impl SpendDagDb {
             {
                 if let Some(user_name) = beta_participants_read.get(&default_user_name_hash) {
                     warn!("With default key, got forwarded reward {amount} from {user_name} of {amount} at {addr:?}");
-                    println!("With default key, got forwarded reward {amount} from {user_name} of {amount} at {addr:?}");
                     beta_tracking
                         .forwarded_payments
                         .entry(user_name.to_owned())
@@ -375,7 +378,6 @@ impl SpendDagDb {
             }
 
             warn!("Found a forwarded reward {amount} for an unknown participant at {addr:?}: {user_name_hash:?}");
-            println!("Found a forwarded reward {amount} for an unknown participant at {addr:?}: {user_name_hash:?}");
             beta_tracking
                 .forwarded_payments
                 .entry(format!("unknown participant: {user_name_hash:?}"))
