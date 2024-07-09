@@ -11,6 +11,7 @@ use crate::wallet::Result;
 use crate::MainSecretKey;
 use bls::SecretKey;
 use hex::encode;
+use lazy_static::lazy_static;
 use rand::Rng;
 use ring::aead::{BoundKey, Nonce, NonceSequence};
 use ring::error::Unspecified;
@@ -18,11 +19,12 @@ use serde::{Deserialize, Serialize};
 use std::io::Read;
 use std::num::NonZeroU32;
 use std::path::Path;
-use std::sync::LazyLock;
 
-/// Number of iterations for pbkdf2.
-static ITERATIONS: LazyLock<NonZeroU32> =
-    LazyLock::new(|| NonZeroU32::new(100_000).expect("ITERATIONS should be > 0."));
+lazy_static! {
+    /// Number of iterations for pbkdf2.
+    static ref ITERATIONS: NonZeroU32 =
+        NonZeroU32::new(100_000).expect("ITERATIONS should be > 0.");
+}
 
 /// Filename for the encrypted secret key.
 const ENCRYPTED_MAIN_SECRET_KEY_FILENAME: &str = "main_secret_key.encrypted";
