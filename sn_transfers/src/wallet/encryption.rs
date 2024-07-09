@@ -18,9 +18,12 @@ use serde::{Deserialize, Serialize};
 use std::io::Read;
 use std::num::NonZeroU32;
 use std::path::Path;
+use std::sync::LazyLock;
 
 /// Number of iterations for pbkdf2.
-const ITERATIONS: u32 = 100_000; // Should always be > 0
+static ITERATIONS: LazyLock<NonZeroU32> =
+    LazyLock::new(|| NonZeroU32::new(100_000).expect("ITERATIONS should be > 0."));
+
 /// Filename for the encrypted secret key.
 const ENCRYPTED_MAIN_SECRET_KEY_FILENAME: &str = "main_secret_key.encrypted";
 
@@ -83,7 +86,7 @@ impl EncryptedSecretKey {
         // Reconstruct the key from salt and password
         ring::pbkdf2::derive(
             ring::pbkdf2::PBKDF2_HMAC_SHA512,
-            NonZeroU32::new(ITERATIONS).expect("ITERATIONS should be > 0."), // Will never panic
+            *ITERATIONS,
             &salt,
             password.as_bytes(),
             &mut key,
@@ -159,7 +162,7 @@ pub(crate) fn encrypt_secret_key(
     // HMAC<Sha512> is used as the pseudorandom function for its security properties
     ring::pbkdf2::derive(
         ring::pbkdf2::PBKDF2_HMAC_SHA512,
-        NonZeroU32::new(ITERATIONS).expect("ITERATIONS should be > 0."), // Will never panic
+        *ITERATIONS,
         &salt,
         password.as_bytes(),
         &mut key,
