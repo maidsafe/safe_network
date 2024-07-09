@@ -80,32 +80,38 @@ impl EncryptedSecretKey {
 
         let mut key = [0; 32];
 
+        // Reconstruct the key from salt and password
         ring::pbkdf2::derive(
             ring::pbkdf2::PBKDF2_HMAC_SHA512,
-            NonZeroU32::new(ITERATIONS).unwrap(),
+            NonZeroU32::new(ITERATIONS).expect("ITERATIONS should be > 0."), // Will never panic
             &salt,
             password.as_bytes(),
             &mut key,
         );
 
+        // Create an unbound key from the previously reconstructed key
         let unbound_key = ring::aead::UnboundKey::new(&ring::aead::CHACHA20_POLY1305, &key)
             .map_err(|_| {
                 Error::FailedToDecryptKey(String::from("Could not create unbound key."))
             })?;
 
+        // Restore original nonce
         let nonce_vec = hex::decode(&self.nonce)
             .map_err(|_| Error::FailedToDecryptKey(String::from("Invalid nonce encoding.")))?;
 
         let mut nonce = [0u8; 12];
         nonce.copy_from_slice(&nonce_vec[0..12]);
 
+        // Create an opening key using the unbound key and original nonce
         let mut opening_key = ring::aead::OpeningKey::new(unbound_key, NonceSeq(nonce));
         let aad = ring::aead::Aad::from(&[]);
 
+        // Convert the hex encoded and encrypted secret key to bytes
         let mut encrypted_secret_key = hex::decode(&self.encrypted_secret_key).map_err(|_| {
             Error::FailedToDecryptKey(String::from("Invalid encrypted secret key encoding."))
         })?;
 
+        // Decrypt the encrypted secret key bytes
         let decrypted_data = opening_key
             .open_in_place(aad, &mut encrypted_secret_key)
             .map_err(|_| {
@@ -115,6 +121,7 @@ impl EncryptedSecretKey {
         let mut secret_key_bytes = [0u8; 32];
         secret_key_bytes.copy_from_slice(&decrypted_data[0..32]);
 
+        // Create secret key from decrypted bytes
         let secret_key = SecretKey::from_bytes(secret_key_bytes)?;
 
         Ok(MainSecretKey::new(secret_key))
@@ -152,7 +159,7 @@ pub(crate) fn encrypt_secret_key(
     // HMAC<Sha512> is used as the pseudorandom function for its security properties
     ring::pbkdf2::derive(
         ring::pbkdf2::PBKDF2_HMAC_SHA512,
-        NonZeroU32::new(ITERATIONS).unwrap(),
+        NonZeroU32::new(ITERATIONS).expect("ITERATIONS should be > 0."), // Will never panic
         &salt,
         password.as_bytes(),
         &mut key,
