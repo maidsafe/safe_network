@@ -749,9 +749,7 @@ impl Node {
         }
 
         // keep track of double spend with double spent parent
-        let some_parents_double_spent = !double_spent_parent.is_empty();
-        let we_re_double_spent = all_verified_spends.len() > 1;
-        if some_parents_double_spent && we_re_double_spent {
+        if !all_verified_spends.is_empty() && !double_spent_parent.is_empty() {
             warn!("Parent of {unique_pubkey:?} was double spent, but it's also a double spend. So keeping track of this double spend attempt.");
             all_verified_spends.extend(double_spent_parent.into_iter())
         }
