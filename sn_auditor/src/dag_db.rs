@@ -218,7 +218,7 @@ impl SpendDagDb {
     }
 
     /// Update DAG from Network continuously
-    pub async fn continuous_background_update(self) -> Result<()> {
+    pub async fn continuous_background_update(self, storage_dir: PathBuf) -> Result<()> {
         let client = if let Some(client) = &self.client {
             client.clone()
         } else {
@@ -242,9 +242,32 @@ impl SpendDagDb {
             );
             tokio::spawn(async move {
                 let mut double_spends = BTreeSet::new();
+                let mut detected_spends = BTreeSet::new();
 
                 while let Some((spend, utxos_for_further_track, is_double_spend)) = rx.recv().await
                 {
+                    let content_hash = spend.spend.hash();
+
+                    if detected_spends.insert(content_hash) {
+                        let hex_content_hash = content_hash.to_hex();
+                        let addr_hex = spend.address().to_hex();
+                        let file_name = format!("{addr_hex}_{hex_content_hash}");
+                        let spend_copy = spend.clone();
+                        let file_path = storage_dir.join(&file_name);
+
+                        tokio::spawn(async move {
+                            let bytes = spend_copy.to_bytes();
+                            match std::fs::write(&file_path, bytes) {
+                                Ok(_) => {
+                                    info!("Wrote spend {file_name} to disk!");
+                                }
+                                Err(err) => {
+                                    error!("Error writing spend {file_name}, error: {err:?}");
+                                }
+                            }
+                        });
+                    }
+
                     if is_double_spend {
                         self_clone
                             .beta_background_process_double_spend(
@@ -423,7 +446,7 @@ impl SpendDagDb {
                 spend.spend.reason
             );
             eprintln!(
-                "Incorreect royalty spend has {} royalties, {:?} - {:?}",
+                "Incorrect royalty spend has {} royalties, {:?} - {:?}",
                 spend.spend.network_royalties.len(),
                 spend.spend.spent_tx.inputs,
                 spend.spend.spent_tx.outputs
@@ -436,7 +459,7 @@ impl SpendDagDb {
                 spend.spend.reason
             );
             warn!(
-                "Incorreect royalty spend has {} royalties, {:?} - {:?}",
+                "Incorrect royalty spend has {} royalties, {:?} - {:?}",
                 spend.spend.network_royalties.len(),
                 spend.spend.spent_tx.inputs,
                 spend.spend.spent_tx.outputs
