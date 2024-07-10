@@ -19,6 +19,7 @@ use super::{
     Error, Result,
 };
 use crate::wallet::authentication::AuthenticationManager;
+use crate::wallet::encryption::EncryptedSecretKey;
 use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
@@ -64,6 +65,11 @@ impl HotWallet {
 
     pub fn root_dir(&self) -> &Path {
         self.watchonly_wallet.api().wallet_dir()
+    }
+
+    pub fn is_encrypted(root_dir: &Path) -> bool {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        EncryptedSecretKey::file_exists(&wallet_dir)
     }
 
     /// Stores the wallet to disk.
@@ -176,12 +182,16 @@ impl HotWallet {
 
     /// Creates a serialized wallet for a path and main key.
     /// This will overwrite any existing wallet, unlike load_from_main_key
-    pub fn create_from_key(root_dir: &Path, key: MainSecretKey) -> Result<Self> {
+    pub fn create_from_key(
+        root_dir: &Path,
+        key: MainSecretKey,
+        password: Option<String>,
+    ) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
         // This creates the received_cash_notes dir if it doesn't exist.
         std::fs::create_dir_all(&wallet_dir)?;
         // Create the new wallet for this key
-        store_new_keypair(&wallet_dir, &key, None)?;
+        store_new_keypair(&wallet_dir, &key, password)?;
         let unconfirmed_spend_requests =
             (get_unconfirmed_spend_requests(&wallet_dir)?).unwrap_or_default();
         let watchonly_wallet = WatchOnlyWallet::load_from(&wallet_dir, key.main_pubkey())?;
@@ -211,6 +221,17 @@ impl HotWallet {
     pub fn load_from_path(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
         std::fs::create_dir_all(wallet_dir)?;
         Self::load_from_path_and_key(wallet_dir, main_key, None)
+    }
+
+    /// Loads an encrypted serialized wallet from a given path, no additional element will
+    /// be added to the provided path and strictly taken as the wallet files location.
+    pub fn load_encrypted_from_path(
+        wallet_dir: &Path,
+        main_key: Option<MainSecretKey>,
+        password: String,
+    ) -> Result<Self> {
+        std::fs::create_dir_all(wallet_dir)?;
+        Self::load_from_path_and_key(wallet_dir, main_key, Some(password))
     }
 
     pub fn address(&self) -> MainPubkey {
@@ -897,7 +918,7 @@ mod tests {
         let root_dir = dir.path().to_path_buf();
 
         let new_wallet = MainSecretKey::random();
-        let mut depositor = HotWallet::create_from_key(&root_dir, new_wallet)?;
+        let mut depositor = HotWallet::create_from_key(&root_dir, new_wallet, None)?;
         let genesis =
             create_first_cash_note_from_key(&depositor.key).expect("Genesis creation to succeed.");
         depositor.deposit_and_store_to_disk(&vec![genesis])?;
@@ -941,7 +962,7 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
         let new_wallet = MainSecretKey::random();
-        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet, None)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -974,7 +995,7 @@ mod tests {
         let root_dir = dir.path().to_path_buf();
 
         let new_wallet = MainSecretKey::random();
-        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet, None)?;
 
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
@@ -1028,7 +1049,7 @@ mod tests {
         let sender_root_dir = create_temp_dir();
         let sender_root_dir = sender_root_dir.path().to_path_buf();
         let new_wallet = MainSecretKey::random();
-        let mut sender = HotWallet::create_from_key(&sender_root_dir, new_wallet)?;
+        let mut sender = HotWallet::create_from_key(&sender_root_dir, new_wallet, None)?;
 
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
@@ -1041,7 +1062,7 @@ mod tests {
         let recipient_root_dir = recipient_root_dir.path().to_path_buf();
 
         let new_wallet = MainSecretKey::random();
-        let mut recipient = HotWallet::create_from_key(&recipient_root_dir, new_wallet)?;
+        let mut recipient = HotWallet::create_from_key(&recipient_root_dir, new_wallet, None)?;
 
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
@@ -1090,7 +1111,7 @@ mod tests {
         let root_dir = dir.path().to_path_buf();
 
         let new_wallet = MainSecretKey::random();
-        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet, None)?;
 
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");

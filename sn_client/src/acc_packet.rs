@@ -32,7 +32,7 @@ pub fn load_account_wallet_or_create_with_mnemonic(
             let wallet =
                 secret_key_from_mnemonic(mnemonic, derivation_passphrase.map(|v| v.to_owned()))?;
 
-            Ok(HotWallet::create_from_key(root_dir, wallet)?)
+            Ok(HotWallet::create_from_key(root_dir, wallet, None)?)
         }
     }
 }

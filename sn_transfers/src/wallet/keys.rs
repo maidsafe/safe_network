@@ -21,13 +21,13 @@ const MAIN_PUBKEY_FILENAME: &str = "main_pubkey";
 pub(crate) fn store_new_keypair(
     wallet_dir: &Path,
     main_key: &MainSecretKey,
-    encryption_password: Option<&str>,
+    password: Option<String>,
 ) -> Result<()> {
     // Save the public key as plain hex text in `main_pubkey` file
     store_new_pubkey(wallet_dir, &main_key.main_pubkey())?;
 
     // If encryption_password is provided, the secret key will be encrypted with the password
-    if let Some(password) = encryption_password {
+    if let Some(password) = password.as_ref() {
         let encrypted_key = encrypt_secret_key(main_key, password)?;
         // Save the encrypted secret key in `main_secret_key.encrypted` file
         encrypted_key.save_to_file(wallet_dir)?;
