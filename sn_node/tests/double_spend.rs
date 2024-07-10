@@ -404,7 +404,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         assert!(str.starts_with("Network Error Double spend(s) was detected"));
     });
 
-    info!("Verifying the original cashnote of B -> C");
+    println!("Verifying the original cashnote of B -> C");
     let result = client.verify_cashnote(&cash_notes_for_c[0]).await;
     info!("Got result while verifying the original spend from B -> C: {result:?}");
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
