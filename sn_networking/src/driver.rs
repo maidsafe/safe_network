@@ -549,7 +549,12 @@ impl NetworkBuilder {
             .boxed();
 
         let relay_server = {
-            let relay_server_cfg = relay::Config::default();
+            let relay_server_cfg = relay::Config {
+                max_circuits: 256, // The total amount of relayed connections at any given moment.
+                max_circuits_per_peer: 256, // Amount of relayed connections per peer (both dst and src)
+                circuit_src_rate_limiters: vec![], // No extra rate limiting for now
+                ..Default::default()
+            };
             libp2p::relay::Behaviour::new(peer_id, relay_server_cfg)
         };
 
