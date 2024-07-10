@@ -48,7 +48,7 @@ pub struct HotWallet {
     /// These have not yet been successfully sent to the network
     /// and need to be, to reach network validity.
     unconfirmed_spend_requests: BTreeSet<SignedSpend>,
-    /// Approves or disapproves certain actions
+    /// Handles authentication of (encrypted) wallets.
     authentication_manager: AuthenticationManager,
 }
 
@@ -94,7 +94,8 @@ impl HotWallet {
     /// Returns password if wallet is encrypted.
     /// Is None if wallet is not encrypted.
     /// Is Some if wallet is encrypted and password is available.
-    /// Fails if wallet is encrypted, but no password available. In that case, the password needs to be set using `authenticate_with_password()`.
+    /// Fails if wallet is encrypted, but no password available.
+    /// When it fails, the password needs to be set using `authenticate_with_password()`.
     pub fn authenticate(&mut self) -> Result<Option<String>> {
         self.authentication_manager.authenticate()
     }
