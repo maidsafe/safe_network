@@ -125,10 +125,10 @@ pub fn sort_peers_by_key<'a, T>(
     // bail early if that's not the case
     if CLOSE_GROUP_SIZE > peers.len() {
         warn!("Not enough peers in the k-bucket to satisfy the request");
-        return Err(NetworkError::NotEnoughPeers {
-            found: peers.len(),
-            required: CLOSE_GROUP_SIZE,
-        });
+        // return Err(NetworkError::NotEnoughPeers {
+        //     found: peers.len(),
+        //     required: CLOSE_GROUP_SIZE,
+        // });
     }
 
     // Create a vector of tuples where each tuple is a reference to a peer and its distance to the key.
@@ -833,11 +833,15 @@ impl Network {
         let k_bucket_peers = receiver.await?;
 
         // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
+        let result_len = k_bucket_peers.len();
         let mut closest_peers = k_bucket_peers;
         // ensure we're not including self here
         if client {
             // remove our peer id from the calculations here:
             closest_peers.retain(|&x| x != self.peer_id());
+            if result_len != closest_peers.len() {
+                info!("Remove self client from the closest_peers");
+            }
         }
         if tracing::level_enabled!(tracing::Level::DEBUG) {
             let close_peers_pretty_print: Vec<_> = closest_peers
