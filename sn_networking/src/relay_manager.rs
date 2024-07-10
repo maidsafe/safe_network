@@ -9,7 +9,7 @@
 use crate::driver::{BadNodes, NodeBehaviour};
 use itertools::Itertools;
 use libp2p::{
-    core::transport::ListenerId, multiaddr::Protocol, Multiaddr, PeerId, StreamProtocol, Swarm,
+    core::transport::ListenerId, multiaddr::Protocol, relay::STOP_PROTOCOL_NAME, Multiaddr, PeerId, StreamProtocol, Swarm
 };
 use rand::Rng;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
@@ -23,7 +23,7 @@ pub(crate) fn is_a_relayed_peer(addrs: &HashSet<Multiaddr>) -> bool {
         .any(|multiaddr| multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit)))
 }
 
-/// To manager relayed connections.
+/// To manage relayed connections.
 #[derive(Debug)]
 pub(crate) struct RelayManager {
     self_peer_id: PeerId,
@@ -260,7 +260,7 @@ impl RelayManager {
 
     fn does_it_support_relay_server_protocol(protocols: &Vec<StreamProtocol>) -> bool {
         for stream_protocol in protocols {
-            if *stream_protocol == "/libp2p/circuit/relay/0.2.0/stop" {
+            if stream_protocol == &STOP_PROTOCOL_NAME {
                 return true;
             }
         }

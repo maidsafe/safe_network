@@ -407,7 +407,12 @@ impl SwarmDriver {
             } => {
                 event_string = "ConnectionClosed";
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
-                let _ = self.live_connected_peers.remove(&connection_id);
+
+                // If no other connections remaining (to this peer), stop monitoring
+                if num_established == 0 {
+                    let _ = self.live_connected_peers.remove(&connection_id);
+                }
+
                 #[cfg(feature = "open-metrics")]
                 if let Some(metrics) = &self.network_metrics {
                     metrics
