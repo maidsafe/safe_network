@@ -660,7 +660,6 @@ impl Node {
 
         // trust local spends as we've verified them before
         let local_spends = self.get_local_spends(spend_addr).await?;
-        let mut all_verified_spends = BTreeSet::from_iter(local_spends.into_iter());
 
         // get spends from the network at the address for that unique pubkey
         let network_spends = match self.network().get_raw_spends(spend_addr).await {
@@ -698,8 +697,16 @@ impl Node {
                 vec![]
             }
         };
+        debug!(
+            "For {unique_pubkey:?} got {} local spends, {} from network and {} provided",
+            local_spends.len(),
+            network_spends.len(),
+            signed_spends.len()
+        );
+        debug!("Local spends {local_spends:?}; from network {network_spends:?}; provided {signed_spends:?}");
 
         // only verify spends we don't know of
+        let mut all_verified_spends = BTreeSet::from_iter(local_spends.into_iter());
         let unverified_spends =
             BTreeSet::from_iter(network_spends.into_iter().chain(signed_spends.into_iter()));
         let known_spends = all_verified_spends.clone();
@@ -717,7 +724,7 @@ impl Node {
         }
 
         // gather verified spends
-        let mut double_spent_parent = vec![];
+        let mut double_spent_parent = BTreeSet::new();
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((spend, Ok(()))) => {
@@ -726,7 +733,7 @@ impl Node {
                 }
                 Ok((spend, Err(NetworkError::Transfer(TransferError::DoubleSpentParent)))) => {
                     warn!("Parent of {spend:?} was double spent, keeping aside in case we're a double spend as well");
-                    double_spent_parent.push(spend.clone());
+                    let _ = double_spent_parent.insert(spend.clone());
                 }
                 Ok((spend, Err(e))) => {
                     // an error here most probably means the received spend is invalid

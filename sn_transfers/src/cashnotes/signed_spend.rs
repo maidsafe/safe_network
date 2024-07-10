@@ -235,25 +235,26 @@ impl std::hash::Hash for SignedSpend {
 }
 
 /// Represents the data to be signed by the DerivedSecretKey of the CashNote being spent.
-#[derive(custom_debug::Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Spend {
     /// UniquePubkey of input CashNote that this SignedSpend is proving to be spent.
     pub unique_pubkey: UniquePubkey,
     /// The transaction that the input CashNote is being spent in (where it is an input)
-    #[debug(skip)]
     pub spent_tx: Transaction,
     /// Reason why this CashNote was spent.
-    #[debug(skip)]
     pub reason: SpendReason,
     /// The amount of the input CashNote.
-    #[debug(skip)]
     pub amount: NanoTokens,
     /// The transaction that the input CashNote was created in (where it is an output)
-    #[debug(skip)]
     pub parent_tx: Transaction,
     /// Data to claim the Network Royalties (if any) from the Spend's descendants (outputs in spent_tx)
-    #[debug(skip)]
     pub network_royalties: Vec<DerivationIndex>,
+}
+
+impl core::fmt::Debug for Spend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Spend({:?}({:?}))", self.unique_pubkey, self.hash())
+    }
 }
 
 impl Spend {
