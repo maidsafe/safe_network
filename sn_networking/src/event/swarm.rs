@@ -660,64 +660,61 @@ impl SwarmDriver {
 
     // Remove outdated connection to a peer if it is not in the RT.
     fn remove_outdated_connections(&mut self) {
-        let mut shall_removed = vec![];
+        let mut removed_conns = 0;
+        self.live_connected_peers.retain(|connection_id, (peer_id, timeout_time)| {
+            // skip if timeout isn't reached yet
+            if Instant::now() < *timeout_time {
+                return true; // retain peer
+            }
 
-        let timed_out_connections =
-            self.live_connected_peers
-                .iter()
-                .filter_map(|(connection_id, (peer_id, timeout))| {
-                    if Instant::now() > *timeout {
-                        Some((connection_id, peer_id))
-                    } else {
-                        None
-                    }
-                });
-
-        for (connection_id, peer_id) in timed_out_connections {
-            // Skip if the peer is present in our RT
+            // ignore if peer is present in our RT
             if let Some(kbucket) = self.swarm.behaviour_mut().kademlia.kbucket(*peer_id) {
                 if kbucket
                     .iter()
                     .any(|peer_entry| *peer_id == *peer_entry.node.key.preimage())
                 {
-                    continue;
+                    return true; // retain peer
                 }
             }
 
             // skip if the peer is a relay server that we're connected to
             if self.relay_manager.keep_alive_peer(peer_id, &self.bad_nodes) {
-                continue;
+                return true; // retain peer
             }
 
-            shall_removed.push((*connection_id, *peer_id));
+            // actually remove connection
+            let result = self.swarm.close_connection(*connection_id);
+            trace!("Removed outdated connection {connection_id:?} to {peer_id:?} with result: {result:?}");
+
+            removed_conns += 1;
+
+            // do not retain this connection as it has been closed
+            false
+        });
+
+        // early return if we did not remove any connections
+        if removed_conns == 0 {
+            return;
         }
 
-        if !shall_removed.is_empty() {
-            trace!(
-                "Current libp2p peers pool stats is {:?}",
-                self.swarm.network_info()
-            );
-            trace!(
-                "Removing {} outdated live connections, still have {} left.",
-                shall_removed.len(),
-                self.live_connected_peers.len()
-            );
-
-            for (connection_id, peer_id) in shall_removed {
-                let _ = self.live_connected_peers.remove(&connection_id);
-                let result = self.swarm.close_connection(connection_id);
-                #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics
-                        .open_connections
-                        .set(self.live_connected_peers.len() as i64);
-                    metrics
-                        .connected_peers
-                        .set(self.swarm.connected_peers().count() as i64);
-                }
-                trace!("Removed outdated connection {connection_id:?} to {peer_id:?} with result: {result:?}");
-            }
+        #[cfg(feature = "open-metrics")]
+        if let Some(metrics) = &self.network_metrics {
+            metrics
+                .open_connections
+                .set(self.live_connected_peers.len() as i64);
+            metrics
+                .connected_peers
+                .set(self.swarm.connected_peers().count() as i64);
         }
+
+        trace!(
+            "Current libp2p peers pool stats is {:?}",
+            self.swarm.network_info()
+        );
+        trace!(
+            "Removed {removed_conns} outdated live connections, still have {} left.",
+            self.live_connected_peers.len()
+        );
     }
 }
 
