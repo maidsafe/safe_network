@@ -117,10 +117,10 @@ pub enum Error {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
-    /// Hot wallet is password protected
-    #[error("Hot wallet password required")]
-    HotWalletPasswordRequired,
-    /// Hot wallet password is only valid for a certain time until the user has to provide it again
-    #[error("Hot wallet password expired")]
-    HotWalletPasswordExpired,
+    /// Wallet is password protected
+    #[error("Wallet password required")]
+    WalletPasswordRequired,
+    /// Wallet password is only valid for a certain time until the user has to provide it again
+    #[error("Wallet password expired")]
+    WalletPasswordExpired,
 }

@@ -42,9 +42,11 @@ impl WalletApiHelper {
         }
     }
 
-    pub fn status(&mut self) {
+    pub fn status(&mut self) -> Result<()> {
+        self.authenticate()?;
+
         match self {
-            Self::WatchOnlyWallet(_) => {}
+            Self::WatchOnlyWallet(_) => Ok(()),
             Self::HotWallet(w) => {
                 println!("Unconfirmed spends are:");
                 for spend in w.unconfirmed_spend_requests().iter() {
@@ -74,6 +76,8 @@ impl WalletApiHelper {
                         println!("{cnr:?}");
                     }
                 }
+
+                Ok(())
             }
         }
     }
@@ -160,11 +164,15 @@ impl WalletApiHelper {
         match self {
             WalletApiHelper::WatchOnlyWallet(_) => Ok(()),
             WalletApiHelper::HotWallet(w) => {
-                print!("Wallet password: ");
-                let mut input = String::new();
-                std::io::stdin().read_to_string(&mut input)?;
-                w.authenticate_with_password(input)?;
-                Ok(())
+                if w.authenticate().is_err() {
+                    print!("Wallet password: ");
+                    let mut input = String::new();
+                    std::io::stdin().read_to_string(&mut input)?;
+                    w.authenticate_with_password(input)?;
+                    Ok(())
+                } else {
+                    Ok(())
+                }
             }
         }
     }

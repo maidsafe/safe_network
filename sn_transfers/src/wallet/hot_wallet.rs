@@ -75,7 +75,7 @@ impl HotWallet {
     /// Reloads the wallet from disk. If the wallet secret key is encrypted, you'll need to specify the password.
     fn reload(&mut self) -> Result<()> {
         // Password needed to decrypt wallet if it is encrypted
-        let opt_password = self.authentication_manager.authenticate()?;
+        let opt_password = self.authenticate()?;
 
         let wallet =
             Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None, opt_password)?;
@@ -89,6 +89,14 @@ impl HotWallet {
         // if it's a matching key, we can overwrite our wallet
         *self = wallet;
         Ok(())
+    }
+
+    /// Returns password if wallet is encrypted.
+    /// Is None if wallet is not encrypted.
+    /// Is Some if wallet is encrypted and password is available.
+    /// Fails if wallet is encrypted, but no password available. In that case, the password needs to be set using `authenticate_with_password()`.
+    pub fn authenticate(&mut self) -> Result<Option<String>> {
+        self.authentication_manager.authenticate()
     }
 
     /// Saves the password for decrypting an encrypted wallet for a certain amount of time.
