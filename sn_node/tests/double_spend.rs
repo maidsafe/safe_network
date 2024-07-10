@@ -334,6 +334,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         reason.clone(),
     )?;
 
+    info!("spend B to C: {:?}", transfer_to_c.all_spend_requests);
     client
         .send_spends(transfer_to_c.all_spend_requests.iter(), false)
         .await?;
@@ -386,9 +387,18 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         wallet_b.address(),
         reason.clone(),
     )?; // reuse the old cash notes
+
+    info!("spend B to Y: {:?}", transfer_to_y.all_spend_requests);
     client
         .send_spends(transfer_to_y.all_spend_requests.iter(), false)
         .await?;
+    let spend_b_to_y = transfer_to_y
+        .all_spend_requests
+        .first()
+        .expect("should have one");
+    let b_spends = client.get_spend_from_network(spend_b_to_y.address()).await;
+    info!("B spends: {b_spends:?}");
+
     info!("Verifying the transfers from B -> Y wallet... It should error out.");
     let cash_notes_for_y: Vec<_> = transfer_to_y.cash_notes_for_recipient.clone();
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
