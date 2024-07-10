@@ -212,9 +212,13 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 secret_key_from_mnemonic(mnemonic, derivation_passphrase.to_owned())?
             };
             // TODO: encrypt wallet file with password
+
+            // Ask user if they want to encrypt the wallet with a password
+            let password = request_optional_password();
+
             // Create the new wallet with the new key
             let main_pubkey = main_sk.main_pubkey();
-            let local_wallet = HotWallet::create_from_key(root_dir, main_sk)?;
+            let local_wallet = HotWallet::create_from_key(root_dir, main_sk, password)?;
             let balance = local_wallet.balance();
             println!(
                 "Hot Wallet created (balance {balance}) for main public key: {main_pubkey:?}."
@@ -397,4 +401,35 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     );
 
     Ok(())
+}
+
+fn request_optional_password() -> Option<String> {
+    'outer: loop {
+        let password_response = get_stdin_response("Enter password (leave empty for none):");
+
+        // If a password is set, request user to repeat it
+        if !password_response.is_empty() {
+            const MAX_RETRIES: u8 = 2;
+            let mut retries = 0u8;
+
+            loop {
+                let repeat_password = get_stdin_response("Repeat password:");
+
+                if repeat_password == password_response {
+                    break;
+                } else if retries >= MAX_RETRIES {
+                    // User forgot the password, let them reset it again
+                    println!("You might have forgotten the password. Please set a new one.");
+                    continue 'outer;
+                } else {
+                    println!("Passwords do not match.");
+                    retries += 1;
+                }
+            }
+
+            break Some(password_response);
+        }
+
+        break None;
+    }
 }
