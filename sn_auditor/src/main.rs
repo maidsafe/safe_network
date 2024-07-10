@@ -101,12 +101,17 @@ async fn main() -> Result<()> {
     }
 
     let client = connect_to_network(opt.peers).await?;
+
+    let storage_dir = get_auditor_data_dir_path()?.join("fetched_spends");
+    std::fs::create_dir_all(&storage_dir).expect("fetched_spends path to be successfully created.");
+
     let dag = initialize_background_spend_dag_collection(
         client.clone(),
         opt.force_from_genesis,
         opt.clean,
         beta_participants,
         maybe_sk,
+        storage_dir,
     )
     .await?;
 
@@ -186,6 +191,7 @@ async fn initialize_background_spend_dag_collection(
     clean: bool,
     beta_participants: BTreeSet<String>,
     foundation_sk: Option<SecretKey>,
+    storage_dir: PathBuf,
 ) -> Result<SpendDagDb> {
     println!("Initialize spend dag...");
     let path = get_auditor_data_dir_path()?;
@@ -245,7 +251,7 @@ async fn initialize_background_spend_dag_collection(
     let d = dag.clone();
     tokio::spawn(async move {
         let _ = d
-            .continuous_background_update()
+            .continuous_background_update(storage_dir)
             .await
             .map_err(|e| eprintln!("Failed to update DAG in background thread: {e}"));
     });

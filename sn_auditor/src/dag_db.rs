@@ -204,7 +204,7 @@ impl SpendDagDb {
     }
 
     /// Update DAG from Network continuously
-    pub async fn continuous_background_update(self) -> Result<()> {
+    pub async fn continuous_background_update(self, storage_dir: PathBuf) -> Result<()> {
         let client = if let Some(client) = &self.client {
             client.clone()
         } else {
@@ -222,9 +222,34 @@ impl SpendDagDb {
         // beta rewards processing
         let self_clone = self.clone();
         let spend_processing = if let Some(sk) = self.encryption_sk.clone() {
-            let (tx, mut rx) = tokio::sync::mpsc::channel(SPENDS_PROCESSING_BUFFER_SIZE);
+            let (tx, mut rx) =
+                tokio::sync::mpsc::channel::<(SignedSpend, u64)>(SPENDS_PROCESSING_BUFFER_SIZE);
             tokio::spawn(async move {
+                let mut detected_spends = BTreeSet::new();
+
                 while let Some((spend, utxos_for_further_track)) = rx.recv().await {
+                    let content_hash = spend.spend.hash();
+
+                    if detected_spends.insert(content_hash) {
+                        let hex_content_hash = content_hash.to_hex();
+                        let addr_hex = spend.address().to_hex();
+                        let file_name = format!("{addr_hex}_{hex_content_hash}");
+                        let spend_copy = spend.clone();
+                        let file_path = storage_dir.join(&file_name);
+
+                        tokio::spawn(async move {
+                            let bytes = spend_copy.to_bytes();
+                            match std::fs::write(&file_path, bytes) {
+                                Ok(_) => {
+                                    info!("Wrote spend {file_name} to disk!");
+                                }
+                                Err(err) => {
+                                    error!("Error writing spend {file_name}, error: {err:?}");
+                                }
+                            }
+                        });
+                    }
+
                     self_clone
                         .beta_background_process_spend(spend, &sk, utxos_for_further_track)
                         .await;
