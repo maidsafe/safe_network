@@ -15,7 +15,7 @@ use itertools::Itertools;
 use rand::{seq::IteratorRandom, Rng};
 use sn_client::Client;
 use sn_logging::LogBuilder;
-use sn_networking::NetworkError;
+use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{
     rng, CashNote, DerivationIndex, HotWallet, MainPubkey, NanoTokens, OfflineTransfer,
     SpendAddress, SpendReason, Transaction, UniquePubkey,
@@ -30,10 +30,10 @@ use tokio::sync::mpsc;
 use tracing::*;
 
 const MAX_WALLETS: usize = 15;
-const MAX_CYCLES: usize = 5;
+const MAX_CYCLES: usize = 10;
 const AMOUNT_PER_RECIPIENT: NanoTokens = NanoTokens::from(1000);
 /// The chance for an double spend to happen. 1 in X chance.
-const ONE_IN_X_CHANCE_FOR_AN_ATTACK: u32 = 2;
+const ONE_IN_X_CHANCE_FOR_AN_ATTACK: u32 = 3;
 
 enum WalletAction {
     Send {
@@ -89,6 +89,14 @@ enum TransactionStatus {
     Valid,
     /// All the inputs have been double spent.
     DoubleSpentInputs,
+}
+
+// Just for printing things
+#[derive(Debug)]
+enum AttackType {
+    Poison,
+    DoubleSpendAllUxtoOutputs,
+    DoubleSpendPartialUtxoOutputs,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Hash)]
@@ -186,34 +194,51 @@ async fn spend_simulation() -> Result<()> {
                     input_cashnotes_to_double_spend,
                     output_cashnotes_that_are_unspendable,
                     amount,
+                    attack_type,
                 )) = get_cashnotes_to_double_spend(our_id, &mut state)?
                 {
                     // tell wallets about the cashnotes that will become invalid after we perform the double spend.
-                    for (i, sender) in state.action_senders.iter() {
-                        sender
-                            .send(WalletAction::NotifyAboutInvalidCashNote {
-                                from: our_id,
-                                cashnote: output_cashnotes_that_are_unspendable.clone(),
-                            })
-                            .await?;
-                        pending_task_results
+                    if !output_cashnotes_that_are_unspendable.is_empty() {
+                        info!("{our_id} is notifying wallets about invalid cashnotes: {output_cashnotes_that_are_unspendable:?}");
+                        for (i, sender) in state.action_senders.iter() {
+                            sender
+                                .send(WalletAction::NotifyAboutInvalidCashNote {
+                                    from: our_id,
+                                    cashnote: output_cashnotes_that_are_unspendable.clone(),
+                                })
+                                .await?;
+                            pending_task_results
+                                .pending_notify_invalid_cashnotes_results
+                                .push(*i);
+                        }
+                        // wait until all the wallets have received the notification. Else we'd try to spend those
+                        // cashnotes while a double spend has just gone out.
+                        while !pending_task_results
                             .pending_notify_invalid_cashnotes_results
-                            .push(*i);
-                    }
-                    // wait until all the wallets have received the notification. Else we'd try to spend those
-                    // cashnotes while a double spend has just gone out.
-                    while !pending_task_results
-                        .pending_notify_invalid_cashnotes_results
-                        .is_empty()
-                    {
-                        let result = result_rx
-                            .recv()
-                            .await
-                            .ok_or_eyre("Senders will not be dropped")?;
+                            .is_empty()
+                        {
+                            let result = result_rx
+                                .recv()
+                                .await
+                                .ok_or_eyre("Senders will not be dropped")?;
 
-                        handle_wallet_task_result(&mut state, result, &mut pending_task_results)
+                            handle_wallet_task_result(
+                                &mut state,
+                                result,
+                                &mut pending_task_results,
+                            )
                             .await?;
+                        }
                     }
+
+                    info!(
+                        "{our_id} is now attempting a {attack_type:?} of {} cashnotes.",
+                        input_cashnotes_to_double_spend.len()
+                    );
+                    println!(
+                        "{our_id} is attempting a {attack_type:?} of {} cashnotes",
+                        input_cashnotes_to_double_spend.len()
+                    );
 
                     action_sender
                         .send(WalletAction::DoubleSpend {
@@ -225,7 +250,6 @@ async fn spend_simulation() -> Result<()> {
                             ),
                         })
                         .await?;
-                    println!("{our_id} is attempting an attack");
                     illicit_spend_done = true;
                 }
             }
@@ -570,19 +594,26 @@ async fn verify_wallets(state: &State, client: Client) -> Result<()> {
         info!("{id} verifying {} spends", spends.len());
         let mut wallet = get_wallet(state.all_wallets.get(id).expect("Wallet not found"));
         let (available_cash_notes, _lock) = wallet.available_cash_notes()?;
-        for spend in spends {
+        for (num, spend) in spends.iter().enumerate() {
             let (status, _cashnote) = state
                 .cashnote_tracker
                 .get(spend)
                 .ok_or_eyre("Something went wrong. Spend not tracked")?;
-            info!("{id} verifying status of spend: {spend:?} : {status:?}");
+            info!("{id} verifying status of spend number({num:?}): {spend:?} : {status:?}");
             match status {
                 SpendStatus::Utxo => {
                     available_cash_notes
                         .iter()
                         .find(|(c, _)| &c.unique_pubkey() == spend)
                         .ok_or_eyre("UTXO not found in wallet")?;
-                    // todo: should not be present in the network.
+                    let addr = SpendAddress::from_unique_pubkey(spend);
+                    let result = client.peek_a_spend(addr).await;
+                    assert_matches!(
+                        result,
+                        Err(sn_client::Error::Network(NetworkError::GetRecordError(
+                            GetRecordError::RecordNotFound
+                        )))
+                    );
                 }
                 SpendStatus::Spent => {
                     let addr = SpendAddress::from_unique_pubkey(spend);
@@ -607,10 +638,16 @@ async fn verify_wallets(state: &State, client: Client) -> Result<()> {
                         .find(|(c, _)| &c.unique_pubkey() == spend)
                         .ok_or_eyre("UTXO not found in wallet")?;
                     let addr = SpendAddress::from_unique_pubkey(spend);
-                    let result = client.get_spend_from_network(addr).await;
-                    error!("utxo with parent double spend for {addr:?} : {result:?}");
+                    let result = client.peek_a_spend(addr).await;
+                    assert_matches!(
+                        result,
+                        Err(sn_client::Error::Network(NetworkError::GetRecordError(
+                            GetRecordError::RecordNotFound
+                        )))
+                    );
                 }
             }
+            info!("{id} successfully verified spend number({num:?}): {spend:?} : {status:?}");
         }
     }
     println!("All wallets verified successfully");
@@ -735,34 +772,23 @@ fn get_recipients(our_id: WalletId, state: &State) -> Vec<MainPubkey> {
 fn get_cashnotes_to_double_spend(
     our_id: WalletId,
     state: &mut State,
-) -> Result<Option<(Vec<CashNote>, Vec<UniquePubkey>, NanoTokens)>> {
+) -> Result<Option<(Vec<CashNote>, Vec<UniquePubkey>, NanoTokens, AttackType)>> {
     let mut rng = rand::thread_rng();
-
-    // Providing higher probability for poisoning than then others.
-    let random_number = rng.gen_range(0..4);
+    let mut attack_type;
     let mut cashnotes_to_double_spend;
-    // 50% chance
-    if random_number <= 1 {
-        cashnotes_to_double_spend = get_random_transaction_to_poison(our_id, state, &mut rng)?;
-    } else if random_number <= 2 {
-        cashnotes_to_double_spend =
-            get_random_transaction_with_partially_spent_output(our_id, state, &mut rng)?;
-    } else {
-        cashnotes_to_double_spend =
-            get_random_transaction_with_all_unspent_output(our_id, state, &mut rng)?;
-    };
 
-    // try to perform any attack if the chances fail.
-    if cashnotes_to_double_spend.is_none() {
-        cashnotes_to_double_spend = get_random_transaction_to_poison(our_id, state, &mut rng)?;
-    }
+    cashnotes_to_double_spend = get_random_transaction_to_poison(our_id, state, &mut rng)?;
+    attack_type = AttackType::Poison;
+
     if cashnotes_to_double_spend.is_none() {
         cashnotes_to_double_spend =
             get_random_transaction_with_partially_spent_output(our_id, state, &mut rng)?;
+        attack_type = AttackType::DoubleSpendPartialUtxoOutputs;
     }
     if cashnotes_to_double_spend.is_none() {
         cashnotes_to_double_spend =
             get_random_transaction_with_all_unspent_output(our_id, state, &mut rng)?;
+        attack_type = AttackType::DoubleSpendAllUxtoOutputs;
     }
 
     if let Some((cashnotes_to_double_spend, output_cash_notes_that_are_unspendable)) =
@@ -777,6 +803,7 @@ fn get_cashnotes_to_double_spend(
             cashnotes_to_double_spend,
             output_cash_notes_that_are_unspendable,
             NanoTokens::from(input_total_amount),
+            attack_type,
         )));
     }
 
@@ -900,8 +927,9 @@ fn get_random_transaction_with_partially_spent_output(
         }
         let mut utxo_found = false;
         let mut spent_output_found = false;
+        let mut change_cashnote_found = false;
         for output in &tx.outputs {
-            let (status, _) = state
+            let (status, cashnote) = state
                 .cashnote_tracker
                 .get(output.unique_pubkey())
                 .ok_or_eyre(format!(
@@ -910,7 +938,14 @@ fn get_random_transaction_with_partially_spent_output(
                 ))?;
 
             match status {
-                SpendStatus::Utxo => utxo_found = true,
+                SpendStatus::Utxo => {
+                    // skip if the cashnote is the change. The test can't progress if we make the change unspendable.
+                    if cashnote.value()? > NanoTokens::from(AMOUNT_PER_RECIPIENT.as_nano()*10) {
+                        change_cashnote_found = true;
+                        break;
+                    }
+                    utxo_found = true;
+                },
                 SpendStatus::UtxoWithParentDoubleSpend => bail!("UtxoWithParentDoubleSpend should not be present here. We skip txs that has been attacked"),
                 SpendStatus::Spent
                 // DoubleSpend can be present. TransactionStatus::DoubleSpentInputs means that inputs are double spent, we skip those.
@@ -919,7 +954,9 @@ fn get_random_transaction_with_partially_spent_output(
 
             }
         }
-        if utxo_found && spent_output_found {
+        if change_cashnote_found {
+            continue;
+        } else if utxo_found && spent_output_found {
             double_spendable_tx.push(tx);
         }
     }
@@ -1009,8 +1046,9 @@ fn get_random_transaction_with_all_unspent_output(
             continue;
         }
         let mut all_utxos = true;
+        let mut change_cashnote_found = false;
         for output in &tx.outputs {
-            let (status, _) = state
+            let (status, cashnote) = state
                 .cashnote_tracker
                 .get(output.unique_pubkey())
                 .ok_or_eyre(format!(
@@ -1019,7 +1057,13 @@ fn get_random_transaction_with_all_unspent_output(
                 ))?;
 
             match status {
-                SpendStatus::Utxo => {}
+                SpendStatus::Utxo => {
+                    // skip if the cashnote is the change. The test can't progress if we make the change unspendable.
+                    if cashnote.value()? > NanoTokens::from(AMOUNT_PER_RECIPIENT.as_nano()*10) {
+                        change_cashnote_found = true;
+                        break;
+                    }
+                }
                 SpendStatus::UtxoWithParentDoubleSpend => bail!("UtxoWithParentDoubleSpend should not be present here. We skip txs that has been attacked"),
                 _ => {
                     all_utxos = false;
@@ -1027,7 +1071,9 @@ fn get_random_transaction_with_all_unspent_output(
                 }
             }
         }
-        if all_utxos {
+        if change_cashnote_found {
+            continue;
+        } else if all_utxos {
             double_spendable_tx.push(tx);
         }
     }
