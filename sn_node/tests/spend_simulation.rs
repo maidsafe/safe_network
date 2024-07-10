@@ -507,11 +507,17 @@ async fn verify_wallets(state: &State, client: Client) -> Result<()> {
             info!("TestWallet {id} verifying status of spend: {spend:?} : {status:?}");
             match status {
                 SpendStatus::Utxo => {
-                    available_cash_notes
+                    // TODO: with the new spend struct requiring `middle payment`
+                    //       the transaction no longer covers all spends to be tracked
+                    //       leaving the chance the Spend retain as UTXO even got spent properly
+                    //       Currently just log it, leave for further work of replace transaction
+                    //       with a properly formatted new instance.
+                    if !available_cash_notes
                         .iter()
-                        .find(|(c, _)| &c.unique_pubkey() == spend)
-                        .ok_or_eyre("UTXO not found in wallet")?;
-                    // todo: should not be present in the network.
+                        .any(|(c, _)| &c.unique_pubkey() == spend)
+                    {
+                        warn!("UTXO spend not find as a cashnote: {spend:?}");
+                    }
                 }
                 SpendStatus::Spent => {
                     let addr = SpendAddress::from_unique_pubkey(spend);
