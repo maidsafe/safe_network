@@ -14,10 +14,7 @@ use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, RetryStrategy, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{
-    CashNote, CashNoteRedemption, DerivationIndex, HotWallet, MainPubkey, SignedSpend, Transfer,
-    UniquePubkey,
-};
+use sn_transfers::{CashNote, CashNoteRedemption, HotWallet, MainPubkey, SignedSpend, Transfer};
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 
@@ -121,14 +118,14 @@ impl Network {
         main_pubkey: MainPubkey,
         cashnote_redemptions: &[CashNoteRedemption],
     ) -> Result<Vec<CashNote>> {
-        // get the parent transactions
+        // get all the parent spends
         debug!(
-            "Getting parent Tx for validation from {:?}",
+            "Getting parent Spends for validation from {:?}",
             cashnote_redemptions.len()
         );
         let parent_addrs: BTreeSet<SpendAddress> = cashnote_redemptions
             .iter()
-            .map(|u| u.parent_spend)
+            .flat_map(|u| u.parent_spends.clone())
             .collect();
         let mut tasks = JoinSet::new();
         for addr in parent_addrs.clone() {
@@ -143,25 +140,34 @@ impl Network {
             let _ = parent_spends.insert(signed_spend.clone());
         }
 
-        // get our outputs from Tx
-        let our_output_unique_pubkeys: Vec<(UniquePubkey, DerivationIndex)> = cashnote_redemptions
+        // get our outputs CashNotes
+        let our_output_cash_notes: Vec<CashNote> = cashnote_redemptions
             .iter()
-            .map(|u| {
-                let unique_pubkey = main_pubkey.new_unique_pubkey(&u.derivation_index);
-                (unique_pubkey, u.derivation_index)
+            .map(|cnr| {
+                let unique_pubkey = main_pubkey.new_unique_pubkey(&cnr.derivation_index);
+                let derivation_index = cnr.derivation_index;
+                // assuming parent spends all exist as they were collected just above
+                let parent_spends: BTreeSet<SignedSpend> = cnr
+                    .parent_spends
+                    .iter()
+                    .flat_map(|a| {
+                        parent_spends
+                            .iter()
+                            .find(|s| &s.address() == a)
+                            .map(|s| vec![s])
+                            .unwrap_or_default()
+                    })
+                    .cloned()
+                    .collect();
+
+                CashNote {
+                    unique_pubkey,
+                    parent_spends: parent_spends.clone(),
+                    main_pubkey,
+                    derivation_index,
+                }
             })
             .collect();
-        let mut our_output_cash_notes = Vec::new();
-
-        for (id, derivation_index) in our_output_unique_pubkeys.into_iter() {
-            let cash_note = CashNote {
-                unique_pubkey: id,
-                parent_spends: parent_spends.clone(),
-                main_pubkey,
-                derivation_index,
-            };
-            our_output_cash_notes.push(cash_note);
-        }
 
         Ok(our_output_cash_notes)
     }
