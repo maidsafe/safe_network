@@ -20,6 +20,7 @@ use color_eyre::{
     Result,
 };
 use dialoguer::Confirm;
+use sn_client::acc_packet::{load_or_create_mnemonic, secret_key_from_mnemonic};
 use sn_client::transfers::{
     HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransfer,
     WalletError,
@@ -34,13 +35,7 @@ use std::{path::Path, str::FromStr};
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
     /// Print the wallet address.
-    Address {
-        /// Optional passphrase to protect the mnemonic,
-        /// it's not the source of the entropy for the mnemonic generation.
-        /// The mnemonic+passphrase will be the seed. See detail at
-        /// `<https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed>`
-        passphrase: Option<String>,
-    },
+    Address,
     /// Print the wallet balance.
     Balance {
         /// Instead of checking CLI local wallet balance, the PeerId of a node can be used
@@ -49,11 +44,20 @@ pub enum WalletCmds {
         #[clap(long)]
         peer_id: Vec<String>,
     },
-    /// Create a hot wallet from the given (hex-encoded) key.
+    /// Create a hot wallet.
     Create {
-        /// Hex-encoded main secret key.
+        /// Optional hex-encoded main secret key.
         #[clap(name = "key")]
-        key: String,
+        key: Option<String>,
+        /// Optional derivation passphrase to protect the mnemonic,
+        /// it's not the source of the entropy for the mnemonic generation.
+        /// The mnemonic+passphrase will be the seed. See detail at
+        /// `<https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed>`
+        #[clap(name = "derivation")]
+        derivation_passphrase: Option<String>,
+        // Optional password to encrypt the wallet with.
+        // #[clap(name = "password")]
+        // password: Option<String>,
     },
     /// Get tokens from a faucet.
     GetFaucet {
@@ -133,15 +137,12 @@ pub enum WalletCmds {
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
     match cmds {
-        WalletCmds::Address {
-            passphrase: derivation_passphrase,
-        } => {
-            let wallet = load_account_wallet_or_create_with_mnemonic(
-                root_dir,
-                derivation_passphrase.as_deref(),
-            )?;
-
-            println!("{:?}", wallet.address());
+        WalletCmds::Address => {
+            let wallet = WalletApiHelper::load_from(root_dir)?;
+            match wallet {
+                WalletApiHelper::WatchOnlyWallet(w) => println!("{:?}", w.address()),
+                WalletApiHelper::HotWallet(w) => println!("{:?}", w.address()),
+            }
             Ok(())
         }
         WalletCmds::Balance { peer_id } => {
@@ -162,11 +163,24 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             }
             Ok(())
         }
-        WalletCmds::Create { key } => {
-            let sk = SecretKey::from_hex(key)
-                .map_err(|err| eyre!("Failed to parse hex-encoded SK: {err:?}"))?;
-            let main_sk = MainSecretKey::new(sk);
-            // TODO: encrypt wallet file
+        WalletCmds::Create {
+            key,
+            derivation_passphrase,
+        } => {
+            if key.is_some() && derivation_passphrase.is_some() {
+                return Err(eyre!(
+                    "Only one of `--hex` or `--derivation` may be specified"
+                ));
+            }
+            let main_sk = if let Some(key) = key {
+                let sk = SecretKey::from_hex(key)
+                    .map_err(|err| eyre!("Failed to parse hex-encoded SK: {err:?}"))?;
+                MainSecretKey::new(sk)
+            } else {
+                // If no key is specified, use the mnemonic
+                let mnemonic = load_or_create_mnemonic(root_dir)?;
+                secret_key_from_mnemonic(mnemonic, derivation_passphrase.to_owned())?
+            };
             // check for existing wallet with balance
             let existing_balance = match WalletApiHelper::load_from(root_dir) {
                 Ok(wallet) => wallet.balance(),
@@ -185,6 +199,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 let new_location = HotWallet::stash(root_dir)?;
                 println!("Old wallet stored at {}", new_location.display());
             }
+            // TODO: encrypt wallet file with password
             // Create the new wallet with the new key
             let main_pubkey = main_sk.main_pubkey();
             let local_wallet = HotWallet::create_from_key(root_dir, main_sk)?;
