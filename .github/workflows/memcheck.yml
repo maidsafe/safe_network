@@ -5,9 +5,9 @@ on:
   # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
   # the merge run checks should show on master and enable this clear test/passing history
   merge_group:
-    branches: [main, alpha*, beta*, rc*]
+    branches: [ main, alpha*, beta*, rc* ]
   pull_request:
-    branches: ["*"]
+    branches: [ "*" ]
 
 env:
   SAFE_DATA_PATH: /home/runner/.local/share/safe
@@ -100,6 +100,7 @@ jobs:
       - name: Create and fund a wallet to pay for files storage
         run: |
           echo "Obtaining address for use with the faucet..."
+          ./target/release/safe --log-output-dest=data-dir wallet create
           address=$(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1)
           echo "Sending tokens to the faucet at $address"
           ./target/release/faucet --log-output-dest=data-dir send 5000000 $address > initial_balance_from_faucet.txt
@@ -171,6 +172,7 @@ jobs:
           mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
           ls -l $CLIENT_DATA_PATH
           cp ./the-test-data.zip ./the-test-data_1.zip
+          ./target/release/safe --log-output-dest=data-dir wallet create --no-replace
           ./target/release/faucet --log-output-dest=data-dir send 5000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet_1.txt
           cat initial_balance_from_faucet_1.txt
           cat initial_balance_from_faucet_1.txt | tail -n 1 > transfer_hex
