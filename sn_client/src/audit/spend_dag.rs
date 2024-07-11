@@ -12,8 +12,8 @@ use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 use sn_transfers::{
-    is_genesis_spend, CashNoteRedemption, Hash, NanoTokens, OutputPurpose, SignedSpend,
-    SpendAddress,
+    is_genesis_spend, CashNoteRedemption, DerivationIndex, Hash, NanoTokens, OutputPurpose,
+    SignedSpend, SpendAddress, UniquePubkey,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -404,14 +404,41 @@ impl SpendDag {
     /// Get all royalties from the DAG
     pub fn all_royalties(&self) -> crate::Result<Vec<CashNoteRedemption>> {
         let spends = self.all_spends();
-        let mut royalties = Vec::new();
+        let mut royalties_by_unique_pk: BTreeMap<
+            UniquePubkey,
+            Vec<(DerivationIndex, SpendAddress)>,
+        > = BTreeMap::new();
         for s in spends {
-            for (_descendant, (_amount, purpose)) in s.spend.descendants.iter() {
+            for (unique_pk, (_amount, purpose)) in s.spend.descendants.iter() {
                 if let OutputPurpose::RoyaltyFee(derivation_index) = purpose {
-                    let spend_addr = SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey);
-                    royalties.push(CashNoteRedemption::new(*derivation_index, spend_addr));
+                    let parent_spend_addr =
+                        SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey);
+                    royalties_by_unique_pk
+                        .entry(*unique_pk)
+                        .and_modify(|v| v.push((*derivation_index, parent_spend_addr)))
+                        .or_insert(vec![(*derivation_index, parent_spend_addr)]);
                 }
             }
+        }
+
+        // assemble those and check
+        let mut royalties = vec![];
+        for (unique_pk, vec) in royalties_by_unique_pk.into_iter() {
+            let parents_spend_addrs = vec.iter().map(|(_di, spend_addr)| *spend_addr).collect();
+            let derivation_idx_uniq: BTreeSet<_> =
+                vec.iter().map(|(di, _spend_addr)| *di).collect();
+            let idx_vec: Vec<_> = derivation_idx_uniq.into_iter().collect();
+            let derivation_index = match idx_vec.as_slice() {
+                [one_unique] => *one_unique,
+                _ => {
+                    warn!("DerivationIndex in single royalty output for {unique_pk:?} should have been unique, found parents and reported derivation index {vec:?}");
+                    continue;
+                }
+            };
+            royalties.push(CashNoteRedemption::new(
+                derivation_index,
+                parents_spend_addrs,
+            ))
         }
         Ok(royalties)
     }
