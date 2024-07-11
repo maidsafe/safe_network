@@ -18,7 +18,7 @@ use color_eyre::Result;
 use std::{collections::BTreeSet, io::Read, path::Path};
 
 // TODO: convert this into a Trait part of the wallet APIs.
-enum WalletApiHelper {
+pub(crate) enum WalletApiHelper {
     WatchOnlyWallet(WatchOnlyWallet),
     HotWallet(HotWallet),
 }
