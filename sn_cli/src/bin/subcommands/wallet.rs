@@ -35,12 +35,17 @@ impl WalletApiHelper {
         let wallet = if HotWallet::is_encrypted(root_dir) {
             println!("Wallet is encrypted. It needs a password to unlock.");
             let password = get_stdin_response("Enter password:");
-            HotWallet::load_encrypted_from_path(root_dir, None, password)?
+            HotWallet::load_encrypted_from_path(root_dir, password)?
         } else {
             HotWallet::load_from(root_dir)?
         };
 
         Ok(Self::HotWallet(wallet))
+    }
+
+    pub fn encrypt(root_dir: &Path, password: &str) -> Result<()> {
+        HotWallet::encrypt(root_dir, password)?;
+        Ok(())
     }
 
     pub fn balance(&self) -> NanoTokens {
@@ -173,10 +178,8 @@ impl WalletApiHelper {
             WalletApiHelper::WatchOnlyWallet(_) => Ok(()),
             WalletApiHelper::HotWallet(w) => {
                 if w.authenticate().is_err() {
-                    print!("Wallet password: ");
-                    let mut input = String::new();
-                    std::io::stdin().read_to_string(&mut input)?;
-                    w.authenticate_with_password(input)?;
+                    let password = get_stdin_response("Wallet password:");
+                    w.authenticate_with_password(password)?;
                     Ok(())
                 } else {
                     Ok(())

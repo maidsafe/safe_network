@@ -79,7 +79,8 @@ async fn main() -> Result<()> {
         | WalletCmds::Balance { .. }
         | WalletCmds::Create { .. }
         | WalletCmds::Sign { .. }
-        | WalletCmds::Status = cmds
+        | WalletCmds::Status { .. }
+        | WalletCmds::Encrypt { .. } = cmds
         {
             wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
             return Ok(());
@@ -234,6 +235,7 @@ fn get_client_data_dir_path() -> Result<PathBuf> {
     Ok(home_dirs)
 }
 
+// TODO: need similar function that hides user input with `*`
 fn get_stdin_response(prompt: &str) -> String {
     println!("{prompt}");
     let mut buffer = String::new();
@@ -242,7 +244,8 @@ fn get_stdin_response(prompt: &str) -> String {
         // consider if error should process::exit(1) here
         return "".to_string();
     };
-    buffer
+    // Remove leading and trailing whitespace
+    buffer.trim().to_owned()
 }
 
 #[cfg(test)]
