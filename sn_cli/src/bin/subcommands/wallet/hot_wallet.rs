@@ -173,7 +173,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
         } => {
             if key.is_some() && derivation_passphrase.is_some() {
                 return Err(eyre!(
-                    "Only one of `--hex` or `--derivation` may be specified"
+                    "Only one of `--key` or `--derivation` may be specified"
                 ));
             }
             // Check for existing wallet
