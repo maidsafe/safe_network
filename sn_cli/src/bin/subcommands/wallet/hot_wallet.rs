@@ -50,13 +50,13 @@ pub enum WalletCmds {
         #[clap(long, short, action)]
         no_replace: bool,
         /// Optional hex-encoded main secret key.
-        #[clap(name = "key")]
+        #[clap(long, short, name = "key")]
         key: Option<String>,
         /// Optional derivation passphrase to protect the mnemonic,
         /// it's not the source of the entropy for the mnemonic generation.
         /// The mnemonic+passphrase will be the seed. See detail at
         /// `<https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed>`
-        #[clap(name = "derivation")]
+        #[clap(long, short, name = "derivation")]
         derivation_passphrase: Option<String>,
         // Optional password to encrypt the wallet with.
         // #[clap(name = "password")]
