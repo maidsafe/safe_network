@@ -1,0 +1,50 @@
+name: Check local development flow works
+
+on:
+  # tests must run for a PR to be valid and pass merge queue muster
+  # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
+  # the merge run checks should show on master and enable this clear test/passing history
+  merge_group:
+    branches: [main, alpha*, beta*, rc*]
+  pull_request:
+    branches: ["*"]
+
+env:
+  # This is a separate workflow so we don't accidentally add env vars that could lead us to think this
+  # basic command is working when actually it's aided by env vars or other preconfigured values
+  # So don't add more here!
+  CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
+
+jobs:
+  local-net:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Local Network runs?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: install ripgrep
+        shell: bash
+        run: sudo apt-get install -y ripgrep
+
+      - name: Run local network
+        run: cargo run --bin safenode-manager -- local run --build --clean > output.log
+        timeout-minutes: 30
+
+      - name: Check if Genesis was claimed
+        run: rg "Genesis claimed" output.log
+
+      - name: Check faucet balance
+        run: rg "90000" output.log
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_localnet_test_logs_e2e
+          platform: ${{ matrix.os }}
