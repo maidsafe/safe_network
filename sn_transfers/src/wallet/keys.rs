@@ -23,19 +23,8 @@ pub(crate) fn store_new_keypair(
     main_key: &MainSecretKey,
     password: Option<String>,
 ) -> Result<()> {
-    // Save the public key as plain hex text in `main_pubkey` file
     store_new_pubkey(wallet_dir, &main_key.main_pubkey())?;
-
-    // If encryption_password is provided, the secret key will be encrypted with the password
-    if let Some(password) = password.as_ref() {
-        let encrypted_key = encrypt_secret_key(main_key, password)?;
-        // Save the encrypted secret key in `main_secret_key.encrypted` file
-        encrypted_key.save_to_file(wallet_dir)?;
-    } else {
-        // Save secret key as plain hex text in `main_secret_key` file
-        let secret_key_path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
-        std::fs::write(secret_key_path, encode(main_key.to_bytes()))?;
-    }
+    store_main_secret_key(wallet_dir, main_key, password)?;
 
     Ok(())
 }
@@ -66,6 +55,28 @@ pub(super) fn get_main_key_from_disk(
     }
 }
 
+/// Writes the main secret key (hex-encoded) to disk.
+///
+/// When a password is set, the secret key file will be encrypted.
+pub(crate) fn store_main_secret_key(
+    wallet_dir: &Path,
+    main_secret_key: &MainSecretKey,
+    password: Option<String>,
+) -> Result<()> {
+    // If encryption_password is provided, the secret key will be encrypted with the password
+    if let Some(password) = password.as_ref() {
+        let encrypted_key = encrypt_secret_key(main_secret_key, password)?;
+        // Save the encrypted secret key in `main_secret_key.encrypted` file
+        encrypted_key.save_to_file(wallet_dir)?;
+    } else {
+        // Save secret key as plain hex text in `main_secret_key` file
+        let secret_key_path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
+        std::fs::write(secret_key_path, encode(main_secret_key.to_bytes()))?;
+    }
+
+    Ok(())
+}
+
 /// Writes the public address (hex-encoded) to disk.
 pub(crate) fn store_new_pubkey(wallet_dir: &Path, main_pubkey: &MainPubkey) -> Result<()> {
     let public_key_path = wallet_dir.join(MAIN_PUBKEY_FILENAME);
@@ -85,6 +96,14 @@ pub(super) fn get_main_pubkey(wallet_dir: &Path) -> Result<Option<MainPubkey>> {
     let main_pk = MainPubkey::from_hex(pk_hex_bytes)?;
 
     Ok(Some(main_pk))
+}
+
+/// Delete the file containing the secret key `main_secret_key`.
+/// WARNING: Only call this if you know what you're doing!
+pub(crate) fn delete_main_secret_key(wallet_dir: &Path) -> Result<()> {
+    let path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
+    std::fs::remove_file(path)?;
+    Ok(())
 }
 
 /// Construct a BLS secret key from a hex-encoded string.

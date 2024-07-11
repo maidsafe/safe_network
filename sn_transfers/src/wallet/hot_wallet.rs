@@ -20,6 +20,7 @@ use super::{
 };
 use crate::wallet::authentication::AuthenticationManager;
 use crate::wallet::encryption::EncryptedSecretKey;
+use crate::wallet::keys::{delete_main_secret_key, store_main_secret_key};
 use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
@@ -109,6 +110,26 @@ impl HotWallet {
     /// Saves the password for decrypting an encrypted wallet for a certain amount of time.
     pub fn authenticate_with_password(&mut self, password: String) -> Result<()> {
         self.authentication_manager.set_password(password)
+    }
+
+    /// Encrypts wallet with a password.
+    ///
+    /// Fails if wallet is already encrypted.
+    pub fn encrypt(root_dir: &Path, password: &str) -> Result<()> {
+        if Self::is_encrypted(root_dir) {
+            return Err(Error::WalletAlreadyEncrypted);
+        }
+
+        let wallet_key = Self::load_from(root_dir)?.key;
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+
+        // Delete the unencrypted secret key file
+        delete_main_secret_key(&wallet_dir)?;
+
+        // Save the secret key as an encrypted file
+        store_main_secret_key(&wallet_dir, &wallet_key, Some(password.to_owned()))?;
+
+        Ok(())
     }
 
     /// Locks the wallet and returns exclusive access to the wallet
@@ -223,15 +244,11 @@ impl HotWallet {
         Self::load_from_path_and_key(wallet_dir, main_key, None)
     }
 
-    /// Loads an encrypted serialized wallet from a given path, no additional element will
-    /// be added to the provided path and strictly taken as the wallet files location.
-    pub fn load_encrypted_from_path(
-        wallet_dir: &Path,
-        main_key: Option<MainSecretKey>,
-        password: String,
-    ) -> Result<Self> {
-        std::fs::create_dir_all(wallet_dir)?;
-        Self::load_from_path_and_key(wallet_dir, main_key, Some(password))
+    /// Loads an encrypted serialized wallet from a given root path.
+    pub fn load_encrypted_from_path(root_dir: &Path, password: String) -> Result<Self> {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        std::fs::create_dir_all(&wallet_dir)?;
+        Self::load_from_path_and_key(&wallet_dir, None, Some(password))
     }
 
     pub fn address(&self) -> MainPubkey {
@@ -708,7 +725,7 @@ impl HotWallet {
         main_key: Option<MainSecretKey>,
         main_key_password: Option<String>,
     ) -> Result<Self> {
-        let key = match get_main_key_from_disk(wallet_dir, main_key_password) {
+        let key = match get_main_key_from_disk(wallet_dir, main_key_password.to_owned()) {
             Ok(key) => {
                 if let Some(passed_key) = main_key {
                     if key.secret_key() != passed_key.secret_key() {
@@ -720,7 +737,7 @@ impl HotWallet {
             }
             Err(error) => {
                 if let Some(key) = main_key {
-                    store_new_keypair(wallet_dir, &key, None)?;
+                    store_new_keypair(wallet_dir, &key, main_key_password)?;
                     key
                 } else {
                     error!(
@@ -1151,6 +1168,43 @@ mod tests {
 
         let expected_price: u64 = map.values().map(|(_, quote, _)| quote.cost.as_nano()).sum();
         assert_eq!(price.as_nano(), expected_price);
+
+        Ok(())
+    }
+
+    /// --------------------------------
+    /// <-------> Encryption <--------->
+    /// --------------------------------
+
+    #[test]
+    fn test_encrypting_existing_unencrypted_wallet() -> Result<()> {
+        let password: &'static str = "safenetwork";
+        let wrong_password: &'static str = "unsafenetwork";
+
+        let dir = create_temp_dir();
+        let root_dir = dir.path().to_path_buf();
+        let wallet_key = MainSecretKey::random();
+
+        let unencrypted_wallet = HotWallet::create_from_key(&root_dir, wallet_key, None)?;
+
+        HotWallet::encrypt(&root_dir, password)?;
+
+        let mut encrypted_wallet =
+            HotWallet::load_encrypted_from_path(&root_dir, password.to_owned())?;
+
+        // Should fail when not authenticated with password yet
+        assert!(encrypted_wallet.authenticate().is_err());
+
+        // Authentication should fail with wrong password
+        assert!(encrypted_wallet
+            .authenticate_with_password(wrong_password.to_owned())
+            .is_err());
+
+        encrypted_wallet.authenticate_with_password(password.to_owned())?;
+
+        encrypted_wallet.reload()?;
+
+        assert_eq!(encrypted_wallet.address(), unencrypted_wallet.address());
 
         Ok(())
     }

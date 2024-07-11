@@ -102,7 +102,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
 
     // create a new genesis wallet with the intention to spend genesis again
     let second_wallet_dir = TempDir::new()?;
-    let mut second_wallet = HotWallet::create_from_key(&second_wallet_dir, get_genesis_sk())?;
+    let mut second_wallet = HotWallet::create_from_key(&second_wallet_dir, get_genesis_sk(), None)?;
     second_wallet.deposit_and_store_to_disk(&vec![GENESIS_CASHNOTE.clone()])?;
     let genesis_amount = GENESIS_CASHNOTE.value()?;
     let second_wallet_addr = second_wallet.address();

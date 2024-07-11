@@ -125,9 +125,7 @@ impl EncryptedSecretKey {
         // Decrypt the encrypted secret key bytes
         let decrypted_data = opening_key
             .open_in_place(aad, &mut encrypted_secret_key)
-            .map_err(|_| {
-                Error::FailedToDecryptKey(String::from("Could not open encrypted key."))
-            })?;
+            .map_err(|_| Error::FailedToDecryptKey(String::from("Could not open encrypted key")))?;
 
         let mut secret_key_bytes = [0u8; 32];
         secret_key_bytes.copy_from_slice(&decrypted_data[0..32]);
@@ -285,5 +283,10 @@ mod tests {
         );
         assert_eq!(read_encrypted_secret_key.salt, encrypted_secret_key.salt);
         assert_eq!(read_encrypted_secret_key.nonce, encrypted_secret_key.nonce);
+    }
+
+    #[test]
+    fn test_file_exists() {
+        // todo
     }
 }

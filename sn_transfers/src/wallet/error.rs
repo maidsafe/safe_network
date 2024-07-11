@@ -74,7 +74,7 @@ pub enum Error {
     #[error("Failed to encrypt secret key: {0}")]
     FailedToEncryptKey(String),
     /// Failed to decrypt a secret key
-    #[error("Failed to encrypt secret key: {0}")]
+    #[error("Failed to decrypt secret key: {0}")]
     FailedToDecryptKey(String),
     /// Failed to parse bytes into a bls key
     #[error("Failed to parse bls key")]
@@ -123,4 +123,7 @@ pub enum Error {
     /// Wallet password is only valid for a certain time until the user has to provide it again
     #[error("Wallet password expired")]
     WalletPasswordExpired,
+    /// Wallet is already encrypted
+    #[error("Wallet is already encrypted")]
+    WalletAlreadyEncrypted,
 }

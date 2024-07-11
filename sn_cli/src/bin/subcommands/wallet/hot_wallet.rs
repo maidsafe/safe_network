@@ -137,6 +137,8 @@ pub enum WalletCmds {
         sk_str: Option<String>,
     },
     Status,
+    /// Encrypt wallet with a password.
+    Encrypt,
 }
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
@@ -193,7 +195,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 } else {
                     get_stdin_response("Replace existing wallet with new wallet? [y/N]")
                 };
-                if response.trim() != "y" {
+                if response != "y" {
                     // Do nothing, return ok and prevent any further operations
                     println!("Exiting without creating new wallet");
                     return Ok(());
@@ -214,7 +216,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             // TODO: encrypt wallet file with password
 
             // Ask user if they want to encrypt the wallet with a password
-            let password = request_optional_password();
+            let password = request_password(false);
 
             // Create the new wallet with the new key
             let main_pubkey = main_sk.main_pubkey();
@@ -229,7 +231,16 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
         WalletCmds::Status => {
             let mut wallet = WalletApiHelper::load_from(root_dir)?;
             println!("{}", wallet.balance());
-            wallet.status();
+            wallet.status()?;
+            Ok(())
+        }
+        WalletCmds::Encrypt => {
+            println!("Encrypt your wallet with a password. WARNING: If you forget your password, you will lose access to your wallet!");
+
+            // Ask user for a new password to encrypt the wallet with
+            if let Some(password) = request_password(true) {
+                WalletApiHelper::encrypt(root_dir, &password)?;
+            }
             Ok(())
         }
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
@@ -403,9 +414,14 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     Ok(())
 }
 
-fn request_optional_password() -> Option<String> {
+fn request_password(required: bool) -> Option<String> {
     'outer: loop {
         let password_response = get_stdin_response("Enter password (leave empty for none):");
+
+        if required && password_response.is_empty() {
+            println!("Password is required.");
+            continue 'outer;
+        }
 
         // If a password is set, request user to repeat it
         if !password_response.is_empty() {
