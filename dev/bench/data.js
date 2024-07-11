@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720468455386,
+  "lastUpdate": 1720677984634,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "c49ff0e0561b8ee607c3b6ad457f488bd81338ae",
-          "message": "fix(uploader): clarify the use of root and wallet dirs",
-          "timestamp": "2024-03-27T21:55:16Z",
-          "tree_id": "2e361fb570c0a61a5868571eff4d2c9aeede1b9a",
-          "url": "https://github.com/maidsafe/safe_network/commit/c49ff0e0561b8ee607c3b6ad457f488bd81338ae"
-        },
-        "date": 1711578890722,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.8478972897130863,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 3.30634694969861,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.158375453204556,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.05809047128204,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "42e9d6c62c9c9836644e3cbf3981eca2710caeb1",
+          "message": "fix: double spend ignored when parent is double spent",
+          "timestamp": "2024-07-11T05:17:12Z",
+          "tree_id": "56fb0bd0049d386f8e35bdc64f4fed83465b1706",
+          "url": "https://github.com/maidsafe/safe_network/commit/42e9d6c62c9c9836644e3cbf3981eca2710caeb1"
+        },
+        "date": 1720677978624,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2719857118450453,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6781090942364834,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.89042083174065,
             "unit": "MiB/s"
           }
         ]
