@@ -46,6 +46,9 @@ pub enum WalletCmds {
     },
     /// Create a hot wallet.
     Create {
+        /// Optional flag to not replace existing wallet.
+        #[clap(long, short, action)]
+        no_replace: bool,
         /// Optional hex-encoded main secret key.
         #[clap(name = "key")]
         key: Option<String>,
@@ -164,6 +167,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             Ok(())
         }
         WalletCmds::Create {
+            no_replace,
             key,
             derivation_passphrase,
         } => {
@@ -171,6 +175,24 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 return Err(eyre!(
                     "Only one of `--hex` or `--derivation` may be specified"
                 ));
+            }
+            // Check for existing wallet
+            if let Ok(existing_wallet) = WalletApiHelper::load_from(root_dir) {
+                let balance = existing_wallet.balance();
+                println!("Existing wallet found with balance of {balance}");
+                let response = if *no_replace {
+                    "n".to_string()
+                } else {
+                    get_stdin_response("Replace existing wallet with new wallet? [y/N]")
+                };
+                if response.trim() != "y" {
+                    // Do nothing, return ok and prevent any further operations
+                    println!("Exiting without creating new wallet");
+                    return Ok(());
+                }
+                // remove existing wallet
+                let new_location = HotWallet::stash(root_dir)?;
+                println!("Old wallet stored at {}", new_location.display());
             }
             let main_sk = if let Some(key) = key {
                 let sk = SecretKey::from_hex(key)
@@ -181,24 +203,6 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 let mnemonic = load_or_create_mnemonic(root_dir)?;
                 secret_key_from_mnemonic(mnemonic, derivation_passphrase.to_owned())?
             };
-            // check for existing wallet with balance
-            let existing_balance = match WalletApiHelper::load_from(root_dir) {
-                Ok(wallet) => wallet.balance(),
-                Err(_) => NanoTokens::zero(),
-            };
-            // if about to overwrite an existing balance, confirm operation
-            if existing_balance > NanoTokens::zero() {
-                let prompt = format!("Existing wallet has balance of {existing_balance}. Replace with new wallet? [y/N]");
-                let response = get_stdin_response(&prompt);
-                if response.trim() != "y" {
-                    // Do nothing, return ok and prevent any further operations
-                    println!("Exiting without creating new wallet");
-                    return Ok(());
-                }
-                // remove existing wallet
-                let new_location = HotWallet::stash(root_dir)?;
-                println!("Old wallet stored at {}", new_location.display());
-            }
             // TODO: encrypt wallet file with password
             // Create the new wallet with the new key
             let main_pubkey = main_sk.main_pubkey();
