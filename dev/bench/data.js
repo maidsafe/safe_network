@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720678108177,
+  "lastUpdate": 1720678109967,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "distinct": true,
-          "id": "c49ff0e0561b8ee607c3b6ad457f488bd81338ae",
-          "message": "fix(uploader): clarify the use of root and wallet dirs",
-          "timestamp": "2024-03-27T21:55:16Z",
-          "tree_id": "2e361fb570c0a61a5868571eff4d2c9aeede1b9a",
-          "url": "https://github.com/maidsafe/safe_network/commit/c49ff0e0561b8ee607c3b6ad457f488bd81338ae"
-        },
-        "date": 1711579002941,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 3510,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 16575,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
           "id": "fa158d5ea0112b5f2884913ca8914b97ae8ff239",
           "message": "fix(cli): read from cache during initial chunking process",
           "timestamp": "2024-03-28T10:03:51Z",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 30552,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "grumbach",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "42e9d6c62c9c9836644e3cbf3981eca2710caeb1",
+          "message": "fix: double spend ignored when parent is double spent",
+          "timestamp": "2024-07-11T05:17:12Z",
+          "tree_id": "56fb0bd0049d386f8e35bdc64f4fed83465b1706",
+          "url": "https://github.com/maidsafe/safe_network/commit/42e9d6c62c9c9836644e3cbf3981eca2710caeb1"
+        },
+        "date": 1720678109460,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6299,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 28984,
             "unit": "ms"
           },
           {
