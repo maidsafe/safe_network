@@ -13,6 +13,7 @@ use super::{
 };
 use crate::get_stdin_response;
 
+use autonomi::utils::is_valid_key_hex;
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::{
@@ -175,6 +176,13 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 return Err(eyre!(
                     "Only one of `--key` or `--derivation` may be specified"
                 ));
+            }
+            if let Some(key) = key {
+                // Check if key is valid
+                // Doing this early to avoid stashing an existing wallet while the provided key is invalid
+                if !is_valid_key_hex(key) {
+                    return Err(eyre!("Please provide a valid secret key in hex format. It must be 64 characters long."));
+                }
             }
             // Check for existing wallet
             if let Ok(existing_wallet) = WalletApiHelper::load_from(root_dir) {

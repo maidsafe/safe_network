@@ -8,6 +8,7 @@
 
 mod acc_packet;
 mod files;
+pub mod utils;
 
 pub use acc_packet::AccountPacket;
 pub use files::{
