@@ -34,7 +34,6 @@ use futures::future::Either;
 use futures::StreamExt;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-use libp2p::{swarm::behaviour::toggle::Toggle, Transport as _};
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
@@ -47,6 +46,7 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
+use libp2p::{swarm::behaviour::toggle::Toggle, Transport as _};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_protocol::{
@@ -560,7 +560,7 @@ impl NetworkBuilder {
                 Either::Right((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
             })
             .boxed();
-        
+
         let relay_server = if !self.is_behind_home_network {
             let relay_server_cfg = relay::Config {
                 max_reservations: 128,             // Amount of peers we are relaying for
