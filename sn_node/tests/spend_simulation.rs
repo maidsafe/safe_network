@@ -357,18 +357,11 @@ async fn inner_handle_action(
                 "{our_id} Available CashNotes for local send: {:?}",
                 available_cash_notes
             );
-            let mut rng = &mut rand::rngs::OsRng;
-            let derivation_index = DerivationIndex::random(&mut rng);
             let transfer = OfflineTransfer::new(
                 available_cash_notes,
                 recipients,
                 wallet.address(),
                 SpendReason::default(),
-                Some((
-                    wallet.key().main_pubkey(),
-                    derivation_index,
-                    wallet.key().derive_key(&derivation_index),
-                )),
             )?;
             let recipient_cash_notes = transfer.cash_notes_for_recipient.clone();
             let change = transfer.change_cash_note.clone();
@@ -414,7 +407,6 @@ async fn inner_handle_action(
                 vec![to],
                 wallet.address(),
                 SpendReason::default(),
-                None,
             )?;
             info!("{our_id} double spending transfer: {transfer:?}");
 
@@ -703,7 +695,6 @@ async fn init_state(count: usize) -> Result<(Client, State)> {
         recipients,
         first_wallet.address(),
         reason.clone(),
-        None,
     )?;
 
     info!("Sending transfer for all wallets and verifying them");

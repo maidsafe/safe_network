@@ -424,18 +424,8 @@ impl HotWallet {
 
         let reason = reason.unwrap_or_default();
 
-        let derivation_index = DerivationIndex::random(&mut rng);
-        let transfer = OfflineTransfer::new(
-            available_cash_notes,
-            to_unique_keys,
-            self.address(),
-            reason,
-            Some((
-                self.key.main_pubkey(),
-                derivation_index,
-                self.key.derive_key(&derivation_index),
-            )),
-        )?;
+        let transfer =
+            OfflineTransfer::new(available_cash_notes, to_unique_keys, self.address(), reason)?;
 
         let created_cash_notes = transfer.cash_notes_for_recipient.clone();
 
@@ -498,18 +488,12 @@ impl HotWallet {
             .into_iter()
             .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
             .collect();
-        let derivation_index = DerivationIndex::random(&mut rng);
 
         let transfer = OfflineTransfer::new(
             available_cash_notes,
             to_unique_keys,
             self.address(),
             spend_reason,
-            Some((
-                self.key.main_pubkey(),
-                derivation_index,
-                self.key.derive_key(&derivation_index),
-            )),
         )?;
 
         let signed_spends = transfer.all_spend_requests.clone();
@@ -588,17 +572,11 @@ impl HotWallet {
 
         let spend_reason = Default::default();
         let start = Instant::now();
-        let derivation_index = DerivationIndex::random(&mut rng);
         let offline_transfer = OfflineTransfer::new(
             available_cash_notes,
             recipients,
             self.address(),
             spend_reason,
-            Some((
-                self.key.main_pubkey(),
-                derivation_index,
-                self.key.derive_key(&derivation_index),
-            )),
         )?;
         trace!(
             "local_send_storage_payment created offline_transfer with {} cashnotes in {:?}",
