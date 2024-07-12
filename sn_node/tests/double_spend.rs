@@ -54,15 +54,9 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let to2_unique_key = (amount, to2, DerivationIndex::random(&mut rng));
     let to3_unique_key = (amount, to3, DerivationIndex::random(&mut rng));
 
-    let transfer_to_2 = OfflineTransfer::new(
-        some_cash_notes,
-        vec![to2_unique_key],
-        to1,
-        reason.clone(),
-        None,
-    )?;
-    let transfer_to_3 =
-        OfflineTransfer::new(same_cash_notes, vec![to3_unique_key], to1, reason, None)?;
+    let transfer_to_2 =
+        OfflineTransfer::new(some_cash_notes, vec![to2_unique_key], to1, reason.clone())?;
+    let transfer_to_3 = OfflineTransfer::new(same_cash_notes, vec![to3_unique_key], to1, reason)?;
 
     // send both transfers to the network
     // upload won't error out, only error out during verification.
@@ -127,8 +121,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
     );
     let change_addr = second_wallet_addr;
     let reason = SpendReason::default();
-    let transfer =
-        OfflineTransfer::new(genesis_cashnote, vec![recipient], change_addr, reason, None)?;
+    let transfer = OfflineTransfer::new(genesis_cashnote, vec![recipient], change_addr, reason)?;
 
     // send the transfer to the network which will mark genesis as a double spent
     // making its direct descendants unspendable
@@ -160,7 +153,6 @@ async fn genesis_double_spend_fail() -> Result<()> {
         vec![recipient],
         change_addr,
         reason,
-        None,
     )?;
 
     // send the transfer to the network which should reject it
@@ -199,7 +191,6 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         vec![to_2_unique_key],
         to1,
         reason.clone(),
-        None,
     )?;
 
     info!("Sending 1->2 to the network...");
@@ -224,13 +215,8 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         wallet_22.address(),
         DerivationIndex::random(&mut rng),
     );
-    let transfer_to_22 = OfflineTransfer::new(
-        cash_notes_2,
-        vec![to_22_unique_key],
-        to2,
-        reason.clone(),
-        None,
-    )?;
+    let transfer_to_22 =
+        OfflineTransfer::new(cash_notes_2, vec![to_22_unique_key], to2, reason.clone())?;
 
     client
         .send_spends(transfer_to_22.all_spend_requests.iter(), false)
@@ -251,13 +237,8 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         wallet_3.address(),
         DerivationIndex::random(&mut rng),
     );
-    let transfer_to_3 = OfflineTransfer::new(
-        cash_notes_1,
-        vec![to_3_unique_key],
-        to1,
-        reason.clone(),
-        None,
-    )?; // reuse the old cash notes
+    let transfer_to_3 =
+        OfflineTransfer::new(cash_notes_1, vec![to_3_unique_key], to1, reason.clone())?; // reuse the old cash notes
     client
         .send_spends(transfer_to_3.all_spend_requests.iter(), false)
         .await?;
@@ -290,7 +271,6 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         vec![to_222_unique_key],
         wallet_22.address(),
         reason,
-        None,
     )?;
     client
         .send_spends(transfer_to_222.all_spend_requests.iter(), false)
@@ -358,7 +338,6 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         vec![to_b_unique_key],
         wallet_a.address(),
         reason.clone(),
-        None,
     )?;
 
     info!("Sending A->B to the network...");
@@ -388,7 +367,6 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         vec![to_c_unique_key],
         wallet_b.address(),
         reason.clone(),
-        None,
     )?;
 
     info!("spend B to C: {:?}", transfer_to_c.all_spend_requests);
@@ -416,7 +394,6 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         vec![to_x_unique_key],
         wallet_a.address(),
         reason.clone(),
-        None,
     )?; // reuse the old cash notes
     client
         .send_spends(transfer_to_x.all_spend_requests.iter(), false)
@@ -447,7 +424,6 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         vec![to_y_unique_key],
         wallet_b.address(),
         reason.clone(),
-        None,
     )?; // reuse the old cash notes
 
     info!("spend B to Y: {:?}", transfer_to_y.all_spend_requests);
