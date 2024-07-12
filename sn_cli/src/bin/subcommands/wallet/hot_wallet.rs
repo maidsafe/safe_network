@@ -179,6 +179,7 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             derivation_passphrase,
             password,
         } => {
+            let mut wallet_already_exists = false;
             if key.is_some() && derivation_passphrase.is_some() {
                 return Err(eyre!(
                     "Only one of `--key` or `--derivation` may be specified"
@@ -197,9 +198,16 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 }
             }
             // Check for existing wallet
-            if let Ok(existing_wallet) = WalletApiHelper::load_from(root_dir) {
+            if HotWallet::is_encrypted(root_dir) {
+                wallet_already_exists = true;
+                println!("Existing encrypted wallet found.");
+            } else if let Ok(existing_wallet) = WalletApiHelper::load_from(root_dir) {
+                wallet_already_exists = true;
                 let balance = existing_wallet.balance();
                 println!("Existing wallet found with balance of {balance}");
+            }
+            // If a wallet already exists, ask the user if they want to replace it
+            if wallet_already_exists {
                 let response = if *no_replace {
                     "n".to_string()
                 } else {

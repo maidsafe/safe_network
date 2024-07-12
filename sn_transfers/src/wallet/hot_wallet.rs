@@ -29,6 +29,7 @@ use crate::{
     NanoTokens, SignedSpend, Spend, SpendAddress, SpendReason, Transaction, Transfer, UniquePubkey,
     WalletError, NETWORK_ROYALTIES_PK,
 };
+use chrono::Local;
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     fs::File,
@@ -267,12 +268,11 @@ impl HotWallet {
     }
 
     /// Moves all files for the current wallet, including keys and cashnotes
-    /// to directory root_dir/wallet_ADDRESS
+    /// to directory root_dir/wallet_DATETIME
     pub fn stash(root_dir: &Path) -> Result<PathBuf> {
-        let wallet = HotWallet::load_from(root_dir)?;
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let addr_hex = &format!("{:?}", wallet.address());
-        let new_name = format!("{WALLET_DIR_NAME}_{addr_hex}");
+        let datetime_str = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+        let new_name = format!("{WALLET_DIR_NAME}_{datetime_str}");
         let moved_dir = root_dir.join(new_name);
         let _ = std::fs::rename(wallet_dir, moved_dir.clone());
         Ok(moved_dir)
