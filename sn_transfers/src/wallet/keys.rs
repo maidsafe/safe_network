@@ -7,7 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::error::{Error, Result};
-use crate::wallet::encryption::{encrypt_secret_key, EncryptedSecretKey};
+use crate::wallet::encryption::{
+    encrypt_secret_key, EncryptedSecretKey, ENCRYPTED_MAIN_SECRET_KEY_FILENAME,
+};
 use crate::{MainPubkey, MainSecretKey};
 use hex::{decode, encode};
 use std::path::Path;
@@ -100,8 +102,16 @@ pub(super) fn get_main_pubkey(wallet_dir: &Path) -> Result<Option<MainPubkey>> {
 
 /// Delete the file containing the secret key `main_secret_key`.
 /// WARNING: Only call this if you know what you're doing!
-pub(crate) fn delete_main_secret_key(wallet_dir: &Path) -> Result<()> {
+pub(crate) fn delete_unencrypted_main_secret_key(wallet_dir: &Path) -> Result<()> {
     let path = wallet_dir.join(MAIN_SECRET_KEY_FILENAME);
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+/// Delete the file containing the secret key `main_secret_key.encrypted`.
+/// WARNING: Only call this if you know what you're doing!
+pub(crate) fn delete_encrypted_main_secret_key(wallet_dir: &Path) -> Result<()> {
+    let path = wallet_dir.join(ENCRYPTED_MAIN_SECRET_KEY_FILENAME);
     std::fs::remove_file(path)?;
     Ok(())
 }

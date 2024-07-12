@@ -27,7 +27,7 @@ lazy_static! {
 }
 
 /// Filename for the encrypted secret key.
-const ENCRYPTED_MAIN_SECRET_KEY_FILENAME: &str = "main_secret_key.encrypted";
+pub const ENCRYPTED_MAIN_SECRET_KEY_FILENAME: &str = "main_secret_key.encrypted";
 
 /// Encrypted secret key for storing on disk and decrypting with password
 #[derive(Serialize, Deserialize)]
