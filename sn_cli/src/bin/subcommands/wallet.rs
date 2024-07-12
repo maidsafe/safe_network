@@ -35,7 +35,10 @@ impl WalletApiHelper {
         let wallet = if HotWallet::is_encrypted(root_dir) {
             println!("Wallet is encrypted. It needs a password to unlock.");
             let password = get_stdin_response("Enter password:");
-            HotWallet::load_encrypted_from_path(root_dir, password)?
+            let mut wallet = HotWallet::load_encrypted_from_path(root_dir, password.to_owned())?;
+            // Authenticate so that a user doesn't have to immediately provide the password again
+            wallet.authenticate_with_password(password)?;
+            wallet
         } else {
             HotWallet::load_from(root_dir)?
         };
