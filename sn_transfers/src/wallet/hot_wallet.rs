@@ -109,16 +109,6 @@ impl HotWallet {
     /// # Errors
     /// Returns an error if the wallet is encrypted and the password is not available.
     /// In such cases, the password needs to be set using `authenticate_with_password()`.
-    ///
-    /// # Examples
-    /// ```
-    /// let mut wallet = Wallet::new();
-    /// match wallet.authenticate() {
-    ///     Ok(Some(password)) => println!("Password: {}", password),
-    ///     Ok(None) => println!("Wallet is not encrypted."),
-    ///     Err(e) => println!("Failed to authenticate: {}", e),
-    /// }
-    /// ```
     pub fn authenticate(&mut self) -> Result<Option<String>> {
         self.authentication_manager.authenticate()
     }
