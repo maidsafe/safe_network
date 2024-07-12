@@ -261,7 +261,7 @@ mod tests {
     fn create_wallet(root_dir: &Path, derivation_passphrase: Option<String>) -> Result<HotWallet> {
         let mnemonic = load_or_create_mnemonic(root_dir)?;
         let secret_key = secret_key_from_mnemonic(mnemonic, derivation_passphrase)?;
-        let wallet = HotWallet::create_from_key(root_dir, secret_key)?;
+        let wallet = HotWallet::create_from_key(root_dir, secret_key, None)?;
         Ok(wallet)
     }
 
@@ -298,8 +298,10 @@ mod tests {
 
         let cmds = WalletCmds::Create {
             no_replace: false,
+            no_password: true,
             key: None,
             derivation_passphrase: None,
+            password: None,
         };
 
         // Run command and hopefully create a wallet
@@ -321,8 +323,10 @@ mod tests {
 
         let cmds = WalletCmds::Create {
             no_replace: false,
+            no_password: true,
             key: Some(secret_key_hex),
             derivation_passphrase: None,
+            password: None,
         };
 
         // Run command and hopefully create a wallet

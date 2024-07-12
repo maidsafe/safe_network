@@ -48,8 +48,11 @@ pub enum WalletCmds {
     /// Create a hot wallet.
     Create {
         /// Optional flag to not replace existing wallet.
-        #[clap(long, short, action)]
+        #[clap(long, action)]
         no_replace: bool,
+        /// Optional flag to not add a password.
+        #[clap(long, action)]
+        no_password: bool,
         /// Optional hex-encoded main secret key.
         #[clap(long, short, name = "key")]
         key: Option<String>,
@@ -59,9 +62,9 @@ pub enum WalletCmds {
         /// `<https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed>`
         #[clap(long, short, name = "derivation")]
         derivation_passphrase: Option<String>,
-        // Optional password to encrypt the wallet with.
-        // #[clap(name = "password")]
-        // password: Option<String>,
+        /// Optional password to encrypt the wallet with.
+        #[clap(long, short)]
+        password: Option<String>,
     },
     /// Get tokens from a faucet.
     GetFaucet {
@@ -171,12 +174,19 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
         }
         WalletCmds::Create {
             no_replace,
+            no_password,
             key,
             derivation_passphrase,
+            password,
         } => {
             if key.is_some() && derivation_passphrase.is_some() {
                 return Err(eyre!(
                     "Only one of `--key` or `--derivation` may be specified"
+                ));
+            }
+            if *no_password && password.is_some() {
+                return Err(eyre!(
+                    "Only one of `--no-password` or `--password` may be specified"
                 ));
             }
             if let Some(key) = key {
@@ -213,11 +223,14 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 let mnemonic = load_or_create_mnemonic(root_dir)?;
                 secret_key_from_mnemonic(mnemonic, derivation_passphrase.to_owned())?
             };
-            // TODO: encrypt wallet file with password
-
             // Ask user if they want to encrypt the wallet with a password
-            let password = request_password(false);
-
+            let password = if *no_password {
+                None
+            } else if let Some(password) = password {
+                Some(password.to_owned())
+            } else {
+                request_password(false)
+            };
             // Create the new wallet with the new key
             let main_pubkey = main_sk.main_pubkey();
             let local_wallet = HotWallet::create_from_key(root_dir, main_sk, password)?;
