@@ -207,7 +207,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          ./target/release/safe --log-output-dest=data-dir wallet create
+          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
           ./target/release/faucet --log-output-dest=data-dir send 1000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
@@ -856,7 +856,7 @@ jobs:
 
       - name: Create and fund a wallet first time
         run: |
-          ~/safe --log-output-dest=data-dir wallet create
+          ~/safe --log-output-dest=data-dir wallet create --no-password
           ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
           echo "----------"
           cat first.txt
@@ -871,7 +871,7 @@ jobs:
           rm -rf /home/runner/.local/share/safe/test_faucet
           rm -rf /home/runner/.local/share/safe/test_genesis
           rm -rf /home/runner/.local/share/safe/client
-          ~/safe --log-output-dest=data-dir wallet create
+          ~/safe --log-output-dest=data-dir wallet create --no-password
           ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
           echo "----------"
           cat second.txt
@@ -892,7 +892,7 @@ jobs:
           rm -rf /home/runner/.local/share/safe/test_faucet
           rm -rf /home/runner/.local/share/safe/test_genesis
           rm -rf /home/runner/.local/share/safe/client
-          ~/safe --log-output-dest=data-dir wallet create
+          ~/safe --log-output-dest=data-dir wallet create --no-password
           if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
             echo "Faucet with different genesis key not rejected!"
             exit 1
@@ -1031,7 +1031,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          ~/safe --log-output-dest=data-dir wallet create
+          ~/safe --log-output-dest=data-dir wallet create --no-password
           ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
@@ -1164,7 +1164,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
-          ./target/release/safe --log-output-dest=data-dir wallet create
+          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
           ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
@@ -1249,7 +1249,7 @@ jobs:
           ls -l $SAFE_DATA_PATH
           mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
           ls -l $CLIENT_DATA_PATH
-          ./target/release/safe --log-output-dest=data-dir wallet create
+          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
           ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
