@@ -77,14 +77,23 @@ impl AuthenticationManager {
             if let (Some(password), Some(expiration_time)) =
                 (&self.password.to_owned(), self.password_expires_at)
             {
+                let password = password.expose_secret().to_owned();
+
+                // Verify if password is still correct
+                if self.verify_password(&password).is_err() {
+                    self.password = None;
+                    return Err(Error::WalletPasswordIncorrect);
+                }
+
                 // Check if password hasn't expired
                 if Utc::now() <= expiration_time {
                     // Renew password expiration time after authenticating
                     self.reset_password_expiration_time();
-                    Ok(Some(password.expose_secret().to_owned()))
+                    Ok(Some(password))
                 } else {
                     // Password is no longer active.
                     // User needs to authenticate again with a valid password
+                    self.password = None;
                     Err(Error::WalletPasswordExpired)
                 }
             } else {

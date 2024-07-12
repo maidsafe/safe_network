@@ -117,6 +117,9 @@ pub enum Error {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// Wallet password is incorrect
+    #[error("Wallet password is incorrect")]
+    WalletPasswordIncorrect,
     /// Wallet is password protected
     #[error("Wallet password required")]
     WalletPasswordRequired,
