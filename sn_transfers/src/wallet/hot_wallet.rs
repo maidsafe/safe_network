@@ -68,6 +68,7 @@ impl HotWallet {
         self.watchonly_wallet.api().wallet_dir()
     }
 
+    /// Returns whether a wallet in the specified directory is encrypted or not.
     pub fn is_encrypted(root_dir: &Path) -> bool {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
         EncryptedSecretKey::file_exists(&wallet_dir)
@@ -98,18 +99,34 @@ impl HotWallet {
         Ok(())
     }
 
-    /// Returns password if wallet is encrypted.
-    /// Is None if wallet is not encrypted.
-    /// Is Some if wallet is encrypted and password is available.
-    /// Fails if wallet is encrypted, but no password available.
-    /// When it fails, the password needs to be set using `authenticate_with_password()`.
+    /// Authenticates the wallet and returns the password if it is encrypted.
+    ///
+    /// # Returns
+    /// - `Ok(Some(String))`: The wallet is encrypted and the password is available.
+    /// - `Ok(None)`: The wallet is not encrypted.
+    /// - `Err`: The wallet is encrypted, but no password is available.
+    ///
+    /// # Errors
+    /// Returns an error if the wallet is encrypted and the password is not available.
+    /// In such cases, the password needs to be set using `authenticate_with_password()`.
+    ///
+    /// # Examples
+    /// ```
+    /// let mut wallet = Wallet::new();
+    /// match wallet.authenticate() {
+    ///     Ok(Some(password)) => println!("Password: {}", password),
+    ///     Ok(None) => println!("Wallet is not encrypted."),
+    ///     Err(e) => println!("Failed to authenticate: {}", e),
+    /// }
+    /// ```
     pub fn authenticate(&mut self) -> Result<Option<String>> {
         self.authentication_manager.authenticate()
     }
 
-    /// Saves the password for decrypting an encrypted wallet for a certain amount of time.
+    /// Authenticates the wallet and saves the password for a certain amount of time.
     pub fn authenticate_with_password(&mut self, password: String) -> Result<()> {
-        self.authentication_manager.set_password(password)
+        self.authentication_manager
+            .authenticate_with_password(password)
     }
 
     /// Encrypts wallet with a password.
