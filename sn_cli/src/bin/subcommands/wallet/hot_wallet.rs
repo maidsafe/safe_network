@@ -11,7 +11,7 @@ use super::{
     helpers::{get_faucet, receive},
     WalletApiHelper,
 };
-use crate::get_stdin_response;
+use crate::{get_stdin_password_response, get_stdin_response};
 
 use autonomi::utils::is_valid_key_hex;
 use bls::SecretKey;
@@ -430,12 +430,12 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
 fn request_password(required: bool) -> Option<String> {
     'outer: loop {
         let prompt = if required {
-            "Enter password:"
+            "Enter password: "
         } else {
-            "Enter password (leave empty for none):"
+            "Enter password (leave empty for none): "
         };
 
-        let password_response = get_stdin_response(prompt);
+        let password_response = get_stdin_password_response(prompt);
 
         if required && password_response.is_empty() {
             println!("Password is required.");
@@ -448,7 +448,7 @@ fn request_password(required: bool) -> Option<String> {
             let mut retries = 0u8;
 
             loop {
-                let repeat_password = get_stdin_response("Repeat password:");
+                let repeat_password = get_stdin_password_response("Repeat password: ");
 
                 if repeat_password == password_response {
                     break;

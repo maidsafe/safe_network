@@ -14,7 +14,7 @@ pub(crate) mod wo_wallet;
 use sn_client::transfers::{CashNote, HotWallet, MainPubkey, NanoTokens, WatchOnlyWallet};
 use sn_protocol::storage::SpendAddress;
 
-use crate::get_stdin_response;
+use crate::get_stdin_password_response;
 use color_eyre::Result;
 use std::{collections::BTreeSet, io::Read, path::Path};
 
@@ -33,7 +33,7 @@ impl WalletApiHelper {
     pub fn load_from(root_dir: &Path) -> Result<Self> {
         let wallet = if HotWallet::is_encrypted(root_dir) {
             println!("Wallet is encrypted. It needs a password to unlock.");
-            let password = get_stdin_response("Enter password:");
+            let password = get_stdin_password_response("Enter password: ");
             let mut wallet = HotWallet::load_encrypted_from_path(root_dir, password.to_owned())?;
             // Authenticate so that a user doesn't have to immediately provide the password again
             wallet.authenticate_with_password(password)?;
@@ -180,7 +180,7 @@ impl WalletApiHelper {
             WalletApiHelper::WatchOnlyWallet(_) => Ok(()),
             WalletApiHelper::HotWallet(w) => {
                 if w.authenticate().is_err() {
-                    let password = get_stdin_response("Wallet password:");
+                    let password = get_stdin_password_response("Wallet password: ");
                     w.authenticate_with_password(password)?;
                     Ok(())
                 } else {

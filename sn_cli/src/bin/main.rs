@@ -235,7 +235,6 @@ fn get_client_data_dir_path() -> Result<PathBuf> {
     Ok(home_dirs)
 }
 
-// TODO: need similar function that hides user input with `*`
 fn get_stdin_response(prompt: &str) -> String {
     println!("{prompt}");
     let mut buffer = String::new();
@@ -246,6 +245,12 @@ fn get_stdin_response(prompt: &str) -> String {
     };
     // Remove leading and trailing whitespace
     buffer.trim().to_owned()
+}
+
+fn get_stdin_password_response(prompt: &str) -> String {
+    rpassword::prompt_password(prompt)
+        .map(|v| v.trim().to_owned())
+        .unwrap_or("".to_string())
 }
 
 #[cfg(test)]
