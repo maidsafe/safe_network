@@ -249,11 +249,11 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
         }
         WalletCmds::Encrypt => {
             println!("Encrypt your wallet with a password. WARNING: If you forget your password, you will lose access to your wallet!");
-
             // Ask user for a new password to encrypt the wallet with
             if let Some(password) = request_password(true) {
                 WalletApiHelper::encrypt(root_dir, &password)?;
             }
+            println!("Wallet successfully encrypted.");
             Ok(())
         }
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
@@ -429,7 +429,13 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
 
 fn request_password(required: bool) -> Option<String> {
     'outer: loop {
-        let password_response = get_stdin_response("Enter password (leave empty for none):");
+        let prompt = if required {
+            "Enter password:"
+        } else {
+            "Enter password (leave empty for none):"
+        };
+
+        let password_response = get_stdin_response(prompt);
 
         if required && password_response.is_empty() {
             println!("Password is required.");
