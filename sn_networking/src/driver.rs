@@ -563,8 +563,8 @@ impl NetworkBuilder {
 
         let relay_server = {
             let relay_server_cfg = relay::Config {
-                max_reservations: 8,               // Amount of peers we are relaying for
-                max_circuits: 256, // The total amount of relayed connections at any given moment.
+                max_reservations: 128,             // Amount of peers we are relaying for
+                max_circuits: 4096, // The total amount of relayed connections at any given moment.
                 max_circuits_per_peer: 256, // Amount of relayed connections per peer (both dst and src)
                 circuit_src_rate_limiters: vec![], // No extra rate limiting for now
                 ..Default::default()
