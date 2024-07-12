@@ -41,7 +41,6 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
         recipients,
         starting_main_key.main_pubkey(),
         SpendReason::default(),
-        None,
     )
     .expect("transfer to succeed");
 
@@ -98,7 +97,6 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         recipients,
         starting_main_key.main_pubkey(),
         SpendReason::default(),
-        None,
     )
     .expect("transfer to succeed");
 
@@ -136,18 +134,12 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         DerivationIndex::random(&mut rng),
     )];
 
-    let derivation_index = DerivationIndex::random(&mut rng);
     // create transfer to merge all of the cashnotes into one
     let many_to_one_transfer = OfflineTransfer::new(
         many_cashnotes,
         one_single_recipient,
         starting_main_key.main_pubkey(),
         SpendReason::default(),
-        Some((
-            starting_main_key.main_pubkey(),
-            derivation_index,
-            starting_main_key.derive_key(&derivation_index),
-        )),
     )
     .expect("transfer to succeed");
 

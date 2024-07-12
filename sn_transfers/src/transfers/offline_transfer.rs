@@ -108,16 +108,11 @@ impl OfflineTransfer {
     /// The peers will validate each signed spend they receive, before accepting it.
     /// Once enough peers have accepted all the spends of the transaction, and serve
     /// them upon request, the transaction will be completed.
-    ///
-    /// When there are multiple inputs from different unique_pubkeys,
-    /// they shall all be paid into a `middle_addr` first, then from that `middle_addr` pay out
-    /// to recipients as normal.
     pub fn new(
         available_cash_notes: CashNotesAndSecretKey,
         recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex)>,
         change_to: MainPubkey,
         input_reason_hash: SpendReason,
-        middle_addr: Option<(MainPubkey, DerivationIndex, DerivedSecretKey)>,
     ) -> Result<Self> {
         let total_output_amount = recipients
             .iter()
@@ -140,7 +135,7 @@ impl OfflineTransfer {
             change: (change_amount, change_to),
         };
 
-        create_offline_transfer_with(selected_inputs, input_reason_hash, middle_addr)
+        create_offline_transfer_with(selected_inputs, input_reason_hash)
     }
 
     pub fn verify(&self, main_key: &MainSecretKey) -> Result<()> {
@@ -315,103 +310,9 @@ fn create_transaction_builder_with(
 /// to the network. When those same signed spends can be retrieved from
 /// enough peers in the network, the transaction will be completed.
 fn create_offline_transfer_with(
-    mut selected_inputs: TransferInputs,
+    selected_inputs: TransferInputs,
     input_reason: SpendReason,
-    middle_addr: Option<(MainPubkey, DerivationIndex, DerivedSecretKey)>,
 ) -> Result<OfflineTransfer> {
-    let mut all_spend_requests = vec![];
-
-    let input_keys: BTreeSet<_> = selected_inputs
-        .cash_notes_to_spend
-        .iter()
-        .map(|(cn, _)| cn.unique_pubkey)
-        .collect();
-    if input_keys.len() > 1 {
-        info!(
-            "Multiple input_keys vs multiple outputs detected {:?}",
-            input_keys
-        );
-        if let Some((main_pubkey, derivation_index, middle_derived_sk)) = middle_addr {
-            let mut middle_cash_notes = vec![];
-            for input_key in input_keys {
-                let mut amount: u64 = 0;
-                let cash_notes_to_spend = selected_inputs
-                    .cash_notes_to_spend
-                    .iter()
-                    .filter_map(|(cn, derived_sk)| {
-                        if cn.unique_pubkey == input_key {
-                            if let Ok(value) = cn.value() {
-                                amount += value.as_nano();
-                                Some((cn.clone(), derived_sk.clone()))
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-
-                let recipients = vec![(NanoTokens::from(amount), main_pubkey, derivation_index)];
-
-                let middle_inputs = TransferInputs {
-                    cash_notes_to_spend,
-                    recipients,
-                    change: (NanoTokens::zero(), selected_inputs.change.1),
-                };
-
-                let (tx_builder, _change_id) = create_transaction_builder_with(middle_inputs)?;
-                let cash_note_builder = tx_builder.build(input_reason.clone());
-                let signed_spends: BTreeMap<_, _> = cash_note_builder
-                    .signed_spends()
-                    .into_iter()
-                    .map(|spend| (spend.unique_pubkey(), spend))
-                    .collect();
-
-                for (_, signed_spend) in signed_spends.into_iter() {
-                    all_spend_requests.push(signed_spend.to_owned());
-                }
-                middle_cash_notes.extend(
-                    cash_note_builder
-                        .build()?
-                        .into_iter()
-                        .map(|(cash_note, _)| cash_note)
-                        .collect::<Vec<_>>(),
-                );
-            }
-
-            info!("We now have middle cash notes: {middle_cash_notes:?}");
-
-            let mut parent_spends = BTreeSet::new();
-            for cn in middle_cash_notes.iter() {
-                for parent_spend in cn.parent_spends.iter() {
-                    let _ = parent_spends.insert(parent_spend.clone());
-                }
-            }
-
-            let cash_notes_to_spend = if let Some(cn) = middle_cash_notes.first() {
-                let merged_cn = CashNote {
-                    unique_pubkey: cn.unique_pubkey,
-                    parent_spends,
-                    main_pubkey: cn.main_pubkey,
-                    derivation_index: cn.derivation_index,
-                };
-                info!("We now have a merged cash note: {merged_cn:?}");
-                vec![(merged_cn, Some(middle_derived_sk.clone()))]
-            } else {
-                return Err(TransferError::MultipleInputsWithoutMiddlePayment);
-            };
-
-            selected_inputs = TransferInputs {
-                cash_notes_to_spend,
-                recipients: selected_inputs.recipients,
-                change: selected_inputs.change,
-            };
-        } else {
-            return Err(TransferError::MultipleInputsWithoutMiddleAddr);
-        }
-    }
-
     let (tx_builder, change_id) = create_transaction_builder_with(selected_inputs)?;
 
     // Finalize the tx builder to get the cash_note builder.
@@ -423,6 +324,7 @@ fn create_offline_transfer_with(
         .map(|spend| (spend.unique_pubkey(), spend))
         .collect();
 
+    let mut all_spend_requests = vec![];
     for (_, signed_spend) in signed_spends.into_iter() {
         all_spend_requests.push(signed_spend.to_owned());
     }
