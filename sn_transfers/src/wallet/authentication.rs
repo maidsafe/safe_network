@@ -17,13 +17,13 @@ const PASSWORD_EXPIRATION_TIME_SECS: i64 = 120;
 
 /// Manager that makes it easier to interact with encrypted wallets
 pub struct AuthenticationManager {
-    // Password to decrypt the wallet.
-    // Wrapped in Secret<> so that it doesn't accidentally get exposed
+    /// Password to decrypt the wallet.
+    /// Wrapped in Secret<> so that it doesn't accidentally get exposed
     password: Option<Secret<String>>,
-    // Expiry time of the password.
-    // Has to be provided by the user again after a certain amount of time
+    /// Expiry time of the password.
+    /// Has to be provided by the user again after a certain amount of time
     password_expires_at: Option<DateTime<Utc>>,
-    // Path to the root directory of the wallet
+    /// Path to the root directory of the wallet
     wallet_dir: PathBuf,
 }
 
@@ -36,13 +36,16 @@ impl AuthenticationManager {
         }
     }
 
-    pub fn set_password(&mut self, password: String) -> Result<()> {
+    /// Authenticates the wallet using the provided password.
+    /// Password will be saved (available) for a limited amount of time.
+    pub fn authenticate_with_password(&mut self, password: String) -> Result<()> {
         self.verify_password(&password)?;
         self.password = Some(Secret::new(password));
         self.reset_password_expiration_time();
         Ok(())
     }
 
+    /// Verifies the provided password against the encrypted secret key.
     fn verify_password(&self, password: &str) -> Result<()> {
         let encrypted_secret_key = EncryptedSecretKey::from_file(self.wallet_dir.as_path())?;
         // Check if password is correct by trying to decrypt
@@ -50,15 +53,23 @@ impl AuthenticationManager {
         Ok(())
     }
 
+    /// Resets the password expiration time to the current time plus the expiration duration.
     fn reset_password_expiration_time(&mut self) {
         self.password_expires_at =
             Some(Utc::now() + Duration::seconds(PASSWORD_EXPIRATION_TIME_SECS));
     }
 
-    /// Returns password if wallet is encrypted.
-    /// Is None if wallet is not encrypted.
-    /// Is Some if wallet is encrypted and password is available.
-    /// Fails if wallet is encrypted, but no password available. In that case, the password needs to be set using `set_password()`.
+    /// Authenticates the wallet and returns the password if it is encrypted.
+    ///
+    /// # Returns
+    /// - `Ok(Some(String))`: The wallet is encrypted and the password is available and valid.
+    /// - `Ok(None)`: The wallet is not encrypted.
+    /// - `Err(Error)`: The wallet is encrypted, but no valid password is available.
+    ///
+    /// # Errors
+    /// Returns an error in the following cases:
+    /// - `Error::WalletPasswordExpired`: The wallet's password has expired and the user needs to authenticate again with a valid password using `authenticate_with_password()`.
+    /// - `Error::WalletPasswordRequired`: The wallet is encrypted but no password is set. The user needs to authenticate with a valid password using `authenticate_with_password()`.
     pub fn authenticate(&mut self) -> Result<Option<String>> {
         // If wallet is encrypted, require a valid password
         if EncryptedSecretKey::file_exists(self.wallet_dir.as_path()) {
@@ -73,11 +84,11 @@ impl AuthenticationManager {
                     Ok(Some(password.expose_secret().to_owned()))
                 } else {
                     // Password is no longer active.
-                    // Password needs to be set again using `set_password()`
+                    // User needs to authenticate again with a valid password
                     Err(Error::WalletPasswordExpired)
                 }
             } else {
-                // Password needs to be set using `set_password()`
+                // User needs to authenticate with a valid password
                 Err(Error::WalletPasswordRequired)
             }
         } else {
