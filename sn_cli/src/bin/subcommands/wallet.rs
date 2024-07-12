@@ -24,7 +24,6 @@ pub(crate) enum WalletApiHelper {
     HotWallet(HotWallet),
 }
 
-// TODO: if any action yields an authentication error, call the authenticate function and try again.
 impl WalletApiHelper {
     pub fn watch_only_from_pk(main_pk: MainPubkey, root_dir: &Path) -> Result<Self> {
         let wallet = watch_only_wallet_from_pk(main_pk, root_dir)?;
