@@ -20,7 +20,9 @@ use super::{
 };
 use crate::wallet::authentication::AuthenticationManager;
 use crate::wallet::encryption::EncryptedSecretKey;
-use crate::wallet::keys::{delete_main_secret_key, store_main_secret_key};
+use crate::wallet::keys::{
+    delete_encrypted_main_secret_key, delete_unencrypted_main_secret_key, store_main_secret_key,
+};
 use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
@@ -131,11 +133,15 @@ impl HotWallet {
         let wallet_key = Self::load_from(root_dir)?.key;
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
 
-        // Delete the unencrypted secret key file
-        delete_main_secret_key(&wallet_dir)?;
-
         // Save the secret key as an encrypted file
         store_main_secret_key(&wallet_dir, &wallet_key, Some(password.to_owned()))?;
+
+        // Delete the unencrypted secret key file
+        // Cleanup if it fails
+        if let Err(err) = delete_unencrypted_main_secret_key(&wallet_dir) {
+            let _ = delete_encrypted_main_secret_key(&wallet_dir);
+            return Err(err);
+        }
 
         Ok(())
     }
