@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1720748088319,
+  "lastUpdate": 1720748090495,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "d0bc0c37e8321ed2ebce7d5a3225d55b0b921dfb",
-          "message": "ci: fix node manager binary packaging\n\nIn the packaging process, the crate name for the node manager was incorrectly renamed to\n`sn-node-manager`. Confusingly, this is the correct name for the crate, but the directory and crate\nname are mismatched. For clarity, I've changed the name of the variable to `crate_dir_name`.\n\nAlso, the `sn-node-manager` string was removed from the supported binary array, because that's the\nname of the crate, not the binary.",
-          "timestamp": "2024-03-28T20:17:04Z",
-          "tree_id": "8397e35a688dbb4967dc02e4ea70d7d94720a124",
-          "url": "https://github.com/maidsafe/safe_network/commit/d0bc0c37e8321ed2ebce7d5a3225d55b0b921dfb"
-        },
-        "date": 1711657829995,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6215,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35622,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 28998,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "f4c6b6acd1312ba8a978688b21f10ae7f57bd7b7",
+          "message": "refactor(networking): performance/cleanup of fn\n\nRefactor the remove_outdated_connections method. This uses `retain` to\nmore efficiently go through the live peers and remove from the\n`BTreeSet`. It also only sets the metrics after removing all the peers.\nFor the rest, the function should be the same.",
+          "timestamp": "2024-07-12T00:49:38Z",
+          "tree_id": "f712112c9b5392e06f0dae26d5bac0880adb8218",
+          "url": "https://github.com/maidsafe/safe_network/commit/f4c6b6acd1312ba8a978688b21f10ae7f57bd7b7"
+        },
+        "date": 1720748089724,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6291,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 29819,
             "unit": "ms"
           },
           {
