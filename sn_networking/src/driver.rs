@@ -739,12 +739,10 @@ impl SwarmDriver {
     // --------------------------------------------
 
     /// Defines a new X distance range to be used for GETs and data replication
-    pub(crate) fn add_distance_range(&mut self) {
+    pub(crate) fn add_distance_range_for_gets(&mut self) {
         // TODO: define how/where this distance comes from
 
         const TARGET_PEER: usize = 42;
-        //used to ensure we can always hit some minimum number of peers
-        const DISTANCE_MULTIPLIER: usize = 5;
 
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let our_key = our_address.as_kbucket_key();
@@ -760,7 +758,17 @@ impl SwarmDriver {
         // get 42nd or farthest
         for (i, peer) in sorted_peers_iter.enumerate() {
             if let Some(prior_peer) = prior_peer {
-                last_peers_distance = prior_peer.distance(&peer);
+                let this_last_peers_distance = prior_peer.distance(&peer);
+
+                // only override it if it's larger!
+                //
+                // how does this play with keeping 100?
+                // We only update with peers changes... Perhaps this negates the need for a buffer?
+                //
+                //
+                // if this_last_peers_distance > last_peers_distance {
+                last_peers_distance = this_last_peers_distance;
+                // }
             }
 
             // info!("Peeeeeer {i}: {peer:?} - distance: {last_peers_distance:?}");
@@ -785,6 +793,11 @@ impl SwarmDriver {
         info!("Adding new distance range: {last_peers_distance:?}");
 
         self.range_distances.push_back(last_peers_distance);
+    }
+
+    pub(crate) fn get_peers_within_get_range(&mut self) {
+        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+        let our_key = our_address.as_kbucket_key();
 
         let sorted_peers_iter = self
             .swarm
@@ -792,20 +805,29 @@ impl SwarmDriver {
             .kademlia
             .get_closest_local_peers(&our_key);
 
-        // lets print how many are within range
-        for (i, peer) in sorted_peers_iter.enumerate() {
-            let peer_distance_from_us = peer.distance(&our_key);
+        let farthest_get_range_record_distance = self.range_distances.iter().max();
 
-            if peer_distance_from_us < last_peers_distance {
-                info!(
-                    "ilog2sss to us {:?} - between {:?}",
-                    peer_distance_from_us.ilog2(),
-                    last_peers_distance.ilog2()
-                );
-                info!("Peer {peer:?} is {peer_distance_from_us:?} and would be within the range based search group!");
-                info!("That's {i:?} peers within the range!");
+        if let Some(farthest_range) = farthest_get_range_record_distance {
+            // lets print how many are within range
+            for (i, peer) in sorted_peers_iter.enumerate() {
+                let peer_distance_from_us = peer.distance(&our_key);
+
+                if &peer_distance_from_us < farthest_range {
+                    // info!(
+                    //     "ilog2sss to us {:?} - between {:?}",
+                    //     peer_distance_from_us.ilog2(),
+                    //     last_peers_distance.ilog2()
+                    // );
+                    info!("Peer {peer:?} is {peer_distance_from_us:?} and would be within the range based search group!");
+                    info!("That's {i:?} peers within the range!");
+                }
             }
+        } else {
+            warn!("No range distance has been set, no peers can be found within the range");
+            // return;
         }
+
+        // farthest_get_range_record_distance
     }
 
     /// Returns the farthest bucket, close to but probably farther than our responsibilty range.
