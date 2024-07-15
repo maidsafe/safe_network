@@ -6,11 +6,41 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+//! > **Core functionalities for interacting with the SAFE Network**
+//!
+//! The `sn_client` crate is a part of the [Safe Network](https://safenetwork.tech/) (SN),
+//! and plays a crucial role in this ecosystem by serving as the client library that allows
+//! applications and users to interact with the Safe Network, and build applications that
+//! leverage the Safe Network's capabilities, providing a high-level API that simplifies the development process.
+//!
+//! Here are the key functionalities provided by this crate:
+//!
+//! 1. **Network Communication**: It handles communication with the Safe Network, enabling clients to
+//! send and receive messages from the decentralized nodes that make up the network.
+//!
+//! 2. **Data Storage and Retrieval**: to store and retrieve data on the Safe Network.
+//! This includes both private and public data, ensuring privacy and security.
+//!
+//! 3. **Authentication and Access Control**: It provides mechanisms for authenticating users and
+//! managing access to data, ensuring that only authorized users can access sensitive information.
+//!
+//! 4. **File Management**: The crate supports operations related to file management, such as uploading,
+//! downloading, and managing files and directories on the Safe Network.
+//!
+//! 5. **Token Management**: It includes functionality for managing Safe Network tokens, which can be
+//! used for various purposes within the network, including paying for storage and services.
+//!
+//! ## Quick links
+//! - [Crates.io](https://crates.io/crates/sn_client)
+//! - [Forum](https://forum.autonomi.community/)
+//! - [Issues on GitHub](https://github.com/maidsafe/safe_network/issues)
+//!
+
 #[macro_use]
 extern crate tracing;
 
 pub mod acc_packet;
-mod api;
+pub mod api;
 mod audit;
 mod chunks;
 mod error;

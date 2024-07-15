@@ -52,7 +52,7 @@ use tracing::trace;
 use xor_name::XorName;
 
 /// The maximum duration the client will wait for a connection to the network before timing out.
-const CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
+pub const CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
@@ -67,7 +67,7 @@ impl Client {
     ///
     /// Optionally specify the duration for the connection timeout.
     ///
-    /// Defaults to 180 seconds.
+    /// Defaults to [`CONNECTION_TIMEOUT`].
     ///
     /// # Arguments
     /// * 'signer' - [SecretKey]
