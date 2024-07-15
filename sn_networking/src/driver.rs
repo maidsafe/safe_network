@@ -743,6 +743,8 @@ impl SwarmDriver {
         // TODO: define how/where this distance comes from
 
         const TARGET_PEER: usize = 42;
+        //used to ensure we can always hit some minimum number of peers
+        const DISTANCE_MULTIPLIER: usize = 5;
 
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let our_key = our_address.as_kbucket_key();
@@ -761,6 +763,7 @@ impl SwarmDriver {
                 last_peers_distance = prior_peer.distance(&peer);
             }
 
+            // info!("Peeeeeer {i}: {peer:?} - distance: {last_peers_distance:?}");
             prior_peer = Some(peer);
 
             if i == TARGET_PEER {
@@ -768,9 +771,7 @@ impl SwarmDriver {
             }
         }
 
-        // query of cloest to random?
-        // random selection of RT distance?
-        // first bucket with 20 peers and take lowest distance between two???
+        // last_peers_distance = last_peers_distance * DISTANCE_MULTIPLIER;
 
         if last_peers_distance == KBucketDistance::default() {
             warn!("No peers found, no range distance can be set/added");
@@ -796,6 +797,11 @@ impl SwarmDriver {
             let peer_distance_from_us = peer.distance(&our_key);
 
             if peer_distance_from_us < last_peers_distance {
+                info!(
+                    "ilog2sss to us {:?} - between {:?}",
+                    peer_distance_from_us.ilog2(),
+                    last_peers_distance.ilog2()
+                );
                 info!("Peer {peer:?} is {peer_distance_from_us:?} and would be within the range based search group!");
                 info!("That's {i:?} peers within the range!");
             }
