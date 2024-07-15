@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    sort_peers_by_address, MsgResponder, NetworkError, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
-    REPLICATION_PEERS_COUNT,
+    sort_peers_by_address_and_limit, MsgResponder, NetworkError, NetworkEvent, SwarmDriver,
+    CLOSE_GROUP_SIZE, REPLICATION_PEERS_COUNT,
 };
 use itertools::Itertools;
 use libp2p::{
@@ -319,7 +319,7 @@ impl SwarmDriver {
         }
 
         // Margin of 2 to allow our RT being bit lagging.
-        match sort_peers_by_address(all_peers, target, REPLICATION_PEERS_COUNT) {
+        match sort_peers_by_address_and_limit(all_peers, target, REPLICATION_PEERS_COUNT) {
             Ok(close_group) => close_group.contains(&our_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");
@@ -362,7 +362,7 @@ impl SwarmDriver {
             .values()
             .filter_map(|(addr, record_type)| {
                 if RecordType::Chunk == *record_type {
-                    match sort_peers_by_address(&closest_peers, addr, CLOSE_GROUP_SIZE) {
+                    match sort_peers_by_address_and_limit(&closest_peers, addr, CLOSE_GROUP_SIZE) {
                         Ok(close_group) => {
                             if close_group.contains(&&target_peer) {
                                 Some(addr.clone())
