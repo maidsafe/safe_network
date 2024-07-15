@@ -254,6 +254,8 @@ impl SwarmDriver {
         self.log_kbuckets(&added_peer);
         self.send_event(NetworkEvent::PeerAdded(added_peer, self.peers_in_rt));
 
+        self.add_distance_range_for_gets();
+        self.get_peers_within_get_range();
         #[cfg(feature = "open-metrics")]
         if self.metrics_recorder.is_some() {
             self.check_for_change_in_our_close_group();
