@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::NetworkSwarmCmd, log_markers::Marker, sort_peers_by_address, MsgResponder, NetworkError,
-    NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+    cmd::NetworkSwarmCmd, log_markers::Marker, sort_peers_by_address_and_limit, MsgResponder,
+    NetworkError, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::request_response::{self, Message};
@@ -286,7 +286,7 @@ impl SwarmDriver {
             .values()
             .filter_map(|(addr, record_type)| {
                 if RecordType::Chunk == *record_type {
-                    match sort_peers_by_address(&closest_peers, addr, CLOSE_GROUP_SIZE) {
+                    match sort_peers_by_address_and_limit(&closest_peers, addr, CLOSE_GROUP_SIZE) {
                         Ok(close_group) => {
                             if close_group.contains(&&target_peer) {
                                 Some(addr.clone())

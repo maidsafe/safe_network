@@ -931,7 +931,7 @@ pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
 mod tests {
 
     use super::*;
-    use crate::{close_group_majority, sort_peers_by_key, REPLICATION_PEERS_COUNT};
+    use crate::{close_group_majority, sort_peers_by_key_and_limit, REPLICATION_PEERS_COUNT};
     use bytes::Bytes;
     use eyre::ContextCompat;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
@@ -1441,7 +1441,7 @@ mod tests {
             for _ in 0..num_of_chunks_per_itr {
                 let name = xor_name::rand::random();
                 let address = NetworkAddress::from_chunk_address(ChunkAddress::new(name));
-                match sort_peers_by_key(
+                match sort_peers_by_key_and_limit(
                     &peers_vec,
                     &address.as_kbucket_key(),
                     REPLICATION_PEERS_COUNT,
@@ -1451,7 +1451,7 @@ mod tests {
                             .iter()
                             .map(|peer_id| **peer_id)
                             .collect();
-                        let peers_in_close: Vec<PeerId> = match sort_peers_by_key(
+                        let peers_in_close: Vec<PeerId> = match sort_peers_by_key_and_limit(
                             &peers_in_replicate_range,
                             &address.as_kbucket_key(),
                             close_group_majority(),
