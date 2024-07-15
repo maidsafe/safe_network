@@ -10,6 +10,7 @@ The `sn_client` library provides the core functionalities for interacting with t
 - [Installation](#installation)
 - [Usage](#usage)
   - [API Calls](#api-calls)
+- [Running Tests](#running-tests)
 - [Contributing](#contributing)
   - [Conventional Commits](#conventional-commits)
 - [License](#license)
@@ -30,6 +31,16 @@ To use `sn_client`, you first need to instantiate a client. Here's a simple exam
 ```rust
 use sn_client::Client;
 let client = Client::new(signer, peers, req_response_timeout, custom_concurrency_limit).await?;
+```
+
+## Running Tests
+
+Prerequisites:
+* A running local network. Refer to [`safe_network/README.md`](../README.md) to run a local test network.
+* `SAFE_PEERS` environment variable or running the tests with `--feature=local-discovery`:
+
+```bash
+$ cargo test --package sn_client --release --tests --features=local-discovery
 ```
 
 ## Contributing
