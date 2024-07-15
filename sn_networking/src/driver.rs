@@ -839,7 +839,8 @@ impl SwarmDriver {
         self.range_distances.push_back(last_peers_distance);
     }
 
-    pub(crate) fn get_peers_within_get_range(&mut self) {
+    pub(crate) fn get_peers_within_get_range(&mut self) -> Option<KBucketDistance> {
+        // TODO: Is this the correct keytype for comparisons?
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let our_key = our_address.as_kbucket_key();
 
@@ -857,21 +858,16 @@ impl SwarmDriver {
                 let peer_distance_from_us = peer.distance(&our_key);
 
                 if &peer_distance_from_us < farthest_range {
-                    // info!(
-                    //     "ilog2sss to us {:?} - between {:?}",
-                    //     peer_distance_from_us.ilog2(),
-                    //     last_peers_distance.ilog2()
-                    // );
                     info!("Peer {peer:?} is {peer_distance_from_us:?} and would be within the range based search group!");
                     info!("That's {i:?} peers within the range!");
                 }
             }
         } else {
             warn!("No range distance has been set, no peers can be found within the range");
-            // return;
+            return None;
         }
 
-        // farthest_get_range_record_distance
+        farthest_get_range_record_distance.copied()
     }
 
     /// Returns the farthest bucket, close to but probably farther than our responsibilty range.
