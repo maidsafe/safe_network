@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721051134148,
+  "lastUpdate": 1721051135997,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0",
-          "message": "feat(acc-packet): cache the root seed on a file to prevent user to re-entering it for each op",
-          "timestamp": "2024-03-29T00:47:53Z",
-          "tree_id": "509255f4e57b3579bb2e369c358427e81c8b9e8c",
-          "url": "https://github.com/maidsafe/safe_network/commit/a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0"
-        },
-        "date": 1711675804440,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5422,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 27121,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 30991,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "1d96e5fb7af82e9faff212d4dbecb176f4f89d59",
+          "message": "fix(network): do not add bootstrap peer as relay candidate",
+          "timestamp": "2024-07-15T13:01:01Z",
+          "tree_id": "3fdf1a43b43bada897b41e645ab487455f62bb39",
+          "url": "https://github.com/maidsafe/safe_network/commit/1d96e5fb7af82e9faff212d4dbecb176f4f89d59"
+        },
+        "date": 1721051135522,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6621,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 30959,
             "unit": "ms"
           },
           {
