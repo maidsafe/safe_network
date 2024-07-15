@@ -98,18 +98,18 @@ const MIN_WAIT_BEFORE_READING_A_PUT: Duration = Duration::from_millis(300);
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
-pub fn sort_peers_by_address<'a>(
+pub fn sort_peers_by_address_and_limit<'a>(
     peers: &'a Vec<PeerId>,
     address: &NetworkAddress,
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
-    sort_peers_by_key(peers, &address.as_kbucket_key(), expected_entries)
+    sort_peers_by_key_and_limit(peers, &address.as_kbucket_key(), expected_entries)
 }
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
-pub fn sort_peers_by_key<'a, T>(
+pub fn sort_peers_by_key_and_limit<'a, T>(
     peers: &'a Vec<PeerId>,
     key: &KBucketKey<T>,
     expected_entries: usize,
@@ -846,7 +846,7 @@ impl Network {
             debug!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
         }
 
-        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?;
+        let closest_peers = sort_peers_by_address_and_limit(&closest_peers, key, CLOSE_GROUP_SIZE)?;
         Ok(closest_peers.into_iter().cloned().collect())
     }
 
