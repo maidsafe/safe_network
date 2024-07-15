@@ -40,27 +40,14 @@ pub(crate) struct RelayManager {
 }
 
 impl RelayManager {
-    pub(crate) fn new(initial_peers: Vec<Multiaddr>, self_peer_id: PeerId) -> Self {
-        let candidates = initial_peers
-            .into_iter()
-            .filter_map(|addr| {
-                for protocol in addr.iter() {
-                    if let Protocol::P2p(peer_id) = protocol {
-                        let relay_addr = Self::craft_relay_address(&addr, Some(peer_id))?;
-
-                        return Some((peer_id, relay_addr));
-                    }
-                }
-                None
-            })
-            .collect();
+    pub(crate) fn new(self_peer_id: PeerId) -> Self {
         Self {
             self_peer_id,
             reserved_by: Default::default(),
             enable_client: false,
             connected_relays: Default::default(),
             waiting_for_reservation: Default::default(),
-            candidates,
+            candidates: Default::default(),
             relayed_listener_id_map: Default::default(),
         }
     }
