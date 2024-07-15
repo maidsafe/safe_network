@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721051132459,
+  "lastUpdate": 1721051134148,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0",
-          "message": "feat(acc-packet): cache the root seed on a file to prevent user to re-entering it for each op",
-          "timestamp": "2024-03-29T00:47:53Z",
-          "tree_id": "509255f4e57b3579bb2e369c358427e81c8b9e8c",
-          "url": "https://github.com/maidsafe/safe_network/commit/a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0"
-        },
-        "date": 1711675801231,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 205,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "1d96e5fb7af82e9faff212d4dbecb176f4f89d59",
+          "message": "fix(network): do not add bootstrap peer as relay candidate",
+          "timestamp": "2024-07-15T13:01:01Z",
+          "tree_id": "3fdf1a43b43bada897b41e645ab487455f62bb39",
+          "url": "https://github.com/maidsafe/safe_network/commit/1d96e5fb7af82e9faff212d4dbecb176f4f89d59"
+        },
+        "date": 1721051133588,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 193,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
