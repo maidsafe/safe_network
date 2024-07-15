@@ -12,12 +12,11 @@ use crate::{
     event::TerminateNodeReason,
     log_markers::Marker,
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
-    REPLICATION_PEERS_COUNT,
 };
 use libp2p::{
     kad::{
         store::{Error as StoreError, RecordStore},
-        Quorum, Record, RecordKey,
+        KBucketDistance, Quorum, Record, RecordKey,
     },
     Multiaddr, PeerId,
 };
@@ -544,7 +543,9 @@ impl SwarmDriver {
         match cmd {
             LocalSwarmCmd::TriggerIntervalReplication => {
                 cmd_string = "TriggerIntervalReplication";
-                self.try_interval_replication()?;
+
+                let our_acceptable_range = self.get_peers_within_get_range();
+                self.try_interval_replication(our_acceptable_range)?;
             }
             LocalSwarmCmd::GetLocalStoreCost { key, sender } => {
                 cmd_string = "GetLocalStoreCost";
@@ -933,22 +934,32 @@ impl SwarmDriver {
         let _ = self.quotes_history.insert(peer_id, quote);
     }
 
-    fn try_interval_replication(&mut self) -> Result<()> {
+    fn try_interval_replication(
+        &mut self,
+        acceptable_distance_range: Option<KBucketDistance>,
+    ) -> Result<()> {
         // get closest peers from buckets, sorted by increasing distance to us
         let our_peer_id = self.self_peer_id.into();
-        let closest_k_peers = self
+
+        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+        let our_key = our_address.as_kbucket_key();
+
+        let mut replicate_targets = self
             .swarm
             .behaviour_mut()
             .kademlia
             .get_closest_local_peers(&our_peer_id)
-            // Map KBucketKey<PeerId> to PeerId.
-            .map(|key| key.into_preimage());
+            .filter_map(|key| {
+                // Map KBucketKey<PeerId> to PeerId.
+                if let Some(distance) = acceptable_distance_range {
+                    if distance < our_key.distance(&key) {
+                        return None;
+                    }
+                }
 
-        // Only grab the closest nodes within the REPLICATE_RANGE
-        let mut replicate_targets = closest_k_peers
-            .into_iter()
-            // add some leeway to allow for divergent knowledge
-            .take(REPLICATION_PEERS_COUNT)
+                let peer_id = key.into_preimage();
+                Some(peer_id)
+            })
             .collect::<Vec<_>>();
 
         let now = Instant::now();
