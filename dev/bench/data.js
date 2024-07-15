@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721047697404,
+  "lastUpdate": 1721051010681,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "Gabriel Viganotti",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0",
-          "message": "feat(acc-packet): cache the root seed on a file to prevent user to re-entering it for each op",
-          "timestamp": "2024-03-29T00:47:53Z",
-          "tree_id": "509255f4e57b3579bb2e369c358427e81c8b9e8c",
-          "url": "https://github.com/maidsafe/safe_network/commit/a81dfdc5a7a2a0d272a4465739aa5a1ddd9de7d0"
-        },
-        "date": 1711675690361,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2571853497562417,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6998055551332685,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 59.12633907921777,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.487095538748235,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "1d96e5fb7af82e9faff212d4dbecb176f4f89d59",
+          "message": "fix(network): do not add bootstrap peer as relay candidate",
+          "timestamp": "2024-07-15T13:01:01Z",
+          "tree_id": "3fdf1a43b43bada897b41e645ab487455f62bb39",
+          "url": "https://github.com/maidsafe/safe_network/commit/1d96e5fb7af82e9faff212d4dbecb176f4f89d59"
+        },
+        "date": 1721051004680,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2296111705591837,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6491363401422403,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.474232683119176,
             "unit": "MiB/s"
           }
         ]
