@@ -34,7 +34,6 @@ use futures::future::Either;
 use futures::StreamExt;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-use libp2p::Transport as _;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
@@ -47,6 +46,7 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
+use libp2p::{kad::KBucketDistance, Transport as _};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_protocol::{
@@ -56,7 +56,7 @@ use sn_protocol::{
 };
 use sn_transfers::PaymentQuote;
 use std::{
-    collections::{btree_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{btree_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet, VecDeque},
     fmt::Debug,
     net::SocketAddr,
     num::NonZeroUsize,
@@ -73,6 +73,9 @@ pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(15
 
 /// Interval over which we query relay manager to check if we can make any more reservations.
 pub(crate) const RELAY_MANAGER_RESERVATION_INTERVAL: Duration = Duration::from_secs(30);
+
+// Number of range distances to keep in the circular buffer
+pub const X_RANGE_STORAGE_LIMIT: usize = 100;
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
@@ -614,6 +617,7 @@ impl NetworkBuilder {
             bad_nodes_ongoing_verifications: Default::default(),
             quotes_history: Default::default(),
             replication_targets: Default::default(),
+            range_distances: VecDeque::with_capacity(X_RANGE_STORAGE_LIMIT),
         };
 
         let network = Network::new(swarm_cmd_sender, peer_id, self.root_dir, self.keypair);
@@ -665,6 +669,11 @@ pub struct SwarmDriver {
     pub(crate) bad_nodes_ongoing_verifications: BTreeSet<PeerId>,
     pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
     pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
+
+    // The recent range_distances calculated by the node
+    // Each update is generated when there is a routing table change
+    // We use the largest of these X_STORAGE_LIMIT values as our X distance.
+    pub(crate) range_distances: VecDeque<KBucketDistance>,
 }
 
 impl SwarmDriver {
@@ -728,6 +737,70 @@ impl SwarmDriver {
     // --------------------------------------------
     // ---------- Crate helpers -------------------
     // --------------------------------------------
+
+    /// Defines a new X distance range to be used for GETs and data replication
+    pub(crate) fn add_distance_range(&mut self) {
+        // TODO: define how/where this distance comes from
+
+        const TARGET_PEER: usize = 42;
+
+        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+        let our_key = our_address.as_kbucket_key();
+        let mut sorted_peers_iter = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .get_closest_local_peers(&our_key);
+
+        let mut last_peers_distance = KBucketDistance::default();
+        let mut prior_peer = sorted_peers_iter.next();
+
+        // get 42nd or farthest
+        for (i, peer) in sorted_peers_iter.enumerate() {
+            if let Some(prior_peer) = prior_peer {
+                last_peers_distance = prior_peer.distance(&peer);
+            }
+
+            prior_peer = Some(peer);
+
+            if i == TARGET_PEER {
+                break;
+            }
+        }
+
+        // query of cloest to random?
+        // random selection of RT distance?
+        // first bucket with 20 peers and take lowest distance between two???
+
+        if last_peers_distance == KBucketDistance::default() {
+            warn!("No peers found, no range distance can be set/added");
+            return;
+        }
+
+        if self.range_distances.len() == X_RANGE_STORAGE_LIMIT {
+            self.range_distances.pop_front();
+        }
+
+        info!("Adding new distance range: {last_peers_distance:?}");
+
+        self.range_distances.push_back(last_peers_distance);
+
+        let sorted_peers_iter = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .get_closest_local_peers(&our_key);
+
+        // lets print how many are within range
+        for (i, peer) in sorted_peers_iter.enumerate() {
+            let peer_distance_from_us = peer.distance(&our_key);
+
+            if peer_distance_from_us < last_peers_distance {
+                info!("Peer {peer:?} is {peer_distance_from_us:?} and would be within the range based search group!");
+                info!("That's {i:?} peers within the range!");
+            }
+        }
+    }
 
     /// Returns the farthest bucket, close to but probably farther than our responsibilty range.
     /// This simply uses the closest k peers to estimate the farthest address as
