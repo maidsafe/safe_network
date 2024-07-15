@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721047695602,
+  "lastUpdate": 1721047697404,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "dcb4dc96d0bbf5f109ce5a443e293e93677fa409",
-          "message": "refactor(client): move retry pending tx into its own method",
-          "timestamp": "2024-03-29T00:28:57Z",
-          "tree_id": "c9584f2999a00c03f7294dedf9712640cef54a11",
-          "url": "https://github.com/maidsafe/safe_network/commit/dcb4dc96d0bbf5f109ce5a443e293e93677fa409"
-        },
-        "date": 1711674839648,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5535,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 27119,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "Gabriel Viganotti",
             "username": "bochaco"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 29481,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": true,
+          "id": "fed311b76d03324c4ea2ee897bbc88850daf2176",
+          "message": "docs(sn_client): readme.md, genral lib and hyperlinked constant",
+          "timestamp": "2024-07-15T11:56:46Z",
+          "tree_id": "cb7976f2acb02c8358aa75f7822b7b9d2ab4c0a6",
+          "url": "https://github.com/maidsafe/safe_network/commit/fed311b76d03324c4ea2ee897bbc88850daf2176"
+        },
+        "date": 1721047697133,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6534,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 30991,
             "unit": "ms"
           },
           {
