@@ -286,6 +286,9 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
                 ("sn_registers".to_string(), Level::INFO),
                 ("sn_service_management".to_string(), Level::TRACE),
                 ("sn_transfers".to_string(), Level::TRACE),
+                // ("libp2p".to_string(), Level::TRACE),
+                ("libp2p_swarm".to_string(), Level::TRACE),
+                ("libp2p_kad".to_string(), Level::TRACE),
             ]);
 
             // Override sn_networking if it was not specified.
