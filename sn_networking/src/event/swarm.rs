@@ -137,6 +137,7 @@ impl SwarmDriver {
                                 our_protocol: IDENTIFY_PROTOCOL_STR.to_string(),
                                 their_protocol: info.protocol_version,
                             });
+                            self.remove_outdated_connections(Some(peer_id));
 
                             return Ok(());
                         }
@@ -617,7 +618,7 @@ impl SwarmDriver {
                 trace!("SwarmEvent has been ignored: {other:?}")
             }
         }
-        self.remove_outdated_connections();
+        self.remove_outdated_connections(None);
 
         self.log_handling(event_string.to_string(), start.elapsed());
 
@@ -659,9 +660,21 @@ impl SwarmDriver {
     }
 
     // Remove outdated connection to a peer if it is not in the RT.
-    fn remove_outdated_connections(&mut self) {
+    // Optionally force remove all the connections for a provided peer.
+    fn remove_outdated_connections(&mut self, force_remove_peer: Option<PeerId>) {
         let mut removed_conns = 0;
         self.live_connected_peers.retain(|connection_id, (peer_id, timeout_time)| {
+            if let Some(p) = force_remove_peer {
+                if *peer_id == p {
+                    let result = self.swarm.close_connection(*connection_id);
+                    trace!(
+                        "Force removed connection {connection_id:?} to {peer_id:?} with result: {result:?}"
+                    );
+                    removed_conns += 1;
+                    return false;
+                }
+            }
+
             // skip if timeout isn't reached yet
             if Instant::now() < *timeout_time {
                 return true; // retain peer
@@ -692,7 +705,6 @@ impl SwarmDriver {
             false
         });
 
-        // early return if we did not remove any connections
         if removed_conns == 0 {
             return;
         }
