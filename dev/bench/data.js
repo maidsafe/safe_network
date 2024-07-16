@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721116131826,
+  "lastUpdate": 1721116134095,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f377a15f9dbae45dbec5d55242547fa0b292a472",
-          "message": "docs: turn node manager readme into a guide\n\nThe README for the node manager was initially generated mostly by ChatGPT, just to flesh it out for\nfirst publish. It was based on the UI, so it quickly became out of date.\n\nSome users in the most recent testnet wanted to refer to it to help them with the node manager, so\nit has now been turned into a guide.",
-          "timestamp": "2024-03-29T00:49:48Z",
-          "tree_id": "875933765c655923bb2bfdc9364b347764a54ec7",
-          "url": "https://github.com/maidsafe/safe_network/commit/f377a15f9dbae45dbec5d55242547fa0b292a472"
-        },
-        "date": 1711676054719,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 5919,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 30366,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 30959,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "9bddeeac8f49bd99bd2ff282ae01007fcdfe61de",
+          "message": "chore(network): remove protocol mismatch peer from RT",
+          "timestamp": "2024-07-16T07:04:17Z",
+          "tree_id": "4173f98d041b465a8ba101389ec343e3db32aba9",
+          "url": "https://github.com/maidsafe/safe_network/commit/9bddeeac8f49bd99bd2ff282ae01007fcdfe61de"
+        },
+        "date": 1721116133273,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6297,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 30777,
             "unit": "ms"
           },
           {
