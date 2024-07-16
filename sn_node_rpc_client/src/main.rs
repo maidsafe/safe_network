@@ -22,7 +22,7 @@ use tokio_stream::StreamExt;
 use tonic::Request;
 
 #[derive(Parser, Debug)]
-#[clap(name = "safenode RPC client")]
+#[clap(version, name = "safenode RPC client")]
 struct Opt {
     /// Address of the node's RPC service, e.g. 127.0.0.1:12001.
     addr: SocketAddr,
