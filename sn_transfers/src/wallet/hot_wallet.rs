@@ -21,7 +21,8 @@ use super::{
 use crate::wallet::authentication::AuthenticationManager;
 use crate::wallet::encryption::EncryptedSecretKey;
 use crate::wallet::keys::{
-    delete_encrypted_main_secret_key, delete_unencrypted_main_secret_key, store_main_secret_key,
+    delete_encrypted_main_secret_key, delete_unencrypted_main_secret_key, get_main_pubkey,
+    store_main_secret_key,
 };
 use crate::{
     calculate_royalties_fee,
@@ -31,7 +32,6 @@ use crate::{
     NanoTokens, SignedSpend, Spend, SpendAddress, SpendReason, Transaction, Transfer, UniquePubkey,
     WalletError, NETWORK_ROYALTIES_PK,
 };
-use chrono::Local;
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     fs::File,
@@ -274,11 +274,13 @@ impl HotWallet {
     }
 
     /// Moves all files for the current wallet, including keys and cashnotes
-    /// to directory root_dir/wallet_DATETIME
+    /// to directory root_dir/wallet_ADDRESS
     pub fn stash(root_dir: &Path) -> Result<PathBuf> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let datetime_str = Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-        let new_name = format!("{WALLET_DIR_NAME}_{datetime_str}");
+        let wallet_pub_key =
+            get_main_pubkey(&wallet_dir)?.ok_or(Error::PubkeyNotFound(wallet_dir.clone()))?;
+        let addr_hex = wallet_pub_key.to_hex();
+        let new_name = format!("{WALLET_DIR_NAME}_{addr_hex}");
         let moved_dir = root_dir.join(new_name);
         let _ = std::fs::rename(wallet_dir, moved_dir.clone());
         Ok(moved_dir)
@@ -1218,6 +1220,34 @@ mod tests {
         encrypted_wallet.reload()?;
 
         assert_eq!(encrypted_wallet.address(), unencrypted_wallet.address());
+
+        Ok(())
+    }
+
+    /// --------------------------------
+    /// <-------> Other <--------->
+    /// --------------------------------
+
+    #[test]
+    fn test_stashing_and_unstashing() -> Result<()> {
+        let dir = create_temp_dir();
+        let root_dir = dir.path().to_path_buf();
+        let wallet_key = MainSecretKey::random();
+        let wallet = HotWallet::create_from_key(&root_dir, wallet_key, None)?;
+        let pub_key_hex_str = wallet.address().to_hex();
+
+        // Stash wallet
+        assert!(HotWallet::stash(&root_dir).is_ok());
+
+        // There should be no active wallet now
+        assert!(HotWallet::load_from(&root_dir).is_err());
+
+        // Unstash wallet
+        assert!(HotWallet::unstash(&root_dir, &pub_key_hex_str).is_ok());
+
+        let unstashed_wallet = HotWallet::load_from(&root_dir)?;
+
+        assert_eq!(unstashed_wallet.address().to_hex(), pub_key_hex_str);
 
         Ok(())
     }
