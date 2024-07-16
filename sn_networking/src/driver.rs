@@ -117,6 +117,13 @@ const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Time before a Kad query times out if no response is received
 const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(10);
 
+// Init during compilation, instead of runtime error that should never happen
+// Option<T>::expect will be stabilised as const in the future (https://github.com/rust-lang/rust/issues/67441)
+const REPLICATION_FACTOR: NonZeroUsize = match NonZeroUsize::new(CLOSE_GROUP_SIZE) {
+    Some(v) => v,
+    None => panic!("CLOSE_GROUP_SIZE should not be zero"),
+};
+
 /// The various settings to apply to when fetching a record from network
 #[derive(Clone)]
 pub struct GetRecordCfg {
@@ -305,10 +312,7 @@ impl NetworkBuilder {
             // 1mb packet size
             .set_max_packet_size(MAX_PACKET_SIZE)
             // How many nodes _should_ store data.
-            .set_replication_factor(
-                NonZeroUsize::new(CLOSE_GROUP_SIZE)
-                    .ok_or_else(|| NetworkError::InvalidCloseGroupSize)?,
-            )
+            .set_replication_factor(REPLICATION_FACTOR)
             .set_query_timeout(KAD_QUERY_TIMEOUT_S)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
@@ -377,7 +381,12 @@ impl NetworkBuilder {
     }
 
     /// Same as `build_node` API but creates the network components in client mode
-    pub fn build_client(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    pub fn build_client(
+        self,
+    ) -> std::result::Result<
+        (Network, mpsc::Receiver<NetworkEvent>, SwarmDriver),
+        MdnsBuildBehaviourError,
+    > {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = kad::Config::default(); // default query timeout is 60 secs
@@ -389,10 +398,7 @@ impl NetworkBuilder {
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
             // How many nodes _should_ store data.
-            .set_replication_factor(
-                NonZeroUsize::new(CLOSE_GROUP_SIZE)
-                    .ok_or_else(|| NetworkError::InvalidCloseGroupSize)?,
-            );
+            .set_replication_factor(REPLICATION_FACTOR);
 
         let (network, net_event_recv, driver) = self.build(
             kad_cfg,
@@ -416,7 +422,10 @@ impl NetworkBuilder {
         req_res_protocol: ProtocolSupport,
         identify_version: String,
         #[cfg(feature = "upnp")] upnp: bool,
-    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    ) -> std::result::Result<
+        (Network, mpsc::Receiver<NetworkEvent>, SwarmDriver),
+        MdnsBuildBehaviourError,
+    > {
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         #[cfg(not(target_arch = "wasm32"))]
@@ -881,3 +890,7 @@ impl SwarmDriver {
         Ok(())
     }
 }
+
+#[derive(Debug, thiserror::Error)]
+#[error("building the mDNS behaviour failed: {0}")]
+pub struct MdnsBuildBehaviourError(#[from] std::io::Error);
