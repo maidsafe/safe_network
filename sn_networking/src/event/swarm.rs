@@ -138,6 +138,13 @@ impl SwarmDriver {
                                 their_protocol: info.protocol_version,
                             });
                             self.remove_outdated_connections(Some(peer_id));
+                            if let Some(dead_peer) =
+                                self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id)
+                            {
+                                error!("Clearing out a protocol mistmatch peer from RT. Something went wrong, we should not have added this peer to RT: {peer_id:?}");
+                                self.update_on_peer_removal(*dead_peer.node.key.preimage());
+                                let _ = self.check_for_change_in_our_close_group();
+                            }
 
                             return Ok(());
                         }
@@ -667,7 +674,7 @@ impl SwarmDriver {
             if let Some(p) = force_remove_peer {
                 if *peer_id == p {
                     let result = self.swarm.close_connection(*connection_id);
-                    trace!(
+                    debug!(
                         "Force removed connection {connection_id:?} to {peer_id:?} with result: {result:?}"
                     );
                     removed_conns += 1;
@@ -697,7 +704,7 @@ impl SwarmDriver {
 
             // actually remove connection
             let result = self.swarm.close_connection(*connection_id);
-            trace!("Removed outdated connection {connection_id:?} to {peer_id:?} with result: {result:?}");
+            debug!("Removed outdated connection {connection_id:?} to {peer_id:?} with result: {result:?}");
 
             removed_conns += 1;
 
