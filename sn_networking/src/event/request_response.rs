@@ -8,10 +8,11 @@
 
 use crate::{
     sort_peers_by_address_and_limit, MsgResponder, NetworkError, NetworkEvent, SwarmDriver,
-    CLOSE_GROUP_SIZE, REPLICATION_PEERS_COUNT,
+    CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::{
+    kad::KBucketDistance,
     request_response::{self, Message},
     PeerId,
 };
@@ -313,10 +314,11 @@ impl SwarmDriver {
         our_peer_id: &PeerId,
         target: &NetworkAddress,
         all_peers: &Vec<PeerId>,
+        distance_range: KBucketDistance,
     ) -> bool {
-        if all_peers.len() <= REPLICATION_PEERS_COUNT {
-            return true;
-        }
+        // if all_peers.len() <= REPLICATION_PEERS_COUNT {
+        //     return true;
+        // }
 
         // Margin of 2 to allow our RT being bit lagging.
         match sort_peers_by_address_and_limit(all_peers, target, REPLICATION_PEERS_COUNT) {

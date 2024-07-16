@@ -85,10 +85,6 @@ pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
 /// The size has been set to 5 for improved performance.
 pub const CLOSE_GROUP_SIZE: usize = 5;
 
-/// The count of peers that will be considered as close to a record target,
-/// that a replication of the record shall be sent/accepted to/by the peer.
-pub const REPLICATION_PEERS_COUNT: usize = CLOSE_GROUP_SIZE + 2;
-
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
 pub const fn close_group_majority() -> usize {
@@ -111,6 +107,16 @@ pub fn sort_peers_by_address_and_limit<'a>(
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
     sort_peers_by_key_and_limit(peers, &address.as_kbucket_key(), expected_entries)
+}
+/// Sort the provided peers by their distance to the given `NetworkAddress`.
+/// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
+pub fn sort_peers_by_address_and_limit_by_distance<'a>(
+    peers: &'a Vec<PeerId>,
+    address: &NetworkAddress,
+    distance: KBucketDistance,
+) -> Result<Vec<&'a PeerId>> {
+    limit_peers_by_distance(peers, &address.as_kbucket_key(), distance)
 }
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
@@ -152,6 +158,49 @@ pub fn sort_peers_by_key_and_limit<'a, T>(
         .collect();
 
     Ok(sorted_peers)
+}
+/// Only return peers closer to key than the provided distance
+/// Their distance is measured by closeness to the given `KBucketKey`.
+/// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
+pub fn limit_peers_by_distance<'a, T>(
+    peers: &'a Vec<PeerId>,
+    key: &KBucketKey<T>,
+    distance: KBucketDistance,
+) -> Result<Vec<&'a PeerId>> {
+    // Check if there are enough peers to satisfy the request.
+    // bail early if that's not the case
+    if CLOSE_GROUP_SIZE > peers.len() {
+        warn!("Not enough peers in the k-bucket to satisfy the request");
+        return Err(NetworkError::NotEnoughPeers {
+            found: peers.len(),
+            required: CLOSE_GROUP_SIZE,
+        });
+    }
+
+    // Create a vector of tuples where each tuple is a reference to a peer and its distance to the key.
+    // This avoids multiple computations of the same distance in the sorting process.
+    let mut peers_within_distance: Vec<&PeerId> = Vec::with_capacity(peers.len());
+
+    for peer_id in peers {
+        let addr = NetworkAddress::from_peer(*peer_id);
+        let peer_distance = key.distance(&addr.as_kbucket_key());
+
+        if peer_distance < distance {
+            peers_within_distance.push(peer_id);
+        }
+    }
+
+    // // Sort the vector of tuples by the distance.
+    // valid_distances.sort_by(|a, b| a.1.cmp(&b.1));
+
+    // Collect the sorted peers into a new vector.
+    // let peers: Vec<_> = valid_distances
+    //     .into_iter()
+    //     .map(|(peer_id, _)| peer_id)
+    //     .collect();
+
+    Ok(peers_within_distance)
 }
 
 #[derive(Clone)]
