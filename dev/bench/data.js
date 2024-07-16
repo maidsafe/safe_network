@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721051135997,
+  "lastUpdate": 1721116007193,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f377a15f9dbae45dbec5d55242547fa0b292a472",
-          "message": "docs: turn node manager readme into a guide\n\nThe README for the node manager was initially generated mostly by ChatGPT, just to flesh it out for\nfirst publish. It was based on the UI, so it quickly became out of date.\n\nSome users in the most recent testnet wanted to refer to it to help them with the node manager, so\nit has now been turned into a guide.",
-          "timestamp": "2024-03-29T00:49:48Z",
-          "tree_id": "875933765c655923bb2bfdc9364b347764a54ec7",
-          "url": "https://github.com/maidsafe/safe_network/commit/f377a15f9dbae45dbec5d55242547fa0b292a472"
-        },
-        "date": 1711675943192,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2449431535000293,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6727410117490764,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.60511258022519,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.474232683119176,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "9bddeeac8f49bd99bd2ff282ae01007fcdfe61de",
+          "message": "chore(network): remove protocol mismatch peer from RT",
+          "timestamp": "2024-07-16T07:04:17Z",
+          "tree_id": "4173f98d041b465a8ba101389ec343e3db32aba9",
+          "url": "https://github.com/maidsafe/safe_network/commit/9bddeeac8f49bd99bd2ff282ae01007fcdfe61de"
+        },
+        "date": 1721116000855,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2449003695076863,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.658606226653058,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.24698980343151,
             "unit": "MiB/s"
           }
         ]
