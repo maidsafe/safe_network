@@ -15,7 +15,7 @@ use libp2p::{
     request_response::{self, Message},
     PeerId,
 };
-use rand::{rngs::OsRng, Rng};
+use rand::{rngs::OsRng, thread_rng, Rng};
 use sn_protocol::{
     messages::{CmdResponse, Request, Response},
     storage::RecordType,
@@ -235,8 +235,10 @@ impl SwarmDriver {
             }
         }
 
-        // Only trigger chunk_proof check when received a periodical replication request.
-        if incoming_keys.len() > 1 {
+        // Only trigger chunk_proof check based every X% of the time
+        let mut rng = thread_rng();
+        // 5% probability
+        if incoming_keys.len() > 1 && rng.gen_bool(0.05) {
             let keys_to_verify = self.select_verification_data_candidates(sender);
 
             if keys_to_verify.is_empty() {
