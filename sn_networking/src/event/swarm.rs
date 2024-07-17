@@ -143,7 +143,6 @@ impl SwarmDriver {
                             {
                                 error!("Clearing out a protocol mistmatch peer from RT. Something went wrong, we should not have added this peer to RT: {peer_id:?}");
                                 self.update_on_peer_removal(*dead_peer.node.key.preimage());
-                                let _ = self.check_for_change_in_our_close_group();
                             }
 
                             return Ok(());
@@ -549,8 +548,6 @@ impl SwarmDriver {
                             peer_id: failed_peer_id,
                             issue: crate::NodeIssue::ConnectionIssue,
                         })?;
-
-                        let _ = self.check_for_change_in_our_close_group();
                     }
                 }
             }
@@ -661,7 +658,6 @@ impl SwarmDriver {
                 .remove_peer(&to_be_removed_bootstrap);
             if let Some(removed_peer) = entry {
                 self.update_on_peer_removal(*removed_peer.node.key.preimage());
-                let _ = self.check_for_change_in_our_close_group();
             }
         }
     }
