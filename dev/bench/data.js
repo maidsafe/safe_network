@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721178385569,
+  "lastUpdate": 1721198336159,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "873469bee8ce53bf97c58da146f116067ed2b210",
-          "message": "fix(node): record problematic connection issues for bad nodes",
-          "timestamp": "2024-04-01T05:45:53Z",
-          "tree_id": "e31ab38b946b9d95b5b16622c90146a88a50e1f7",
-          "url": "https://github.com/maidsafe/safe_network/commit/873469bee8ce53bf97c58da146f116067ed2b210"
-        },
-        "date": 1711953003294,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1844228867549285,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6245691442512988,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.00879736033898,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.274768534560295,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "27bf1ac9f27349e61cb12456940294177f9886aa",
+          "message": "feat(networking): remove self.close_group and checks there as unused\n\ncheck_for_changes_in_close_group only updated self,\nwhich was only used in the process of calling the function.\nThe boolean was not used anywhere in the code, so we could safely remove this",
+          "timestamp": "2024-07-17T05:55:52Z",
+          "tree_id": "fed1a50611b2c184c9487d3060a7d1da675f3d4f",
+          "url": "https://github.com/maidsafe/safe_network/commit/27bf1ac9f27349e61cb12456940294177f9886aa"
+        },
+        "date": 1721198329957,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2187188711874337,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6476270934285733,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.55118229621955,
             "unit": "MiB/s"
           }
         ]
