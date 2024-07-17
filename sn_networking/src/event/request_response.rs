@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    sort_peers_by_address_and_limit, MsgResponder, NetworkError, NetworkEvent, SwarmDriver,
-    CLOSE_GROUP_SIZE,
+    sort_peers_by_address_and_limit, sort_peers_by_address_and_limit_by_distance, MsgResponder,
+    NetworkError, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::{
@@ -196,10 +196,10 @@ impl SwarmDriver {
             incoming_keys.len()
         );
 
-        // accept replication requests from the K_VALUE peers away,
-        // giving us some margin for replication
-        let closest_k_peers = self.get_closest_k_value_local_peers();
-        if !closest_k_peers.contains(&holder) || holder == self.self_peer_id {
+        // accept replication requests from all peers within our
+        // X-range
+        let peers = self.get_all_local_peers();
+        if !peers.contains(&holder) || holder == self.self_peer_id {
             trace!("Holder {holder:?} is self or not in replication range.");
             return;
         }
@@ -214,7 +214,7 @@ impl SwarmDriver {
 
         // For fetching, only handle those non-exist and in close range keys
         let keys_to_store =
-            self.select_non_existent_records_for_replications(&incoming_keys, &closest_k_peers);
+            self.select_non_existent_records_for_replications(&incoming_keys, &peers);
 
         if keys_to_store.is_empty() {
             debug!("Empty keys to store after adding to");
@@ -256,7 +256,7 @@ impl SwarmDriver {
     fn select_non_existent_records_for_replications(
         &mut self,
         incoming_keys: &[(NetworkAddress, RecordType)],
-        closest_k_peers: &Vec<PeerId>,
+        peers: &Vec<PeerId>,
     ) -> Vec<(NetworkAddress, RecordType)> {
         #[allow(clippy::mutable_key_type)]
         let locally_stored_keys = self
@@ -285,22 +285,30 @@ impl SwarmDriver {
             })
             .collect();
 
-        non_existent_keys
-            .into_iter()
-            .filter_map(|(key, record_type)| {
-                if Self::is_in_close_range(&self.self_peer_id, key, closest_k_peers) {
-                    Some((key.clone(), record_type.clone()))
-                } else {
-                    // Reduce the log level as there will always be around 40% records being
-                    // out of the close range, as the sender side is using `CLOSE_GROUP_SIZE + 2`
-                    // to send our replication list to provide addressing margin.
-                    // Given there will normally be 6 nodes sending such list with interval of 5-10s,
-                    // this will accumulate to a lot of logs with the increasing records uploaded.
-                    trace!("not in close range for key {key:?}");
-                    None
-                }
-            })
-            .collect()
+        if let Some(our_distance_range) = self.get_request_range() {
+            non_existent_keys
+                .into_iter()
+                .filter_map(|(key, record_type)| {
+                    if Self::is_in_close_range(&self.self_peer_id, key, peers, our_distance_range) {
+                        Some((key.clone(), record_type.clone()))
+                    } else {
+                        // Reduce the log level as there will always be around 40% records being
+                        // out of the close range, as the sender side is using `CLOSE_GROUP_SIZE + 2`
+                        // to send our replication list to provide addressing margin.
+                        // Given there will normally be 6 nodes sending such list with interval of 5-10s,
+                        // this will accumulate to a lot of logs with the increasing records uploaded.
+                        trace!("not in close range for key {key:?}");
+                        None
+                    }
+                })
+                .collect()
+        } else {
+            warn!("Not enough peers to determine valid GetRange");
+            non_existent_keys
+                .iter()
+                .map(|(x, y)| (x.clone(), y.clone()))
+                .collect()
+        }
     }
 
     /// A close target doesn't falls into the close peers range:
@@ -321,7 +329,7 @@ impl SwarmDriver {
         // }
 
         // Margin of 2 to allow our RT being bit lagging.
-        match sort_peers_by_address_and_limit(all_peers, target, REPLICATION_PEERS_COUNT) {
+        match sort_peers_by_address_and_limit_by_distance(all_peers, target, distance_range) {
             Ok(close_group) => close_group.contains(&our_peer_id),
             Err(err) => {
                 warn!("Could not get sorted peers for {target:?} with error {err:?}");
@@ -364,6 +372,8 @@ impl SwarmDriver {
             .values()
             .filter_map(|(addr, record_type)| {
                 if RecordType::Chunk == *record_type {
+                    // Here we take the actual closest, as this is where we want to be
+                    // strict about who does have the data...
                     match sort_peers_by_address_and_limit(&closest_peers, addr, CLOSE_GROUP_SIZE) {
                         Ok(close_group) => {
                             if close_group.contains(&&target_peer) {

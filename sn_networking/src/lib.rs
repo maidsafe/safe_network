@@ -250,6 +250,13 @@ impl Network {
         &self.inner.root_dir_path
     }
 
+    /// Return the GetRange as determined by the internal SwarmDriver
+    pub async fn get_range(&self) -> Result<Option<KBucketDistance>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_swarm_cmd(SwarmCmd::GetCurrentRange { sender });
+        receiver.await.map_err(NetworkError::from)
+    }
+
     /// Get the sender to send a `SwarmCmd` to the underlying `Swarm`.
     pub(crate) fn swarm_cmd_sender(&self) -> &mpsc::Sender<SwarmCmd> {
         &self.inner.swarm_cmd_sender

@@ -795,7 +795,9 @@ impl SwarmDriver {
         self.range_distances.push_back(last_peers_distance);
     }
 
-    pub(crate) fn get_peers_within_get_range(&mut self) -> Option<KBucketDistance> {
+    /// Returns the KBucketDistance we are currently using as our X value
+    /// for range based search.
+    pub(crate) fn get_request_range(&mut self) -> Option<KBucketDistance> {
         // TODO: Is this the correct keytype for comparisons?
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let our_key = our_address.as_kbucket_key();
