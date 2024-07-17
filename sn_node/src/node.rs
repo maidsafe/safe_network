@@ -16,7 +16,7 @@ use super::{
 use crate::metrics::NodeMetrics;
 use crate::RunningNode;
 use bytes::Bytes;
-use libp2p::{identity::Keypair, kad::KBucketDistance, Multiaddr, PeerId};
+use libp2p::{identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::gauge::Gauge;
 #[cfg(feature = "open-metrics")]
@@ -241,11 +241,6 @@ impl Node {
     /// Returns the instance of Network
     pub(crate) fn network(&self) -> &Network {
         &self.inner.network
-    }
-
-    /// Returns the current GetRange of the node
-    pub(crate) async fn get_range(&self) -> Result<Option<KBucketDistance>> {
-        Ok(self.inner.network.get_range().await?)
     }
 
     /// Returns the NodeCmds channel
