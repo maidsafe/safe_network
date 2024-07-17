@@ -592,7 +592,6 @@ impl NetworkBuilder {
             peers_in_rt: 0,
             bootstrap,
             relay_manager,
-            close_group: Default::default(),
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
@@ -635,7 +634,6 @@ pub struct SwarmDriver {
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) relay_manager: RelayManager,
     /// The peers that are closer to our PeerId. Includes self.
-    pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,

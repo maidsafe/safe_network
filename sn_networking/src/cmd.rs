@@ -832,7 +832,6 @@ impl SwarmDriver {
             warn!("Cleaning out bad_peer {peer_id:?}");
             if let Some(dead_peer) = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id) {
                 self.update_on_peer_removal(*dead_peer.node.key.preimage());
-                let _ = self.check_for_change_in_our_close_group();
             }
 
             if is_new_bad {
