@@ -282,7 +282,7 @@ impl HotWallet {
         let addr_hex = wallet_pub_key.to_hex();
         let new_name = format!("{WALLET_DIR_NAME}_{addr_hex}");
         let moved_dir = root_dir.join(new_name);
-        let _ = std::fs::rename(wallet_dir, moved_dir.clone());
+        std::fs::rename(wallet_dir, moved_dir.clone())?;
         Ok(moved_dir)
     }
 
@@ -1237,13 +1237,13 @@ mod tests {
         let pub_key_hex_str = wallet.address().to_hex();
 
         // Stash wallet
-        assert!(HotWallet::stash(&root_dir).is_ok());
+        HotWallet::stash(&root_dir)?;
 
         // There should be no active wallet now
         assert!(HotWallet::load_from(&root_dir).is_err());
 
         // Unstash wallet
-        assert!(HotWallet::unstash(&root_dir, &pub_key_hex_str).is_ok());
+        HotWallet::unstash(&root_dir, &pub_key_hex_str)?;
 
         let unstashed_wallet = HotWallet::load_from(&root_dir)?;
 
