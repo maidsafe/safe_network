@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721198461435,
+  "lastUpdate": 1721198463225,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "873469bee8ce53bf97c58da146f116067ed2b210",
-          "message": "fix(node): record problematic connection issues for bad nodes",
-          "timestamp": "2024-04-01T05:45:53Z",
-          "tree_id": "e31ab38b946b9d95b5b16622c90146a88a50e1f7",
-          "url": "https://github.com/maidsafe/safe_network/commit/873469bee8ce53bf97c58da146f116067ed2b210"
-        },
-        "date": 1711953120330,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6205,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33662,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 27468,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "27bf1ac9f27349e61cb12456940294177f9886aa",
+          "message": "feat(networking): remove self.close_group and checks there as unused\n\ncheck_for_changes_in_close_group only updated self,\nwhich was only used in the process of calling the function.\nThe boolean was not used anywhere in the code, so we could safely remove this",
+          "timestamp": "2024-07-17T05:55:52Z",
+          "tree_id": "fed1a50611b2c184c9487d3060a7d1da675f3d4f",
+          "url": "https://github.com/maidsafe/safe_network/commit/27bf1ac9f27349e61cb12456940294177f9886aa"
+        },
+        "date": 1721198462765,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6478,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 31302,
             "unit": "ms"
           },
           {
