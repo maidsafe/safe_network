@@ -41,8 +41,8 @@ pub(crate) struct ReplicationFetcher {
     // Avoid fetching same chunk from different nodes AND carry out too many parallel tasks.
     on_going_fetches: HashMap<(RecordKey, RecordType), (PeerId, ReplicationTimeout)>,
     event_sender: mpsc::Sender<NetworkEvent>,
-    /// ilog2 bucket distance range that the incoming key shall be fetched
-    distance_range: Option<u32>,
+    /// KBucketDistance range that the incoming key shall be fetched
+    distance_range: Option<Distance>,
     /// Restrict fetch range to closer than this value
     /// used when the node is full, but we still have "close" data coming in
     /// that is _not_ closer than our farthest max record
@@ -63,7 +63,7 @@ impl ReplicationFetcher {
     }
 
     /// Set the distance range.
-    pub(crate) fn set_replication_distance_range(&mut self, distance_range: u32) {
+    pub(crate) fn set_replication_distance_range(&mut self, distance_range: Distance) {
         self.distance_range = Some(distance_range);
     }
 
@@ -136,8 +136,7 @@ impl ReplicationFetcher {
         // Filter out those out_of_range ones among the incoming_keys.
         if let Some(ref distance_range) = self.distance_range {
             new_incoming_keys.retain(|(addr, _record_type)| {
-                let is_in_range =
-                    self_address.distance(addr).ilog2().unwrap_or(0) <= *distance_range;
+                let is_in_range = self_address.distance(addr) <= *distance_range;
                 if !is_in_range {
                     out_of_range_keys.push(addr.clone());
                 }

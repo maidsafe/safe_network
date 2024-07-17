@@ -669,13 +669,7 @@ impl SwarmDriver {
 
                 // The record_store will prune far records and setup a `distance range`,
                 // once reached the `max_records` cap.
-                if let Some(distance) = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .store_mut()
-                    .get_farthest_replication_distance_bucket()
-                {
+                if let Some(distance) = self.get_request_range() {
                     self.replication_fetcher
                         .set_replication_distance_range(distance);
                 }

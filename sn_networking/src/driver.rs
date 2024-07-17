@@ -670,7 +670,7 @@ pub struct SwarmDriver {
     pub(crate) local_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     local_cmd_receiver: mpsc::Receiver<LocalSwarmCmd>,
     network_cmd_receiver: mpsc::Receiver<NetworkSwarmCmd>,
-    event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
+    pub(crate) event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
 
     /// Trackers for underlying behaviour related events
     pub(crate) pending_get_closest_peers: PendingGetClosest,
@@ -761,16 +761,18 @@ impl SwarmDriver {
                 }
                 _ = set_farthest_record_interval.tick() => {
                     if !self.is_client {
-                        let closest_k_peers = self.get_closest_k_value_local_peers();
+                        if let Some(get_range) = self.get_request_range() {
+                        // set any new distance to farthest record in the store
+                        self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(get_range);
 
-                        if let Some(distance) = self.get_farthest_data_address_estimate(&closest_k_peers) {
-                            // set any new distance to farthest record in the store
-                            self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+                        // the distance range within the replication_fetcher shall be in sync as well
+                        self.replication_fetcher.set_replication_distance_range(get_range);
 
-                            let replication_distance = self.swarm.behaviour_mut().kademlia.store_mut().get_farthest_replication_distance_bucket().unwrap_or(1);
-                            // the distance range within the replication_fetcher shall be in sync as well
-                            self.replication_fetcher.set_replication_distance_range(replication_distance);
                         }
+                        else {
+                            warn!("No GetRange yet defined during far record check interval");
+                        }
+
                     }
                 }
                 _ = relay_manager_reservation_interval.tick() => self.relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes),
@@ -786,6 +788,7 @@ impl SwarmDriver {
     pub(crate) fn add_distance_range_for_gets(&mut self) {
         // TODO: define how/where this distance comes from
 
+        info!("Adding a distance range to our getrange stash");
         const TARGET_PEER: usize = 42;
 
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
@@ -836,38 +839,43 @@ impl SwarmDriver {
 
         info!("Adding new distance range: {last_peers_distance:?}");
 
-        self.range_distances.push_back(last_peers_distance);
-    }
-
-    /// Returns the KBucketDistance we are currently using as our X value
-    /// for range based search.
-    pub(crate) fn get_request_range(&mut self) -> Option<KBucketDistance> {
-        // TODO: Is this the correct keytype for comparisons?
-        let our_address = NetworkAddress::from_peer(self.self_peer_id);
-        let our_key = our_address.as_kbucket_key();
-
         let sorted_peers_iter = self
             .swarm
             .behaviour_mut()
             .kademlia
             .get_closest_local_peers(&our_key);
 
+        self.range_distances.push_back(last_peers_distance);
+
         let farthest_get_range_record_distance = self.range_distances.iter().max();
 
+        // now we're just logging for stats abotu peers in range:
+        //
+
+        let mut peers_within_range = 0;
         if let Some(farthest_range) = farthest_get_range_record_distance {
             // lets print how many are within range
-            for (i, peer) in sorted_peers_iter.enumerate() {
+            for peer in sorted_peers_iter {
                 let peer_distance_from_us = peer.distance(&our_key);
 
                 if &peer_distance_from_us < farthest_range {
+                    peers_within_range += 1;
                     info!("Peer {peer:?} is {peer_distance_from_us:?} and would be within the range based search group!");
-                    info!("That's {i:?} peers within the range!");
                 }
             }
         } else {
             warn!("No range distance has been set, no peers can be found within the range");
-            return None;
+            return;
         }
+
+        info!("Peers within range: {peers_within_range:?}");
+    }
+
+    /// Returns the KBucketDistance we are currently using as our X value
+    /// for range based search.
+    pub(crate) fn get_request_range(&self) -> Option<KBucketDistance> {
+        // TODO: Is this the correct keytype for comparisons?
+        let farthest_get_range_record_distance = self.range_distances.iter().max();
 
         farthest_get_range_record_distance.copied()
     }
@@ -882,31 +890,6 @@ impl SwarmDriver {
         }
         all_peers.push(self.self_peer_id);
         all_peers
-    }
-
-    /// Returns the farthest bucket, close to but probably farther than our responsibilty range.
-    /// This simply uses the closest k peers to estimate the farthest address as
-    /// `K_VALUE`th peer's bucket.
-    fn get_farthest_data_address_estimate(
-        &mut self,
-        // Sorted list of closest k peers to our peer id.
-        closest_k_peers: &[PeerId],
-    ) -> Option<u32> {
-        // if we don't have enough peers we don't set the distance range yet.
-        let mut farthest_distance = None;
-
-        let our_address = NetworkAddress::from_peer(self.self_peer_id);
-
-        // get K_VALUEth peer's address distance
-        // This is a rough estimate of the farthest address we might be responsible for.
-        // We want this to be higher than actually necessary, so we retain more data
-        // and can be sure to pass bad node checks
-        if let Some(peer) = closest_k_peers.last() {
-            let address = NetworkAddress::from_peer(*peer);
-            farthest_distance = our_address.distance(&address).ilog2();
-        }
-
-        farthest_distance
     }
 
     /// Pushes NetworkSwarmCmd off thread so as to be non-blocking

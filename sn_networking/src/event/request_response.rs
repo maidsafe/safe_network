@@ -10,14 +10,18 @@ use crate::{
     cmd::NetworkSwarmCmd, log_markers::Marker, sort_peers_by_address_and_limit, MsgResponder,
     NetworkError, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
 };
-use itertools::Itertools;
-use libp2p::request_response::{self, Message};
+use libp2p::{
+    kad::RecordKey,
+    request_response::{self, Message},
+    PeerId,
+};
 use rand::{rngs::OsRng, thread_rng, Rng};
 use sn_protocol::{
     messages::{CmdResponse, Request, Response},
     storage::RecordType,
     NetworkAddress,
 };
+use std::collections::HashMap;
 
 impl SwarmDriver {
     /// Forwards `Request` to the upper layers using `Sender<NetworkEvent>`. Sends `Response` to the peers
@@ -190,6 +194,15 @@ impl SwarmDriver {
         sender: NetworkAddress,
         incoming_keys: Vec<(NetworkAddress, RecordType)>,
     ) {
+        let peers = self.get_all_local_peers();
+        let get_range = self.get_request_range();
+
+        if get_range.is_none() {
+            warn!("No get range set, ignoring replication list.");
+            return;
+        }
+        let our_peer_id = self.self_peer_id;
+
         let holder = if let Some(peer_id) = sender.as_peer_id() {
             peer_id
         } else {
@@ -203,6 +216,12 @@ impl SwarmDriver {
         );
 
         let more_than_one_key = incoming_keys.len() > 1;
+        // accept replication requests from all peers within our
+        // X-range
+        if !peers.contains(&holder) || holder == our_peer_id {
+            trace!("Holder {holder:?} is self or not in replication range.");
+            return;
+        }
 
         // On receive a replication_list from a close_group peer, we undertake two tasks:
         //   1, For those keys that we don't have:
@@ -217,10 +236,13 @@ impl SwarmDriver {
             .behaviour_mut()
             .kademlia
             .store_mut()
-            .record_addresses_ref();
+            .record_addresses_ref()
+            .clone();
+
         let keys_to_fetch = self
             .replication_fetcher
-            .add_keys(holder, incoming_keys, all_keys);
+            .add_keys(holder, incoming_keys, &all_keys);
+
         if keys_to_fetch.is_empty() {
             debug!("no waiting keys to fetch from the network");
         } else {
@@ -231,47 +253,40 @@ impl SwarmDriver {
         let mut rng = thread_rng();
         // 5% probability
         if more_than_one_key && rng.gen_bool(0.05) {
-            let keys_to_verify = self.select_verification_data_candidates(sender);
+            let event_sender = self.event_sender.clone();
+            let _handle = tokio::spawn(async move {
+                let keys_to_verify =
+                    Self::select_verification_data_candidates(&peers, &all_keys, sender);
 
-            if keys_to_verify.is_empty() {
-                debug!("No valid candidate to be checked against peer {holder:?}");
-            } else {
-                self.send_event(NetworkEvent::ChunkProofVerification {
-                    peer_id: holder,
-                    keys_to_verify,
-                });
-            }
+                if keys_to_verify.is_empty() {
+                    debug!("No valid candidate to be checked against peer {holder:?}");
+                } else if let Err(error) = event_sender
+                    .send(NetworkEvent::ChunkProofVerification {
+                        peer_id: holder,
+                        keys_to_verify,
+                    })
+                    .await
+                {
+                    error!("SwarmDriver failed to send event: {}", error);
+                }
+            });
         }
     }
 
     /// Check among all chunk type records that we have, select those close to the peer,
     /// and randomly pick one as the verification candidate.
     #[allow(clippy::mutable_key_type)]
-    fn select_verification_data_candidates(&mut self, peer: NetworkAddress) -> Vec<NetworkAddress> {
-        let mut closest_peers = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .get_closest_local_peers(&self.self_peer_id.into())
-            .map(|peer| peer.into_preimage())
-            .take(20)
-            .collect_vec();
-        closest_peers.push(self.self_peer_id);
-
+    fn select_verification_data_candidates(
+        all_peers: &Vec<PeerId>,
+        all_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
+        peer: NetworkAddress,
+    ) -> Vec<NetworkAddress> {
         let target_peer = if let Some(peer_id) = peer.as_peer_id() {
             peer_id
         } else {
             error!("Target {peer:?} is not a valid PeerId");
             return vec![];
         };
-
-        #[allow(clippy::mutable_key_type)]
-        let all_keys = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .store_mut()
-            .record_addresses_ref();
 
         // Targeted chunk type record shall be expected within the close range from our perspective.
         let mut verify_candidates: Vec<NetworkAddress> = all_keys
@@ -280,7 +295,7 @@ impl SwarmDriver {
                 if RecordType::Chunk == *record_type {
                     // Here we take the actual closest, as this is where we want to be
                     // strict about who does have the data...
-                    match sort_peers_by_address_and_limit(&closest_peers, addr, CLOSE_GROUP_SIZE) {
+                    match sort_peers_by_address_and_limit(all_peers, addr, CLOSE_GROUP_SIZE) {
                         Ok(close_group) => {
                             if close_group.contains(&&target_peer) {
                                 Some(addr.clone())
