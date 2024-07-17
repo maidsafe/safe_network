@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721178263838,
+  "lastUpdate": 1721178381343,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cbc0e73307ad76683e3841d2c1229e27aa41be29",
-          "message": "fix(client): do not check quote expiry from the client",
-          "timestamp": "2024-03-31T22:08:49Z",
-          "tree_id": "92f7e8eb069d9739f05c6afbdc3e1bca9cad240f",
-          "url": "https://github.com/maidsafe/safe_network/commit/cbc0e73307ad76683e3841d2c1229e27aa41be29"
-        },
-        "date": 1711926049801,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 51,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "7a16c14a31b0e4847e1a24aad03455c0050e9ace",
+          "message": "feat(auditor): dump fetched spends to local disk",
+          "timestamp": "2024-07-17T00:15:21Z",
+          "tree_id": "df587f4ddf412d166f582d82191fbfd6965eee2b",
+          "url": "https://github.com/maidsafe/safe_network/commit/7a16c14a31b0e4847e1a24aad03455c0050e9ace"
+        },
+        "date": 1721178380583,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 54,
             "unit": "MB"
           }
         ]
