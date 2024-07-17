@@ -74,17 +74,30 @@ impl ReplicationFetcher {
     pub(crate) fn add_keys(
         &mut self,
         holder: PeerId,
-        mut incoming_keys: Vec<(NetworkAddress, RecordType)>,
+        incoming_keys: Vec<(NetworkAddress, RecordType)>,
         locally_stored_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
     ) -> Vec<(PeerId, RecordKey)> {
+        // remove locally stored from incoming_keys
+        let mut new_incoming_keys: Vec<_> = incoming_keys
+            .iter()
+            .filter(|(addr, record_type)| {
+                let key = &addr.to_record_key();
+                !locally_stored_keys.contains_key(key)
+                    && !self
+                        .to_be_fetched
+                        .contains_key(&(key.clone(), record_type.clone(), holder))
+            })
+            .cloned()
+            .collect();
+
         self.remove_stored_keys(locally_stored_keys);
         let self_address = NetworkAddress::from_peer(self.self_peer_id);
-        let total_incoming_keys = incoming_keys.len();
+        let total_incoming_keys = new_incoming_keys.len();
 
         // In case of node full, restrict fetch range
         if let Some(farthest_distance) = self.farthest_acceptable_distance {
             let mut out_of_range_keys = vec![];
-            incoming_keys.retain(|(addr, _)| {
+            new_incoming_keys.retain(|(addr, _)| {
                 let is_in_range = self_address.distance(addr) <= farthest_distance;
                 if !is_in_range {
                     out_of_range_keys.push(addr.clone());
@@ -101,8 +114,8 @@ impl ReplicationFetcher {
         let mut keys_to_fetch = vec![];
         // For new data, it will be replicated out in a special replication_list of length 1.
         // And we shall `fetch` that copy immediately (if in range), if it's not being fetched.
-        if incoming_keys.len() == 1 {
-            let (record_address, record_type) = incoming_keys[0].clone();
+        if new_incoming_keys.len() == 1 {
+            let (record_address, record_type) = new_incoming_keys[0].clone();
 
             let new_data_key = (record_address.to_record_key(), record_type);
 
@@ -113,16 +126,16 @@ impl ReplicationFetcher {
             }
 
             // To avoid later on un-necessary actions.
-            incoming_keys.clear();
+            new_incoming_keys.clear();
         }
 
         self.to_be_fetched
             .retain(|_, time_out| *time_out > Instant::now());
 
         let mut out_of_range_keys = vec![];
-        // Filter out those out_of_range ones among the imcoming_keys.
+        // Filter out those out_of_range ones among the incoming_keys.
         if let Some(ref distance_range) = self.distance_range {
-            incoming_keys.retain(|(addr, _record_type)| {
+            new_incoming_keys.retain(|(addr, _record_type)| {
                 let is_in_range =
                     self_address.distance(addr).ilog2().unwrap_or(0) <= *distance_range;
                 if !is_in_range {
@@ -141,12 +154,14 @@ impl ReplicationFetcher {
         }
 
         // add in-range AND non existing keys to the fetcher
-        incoming_keys.into_iter().for_each(|(addr, record_type)| {
-            let _ = self
-                .to_be_fetched
-                .entry((addr.to_record_key(), record_type, holder))
-                .or_insert(Instant::now() + PENDING_TIMEOUT);
-        });
+        new_incoming_keys
+            .into_iter()
+            .for_each(|(addr, record_type)| {
+                let _ = self
+                    .to_be_fetched
+                    .entry((addr.to_record_key(), record_type, holder))
+                    .or_insert(Instant::now() + PENDING_TIMEOUT);
+            });
 
         keys_to_fetch.extend(self.next_keys_to_fetch());
 
@@ -469,11 +484,13 @@ mod tests {
             replication_fetcher.add_keys(PeerId::random(), incoming_keys, &Default::default());
         assert_eq!(
             keys_to_fetch.len(),
-            replication_fetcher.on_going_fetches.len()
+            replication_fetcher.on_going_fetches.len(),
+            "keys to fetch and ongoing fetches should match"
         );
         assert_eq!(
             in_range_keys,
-            keys_to_fetch.len() + replication_fetcher.to_be_fetched.len()
+            keys_to_fetch.len() + replication_fetcher.to_be_fetched.len(),
+            "all keys should be in range and in the fetcher"
         );
     }
 }
