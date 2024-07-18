@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721275152467,
+  "lastUpdate": 1721275154829,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "distinct": false,
-          "id": "29e98892489d9d071e7b97665ac880234a1c0033",
-          "message": "feat(node): carry out chunk_proof chunk against peer",
-          "timestamp": "2024-04-01T10:37:26Z",
-          "tree_id": "a7a345dc72419c191f6e46dad2b96358d17ff3ed",
-          "url": "https://github.com/maidsafe/safe_network/commit/29e98892489d9d071e7b97665ac880234a1c0033"
-        },
-        "date": 1711970716283,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 190,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "dfc1852d227c18560257fe2d1b4045953c13b900",
+          "message": "chore(networking): make ChunkVerification probabalistic\n\nPreviously _any_ replication message with more than one key generated a\nChunkVerification message.\n\nNow we just do this for every 1/10 messages we receive.\nThis should result in less verificaiton under heavy churn",
+          "timestamp": "2024-07-18T03:05:27Z",
+          "tree_id": "000c5f748d382ba90dcb3760f0479db7a85f1bb6",
+          "url": "https://github.com/maidsafe/safe_network/commit/dfc1852d227c18560257fe2d1b4045953c13b900"
+        },
+        "date": 1721275153906,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 182,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
