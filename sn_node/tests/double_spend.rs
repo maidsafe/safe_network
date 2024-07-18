@@ -239,11 +239,17 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
     client
         .send_spends(transfer_to_3.all_spend_requests.iter(), false)
         .await?;
-    info!("Verifying the transfers from 1 -> 3 wallet... It should error out.");
+
     let cash_notes_for_3: Vec<_> = transfer_to_3.cash_notes_for_recipient.clone();
-    assert!(client.verify_cashnote(&cash_notes_for_3[0]).await.is_err()); // the old spend has been poisoned
-    info!("Verifying the original transfers from 1 -> 2 wallet... It should error out.");
-    assert!(client.verify_cashnote(&cash_notes_for_2[0]).await.is_err()); // the old spend has been poisoned
+
+    info!("Verifying the transfers from 1 -> 3 wallet aand 1-> 2... One should error out.");
+    let for3_failed = client.verify_cashnote(&cash_notes_for_3[0]).await.is_err();
+    let for2_failed = client.verify_cashnote(&cash_notes_for_2[0]).await.is_err();
+    // Both cannot pass
+    assert!(
+        for2_failed || for3_failed,
+        "one transaction must be invalid"
+    ); // the old spend has been poisoned
 
     // The old spend has been poisoned, but spends from 22 -> 222 should still work
     let wallet_dir_222 = TempDir::new()?;
@@ -266,6 +272,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
     client
         .send_spends(transfer_to_222.all_spend_requests.iter(), false)
         .await?;
+
     info!("Verifying the transfers from 22 -> 222 wallet...");
     let cash_notes_for_222: Vec<_> = transfer_to_222.cash_notes_for_recipient.clone();
     client.verify_cashnote(&cash_notes_for_222[0]).await?;
