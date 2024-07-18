@@ -7,10 +7,11 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
+use crate::cmd::LocalSwarmCmd;
 use crate::driver::MAX_PACKET_SIZE;
 use crate::target_arch::{spawn, Instant};
-use crate::CLOSE_GROUP_SIZE;
-use crate::{cmd::NetworkSwarmCmd, event::NetworkEvent, log_markers::Marker, send_swarm_cmd};
+use crate::{event::NetworkEvent, log_markers::Marker};
+use crate::{send_local_swarm_cmd, CLOSE_GROUP_SIZE};
 use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
     Aes256GcmSiv, Nonce,
@@ -76,7 +77,7 @@ pub struct NodeRecordStore {
     /// Send network events to the node layer.
     network_event_sender: mpsc::Sender<NetworkEvent>,
     /// Send cmds to the network layer. Used to interact with self in an async fashion.
-    swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
+    local_swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     /// ilog2 distance range of responsible records
     /// AKA: how many buckets of data do we consider "close"
     /// None means accept all records.
@@ -248,7 +249,7 @@ impl NodeRecordStore {
         local_id: PeerId,
         config: NodeRecordStoreConfig,
         network_event_sender: mpsc::Sender<NetworkEvent>,
-        swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
+        swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     ) -> Self {
         let key = Aes256GcmSiv::generate_key(&mut OsRng);
         let cipher = Aes256GcmSiv::new(&key);
@@ -280,7 +281,7 @@ impl NodeRecordStore {
             records,
             records_cache: VecDeque::with_capacity(cache_size),
             network_event_sender,
-            swarm_cmd_sender,
+            local_swarm_cmd_sender: swarm_cmd_sender,
             responsible_distance_range: None,
             #[cfg(feature = "open-metrics")]
             record_count_metric: None,
@@ -541,7 +542,7 @@ impl NodeRecordStore {
         }
 
         let encryption_details = self.encryption_details.clone();
-        let cloned_cmd_sender = self.swarm_cmd_sender.clone();
+        let cloned_cmd_sender = self.local_swarm_cmd_sender.clone();
         spawn(async move {
             let key = r.key.clone();
             if let Some(bytes) = Self::prepare_record_bytes(r, encryption_details) {
@@ -550,17 +551,17 @@ impl NodeRecordStore {
                         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
                         info!("Wrote record {record_key:?} to disk! filename: {filename}");
 
-                        NetworkSwarmCmd::AddLocalRecordAsStored { key, record_type }
+                        LocalSwarmCmd::AddLocalRecordAsStored { key, record_type }
                     }
                     Err(err) => {
                         error!(
                         "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
                     );
-                        NetworkSwarmCmd::RemoveFailedLocalRecord { key }
+                        LocalSwarmCmd::RemoveFailedLocalRecord { key }
                     }
                 };
 
-                send_swarm_cmd(cloned_cmd_sender, cmd);
+                send_local_swarm_cmd(cloned_cmd_sender, cmd);
             }
         });
 

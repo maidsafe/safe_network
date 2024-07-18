@@ -13,7 +13,7 @@ use crate::metrics_service::run_metrics_server;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
-    cmd::NetworkSwarmCmd,
+    cmd::{LocalSwarmCmd, NetworkSwarmCmd},
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
     multiaddr_pop_p2p,
@@ -62,7 +62,10 @@ use std::{
     num::NonZeroUsize,
     path::PathBuf,
 };
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{
+    mpsc::{self, error::TryRecvError},
+    oneshot,
+};
 use tokio::time::Duration;
 use tracing::warn;
 use xor_name::XorName;
@@ -457,7 +460,10 @@ impl NetworkBuilder {
         };
 
         let (network_event_sender, network_event_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
-        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
+        let (network_swarm_cmd_sender, network_swarm_cmd_receiver) =
+            mpsc::channel(NETWORKING_CHANNEL_SIZE);
+        let (local_swarm_cmd_sender, local_swarm_cmd_receiver) =
+            mpsc::channel(NETWORKING_CHANNEL_SIZE);
 
         // Kademlia Behaviour
         let kademlia = {
@@ -467,7 +473,7 @@ impl NetworkBuilder {
                         peer_id,
                         store_cfg,
                         network_event_sender.clone(),
-                        swarm_cmd_sender.clone(),
+                        local_swarm_cmd_sender.clone(),
                     );
                     #[cfg(feature = "open-metrics")]
                     let mut node_record_store = node_record_store;
@@ -604,7 +610,8 @@ impl NetworkBuilder {
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
-            network_cmd_receiver: swarm_cmd_receiver,
+            network_cmd_receiver: network_swarm_cmd_receiver,
+            local_cmd_receiver: local_swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
@@ -623,7 +630,13 @@ impl NetworkBuilder {
             replication_targets: Default::default(),
         };
 
-        let network = Network::new(swarm_cmd_sender, peer_id, self.root_dir, self.keypair);
+        let network = Network::new(
+            network_swarm_cmd_sender,
+            local_swarm_cmd_sender,
+            peer_id,
+            self.root_dir,
+            self.keypair,
+        );
 
         Ok((network, network_event_receiver, swarm_driver))
     }
@@ -646,6 +659,7 @@ pub struct SwarmDriver {
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,
 
+    local_cmd_receiver: mpsc::Receiver<LocalSwarmCmd>,
     network_cmd_receiver: mpsc::Receiver<NetworkSwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
 
@@ -686,6 +700,30 @@ impl SwarmDriver {
         let mut relay_manager_reservation_interval = interval(RELAY_MANAGER_RESERVATION_INTERVAL);
 
         loop {
+            // Prioritise any local cmds pending.
+            // https://github.com/libp2p/rust-libp2p/blob/master/docs/coding-guidelines.md#prioritize-local-work-over-new-work-from-a-remote
+            match self.local_cmd_receiver.try_recv() {
+                Ok(cmd) => {
+                    let start = Instant::now();
+                    let cmd_string = format!("{cmd:?}");
+                    if let Err(err) = self.handle_local_cmd(cmd) {
+                        warn!("Error while handling local cmd: {err}");
+                    }
+                    trace!("LocalCmd handled in {:?}: {cmd_string:?}", start.elapsed());
+
+                    continue;
+                }
+                Err(error) => match error {
+                    TryRecvError::Empty => {
+                        // no local cmds pending, continue
+                    }
+                    TryRecvError::Disconnected => {
+                        error!("LocalCmd channel disconnected, shutting down SwarmDriver");
+                        return;
+                    }
+                },
+            }
+
             tokio::select! {
                 swarm_event = self.swarm.select_next_some() => {
                     // logging for handling events happens inside handle_swarm_events
@@ -698,7 +736,7 @@ impl SwarmDriver {
                     Some(cmd) => {
                         let start = Instant::now();
                         let cmd_string = format!("{cmd:?}");
-                        if let Err(err) = self.handle_cmd(cmd) {
+                        if let Err(err) = self.handle_network_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
                         }
                         trace!("SwarmCmd handled in {:?}: {cmd_string:?}", start.elapsed());
