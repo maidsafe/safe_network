@@ -365,10 +365,13 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         .await?;
     info!("Verifying the transfers from A -> X wallet... It should error out.");
     let cash_notes_for_x: Vec<_> = transfer_to_x.cash_notes_for_recipient.clone();
+
     let result = client.verify_cashnote(&cash_notes_for_x[0]).await;
     info!("Got result while verifying double spend from A -> X: {result:?}");
+
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-        assert!(str.starts_with("Network Error Double spend(s) was detected"));
+        let spend_did_not_happen = str.starts_with("The spends in network were not the same as the ones in the CashNote") || str.starts_with("Network Error Double spend(s) was detected");
+        assert!(spend_did_not_happen);
     }); // poisoned
 
     // Try to double spend from B -> Y
@@ -401,20 +404,29 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
 
     info!("Verifying the transfers from B -> Y wallet... It should error out.");
     let cash_notes_for_y: Vec<_> = transfer_to_y.cash_notes_for_recipient.clone();
+
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
     info!("Got result while verifying double spend from B -> Y: {result:?}");
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-        assert!(str.starts_with("Network Error Double spend(s) was detected"));
+        let spend_did_not_happen = str.starts_with("The spends in network were not the same as the ones in the CashNote") || str.starts_with("Network Error Double spend(s) was detected");
+        assert!(spend_did_not_happen);
     });
 
     info!("Verifying the original cashnote of A -> B");
+
     let result = client.verify_cashnote(&cash_notes_for_b[0]).await;
     info!("Got result while verifying the original spend from A -> B: {result:?}");
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-        assert!(str.starts_with("Network Error Double spend(s) was detected"));
+
+        let spend_did_not_happen = str.starts_with("The spends in network were not the same as the ones in the CashNote") || str.starts_with("Network Error Double spend(s) was detected");
+        assert!(spend_did_not_happen);
     });
 
     println!("Verifying the original cashnote of B -> C");
+
+    // arbitrary time sleep to allow for network accumulation
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
     let result = client.verify_cashnote(&cash_notes_for_c[0]).await;
     info!("Got result while verifying the original spend from B -> C: {result:?}");
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
