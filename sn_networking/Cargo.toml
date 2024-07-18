@@ -74,6 +74,7 @@ backoff = { version = "0.4.0", features = ["tokio"] }
 aes-gcm-siv = "0.11.1"
 walkdir = "~2.5.0"
 strum = { version = "0.26.2", features = ["derive"] }
+void = "1.0.2"
 
 [dev-dependencies]
 bls = { package = "blsttc", version = "8.0.1" }

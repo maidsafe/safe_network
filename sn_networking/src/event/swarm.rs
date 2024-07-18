@@ -137,7 +137,8 @@ impl SwarmDriver {
                                 our_protocol: IDENTIFY_PROTOCOL_STR.to_string(),
                                 their_protocol: info.protocol_version,
                             });
-                            self.remove_outdated_connections(Some(peer_id));
+                            // Block the peer from any further communication.
+                            self.swarm.behaviour_mut().blocklist.block_peer(peer_id);
                             if let Some(dead_peer) =
                                 self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id)
                             {
@@ -391,15 +392,7 @@ impl SwarmDriver {
                     connection_id,
                     (peer_id, Instant::now() + Duration::from_secs(60)),
                 );
-                #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics
-                        .open_connections
-                        .set(self.live_connected_peers.len() as i64);
-                    metrics
-                        .connected_peers
-                        .set(self.swarm.connected_peers().count() as i64);
-                }
+                self.record_connection_metrics();
 
                 if endpoint.is_dialer() {
                     self.dialed_peers.push(peer_id);
@@ -415,23 +408,7 @@ impl SwarmDriver {
                 event_string = "ConnectionClosed";
                 trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
                 let _ = self.live_connected_peers.remove(&connection_id);
-                #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics
-                        .open_connections
-                        .set(self.live_connected_peers.len() as i64);
-                    metrics
-                        .connected_peers
-                        .set(self.swarm.connected_peers().count() as i64);
-                }
-            }
-            SwarmEvent::OutgoingConnectionError {
-                connection_id,
-                peer_id: None,
-                error,
-            } => {
-                event_string = "OutgoingConnErr";
-                warn!("OutgoingConnectionError to on {connection_id:?} - {error:?}");
+                self.record_connection_metrics();
             }
             SwarmEvent::OutgoingConnectionError {
                 peer_id: Some(failed_peer_id),
@@ -440,6 +417,8 @@ impl SwarmDriver {
             } => {
                 event_string = "OutgoingConnErr";
                 warn!("OutgoingConnectionError to {failed_peer_id:?} on {connection_id:?} - {error:?}");
+                let _ = self.live_connected_peers.remove(&connection_id);
+                self.record_connection_metrics();
 
                 // we need to decide if this was a critical error and the peer should be removed from the routing table
                 let should_clean_peer = match error {
@@ -559,6 +538,8 @@ impl SwarmDriver {
             } => {
                 event_string = "Incoming ConnErr";
                 error!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
+                let _ = self.live_connected_peers.remove(&connection_id);
+                self.record_connection_metrics();
             }
             SwarmEvent::Dialing {
                 peer_id,
@@ -622,7 +603,7 @@ impl SwarmDriver {
                 trace!("SwarmEvent has been ignored: {other:?}")
             }
         }
-        self.remove_outdated_connections(None);
+        self.remove_outdated_connections();
 
         self.log_handling(event_string.to_string(), start.elapsed());
 
@@ -664,19 +645,9 @@ impl SwarmDriver {
 
     // Remove outdated connection to a peer if it is not in the RT.
     // Optionally force remove all the connections for a provided peer.
-    fn remove_outdated_connections(&mut self, force_remove_peer: Option<PeerId>) {
+    fn remove_outdated_connections(&mut self) {
         let mut removed_conns = 0;
         self.live_connected_peers.retain(|connection_id, (peer_id, timeout_time)| {
-            if let Some(p) = force_remove_peer {
-                if *peer_id == p {
-                    let result = self.swarm.close_connection(*connection_id);
-                    debug!(
-                        "Force removed connection {connection_id:?} to {peer_id:?} with result: {result:?}"
-                    );
-                    removed_conns += 1;
-                    return false;
-                }
-            }
 
             // skip if timeout isn't reached yet
             if Instant::now() < *timeout_time {
@@ -712,15 +683,7 @@ impl SwarmDriver {
             return;
         }
 
-        #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
-            metrics
-                .open_connections
-                .set(self.live_connected_peers.len() as i64);
-            metrics
-                .connected_peers
-                .set(self.swarm.connected_peers().count() as i64);
-        }
+        self.record_connection_metrics();
 
         trace!(
             "Current libp2p peers pool stats is {:?}",
@@ -730,6 +693,19 @@ impl SwarmDriver {
             "Removed {removed_conns} outdated live connections, still have {} left.",
             self.live_connected_peers.len()
         );
+    }
+
+    /// Record the metrics on update of connection state.
+    fn record_connection_metrics(&self) {
+        #[cfg(feature = "open-metrics")]
+        if let Some(metrics) = &self.network_metrics {
+            metrics
+                .open_connections
+                .set(self.live_connected_peers.len() as i64);
+            metrics
+                .connected_peers
+                .set(self.swarm.connected_peers().count() as i64);
+        }
     }
 }
 

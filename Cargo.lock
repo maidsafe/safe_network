@@ -7282,6 +7282,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "void",
  "walkdir",
  "wasm-bindgen-futures",
  "wasmtimer",

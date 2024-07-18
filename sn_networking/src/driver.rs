@@ -184,20 +184,24 @@ pub enum VerificationKind {
     },
 }
 
-/// NodeBehaviour struct
+/// The behaviors are polled in the order they are defined.
+/// The first struct member is polled until it returns Poll::Pending before moving on to later members.
+/// Prioritize the behaviors related to connection handling.
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
 pub(super) struct NodeBehaviour {
-    #[cfg(feature = "upnp")]
-    pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
-    pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
-    pub(super) kademlia: kad::Behaviour<UnifiedRecordStore>,
+    pub(super) blocklist:
+        libp2p::allow_block_list::Behaviour<libp2p::allow_block_list::BlockedPeers>,
+    pub(super) identify: libp2p::identify::Behaviour,
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
-    pub(super) identify: libp2p::identify::Behaviour,
-    pub(super) dcutr: libp2p::dcutr::Behaviour,
+    #[cfg(feature = "upnp")]
+    pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
     pub(super) relay_client: libp2p::relay::client::Behaviour,
     pub(super) relay_server: libp2p::relay::Behaviour,
+    pub(super) dcutr: libp2p::dcutr::Behaviour,
+    pub(super) kademlia: kad::Behaviour<UnifiedRecordStore>,
+    pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
 }
 
 #[derive(Debug)]
@@ -554,6 +558,7 @@ impl NetworkBuilder {
         };
 
         let behaviour = NodeBehaviour {
+            blocklist: libp2p::allow_block_list::Behaviour::default(),
             relay_client: relay_behaviour,
             relay_server,
             #[cfg(feature = "upnp")]
