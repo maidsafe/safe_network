@@ -56,7 +56,7 @@ use sn_protocol::{
 };
 use sn_transfers::PaymentQuote;
 use std::{
-    collections::{btree_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
     fmt::Debug,
     net::SocketAddr,
     num::NonZeroUsize,
@@ -615,7 +615,6 @@ impl NetworkBuilder {
             handled_times: 0,
             hard_disk_write_error: 0,
             bad_nodes: Default::default(),
-            bad_nodes_ongoing_verifications: Default::default(),
             quotes_history: Default::default(),
             replication_targets: Default::default(),
         };
@@ -665,7 +664,6 @@ pub struct SwarmDriver {
     handled_times: usize,
     pub(crate) hard_disk_write_error: usize,
     pub(crate) bad_nodes: BadNodes,
-    pub(crate) bad_nodes_ongoing_verifications: BTreeSet<PeerId>,
     pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
     pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
 }
