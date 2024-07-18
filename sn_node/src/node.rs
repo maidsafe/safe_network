@@ -278,7 +278,8 @@ impl Node {
         #[cfg(all(feature = "reward-forward", feature = "open-metrics"))]
         let _handle = spawn(async move {
             let root_dir = node_copy.network().root_dir_path().clone();
-            let balance = read_forwarded_balance_value(&root_dir);
+            let balance_file_path = root_dir.join(FORWARDED_BALANCE_FILE_NAME);
+            let balance = read_forwarded_balance_value(&balance_file_path);
 
             if let Some(node_metrics) = node_copy.node_metrics() {
                 let _ = node_metrics.total_forwarded_rewards.set(balance as i64);
