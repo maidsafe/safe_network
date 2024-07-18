@@ -282,7 +282,7 @@ impl HotWallet {
         let addr_hex = wallet_pub_key.to_hex();
         let new_name = format!("{WALLET_DIR_NAME}_{addr_hex}");
         let moved_dir = root_dir.join(new_name);
-        std::fs::rename(wallet_dir, moved_dir.clone())?;
+        std::fs::rename(wallet_dir, &moved_dir)?;
         Ok(moved_dir)
     }
 
@@ -291,7 +291,17 @@ impl HotWallet {
         let cleared_name = format!("{WALLET_DIR_NAME}_{addr_hex}");
         let cleared_dir = root_dir.join(cleared_name);
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        std::fs::rename(cleared_dir, wallet_dir.clone())?;
+
+        // Stash old wallet if it exists
+        if wallet_dir.exists() {
+            if let Ok(_wallet) = HotWallet::load_from(root_dir) {
+                Self::stash(root_dir)?;
+            }
+
+            std::fs::remove_dir_all(&wallet_dir)?;
+        }
+
+        std::fs::rename(cleared_dir, wallet_dir)?;
         Ok(())
     }
 
