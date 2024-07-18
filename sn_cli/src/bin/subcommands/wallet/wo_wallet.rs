@@ -262,7 +262,7 @@ async fn broadcast_signed_spends(
     for (i, signed_spend) in signed_spends.iter().enumerate() {
         println!("\nSpending input #{i}:");
         println!("\tKey: {}", signed_spend.unique_pubkey().to_hex());
-        println!("\tAmount: {}", signed_spend.token());
+        println!("\tAmount: {}", signed_spend.amount());
 
         if let Err(err) = signed_spend.verify() {
             bail!("Transaction is invalid: {err:?}");
