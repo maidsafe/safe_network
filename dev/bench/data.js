@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721315823546,
+  "lastUpdate": 1721315825438,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "c490399ecc59b8b1b2c9237143e3dcd7550dacfa",
-          "message": "docs(readme): add details about the recovery secret in example folders cmds",
-          "timestamp": "2024-04-02T07:44:23Z",
-          "tree_id": "25adba6137846097812ac0c792d55ff8a5fdfe82",
-          "url": "https://github.com/maidsafe/safe_network/commit/c490399ecc59b8b1b2c9237143e3dcd7550dacfa"
-        },
-        "date": 1712046288952,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 201,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "distinct": false,
+          "id": "52a39032ae45e1e33388f0ff8334fd3a8f4121e0",
+          "message": "chore(network): remove bad node checks at places as we will never connect to bad nodes",
+          "timestamp": "2024-07-18T14:26:09Z",
+          "tree_id": "63ac8a49ef723edc87d232874035e5c814c62c87",
+          "url": "https://github.com/maidsafe/safe_network/commit/52a39032ae45e1e33388f0ff8334fd3a8f4121e0"
+        },
+        "date": 1721315825193,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
