@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721308243953,
+  "lastUpdate": 1721309695968,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "6a7389b322874b4b0ef6047344fa0dfc16cc4dc9",
-          "message": "chore(node): scramble periodical network discovery",
-          "timestamp": "2024-04-01T13:11:43Z",
-          "tree_id": "269d227be31f3aa21e254ea796e1b5b4b901e360",
-          "url": "https://github.com/maidsafe/safe_network/commit/6a7389b322874b4b0ef6047344fa0dfc16cc4dc9"
-        },
-        "date": 1711979514329,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2160015935535506,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.659219776404499,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.364385428506246,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.175930075767525,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "784e1d322bd36da4217cdbf3cef860f8e219d291",
+          "message": "fix(node): remove cn from disk and flush to confirmed_spends during forwarding",
+          "timestamp": "2024-07-18T12:45:21Z",
+          "tree_id": "95a1e18ee0cd83ea67c59ce11e59c3d7bd1d5863",
+          "url": "https://github.com/maidsafe/safe_network/commit/784e1d322bd36da4217cdbf3cef860f8e219d291"
+        },
+        "date": 1721309689862,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2317493673201902,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6715320080877103,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.00030765331304,
             "unit": "MiB/s"
           }
         ]
