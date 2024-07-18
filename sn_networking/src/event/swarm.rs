@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::SwarmCmd,
+    cmd::NetworkSwarmCmd,
     event::NodeEvent,
     multiaddr_is_global, multiaddr_strip_p2p,
     relay_manager::is_a_relayed_peer,
@@ -503,7 +503,7 @@ impl SwarmDriver {
                     {
                         self.update_on_peer_removal(*dead_peer.node.key.preimage());
 
-                        self.handle_cmd(SwarmCmd::RecordNodeIssue {
+                        self.handle_cmd(NetworkSwarmCmd::RecordNodeIssue {
                             peer_id: failed_peer_id,
                             issue: crate::NodeIssue::ConnectionIssue,
                         })?;

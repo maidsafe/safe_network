@@ -10,7 +10,7 @@
 use crate::driver::MAX_PACKET_SIZE;
 use crate::target_arch::{spawn, Instant};
 use crate::CLOSE_GROUP_SIZE;
-use crate::{cmd::SwarmCmd, event::NetworkEvent, log_markers::Marker, send_swarm_cmd};
+use crate::{cmd::NetworkSwarmCmd, event::NetworkEvent, log_markers::Marker, send_swarm_cmd};
 use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
     Aes256GcmSiv, Nonce,
@@ -76,7 +76,7 @@ pub struct NodeRecordStore {
     /// Send network events to the node layer.
     network_event_sender: mpsc::Sender<NetworkEvent>,
     /// Send cmds to the network layer. Used to interact with self in an async fashion.
-    swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+    swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
     /// ilog2 distance range of responsible records
     /// AKA: how many buckets of data do we consider "close"
     /// None means accept all records.
@@ -248,7 +248,7 @@ impl NodeRecordStore {
         local_id: PeerId,
         config: NodeRecordStoreConfig,
         network_event_sender: mpsc::Sender<NetworkEvent>,
-        swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+        swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
     ) -> Self {
         let key = Aes256GcmSiv::generate_key(&mut OsRng);
         let cipher = Aes256GcmSiv::new(&key);
@@ -550,13 +550,13 @@ impl NodeRecordStore {
                         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
                         info!("Wrote record {record_key:?} to disk! filename: {filename}");
 
-                        SwarmCmd::AddLocalRecordAsStored { key, record_type }
+                        NetworkSwarmCmd::AddLocalRecordAsStored { key, record_type }
                     }
                     Err(err) => {
                         error!(
                         "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
                     );
-                        SwarmCmd::RemoveFailedLocalRecord { key }
+                        NetworkSwarmCmd::RemoveFailedLocalRecord { key }
                     }
                 };
 

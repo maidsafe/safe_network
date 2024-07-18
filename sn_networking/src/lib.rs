@@ -45,7 +45,7 @@ pub use self::{
     transfers::{get_raw_signed_spends_from_record, get_signed_spend_from_record},
 };
 
-use self::{cmd::SwarmCmd, error::Result};
+use self::{cmd::NetworkSwarmCmd, error::Result};
 use backoff::{Error as BackoffError, ExponentialBackoff};
 use futures::future::select_all;
 use libp2p::{
@@ -161,7 +161,7 @@ pub struct Network {
 /// The actual implementation of the Network. The other is just a wrapper around this, so that we don't expose
 /// the Arc from the interface.
 struct NetworkInner {
-    swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+    swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
     peer_id: PeerId,
     root_dir_path: PathBuf,
     keypair: Keypair,
@@ -169,7 +169,7 @@ struct NetworkInner {
 
 impl Network {
     pub fn new(
-        swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+        swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
         peer_id: PeerId,
         root_dir_path: PathBuf,
         keypair: Keypair,
@@ -200,7 +200,7 @@ impl Network {
     }
 
     /// Get the sender to send a `SwarmCmd` to the underlying `Swarm`.
-    pub(crate) fn swarm_cmd_sender(&self) -> &mpsc::Sender<SwarmCmd> {
+    pub(crate) fn swarm_cmd_sender(&self) -> &mpsc::Sender<NetworkSwarmCmd> {
         &self.inner.swarm_cmd_sender
     }
 
@@ -223,7 +223,7 @@ impl Network {
     /// This function will only be called for the bootstrap nodes.
     pub async fn dial(&self, addr: Multiaddr) -> Result<()> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::Dial { addr, sender });
+        self.send_swarm_cmd(NetworkSwarmCmd::Dial { addr, sender });
         receiver.await?
     }
 
@@ -245,7 +245,7 @@ impl Network {
     /// Does not include self
     pub async fn get_kbuckets(&self) -> Result<BTreeMap<u32, Vec<PeerId>>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetKBuckets { sender });
+        self.send_swarm_cmd(NetworkSwarmCmd::GetKBuckets { sender });
         receiver
             .await
             .map_err(|_e| NetworkError::InternalMsgChannelDropped)
@@ -255,7 +255,7 @@ impl Network {
     /// Also contains our own PeerId.
     pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetClosestKLocalPeers { sender });
+        self.send_swarm_cmd(NetworkSwarmCmd::GetClosestKLocalPeers { sender });
 
         receiver
             .await
@@ -435,7 +435,7 @@ impl Network {
         let pretty_key = PrettyPrintRecordKey::from(&key);
         info!("Getting record from network of {pretty_key:?}. with cfg {cfg:?}",);
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
+        self.send_swarm_cmd(NetworkSwarmCmd::GetNetworkRecord {
             key: key.clone(),
             sender,
             cfg: cfg.clone(),
@@ -471,7 +471,7 @@ impl Network {
                 let pretty_key = PrettyPrintRecordKey::from(&key);
                 info!("Getting record from network of {pretty_key:?}. with cfg {cfg:?}",);
                 let (sender, receiver) = oneshot::channel();
-                self.send_swarm_cmd(SwarmCmd::GetNetworkRecord {
+                self.send_swarm_cmd(NetworkSwarmCmd::GetNetworkRecord {
                     key: key.clone(),
                     sender,
                     cfg: cfg.clone(),
@@ -530,7 +530,7 @@ impl Network {
         key: RecordKey,
     ) -> Result<(NanoTokens, QuotingMetrics)> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetLocalStoreCost { key, sender });
+        self.send_swarm_cmd(NetworkSwarmCmd::GetLocalStoreCost { key, sender });
 
         receiver
             .await
@@ -539,13 +539,13 @@ impl Network {
 
     /// Notify the node receicced a payment.
     pub fn notify_payment_received(&self) {
-        self.send_swarm_cmd(SwarmCmd::PaymentReceived);
+        self.send_swarm_cmd(NetworkSwarmCmd::PaymentReceived);
     }
 
     /// Get `Record` from the local RecordStore
     pub async fn get_local_record(&self, key: &RecordKey) -> Result<Option<Record>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetLocalRecord {
+        self.send_swarm_cmd(NetworkSwarmCmd::GetLocalRecord {
             key: key.clone(),
             sender,
         });
@@ -558,7 +558,7 @@ impl Network {
     /// Whether the target peer is considered blacklisted by self
     pub async fn is_peer_shunned(&self, target: NetworkAddress) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::IsPeerShunned { target, sender });
+        self.send_swarm_cmd(NetworkSwarmCmd::IsPeerShunned { target, sender });
 
         receiver
             .await
@@ -609,14 +609,14 @@ impl Network {
         // Waiting for a response to avoid flushing to network too quick that causing choke
         let (sender, receiver) = oneshot::channel();
         if let Some(put_record_to_peers) = &cfg.use_put_record_to {
-            self.send_swarm_cmd(SwarmCmd::PutRecordTo {
+            self.send_swarm_cmd(NetworkSwarmCmd::PutRecordTo {
                 peers: put_record_to_peers.clone(),
                 record: record.clone(),
                 sender,
                 quorum: cfg.put_quorum,
             });
         } else {
-            self.send_swarm_cmd(SwarmCmd::PutRecord {
+            self.send_swarm_cmd(NetworkSwarmCmd::PutRecord {
                 record: record.clone(),
                 sender,
                 quorum: cfg.put_quorum,
@@ -677,7 +677,7 @@ impl Network {
     /// Notify ReplicationFetch a fetch attempt is completed.
     /// (but it won't trigger any real writes to disk, say fetched an old version of register)
     pub fn notify_fetch_completed(&self, key: RecordKey) {
-        self.send_swarm_cmd(SwarmCmd::FetchCompleted(key))
+        self.send_swarm_cmd(NetworkSwarmCmd::FetchCompleted(key))
     }
 
     /// Put `Record` to the local RecordStore
@@ -688,13 +688,13 @@ impl Network {
             PrettyPrintRecordKey::from(&record.key),
             record.value.len()
         );
-        self.send_swarm_cmd(SwarmCmd::PutLocalRecord { record })
+        self.send_swarm_cmd(NetworkSwarmCmd::PutLocalRecord { record })
     }
 
     /// Returns true if a RecordKey is present locally in the RecordStore
     pub async fn is_record_key_present_locally(&self, key: &RecordKey) -> Result<bool> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::RecordStoreHasKey {
+        self.send_swarm_cmd(NetworkSwarmCmd::RecordStoreHasKey {
             key: key.clone(),
             sender,
         });
@@ -709,7 +709,7 @@ impl Network {
         &self,
     ) -> Result<HashMap<NetworkAddress, RecordType>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetAllLocalRecordAddresses { sender });
+        self.send_swarm_cmd(NetworkSwarmCmd::GetAllLocalRecordAddresses { sender });
 
         receiver
             .await
@@ -722,7 +722,7 @@ impl Network {
     /// layers.
     pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::SendRequest {
+        self.send_swarm_cmd(NetworkSwarmCmd::SendRequest {
             req,
             peer,
             sender: Some(sender),
@@ -733,7 +733,7 @@ impl Network {
     /// Send `Request` to the given `PeerId` and do _not_ await a response here.
     /// Instead the Response will be handled by the common `response_handler`
     pub fn send_req_ignore_reply(&self, req: Request, peer: PeerId) {
-        let swarm_cmd = SwarmCmd::SendRequest {
+        let swarm_cmd = NetworkSwarmCmd::SendRequest {
             req,
             peer,
             sender: None,
@@ -743,31 +743,31 @@ impl Network {
 
     /// Send a `Response` through the channel opened by the requester.
     pub fn send_response(&self, resp: Response, channel: MsgResponder) {
-        self.send_swarm_cmd(SwarmCmd::SendResponse { resp, channel })
+        self.send_swarm_cmd(NetworkSwarmCmd::SendResponse { resp, channel })
     }
 
     /// Return a `SwarmLocalState` with some information obtained from swarm's local state.
     pub async fn get_swarm_local_state(&self) -> Result<SwarmLocalState> {
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetSwarmLocalState(sender));
+        self.send_swarm_cmd(NetworkSwarmCmd::GetSwarmLocalState(sender));
         let state = receiver.await?;
         Ok(state)
     }
 
     pub fn trigger_interval_replication(&self) {
-        self.send_swarm_cmd(SwarmCmd::TriggerIntervalReplication)
+        self.send_swarm_cmd(NetworkSwarmCmd::TriggerIntervalReplication)
     }
 
     pub fn record_node_issues(&self, peer_id: PeerId, issue: NodeIssue) {
-        self.send_swarm_cmd(SwarmCmd::RecordNodeIssue { peer_id, issue });
+        self.send_swarm_cmd(NetworkSwarmCmd::RecordNodeIssue { peer_id, issue });
     }
 
     pub fn historical_verify_quotes(&self, quotes: Vec<(PeerId, PaymentQuote)>) {
-        self.send_swarm_cmd(SwarmCmd::QuoteVerification { quotes });
+        self.send_swarm_cmd(NetworkSwarmCmd::QuoteVerification { quotes });
     }
 
     // Helper to send SwarmCmd
-    fn send_swarm_cmd(&self, cmd: SwarmCmd) {
+    fn send_swarm_cmd(&self, cmd: NetworkSwarmCmd) {
         send_swarm_cmd(self.swarm_cmd_sender().clone(), cmd);
     }
 
@@ -780,7 +780,7 @@ impl Network {
     ) -> Result<Vec<PeerId>> {
         debug!("Getting the closest peers to {key:?}");
         let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetClosestPeersToAddressFromNetwork {
+        self.send_swarm_cmd(NetworkSwarmCmd::GetClosestPeersToAddressFromNetwork {
             key: key.clone(),
             sender,
         });
@@ -953,7 +953,7 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
     }
 }
 
-pub(crate) fn send_swarm_cmd(swarm_cmd_sender: Sender<SwarmCmd>, cmd: SwarmCmd) {
+pub(crate) fn send_swarm_cmd(swarm_cmd_sender: Sender<NetworkSwarmCmd>, cmd: NetworkSwarmCmd) {
     let capacity = swarm_cmd_sender.capacity();
 
     if capacity == 0 {

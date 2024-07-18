@@ -13,7 +13,7 @@ use crate::metrics_service::run_metrics_server;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
-    cmd::SwarmCmd,
+    cmd::NetworkSwarmCmd,
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
     multiaddr_pop_p2p,
@@ -604,7 +604,7 @@ impl NetworkBuilder {
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
-            cmd_receiver: swarm_cmd_receiver,
+            network_cmd_receiver: swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
@@ -646,7 +646,7 @@ pub struct SwarmDriver {
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,
 
-    cmd_receiver: mpsc::Receiver<SwarmCmd>,
+    network_cmd_receiver: mpsc::Receiver<NetworkSwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
 
     /// Trackers for underlying behaviour related events
@@ -694,7 +694,7 @@ impl SwarmDriver {
                         warn!("Error while handling swarm event: {err}");
                     }
                 },
-                some_cmd = self.cmd_receiver.recv() => match some_cmd {
+                some_cmd = self.network_cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
                         let start = Instant::now();
                         let cmd_string = format!("{cmd:?}");
