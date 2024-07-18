@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721320312679,
+  "lastUpdate": 1721320314052,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "max@foorack.com",
-            "name": "Foorack / Max Faxälv",
-            "username": "Foorack"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2c2d574c7971ebb1da138f941febfc3a1c9df5a3",
-          "message": "chore(auditor): set repository field in cargo",
-          "timestamp": "2024-04-02T08:04:35Z",
-          "tree_id": "e4149eeac5c66b197de14eeb24fa982dfc51c440",
-          "url": "https://github.com/maidsafe/safe_network/commit/2c2d574c7971ebb1da138f941febfc3a1c9df5a3"
-        },
-        "date": 1712047881264,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 190,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mickvd99@gmail.com",
+            "name": "Warm Beer",
+            "username": "mickvandijke"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": false,
+          "id": "3026b0a332edeffe02ef44cbd1ec92c35a0dcb97",
+          "message": "fix(node): [#1849] fix reading persisted `total_forwarded_rewards` from file",
+          "timestamp": "2024-07-18T15:41:01Z",
+          "tree_id": "193a7681c4922846f7aa46f019685f7ab6a35ea0",
+          "url": "https://github.com/maidsafe/safe_network/commit/3026b0a332edeffe02ef44cbd1ec92c35a0dcb97"
+        },
+        "date": 1721320313746,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
