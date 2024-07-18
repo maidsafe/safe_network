@@ -829,10 +829,11 @@ impl SwarmDriver {
         }
 
         if *is_bad {
-            warn!("Cleaning out bad_peer {peer_id:?}");
+            warn!("Cleaning out bad_peer {peer_id:?} and adding it to the blocklist");
             if let Some(dead_peer) = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id) {
                 self.update_on_peer_removal(*dead_peer.node.key.preimage());
             }
+            self.swarm.behaviour_mut().blocklist.block_peer(peer_id);
 
             if is_new_bad {
                 self.send_event(NetworkEvent::PeerConsideredAsBad {
