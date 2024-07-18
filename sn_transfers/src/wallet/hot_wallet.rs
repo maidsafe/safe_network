@@ -505,6 +505,14 @@ impl HotWallet {
 
         self.update_local_wallet(transfer, exclusive_access, false)?;
 
+        // cash_notes better to be removed from disk
+        let _ =
+            self.remove_cash_notes_from_disk(signed_spends.iter().map(|s| &s.spend.unique_pubkey));
+
+        // signed_spends need to be flushed to the disk as confirmed_spends as well.
+        let ss_btree: BTreeSet<_> = signed_spends.iter().cloned().collect();
+        let _ = remove_unconfirmed_spend_requests(self.watchonly_wallet.wallet_dir(), &ss_btree);
+
         Ok(signed_spends)
     }
 
