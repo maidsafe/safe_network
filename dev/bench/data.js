@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721316683718,
+  "lastUpdate": 1721316685801,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "7cd08619a07127330a33d174c4ade31b5e4399df",
-          "message": "test(networking): add illustrative tests for various node fullness levels",
-          "timestamp": "2024-04-02T08:04:23Z",
-          "tree_id": "de7e1ccaf4851cb1c335448b8378a4843a381821",
-          "url": "https://github.com/maidsafe/safe_network/commit/7cd08619a07127330a33d174c4ade31b5e4399df"
-        },
-        "date": 1712047797853,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7482,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33626,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "max@foorack.com",
             "name": "Foorack / Max Faxälv",
             "username": "Foorack"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 39377,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "eb6a14d255537a361cdda2cef3d25ee7e65e97e1",
+          "message": "chore(node): move sn_client to dev deps\n\nsn_client is only used in tests and examples",
+          "timestamp": "2024-07-18T14:42:39Z",
+          "tree_id": "57c3786090ec4ea1b5a76e17cfb14496c5adf9cc",
+          "url": "https://github.com/maidsafe/safe_network/commit/eb6a14d255537a361cdda2cef3d25ee7e65e97e1"
+        },
+        "date": 1721316685518,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6532,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35230,
             "unit": "ms"
           },
           {
