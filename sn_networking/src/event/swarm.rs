@@ -187,7 +187,6 @@ impl SwarmDriver {
                                 &peer_id,
                                 &addrs,
                                 &info.protocols,
-                                &self.bad_nodes,
                             );
                         }
 
@@ -254,32 +253,25 @@ impl SwarmDriver {
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
                         if self.local || has_dialed {
-                            // To reduce the bad_node check resource usage,
-                            // during the connection establish process, only check cached black_list
-                            // The periodical check, which involves network queries shall filter
-                            // out bad_nodes eventually.
-                            if let Some((_issues, true)) = self.bad_nodes.get(&peer_id) {
-                                info!("Peer {peer_id:?} is considered as bad, blocking it.");
-                            } else {
-                                self.remove_bootstrap_from_full(peer_id);
+                            // A bad node cannot establish a connection with us. So we can add it to the RT directly.
+                            self.remove_bootstrap_from_full(peer_id);
 
-                                // Avoid have `direct link format` addrs co-exists with `relay` addr
-                                if has_relayed {
-                                    addrs.retain(|multiaddr| {
-                                        multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit))
-                                    });
-                                }
+                            // Avoid have `direct link format` addrs co-exists with `relay` addr
+                            if has_relayed {
+                                addrs.retain(|multiaddr| {
+                                    multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit))
+                                });
+                            }
 
-                                trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
+                            trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
-                                // Attempt to add the addresses to the routing table.
-                                for multiaddr in addrs {
-                                    let _routing_update = self
-                                        .swarm
-                                        .behaviour_mut()
-                                        .kademlia
-                                        .add_address(&peer_id, multiaddr);
-                                }
+                            // Attempt to add the addresses to the routing table.
+                            for multiaddr in addrs {
+                                let _routing_update = self
+                                    .swarm
+                                    .behaviour_mut()
+                                    .kademlia
+                                    .add_address(&peer_id, multiaddr);
                             }
                         }
                         trace!(
@@ -665,7 +657,7 @@ impl SwarmDriver {
             }
 
             // skip if the peer is a relay server that we're connected to
-            if self.relay_manager.keep_alive_peer(peer_id, &self.bad_nodes) {
+            if self.relay_manager.keep_alive_peer(peer_id) {
                 return true; // retain peer
             }
 

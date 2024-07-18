@@ -734,7 +734,6 @@ impl SwarmDriver {
 
             SwarmCmd::RecordNodeIssue { peer_id, issue } => {
                 cmd_string = "RecordNodeIssues";
-                let _ = self.bad_nodes_ongoing_verifications.remove(&peer_id);
                 self.record_node_issue(peer_id, issue);
             }
             SwarmCmd::IsPeerShunned { target, sender } => {

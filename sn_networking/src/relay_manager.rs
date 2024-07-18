@@ -57,19 +57,10 @@ impl RelayManager {
         self.enable_client = enable;
     }
 
-    /// Should we keep this peer alive?
-    /// If a peer is considered as a bad node, closing it's connection would remove that server from the listen addr.
-    #[allow(clippy::nonminimal_bool)]
-    pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId, bad_nodes: &BadNodes) -> bool {
-        let is_not_bad = if let Some((_, is_bad)) = bad_nodes.get(peer_id) {
-            !*is_bad
-        } else {
-            true
-        };
-
-        // we disconnect from bad server
-        (self.connected_relays.contains_key(peer_id) && is_not_bad)
-            || (self.waiting_for_reservation.contains_key(peer_id) && is_not_bad)
+    /// Should we keep this peer alive? Closing a connection to that peer would remove that server from the listen addr.
+    pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId) -> bool {
+        self.connected_relays.contains_key(peer_id)
+            || self.waiting_for_reservation.contains_key(peer_id)
             // but servers provide connections to bad nodes.
             || self.reserved_by.contains(peer_id)
     }
@@ -81,18 +72,10 @@ impl RelayManager {
         peer_id: &PeerId,
         addrs: &HashSet<Multiaddr>,
         stream_protocols: &Vec<StreamProtocol>,
-        bad_nodes: &BadNodes,
     ) {
         if self.candidates.len() >= MAX_POTENTIAL_CANDIDATES {
             trace!("Got max relay candidates");
             return;
-        }
-
-        if let Some((_, is_bad)) = bad_nodes.get(peer_id) {
-            if *is_bad {
-                debug!("Not adding peer {peer_id:?} as relay candidate as it is a bad node.");
-                return;
-            }
         }
 
         if Self::does_it_support_relay_server_protocol(stream_protocols) {
