@@ -519,6 +519,10 @@ impl NodeRecordStore {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
+        // if the cache already has this record in it (eg, a conflicting spend)
+        // remove it from the cache
+        self.records_cache.retain(|record| record.key != r.key);
+
         // store in the FIFO records cache, removing the oldest if needed
         if self.records_cache.len() > self.config.records_cache_size {
             self.records_cache.pop_front();
@@ -735,6 +739,8 @@ impl RecordStore for NodeRecordStore {
 
     fn remove(&mut self, k: &Key) {
         let _ = self.records.remove(k);
+        self.records_cache.retain(|r| r.key != *k);
+
         #[cfg(feature = "open-metrics")]
         if let Some(metric) = &self.record_count_metric {
             let _ = metric.set(self.records.len() as i64);
