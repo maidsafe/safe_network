@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721316562763,
+  "lastUpdate": 1721316682415,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "7cd08619a07127330a33d174c4ade31b5e4399df",
-          "message": "test(networking): add illustrative tests for various node fullness levels",
-          "timestamp": "2024-04-02T08:04:23Z",
-          "tree_id": "de7e1ccaf4851cb1c335448b8378a4843a381821",
-          "url": "https://github.com/maidsafe/safe_network/commit/7cd08619a07127330a33d174c4ade31b5e4399df"
-        },
-        "date": 1712047794774,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 60,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "max@foorack.com",
             "name": "Foorack / Max Faxälv",
             "username": "Foorack"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 152,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "eb6a14d255537a361cdda2cef3d25ee7e65e97e1",
+          "message": "chore(node): move sn_client to dev deps\n\nsn_client is only used in tests and examples",
+          "timestamp": "2024-07-18T14:42:39Z",
+          "tree_id": "57c3786090ec4ea1b5a76e17cfb14496c5adf9cc",
+          "url": "https://github.com/maidsafe/safe_network/commit/eb6a14d255537a361cdda2cef3d25ee7e65e97e1"
+        },
+        "date": 1721316682154,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 141,
             "unit": "MB"
           }
         ]
