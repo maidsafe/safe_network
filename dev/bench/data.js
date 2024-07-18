@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721295932139,
+  "lastUpdate": 1721295933468,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "c198dc62923a8cede8479f656b009c83095c9892",
-          "message": "fix(node): add only the external addresses with the configured port",
-          "timestamp": "2024-04-01T10:53:19Z",
-          "tree_id": "6bad1fc570c6506e2a04797c620500a04d7b7d98",
-          "url": "https://github.com/maidsafe/safe_network/commit/c198dc62923a8cede8479f656b009c83095c9892"
-        },
-        "date": 1711971771841,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 182,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mickvd99@gmail.com",
+            "name": "Warm Beer",
+            "username": "mickvandijke"
+          },
+          "committer": {
+            "email": "mickvd99@gmail.com",
+            "name": "Mick van Dijke",
+            "username": "mickvandijke"
+          },
+          "distinct": true,
+          "id": "275d893f765e5108e1e736c2a291112946f59b47",
+          "message": "refactor(wallet): stash and delete old wallet folder when unstashing another wallet",
+          "timestamp": "2024-07-18T08:48:17Z",
+          "tree_id": "72d0e599ed1b9cdef3087cba50d0cb0b5b3a2557",
+          "url": "https://github.com/maidsafe/safe_network/commit/275d893f765e5108e1e736c2a291112946f59b47"
+        },
+        "date": 1721295933177,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
