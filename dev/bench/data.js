@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721308118977,
+  "lastUpdate": 1721308239256,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "3d231c6b34af8f8e80006b8236a9ef0d2aa97068",
-          "message": "chore: make a constant",
-          "timestamp": "2024-04-01T11:35:28Z",
-          "tree_id": "32cbb25cdb6f4de5353f2a89128ee7fece2bbdbb",
-          "url": "https://github.com/maidsafe/safe_network/commit/3d231c6b34af8f8e80006b8236a9ef0d2aa97068"
-        },
-        "date": 1711973895536,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 54,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "Josh Wilson",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "680e44ebad9fa6ae282ae17f02072cac733221d2",
+          "message": "fix(networking): remove excessive parsing of incoming keys\n\nRemoves compute intensive logic that is functionally the same as the result of\nreplication_fetcher.add_keys",
+          "timestamp": "2024-07-18T12:16:39Z",
+          "tree_id": "e320830e061042546415ecbf54c47ff1d96d61ea",
+          "url": "https://github.com/maidsafe/safe_network/commit/680e44ebad9fa6ae282ae17f02072cac733221d2"
+        },
+        "date": 1721308238433,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 56,
             "unit": "MB"
           }
         ]
