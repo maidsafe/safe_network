@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721309815630,
+  "lastUpdate": 1721309817343,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "6a7389b322874b4b0ef6047344fa0dfc16cc4dc9",
-          "message": "chore(node): scramble periodical network discovery",
-          "timestamp": "2024-04-01T13:11:43Z",
-          "tree_id": "269d227be31f3aa21e254ea796e1b5b4b901e360",
-          "url": "https://github.com/maidsafe/safe_network/commit/6a7389b322874b4b0ef6047344fa0dfc16cc4dc9"
-        },
-        "date": 1711979628421,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 188,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "qi.ma@maidsafe.net",
             "name": "maqi",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": false,
+          "id": "784e1d322bd36da4217cdbf3cef860f8e219d291",
+          "message": "fix(node): remove cn from disk and flush to confirmed_spends during forwarding",
+          "timestamp": "2024-07-18T12:45:21Z",
+          "tree_id": "95a1e18ee0cd83ea67c59ce11e59c3d7bd1d5863",
+          "url": "https://github.com/maidsafe/safe_network/commit/784e1d322bd36da4217cdbf3cef860f8e219d291"
+        },
+        "date": 1721309816833,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 178,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
