@@ -40,7 +40,7 @@ impl SignedSpend {
     }
 
     /// Get Nano
-    pub fn token(&self) -> NanoTokens {
+    pub fn amount(&self) -> NanoTokens {
         self.spend.amount()
     }
 
@@ -116,7 +116,7 @@ impl SignedSpend {
             }
         }
 
-        let total_outputs = self.token().as_nano();
+        let total_outputs = self.amount().as_nano();
         if total_outputs != total_inputs {
             return Err(TransferError::InvalidParentSpend(format!(
                 "Parents total_inputs {total_inputs:?} doesn't match total_outputs {total_outputs:?}"
