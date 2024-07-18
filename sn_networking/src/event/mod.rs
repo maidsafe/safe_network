@@ -45,6 +45,7 @@ pub(super) enum NodeEvent {
     Dcutr(Box<libp2p::dcutr::Event>),
     RelayClient(Box<libp2p::relay::client::Event>),
     RelayServer(Box<libp2p::relay::Event>),
+    Void(void::Void),
 }
 
 #[cfg(feature = "upnp")]
@@ -91,6 +92,12 @@ impl From<libp2p::relay::client::Event> for NodeEvent {
 impl From<libp2p::relay::Event> for NodeEvent {
     fn from(event: libp2p::relay::Event) -> Self {
         NodeEvent::RelayServer(Box::new(event))
+    }
+}
+
+impl From<void::Void> for NodeEvent {
+    fn from(event: void::Void) -> Self {
+        NodeEvent::Void(event)
     }
 }
 
