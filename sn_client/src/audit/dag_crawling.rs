@@ -11,8 +11,8 @@ use crate::{Client, Error, SpendDag};
 use futures::{future::join_all, StreamExt};
 use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{
-    NanoTokens, OutputPurpose, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError, WalletResult,
-    GENESIS_SPEND_UNIQUE_KEY, DEFAULT_NETWORK_ROYALTIES_PK, NETWORK_ROYALTIES_PK,
+    NanoTokens, OutputPurpose, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError,
+    WalletResult, DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -170,9 +170,22 @@ impl Client {
                             spends.len()
                         );
                         for (i, spend) in spends.iter().enumerate() {
-                            warn!("double spend entry {i} reason {:?}, amount {}, inputs: {}, outputs: {}, royties: {}, {:?} - {:?}",
-                                spend.spend.reason, spend.spend.amount, spend.spend.spent_tx.inputs.len(), spend.spend.spent_tx.outputs.len(),
-                                spend.spend.network_royalties.len(), spend.spend.spent_tx.inputs, spend.spend.spent_tx.outputs);
+                            let reason = spend.reason();
+                            let amount = spend.spend.amount();
+                            let ancestors_len = spend.spend.ancestors.len();
+                            let descendants_len = spend.spend.descendants.len();
+                            let roy_len = spend
+                                .spend
+                                .descendants
+                                .iter()
+                                .filter(|(_pk, (_amount, _purpose))| {
+                                    matches!(OutputPurpose::RoyaltyFee, _purpose)
+                                })
+                                .count();
+                            warn!(
+                                "double spend entry {i} reason {reason:?}, amount {amount}, ancestors: {ancestors_len}, descendants: {descendants_len}, royalties: {roy_len}, {:?} - {:?}",
+                                spend.spend.ancestors, spend.spend.descendants
+                            );
 
                             let for_further_track = beta_track_analyze_spend(spend);
                             addrs_to_get.extend(for_further_track);
@@ -541,8 +554,8 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, Nano
         .spend
         .descendants
         .iter()
-        .filter(|(pk, (_amount, purpose))| {
-            if matches!(purpose, OutputPurpose::RoyaltyFee(der)) {
+        .filter_map(|(_pk, (_amount, purpose))| {
+            if let OutputPurpose::RoyaltyFee(der) = purpose {
                 Some(NETWORK_ROYALTIES_PK.new_unique_pubkey(der))
             } else {
                 None
@@ -551,24 +564,28 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, Nano
         .collect();
     let default_royalty_pubkeys: BTreeSet<_> = spend
         .spend
-        .network_royalties
+        .descendants
         .iter()
-        .map(|derivation_idx| DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+        .filter_map(|(_pk, (_amount, purpose))| {
+            if let OutputPurpose::RoyaltyFee(der) = purpose {
+                Some(DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(der))
+            } else {
+                None
+            }
+        })
         .collect();
 
     let new_utxos: BTreeSet<_> = spend
         .spend
         .descendants
         .iter()
-        .filter_map(|output| {
-            if default_royalty_pubkeys.contains(&output.unique_pubkey)
-            || royalty_pubkeys.contains(&output.unique_pubkey) {
+        .filter_map(|(unique_pubkey, (amount, _purpose))| {
+            if default_royalty_pubkeys.contains(unique_pubkey)
+                || royalty_pubkeys.contains(unique_pubkey)
+            {
                 None
             } else {
-                Some((
-                    SpendAddress::from_unique_pubkey(&output.unique_pubkey),
-                    output.amount,
-                ))
+                Some((SpendAddress::from_unique_pubkey(unique_pubkey), *amount))
             }
         })
         .collect();

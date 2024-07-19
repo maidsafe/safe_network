@@ -16,10 +16,7 @@ use crate::{get_stdin_password_response, get_stdin_response};
 use autonomi::utils::is_valid_key_hex;
 use bls::SecretKey;
 use clap::Parser;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
+use color_eyre::{eyre::eyre, Result};
 use dialoguer::Confirm;
 use sn_client::acc_packet::{load_or_create_mnemonic, secret_key_from_mnemonic};
 use sn_client::transfers::{
@@ -400,10 +397,6 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
 
     println!("Signing the transaction with local hot-wallet...");
     let signed_tx = wallet.sign(unsigned_tx)?;
-
-    if let Err(err) = signed_tx.verify(wallet.key()) {
-        bail!("Signature or transaction generated is invalid: {err:?}");
-    }
 
     println!(
         "The transaction has been successfully signed:\n\n{}\n",
