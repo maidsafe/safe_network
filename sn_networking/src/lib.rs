@@ -251,56 +251,6 @@ impl Network {
             .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
-    /// Returns the closest peers to the given `NetworkAddress` that is fetched from the local
-    /// Routing Table. It is ordered by increasing distance of the peers
-    /// Note self peer_id is not included in the result.
-    pub async fn get_close_group_local_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetCloseGroupLocalPeers {
-            key: key.clone(),
-            sender,
-        });
-
-        match receiver.await {
-            Ok(close_peers) => {
-                // Only perform the pretty print and tracing if tracing is enabled
-                if tracing::level_enabled!(tracing::Level::TRACE) {
-                    let close_peers_pretty_print: Vec<_> = close_peers
-                        .iter()
-                        .map(|peer_id| {
-                            format!(
-                                "{peer_id:?}({:?})",
-                                PrettyPrintKBucketKey(
-                                    NetworkAddress::from_peer(*peer_id).as_kbucket_key()
-                                )
-                            )
-                        })
-                        .collect();
-
-                    trace!(
-                        "Local knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}"
-                    );
-                }
-                Ok(close_peers)
-            }
-            Err(err) => {
-                error!("When getting local knowledge of close peers to {key:?}, failed with error {err:?}");
-                Err(NetworkError::InternalMsgChannelDropped)
-            }
-        }
-    }
-
-    /// Returns all the PeerId from all the KBuckets from our local Routing Table
-    /// Also contains our own PeerId.
-    pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_swarm_cmd(SwarmCmd::GetAllLocalPeers { sender });
-
-        receiver
-            .await
-            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
-    }
-
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
     /// Also contains our own PeerId.
     pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {

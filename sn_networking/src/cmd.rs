@@ -10,7 +10,7 @@ use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     event::TerminateNodeReason,
-    multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
+    multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent,
     REPLICATION_PEERS_COUNT,
 };
 use libp2p::{
@@ -18,7 +18,6 @@ use libp2p::{
         store::{Error as StoreError, RecordStore},
         Quorum, Record, RecordKey,
     },
-    swarm::dial_opts::DialOpts,
     Multiaddr, PeerId,
 };
 use sn_protocol::{
@@ -63,15 +62,6 @@ pub enum SwarmCmd {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<()>>,
     },
-    DialWithOpts {
-        opts: DialOpts,
-        sender: oneshot::Sender<Result<()>>,
-    },
-    // Returns all the peers from all the k-buckets from the local Routing Table.
-    // This includes our PeerId as well.
-    GetAllLocalPeers {
-        sender: oneshot::Sender<Vec<PeerId>>,
-    },
     /// Get a map where each key is the ilog2 distance of that Kbucket and each value is a vector of peers in that
     /// bucket.
     GetKBuckets {
@@ -84,11 +74,6 @@ pub enum SwarmCmd {
     },
     // Get closest peers from the network
     GetClosestPeersToAddressFromNetwork {
-        key: NetworkAddress,
-        sender: oneshot::Sender<Vec<PeerId>>,
-    },
-    // Get closest peers from the local RoutingTable
-    GetCloseGroupLocalPeers {
         key: NetworkAddress,
         sender: oneshot::Sender<Vec<PeerId>>,
     },
@@ -238,17 +223,11 @@ impl Debug for SwarmCmd {
             SwarmCmd::TriggerIntervalReplication => {
                 write!(f, "SwarmCmd::TriggerIntervalReplication")
             }
-            SwarmCmd::DialWithOpts { opts, .. } => {
-                write!(f, "SwarmCmd::DialWithOpts {{ opts: {opts:?} }}")
-            }
             SwarmCmd::GetClosestPeersToAddressFromNetwork { key, .. } => {
                 write!(f, "SwarmCmd::GetClosestPeers {{ key: {key:?} }}")
             }
             SwarmCmd::GetClosestKLocalPeers { .. } => {
                 write!(f, "SwarmCmd::GetClosestKLocalPeers")
-            }
-            SwarmCmd::GetCloseGroupLocalPeers { key, .. } => {
-                write!(f, "SwarmCmd::GetCloseGroupLocalPeers {{ key: {key:?} }}")
             }
             SwarmCmd::GetLocalStoreCost { .. } => {
                 write!(f, "SwarmCmd::GetLocalStoreCost")
@@ -265,9 +244,6 @@ impl Debug for SwarmCmd {
             }
             SwarmCmd::GetAllLocalRecordAddresses { .. } => {
                 write!(f, "SwarmCmd::GetAllLocalRecordAddresses")
-            }
-            SwarmCmd::GetAllLocalPeers { .. } => {
-                write!(f, "SwarmCmd::GetAllLocalPeers")
             }
             SwarmCmd::GetKBuckets { .. } => {
                 write!(f, "SwarmCmd::GetKBuckets")
@@ -598,13 +574,6 @@ impl SwarmDriver {
                     Err(e) => sender.send(Err(e.into())),
                 };
             }
-            SwarmCmd::DialWithOpts { opts, sender } => {
-                cmd_string = "DialWithOpts";
-                let _ = match self.dial_with_opts(opts) {
-                    Ok(_) => sender.send(Ok(())),
-                    Err(e) => sender.send(Err(e.into())),
-                };
-            }
             SwarmCmd::GetClosestPeersToAddressFromNetwork { key, sender } => {
                 cmd_string = "GetClosestPeersToAddressFromNetwork";
                 let query_id = self
@@ -619,10 +588,6 @@ impl SwarmDriver {
                         Default::default(),
                     ),
                 );
-            }
-            SwarmCmd::GetAllLocalPeers { sender } => {
-                cmd_string = "GetAllLocalPeers";
-                let _ = sender.send(self.get_all_local_peers());
             }
             SwarmCmd::GetKBuckets { sender } => {
                 cmd_string = "GetKBuckets";
@@ -641,23 +606,6 @@ impl SwarmDriver {
                     }
                 }
                 let _ = sender.send(ilog2_kbuckets);
-            }
-            SwarmCmd::GetCloseGroupLocalPeers { key, sender } => {
-                cmd_string = "GetCloseGroupLocalPeers";
-                let key = key.as_kbucket_key();
-                // calls `kbuckets.closest_keys(key)` internally, which orders the peers by
-                // increasing distance
-                // Note it will return all peers, heance a chop down is required.
-                let closest_peers = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .get_closest_local_peers(&key)
-                    .map(|peer| peer.into_preimage())
-                    .take(CLOSE_GROUP_SIZE)
-                    .collect();
-
-                let _ = sender.send(closest_peers);
             }
             SwarmCmd::GetClosestKLocalPeers { sender } => {
                 cmd_string = "GetClosestKLocalPeers";
