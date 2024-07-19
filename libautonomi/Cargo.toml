@@ -1,0 +1,23 @@
+[package]
+name = "libautonomi"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bytes = { version = "1.0.1", features = ["serde"] }
+libp2p = "0.53"
+rmp-serde = "1.1.1"
+self_encryption = "0.29.2"
+serde = { version = "1.0.133", features = ["derive", "rc"] }
+sn_client = { path = "../sn_client" }
+sn_protocol = { version = "0.17.5", path = "../sn_protocol" }
+thiserror = "1.0.23"
+tracing = { version = "~0.1.26" }
+tokio = { version = "1.35.0", features = ["sync"] }
+xor_name = "5.0.0"
+
+[dev-dependencies]
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[lints]
+workspace = true
