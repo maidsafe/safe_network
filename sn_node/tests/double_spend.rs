@@ -409,7 +409,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         wallet_b.key(),
     )?;
 
-    info!("spend B to C: {:?}", transfer_to_c.all_spend_requests);
+    info!("spend B to C: {:?}", transfer_to_c.spends);
     client
         .send_spends(transfer_to_c.spends.iter(), false)
         .await?;
@@ -469,14 +469,11 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         wallet_b.key(),
     )?; // reuse the old cash notes
 
-    info!("spend B to Y: {:?}", transfer_to_y.all_spend_requests);
+    info!("spend B to Y: {:?}", transfer_to_y.spends);
     client
         .send_spends(transfer_to_y.spends.iter(), false)
         .await?;
-    let spend_b_to_y = transfer_to_y
-        .all_spend_requests
-        .first()
-        .expect("should have one");
+    let spend_b_to_y = transfer_to_y.spends.first().expect("should have one");
     let b_spends = client.get_spend_from_network(spend_b_to_y.address()).await;
     info!("B spends: {b_spends:?}");
 
@@ -546,28 +543,31 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         amount,
         wallet_b.address(),
         DerivationIndex::random(&mut rng),
+        OutputPurpose::None,
     );
-    let transfer_to_b = OfflineTransfer::new(
+    let transfer_to_b = SignedTransaction::new(
         cash_notes_a.clone(),
         vec![to_b_unique_key],
         wallet_a.address(),
         reason.clone(),
+        wallet_a.key(),
     )?;
 
     info!("Sending A->B to the network...");
     client
-        .send_spends(transfer_to_b.all_spend_requests.iter(), false)
+        .send_spends(transfer_to_b.spends.iter(), false)
         .await?;
 
     // save original A spend
-    let original_a_spend = if let [spend] = transfer_to_b.all_spend_requests.as_slice() {
+    let vec_of_spends = transfer_to_b.spends.into_iter().collect::<Vec<_>>();
+    let original_a_spend = if let [spend] = vec_of_spends.as_slice() {
         spend
     } else {
         panic!("Expected to have one spend here!");
     };
 
     info!("Verifying the transfers from A -> B wallet...");
-    let cash_notes_for_b: Vec<_> = transfer_to_b.cash_notes_for_recipient.clone();
+    let cash_notes_for_b: Vec<_> = transfer_to_b.output_cashnotes.clone();
     client.verify_cashnote(&cash_notes_for_b[0]).await?;
     wallet_b.deposit_and_store_to_disk(&cash_notes_for_b)?; // store inside B
 
@@ -582,20 +582,22 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         wallet_b.balance(),
         wallet_c.address(),
         DerivationIndex::random(&mut rng),
+        OutputPurpose::None,
     );
-    let transfer_to_c = OfflineTransfer::new(
+    let transfer_to_c = SignedTransaction::new(
         cash_notes_b.clone(),
         vec![to_c_unique_key],
         wallet_b.address(),
         reason.clone(),
+        wallet_b.key(),
     )?;
 
     client
-        .send_spends(transfer_to_c.all_spend_requests.iter(), false)
+        .send_spends(transfer_to_c.spends.iter(), false)
         .await?;
 
     info!("Verifying the transfers from B -> C wallet...");
-    let cash_notes_for_c: Vec<_> = transfer_to_c.cash_notes_for_recipient.clone();
+    let cash_notes_for_c: Vec<_> = transfer_to_c.output_cashnotes.clone();
     client.verify_cashnote(&cash_notes_for_c[0]).await?;
     wallet_c.deposit_and_store_to_disk(&cash_notes_for_c.clone())?; // store inside c
 
@@ -608,18 +610,20 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         amount,
         wallet_x.address(),
         DerivationIndex::random(&mut rng),
+        OutputPurpose::None,
     );
-    let transfer_to_x = OfflineTransfer::new(
+    let transfer_to_x = SignedTransaction::new(
         cash_notes_a.clone(),
         vec![to_x_unique_key],
         wallet_a.address(),
         reason.clone(),
+        wallet_a.key(),
     )?; // reuse the old cash notes
     client
-        .send_spends(transfer_to_x.all_spend_requests.iter(), false)
+        .send_spends(transfer_to_x.spends.iter(), false)
         .await?;
     info!("Verifying the transfers from A -> X wallet... It should error out.");
-    let cash_notes_for_x: Vec<_> = transfer_to_x.cash_notes_for_recipient.clone();
+    let cash_notes_for_x: Vec<_> = transfer_to_x.output_cashnotes.clone();
 
     // sleep for a bit to allow the network to process and accumulate the double spend
     tokio::time::sleep(Duration::from_secs(10)).await;
@@ -655,18 +659,20 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
             amount,
             wallet_y.address(),
             DerivationIndex::random(&mut rng),
+            OutputPurpose::None,
         );
-        let transfer_to_y = OfflineTransfer::new(
+        let transfer_to_y = SignedTransaction::new(
             cash_notes_a.clone(),
             vec![to_y_unique_key],
             wallet_a.address(),
             reason.clone(),
+            wallet_a.key(),
         )?; // reuse the old cash notes
         client
-            .send_spends(transfer_to_y.all_spend_requests.iter(), false)
+            .send_spends(transfer_to_y.spends.iter(), false)
             .await?;
         info!("Verifying the transfers from A -> Y wallet... It should error out.");
-        let cash_notes_for_y: Vec<_> = transfer_to_y.cash_notes_for_recipient.clone();
+        let cash_notes_for_y: Vec<_> = transfer_to_y.output_cashnotes.clone();
 
         // sleep for a bit to allow the network to process and accumulate the double spend
         tokio::time::sleep(Duration::from_millis(500)).await;

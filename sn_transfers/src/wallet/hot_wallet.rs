@@ -341,9 +341,20 @@ impl HotWallet {
     }
 
     pub fn sign(&self, unsigned_tx: UnsignedTransaction) -> Result<SignedTransaction> {
-        unsigned_tx
+        if let Err(err) = unsigned_tx.verify() {
+            return Err(Error::CouldNotSignTransaction(format!(
+                "Failed to verify unsigned transaction: {err:?}"
+            )));
+        }
+        let signed_tx = unsigned_tx
             .sign(&self.key)
-            .map_err(|e| Error::CouldNotSignTransaction(e.to_string()))
+            .map_err(|e| Error::CouldNotSignTransaction(e.to_string()))?;
+        if let Err(err) = signed_tx.verify(&self.key) {
+            return Err(Error::CouldNotSignTransaction(format!(
+                "Failed to verify signed transaction: {err:?}"
+            )));
+        }
+        Ok(signed_tx)
     }
 
     /// Returns all available cash_notes and an exclusive access to the wallet so no concurrent processes can
@@ -477,7 +488,7 @@ impl HotWallet {
             spend_reason,
             &self.key,
         )?;
-        let signed_spends = signed_tx.spends.iter().cloned().collect();
+        let signed_spends: Vec<_> = signed_tx.spends.iter().cloned().collect();
 
         self.update_local_wallet(signed_tx, exclusive_access, false)?;
 

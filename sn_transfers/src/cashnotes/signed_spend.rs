@@ -9,7 +9,7 @@
 use super::output_purpose::OutputPurpose;
 use super::spend_reason::SpendReason;
 use super::{Hash, NanoTokens, UniquePubkey};
-use crate::{DerivedSecretKey, Result, Signature, SpendAddress, TransferError};
+use crate::{DerivationIndex, DerivedSecretKey, Result, Signature, SpendAddress, TransferError};
 
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
@@ -156,7 +156,7 @@ impl std::hash::Hash for SignedSpend {
 /// Represents the data to be signed by the DerivedSecretKey of the CashNote being spent.
 /// The claimed `spend.unique_pubkey` must appears in the `ancestor` spends, and the total sum of amount
 /// must be equal to the total sum of amount of all outputs (descendants)
-#[derive(custom_debug::Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Spend {
     /// UniquePubkey of input CashNote that this SignedSpend is proving to be spent.
     pub unique_pubkey: UniquePubkey,
@@ -207,6 +207,20 @@ impl Spend {
             .map(|(amount, _)| amount.as_nano())
             .sum();
         NanoTokens::from(amount)
+    }
+
+    /// Returns the royalties descendants of this Spend
+    pub fn network_royalties(&self) -> BTreeSet<(UniquePubkey, NanoTokens, DerivationIndex)> {
+        self.descendants
+            .iter()
+            .filter_map(|(unique_pubkey, (amount, purpose))| {
+                if let OutputPurpose::RoyaltyFee(derivation_index) = purpose {
+                    Some((*unique_pubkey, *amount, *derivation_index))
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     /// Returns the amount of a particual output target.

@@ -825,10 +825,8 @@ impl Node {
         for spend in many_spends {
             let descendants: BTreeSet<_> = spend
                 .spend
-                .spent_tx
-                .outputs
-                .iter()
-                .map(|o| o.unique_pubkey())
+                .descendants
+                .keys()
                 .map(SpendAddress::from_unique_pubkey)
                 .collect();
             for d in descendants {
