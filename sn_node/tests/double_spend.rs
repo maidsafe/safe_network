@@ -12,7 +12,9 @@ use assert_fs::TempDir;
 use assert_matches::assert_matches;
 use common::client::{get_client_and_funded_wallet, get_wallet};
 use eyre::Result;
+use itertools::Itertools;
 use sn_logging::LogBuilder;
+use sn_networking::NetworkError;
 use sn_transfers::{
     get_genesis_sk, rng, DerivationIndex, HotWallet, NanoTokens, OfflineTransfer, SpendReason,
     WalletError, GENESIS_CASHNOTE,
@@ -100,7 +102,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
 
     // create a new genesis wallet with the intention to spend genesis again
     let second_wallet_dir = TempDir::new()?;
-    let mut second_wallet = HotWallet::create_from_key(&second_wallet_dir, get_genesis_sk())?;
+    let mut second_wallet = HotWallet::create_from_key(&second_wallet_dir, get_genesis_sk(), None)?;
     second_wallet.deposit_and_store_to_disk(&vec![GENESIS_CASHNOTE.clone()])?;
     let genesis_amount = GENESIS_CASHNOTE.value()?;
     let second_wallet_addr = second_wallet.address();
@@ -332,6 +334,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         reason.clone(),
     )?;
 
+    info!("spend B to C: {:?}", transfer_to_c.all_spend_requests);
     client
         .send_spends(transfer_to_c.all_spend_requests.iter(), false)
         .await?;
@@ -384,9 +387,18 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         wallet_b.address(),
         reason.clone(),
     )?; // reuse the old cash notes
+
+    info!("spend B to Y: {:?}", transfer_to_y.all_spend_requests);
     client
         .send_spends(transfer_to_y.all_spend_requests.iter(), false)
         .await?;
+    let spend_b_to_y = transfer_to_y
+        .all_spend_requests
+        .first()
+        .expect("should have one");
+    let b_spends = client.get_spend_from_network(spend_b_to_y.address()).await;
+    info!("B spends: {b_spends:?}");
+
     info!("Verifying the transfers from B -> Y wallet... It should error out.");
     let cash_notes_for_y: Vec<_> = transfer_to_y.cash_notes_for_recipient.clone();
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
@@ -402,12 +414,177 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         assert!(str.starts_with("Network Error Double spend(s) was detected"));
     });
 
-    info!("Verifying the original cashnote of B -> C");
+    println!("Verifying the original cashnote of B -> C");
     let result = client.verify_cashnote(&cash_notes_for_c[0]).await;
     info!("Got result while verifying the original spend from B -> C: {result:?}");
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
         assert!(str.starts_with("Network Error Double spend(s) was detected"));
     });
+
+    Ok(())
+}
+
+#[tokio::test]
+/// When A -> B -> C where C is the UTXO cashnote, double spending A many times over and over
+/// should not lead to the original A disappearing and B becoming orphan
+async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("double_spend", true);
+    let mut rng = rng::thread_rng();
+    let reason = SpendReason::default();
+    // create 1 wallet add money from faucet
+    let wallet_dir_a = TempDir::new()?;
+
+    let (client, mut wallet_a) = get_client_and_funded_wallet(wallet_dir_a.path()).await?;
+    let balance_a = wallet_a.balance().as_nano();
+    let amount = NanoTokens::from(balance_a / 2);
+
+    // Send from A -> B
+    let wallet_dir_b = TempDir::new()?;
+    let mut wallet_b = get_wallet(wallet_dir_b.path());
+    assert_eq!(wallet_b.balance(), NanoTokens::zero());
+
+    let (cash_notes_a, _exclusive_access) = wallet_a.available_cash_notes()?;
+    let to_b_unique_key = (
+        amount,
+        wallet_b.address(),
+        DerivationIndex::random(&mut rng),
+    );
+    let transfer_to_b = OfflineTransfer::new(
+        cash_notes_a.clone(),
+        vec![to_b_unique_key],
+        wallet_a.address(),
+        reason.clone(),
+    )?;
+
+    info!("Sending A->B to the network...");
+    client
+        .send_spends(transfer_to_b.all_spend_requests.iter(), false)
+        .await?;
+
+    // save original A spend
+    let original_a_spend = if let [spend] = transfer_to_b.all_spend_requests.as_slice() {
+        spend
+    } else {
+        panic!("Expected to have one spend here!");
+    };
+
+    info!("Verifying the transfers from A -> B wallet...");
+    let cash_notes_for_b: Vec<_> = transfer_to_b.cash_notes_for_recipient.clone();
+    client.verify_cashnote(&cash_notes_for_b[0]).await?;
+    wallet_b.deposit_and_store_to_disk(&cash_notes_for_b)?; // store inside B
+
+    // Send from B -> C
+    let wallet_dir_c = TempDir::new()?;
+    let mut wallet_c = get_wallet(wallet_dir_c.path());
+    assert_eq!(wallet_c.balance(), NanoTokens::zero());
+
+    let (cash_notes_b, _exclusive_access) = wallet_b.available_cash_notes()?;
+    assert!(!cash_notes_b.is_empty());
+    let to_c_unique_key = (
+        wallet_b.balance(),
+        wallet_c.address(),
+        DerivationIndex::random(&mut rng),
+    );
+    let transfer_to_c = OfflineTransfer::new(
+        cash_notes_b.clone(),
+        vec![to_c_unique_key],
+        wallet_b.address(),
+        reason.clone(),
+    )?;
+
+    client
+        .send_spends(transfer_to_c.all_spend_requests.iter(), false)
+        .await?;
+
+    info!("Verifying the transfers from B -> C wallet...");
+    let cash_notes_for_c: Vec<_> = transfer_to_c.cash_notes_for_recipient.clone();
+    client.verify_cashnote(&cash_notes_for_c[0]).await?;
+    wallet_c.deposit_and_store_to_disk(&cash_notes_for_c.clone())?; // store inside c
+
+    // Try to double spend from A -> X
+    let wallet_dir_x = TempDir::new()?;
+    let wallet_x = get_wallet(wallet_dir_x.path());
+    assert_eq!(wallet_x.balance(), NanoTokens::zero());
+
+    let to_x_unique_key = (
+        amount,
+        wallet_x.address(),
+        DerivationIndex::random(&mut rng),
+    );
+    let transfer_to_x = OfflineTransfer::new(
+        cash_notes_a.clone(),
+        vec![to_x_unique_key],
+        wallet_a.address(),
+        reason.clone(),
+    )?; // reuse the old cash notes
+    client
+        .send_spends(transfer_to_x.all_spend_requests.iter(), false)
+        .await?;
+    info!("Verifying the transfers from A -> X wallet... It should error out.");
+    let cash_notes_for_x: Vec<_> = transfer_to_x.cash_notes_for_recipient.clone();
+    let result = client.verify_cashnote(&cash_notes_for_x[0]).await;
+    info!("Got result while verifying double spend from A -> X: {result:?}");
+    assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
+        assert!(str.starts_with("Network Error Double spend(s) was detected"));
+    });
+
+    // the original A should still be present as one of the double spends
+    let res = client
+        .get_spend_from_network(original_a_spend.address())
+        .await;
+    assert_matches!(
+        res,
+        Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(
+            _
+        )))
+    );
+    if let Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(spends))) = res {
+        assert!(spends.iter().contains(original_a_spend))
+    }
+
+    // Try to double spend A -> n different random keys
+    for _ in 0..20 {
+        println!("Spamming double spends on A");
+        let wallet_dir_y = TempDir::new()?;
+        let wallet_y = get_wallet(wallet_dir_y.path());
+        assert_eq!(wallet_y.balance(), NanoTokens::zero());
+
+        let to_y_unique_key = (
+            amount,
+            wallet_y.address(),
+            DerivationIndex::random(&mut rng),
+        );
+        let transfer_to_y = OfflineTransfer::new(
+            cash_notes_a.clone(),
+            vec![to_y_unique_key],
+            wallet_a.address(),
+            reason.clone(),
+        )?; // reuse the old cash notes
+        client
+            .send_spends(transfer_to_y.all_spend_requests.iter(), false)
+            .await?;
+        info!("Verifying the transfers from A -> Y wallet... It should error out.");
+        let cash_notes_for_y: Vec<_> = transfer_to_y.cash_notes_for_recipient.clone();
+        let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
+        info!("Got result while verifying double spend from A -> Y: {result:?}");
+        assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
+            assert!(str.starts_with("Network Error Double spend(s) was detected"));
+        });
+
+        // the original A should still be present as one of the double spends
+        let res = client
+            .get_spend_from_network(original_a_spend.address())
+            .await;
+        assert_matches!(
+            res,
+            Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(
+                _
+            )))
+        );
+        if let Err(sn_client::Error::Network(NetworkError::DoubleSpendAttempt(spends))) = res {
+            assert!(spends.iter().contains(original_a_spend))
+        }
+    }
 
     Ok(())
 }

@@ -24,18 +24,23 @@ Libp2p.<br>
 
 ### For Developers
 
-At build time the following env vars can be set to override default keys (** and must be set during the release process to override the default keys**. Github Secrets can be used to set these values for the release process):
+At build time the following env vars can be set to override default keys (** and must be set during the release process
+to override the default keys**. Github Secrets can be used to set these values for the release process):
 
 - `GENESIS_PK` - The genesis spend public key to use for genesis verification.
-- `GENESIS_SK` - If building the faucet for the genesis spend, this is the secret key to use for genesis verification. This should be kept secret.
+- `GENESIS_SK` - If building the faucet for the genesis spend, this is the secret key to use for genesis verification.
+  This should be kept secret.
 - `FOUNDATION_PK` - The foundation public key to use for the initial disbursement to the foundation.
 - `NETWORK_ROYALTIES_PK` - The foundation public key to use for receiving network royalties.
 - `PAYMENT_FORWARD_PK` - The public key to use for payment forwarding for the beta network collection.
 
 When you start a network there are a few scripts to aid with basic processes:
 
-- `resources/scripts/claim-genesis.sh` which will claim the genesis tokens for a wallet on a launched network (if you have set up the foundation wallet locally by adding a `client/account_secret` and regenerating the wallet or directly adding the `client/wallet/main_secret_key` itself).
-- `resources/scripts/make-wallets.sh` which if you have a wallet with a balance will create a number of wallets with another balance. eg `resources/scripts/make-wallets.sh 5 1` will make 5 wallets with 1 token.
+- `resources/scripts/claim-genesis.sh` which will claim the genesis tokens for a wallet on a launched network (if you
+  have set up the foundation wallet locally by adding a `client/account_secret` and regenerating the wallet or directly
+  adding the `client/wallet/main_secret_key` itself).
+- `resources/scripts/make-wallets.sh` which if you have a wallet with a balance will create a number of wallets with
+  another balance. eg `resources/scripts/make-wallets.sh 5 1` will make 5 wallets with 1 token.
 - `resources/scripts/upload-random-data` will use the existing `client` to upload random data to the network.
 
 - [Client](https://github.com/maidsafe/safe_network/blob/main/sn_client/README.md) The client APIs
@@ -254,7 +259,7 @@ Steps on the offline device/computer with the corresponding hot-wallet:
 
 5. If you still don't have a hot-wallet created, which owns the cash-notes used to build the
    unsigned transaction, create it with the corresponding secret key:
-   `cargo run --release --bin safe -- wallet create <hex-encoded secret key>`
+   `cargo run --release --bin safe -- wallet create --key <hex-encoded secret key>`
 
 6. Use the hot-wallet to sign the built transaction:
    `cargo run --release --bin safe -- wallet sign <unsigned transaction>`
@@ -527,7 +532,8 @@ metrics.
 
 ## Contributing
 
-Feel free to clone and modify this project. Pull requests are welcome.<br>You can also visit \* \*[The MaidSafe Forum](https://safenetforum.org/)\*\* for discussion or if you would like to join our
+Feel free to clone and modify this project. Pull requests are welcome.<br>You can also
+visit \* \*[The MaidSafe Forum](https://safenetforum.org/)\*\* for discussion or if you would like to join our
 online community.
 
 ### Pull Request Process

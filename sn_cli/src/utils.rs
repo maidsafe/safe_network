@@ -6,12 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod acc_packet;
-mod files;
-pub mod utils;
-
-pub use acc_packet::AccountPacket;
-pub use files::{
-    download_file, download_files, ChunkManager, Estimator, FilesUploadStatusNotifier,
-    FilesUploadSummary, FilesUploader, UploadedFile, UPLOADED_FILES,
-};
+/// Returns whether a hex string is a valid secret key in hex format.
+pub fn is_valid_key_hex(hex: &str) -> bool {
+    hex.len() == 64 && hex.chars().all(|c| c.is_ascii_hexdigit())
+}

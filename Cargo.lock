@@ -6299,6 +6299,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rpassword"
+version = "7.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80472be3c897911d0137b2d2b9055faf6eeac5b14e324073d83bc17b191d7e3f"
+dependencies = [
+ "libc",
+ "rtoolbox",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "rtnetlink"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6311,6 +6322,16 @@ dependencies = [
  "nix 0.24.3",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "rtoolbox"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c247d24e63230cdb56463ae328478bd5eac8b8faa8c69461a77e8e323afac90e"
+dependencies = [
+ "libc",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -6614,6 +6635,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5d1746aae42c19d583c3c1a8c646bfad910498e2051c551a7f2e3c0c9fbb7eb"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
+dependencies = [
+ "zeroize",
 ]
 
 [[package]]
@@ -7044,6 +7074,7 @@ dependencies = [
  "rayon",
  "reqwest 0.12.4",
  "rmp-serde",
+ "rpassword",
  "serde",
  "sn_build_info",
  "sn_client",
@@ -7251,6 +7282,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "void",
  "walkdir",
  "wasm-bindgen-futures",
  "wasmtimer",
@@ -7431,6 +7463,7 @@ version = "0.18.8"
 dependencies = [
  "assert_fs",
  "blsttc",
+ "chrono",
  "criterion",
  "custom_debug",
  "dirs-next",
@@ -7442,10 +7475,13 @@ dependencies = [
  "pprof",
  "rand 0.8.5",
  "rayon",
+ "ring 0.17.8",
  "rmp-serde",
+ "secrecy",
  "serde",
  "serde_bytes",
  "serde_json",
+ "tempfile",
  "thiserror",
  "tiny-keccak",
  "tokio",

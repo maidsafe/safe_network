@@ -11,8 +11,9 @@ use super::{
     helpers::{get_faucet, receive},
     WalletApiHelper,
 };
-use crate::get_stdin_response;
+use crate::{get_stdin_password_response, get_stdin_response};
 
+use autonomi::utils::is_valid_key_hex;
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::{
@@ -20,6 +21,7 @@ use color_eyre::{
     Result,
 };
 use dialoguer::Confirm;
+use sn_client::acc_packet::{load_or_create_mnemonic, secret_key_from_mnemonic};
 use sn_client::transfers::{
     HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransfer,
     WalletError,
@@ -34,13 +36,7 @@ use std::{path::Path, str::FromStr};
 #[derive(Parser, Debug)]
 pub enum WalletCmds {
     /// Print the wallet address.
-    Address {
-        /// Optional passphrase to protect the mnemonic,
-        /// it's not the source of the entropy for the mnemonic generation.
-        /// The mnemonic+passphrase will be the seed. See detail at
-        /// `<https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed>`
-        passphrase: Option<String>,
-    },
+    Address,
     /// Print the wallet balance.
     Balance {
         /// Instead of checking CLI local wallet balance, the PeerId of a node can be used
@@ -49,11 +45,26 @@ pub enum WalletCmds {
         #[clap(long)]
         peer_id: Vec<String>,
     },
-    /// Create a hot wallet from the given (hex-encoded) key.
+    /// Create a hot wallet.
     Create {
-        /// Hex-encoded main secret key.
-        #[clap(name = "key")]
-        key: String,
+        /// Optional flag to not replace existing wallet.
+        #[clap(long, action)]
+        no_replace: bool,
+        /// Optional flag to not add a password.
+        #[clap(long, action)]
+        no_password: bool,
+        /// Optional hex-encoded main secret key.
+        #[clap(long, short, name = "key")]
+        key: Option<String>,
+        /// Optional derivation passphrase to protect the mnemonic,
+        /// it's not the source of the entropy for the mnemonic generation.
+        /// The mnemonic+passphrase will be the seed. See detail at
+        /// `<https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#from-mnemonic-to-seed>`
+        #[clap(long, short, name = "derivation")]
+        derivation_passphrase: Option<String>,
+        /// Optional password to encrypt the wallet with.
+        #[clap(long, short)]
+        password: Option<String>,
     },
     /// Get tokens from a faucet.
     GetFaucet {
@@ -129,19 +140,18 @@ pub enum WalletCmds {
         sk_str: Option<String>,
     },
     Status,
+    /// Encrypt wallet with a password.
+    Encrypt,
 }
 
 pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Path) -> Result<()> {
     match cmds {
-        WalletCmds::Address {
-            passphrase: derivation_passphrase,
-        } => {
-            let wallet = load_account_wallet_or_create_with_mnemonic(
-                root_dir,
-                derivation_passphrase.as_deref(),
-            )?;
-
-            println!("{:?}", wallet.address());
+        WalletCmds::Address => {
+            let wallet = WalletApiHelper::load_from(root_dir)?;
+            match wallet {
+                WalletApiHelper::WatchOnlyWallet(w) => println!("{:?}", w.address()),
+                WalletApiHelper::HotWallet(w) => println!("{:?}", w.address()),
+            }
             Ok(())
         }
         WalletCmds::Balance { peer_id } => {
@@ -162,21 +172,48 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
             }
             Ok(())
         }
-        WalletCmds::Create { key } => {
-            let sk = SecretKey::from_hex(key)
-                .map_err(|err| eyre!("Failed to parse hex-encoded SK: {err:?}"))?;
-            let main_sk = MainSecretKey::new(sk);
-            // TODO: encrypt wallet file
-            // check for existing wallet with balance
-            let existing_balance = match WalletApiHelper::load_from(root_dir) {
-                Ok(wallet) => wallet.balance(),
-                Err(_) => NanoTokens::zero(),
-            };
-            // if about to overwrite an existing balance, confirm operation
-            if existing_balance > NanoTokens::zero() {
-                let prompt = format!("Existing wallet has balance of {existing_balance}. Replace with new wallet? [y/N]");
-                let response = get_stdin_response(&prompt);
-                if response.trim() != "y" {
+        WalletCmds::Create {
+            no_replace,
+            no_password,
+            key,
+            derivation_passphrase,
+            password,
+        } => {
+            let mut wallet_already_exists = false;
+            if key.is_some() && derivation_passphrase.is_some() {
+                return Err(eyre!(
+                    "Only one of `--key` or `--derivation` may be specified"
+                ));
+            }
+            if *no_password && password.is_some() {
+                return Err(eyre!(
+                    "Only one of `--no-password` or `--password` may be specified"
+                ));
+            }
+            if let Some(key) = key {
+                // Check if key is valid
+                // Doing this early to avoid stashing an existing wallet while the provided key is invalid
+                if !is_valid_key_hex(key) {
+                    return Err(eyre!("Please provide a valid secret key in hex format. It must be 64 characters long."));
+                }
+            }
+            // Check for existing wallet
+            if HotWallet::is_encrypted(root_dir) {
+                wallet_already_exists = true;
+                println!("Existing encrypted wallet found.");
+            } else if let Ok(existing_wallet) = WalletApiHelper::load_from(root_dir) {
+                wallet_already_exists = true;
+                let balance = existing_wallet.balance();
+                println!("Existing wallet found with balance of {balance}");
+            }
+            // If a wallet already exists, ask the user if they want to replace it
+            if wallet_already_exists {
+                let response = if *no_replace {
+                    "n".to_string()
+                } else {
+                    get_stdin_response("Replace existing wallet with new wallet? [y/N]")
+                };
+                if response != "y" {
                     // Do nothing, return ok and prevent any further operations
                     println!("Exiting without creating new wallet");
                     return Ok(());
@@ -185,9 +222,26 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
                 let new_location = HotWallet::stash(root_dir)?;
                 println!("Old wallet stored at {}", new_location.display());
             }
+            let main_sk = if let Some(key) = key {
+                let sk = SecretKey::from_hex(key)
+                    .map_err(|err| eyre!("Failed to parse hex-encoded SK: {err:?}"))?;
+                MainSecretKey::new(sk)
+            } else {
+                // If no key is specified, use the mnemonic
+                let mnemonic = load_or_create_mnemonic(root_dir)?;
+                secret_key_from_mnemonic(mnemonic, derivation_passphrase.to_owned())?
+            };
+            // Ask user if they want to encrypt the wallet with a password
+            let password = if *no_password {
+                None
+            } else if let Some(password) = password {
+                Some(password.to_owned())
+            } else {
+                request_password(false)
+            };
             // Create the new wallet with the new key
             let main_pubkey = main_sk.main_pubkey();
-            let local_wallet = HotWallet::create_from_key(root_dir, main_sk)?;
+            let local_wallet = HotWallet::create_from_key(root_dir, main_sk, password)?;
             let balance = local_wallet.balance();
             println!(
                 "Hot Wallet created (balance {balance}) for main public key: {main_pubkey:?}."
@@ -198,7 +252,16 @@ pub(crate) async fn wallet_cmds_without_client(cmds: &WalletCmds, root_dir: &Pat
         WalletCmds::Status => {
             let mut wallet = WalletApiHelper::load_from(root_dir)?;
             println!("{}", wallet.balance());
-            wallet.status();
+            wallet.status()?;
+            Ok(())
+        }
+        WalletCmds::Encrypt => {
+            println!("Encrypt your wallet with a password. WARNING: If you forget your password, you will lose access to your wallet!");
+            // Ask user for a new password to encrypt the wallet with
+            if let Some(password) = request_password(true) {
+                WalletApiHelper::encrypt(root_dir, &password)?;
+            }
+            println!("Wallet successfully encrypted.");
             Ok(())
         }
         cmd => Err(eyre!("{cmd:?} requires us to be connected to the Network")),
@@ -370,4 +433,46 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     );
 
     Ok(())
+}
+
+fn request_password(required: bool) -> Option<String> {
+    'outer: loop {
+        let prompt = if required {
+            "Enter password: "
+        } else {
+            "Enter password (leave empty for none): "
+        };
+
+        let password_response = get_stdin_password_response(prompt);
+
+        if required && password_response.is_empty() {
+            println!("Password is required.");
+            continue 'outer;
+        }
+
+        // If a password is set, request user to repeat it
+        if !password_response.is_empty() {
+            const MAX_RETRIES: u8 = 2;
+            let mut retries = 0u8;
+
+            loop {
+                let repeat_password = get_stdin_password_response("Repeat password: ");
+
+                if repeat_password == password_response {
+                    break;
+                } else if retries >= MAX_RETRIES {
+                    // User forgot the password, let them reset it again
+                    println!("You might have forgotten the password. Please set a new one.");
+                    continue 'outer;
+                } else {
+                    println!("Passwords do not match.");
+                    retries += 1;
+                }
+            }
+
+            break Some(password_response);
+        }
+
+        break None;
+    }
 }

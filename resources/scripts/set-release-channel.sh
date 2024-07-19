@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Define the workspace Cargo.toml location (ensure you're in the workspace root)
 WORKSPACE_CARGO_TOML="./Cargo.toml"

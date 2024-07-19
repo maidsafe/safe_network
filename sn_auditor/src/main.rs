@@ -101,12 +101,17 @@ async fn main() -> Result<()> {
     }
 
     let client = connect_to_network(opt.peers).await?;
+
+    let storage_dir = get_auditor_data_dir_path()?.join("fetched_spends");
+    std::fs::create_dir_all(&storage_dir).expect("fetched_spends path to be successfully created.");
+
     let dag = initialize_background_spend_dag_collection(
         client.clone(),
         opt.force_from_genesis,
         opt.clean,
         beta_participants,
         maybe_sk,
+        storage_dir,
     )
     .await?;
 
@@ -139,7 +144,7 @@ fn logging_init(
 
 async fn connect_to_network(peers_args: PeersArgs) -> Result<Client> {
     let bootstrap_peers = peers_args.get_peers().await?;
-    println!(
+    info!(
         "Connecting to the network with {} bootstrap peers",
         bootstrap_peers.len(),
     );
@@ -153,7 +158,7 @@ async fn connect_to_network(peers_args: PeersArgs) -> Result<Client> {
         .await
         .map_err(|err| eyre!("Failed to connect to the network: {err}"))?;
 
-    println!("Connected to the network");
+    info!("Connected to the network");
     Ok(client)
 }
 
@@ -168,10 +173,10 @@ fn initialize_background_rewards_backup(dag: SpendDagDb) {
                 BETA_REWARDS_BACKUP_INTERVAL_SECS,
             ))
             .await;
-            println!("Backing up beta rewards...");
+            info!("Backing up beta rewards...");
 
             if let Err(e) = dag.backup_rewards().await {
-                eprintln!("Failed to backup beta rewards: {e}");
+                error!("Failed to backup beta rewards: {e}");
             }
         }
     });
@@ -186,15 +191,20 @@ async fn initialize_background_spend_dag_collection(
     clean: bool,
     beta_participants: BTreeSet<String>,
     foundation_sk: Option<SecretKey>,
+    storage_dir: PathBuf,
 ) -> Result<SpendDagDb> {
-    println!("Initialize spend dag...");
+    info!("Initialize spend dag...");
     let path = get_auditor_data_dir_path()?;
+    if !path.exists() {
+        debug!("Creating directory {path:?}...");
+        std::fs::create_dir_all(&path)?;
+    }
 
     // clean the local spend DAG if requested
     if clean {
-        println!("Cleaning local spend DAG...");
+        info!("Cleaning local spend DAG...");
         let dag_file = path.join(dag_db::SPEND_DAG_FILENAME);
-        let _ = std::fs::remove_file(dag_file).map_err(|e| eprintln!("Cleanup interrupted: {e}"));
+        let _ = std::fs::remove_file(dag_file).map_err(|e| error!("Cleanup interrupted: {e}"));
     }
 
     // initialize the DAG
@@ -205,7 +215,6 @@ async fn initialize_background_spend_dag_collection(
     // optional force restart from genesis and merge into our current DAG
     // feature guard to prevent a mis-use of opt
     if force_from_genesis && cfg!(feature = "dag-collection") {
-        println!("Forcing DAG to be updated from genesis...");
         warn!("Forcing DAG to be updated from genesis...");
         let mut d = dag.clone();
         let mut genesis_dag = client
@@ -219,7 +228,7 @@ async fn initialize_background_spend_dag_collection(
             let _ = d
                 .merge(genesis_dag)
                 .await
-                .map_err(|e| eprintln!("Failed to merge from genesis DAG into our DAG: {e}"));
+                .map_err(|e| error!("Failed to merge from genesis DAG into our DAG: {e}"));
         });
     }
 
@@ -233,21 +242,21 @@ async fn initialize_background_spend_dag_collection(
             panic!("Foundation SK required to initialize beta rewards program");
         };
 
-        println!("Initializing beta rewards program tracking...");
+        info!("Initializing beta rewards program tracking...");
         if let Err(e) = dag.track_new_beta_participants(beta_participants).await {
-            eprintln!("Could not initialize beta rewards: {e}");
+            error!("Could not initialize beta rewards: {e}");
             return Err(e);
         }
     }
 
     // background thread to update DAG
-    println!("Starting background DAG collection thread...");
+    info!("Starting background DAG collection thread...");
     let d = dag.clone();
     tokio::spawn(async move {
         let _ = d
-            .continuous_background_update()
+            .continuous_background_update(storage_dir)
             .await
-            .map_err(|e| eprintln!("Failed to update DAG in background thread: {e}"));
+            .map_err(|e| error!("Failed to update DAG in background thread: {e}"));
     });
 
     Ok(dag)
@@ -255,9 +264,9 @@ async fn initialize_background_spend_dag_collection(
 
 async fn start_server(dag: SpendDagDb) -> Result<()> {
     let server = Server::http("0.0.0.0:4242").expect("Failed to start server");
-    println!("Starting dag-query server listening on port 4242...");
+    info!("Starting dag-query server listening on port 4242...");
     for request in server.incoming_requests() {
-        println!(
+        info!(
             "Received request! method: {:?}, url: {:?}",
             request.method(),
             request.url(),
@@ -313,7 +322,7 @@ fn load_and_update_beta_participants(
             .lines()
             .map(|line| line.trim().to_string())
             .collect::<Vec<String>>();
-        println!(
+        debug!(
             "Tracking beta rewards for the {} discord usernames provided in {:?}",
             discord_names.len(),
             participants_file
@@ -331,7 +340,7 @@ fn load_and_update_beta_participants(
             .lines()
             .map(|line| line.trim().to_string())
             .collect::<Vec<String>>();
-        println!(
+        debug!(
             "Restoring beta rewards for the {} discord usernames from {:?}",
             discord_names.len(),
             local_participants_file
@@ -340,7 +349,7 @@ fn load_and_update_beta_participants(
     }
     // write the beta participants to disk
     let _ = std::fs::write(local_participants_file, beta_participants.join("\n"))
-        .map_err(|e| eprintln!("Failed to write beta participants to disk: {e}"));
+        .map_err(|e| error!("Failed to write beta participants to disk: {e}"));
 
     Ok(beta_participants.into_iter().collect())
 }
