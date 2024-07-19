@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721374585150,
+  "lastUpdate": 1721392457598,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "430dfcdaafc0855f7df1cf823368f3731de9409e",
-          "message": "fix(networking): don't report ConnectionIssues during initial bootstrap\n\ncontext from the forums:\nhttps://forum.autonomi.community/t/basiceconomytweaks-early-technical-beta/39528/382",
-          "timestamp": "2024-04-02T09:04:46Z",
-          "tree_id": "09264ed7006169c548f89aaec06a3d1520d4079c",
-          "url": "https://github.com/maidsafe/safe_network/commit/430dfcdaafc0855f7df1cf823368f3731de9409e"
-        },
-        "date": 1712051119343,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2048309932914616,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.5982849480616539,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.867166481943464,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 62.06882915756021,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mickvd99@gmail.com",
+            "name": "Warm Beer",
+            "username": "mickvandijke"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "db3b0106ec2979eb6c91f4de9abc11c6f7c1b935",
+          "message": "chore(workflow): [#1850] add aarch64-apple-darwin to build/release job",
+          "timestamp": "2024-07-19T11:45:50Z",
+          "tree_id": "e6d11cbe2e52aa693e5da2025ee5e350f2eb979d",
+          "url": "https://github.com/maidsafe/safe_network/commit/db3b0106ec2979eb6c91f4de9abc11c6f7c1b935"
+        },
+        "date": 1721392451762,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.235028328105044,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6735784341533426,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 62.10019511232331,
             "unit": "MiB/s"
           }
         ]
