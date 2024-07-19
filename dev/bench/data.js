@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721374462278,
+  "lastUpdate": 1721374580688,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "3e6be4d2c2e88810e7bfff479596f4fb61f84ded",
-          "message": "chore(transfer): log close_records_stored in quotes",
-          "timestamp": "2024-04-02T08:40:22Z",
-          "tree_id": "d4b084359b8a68480fca464d05d2ee14c3e17fa0",
-          "url": "https://github.com/maidsafe/safe_network/commit/3e6be4d2c2e88810e7bfff479596f4fb61f84ded"
-        },
-        "date": 1712050486781,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 131,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "b17a53615a574c3d8dc075669c24f6b8c0eb0ebc",
+          "message": "feat!: limit error surface\n\nIn spirit of streamlining our public APIs, it's important to make distinctions between errors.\nOur errors are currently grouped into big error types, while many functions only return a\nhandful of errors, or even just one. This is inconvenient to handle.\n\nBREAKING CHANGE: added/changed an pub enum variant",
+          "timestamp": "2024-07-19T06:51:43Z",
+          "tree_id": "0b3c129bd610566c31c995f5fe8ed393e4c63deb",
+          "url": "https://github.com/maidsafe/safe_network/commit/b17a53615a574c3d8dc075669c24f6b8c0eb0ebc"
+        },
+        "date": 1721374579892,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 143,
             "unit": "MB"
           }
         ]
