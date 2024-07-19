@@ -73,6 +73,7 @@ build-release-artifacts arch:
   supported_archs=(
     "x86_64-pc-windows-msvc"
     "x86_64-apple-darwin"
+    "aarch64-apple-darwin"
     "x86_64-unknown-linux-musl"
     "arm-unknown-linux-musleabi"
     "armv7-unknown-linux-musleabihf"
@@ -152,6 +153,7 @@ make-artifacts-directory:
   architectures=(
     "x86_64-pc-windows-msvc"
     "x86_64-apple-darwin"
+    "aarch64-apple-darwin"
     "x86_64-unknown-linux-musl"
     "arm-unknown-linux-musleabi"
     "armv7-unknown-linux-musleabihf"
@@ -171,6 +173,7 @@ package-release-assets bin version="":
   architectures=(
     "x86_64-pc-windows-msvc"
     "x86_64-apple-darwin"
+    "aarch64-apple-darwin"
     "x86_64-unknown-linux-musl"
     "arm-unknown-linux-musleabi"
     "armv7-unknown-linux-musleabihf"
