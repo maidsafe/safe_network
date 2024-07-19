@@ -893,7 +893,7 @@ where
 {
     let mut received_fee = NanoTokens::zero();
     for cash_note in cash_notes {
-        let amount = cash_note.value()?;
+        let amount = cash_note.value();
         received_fee = received_fee
             .checked_add(amount)
             .ok_or(Error::NumericOverflow)?;

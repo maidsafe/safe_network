@@ -91,7 +91,7 @@ impl WalletApiHelper {
                 }
                 println!("Available cash notes are:");
                 if let Ok(available_cnrs) = w.available_cash_notes() {
-                    for (cnr, _key) in available_cnrs.0.iter() {
+                    for cnr in available_cnrs.0.iter() {
                         println!("{cnr:?}");
                     }
                 }

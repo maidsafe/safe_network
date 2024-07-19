@@ -7,28 +7,21 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod address;
-mod builder;
 mod cashnote;
 mod hash;
 mod nano;
 mod output_purpose;
 mod signed_spend;
 mod spend_reason;
-mod transaction;
 mod unique_keys;
 
-pub(crate) use builder::{CashNoteBuilder, TransactionBuilder};
-pub(crate) use transaction::{Input, Output};
-
 pub use address::SpendAddress;
-pub use builder::UnsignedTransfer;
 pub use cashnote::CashNote;
 pub use hash::Hash;
 pub use nano::NanoTokens;
 pub use output_purpose::OutputPurpose;
 pub use signed_spend::{SignedSpend, Spend};
 pub use spend_reason::SpendReason;
-pub use transaction::Transaction;
 pub use unique_keys::{DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, UniquePubkey};
 
 #[cfg(test)]
@@ -85,7 +78,7 @@ pub(crate) mod tests {
         let hex = cashnote.to_hex()?;
 
         let cashnote = CashNote::from_hex(&hex)?;
-        assert_eq!(cashnote.value()?.as_nano(), 1_530_000_000);
+        assert_eq!(cashnote.value().as_nano(), 1_530_000_000);
 
         Ok(())
     }
@@ -114,7 +107,7 @@ pub(crate) mod tests {
         let hex = cashnote.to_hex()?;
         let cashnote_from_hex = CashNote::from_hex(&hex)?;
 
-        assert_eq!(cashnote.value()?, cashnote_from_hex.value()?);
+        assert_eq!(cashnote.value(), cashnote_from_hex.value());
 
         Ok(())
     }

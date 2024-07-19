@@ -108,16 +108,16 @@ impl CashNote {
     }
 
     /// Return the value in NanoTokens for this CashNote.
-    pub fn value(&self) -> Result<NanoTokens> {
+    pub fn value(&self) -> NanoTokens {
         let mut total_amount: u64 = 0;
         for p in self.parent_spends.iter() {
-            if let Some(amount) = p.spend.get_output_amount(&self.unique_pubkey()) {
-                total_amount += amount.as_nano();
-            } else {
-                return Err(TransferError::OutputNotFound);
-            }
+            let amount = p
+                .spend
+                .get_output_amount(&self.unique_pubkey())
+                .unwrap_or(NanoTokens::zero());
+            total_amount += amount.as_nano();
         }
-        Ok(NanoTokens::from(total_amount))
+        NanoTokens::from(total_amount)
     }
 
     /// Generate the hash of this CashNote
@@ -155,7 +155,9 @@ impl CashNote {
             .iter()
             .all(|p| p.spend.get_output_amount(&unique_pubkey).is_some())
         {
-            return Err(TransferError::CashNoteCiphersNotPresentInTransactionOutput);
+            return Err(TransferError::InvalidParentSpend(format!(
+                "Parent spends refered in CashNote: {unique_pubkey:?} do not refer to its pubkey as an output"
+            )));
         }
 
         Ok(())

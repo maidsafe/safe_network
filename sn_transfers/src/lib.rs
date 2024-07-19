@@ -15,13 +15,10 @@ mod genesis;
 mod transfers;
 mod wallet;
 
-pub(crate) use cashnotes::{Input, TransactionBuilder};
-
 /// Types used in the public API
 pub use cashnotes::{
     CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
-    OutputPurpose, SignedSpend, Spend, SpendAddress, SpendReason, Transaction, UniquePubkey,
-    UnsignedTransfer,
+    OutputPurpose, SignedSpend, Spend, SpendAddress, SpendReason, UniquePubkey,
 };
 pub use error::{Result, TransferError};
 /// Utilities exposed
@@ -31,7 +28,7 @@ pub use genesis::{
     GENESIS_INPUT_DERIVATION_INDEX, GENESIS_OUTPUT_DERIVATION_INDEX, GENESIS_PK,
     GENESIS_SPEND_UNIQUE_KEY, TOTAL_SUPPLY,
 };
-pub use transfers::{CashNoteRedemption, OfflineTransfer, Transfer};
+pub use transfers::{CashNoteRedemption, SignedTransaction, Transfer, UnsignedTransaction};
 pub use wallet::{
     bls_secret_from_hex, wallet_lockfile_name, Error as WalletError, HotWallet, Payment,
     PaymentQuote, QuotingMetrics, Result as WalletResult, WalletApi, WatchOnlyWallet,

@@ -23,7 +23,7 @@ use color_eyre::{
 use dialoguer::Confirm;
 use sn_client::acc_packet::{load_or_create_mnemonic, secret_key_from_mnemonic};
 use sn_client::transfers::{
-    HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransfer,
+    HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransaction,
     WalletError,
 };
 use sn_client::{
@@ -372,15 +372,15 @@ async fn send(
 fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
 
-    let unsigned_transfer: UnsignedTransfer = rmp_serde::from_slice(&hex::decode(tx)?)?;
+    let unsigned_tx = UnsignedTransaction::from_hex(tx)?;
 
     println!("The unsigned transaction has been successfully decoded:");
-    for (i, (spend, _)) in unsigned_transfer.spends.iter().enumerate() {
+    for (i, (unique_pk, amount)) in unsigned_tx.spent_unique_keys().iter().enumerate() {
         println!("\nSpending input #{i}:");
-        println!("\tKey: {}", spend.unique_pubkey.to_hex());
-        println!("\tAmount: {}", spend.amount());
+        println!("\tKey: {}", unique_pk.to_hex());
+        println!("\tAmount: {amount}");
 
-        for (descendant, (amount, _purpose)) in spend.descendants.iter() {
+        for (descendant, amount) in unsigned_tx.output_unique_keys().iter() {
             println!("\tOutput Key: {}", descendant.to_hex());
             println!("\tAmount: {amount}");
         }
@@ -399,21 +399,15 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     }
 
     println!("Signing the transaction with local hot-wallet...");
-    let signed_spends = wallet.sign(unsigned_transfer.spends);
+    let signed_tx = wallet.sign(unsigned_tx)?;
 
-    for signed_spend in signed_spends.iter() {
-        if let Err(err) = signed_spend.verify() {
-            bail!("Signature or transaction generated is invalid: {err:?}");
-        }
+    if let Err(err) = signed_tx.verify(wallet.key()) {
+        bail!("Signature or transaction generated is invalid: {err:?}");
     }
 
     println!(
         "The transaction has been successfully signed:\n\n{}\n",
-        hex::encode(rmp_serde::to_vec(&(
-            &signed_spends,
-            unsigned_transfer.output_details,
-            unsigned_transfer.change_id
-        ))?)
+        signed_tx.to_hex()?
     );
     println!(
         "Please copy the above text, and broadcast it to the network with 'wallet broadcast' cmd."
