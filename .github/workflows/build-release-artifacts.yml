@@ -33,6 +33,8 @@ jobs:
             target: x86_64-pc-windows-msvc
           - os: macos-latest
             target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
           - os: ubuntu-latest
@@ -66,7 +68,7 @@ jobs:
   package:
     name: package artifacts
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [ build ]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -79,6 +81,10 @@ jobs:
         with:
           name: safe_network-x86_64-unknown-linux-musl
           path: artifacts/x86_64-unknown-linux-musl/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-aarch64-apple-darwin
+          path: artifacts/aarch64-apple-darwin/release
       - uses: actions/download-artifact@master
         with:
           name: safe_network-x86_64-apple-darwin
