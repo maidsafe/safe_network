@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721392457598,
+  "lastUpdate": 1721392574076,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "430dfcdaafc0855f7df1cf823368f3731de9409e",
-          "message": "fix(networking): don't report ConnectionIssues during initial bootstrap\n\ncontext from the forums:\nhttps://forum.autonomi.community/t/basiceconomytweaks-early-technical-beta/39528/382",
-          "timestamp": "2024-04-02T09:04:46Z",
-          "tree_id": "09264ed7006169c548f89aaec06a3d1520d4079c",
-          "url": "https://github.com/maidsafe/safe_network/commit/430dfcdaafc0855f7df1cf823368f3731de9409e"
-        },
-        "date": 1712051233557,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 68,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 143,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mickvd99@gmail.com",
+            "name": "Warm Beer",
+            "username": "mickvandijke"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": false,
+          "id": "db3b0106ec2979eb6c91f4de9abc11c6f7c1b935",
+          "message": "chore(workflow): [#1850] add aarch64-apple-darwin to build/release job",
+          "timestamp": "2024-07-19T11:45:50Z",
+          "tree_id": "e6d11cbe2e52aa693e5da2025ee5e350f2eb979d",
+          "url": "https://github.com/maidsafe/safe_network/commit/db3b0106ec2979eb6c91f4de9abc11c6f7c1b935"
+        },
+        "date": 1721392573748,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 141,
             "unit": "MB"
           }
         ]
