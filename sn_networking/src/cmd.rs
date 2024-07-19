@@ -396,7 +396,7 @@ impl SwarmDriver {
             } => {
                 cmd_string = "PutRecord";
                 let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
-                trace!(
+                debug!(
                     "Putting record sized: {:?} to network {:?}",
                     record.value.len(),
                     record_key
@@ -408,7 +408,7 @@ impl SwarmDriver {
                     .put_record(record, quorum)
                 {
                     Ok(request_id) => {
-                        trace!("Sent record {record_key:?} to network. Request id: {request_id:?} to network");
+                        debug!("Sent record {record_key:?} to network. Request id: {request_id:?} to network");
                         Ok(())
                     }
                     Err(error) => {
@@ -429,7 +429,7 @@ impl SwarmDriver {
             } => {
                 cmd_string = "PutRecordTo";
                 let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
-                trace!(
+                debug!(
                     "Putting record {record_key:?} sized: {:?} to {peers:?}",
                     record.value.len(),
                 );
@@ -439,7 +439,7 @@ impl SwarmDriver {
                     peers.into_iter(),
                     quorum,
                 );
-                trace!("Sent record {record_key:?} to {peers_count:?} peers. Request id: {request_id:?}");
+                debug!("Sent record {record_key:?} to {peers_count:?} peers. Request id: {request_id:?}");
 
                 if let Err(err) = sender.send(Ok(())) {
                     error!("Could not send response to PutRecordTo cmd: {:?}", err);
@@ -669,7 +669,7 @@ impl SwarmDriver {
                 // be handled.
                 // `self` then handles the request and sends a response back again to itself.
                 if peer == *self.swarm.local_peer_id() {
-                    trace!("Sending query request to self");
+                    debug!("Sending query request to self");
                     if let Request::Query(query) = req {
                         self.send_event(NetworkEvent::QueryRequestReceived {
                             query,
@@ -678,7 +678,7 @@ impl SwarmDriver {
                     } else {
                         // We should never receive a Replicate request from ourselves.
                         // we already hold this data if we do... so we can ignore
-                        trace!("Replicate cmd to self received, ignoring");
+                        debug!("Replicate cmd to self received, ignoring");
                     }
                 } else {
                     let request_id = self
@@ -686,10 +686,10 @@ impl SwarmDriver {
                         .behaviour_mut()
                         .request_response
                         .send_request(&peer, req);
-                    trace!("Sending request {request_id:?} to peer {peer:?}");
+                    debug!("Sending request {request_id:?} to peer {peer:?}");
                     let _ = self.pending_requests.insert(request_id, sender);
 
-                    trace!("Pending Requests now: {:?}", self.pending_requests.len());
+                    debug!("Pending Requests now: {:?}", self.pending_requests.len());
                 }
             }
             SwarmCmd::SendResponse { resp, channel } => {
@@ -697,7 +697,7 @@ impl SwarmDriver {
                 match channel {
                     // If the response is for `self`, send it directly through the oneshot channel.
                     MsgResponder::FromSelf(channel) => {
-                        trace!("Sending response to self");
+                        debug!("Sending response to self");
                         match channel {
                             Some(channel) => {
                                 channel
@@ -898,7 +898,7 @@ impl SwarmDriver {
             .collect();
 
         if !all_records.is_empty() {
-            trace!(
+            debug!(
                 "Sending a replication list of {} keys to {replicate_targets:?} ",
                 all_records.len()
             );
@@ -912,13 +912,13 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .request_response
                     .send_request(&peer_id, request.clone());
-                trace!("Sending request {request_id:?} to peer {peer_id:?}");
+                debug!("Sending request {request_id:?} to peer {peer_id:?}");
                 let _ = self.pending_requests.insert(request_id, None);
                 let _ = self
                     .replication_targets
                     .insert(peer_id, now + REPLICATION_TIMEOUT);
             }
-            trace!("Pending Requests now: {:?}", self.pending_requests.len());
+            debug!("Pending Requests now: {:?}", self.pending_requests.len());
         }
 
         Ok(())

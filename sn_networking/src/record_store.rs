@@ -149,7 +149,7 @@ impl NodeRecordStore {
         let process_entry = |entry: &DirEntry| -> _ {
             let path = entry.path();
             if path.is_file() {
-                trace!("Existing record found: {path:?}");
+                debug!("Existing record found: {path:?}");
                 // if we've got a file, lets try and read it
                 let filename = match path.file_name().and_then(|n| n.to_str()) {
                     Some(file_name) => file_name,
@@ -517,7 +517,7 @@ impl NodeRecordStore {
     /// this avoids us returning half-written data or registering it as stored before it is.
     pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
-        trace!("PUT a verified Record: {record_key:?}");
+        debug!("PUT a verified Record: {record_key:?}");
 
         // if the cache already has this record in it (eg, a conflicting spend)
         // remove it from the cache
@@ -666,7 +666,7 @@ impl RecordStore for NodeRecordStore {
         }
 
         if !self.records.contains_key(k) {
-            trace!("Record not found locally: {key:?}");
+            debug!("Record not found locally: {key:?}");
             return None;
         }
 
@@ -692,7 +692,7 @@ impl RecordStore for NodeRecordStore {
             Ok(record_header) => {
                 match record_header.kind {
                     RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
-                        trace!("Record {record_key:?} with payment shall always be processed.");
+                        debug!("Record {record_key:?} with payment shall always be processed.");
                     }
                     _ => {
                         // Chunk with existing key do not to be stored again.
@@ -701,13 +701,13 @@ impl RecordStore for NodeRecordStore {
                         // double spend to be detected or register op update.
                         match self.records.get(&record.key) {
                             Some((_addr, RecordType::Chunk)) => {
-                                trace!("Chunk {record_key:?} already exists.");
+                                debug!("Chunk {record_key:?} already exists.");
                                 return Ok(());
                             }
                             Some((_addr, RecordType::NonChunk(existing_content_hash))) => {
                                 let content_hash = XorName::from_content(&record.value);
                                 if content_hash == *existing_content_hash {
-                                    trace!("A non-chunk record {record_key:?} with same content_hash {content_hash:?} already exists.");
+                                    debug!("A non-chunk record {record_key:?} with same content_hash {content_hash:?} already exists.");
                                     return Ok(());
                                 }
                             }
@@ -722,7 +722,7 @@ impl RecordStore for NodeRecordStore {
             }
         }
 
-        trace!("Unverified Record {record_key:?} try to validate and store");
+        debug!("Unverified Record {record_key:?} try to validate and store");
         let event_sender = self.network_event_sender.clone();
         // push the event off thread so as to be non-blocking
         let _handle = spawn(async move {

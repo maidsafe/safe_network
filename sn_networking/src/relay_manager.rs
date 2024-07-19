@@ -74,7 +74,6 @@ impl RelayManager {
         stream_protocols: &Vec<StreamProtocol>,
     ) {
         if self.candidates.len() >= MAX_POTENTIAL_CANDIDATES {
-            trace!("Got max relay candidates");
             return;
         }
 
@@ -89,7 +88,7 @@ impl RelayManager {
                 }
             }
         } else {
-            trace!("Peer {peer_id:?} does not support relay server protocol");
+            debug!("Peer {peer_id:?} does not support relay server protocol");
         }
     }
 
@@ -120,7 +119,7 @@ impl RelayManager {
 
             // Pick a random candidate from the vector. Check if empty, or `gen_range` panics for empty range.
             let index = if self.candidates.is_empty() {
-                trace!("No more relay candidates.");
+                debug!("No more relay candidates.");
                 break;
             } else {
                 rand::thread_rng().gen_range(0..self.candidates.len())
@@ -130,7 +129,7 @@ impl RelayManager {
                 // skip if detected as a bad node
                 if let Some((_, is_bad)) = bad_nodes.get(&peer_id) {
                     if *is_bad {
-                        trace!("Peer {peer_id:?} is considered as a bad node. Skipping it.");
+                        debug!("Peer {peer_id:?} is considered as a bad node. Skipping it.");
                         continue;
                     }
                 }
@@ -138,7 +137,7 @@ impl RelayManager {
                 if self.connected_relays.contains_key(&peer_id)
                     || self.waiting_for_reservation.contains_key(&peer_id)
                 {
-                    trace!("We are already using {peer_id:?} as a relay server. Skipping.");
+                    debug!("We are already using {peer_id:?} as a relay server. Skipping.");
                     continue;
                 }
 
@@ -154,7 +153,7 @@ impl RelayManager {
                     }
                 }
             } else {
-                trace!("No more relay candidates.");
+                debug!("No more relay candidates.");
                 break;
             }
         }
@@ -176,11 +175,11 @@ impl RelayManager {
         peer_id: &PeerId,
         swarm: &mut Swarm<NodeBehaviour>,
     ) {
-        if tracing::level_enabled!(tracing::Level::TRACE) {
+        if tracing::level_enabled!(tracing::Level::DEBUG) {
             let all_external_addresses = swarm.external_addresses().collect_vec();
             let all_listeners = swarm.listeners().collect_vec();
-            trace!("All our listeners: {all_listeners:?}");
-            trace!("All our external addresses: {all_external_addresses:?}");
+            debug!("All our listeners: {all_listeners:?}");
+            debug!("All our external addresses: {all_external_addresses:?}");
         }
 
         match self.waiting_for_reservation.remove(peer_id) {
@@ -221,7 +220,7 @@ impl RelayManager {
         }
         if let Some(addr) = self.waiting_for_reservation.remove(&peer_id) {
             info!("Removed peer form waiting_for_reservation as the listener has been closed {peer_id:?}: {addr:?}");
-            trace!(
+            debug!(
                 "waiting_for_reservation len: {:?}",
                 self.waiting_for_reservation.len()
             )
