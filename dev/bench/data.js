@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721320315625,
+  "lastUpdate": 1721374462278,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "3e6be4d2c2e88810e7bfff479596f4fb61f84ded",
-          "message": "chore(transfer): log close_records_stored in quotes",
-          "timestamp": "2024-04-02T08:40:22Z",
-          "tree_id": "d4b084359b8a68480fca464d05d2ee14c3e17fa0",
-          "url": "https://github.com/maidsafe/safe_network/commit/3e6be4d2c2e88810e7bfff479596f4fb61f84ded"
-        },
-        "date": 1712050372597,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1997317019359575,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6074085686351371,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.42956660317629,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.36982973878657,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "b17a53615a574c3d8dc075669c24f6b8c0eb0ebc",
+          "message": "feat!: limit error surface\n\nIn spirit of streamlining our public APIs, it's important to make distinctions between errors.\nOur errors are currently grouped into big error types, while many functions only return a\nhandful of errors, or even just one. This is inconvenient to handle.\n\nBREAKING CHANGE: added/changed an pub enum variant",
+          "timestamp": "2024-07-19T06:51:43Z",
+          "tree_id": "0b3c129bd610566c31c995f5fe8ed393e4c63deb",
+          "url": "https://github.com/maidsafe/safe_network/commit/b17a53615a574c3d8dc075669c24f6b8c0eb0ebc"
+        },
+        "date": 1721374455534,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2179290949405863,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6595366205305158,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 62.06882915756021,
             "unit": "MiB/s"
           }
         ]
