@@ -104,7 +104,7 @@ impl Network {
         wallet: &HotWallet,
     ) -> Result<Vec<CashNote>> {
         // get CashNoteRedemptions from encrypted Transfer
-        trace!("Decyphering Transfer");
+        debug!("Decyphering Transfer");
         let cashnote_redemptions = wallet.unwrap_transfer(transfer)?;
 
         self.verify_cash_notes_redemptions(wallet.address(), &cashnote_redemptions)
@@ -122,7 +122,7 @@ impl Network {
         cashnote_redemptions: &[CashNoteRedemption],
     ) -> Result<Vec<CashNote>> {
         // get the parent transactions
-        trace!(
+        debug!(
             "Getting parent Tx for validation from {:?}",
             cashnote_redemptions.len()
         );
@@ -179,7 +179,7 @@ impl Network {
         }
 
         // check Txs and parent spends are valid
-        trace!("Validating parent spends");
+        debug!("Validating parent spends");
         for tx in parent_txs {
             let tx_inputs_keys: Vec<_> = tx.inputs.iter().map(|i| i.unique_pubkey()).collect();
 
@@ -246,7 +246,7 @@ pub fn get_signed_spend_from_record(
             Err(NetworkError::NoSpendFoundInsideRecord(*address))
         }
         [one] => {
-            trace!("Spend get for address: {address:?} successful");
+            debug!("Spend get for address: {address:?} successful");
             Ok(one.clone())
         }
         _double_spends => {

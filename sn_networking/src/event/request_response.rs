@@ -32,7 +32,7 @@ impl SwarmDriver {
                     request_id,
                     ..
                 } => {
-                    trace!("Received request {request_id:?} from peer {peer:?}, req: {request:?}");
+                    debug!("Received request {request_id:?} from peer {peer:?}, req: {request:?}");
                     // If the request is replication or quote verification,
                     // we can handle it and send the OK response here.
                     // As the handle result is unimportant to the sender.
@@ -108,7 +108,7 @@ impl SwarmDriver {
                     request_id,
                     response,
                 } => {
-                    trace!("Got response {request_id:?} from peer {peer:?}, res: {response}.");
+                    debug!("Got response {request_id:?} from peer {peer:?}, res: {response}.");
                     if let Some(sender) = self.pending_requests.remove(&request_id) {
                         // The sender will be provided if the caller (Requester) is awaiting for a response
                         // at the call site.
@@ -168,7 +168,7 @@ impl SwarmDriver {
                 warn!("RequestResponse: InboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
             }
             request_response::Event::ResponseSent { peer, request_id } => {
-                trace!("ResponseSent for request_id: {request_id:?} and peer: {peer:?}");
+                debug!("ResponseSent for request_id: {request_id:?} and peer: {peer:?}");
             }
         }
         Ok(())
@@ -186,7 +186,7 @@ impl SwarmDriver {
             return;
         };
 
-        trace!(
+        debug!(
             "Received replication list from {holder:?} of {} keys",
             incoming_keys.len()
         );
@@ -195,7 +195,7 @@ impl SwarmDriver {
         // giving us some margin for replication
         let closest_k_peers = self.get_closest_k_value_local_peers();
         if !closest_k_peers.contains(&holder) || holder == self.self_peer_id {
-            trace!("Holder {holder:?} is self or not in replication range.");
+            debug!("Holder {holder:?} is self or not in replication range.");
             return;
         }
 
@@ -219,7 +219,7 @@ impl SwarmDriver {
             .replication_fetcher
             .add_keys(holder, incoming_keys, all_keys);
         if keys_to_fetch.is_empty() {
-            trace!("no waiting keys to fetch from the network");
+            debug!("no waiting keys to fetch from the network");
         } else {
             self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
         }

@@ -71,9 +71,7 @@ use tokio::sync::{
     mpsc::{self, Sender},
     oneshot,
 };
-
 use tokio::time::Duration;
-use tracing::trace;
 
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
@@ -565,7 +563,7 @@ impl Network {
                     }
                 }
                 if result.is_err() {
-                    trace!("Getting record from network of {pretty_key:?} via backoff...");
+                    debug!("Getting record from network of {pretty_key:?} via backoff...");
                 }
                 result.map_err(|err| BackoffError::Transient {
                     err: NetworkError::from(err),
@@ -735,7 +733,7 @@ impl Network {
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
     pub fn put_local_record(&self, record: Record) {
-        trace!(
+        debug!(
             "Writing Record locally, for {:?} - length {:?}",
             PrettyPrintRecordKey::from(&record.key),
             record.value.len()
@@ -830,7 +828,7 @@ impl Network {
         key: &NetworkAddress,
         client: bool,
     ) -> Result<Vec<PeerId>> {
-        trace!("Getting the closest peers to {key:?}");
+        debug!("Getting the closest peers to {key:?}");
         let (sender, receiver) = oneshot::channel();
         self.send_swarm_cmd(SwarmCmd::GetClosestPeersToAddressFromNetwork {
             key: key.clone(),
@@ -845,7 +843,7 @@ impl Network {
             // remove our peer id from the calculations here:
             closest_peers.retain(|&x| x != self.peer_id());
         }
-        if tracing::level_enabled!(tracing::Level::TRACE) {
+        if tracing::level_enabled!(tracing::Level::DEBUG) {
             let close_peers_pretty_print: Vec<_> = closest_peers
                 .iter()
                 .map(|peer_id| {
@@ -856,7 +854,7 @@ impl Network {
                 })
                 .collect();
 
-            trace!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
+            debug!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
         }
 
         let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?;
@@ -922,7 +920,7 @@ fn get_fees_from_store_cost_responses(
     );
 
     // get the lowest cost
-    trace!("Got all costs: {all_costs:?}");
+    debug!("Got all costs: {all_costs:?}");
     let payee = all_costs
         .into_iter()
         .next()

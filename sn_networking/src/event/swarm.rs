@@ -128,7 +128,7 @@ impl SwarmDriver {
 
                 match *iden {
                     libp2p::identify::Event::Received { peer_id, info } => {
-                        trace!(%peer_id, ?info, "identify: received info");
+                        debug!(%peer_id, ?info, "identify: received info");
 
                         if info.protocol_version != IDENTIFY_PROTOCOL_STR.to_string() {
                             warn!(?info.protocol_version, "identify: {peer_id:?} does not have the same protocol. Our IDENTIFY_PROTOCOL_STR: {:?}", IDENTIFY_PROTOCOL_STR.as_str());
@@ -227,10 +227,10 @@ impl SwarmDriver {
                                 };
 
                             if kbucket_full {
-                                trace!("received identify for a full bucket {ilog2:?}, not dialing {peer_id:?} on {addrs:?}");
+                                debug!("received identify for a full bucket {ilog2:?}, not dialing {peer_id:?} on {addrs:?}");
                                 return Ok(());
                             } else if already_present_in_rt {
-                                trace!("received identify for {peer_id:?} that is already part of the RT. Not dialing {peer_id:?} on {addrs:?}");
+                                debug!("received identify for {peer_id:?} that is already part of the RT. Not dialing {peer_id:?} on {addrs:?}");
                                 return Ok(());
                             }
 
@@ -263,7 +263,7 @@ impl SwarmDriver {
                                 });
                             }
 
-                            trace!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
+                            debug!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
                             // Attempt to add the addresses to the routing table.
                             for multiaddr in addrs {
@@ -280,9 +280,9 @@ impl SwarmDriver {
                         );
                     }
                     // Log the other Identify events.
-                    libp2p::identify::Event::Sent { .. } => trace!("identify: {iden:?}"),
-                    libp2p::identify::Event::Pushed { .. } => trace!("identify: {iden:?}"),
-                    libp2p::identify::Event::Error { .. } => trace!("identify: {iden:?}"),
+                    libp2p::identify::Event::Sent { .. } => debug!("identify: {iden:?}"),
+                    libp2p::identify::Event::Pushed { .. } => debug!("identify: {iden:?}"),
+                    libp2p::identify::Event::Error { .. } => debug!("identify: {iden:?}"),
                 }
             }
             #[cfg(feature = "local-discovery")]
@@ -304,7 +304,7 @@ impl SwarmDriver {
                         }
                     }
                     mdns::Event::Expired(peer) => {
-                        trace!("mdns peer {peer:?} expired");
+                        debug!("mdns peer {peer:?} expired");
                     }
                 }
             }
@@ -367,7 +367,7 @@ impl SwarmDriver {
                 send_back_addr,
             } => {
                 event_string = "incoming";
-                trace!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
+                debug!("IncomingConnection ({connection_id:?}) with local_addr: {local_addr:?} send_back_addr: {send_back_addr:?}");
             }
             SwarmEvent::ConnectionEstablished {
                 peer_id,
@@ -378,7 +378,7 @@ impl SwarmDriver {
                 established_in,
             } => {
                 event_string = "ConnectionEstablished";
-                trace!(%peer_id, num_established, ?concurrent_dial_errors, "ConnectionEstablished ({connection_id:?}) in {established_in:?}: {}", endpoint_str(&endpoint));
+                debug!(%peer_id, num_established, ?concurrent_dial_errors, "ConnectionEstablished ({connection_id:?}) in {established_in:?}: {}", endpoint_str(&endpoint));
 
                 let _ = self.live_connected_peers.insert(
                     connection_id,
@@ -398,7 +398,7 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 event_string = "ConnectionClosed";
-                trace!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
+                debug!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
                 let _ = self.live_connected_peers.remove(&connection_id);
                 self.record_connection_metrics();
             }
@@ -538,7 +538,7 @@ impl SwarmDriver {
                 connection_id,
             } => {
                 event_string = "Dialing";
-                trace!("Dialing {peer_id:?} on {connection_id:?}");
+                debug!("Dialing {peer_id:?} on {connection_id:?}");
             }
             SwarmEvent::NewExternalAddrCandidate { address } => {
                 event_string = "NewExternalAddrCandidate";
@@ -563,12 +563,12 @@ impl SwarmDriver {
                                 info!(%address, "external address: new candidate has the same configured port, adding it.");
                                 self.swarm.add_external_address(address);
 
-                                if tracing::level_enabled!(tracing::Level::TRACE) {
+                                if tracing::level_enabled!(tracing::Level::DEBUG) {
                                     let all_external_addresses =
                                         self.swarm.external_addresses().collect_vec();
                                     let all_listeners = self.swarm.listeners().collect_vec();
-                                    trace!("All our listeners: {all_listeners:?}");
-                                    trace!(
+                                    debug!("All our listeners: {all_listeners:?}");
+                                    debug!(
                                         "All our external addresses: {all_external_addresses:?}"
                                     );
                                 }
@@ -577,7 +577,7 @@ impl SwarmDriver {
                             }
                         }
                     } else {
-                        trace!("external address: listen port not set. This has to be set if you're running a node");
+                        debug!("external address: listen port not set. This has to be set if you're running a node");
                     }
                 }
             }
@@ -592,7 +592,7 @@ impl SwarmDriver {
             other => {
                 event_string = "Other";
 
-                trace!("SwarmEvent has been ignored: {other:?}")
+                debug!("SwarmEvent has been ignored: {other:?}")
             }
         }
         self.remove_outdated_connections();
@@ -677,11 +677,11 @@ impl SwarmDriver {
 
         self.record_connection_metrics();
 
-        trace!(
+        debug!(
             "Current libp2p peers pool stats is {:?}",
             self.swarm.network_info()
         );
-        trace!(
+        debug!(
             "Removed {removed_conns} outdated live connections, still have {} left.",
             self.live_connected_peers.len()
         );
