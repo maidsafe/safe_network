@@ -190,57 +190,60 @@ impl Debug for LocalSwarmCmd {
             LocalSwarmCmd::PutLocalRecord { record } => {
                 write!(
                     f,
-                    "SwarmCmd::PutLocalRecord {{ key: {:?} }}",
+                    "LocalSwarmCmd::PutLocalRecord {{ key: {:?} }}",
                     PrettyPrintRecordKey::from(&record.key)
                 )
             }
             LocalSwarmCmd::RemoveFailedLocalRecord { key } => {
                 write!(
                     f,
-                    "SwarmCmd::RemoveFailedLocalRecord {{ key: {:?} }}",
+                    "LocalSwarmCmd::RemoveFailedLocalRecord {{ key: {:?} }}",
                     PrettyPrintRecordKey::from(key)
                 )
             }
             LocalSwarmCmd::AddLocalRecordAsStored { key, record_type } => {
                 write!(
                     f,
-                    "SwarmCmd::AddLocalRecordAsStored {{ key: {:?}, record_type: {record_type:?} }}",
+                    "LocalSwarmCmd::AddLocalRecordAsStored {{ key: {:?}, record_type: {record_type:?} }}",
                     PrettyPrintRecordKey::from(key)
                 )
             }
 
             LocalSwarmCmd::GetClosestKLocalPeers { .. } => {
-                write!(f, "SwarmCmd::GetClosestKLocalPeers")
+                write!(f, "LocalSwarmCmd::GetClosestKLocalPeers")
             }
             LocalSwarmCmd::GetCloseGroupLocalPeers { key, .. } => {
-                write!(f, "SwarmCmd::GetCloseGroupLocalPeers {{ key: {key:?} }}")
+                write!(
+                    f,
+                    "LocalSwarmCmd::GetCloseGroupLocalPeers {{ key: {key:?} }}"
+                )
             }
             LocalSwarmCmd::GetLocalStoreCost { .. } => {
-                write!(f, "SwarmCmd::GetLocalStoreCost")
+                write!(f, "LocalSwarmCmd::GetLocalStoreCost")
             }
             LocalSwarmCmd::PaymentReceived => {
-                write!(f, "SwarmCmd::PaymentReceived")
+                write!(f, "LocalSwarmCmd::PaymentReceived")
             }
             LocalSwarmCmd::GetLocalRecord { key, .. } => {
                 write!(
                     f,
-                    "SwarmCmd::GetLocalRecord {{ key: {:?} }}",
+                    "LocalSwarmCmd::GetLocalRecord {{ key: {:?} }}",
                     PrettyPrintRecordKey::from(key)
                 )
             }
             LocalSwarmCmd::GetAllLocalRecordAddresses { .. } => {
-                write!(f, "SwarmCmd::GetAllLocalRecordAddresses")
+                write!(f, "LocalSwarmCmd::GetAllLocalRecordAddresses")
             }
             LocalSwarmCmd::GetKBuckets { .. } => {
-                write!(f, "SwarmCmd::GetKBuckets")
+                write!(f, "LocalSwarmCmd::GetKBuckets")
             }
             LocalSwarmCmd::GetSwarmLocalState { .. } => {
-                write!(f, "SwarmCmd::GetSwarmLocalState")
+                write!(f, "LocalSwarmCmd::GetSwarmLocalState")
             }
             LocalSwarmCmd::RecordStoreHasKey { key, .. } => {
                 write!(
                     f,
-                    "SwarmCmd::RecordStoreHasKey {:?}",
+                    "LocalSwarmCmd::RecordStoreHasKey {:?}",
                     PrettyPrintRecordKey::from(key)
                 )
             }
@@ -248,19 +251,23 @@ impl Debug for LocalSwarmCmd {
             LocalSwarmCmd::RecordNodeIssue { peer_id, issue } => {
                 write!(
                     f,
-                    "SwarmCmd::SendNodeStatus peer {peer_id:?}, issue: {issue:?}"
+                    "LocalSwarmCmd::SendNodeStatus peer {peer_id:?}, issue: {issue:?}"
                 )
             }
             LocalSwarmCmd::IsPeerShunned { target, .. } => {
-                write!(f, "SwarmCmd::IsPeerInTrouble target: {target:?}")
+                write!(f, "LocalSwarmCmd::IsPeerInTrouble target: {target:?}")
             }
             LocalSwarmCmd::QuoteVerification { quotes } => {
-                write!(f, "SwarmCmd::QuoteVerification of {} quotes", quotes.len())
+                write!(
+                    f,
+                    "LocalSwarmCmd::QuoteVerification of {} quotes",
+                    quotes.len()
+                )
             }
             LocalSwarmCmd::FetchCompleted(key) => {
                 write!(
                     f,
-                    "SwarmCmd::FetchCompleted({:?})",
+                    "LocalSwarmCmd::FetchCompleted({:?})",
                     PrettyPrintRecordKey::from(key)
                 )
             }
@@ -274,41 +281,44 @@ impl Debug for NetworkSwarmCmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             NetworkSwarmCmd::Dial { addr, .. } => {
-                write!(f, "SwarmCmd::Dial {{ addr: {addr:?} }}")
+                write!(f, "NetworkSwarmCmd::Dial {{ addr: {addr:?} }}")
             }
             NetworkSwarmCmd::GetNetworkRecord { key, cfg, .. } => {
                 write!(
                     f,
-                    "SwarmCmd::GetNetworkRecord {{ key: {:?}, cfg: {cfg:?}",
+                    "NetworkSwarmCmd::GetNetworkRecord {{ key: {:?}, cfg: {cfg:?}",
                     PrettyPrintRecordKey::from(key)
                 )
             }
             NetworkSwarmCmd::PutRecord { record, .. } => {
                 write!(
                     f,
-                    "SwarmCmd::PutRecord {{ key: {:?} }}",
+                    "NetworkSwarmCmd::PutRecord {{ key: {:?} }}",
                     PrettyPrintRecordKey::from(&record.key)
                 )
             }
             NetworkSwarmCmd::PutRecordTo { peers, record, .. } => {
                 write!(
                     f,
-                    "SwarmCmd::PutRecordTo {{ peers: {peers:?}, key: {:?} }}",
+                    "NetworkSwarmCmd::PutRecordTo {{ peers: {peers:?}, key: {:?} }}",
                     PrettyPrintRecordKey::from(&record.key)
                 )
             }
 
             NetworkSwarmCmd::TriggerIntervalReplication => {
-                write!(f, "SwarmCmd::TriggerIntervalReplication")
+                write!(f, "NetworkSwarmCmd::TriggerIntervalReplication")
             }
             NetworkSwarmCmd::GetClosestPeersToAddressFromNetwork { key, .. } => {
-                write!(f, "SwarmCmd::GetClosestPeers {{ key: {key:?} }}")
+                write!(f, "NetworkSwarmCmd::GetClosestPeers {{ key: {key:?} }}")
             }
             NetworkSwarmCmd::SendResponse { resp, .. } => {
-                write!(f, "SwarmCmd::SendResponse resp: {resp:?}")
+                write!(f, "NetworkSwarmCmd::SendResponse resp: {resp:?}")
             }
             NetworkSwarmCmd::SendRequest { req, peer, .. } => {
-                write!(f, "SwarmCmd::SendRequest req: {req:?}, peer: {peer:?}")
+                write!(
+                    f,
+                    "NetworkSwarmCmd::SendRequest req: {req:?}, peer: {peer:?}"
+                )
             }
         }
     }
