@@ -3746,16 +3746,13 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 name = "libautonomi"
 version = "0.1.0"
 dependencies = [
- "bip39",
  "bytes",
  "libp2p",
- "rand 0.8.5",
  "rmp-serde",
  "self_encryption",
  "serde",
  "sn_client",
  "sn_protocol",
- "sn_transfers",
  "thiserror",
  "tokio",
  "tracing",
