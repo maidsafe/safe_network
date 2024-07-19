@@ -150,8 +150,6 @@ pub enum NetworkEvent {
     TerminateNode { reason: TerminateNodeReason },
     /// List of peer nodes that failed to fetch replication copy from.
     FailedToFetchHolders(BTreeSet<PeerId>),
-    /// A peer in RT that supposed to be verified.
-    BadNodeVerification { peer_id: PeerId },
     /// Quotes to be verified
     QuoteVerification { quotes: Vec<(PeerId, PaymentQuote)> },
     /// Carry out chunk proof check against the specified record and peer
@@ -218,9 +216,6 @@ impl Debug for NetworkEvent {
             }
             NetworkEvent::FailedToFetchHolders(bad_nodes) => {
                 write!(f, "NetworkEvent::FailedToFetchHolders({bad_nodes:?})")
-            }
-            NetworkEvent::BadNodeVerification { peer_id } => {
-                write!(f, "NetworkEvent::BadNodeVerification({peer_id:?})")
             }
             NetworkEvent::QuoteVerification { quotes } => {
                 write!(

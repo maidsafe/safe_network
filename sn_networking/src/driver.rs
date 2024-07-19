@@ -790,18 +790,6 @@ impl SwarmDriver {
         });
     }
 
-    // get all the peers from our local RoutingTable. Contains self
-    pub(crate) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
-        let mut all_peers: Vec<PeerId> = vec![];
-        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
-            for entry in kbucket.iter() {
-                all_peers.push(entry.node.key.clone().into_preimage());
-            }
-        }
-        all_peers.push(self.self_peer_id);
-        all_peers
-    }
-
     /// get closest k_value the peers from our local RoutingTable. Contains self.
     /// Is sorted for closeness to self.
     pub(crate) fn get_closest_k_value_local_peers(&mut self) -> Vec<PeerId> {
@@ -838,13 +826,6 @@ impl SwarmDriver {
                 .build(),
             None => DialOpts::unknown_peer_id().address(addr).build(),
         };
-
-        self.swarm.dial(opts)
-    }
-
-    /// Dials with the `DialOpts` given.
-    pub(crate) fn dial_with_opts(&mut self, opts: DialOpts) -> Result<(), DialError> {
-        debug!(?opts, "Dialing manually");
 
         self.swarm.dial(opts)
     }

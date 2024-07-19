@@ -570,17 +570,6 @@ impl Node {
                     }
                 });
             }
-            NetworkEvent::BadNodeVerification { peer_id } => {
-                event_header = "BadNodeVerification";
-                let network = self.network().clone();
-
-                trace!("Need to verify whether peer {peer_id:?} is a bad node");
-                let _handle = spawn(async move {
-                    if Self::close_nodes_shunning_peer(&network, peer_id).await {
-                        network.record_node_issues(peer_id, NodeIssue::CloseNodesShunning);
-                    }
-                });
-            }
             NetworkEvent::QuoteVerification { quotes } => {
                 event_header = "QuoteVerification";
                 let network = self.network().clone();
