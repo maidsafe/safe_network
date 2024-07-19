@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721393738925,
+  "lastUpdate": 1721393741769,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20419,40 +20419,6 @@ window.BENCHMARK_DATA = {
             "name": "bochaco",
             "username": "bochaco"
           },
-          "distinct": true,
-          "id": "da05ca03e04700aec3338164606e5094d0461053",
-          "message": "fix(folders): race condition caused by uploader upon concurrent Folders being payed and synced",
-          "timestamp": "2024-04-02T13:12:45Z",
-          "tree_id": "ed524708c965f14d00012f081cbeec14a2595dc7",
-          "url": "https://github.com/maidsafe/safe_network/commit/da05ca03e04700aec3338164606e5094d0461053"
-        },
-        "date": 1712066262864,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 203,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
           "distinct": false,
           "id": "47e2510eec5068a1a471c9ddd61f1779fb49c8e1",
           "message": "chore(cli): removing the folders upload command for cleaner UX",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno Zeeman",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "bzeeman@live.nl",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "distinct": false,
+          "id": "047fcd804b4a7a5e580534525271525540fd7c52",
+          "message": "feat(networking): restrict max_circuits value",
+          "timestamp": "2024-07-19T12:10:34Z",
+          "tree_id": "b60110cf7c994438237ff953bfee15db90cbc25c",
+          "url": "https://github.com/maidsafe/safe_network/commit/047fcd804b4a7a5e580534525271525540fd7c52"
+        },
+        "date": 1721393740988,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
