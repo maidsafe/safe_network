@@ -125,6 +125,9 @@ pub enum LocalSwarmCmd {
     },
     // Notify a fetch completion
     FetchCompleted(RecordKey),
+    /// Triggers interval repliation
+    /// NOTE: This does result in outgoing messages, but is produced locally
+    TriggerIntervalReplication,
 }
 
 /// Commands to send to the Swarm
@@ -177,9 +180,6 @@ pub enum NetworkSwarmCmd {
         sender: oneshot::Sender<Result<()>>,
         quorum: Quorum,
     },
-
-    /// Triggers interval repliation
-    TriggerIntervalReplication,
 }
 
 /// Debug impl for LocalSwarmCmd to avoid printing full Record, instead only RecodKey
@@ -271,6 +271,9 @@ impl Debug for LocalSwarmCmd {
                     PrettyPrintRecordKey::from(key)
                 )
             }
+            LocalSwarmCmd::TriggerIntervalReplication => {
+                write!(f, "LocalSwarmCmd::TriggerIntervalReplication")
+            }
         }
     }
 }
@@ -304,10 +307,6 @@ impl Debug for NetworkSwarmCmd {
                     PrettyPrintRecordKey::from(&record.key)
                 )
             }
-
-            NetworkSwarmCmd::TriggerIntervalReplication => {
-                write!(f, "NetworkSwarmCmd::TriggerIntervalReplication")
-            }
             NetworkSwarmCmd::GetClosestPeersToAddressFromNetwork { key, .. } => {
                 write!(f, "NetworkSwarmCmd::GetClosestPeers {{ key: {key:?} }}")
             }
@@ -337,10 +336,6 @@ impl SwarmDriver {
         let start = Instant::now();
         let cmd_string;
         match cmd {
-            NetworkSwarmCmd::TriggerIntervalReplication => {
-                cmd_string = "TriggerIntervalReplication";
-                self.try_interval_replication()?;
-            }
             NetworkSwarmCmd::GetNetworkRecord { key, sender, cfg } => {
                 cmd_string = "GetNetworkRecord";
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
@@ -524,6 +519,10 @@ impl SwarmDriver {
         let start = Instant::now();
         let mut cmd_string;
         match cmd {
+            LocalSwarmCmd::TriggerIntervalReplication => {
+                cmd_string = "TriggerIntervalReplication";
+                self.try_interval_replication()?;
+            }
             LocalSwarmCmd::GetLocalStoreCost { key, sender } => {
                 cmd_string = "GetLocalStoreCost";
                 let cost = self

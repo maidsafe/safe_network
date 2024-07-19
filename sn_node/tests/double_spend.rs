@@ -284,8 +284,6 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
     match client.verify_cashnote(&cash_notes_for_2[0]).await {
         Ok(_) => bail!("Cashnote verification should have failed"),
         Err(e) => {
-            println!("Error verifying cashnote: {:?}", e);
-
             assert!(
                 e.to_string()
                     .contains("Network Error Double spend(s) attempt was detected"),
@@ -297,8 +295,6 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
     match client.verify_cashnote(&cash_notes_for_3[0]).await {
         Ok(_) => bail!("Cashnote verification should have failed"),
         Err(e) => {
-            println!("Error verifying cashnote: {:?}", e);
-
             assert!(
                 e.to_string()
                     .contains("Network Error Double spend(s) attempt was detected"),

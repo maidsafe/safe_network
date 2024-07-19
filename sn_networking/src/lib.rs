@@ -763,7 +763,7 @@ impl Network {
     }
 
     pub fn trigger_interval_replication(&self) {
-        self.send_network_swarm_cmd(NetworkSwarmCmd::TriggerIntervalReplication)
+        self.send_local_swarm_cmd(LocalSwarmCmd::TriggerIntervalReplication)
     }
 
     pub fn record_node_issues(&self, peer_id: PeerId, issue: NodeIssue) {
