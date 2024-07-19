@@ -18,8 +18,8 @@ use super::{
     KeyLessWallet,
 };
 use crate::{
-    transfers::create_unsigned_transfer, wallet::data_payments::PaymentDetails, CashNote,
-    DerivationIndex, MainPubkey, NanoTokens, SpendReason, UniquePubkey, UnsignedTransfer,
+    wallet::data_payments::PaymentDetails, CashNote, DerivationIndex, MainPubkey, NanoTokens,
+    OutputPurpose, SpendReason, UniquePubkey, UnsignedTransaction,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use fs2::FileExt;
@@ -139,7 +139,7 @@ impl WatchOnlyWallet {
                 continue;
             }
 
-            let value = cash_note.value()?;
+            let value = cash_note.value();
             self.keyless_wallet.available_cash_notes.insert(id, value);
         }
 
@@ -169,7 +169,7 @@ impl WatchOnlyWallet {
                 continue;
             }
 
-            let value = cash_note.value()?;
+            let value = cash_note.value();
             self.keyless_wallet.available_cash_notes.insert(id, value);
 
             store_created_cash_notes([cash_note], &self.wallet_dir)?;
@@ -212,12 +212,19 @@ impl WatchOnlyWallet {
         &mut self,
         to: Vec<(NanoTokens, MainPubkey)>,
         reason_hash: Option<SpendReason>,
-    ) -> Result<UnsignedTransfer> {
+    ) -> Result<UnsignedTransaction> {
         let mut rng = &mut rand::rngs::OsRng;
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
+            .map(|(amount, address)| {
+                (
+                    amount,
+                    address,
+                    DerivationIndex::random(&mut rng),
+                    OutputPurpose::None,
+                )
+            })
             .collect();
 
         trace!("Trying to lock wallet to get available cash_notes...");
@@ -231,7 +238,7 @@ impl WatchOnlyWallet {
         let wallet_dir = self.wallet_dir.to_path_buf();
         for (id, _token) in self.available_cash_notes().iter() {
             if let Some(cash_note) = load_created_cash_note(id, &wallet_dir) {
-                available_cash_notes.push((cash_note.clone(), None));
+                available_cash_notes.push(cash_note.clone());
             } else {
                 warn!("Skipping CashNote {:?} because we don't have it", id);
             }
@@ -243,17 +250,28 @@ impl WatchOnlyWallet {
 
         let reason_hash = reason_hash.unwrap_or_default();
 
-        let unsigned_transfer = create_unsigned_transfer(
+        let unsigned_transaction = UnsignedTransaction::new(
             available_cash_notes,
             to_unique_keys,
             self.address(),
             reason_hash,
         )?;
 
+        info!(
+            "Spending keys: {:?}",
+            unsigned_transaction.spent_unique_keys()
+        );
+        unsigned_transaction
+            .spent_unique_keys()
+            .iter()
+            .for_each(|(k, _amount)| {
+                self.mark_notes_as_spent(vec![k]);
+            });
+
         trace!("Releasing wallet lock"); // by dropping exclusive_access
         std::mem::drop(exclusive_access);
 
-        Ok(unsigned_transfer)
+        Ok(unsigned_transaction)
     }
 
     // Helpers

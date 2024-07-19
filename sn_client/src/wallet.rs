@@ -16,8 +16,8 @@ use sn_networking::target_arch::Instant;
 use sn_networking::{GetRecordError, PayeeQuote};
 use sn_protocol::NetworkAddress;
 use sn_transfers::{
-    CashNote, DerivationIndex, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote,
-    SignedSpend, SpendAddress, Transfer, UniquePubkey, WalletError, WalletResult,
+    CashNote, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote, SignedSpend, SpendAddress,
+    Transfer, WalletError, WalletResult,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -307,50 +307,6 @@ impl WalletClient {
         verify_store: bool,
     ) -> WalletResult<CashNote> {
         let created_cash_notes = self.wallet.local_send(vec![(amount, to)], None)?;
-
-        // send to network
-        if let Err(error) = self
-            .client
-            .send_spends(
-                self.wallet.unconfirmed_spend_requests().iter(),
-                verify_store,
-            )
-            .await
-        {
-            return Err(WalletError::CouldNotSendMoney(format!(
-                "The transfer was not successfully registered in the network: {error:?}"
-            )));
-        } else {
-            // clear unconfirmed txs
-            self.wallet.clear_confirmed_spend_requests();
-        }
-
-        // return the first CashNote (assuming there is only one because we only sent to one recipient)
-        match &created_cash_notes[..] {
-            [cashnote] => Ok(cashnote.clone()),
-            [_multiple, ..] => Err(WalletError::CouldNotSendMoney(
-                "Multiple CashNotes were returned from the transaction when only one was expected. This is a BUG."
-                    .into(),
-            )),
-            [] => Err(WalletError::CouldNotSendMoney(
-                "No CashNotes were returned from the wallet.".into(),
-            )),
-        }
-    }
-
-    /// Send signed spends to another wallet.
-    /// Can optionally verify if the store has been successful.
-    /// Verification will be attempted via GET request through a Spend on the network.
-    async fn send_signed_spends(
-        &mut self,
-        signed_spends: BTreeSet<SignedSpend>,
-        change_id: UniquePubkey,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
-        verify_store: bool,
-    ) -> WalletResult<CashNote> {
-        let created_cash_notes =
-            self.wallet
-                .prepare_signed_transfer(signed_spends, change_id, output_details)?;
 
         // send to network
         if let Err(error) = self
@@ -1221,87 +1177,6 @@ pub async fn send(
         .await
         .map_err(|err| {
             error!("Could not send cash note, err: {err:?}");
-            err
-        })?;
-
-    wallet_client
-        .resend_pending_transaction_until_success(verify_store)
-        .await?;
-
-    wallet_client
-        .into_wallet()
-        .deposit_and_store_to_disk(&vec![new_cash_note.clone()])?;
-
-    Ok(new_cash_note)
-}
-
-/// Send tokens to another wallet. Can optionally verify the store has been successful.
-///
-/// Verification will be attempted via GET request through a Spend on the network.
-///
-/// # Arguments
-/// * from - [HotWallet],
-/// * client - [Client],
-/// * signed_spends - [BTreeSet]<[SignedSpend]>,
-/// * change_id - [UniquePubkey],
-/// * output_details - [BTreeMap]<[UniquePubkey], ([MainPubkey], [DerivationIndex])>,
-/// * verify_store - Boolean. Set to true for mandatory verification via a GET request through a Spend on the network.
-///
-/// # Return value
-/// [WalletResult]<[CashNote]>
-/// # Example
-/// ```no_run
-/// use sn_client::{Client, WalletClient, Error};
-/// # use tempfile::TempDir;
-/// use bls::SecretKey;
-/// use sn_transfers::{HotWallet, MainSecretKey};
-/// # #[tokio::main]
-/// # async fn main() -> Result<(),Error>{
-/// use std::collections::{BTreeMap, BTreeSet};
-/// use tracing::error;
-/// use sn_transfers::UniquePubkey;
-/// let client = Client::new(SecretKey::random(), None, None, None).await?;
-/// # let tmp_path = TempDir::new()?.path().to_owned();
-/// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-/// let secret_key = UniquePubkey::new(SecretKey::random().public_key());
-///
-/// println!("Broadcasting the signed_spends to the network...");
-///  let cash_note = sn_client::broadcast_signed_spends(
-///     wallet,
-///     &client,
-///     BTreeSet::default(),
-///     secret_key,
-///     BTreeMap::new(),
-///     true
-///  ).await?;
-///
-/// # Ok(())
-/// # }
-/// ```
-pub async fn broadcast_signed_spends(
-    from: HotWallet,
-    client: &Client,
-    signed_spends: BTreeSet<SignedSpend>,
-    change_id: UniquePubkey,
-    output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
-    verify_store: bool,
-) -> WalletResult<CashNote> {
-    let mut wallet_client = WalletClient::new(client.clone(), from);
-
-    // Wallet shall be all clear to progress forward.
-    if let Err(err) = wallet_client
-        .resend_pending_transaction_until_success(verify_store)
-        .await
-    {
-        println!("Wallet has pre-unconfirmed transactions, can't progress further.");
-        return Err(err);
-    }
-
-    let new_cash_note = wallet_client
-        .send_signed_spends(signed_spends, change_id, output_details, verify_store)
-        .await
-        .map_err(|err| {
-            error!("Could not send signed spends, err: {err:?}");
             err
         })?;
 

@@ -9,14 +9,17 @@
 use super::wallet::HotWallet;
 
 use crate::{
-    wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey,
-    NanoTokens, SignedSpend, SpendReason, TransactionBuilder, TransferError as CashNoteError,
-    UniquePubkey,
+    wallet::Result as WalletResult, CashNote, DerivationIndex, MainPubkey, MainSecretKey,
+    NanoTokens, OutputPurpose, SignedSpend, Spend, SpendReason, TransferError, UniquePubkey,
 };
 
 use bls::SecretKey;
 use lazy_static::lazy_static;
-use std::{collections::BTreeSet, fmt::Debug, path::PathBuf};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::Debug,
+    path::PathBuf,
+};
 use thiserror::Error;
 
 /// Number of tokens in the Genesis CashNote.
@@ -59,7 +62,7 @@ pub enum Error {
     GenesisCashNoteError(String),
     /// The cash_note error reason that parsing failed.
     #[error("Failed to parse reason: {0}")]
-    FailedToParseReason(#[from] Box<CashNoteError>),
+    FailedToParseReason(#[from] Box<TransferError>),
 
     #[error("Failed to perform wallet action: {0}")]
     WalletError(String),
@@ -192,45 +195,25 @@ pub fn create_first_cash_note_from_key(
 ) -> GenesisResult<CashNote> {
     let main_pubkey = first_cash_note_key.main_pubkey();
     debug!("genesis cashnote main_pubkey: {:?}", main_pubkey);
-    let derived_key = first_cash_note_key.derive_key(&GENESIS_INPUT_DERIVATION_INDEX);
+    let input_sk = first_cash_note_key.derive_key(&GENESIS_INPUT_DERIVATION_INDEX);
+    let input_pk = input_sk.unique_pubkey();
+    let output_pk = main_pubkey.new_unique_pubkey(&GENESIS_OUTPUT_DERIVATION_INDEX);
+    let amount = NanoTokens::from(GENESIS_CASHNOTE_AMOUNT);
 
-    // Use the same key as the input, but different key as output of Genesis Tx.
-    let genesis_input = Input {
-        unique_pubkey: derived_key.unique_pubkey(),
-        amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
+    let pre_genesis_spend = Spend {
+        unique_pubkey: input_pk,
+        reason: SpendReason::default(),
+        ancestors: BTreeSet::new(),
+        descendants: BTreeMap::from_iter([(output_pk, (amount, OutputPurpose::None))]),
     };
+    let parent_spends = BTreeSet::from_iter([SignedSpend::sign(pre_genesis_spend, &input_sk)]);
 
-    let reason = SpendReason::default();
-    let mut parent_spends = BTreeSet::new();
-    let _ = parent_spends.insert(derived_key.unique_pubkey());
-
-    let cash_note_builder = TransactionBuilder::default()
-        .add_input(
-            genesis_input,
-            Some(derived_key.clone()),
-            GENESIS_INPUT_DERIVATION_INDEX,
-            parent_spends,
-        )
-        .add_output(
-            NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
-            main_pubkey,
-            GENESIS_OUTPUT_DERIVATION_INDEX,
-        )
-        .build(reason);
-
-    // build the output CashNotes
-    let output_cash_notes = cash_note_builder.build_without_verifying().map_err(|err| {
-        Error::GenesisCashNoteError(format!(
-            "CashNote builder failed to create output genesis CashNote: {err}",
-        ))
-    })?;
-
-    // just one output CashNote is expected which is the genesis CashNote
-    let (genesis_cash_note, _) = output_cash_notes.into_iter().next().ok_or_else(|| {
-        Error::GenesisCashNoteError(
-            "CashNote builder (unexpectedly) contains an empty set of outputs.".to_string(),
-        )
-    })?;
+    let genesis_cash_note = CashNote {
+        unique_pubkey: output_pk,
+        parent_spends,
+        main_pubkey,
+        derivation_index: GENESIS_OUTPUT_DERIVATION_INDEX,
+    };
 
     Ok(genesis_cash_note)
 }

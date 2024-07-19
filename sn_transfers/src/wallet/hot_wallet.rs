@@ -25,12 +25,10 @@ use crate::wallet::keys::{
     store_main_secret_key,
 };
 use crate::{
-    calculate_royalties_fee,
-    cashnotes::UnsignedTransfer,
-    transfers::{CashNotesAndSecretKey, OfflineTransfer},
-    CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey,
-    NanoTokens, SignedSpend, Spend, SpendAddress, SpendReason, Transfer, UniquePubkey, WalletError,
-    NETWORK_ROYALTIES_PK,
+    calculate_royalties_fee, transfers::SignedTransaction, CashNote, CashNoteRedemption,
+    DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, NanoTokens, OutputPurpose,
+    SignedSpend, SpendAddress, SpendReason, Transfer, UniquePubkey, UnsignedTransaction,
+    WalletError, NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -342,29 +340,16 @@ impl HotWallet {
         self.watchonly_wallet.balance()
     }
 
-    pub fn sign(
-        &self,
-        spends: impl IntoIterator<Item = (Spend, DerivationIndex)>,
-    ) -> BTreeSet<SignedSpend> {
-        spends
-            .into_iter()
-            .map(|(spend, dindex)| {
-                let derived_sk = self.key.derive_key(&dindex);
-                let derived_key_sig = derived_sk.sign(&spend.to_bytes_for_signing());
-                SignedSpend {
-                    spend,
-                    derived_key_sig,
-                }
-            })
-            .collect()
+    pub fn sign(&self, unsigned_tx: UnsignedTransaction) -> Result<SignedTransaction> {
+        unsigned_tx
+            .sign(&self.key)
+            .map_err(|e| Error::CouldNotSignTransaction(e.to_string()))
     }
 
     /// Returns all available cash_notes and an exclusive access to the wallet so no concurrent processes can
     /// get available cash_notes while we're modifying the wallet
     /// once the updated wallet is stored to disk it is safe to drop the WalletExclusiveAccess
-    pub fn available_cash_notes(
-        &mut self,
-    ) -> Result<(CashNotesAndSecretKey, WalletExclusiveAccess)> {
+    pub fn available_cash_notes(&mut self) -> Result<(Vec<CashNote>, WalletExclusiveAccess)> {
         trace!("Trying to lock wallet to get available cash_notes...");
         // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
         let exclusive_access = self.lock()?;
@@ -377,8 +362,8 @@ impl HotWallet {
         for (id, _token) in self.watchonly_wallet.available_cash_notes().iter() {
             let held_cash_note = load_created_cash_note(id, &wallet_dir);
             if let Some(cash_note) = held_cash_note {
-                if let Ok(derived_key) = cash_note.derived_key(&self.key) {
-                    available_cash_notes.push((cash_note.clone(), Some(derived_key)));
+                if cash_note.derived_key(&self.key).is_ok() {
+                    available_cash_notes.push(cash_note.clone());
                 } else {
                     warn!(
                         "Skipping CashNote {:?} because we don't have the key to spend it",
@@ -402,7 +387,7 @@ impl HotWallet {
         &mut self,
         to: Vec<(NanoTokens, MainPubkey)>,
         reason: Option<SpendReason>,
-    ) -> Result<UnsignedTransfer> {
+    ) -> Result<UnsignedTransaction> {
         self.watchonly_wallet.build_unsigned_transaction(to, reason)
     }
 
@@ -416,7 +401,14 @@ impl HotWallet {
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
+            .map(|(amount, address)| {
+                (
+                    amount,
+                    address,
+                    DerivationIndex::random(&mut rng),
+                    OutputPurpose::None,
+                )
+            })
             .collect();
 
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
@@ -424,35 +416,17 @@ impl HotWallet {
 
         let reason = reason.unwrap_or_default();
 
-        let transfer =
-            OfflineTransfer::new(available_cash_notes, to_unique_keys, self.address(), reason)?;
+        let signed_tx = SignedTransaction::new(
+            available_cash_notes,
+            to_unique_keys,
+            self.address(),
+            reason,
+            &self.key,
+        )?;
 
-        let created_cash_notes = transfer.cash_notes_for_recipient.clone();
+        let created_cash_notes = signed_tx.output_cashnotes.clone();
 
-        self.update_local_wallet(transfer, exclusive_access, true)?;
-
-        trace!("Releasing wallet lock"); // by dropping _exclusive_access
-        Ok(created_cash_notes)
-    }
-
-    /// Prepare a signed transaction in local wallet and return all created cash_notes
-    pub fn prepare_signed_transfer(
-        &mut self,
-        signed_spends: BTreeSet<SignedSpend>,
-        change_id: UniquePubkey,
-        output_details: BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex, NanoTokens)>,
-    ) -> Result<Vec<CashNote>> {
-        let transfer = OfflineTransfer::from_transaction(signed_spends, change_id, output_details)?;
-
-        let created_cash_notes = transfer.cash_notes_for_recipient.clone();
-
-        trace!("Trying to lock wallet to get available cash_notes...");
-        // lock and load from disk to make sure we're up to date and others can't modify the wallet concurrently
-        let exclusive_access = self.lock()?;
-        self.reload()?;
-        trace!("Wallet locked and loaded!");
-
-        self.update_local_wallet(transfer, exclusive_access, true)?;
+        self.update_local_wallet(signed_tx, exclusive_access, true)?;
 
         trace!("Releasing wallet lock"); // by dropping _exclusive_access
         Ok(created_cash_notes)
@@ -486,19 +460,26 @@ impl HotWallet {
         let mut rng = &mut rand::rngs::OsRng;
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
+            .map(|(amount, address)| {
+                (
+                    amount,
+                    address,
+                    DerivationIndex::random(&mut rng),
+                    OutputPurpose::None,
+                )
+            })
             .collect();
 
-        let transfer = OfflineTransfer::new(
+        let signed_tx = SignedTransaction::new(
             available_cash_notes,
             to_unique_keys,
             self.address(),
             spend_reason,
+            &self.key,
         )?;
+        let signed_spends = signed_tx.spends.iter().cloned().collect();
 
-        let signed_spends = transfer.all_spend_requests.clone();
-
-        self.update_local_wallet(transfer, exclusive_access, false)?;
+        self.update_local_wallet(signed_tx, exclusive_access, false)?;
 
         // cash_notes better to be removed from disk
         let _ =
@@ -553,7 +534,12 @@ impl HotWallet {
         // create offline transfers
         let recipients = recipients_by_xor
             .values()
-            .flat_map(|(node, roy)| vec![(node.0, node.1, node.2), *roy])
+            .flat_map(|(node, roy)| {
+                vec![
+                    (node.0, node.1, node.2, OutputPurpose::None),
+                    (roy.0, roy.1, roy.2, OutputPurpose::RoyaltyFee(roy.2)),
+                ]
+            })
             .collect();
 
         trace!(
@@ -572,39 +558,37 @@ impl HotWallet {
 
         let spend_reason = Default::default();
         let start = Instant::now();
-        let offline_transfer = OfflineTransfer::new(
+        let signed_tx = SignedTransaction::new(
             available_cash_notes,
             recipients,
             self.address(),
             spend_reason,
+            &self.key,
         )?;
         trace!(
             "local_send_storage_payment created offline_transfer with {} cashnotes in {:?}",
-            offline_transfer.cash_notes_for_recipient.len(),
+            signed_tx.output_cashnotes.len(),
             start.elapsed()
         );
 
         let start = Instant::now();
         // cache transfer payments in the wallet
-        let mut cashnotes_to_use: HashSet<CashNote> = offline_transfer
-            .cash_notes_for_recipient
-            .iter()
-            .cloned()
-            .collect();
+        let mut cashnotes_to_use: HashSet<CashNote> =
+            signed_tx.output_cashnotes.iter().cloned().collect();
         for (xorname, recipients_info) in recipients_by_xor {
             let (storage_payee, royalties_payee) = recipients_info;
             let (pay_amount, node_key, _, peer_id_bytes) = storage_payee;
             let cash_note_for_node = cashnotes_to_use
                 .iter()
                 .find(|cash_note| {
-                    cash_note.value() == Ok(pay_amount) && cash_note.main_pubkey() == &node_key
+                    cash_note.value() == pay_amount && cash_note.main_pubkey() == &node_key
                 })
                 .ok_or(Error::CouldNotSendMoney(format!(
                     "No cashnote found to pay node for {xorname:?}"
                 )))?
                 .clone();
             cashnotes_to_use.remove(&cash_note_for_node);
-            let transfer_amount = cash_note_for_node.value()?;
+            let transfer_amount = cash_note_for_node.value();
             let transfer_for_node = Transfer::transfer_from_cash_note(&cash_note_for_node)?;
             trace!("Created transaction regarding {xorname:?} paying {transfer_amount:?} to {node_key:?}.");
 
@@ -613,7 +597,7 @@ impl HotWallet {
             let cash_note_for_royalties = cashnotes_to_use
                 .iter()
                 .find(|cash_note| {
-                    cash_note.value() == Ok(royalties_amount)
+                    cash_note.value() == royalties_amount
                         && cash_note.main_pubkey() == &royalties_key
                 })
                 .ok_or(Error::CouldNotSendMoney(format!(
@@ -622,7 +606,7 @@ impl HotWallet {
                 .clone();
             cashnotes_to_use.remove(&cash_note_for_royalties);
             let royalties = Transfer::royalties_transfer_from_cash_note(&cash_note_for_royalties)?;
-            let royalties_amount = cash_note_for_royalties.value()?;
+            let royalties_amount = cash_note_for_royalties.value();
             trace!("Created network royalties cnr regarding {xorname:?} paying {royalties_amount:?} to {royalties_key:?}.");
 
             let quote = price_map
@@ -651,7 +635,7 @@ impl HotWallet {
 
         // write all changes to local wallet
         let start = Instant::now();
-        self.update_local_wallet(offline_transfer, exclusive_access, true)?;
+        self.update_local_wallet(signed_tx, exclusive_access, true)?;
         trace!(
             "local_send_storage_payment completed local wallet update in {:?}",
             start.elapsed()
@@ -663,7 +647,7 @@ impl HotWallet {
     #[cfg(feature = "test-utils")]
     pub fn test_update_local_wallet(
         &mut self,
-        transfer: OfflineTransfer,
+        transfer: SignedTransaction,
         exclusive_access: WalletExclusiveAccess,
         insert_into_pending_spends: bool,
     ) -> Result<()> {
@@ -672,21 +656,18 @@ impl HotWallet {
 
     fn update_local_wallet(
         &mut self,
-        transfer: OfflineTransfer,
+        signed_tx: SignedTransaction,
         exclusive_access: WalletExclusiveAccess,
         insert_into_pending_spends: bool,
     ) -> Result<()> {
         // First of all, update client local state.
-        let spent_unique_pubkeys: BTreeSet<_> = transfer
-            .all_spend_requests
-            .iter()
-            .map(|s| s.unique_pubkey())
-            .collect();
+        let spent_unique_pubkeys: BTreeSet<_> =
+            signed_tx.spends.iter().map(|s| s.unique_pubkey()).collect();
 
         self.watchonly_wallet
             .mark_notes_as_spent(spent_unique_pubkeys.clone());
 
-        if let Some(cash_note) = transfer.change_cash_note {
+        if let Some(cash_note) = signed_tx.change_cashnote {
             let start = Instant::now();
             self.watchonly_wallet.deposit(&[cash_note.clone()])?;
             trace!(
@@ -707,7 +688,7 @@ impl HotWallet {
             );
         }
         if insert_into_pending_spends {
-            for request in transfer.all_spend_requests {
+            for request in signed_tx.spends {
                 self.unconfirmed_spend_requests.insert(request);
             }
         }
@@ -818,7 +799,7 @@ mod tests {
 
         wallet
             .available_cash_notes
-            .insert(genesis.unique_pubkey(), genesis.value()?);
+            .insert(genesis.unique_pubkey(), genesis.value());
 
         store_wallet(&wallet_dir, &wallet)?;
 
@@ -1027,7 +1008,7 @@ mod tests {
         );
 
         let recipient_cash_note = &created_cash_notes[0];
-        assert_eq!(NanoTokens::from(send_amount), recipient_cash_note.value()?);
+        assert_eq!(NanoTokens::from(send_amount), recipient_cash_note.value());
         assert_eq!(&recipient_main_pubkey, recipient_cash_note.main_pubkey());
 
         Ok(())

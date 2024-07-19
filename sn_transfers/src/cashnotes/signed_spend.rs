@@ -9,7 +9,7 @@
 use super::output_purpose::OutputPurpose;
 use super::spend_reason::SpendReason;
 use super::{Hash, NanoTokens, UniquePubkey};
-use crate::{Result, Signature, SpendAddress, TransferError};
+use crate::{DerivedSecretKey, Result, Signature, SpendAddress, TransferError};
 
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
@@ -29,6 +29,15 @@ pub struct SignedSpend {
 }
 
 impl SignedSpend {
+    /// Create a new SignedSpend
+    pub fn sign(spend: Spend, sk: &DerivedSecretKey) -> Self {
+        let derived_key_sig = sk.sign(&spend.to_bytes_for_signing());
+        Self {
+            spend,
+            derived_key_sig,
+        }
+    }
+
     /// Get public key of input CashNote.
     pub fn unique_pubkey(&self) -> &UniquePubkey {
         &self.spend.unique_pubkey
@@ -172,9 +181,11 @@ impl Spend {
         let mut bytes: Vec<u8> = Default::default();
         bytes.extend(self.unique_pubkey.to_bytes());
         bytes.extend(self.reason.hash().as_ref());
+        bytes.extend("ancestors".as_bytes());
         for ancestor in self.ancestors.iter() {
             bytes.extend(&ancestor.to_bytes());
         }
+        bytes.extend("descendants".as_bytes());
         for (descendant, (amount, purpose)) in self.descendants.iter() {
             bytes.extend(&descendant.to_bytes());
             bytes.extend(amount.to_bytes());
