@@ -107,12 +107,7 @@ build-release-artifacts arch:
   mkdir artifacts
   cargo clean
 
-  echo "Using the keys: GENESIS_PK=$GENESIS_PK, FOUNDATION_PK=$FOUNDATION_PK, NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK, PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK"
   cross_container_opts="--env \"GENESIS_PK=$GENESIS_PK\" --env \"GENESIS_SK=$GENESIS_SK\" --env \"FOUNDATION_PK=$FOUNDATION_PK\" --env \"NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK\" --env \"PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK\""
-  if [[ -n "${NETWORK_VERSION_MODE+x}" ]]; then
-    echo "The NETWORK_VERSION_MODE variable is set to $NETWORK_VERSION_MODE"
-    cross_container_opts="$cross_container_opts --env NETWORK_VERSION_MODE=$NETWORK_VERSION_MODE"
-  fi
   export CROSS_CONTAINER_OPTS=$cross_container_opts
 
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
@@ -269,7 +264,7 @@ package-bin bin version="":
   mv *.tar.gz packaged_bins/$bin
   mv *.zip packaged_bins/$bin
 
-upload-all-packaged-bins-to-s3 bin_name:
+upload-all-packaged-bins-to-s3:
   #!/usr/bin/env bash
   set -e
 
@@ -334,9 +329,7 @@ upload-packaged-bin-to-s3 bin_name:
       aws s3 cp "$file" "$dest" --acl public-read
     else
       if aws s3 ls "$dest" > /dev/null 2>&1; then
-        echo "$dest already exists. This suggests an error somewhere."
-        echo "If you intentionally want to overwrite, remove the file and run the workflow again."
-        exit 1
+        echo "$dest already exists. Will not overwrite."
       else
         aws s3 cp "$file" "$dest" --acl public-read
         echo "$dest uploaded."
