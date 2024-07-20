@@ -1,21 +1,27 @@
-name: build release artifacts
+# This workflow builds and packages the release artifacts, without actually running a release.
+#
+# It can sometimes be useful to obtain these binaries built from other branches, or a tag, or when
+# the release process is being updated, this workflow can be used to test some of the changes.
+#
+# The built and packaged binaries will be attached to the workflow run as artifacts, available for
+# download.
+name: build and package release artifacts
 
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: The branch to build.
+        description: Set to build a particular branch
         type: string
       tag:
-        description: The tag to build.
+        description: Set to build a particular tag
         type: string
 
-# Copied from `release.yml`
-# During the build step, the env variable has to be manually sent to the containers for cross platform builds.
-# Update the Justfile as well.
+# The key variables also need to be passed to `cross`, which runs in a container and does not
+# inherit variables from the parent environment. The `cross` tool is used in the `build`
+# job. If any keys are added, the `build-release-artifacts` target in the Justfile must
+# also be updated.
 env:
-  JUST_BIN_URL: https://github.com/casey/just/releases/download/1.25.2/just-1.25.2-x86_64-unknown-linux-musl.tar.gz
-  WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
   GENESIS_PK: ${{ secrets.STABLE_GENESIS_PK }}
   GENESIS_SK: ${{ secrets.STABLE_GENESIS_SK }}
   FOUNDATION_PK: ${{ secrets.STABLE_FOUNDATION_PK }}
@@ -48,8 +54,6 @@ jobs:
         with:
           ref: ${{ inputs.tag || inputs.branch }}
       - uses: dtolnay/rust-toolchain@stable
-      # cargo-binstall will try and use pre-built binaries if they are available and also speeds up
-      # installing `cross`
       - uses: cargo-bins/cargo-binstall@main
       - shell: bash
         run: cargo binstall --no-confirm just
@@ -63,8 +67,6 @@ jobs:
             artifacts
             !artifacts/.cargo-lock
 
-  # This job isn't necessary, but it's useful for debugging the packaging process for the real release
-  # workflow, just in case any issues are ever encountered there.
   package:
     name: package artifacts
     runs-on: ubuntu-latest
@@ -104,19 +106,21 @@ jobs:
       - uses: cargo-bins/cargo-binstall@main
       - shell: bash
         run: cargo binstall --no-confirm just
-      - name: package artifacts
+
+      - name: package binaries
         shell: bash
         run: |
-          just package-release-assets "faucet"
-          just package-release-assets "nat-detection"
-          just package-release-assets "node-launchpad"
-          just package-release-assets "safe"
-          just package-release-assets "safenode"
-          just package-release-assets "safenode_rpc_client"
-          just package-release-assets "safenode-manager"
-          just package-release-assets "safenodemand"
-          just package-release-assets "sn_auditor"
+          just package-all-bins
       - uses: actions/upload-artifact@main
         with:
           name: packaged_binaries
-          path: deploy
+          path: packaged_bins
+
+      - name: package architectures
+        shell: bash
+        run: |
+          just package-all-architectures
+      - uses: actions/upload-artifact@main
+        with:
+          name: packaged_architectures
+          path: packaged_architectures
