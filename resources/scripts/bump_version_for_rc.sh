@@ -4,6 +4,9 @@ set -e
 
 # This script must run from the root of the repository.
 
+# This allows for, e.g., "alpha" to be passed when calling the script.
+pre_release_identifer=${1:-"rc"}
+
 all_crates=($(awk '/members = \[/{flag=1; next} /\]/{flag=0} flag {gsub(/[",]/, ""); print $0}' \
   Cargo.toml))
 
@@ -16,8 +19,7 @@ fi
 declare -A crates_bumped
 crates_bumped_with_version=()
 
-# Remove the --allow-dirty flag
-release-plz update --allow-dirty 2>&1 | tee bump_version_output
+release-plz update 2>&1 | tee bump_version_output
 
 while IFS= read -r line; do
   # Sometimes this list can include crates that were not bumped. The presence of "->" indicates
@@ -38,7 +40,7 @@ git checkout -- .
 for crate in "${crates_bumped_with_version[@]}"; do
   name=$(echo "$crate" | sed -E 's/-v.*$//')
   version=$(echo "$crate" | sed -E 's/^.*-v(.*)$/\1/')
-  new_version="$version-rc.1"
+  new_version="${version}-${pre_release_identifer}.1"
   echo "Setting $crate to $new_version"
   cargo set-version --package $name $new_version
 done
@@ -60,7 +62,7 @@ for crate in "${all_crates[@]}"; do
 
     IFS='.' read -r major minor patch <<< "$version"
     patch=$((patch + 1))
-    new_version="${major}.${minor}.${patch}-rc.1"
+    new_version="${major}.${minor}.${patch}-${pre_release_identifer}.1"
 
     echo "Safety bump to $new_version"
     cargo set-version --package $crate $new_version
