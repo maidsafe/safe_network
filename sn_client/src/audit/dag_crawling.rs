@@ -11,8 +11,8 @@ use crate::{Client, Error, SpendDag};
 use futures::{future::join_all, StreamExt};
 use sn_networking::{GetRecordError, NetworkError};
 use sn_transfers::{
-    NanoTokens, OutputPurpose, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError,
-    WalletResult, DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
+    NanoTokens, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError, WalletResult,
+    DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -174,14 +174,7 @@ impl Client {
                             let amount = spend.spend.amount();
                             let ancestors_len = spend.spend.ancestors.len();
                             let descendants_len = spend.spend.descendants.len();
-                            let roy_len = spend
-                                .spend
-                                .descendants
-                                .iter()
-                                .filter(|(_pk, (_amount, _purpose))| {
-                                    matches!(OutputPurpose::RoyaltyFee, _purpose)
-                                })
-                                .count();
+                            let roy_len = spend.spend.network_royalties().len();
                             warn!(
                                 "double spend entry {i} reason {reason:?}, amount {amount}, ancestors: {ancestors_len}, descendants: {descendants_len}, royalties: {roy_len}, {:?} - {:?}",
                                 spend.spend.ancestors, spend.spend.descendants
@@ -552,27 +545,15 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, Nano
     // Filter out royalty outputs
     let royalty_pubkeys: BTreeSet<_> = spend
         .spend
-        .descendants
+        .network_royalties()
         .iter()
-        .filter_map(|(_pk, (_amount, purpose))| {
-            if let OutputPurpose::RoyaltyFee(der) = purpose {
-                Some(NETWORK_ROYALTIES_PK.new_unique_pubkey(der))
-            } else {
-                None
-            }
-        })
+        .map(|(_, _, der)| NETWORK_ROYALTIES_PK.new_unique_pubkey(der))
         .collect();
     let default_royalty_pubkeys: BTreeSet<_> = spend
         .spend
-        .descendants
+        .network_royalties()
         .iter()
-        .filter_map(|(_pk, (_amount, purpose))| {
-            if let OutputPurpose::RoyaltyFee(der) = purpose {
-                Some(DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(der))
-            } else {
-                None
-            }
-        })
+        .map(|(_, _, der)| DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(der))
         .collect();
 
     let new_utxos: BTreeSet<_> = spend
