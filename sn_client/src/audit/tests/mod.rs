@@ -46,7 +46,6 @@ fn test_spend_dag_verify_valid_simple() -> Result<()> {
     Ok(())
 }
 
-#[ignore = "Re-enabled once got DAG auditor properly updated"]
 #[test]
 fn test_spend_dag_double_spend_poisonning() -> Result<()> {
     let mut net = MockNetwork::genesis()?;
@@ -116,7 +115,7 @@ fn test_spend_dag_double_spend_poisonning() -> Result<()> {
     let expected = BTreeSet::from_iter([SpendFault::DoubleSpend(*double_spent)]);
     assert_eq!(got, expected, "spend_ko3 should be unspendable");
 
-    // make sure the effects of the rest of the DAG
+    // make sure this didn't poison the rest of the DAG
     let s4 = spend_ok4.first().expect("spend_ok4 to be unique");
     let s5 = spend_ok5.first().expect("spend_ok5 to be unique");
 
@@ -125,7 +124,6 @@ fn test_spend_dag_double_spend_poisonning() -> Result<()> {
     Ok(())
 }
 
-#[ignore = "Re-enabled once got DAG auditor properly updated"]
 #[test]
 fn test_spend_dag_double_spend_branches() -> Result<()> {
     let mut net = MockNetwork::genesis()?;
@@ -170,8 +168,7 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
         dag.insert(spend.address(), spend.clone());
     }
 
-    // TODO: re-enable the assertion once figured out the root reason of the failure.
-    // assert_eq!(dag.record_faults(&genesis), Ok(()));
+    assert_eq!(dag.record_faults(&genesis), Ok(()));
     // dag.dump_to_file("/tmp/test_spend_dag_double_spend_branches")?;
 
     // make sure double spend is detected
