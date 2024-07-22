@@ -40,7 +40,7 @@ mod replication;
 pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
     log_markers::Marker,
-    node::{NodeBuilder, NodeCmd, PERIODIC_REPLICATION_INTERVAL_MAX_S},
+    node::{NodeBuilder, PERIODIC_REPLICATION_INTERVAL_MAX_S},
 };
 
 use crate::error::{Error, Result};
@@ -53,7 +53,6 @@ use std::{
     collections::{BTreeMap, HashSet},
     path::PathBuf,
 };
-use tokio::sync::broadcast;
 
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
@@ -61,8 +60,6 @@ use tokio::sync::broadcast;
 pub struct RunningNode {
     network: Network,
     node_events_channel: NodeEventsChannel,
-    #[allow(dead_code)]
-    node_cmds: broadcast::Sender<NodeCmd>,
 }
 
 impl RunningNode {

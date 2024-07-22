@@ -42,7 +42,7 @@ use std::{
     time::Duration,
 };
 use tokio::{
-    sync::{broadcast, mpsc::Receiver},
+    sync::mpsc::Receiver,
     task::{spawn, JoinHandle},
 };
 
@@ -171,12 +171,10 @@ impl NodeBuilder {
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
-        let (node_cmds, _) = broadcast::channel(10);
 
         let node = NodeInner {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
-            node_cmds: node_cmds.clone(),
             initial_peers: self.initial_peers,
             reward_address,
             #[cfg(feature = "open-metrics")]
@@ -189,7 +187,6 @@ impl NodeBuilder {
         let running_node = RunningNode {
             network,
             node_events_channel,
-            node_cmds,
         };
 
         // Run the node
@@ -198,10 +195,6 @@ impl NodeBuilder {
         Ok(running_node)
     }
 }
-
-/// Commands that can be sent by the user to the Node instance, e.g. to mutate some settings.
-#[derive(Clone, Debug)]
-pub enum NodeCmd {}
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
@@ -218,7 +211,6 @@ struct NodeInner {
     // Peers that are dialed at startup of node.
     initial_peers: Vec<Multiaddr>,
     network: Network,
-    node_cmds: broadcast::Sender<NodeCmd>,
     #[cfg(feature = "open-metrics")]
     node_metrics: Option<NodeMetrics>,
     /// Node owner's discord username, in readable format
@@ -243,11 +235,6 @@ impl Node {
         &self.inner.network
     }
 
-    /// Returns the NodeCmds channel
-    pub(crate) fn node_cmds(&self) -> &broadcast::Sender<NodeCmd> {
-        &self.inner.node_cmds
-    }
-
     #[cfg(feature = "open-metrics")]
     /// Returns a reference to the NodeMetrics if the `open-metrics` feature flag is enabled
     pub(crate) fn node_metrics(&self) -> Option<&NodeMetrics> {
@@ -269,7 +256,6 @@ impl Node {
         let mut rng = StdRng::from_entropy();
 
         let peers_connected = Arc::new(AtomicUsize::new(0));
-        let mut cmds_receiver = self.node_cmds().subscribe();
 
         // read the forwarded balance from the file and set the metric.
         // This is done initially because reward forwarding takes a while to kick in
@@ -408,14 +394,6 @@ impl Node {
                         #[cfg(feature = "open-metrics")]
                         if let Some(node_metrics) = self.node_metrics() {
                             let _ = node_metrics.uptime.set(node_metrics.started_instant.elapsed().as_secs() as i64);
-                        }
-                    }
-                    node_cmd = cmds_receiver.recv() => {
-                        match node_cmd {
-                            Ok(cmd) => {
-                                info!("{cmd:?} received... unhandled")
-                            }
-                            Err(err) => error!("When trying to read from the NodeCmds channel/receiver: {err:?}")
                         }
                     }
                 }
