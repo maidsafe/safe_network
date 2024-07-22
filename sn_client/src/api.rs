@@ -636,7 +636,7 @@ impl Client {
     /// * 'payee' - [PeerId]
     /// * 'payment' - [Payment]
     /// * 'verify_store' - Boolean
-    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Balanced by default
+    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Quick by default
     ///
     pub(super) async fn store_chunk(
         &self,
@@ -648,7 +648,7 @@ impl Client {
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
-        let retry_strategy = Some(retry_strategy.unwrap_or(RetryStrategy::Balanced));
+        let retry_strategy = Some(retry_strategy.unwrap_or(RetryStrategy::Quick));
 
         let record_kind = RecordKind::ChunkWithPayment;
         let record = Record {
