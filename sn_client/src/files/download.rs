@@ -91,7 +91,7 @@ impl FilesDownload {
 
     /// Sets the RetryStrategy to increase the re-try on failure attempts.
     ///
-    /// By default, this option is set to RetryStrategy::Balanced
+    /// By default, this option is set to RetryStrategy::Quick
     pub fn set_retry_strategy(mut self, retry_strategy: RetryStrategy) -> Self {
         self.retry_strategy = retry_strategy;
         self

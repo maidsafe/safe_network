@@ -201,7 +201,7 @@ impl Uploader {
     /// This does not affect the retries during the Payment task. Use `set_max_repayments_for_failed_data` to
     /// configure the re-payment attempts.
     ///
-    /// By default, this option is set to RetryStrategy::Balanced
+    /// By default, this option is set to RetryStrategy::Quick
     pub fn set_retry_strategy(&mut self, retry_strategy: RetryStrategy) {
         self.inner
             .as_mut()
