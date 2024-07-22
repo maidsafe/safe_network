@@ -278,7 +278,6 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
                 ("sn_client".to_string(), Level::TRACE),
                 ("sn_faucet".to_string(), Level::TRACE),
                 ("sn_logging".to_string(), Level::TRACE),
-                ("sn_node".to_string(), Level::TRACE),
                 ("sn_node_manager".to_string(), Level::TRACE),
                 ("sn_node_rpc_client".to_string(), Level::TRACE),
                 ("sn_peers_acquisition".to_string(), Level::TRACE),
@@ -292,8 +291,21 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
             if !t.contains_key("sn_networking") {
                 if contains_keyword_all_sn_logs {
                     t.insert("sn_networking".to_string(), Level::TRACE)
-                } else {
+                } else if contains_keyword_verbose_sn_logs {
                     t.insert("sn_networking".to_string(), Level::DEBUG)
+                } else {
+                    t.insert("sn_networking".to_string(), Level::INFO)
+                };
+            }
+
+            // Override sn_node if it was not specified.
+            if !t.contains_key("sn_node") {
+                if contains_keyword_all_sn_logs {
+                    t.insert("sn_node".to_string(), Level::TRACE)
+                } else if contains_keyword_verbose_sn_logs {
+                    t.insert("sn_node".to_string(), Level::DEBUG)
+                } else {
+                    t.insert("sn_node".to_string(), Level::INFO)
                 };
             }
             t

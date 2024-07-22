@@ -395,7 +395,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                 }
                 Ok(event) => {
                     /* we ignore other events */
-                    trace!("Currently ignored node event {event:?}");
+                    debug!("Currently ignored node event {event:?}");
                 }
                 Err(RecvError::Lagged(n)) => {
                     warn!("Skipped {n} node events!");
