@@ -169,7 +169,7 @@ impl NodeMetrics {
                 let _ = self.put_record_err.inc();
             }
 
-            Marker::ReplicationTriggered => {
+            Marker::IntervalReplicationTriggered => {
                 let _ = self.replication_triggered.inc();
             }
 
