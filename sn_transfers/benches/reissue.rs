@@ -17,8 +17,6 @@ use std::collections::BTreeSet;
 
 const N_OUTPUTS: u64 = 100;
 
-// TODO: re-enable if figured out whether it is still required and how to pass in correct keys
-#[allow(unused)]
 fn bench_reissue_1_to_100(c: &mut Criterion) {
     // prepare transfer of genesis cashnote
     let mut rng = rng::from_seed([0u8; 32]);
@@ -160,7 +158,7 @@ fn generate_cashnote() -> (CashNote, MainSecretKey) {
 criterion_group! {
     name = reissue;
     config = Criterion::default().sample_size(10);
-    targets = bench_reissue_100_to_1
+    targets = bench_reissue_1_to_100, bench_reissue_100_to_1
 }
 
 criterion_main!(reissue);
