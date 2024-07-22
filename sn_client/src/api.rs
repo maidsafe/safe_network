@@ -1057,7 +1057,7 @@ impl Client {
     /// let main_pub_key = MainPubkey::new(pk);
     /// // Create a Cash Note Redemption Vector
     /// let cash_note = CashNote::from_hex("&hex").unwrap();
-    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note).unwrap();
+    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note);
     /// let vector = vec![cashNoteRedemption.clone(), cashNoteRedemption.clone()];
     /// // Verify the cash note redemptions
     /// let cash_notes = client.verify_cash_notes_redemptions(main_pub_key,&vector);
