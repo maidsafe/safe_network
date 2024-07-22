@@ -256,7 +256,7 @@ impl Network {
     }
 
     /// Return the GetRange as determined by the internal SwarmDriver
-    pub async fn get_range(&self) -> Result<Option<KBucketDistance>> {
+    pub async fn get_range(&self) -> Result<KBucketDistance> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetCurrentRange { sender });
         receiver.await.map_err(NetworkError::from)
@@ -285,6 +285,105 @@ impl Network {
         receiver.await?
     }
 
+    /// Replicate a fresh record to its close group peers.
+    /// This should not be triggered by a record we receive via replicaiton fetch
+    pub async fn replicate_valid_fresh_record(&self, paid_key: RecordKey, record_type: RecordType) {
+        let network = self;
+
+        let start = std::time::Instant::now();
+        let pretty_key = PrettyPrintRecordKey::from(&paid_key);
+
+        // first we wait until our own network store can return the record
+        // otherwise it may not be fully written yet
+        let mut retry_count = 0;
+        trace!("Checking we have successfully stored the fresh record {pretty_key:?} in the store before replicating");
+        loop {
+            let record = match network.get_local_record(&paid_key).await {
+                Ok(record) => record,
+                Err(err) => {
+                    error!(
+                            "Replicating fresh record {pretty_key:?} get_record_from_store errored: {err:?}"
+                        );
+                    None
+                }
+            };
+
+            if record.is_some() {
+                break;
+            }
+
+            if retry_count > 10 {
+                error!(
+                        "Could not get record from store for replication: {pretty_key:?} after 10 retries"
+                    );
+                return;
+            }
+
+            retry_count += 1;
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+
+        trace!("Start replication of fresh record {pretty_key:?} from store");
+
+        // Already contains self_peer_id
+        let mut all_peers = match network.get_all_local_peers().await {
+            Ok(peers) => peers,
+            Err(err) => {
+                error!(
+                    "Replicating fresh record {pretty_key:?} get_all_local_peers errored: {err:?}"
+                );
+                return;
+            }
+        };
+
+        // remove ourself from these calculations
+        all_peers.retain(|peer_id| peer_id != &network.peer_id());
+
+        let data_addr = NetworkAddress::from_record_key(&paid_key);
+        let sorted_based_on_addr = match network.get_range().await {
+            Err(error) => {
+                error!("Replicating fresh record {pretty_key:?} get_range errored: {error:?}");
+
+                return;
+            }
+
+            Ok(our_get_range) => {
+                match sort_peers_by_address_and_limit_by_distance(
+                    &all_peers,
+                    &data_addr,
+                    our_get_range,
+                ) {
+                    Ok(result) => result,
+                    Err(err) => {
+                        error!(
+                                    "When replicating fresh record {pretty_key:?}, having error when sort {err:?}"
+                                );
+                        return;
+                    }
+                }
+            }
+        };
+
+        let our_peer_id = network.peer_id();
+        let our_address = NetworkAddress::from_peer(our_peer_id);
+        #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
+        let keys = vec![(data_addr.clone(), record_type.clone())];
+
+        for peer_id in sorted_based_on_addr {
+            trace!("Replicating fresh record {pretty_key:?} to {peer_id:?}");
+            let request = Request::Cmd(Cmd::Replicate {
+                holder: our_address.clone(),
+                keys: keys.clone(),
+            });
+
+            network.send_req_ignore_reply(request, *peer_id);
+        }
+        trace!(
+            "Completed replicate fresh record {pretty_key:?} on store, in {:?}",
+            start.elapsed()
+        );
+    }
+
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// Excludes the client's `PeerId` while calculating the closest peers.
     pub async fn client_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
@@ -304,6 +403,34 @@ impl Network {
     pub async fn get_kbuckets(&self) -> Result<BTreeMap<u32, Vec<PeerId>>> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetKBuckets { sender });
+        receiver
+            .await
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
+    }
+
+    /// Returns all the PeerId from all the KBuckets from our local Routing Table
+    /// Also contains our own PeerId.
+    pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeers { sender });
+
+        receiver
+            .await
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
+    }
+
+    /// Returns all the PeerId from all the KBuckets from our local Routing Table
+    /// Also contains our own PeerId.
+    pub async fn get_close_range_peers_for_record(
+        &self,
+        address: NetworkAddress,
+    ) -> Result<Vec<PeerId>> {
+        // let (sender, receiver) = oneshot::channel();
+        // self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeers { sender });
+
+        let (sender, receiver) = oneshot::channel();
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetCloseRangeLocalPeers { address, sender });
+
         receiver
             .await
             .map_err(|_e| NetworkError::InternalMsgChannelDropped)
@@ -396,17 +523,6 @@ impl Network {
         Err(NetworkError::FailedToVerifyChunkProof(
             chunk_address.clone(),
         ))
-    }
-
-    /// Returns all the PeerId from all the KBuckets from our local Routing Table
-    /// Also contains our own PeerId.
-    pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeers { sender });
-
-        receiver
-            .await
-            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Get the store costs from the majority of the closest peers to the provided RecordKey.
@@ -558,7 +674,7 @@ impl Network {
                     Err(GetRecordError::RecordDoesNotMatch(_)) => {
                         warn!("The returned record does not match target {pretty_key:?}.");
                     }
-                    Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
+                    Err(GetRecordError::NotEnoughCopiesInRange { expected, got, .. }) => {
                         warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}.");
                     }
                     // libp2p RecordNotFound does mean no holders answered.

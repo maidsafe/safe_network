@@ -72,7 +72,6 @@ impl SwarmDriver {
 
 /// Tracks and helps with the continuous kad::bootstrapping process
 pub(crate) struct ContinuousBootstrap {
-    initial_bootstrap_done: bool,
     last_peer_added_instant: Instant,
     last_bootstrap_triggered: Option<Instant>,
 }
@@ -80,7 +79,6 @@ pub(crate) struct ContinuousBootstrap {
 impl ContinuousBootstrap {
     pub(crate) fn new() -> Self {
         Self {
-            initial_bootstrap_done: false,
             last_peer_added_instant: Instant::now(),
             last_bootstrap_triggered: None,
         }
@@ -89,20 +87,6 @@ impl ContinuousBootstrap {
     /// The Kademlia Bootstrap request has been sent successfully.
     pub(crate) fn initiated(&mut self) {
         self.last_bootstrap_triggered = Some(Instant::now());
-    }
-
-    /// Notify about a newly added peer to the RT. This will help with slowing down the bootstrap process.
-    /// Returns `true` if we have to perform the initial bootstrapping.
-    pub(crate) fn notify_new_peer(&mut self) -> bool {
-        self.last_peer_added_instant = Instant::now();
-        // true to kick off the initial bootstrapping. `run_bootstrap_continuously` might kick of so soon that we might
-        // not have a single peer in the RT and we'd not perform any bootstrapping for a while.
-        if !self.initial_bootstrap_done {
-            self.initial_bootstrap_done = true;
-            true
-        } else {
-            false
-        }
     }
 
     /// Returns `true` if we should carry out the Kademlia Bootstrap process immediately.

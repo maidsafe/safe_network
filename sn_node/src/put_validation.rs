@@ -715,7 +715,7 @@ impl Node {
                 }
                 spends
             }
-            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopiesInRange {
                 record,
                 got,
                 ..

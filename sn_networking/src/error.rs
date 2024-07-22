@@ -32,7 +32,7 @@ pub(super) type Result<T, E = NetworkError> = std::result::Result<T, E>;
 #[derive(Clone)]
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
-    NotEnoughCopies {
+    NotEnoughCopiesInRange {
         record: Record,
         expected: usize,
         got: usize,
@@ -57,13 +57,13 @@ pub enum GetRecordError {
 impl Debug for GetRecordError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NotEnoughCopies {
+            Self::NotEnoughCopiesInRange {
                 record,
                 expected,
                 got,
             } => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
-                f.debug_struct("NotEnoughCopies")
+                f.debug_struct("NotEnoughCopiesInRange")
                     .field("record_key", &pretty_key)
                     .field("expected", &expected)
                     .field("got", &got)

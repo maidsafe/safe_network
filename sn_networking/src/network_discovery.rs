@@ -52,13 +52,13 @@ impl NetworkDiscovery {
     }
 
     /// The result from the kad::GetClosestPeers are again used to update our kbucket.
-    pub(crate) fn handle_get_closest_query(&mut self, closest_peers: Vec<PeerId>) {
+    pub(crate) fn handle_get_closest_query(&mut self, closest_peers: &Vec<PeerId>) {
         let now = Instant::now();
 
         let candidates_map: BTreeMap<u32, Vec<NetworkAddress>> = closest_peers
             .into_iter()
             .filter_map(|peer| {
-                let peer = NetworkAddress::from_peer(peer);
+                let peer = NetworkAddress::from_peer(*peer);
                 let peer_key = peer.as_kbucket_key();
                 peer_key
                     .distance(&self.self_key)

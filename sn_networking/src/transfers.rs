@@ -61,7 +61,7 @@ impl Network {
         };
         let record = match self.get_record_from_network(key.clone(), &get_cfg).await {
             Ok(record) => record,
-            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopiesInRange {
                 record,
                 expected,
                 got,
@@ -74,7 +74,7 @@ impl Network {
                     self.get_record_from_network(key, &get_cfg).await?
                 } else {
                     return Err(NetworkError::GetRecordError(
-                        GetRecordError::NotEnoughCopies {
+                        GetRecordError::NotEnoughCopiesInRange {
                             record,
                             expected,
                             got,

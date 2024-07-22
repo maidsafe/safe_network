@@ -195,12 +195,12 @@ impl SwarmDriver {
         incoming_keys: Vec<(NetworkAddress, RecordType)>,
     ) {
         let peers = self.get_all_local_peers();
-        let get_range = self.get_request_range();
+        // let get_range = self.get_request_range();
 
-        if get_range.is_none() {
-            warn!("No get range set, ignoring replication list.");
-            return;
-        }
+        // if get_range.is_none() {
+        //     warn!("No get range set, ignoring replication list.");
+        //     return;
+        // }
         let our_peer_id = self.self_peer_id;
 
         let holder = if let Some(peer_id) = sender.as_peer_id() {
