@@ -70,8 +70,8 @@ pub struct NodeRecordStore {
     local_address: NetworkAddress,
     /// The configuration of the store.
     config: NodeRecordStoreConfig,
-    /// A set of keys, each corresponding to a data `Record` stored on disk.
-    records: HashMap<Key, (NetworkAddress, RecordType)>,
+    /// A set of keys, each corresponding to a data `Record` stored on disk. Also contains the instant when the record was stored.
+    records: HashMap<Key, (NetworkAddress, RecordType, Instant)>,
     /// FIFO simple cache of records to reduce read times
     records_cache: VecDeque<Record>,
     /// A map from record keys to their indices in the cache
@@ -149,7 +149,7 @@ impl NodeRecordStore {
     fn update_records_from_an_existing_store(
         config: &NodeRecordStoreConfig,
         encryption_details: &(Aes256GcmSiv, [u8; 4]),
-    ) -> HashMap<Key, (NetworkAddress, RecordType)> {
+    ) -> HashMap<Key, (NetworkAddress, RecordType, Instant)> {
         let process_entry = |entry: &DirEntry| -> _ {
             let path = entry.path();
             if path.is_file() {
@@ -199,7 +199,7 @@ impl NodeRecordStore {
 
                 let address = NetworkAddress::from_record_key(&key);
                 info!("Existing record loaded: {path:?}");
-                return Some((key, (address, record_type)));
+                return Some((key, (address, record_type, Instant::now())));
             }
             None
         };
@@ -458,16 +458,17 @@ impl NodeRecordStore {
 
     /// Returns the set of `NetworkAddress::RecordKey` held by the store
     /// Use `record_addresses_ref` to get a borrowed type
-    pub(crate) fn record_addresses(&self) -> HashMap<NetworkAddress, RecordType> {
+    pub(crate) fn record_addresses(&self) -> Vec<NetworkAddress> {
         self.records
             .iter()
-            .map(|(_record_key, (addr, record_type))| (addr.clone(), record_type.clone()))
+            .map(|(_record_key, (addr, ..))| addr)
+            .cloned()
             .collect()
     }
 
-    /// Returns the reference to the set of `NetworkAddress::RecordKey` held by the store
+    /// Returns the reference to the details regarding each record held by the store.
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
+    pub(crate) fn record_keys_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType, Instant)> {
         &self.records
     }
 
@@ -478,7 +479,7 @@ impl NodeRecordStore {
         let addr = NetworkAddress::from_record_key(&key);
         let _ = self
             .records
-            .insert(key.clone(), (addr.clone(), record_type));
+            .insert(key.clone(), (addr.clone(), record_type, Instant::now()));
 
         let key_distance = self.local_address.distance(&addr);
         if let Some((_farthest_record, farthest_record_distance)) = self.farthest_record.clone() {
@@ -736,11 +737,11 @@ impl RecordStore for NodeRecordStore {
                         // otherwise shall be passed further to allow
                         // double spend to be detected or register op update.
                         match self.records.get(&record.key) {
-                            Some((_addr, RecordType::Chunk)) => {
+                            Some((_addr, RecordType::Chunk, _)) => {
                                 debug!("Chunk {record_key:?} already exists.");
                                 return Ok(());
                             }
-                            Some((_addr, RecordType::NonChunk(existing_content_hash))) => {
+                            Some((_addr, RecordType::NonChunk(existing_content_hash), _)) => {
                                 let content_hash = XorName::from_content(&record.value);
                                 if content_hash == *existing_content_hash {
                                     debug!("A non-chunk record {record_key:?} with same content_hash {content_hash:?} already exists.");
@@ -831,7 +832,7 @@ impl RecordStore for NodeRecordStore {
 /// A place holder RecordStore impl for the client that does nothing
 #[derive(Default, Debug)]
 pub struct ClientRecordStore {
-    empty_record_addresses: HashMap<Key, (NetworkAddress, RecordType)>,
+    empty_record_addresses: HashMap<Key, (NetworkAddress, RecordType, Instant)>,
 }
 
 impl ClientRecordStore {
@@ -839,12 +840,12 @@ impl ClientRecordStore {
         false
     }
 
-    pub(crate) fn record_addresses(&self) -> HashMap<NetworkAddress, RecordType> {
-        HashMap::new()
+    pub(crate) fn record_addresses(&self) -> Vec<NetworkAddress> {
+        vec![]
     }
 
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
+    pub(crate) fn record_keys_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType, Instant)> {
         &self.empty_record_addresses
     }
 
@@ -1268,11 +1269,10 @@ mod tests {
         // now all failed records should be farther than the farthest stored record
         let mut sorted_stored_data = stored_data_at_end.iter().collect_vec();
 
-        sorted_stored_data
-            .sort_by(|(a, _), (b, _)| self_address.distance(a).cmp(&self_address.distance(b)));
+        sorted_stored_data.sort_by_key(|a| self_address.distance(a));
 
         // next assert that all records stored are closer than the next closest of the failed records
-        if let Some((most_distant_data, _)) = sorted_stored_data.last() {
+        if let Some(most_distant_data) = sorted_stored_data.last() {
             for failed_record in failed_records {
                 let failed_data = NetworkAddress::from_record_key(&failed_record);
                 assert!(
@@ -1284,7 +1284,7 @@ mod tests {
             // now for any stored data. It either shoudl still be stored OR further away than `most_distant_data`
             for data in stored_records_at_some_point {
                 let data_addr = NetworkAddress::from_record_key(&data);
-                if !sorted_stored_data.contains(&(&data_addr, &RecordType::Chunk)) {
+                if !sorted_stored_data.contains(&&data_addr) {
                     assert!(
                         self_address.distance(&data_addr)
                             > self_address.distance(most_distant_data),

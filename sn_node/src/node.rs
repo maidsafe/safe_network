@@ -24,7 +24,7 @@ use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
 use sn_networking::{
     close_group_majority, Instant, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
-    SwarmDriver, CLOSE_GROUP_SIZE,
+    SwarmDriver, CLOSE_GROUP_SIZE, REPLICATION_INTERVAL,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -55,7 +55,7 @@ use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any node will be half this
-pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
+pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = REPLICATION_INTERVAL.as_secs();
 
 /// Interval to trigger bad node detection.
 /// This is the max time it should take. Minimum interval at any node will be half this

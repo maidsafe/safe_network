@@ -65,7 +65,7 @@ use sn_protocol::{
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet},
     path::PathBuf,
     sync::Arc,
 };
@@ -88,6 +88,9 @@ pub const CLOSE_GROUP_SIZE: usize = 5;
 /// The count of peers that will be considered as close to a record target,
 /// that a replication of the record shall be sent/accepted to/by the peer.
 pub const REPLICATION_PEERS_COUNT: usize = CLOSE_GROUP_SIZE + 2;
+
+/// The interval in which replication is carried out for each peer.
+pub const REPLICATION_INTERVAL: Duration = Duration::from_secs(45);
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -716,9 +719,7 @@ impl Network {
     }
 
     /// Returns the Addresses of all the locally stored Records
-    pub async fn get_all_local_record_addresses(
-        &self,
-    ) -> Result<HashMap<NetworkAddress, RecordType>> {
+    pub async fn get_all_local_record_addresses(&self) -> Result<Vec<NetworkAddress>> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalRecordAddresses { sender });
 

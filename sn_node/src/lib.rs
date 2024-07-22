@@ -49,10 +49,7 @@ use libp2p::PeerId;
 use sn_networking::{Network, SwarmLocalState};
 use sn_protocol::{get_port_from_multiaddr, NetworkAddress};
 use sn_transfers::{HotWallet, NanoTokens};
-use std::{
-    collections::{BTreeMap, HashSet},
-    path::PathBuf,
-};
+use std::{collections::BTreeMap, path::PathBuf};
 
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
@@ -109,15 +106,8 @@ impl RunningNode {
     }
 
     /// Returns the list of all the RecordKeys held by the node
-    pub async fn get_all_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
-        #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-        let addresses: HashSet<_> = self
-            .network
-            .get_all_local_record_addresses()
-            .await?
-            .keys()
-            .cloned()
-            .collect();
+    pub async fn get_all_record_addresses(&self) -> Result<Vec<NetworkAddress>> {
+        let addresses = self.network.get_all_local_record_addresses().await?;
         Ok(addresses)
     }
 

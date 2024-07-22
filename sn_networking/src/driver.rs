@@ -655,8 +655,9 @@ pub struct SwarmDriver {
     pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) relay_manager: RelayManager,
-    /// The peers that are closer to our PeerId. Includes self.
     pub(crate) replication_fetcher: ReplicationFetcher,
+    /// The peers we are currently replicating to and the time we last replicated to them.
+    pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,
 
@@ -685,7 +686,6 @@ pub struct SwarmDriver {
     pub(crate) hard_disk_write_error: usize,
     pub(crate) bad_nodes: BadNodes,
     pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
-    pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
 }
 
 impl SwarmDriver {

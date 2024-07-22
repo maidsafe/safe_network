@@ -8,6 +8,7 @@
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
 use crate::record_store::{ClientRecordStore, NodeRecordStore};
+use crate::target_arch::Instant;
 use libp2p::kad::{
     store::{RecordStore, Result},
     ProviderRecord, Record, RecordKey,
@@ -90,7 +91,7 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn record_addresses(&self) -> HashMap<NetworkAddress, RecordType> {
+    pub(crate) fn record_addresses(&self) -> Vec<NetworkAddress> {
         match self {
             Self::Client(store) => store.record_addresses(),
             Self::Node(store) => store.record_addresses(),
@@ -98,10 +99,12 @@ impl UnifiedRecordStore {
     }
 
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn record_addresses_ref(&self) -> &HashMap<RecordKey, (NetworkAddress, RecordType)> {
+    pub(crate) fn record_keys_ref(
+        &self,
+    ) -> &HashMap<RecordKey, (NetworkAddress, RecordType, Instant)> {
         match self {
-            Self::Client(store) => store.record_addresses_ref(),
-            Self::Node(store) => store.record_addresses_ref(),
+            Self::Client(store) => store.record_keys_ref(),
+            Self::Node(store) => store.record_keys_ref(),
         }
     }
 

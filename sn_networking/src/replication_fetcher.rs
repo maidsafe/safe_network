@@ -75,7 +75,7 @@ impl ReplicationFetcher {
         &mut self,
         holder: PeerId,
         incoming_keys: Vec<(NetworkAddress, RecordType)>,
-        locally_stored_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
+        locally_stored_keys: &HashMap<RecordKey, (NetworkAddress, RecordType, Instant)>,
     ) -> Vec<(PeerId, RecordKey)> {
         // remove locally stored from incoming_keys
         let mut new_incoming_keys: Vec<_> = incoming_keys
@@ -363,10 +363,10 @@ impl ReplicationFetcher {
     /// This checks the hash on spends to ensure we pull in divergent spends.
     fn remove_stored_keys(
         &mut self,
-        existing_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
+        existing_keys: &HashMap<RecordKey, (NetworkAddress, RecordType, Instant)>,
     ) {
-        self.to_be_fetched.retain(|(key, t, _), _| {
-            if let Some((_addr, record_type)) = existing_keys.get(key) {
+        self.to_be_fetched.retain(|(key, t, ..), _| {
+            if let Some((_addr, record_type, _)) = existing_keys.get(key) {
                 // check the address only against similar record types
                 t != record_type
             } else {
@@ -374,7 +374,7 @@ impl ReplicationFetcher {
             }
         });
         self.on_going_fetches.retain(|(key, t), _| {
-            if let Some((_addr, record_type)) = existing_keys.get(key) {
+            if let Some((_addr, record_type, _)) = existing_keys.get(key) {
                 // check the address only against similar record types
                 t != record_type
             } else {

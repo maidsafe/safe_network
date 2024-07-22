@@ -224,7 +224,7 @@ impl SwarmDriver {
             .behaviour_mut()
             .kademlia
             .store_mut()
-            .record_addresses_ref();
+            .record_keys_ref();
         let keys_to_fetch = self
             .replication_fetcher
             .add_keys(holder, incoming_keys, all_keys);
@@ -278,12 +278,12 @@ impl SwarmDriver {
             .behaviour_mut()
             .kademlia
             .store_mut()
-            .record_addresses_ref();
+            .record_keys_ref();
 
         // Targeted chunk type record shall be expected within the close range from our perspective.
         let mut verify_candidates: Vec<NetworkAddress> = all_keys
             .values()
-            .filter_map(|(addr, record_type)| {
+            .filter_map(|(addr, record_type, _)| {
                 if RecordType::Chunk == *record_type {
                     match sort_peers_by_address(&closest_peers, addr, CLOSE_GROUP_SIZE) {
                         Ok(close_group) => {
