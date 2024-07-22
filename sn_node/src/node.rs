@@ -353,7 +353,7 @@ impl Node {
                     // runs every replication_interval time
                     _ = replication_interval.tick() => {
                         let start = Instant::now();
-                        trace!("Periodic replication triggered");
+                        debug!("Periodic replication triggered");
                         let network = self.network().clone();
                         self.record_metrics(Marker::IntervalReplicationTriggered);
 
@@ -365,7 +365,7 @@ impl Node {
                     // runs every bad_nodes_check_time time
                     _ = bad_nodes_check_interval.tick() => {
                         let start = Instant::now();
-                        trace!("Periodic bad_nodes check triggered");
+                        debug!("Periodic bad_nodes check triggered");
                         let network = self.network().clone();
                         self.record_metrics(Marker::IntervalBadNodesCheckTriggered);
 
@@ -385,7 +385,7 @@ impl Node {
                         if cfg!(feature = "reward-forward") {
                             if let Some(owner) = self.owner() {
                                 let start = Instant::now();
-                                trace!("Periodic balance forward triggered");
+                                debug!("Periodic balance forward triggered");
                                 let network = self.network().clone();
                                 let forwarding_reason = owner.clone();
 
@@ -441,7 +441,7 @@ impl Node {
         let start = Instant::now();
         let event_string = format!("{event:?}");
         let event_header;
-        trace!("Handling NetworkEvent {event_string:?}");
+        debug!("Handling NetworkEvent {event_string:?}");
 
         match event {
             NetworkEvent::PeerAdded(peer_id, connected_peers) => {
@@ -510,14 +510,14 @@ impl Node {
             }
             NetworkEvent::ResponseReceived { res } => {
                 event_header = "ResponseReceived";
-                trace!("NetworkEvent::ResponseReceived {res:?}");
+                debug!("NetworkEvent::ResponseReceived {res:?}");
                 if let Err(err) = self.handle_response(res) {
                     error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
                 }
             }
             NetworkEvent::KeysToFetchForReplication(keys) => {
                 event_header = "KeysToFetchForReplication";
-                trace!("Going to fetch {:?} keys for replication", keys.len());
+                debug!("Going to fetch {:?} keys for replication", keys.len());
                 self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
                 if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
@@ -531,7 +531,7 @@ impl Node {
 
                 let _handle = spawn(async move {
                     let res = Self::handle_query(&network, query, payment_address).await;
-                    trace!("Sending response {res:?}");
+                    debug!("Sending response {res:?}");
 
                     network.send_response(res, channel);
                 });
@@ -543,7 +543,7 @@ impl Node {
                 let _handle = spawn(async move {
                     let key = PrettyPrintRecordKey::from(&record.key).into_owned();
                     match self_clone.validate_and_store_record(record).await {
-                        Ok(()) => trace!("UnverifiedRecord {key} has been stored"),
+                        Ok(()) => debug!("UnverifiedRecord {key} has been stored"),
                         Err(err) => {
                             self_clone.record_metrics(Marker::RecordRejected(&key, &err));
                         }
@@ -585,7 +585,7 @@ impl Node {
                 event_header = "ChunkProofVerification";
                 let network = self.network().clone();
 
-                trace!("Going to verify chunk {keys_to_verify:?} against peer {peer_id:?}");
+                debug!("Going to verify chunk {keys_to_verify:?} against peer {peer_id:?}");
 
                 let _handle = spawn(async move {
                     // To avoid the peer is in the process of getting the copy via replication,
@@ -643,7 +643,7 @@ impl Node {
             let req_copy = req.clone();
             let network_copy = network.clone();
             let handle: JoinHandle<bool> = spawn(async move {
-                trace!("getting node_status of {peer_id:?} from {peer:?}");
+                debug!("getting node_status of {peer_id:?} from {peer:?}");
                 if let Ok(resp) = network_copy.send_request(req_copy, peer).await {
                     match resp {
                         Response::Query(QueryResponse::CheckNodeInProblem {
@@ -695,7 +695,7 @@ impl Node {
     ) -> Response {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(address) => {
-                trace!("Got GetStoreCost request for {address:?}");
+                debug!("Got GetStoreCost request for {address:?}");
                 let record_key = address.to_record_key();
                 let self_id = network.peer_id();
 
@@ -732,7 +732,7 @@ impl Node {
                 }
             }
             Query::GetReplicatedRecord { requester, key } => {
-                trace!("Got GetReplicatedRecord from {requester:?} regarding {key:?}");
+                debug!("Got GetReplicatedRecord from {requester:?} regarding {key:?}");
 
                 let our_address = NetworkAddress::from_peer(network.peer_id());
                 let mut result = Err(ProtocolError::ReplicatedRecordNotFound {
@@ -750,15 +750,15 @@ impl Node {
                 QueryResponse::GetReplicatedRecord(result)
             }
             Query::GetChunkExistenceProof { key, nonce } => {
-                trace!("Got GetChunkExistenceProof for chunk {key:?}");
+                debug!("Got GetChunkExistenceProof for chunk {key:?}");
 
                 let mut result = Err(ProtocolError::ChunkDoesNotExist(key.clone()));
                 if let Ok(Some(record)) = network.get_local_record(&key.to_record_key()).await {
                     let proof = ChunkProof::new(&record.value, nonce);
-                    trace!("Chunk proof for {key:?} is {proof:?}");
+                    debug!("Chunk proof for {key:?} is {proof:?}");
                     result = Ok(proof)
                 } else {
-                    trace!(
+                    debug!(
                         "Could not get ChunkProof for {key:?} as we don't have the record locally."
                     );
                 }
@@ -766,13 +766,13 @@ impl Node {
                 QueryResponse::GetChunkExistenceProof(result)
             }
             Query::CheckNodeInProblem(target_address) => {
-                trace!("Got CheckNodeInProblem for peer {target_address:?}");
+                debug!("Got CheckNodeInProblem for peer {target_address:?}");
 
                 let is_in_trouble =
                     if let Ok(result) = network.is_peer_shunned(target_address.clone()).await {
                         result
                     } else {
-                        trace!("Could not get status of {target_address:?}.");
+                        debug!("Could not get status of {target_address:?}.");
                         false
                     };
 
@@ -950,7 +950,7 @@ impl Node {
         let balance_file_path = network.root_dir_path().join(FORWARDED_BALANCE_FILE_NAME);
         let old_balance = read_forwarded_balance_value(&balance_file_path);
         let updated_balance = old_balance + total_forwarded_amount;
-        trace!("Updating forwarded balance to {updated_balance}");
+        debug!("Updating forwarded balance to {updated_balance}");
         write_forwarded_balance_value(&balance_file_path, updated_balance)?;
 
         Ok(updated_balance)
@@ -958,14 +958,14 @@ impl Node {
 }
 
 fn read_forwarded_balance_value(balance_file_path: &PathBuf) -> u64 {
-    trace!("Reading forwarded balance from file {balance_file_path:?}");
+    debug!("Reading forwarded balance from file {balance_file_path:?}");
     match std::fs::read_to_string(balance_file_path) {
         Ok(balance) => balance.parse::<u64>().unwrap_or_else(|_| {
-            trace!("The balance from file is not a valid number");
+            debug!("The balance from file is not a valid number");
             0
         }),
         Err(_) => {
-            trace!("Error while reading to string, setting the balance to 0. This can happen at node init.");
+            debug!("Error while reading to string, setting the balance to 0. This can happen at node init.");
             0
         }
     }
@@ -991,7 +991,7 @@ async fn chunk_proof_verify_peer(
         {
             let nonce = thread_rng().gen::<u64>();
             let expected_proof = ChunkProof::new(&record.value, nonce);
-            trace!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
+            debug!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
 
             let request = Request::Query(Query::GetChunkExistenceProof {
                 key: key.clone(),
@@ -1031,7 +1031,7 @@ fn received_valid_chunk_proof(
 ) -> Option<()> {
     if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(Ok(proof)))) = resp {
         if expected_proof.verify(&proof) {
-            trace!(
+            debug!(
                 "Got a valid ChunkProof of {key:?} from {peer:?}, during peer chunk proof check."
             );
             Some(())

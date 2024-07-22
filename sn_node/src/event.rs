@@ -39,7 +39,7 @@ impl NodeEventsChannel {
     pub(crate) fn broadcast(&self, event: NodeEvent) {
         let event_string = format!("{event:?}");
         if let Err(err) = self.0.send(event) {
-            trace!(
+            debug!(
                 "Error occurred when trying to broadcast a node event ({event_string:?}): {err}"
             );
         }
