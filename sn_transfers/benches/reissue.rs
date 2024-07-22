@@ -21,12 +21,12 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
     // prepare transfer of genesis cashnote
     let mut rng = rng::from_seed([0u8; 32]);
     let (starting_cashnote, starting_main_key) = generate_cashnote();
+    let main_pubkey = starting_main_key.main_pubkey();
     let recipients = (0..N_OUTPUTS)
         .map(|_| {
-            let main_key = MainSecretKey::random_from_rng(&mut rng);
             (
                 NanoTokens::from(1),
-                main_key.main_pubkey(),
+                main_pubkey,
                 DerivationIndex::random(&mut rng),
                 OutputPurpose::None,
             )
