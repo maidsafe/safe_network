@@ -53,6 +53,7 @@ use libp2p::{
     identity::Keypair,
     kad::{KBucketDistance, KBucketKey, Quorum, Record, RecordKey},
     multiaddr::Protocol,
+    request_response::OutboundFailure,
     Multiaddr, PeerId,
 };
 use rand::Rng;
@@ -728,14 +729,45 @@ impl Network {
     /// then the `Request` is forwarded to itself and handled, and a corresponding `Response` is created
     /// and returned to itself. Hence the flow remains the same and there is no branching at the upper
     /// layers.
+    ///
+    /// If an outbound issue is raised, we retry once more to send the request before returning an error.
     pub async fn send_request(&self, req: Request, peer: PeerId) -> Result<Response> {
         let (sender, receiver) = oneshot::channel();
         self.send_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
-            req,
+            req: req.clone(),
             peer,
             sender: Some(sender),
         });
-        receiver.await?
+        let mut r = receiver.await?;
+
+        if let Err(error) = &r {
+            error!("Error in response: {:?}", error);
+
+            match error {
+                NetworkError::OutboundError(OutboundFailure::Io(_))
+                | NetworkError::OutboundError(OutboundFailure::ConnectionClosed) => {
+                    warn!(
+                        "Outbound failed for {req:?} .. {error:?}, redialing once and reattempting"
+                    );
+                    let (sender, receiver) = oneshot::channel();
+
+                    debug!("Reattempting to send_request {req:?} to {peer:?}");
+                    self.send_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                        req,
+                        peer,
+                        sender: Some(sender),
+                    });
+
+                    r = receiver.await?;
+                }
+                _ => {
+                    // If the record is found, we should log the error and continue
+                    warn!("Error in response: {:?}", error);
+                }
+            }
+        }
+
+        r
     }
 
     /// Send `Request` to the given `PeerId` and do _not_ await a response here.
