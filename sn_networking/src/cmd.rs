@@ -124,7 +124,7 @@ pub enum LocalSwarmCmd {
         quotes: Vec<(PeerId, PaymentQuote)>,
     },
     // Notify a fetch completion
-    FetchCompleted(RecordKey),
+    FetchCompleted((RecordKey, RecordType)),
     /// Triggers interval repliation
     /// NOTE: This does result in outgoing messages, but is produced locally
     TriggerIntervalReplication,
@@ -264,10 +264,10 @@ impl Debug for LocalSwarmCmd {
                     quotes.len()
                 )
             }
-            LocalSwarmCmd::FetchCompleted(key) => {
+            LocalSwarmCmd::FetchCompleted((key, record_type)) => {
                 write!(
                     f,
-                    "LocalSwarmCmd::FetchCompleted({:?})",
+                    "LocalSwarmCmd::FetchCompleted({record_type:?} : {:?})",
                     PrettyPrintRecordKey::from(key)
                 )
             }
@@ -776,13 +776,15 @@ impl SwarmDriver {
                     self.verify_peer_quote(peer_id, quote);
                 }
             }
-            LocalSwarmCmd::FetchCompleted(key) => {
+            LocalSwarmCmd::FetchCompleted((key, record_type)) => {
                 info!(
-                    "Fetch {:?} early completed, may fetched an old version record.",
+                    "Fetch of {record_type:?} {:?} early completed, may have fetched an old version of the record.",
                     PrettyPrintRecordKey::from(&key)
                 );
                 cmd_string = "FetchCompleted";
-                let new_keys_to_fetch = self.replication_fetcher.notify_fetch_early_completed(key);
+                let new_keys_to_fetch = self
+                    .replication_fetcher
+                    .notify_fetch_early_completed(key, record_type);
                 if !new_keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
                 }

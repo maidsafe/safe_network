@@ -223,10 +223,23 @@ impl ReplicationFetcher {
     pub(crate) fn notify_fetch_early_completed(
         &mut self,
         key_in: RecordKey,
+        record_type: RecordType,
     ) -> Vec<(PeerId, RecordKey)> {
-        self.to_be_fetched.retain(|(key, _t, _), _| key != &key_in);
+        self.to_be_fetched.retain(|(key, current_type, _), _| {
+            if current_type == &record_type {
+                key != &key_in
+            } else {
+                true
+            }
+        });
 
-        self.on_going_fetches.retain(|(key, _t), _| key != &key_in);
+        self.on_going_fetches.retain(|(key, current_type), _| {
+            if current_type == &record_type {
+                key != &key_in
+            } else {
+                true
+            }
+        });
 
         self.next_keys_to_fetch()
     }

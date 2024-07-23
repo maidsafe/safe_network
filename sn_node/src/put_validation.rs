@@ -30,11 +30,6 @@ impl Node {
     pub(crate) async fn validate_and_store_record(&self, record: Record) -> Result<()> {
         let record_header = RecordHeader::from_record(&record)?;
 
-        // Notify replication_fetcher to mark the attempt as completed.
-        // Send the notification earlier to avoid it got skipped due to:
-        // the record becomes stored during the fetch because of other interleaved process.
-        self.network().notify_fetch_completed(record.key.clone());
-
         match record_header.kind {
             RecordKind::ChunkWithPayment => {
                 let record_key = record.key.clone();
@@ -56,6 +51,13 @@ impl Node {
                     // we eagery retry replicaiton as it seems like other nodes are having trouble
                     // did not manage to get this chunk as yet
                     self.replicate_valid_fresh_record(record_key, RecordType::Chunk);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network()
+                        .notify_fetch_completed(record.key.clone(), RecordType::Chunk);
+
                     debug!(
                         "Chunk with addr {:?} already exists: {already_exists}, payment extracted.",
                         chunk.network_address()
@@ -75,6 +77,12 @@ impl Node {
                     Marker::ValidPaidChunkPutFromClient(&PrettyPrintRecordKey::from(&record.key))
                         .log();
                     self.replicate_valid_fresh_record(record_key, RecordType::Chunk);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network()
+                        .notify_fetch_completed(record.key.clone(), RecordType::Chunk);
                 }
 
                 store_chunk_result
@@ -97,6 +105,14 @@ impl Node {
                     let content_hash = XorName::from_content(&value_to_hash);
                     self.replicate_valid_fresh_record(
                         record_key,
+                        RecordType::NonChunk(content_hash),
+                    );
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network().notify_fetch_completed(
+                        record.key.clone(),
                         RecordType::NonChunk(content_hash),
                     );
                 }
@@ -125,6 +141,16 @@ impl Node {
                     Marker::ValidPaidRegisterPutFromClient(&pretty_key).log();
                     // we dont try and force replicaiton here as there's state to be kept in sync
                     // which we leave up to the client to enforce
+
+                    let content_hash = XorName::from_content(&record.value);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network().notify_fetch_completed(
+                        record.key.clone(),
+                        RecordType::NonChunk(content_hash),
+                    );
                 }
                 result
             }
@@ -161,7 +187,19 @@ impl Node {
                     }
                 }
 
-                self.validate_and_store_register(register, true).await
+                let res = self.validate_and_store_register(register, true).await;
+                if res.is_ok() {
+                    let content_hash = XorName::from_content(&record.value);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network().notify_fetch_completed(
+                        record.key.clone(),
+                        RecordType::NonChunk(content_hash),
+                    );
+                }
+                res
             }
         }
     }
@@ -300,8 +338,6 @@ impl Node {
         let updated_register = match self.register_validation(&register, present_locally).await? {
             Some(reg) => reg,
             None => {
-                // Notify replication_fetcher to mark the attempt as completed.
-                self.network().notify_fetch_completed(key.clone());
                 return Ok(());
             }
         };
