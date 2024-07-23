@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721764974205,
+  "lastUpdate": 1721764976426,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "c0bd5f814504c9796d68dd363edd0eed2f2fd98b",
-          "message": "fix(networking): reduce close record range set interval\n\nthe check is actually cheap, so can happen much more frequently",
-          "timestamp": "2024-04-03T07:32:35Z",
-          "tree_id": "d72fb4f74124e1689388a30cecea45fa3d25e92b",
-          "url": "https://github.com/maidsafe/safe_network/commit/c0bd5f814504c9796d68dd363edd0eed2f2fd98b"
-        },
-        "date": 1712132240130,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 187,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b2d7307bde83e0d1d076e19c719aa68c8f60e360",
+          "message": "Merge pull request #2000 from RolandSherwin/dial_down_msgs\n\nchore(node): increase bad node & bootstrap interval",
+          "timestamp": "2024-07-23T19:07:32Z",
+          "tree_id": "04ea2380cd0d08b61d01df0edbbe7c41ddc1b675",
+          "url": "https://github.com/maidsafe/safe_network/commit/b2d7307bde83e0d1d076e19c719aa68c8f60e360"
+        },
+        "date": 1721764975521,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 202,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
