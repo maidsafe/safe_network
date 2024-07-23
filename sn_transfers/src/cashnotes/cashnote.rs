@@ -15,6 +15,7 @@ use crate::{Result, TransferError};
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
+use std::fmt::Debug;
 use tiny_keccak::{Hasher, Sha3};
 
 /// Represents a CashNote (CashNote).
@@ -56,7 +57,7 @@ use tiny_keccak::{Hasher, Sha3};
 /// To spend or work with a CashNote, wallet software must obtain the corresponding
 /// MainSecretKey from the user, and then call an API function that accepts a MainSecretKey,
 /// eg: `cashnote.derivation_index(&main_key)`
-#[derive(custom_debug::Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub struct CashNote {
     /// The transaction's input's SignedSpends
     pub parent_spends: BTreeSet<SignedSpend>,
@@ -66,6 +67,18 @@ pub struct CashNote {
     /// It is to be kept secret to preserve the privacy of the owner.
     /// Without it, it is very hard to link the MainPubkey (original owner) and the UniquePubkey (derived unique identity of the CashNote)
     pub derivation_index: DerivationIndex,
+}
+
+impl Debug for CashNote {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // print all fields and add unique_pubkey as first field
+        f.debug_struct("CashNote")
+            .field("unique_pubkey", &self.unique_pubkey())
+            .field("main_pubkey", &self.main_pubkey)
+            .field("derivation_index", &self.derivation_index)
+            .field("parent_spends", &self.parent_spends)
+            .finish()
+    }
 }
 
 impl CashNote {

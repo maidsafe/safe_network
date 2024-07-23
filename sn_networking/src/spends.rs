@@ -46,11 +46,11 @@ impl Network {
         for (parent_key, parent_spend) in join_all(tasks).await {
             match parent_spend {
                 Ok(parent_spend) => {
-                    parent_spends.insert(BTreeSet::from_iter([parent_spend]));
+                    parent_spends.insert(parent_spend);
                 }
                 Err(NetworkError::DoubleSpendAttempt(attempts)) => {
                     warn!("While verifying {unique_key:?}, a double spend attempt ({attempts:?}) detected for the parent with pub key {parent_key:?} . Continuing verification.");
-                    parent_spends.insert(BTreeSet::from_iter(attempts));
+                    parent_spends.extend(attempts);
                     result = Err(NetworkError::Transfer(TransferError::DoubleSpentParent));
                 }
                 Err(e) => {
@@ -62,7 +62,7 @@ impl Network {
         }
 
         // verify the parents
-        spend.verify_parent_spends(parent_spends.iter())?;
+        spend.verify_parent_spends(&parent_spends)?;
 
         result
     }

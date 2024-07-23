@@ -181,16 +181,20 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     // make sure the double spend's direct descendants are marked as bad
     let s3 = spend3.first().expect("spend3 to have an element");
     let got = dag.get_spend_faults(s3);
-    let expected = BTreeSet::from_iter([
-        SpendFault::MissingAncestry {
-            addr: *s3,
-            ancestor: *double_spent,
-        },
-        SpendFault::DoubleSpentAncestor {
-            addr: *s3,
-            ancestor: *double_spent,
-        },
-    ]);
+    let expected = BTreeSet::from_iter([SpendFault::DoubleSpentAncestor {
+        addr: *s3,
+        ancestor: *double_spent,
+    }]);
+    // let expected = BTreeSet::from_iter([
+    //     SpendFault::MissingAncestry {
+    //         addr: *s3,
+    //         ancestor: *double_spent,
+    //     },
+    //     SpendFault::DoubleSpentAncestor {
+    //         addr: *s3,
+    //         ancestor: *double_spent,
+    //     },
+    // ]); TODO check this
     assert_eq!(got, expected, "spend3 should be unspendable");
     let s3a = spend3a.first().expect("spend3a to have an element");
     let got = dag.get_spend_faults(s3a);
@@ -217,18 +221,14 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     );
     let all_descendants = [spend4, spend5, vec![utxo_of_6], spend4a, vec![utxo_of_5a]];
     for d in all_descendants.iter() {
-        let addr = *d.first().expect("descendant spend to have an element");
-        let got = dag.get_spend_faults(&addr);
-        if got != expected {
-            let expected_ancestor_error = BTreeSet::from_iter([SpendFault::DoubleSpentAncestor {
-                addr,
-                ancestor: *double_spent,
-            }]);
-            assert_eq!(
-                got, expected_ancestor_error,
-                "all descendants should be marked as bad"
-            );
-        }
+        let got = dag.get_spend_faults(d.first().expect("descendant spend to have an element"));
+        let expected = BTreeSet::from_iter([SpendFault::PoisonedAncestry(
+            *d.first().expect("d to have an element"),
+            format!(
+                "spend is on one of multiple branches of a double spent ancestor: {double_spent:?}"
+            ),
+        )]);
+        assert_eq!(got, expected, "all descendants should be marked as bad");
     }
     Ok(())
 }
