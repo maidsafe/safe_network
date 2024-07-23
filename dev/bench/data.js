@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721752796472,
+  "lastUpdate": 1721752915190,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cd8dfee8e639e558f143cb0cc319d62d477c231f",
-          "message": "chore: cleanup deadcode and bad comments",
-          "timestamp": "2024-04-03T06:49:29Z",
-          "tree_id": "db2b1262e0d9e7122cf7661e595d4027c908cf6e",
-          "url": "https://github.com/maidsafe/safe_network/commit/cd8dfee8e639e558f143cb0cc319d62d477c231f"
-        },
-        "date": 1712130026895,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 145,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a9f0d5602e1b233a3514ed5c22d50705893ebcb9",
+          "message": "Merge pull request #2001 from jacderida/disable-stable-trigger\n\nchore: remove push triggers for release workflow",
+          "timestamp": "2024-07-23T17:27:01+01:00",
+          "tree_id": "cc201ce836bab564cc8b86c6dba0c4b2fc381719",
+          "url": "https://github.com/maidsafe/safe_network/commit/a9f0d5602e1b233a3514ed5c22d50705893ebcb9"
+        },
+        "date": 1721752914890,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 173,
             "unit": "MB"
           }
         ]
