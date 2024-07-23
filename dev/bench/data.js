@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721711402814,
+  "lastUpdate": 1721711404341,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "abfcd0c01345ead03e9e1197b1eb40066f7e46c3",
-          "message": "feat(ci): run wan churn tests on the entire network",
-          "timestamp": "2024-04-02T16:58:43Z",
-          "tree_id": "19fa9388aae89128482a7e695c466946b030b096",
-          "url": "https://github.com/maidsafe/safe_network/commit/abfcd0c01345ead03e9e1197b1eb40066f7e46c3"
-        },
-        "date": 1712080058232,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7295,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34922,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 52794,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "cd5f8d40b5bfac81ef290ebebdc416f0905a8a48",
+          "message": "chore: remove unused node code",
+          "timestamp": "2024-07-23T04:20:19Z",
+          "tree_id": "fc48d52ccdd550ac6af36bed198f82a76fc35370",
+          "url": "https://github.com/maidsafe/safe_network/commit/cd5f8d40b5bfac81ef290ebebdc416f0905a8a48"
+        },
+        "date": 1721711404016,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6156,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34534,
             "unit": "ms"
           },
           {
