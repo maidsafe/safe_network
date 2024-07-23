@@ -209,7 +209,6 @@ pub fn create_first_cash_note_from_key(
     let parent_spends = BTreeSet::from_iter([SignedSpend::sign(pre_genesis_spend, &input_sk)]);
 
     let genesis_cash_note = CashNote {
-        unique_pubkey: output_pk,
         parent_spends,
         main_pubkey,
         derivation_index: GENESIS_OUTPUT_DERIVATION_INDEX,

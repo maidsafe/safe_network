@@ -125,10 +125,10 @@ pub fn sort_peers_by_key<'a, T>(
     // bail early if that's not the case
     if CLOSE_GROUP_SIZE > peers.len() {
         warn!("Not enough peers in the k-bucket to satisfy the request");
-        // return Err(NetworkError::NotEnoughPeers {
-        //     found: peers.len(),
-        //     required: CLOSE_GROUP_SIZE,
-        // });
+        return Err(NetworkError::NotEnoughPeers {
+            found: peers.len(),
+            required: CLOSE_GROUP_SIZE,
+        });
     }
 
     // Create a vector of tuples where each tuple is a reference to a peer and its distance to the key.

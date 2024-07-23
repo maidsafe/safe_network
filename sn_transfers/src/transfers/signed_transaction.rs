@@ -48,12 +48,12 @@ impl SignedTransaction {
     }
 
     /// Verify the `SignedTransaction`
-    pub fn verify(&self, main_key: &MainSecretKey) -> Result<()> {
+    pub fn verify(&self) -> Result<()> {
         for cn in self.output_cashnotes.iter() {
-            cn.verify(main_key)?;
+            cn.verify()?;
         }
         if let Some(ref cn) = self.change_cashnote {
-            cn.verify(main_key)?;
+            cn.verify()?;
         }
         for spend in self.spends.iter() {
             spend.verify()?;

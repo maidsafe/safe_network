@@ -39,8 +39,8 @@ pub enum TransferError {
     HexDeserializationFailed(String),
     #[error("Could not serialize CashNote to hex: {0}")]
     HexSerializationFailed(String),
-    #[error("Transaction must have at least one input.")]
-    MissingTxInputs,
+    #[error("CashNote must have at least one ancestor.")]
+    CashNoteMissingAncestors,
     #[error("The spends don't match the inputs of the Transaction.")]
     SpendsDoNotMatchInputs,
     #[error("Overflow occurred while adding values")]

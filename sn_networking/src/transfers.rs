@@ -120,7 +120,7 @@ impl Network {
     ) -> Result<Vec<CashNote>> {
         // get all the parent spends
         debug!(
-            "Getting parent Spends for validation from {:?}",
+            "Getting parent spends for validation from {:?}",
             cashnote_redemptions.len()
         );
         let parent_addrs: BTreeSet<SpendAddress> = cashnote_redemptions
@@ -144,7 +144,6 @@ impl Network {
         let our_output_cash_notes: Vec<CashNote> = cashnote_redemptions
             .iter()
             .map(|cnr| {
-                let unique_pubkey = main_pubkey.new_unique_pubkey(&cnr.derivation_index);
                 let derivation_index = cnr.derivation_index;
                 // assuming parent spends all exist as they were collected just above
                 let parent_spends: BTreeSet<SignedSpend> = cnr
@@ -161,13 +160,19 @@ impl Network {
                     .collect();
 
                 CashNote {
-                    unique_pubkey,
                     parent_spends: parent_spends.clone(),
                     main_pubkey,
                     derivation_index,
                 }
             })
             .collect();
+
+        // verify our output cash notes
+        for cash_note in our_output_cash_notes.iter() {
+            cash_note.verify().map_err(|e| {
+                NetworkError::InvalidTransfer(format!("Invalid CashNoteRedemption: {e}"))
+            })?;
+        }
 
         Ok(our_output_cash_notes)
     }

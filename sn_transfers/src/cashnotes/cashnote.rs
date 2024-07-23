@@ -58,9 +58,6 @@ use tiny_keccak::{Hasher, Sha3};
 /// eg: `cashnote.derivation_index(&main_key)`
 #[derive(custom_debug::Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub struct CashNote {
-    /// The unique public key of this CashNote. It is unique, and there can never
-    /// be another CashNote with the same public key. It used in SignedSpends.
-    pub unique_pubkey: UniquePubkey,
     /// The transaction's input's SignedSpends
     pub parent_spends: BTreeSet<SignedSpend>,
     /// This is the MainPubkey of the owner of this CashNote
@@ -74,7 +71,8 @@ pub struct CashNote {
 impl CashNote {
     /// Return the unique pubkey of this CashNote.
     pub fn unique_pubkey(&self) -> UniquePubkey {
-        self.unique_pubkey
+        self.main_pubkey()
+            .new_unique_pubkey(&self.derivation_index())
     }
 
     // Return MainPubkey from which UniquePubkey is derived.
@@ -135,21 +133,17 @@ impl CashNote {
         Hash::from(hash)
     }
 
-    /// Verifies that this CashNote is valid.
-    ///
-    /// A CashNote recipient should call this immediately upon receipt.
-    ///
-    /// important: this does not check if the CashNote has been spent.
-    /// For that, one must query the spentbook nodes.
-    ///
-    /// Note that the spentbook nodes cannot perform this check.  Only the CashNote
-    /// recipient (private key holder) can.
-    pub fn verify(&self, main_key: &MainSecretKey) -> Result<(), TransferError> {
+    /// Verifies that this CashNote is valid. This checks that the CashNote is structurally sound.
+    /// Important: this does not check if the CashNote has been spent, nor does it check if the parent spends are spent.
+    /// For that, one must query the Network.
+    pub fn verify(&self) -> Result<(), TransferError> {
+        // check if we have parents
         if self.parent_spends.is_empty() {
-            return Err(TransferError::MissingTxInputs);
+            return Err(TransferError::CashNoteMissingAncestors);
         }
 
-        let unique_pubkey = self.derived_key(main_key)?.unique_pubkey();
+        // check if the parents refer to us as a descendant
+        let unique_pubkey = self.unique_pubkey();
         if !self
             .parent_spends
             .iter()

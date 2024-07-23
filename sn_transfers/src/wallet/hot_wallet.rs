@@ -349,7 +349,7 @@ impl HotWallet {
         let signed_tx = unsigned_tx
             .sign(&self.key)
             .map_err(|e| Error::CouldNotSignTransaction(e.to_string()))?;
-        if let Err(err) = signed_tx.verify(&self.key) {
+        if let Err(err) = signed_tx.verify() {
             return Err(Error::CouldNotSignTransaction(format!(
                 "Failed to verify signed transaction: {err:?}"
             )));

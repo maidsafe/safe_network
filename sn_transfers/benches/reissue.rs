@@ -57,7 +57,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
         let guard = pprof::ProfilerGuard::new(100).unwrap();
 
         b.iter(|| {
-            black_box(&signed_tx).verify(&starting_main_key).unwrap();
+            black_box(&signed_tx).verify().unwrap();
         });
 
         #[cfg(unix)]
@@ -134,9 +134,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         let guard = pprof::ProfilerGuard::new(100).unwrap();
 
         b.iter(|| {
-            black_box(&many_to_one_tx)
-                .verify(&starting_main_key)
-                .unwrap();
+            black_box(&many_to_one_tx).verify().unwrap();
         });
 
         #[cfg(unix)]

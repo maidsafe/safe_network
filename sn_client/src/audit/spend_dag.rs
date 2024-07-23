@@ -12,8 +12,8 @@ use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 use sn_transfers::{
-    is_genesis_spend, CashNoteRedemption, DerivationIndex, Hash, NanoTokens, OutputPurpose,
-    SignedSpend, SpendAddress, UniquePubkey,
+    is_genesis_spend, CashNoteRedemption, DerivationIndex, Hash, NanoTokens, SignedSpend,
+    SpendAddress, UniquePubkey,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -409,15 +409,12 @@ impl SpendDag {
             Vec<(DerivationIndex, SpendAddress)>,
         > = BTreeMap::new();
         for s in spends {
-            for (unique_pk, (_amount, purpose)) in s.spend.descendants.iter() {
-                if let OutputPurpose::RoyaltyFee(derivation_index) = purpose {
-                    let parent_spend_addr =
-                        SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey);
-                    royalties_by_unique_pk
-                        .entry(*unique_pk)
-                        .and_modify(|v| v.push((*derivation_index, parent_spend_addr)))
-                        .or_insert(vec![(*derivation_index, parent_spend_addr)]);
-                }
+            let parent_spend_addr = SpendAddress::from_unique_pubkey(&s.spend.unique_pubkey);
+            for (roy_pk, _, derivation_idx) in s.spend.network_royalties() {
+                royalties_by_unique_pk
+                    .entry(roy_pk)
+                    .and_modify(|v| v.push((derivation_idx, parent_spend_addr)))
+                    .or_insert(vec![(derivation_idx, parent_spend_addr)]);
             }
         }
 
@@ -728,9 +725,9 @@ impl SpendDag {
                 continue;
             }
 
-            // verify parent Tx
+            // verify parents
             for s in spends {
-                recorded_faults.extend(self.verify_parent_tx(s)?);
+                recorded_faults.extend(self.verify_spend_parents(s)?);
             }
         }
 
@@ -742,14 +739,14 @@ impl SpendDag {
     }
 
     /// Verifies a single spend and returns resulting errors and DAG poisoning spread
-    fn verify_parent_tx(&self, spend: &SignedSpend) -> Result<BTreeSet<SpendFault>, DagError> {
+    fn verify_spend_parents(&self, spend: &SignedSpend) -> Result<BTreeSet<SpendFault>, DagError> {
         let addr = spend.address();
         let mut recorded_faults = BTreeSet::new();
-        debug!("Verifying spend at: {addr:?}");
+        debug!("Verifying spend: {spend:?}");
 
         // skip if spend matches genesis
         if is_genesis_spend(spend) {
-            debug!("Skip transaction verification for Genesis at: {addr:?}");
+            debug!("Skip transaction verification for Genesis: {spend:?}");
             return Ok(recorded_faults);
         }
 
@@ -757,7 +754,7 @@ impl SpendDag {
         let (ancestor_spends, faults) = match self.get_direct_ancestors(spend) {
             Ok(a) => a,
             Err(missing_ancestor) => {
-                debug!("Failed to get ancestor spends of {addr:?} as ancestor at {missing_ancestor:?} is missing");
+                debug!("Failed to get ancestor spends of {spend:?} as ancestor at {missing_ancestor:?} is missing");
                 recorded_faults.insert(SpendFault::MissingAncestry {
                     addr,
                     ancestor: missing_ancestor,
@@ -778,11 +775,11 @@ impl SpendDag {
             let _ = parents_collector.insert(collector);
         }
 
-        // verify the tx
+        // verify the parents
         if let Err(e) = spend.verify_parent_spends(parents_collector.iter()) {
-            warn!("Parent Tx verfication failed for spend at: {addr:?}: {e}");
+            warn!("Parent verfication failed for spend at: {spend:?}: {e}");
             recorded_faults.insert(SpendFault::InvalidTransaction(addr, format!("{e}")));
-            let poison = format!("ancestor transaction was poisoned at: {addr:?}: {e}");
+            let poison = format!("ancestor transaction was poisoned at: {spend:?}: {e}");
             let descendants_faults = self.poison_all_descendants(spend, poison)?;
             recorded_faults.extend(descendants_faults);
         }
