@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721393744150,
+  "lastUpdate": 1721703414856,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "47e2510eec5068a1a471c9ddd61f1779fb49c8e1",
-          "message": "chore(cli): removing the folders upload command for cleaner UX",
-          "timestamp": "2024-04-02T16:41:38Z",
-          "tree_id": "7bcd2050b7d1e52cc04493976b515050c7e5d694",
-          "url": "https://github.com/maidsafe/safe_network/commit/47e2510eec5068a1a471c9ddd61f1779fb49c8e1"
-        },
-        "date": 1712079154248,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2013995902998411,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.625474507653725,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.40589997354462,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.16130232455764,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c688b7eafc6075bd9ce2dd34025d3688d5d7cbe3",
+          "message": "chore(cli): use Quick strategy during chunk upload",
+          "timestamp": "2024-07-23T02:00:48Z",
+          "tree_id": "97cf57b1b8d1d156c7fc15969661e173575047d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/c688b7eafc6075bd9ce2dd34025d3688d5d7cbe3"
+        },
+        "date": 1721703408073,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.0985727620010777,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.5178113614952093,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.32426848903126,
             "unit": "MiB/s"
           }
         ]
