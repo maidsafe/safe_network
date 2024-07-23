@@ -719,9 +719,9 @@ impl SpendDag {
                 continue;
             }
 
-            // skip parent Tx verification for source as we don't know its ancestors
+            // skip parent verification for source as we don't know its ancestors
             if addr == source {
-                debug!("Skip transaction verification for source at: {addr:?}");
+                debug!("Skip parent verification for source at: {addr:?}");
                 continue;
             }
 
