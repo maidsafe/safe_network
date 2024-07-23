@@ -360,7 +360,7 @@ impl Client {
         // use iteration instead of recursion to avoid stack overflow
         let mut ancestors_to_verify = new_spend.spend.ancestors.clone();
         let mut depth = 0;
-        let mut known_ancestors = BTreeSet::new();
+        let mut known_ancestors = BTreeSet::from_iter([dag.source()]);
         let start = std::time::Instant::now();
 
         while !ancestors_to_verify.is_empty() {
@@ -404,20 +404,8 @@ impl Client {
                 debug!("Depth {depth} - Got {spends_len} spends for parent: {addrs_to_verify:?}");
                 trace!("Spends for {addrs_to_verify:?} - {spends:?}");
 
-                // check if we reached the genesis spend
-                known_ancestors.extend(addrs_to_verify.clone());
-                if spends
-                    .iter()
-                    .all(|s| s.spend.unique_pubkey == *sn_transfers::GENESIS_SPEND_UNIQUE_KEY)
-                    && spends.len() == 1
-                {
-                    debug!(
-                        "Depth {depth} - reached genesis spend on one branch: {addrs_to_verify:?}"
-                    );
-                    continue;
-                }
-
                 // add spends to the dag
+                known_ancestors.extend(addrs_to_verify.clone());
                 for (spend, addr) in spends.clone().into_iter().zip(addrs_to_verify) {
                     let is_new_spend = dag.insert(addr, spend.clone());
 
