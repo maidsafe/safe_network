@@ -107,6 +107,11 @@ pub enum CmdResponse {
     /// Response to replication cmd
     Replicate(Result<()>),
     //
+    // ===== RequestReplication =====
+    //
+    /// Response to request replication cmd
+    RequestReplication(Result<()>),
+    //
     // ===== QuoteVerification =====
     //
     /// Response to quote verification cmd

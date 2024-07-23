@@ -96,6 +96,7 @@ pub struct NodeBuilder {
     root_dir: PathBuf,
     #[cfg(feature = "upnp")]
     upnp: bool,
+    was_node_restarted: bool,
 }
 
 impl NodeBuilder {
@@ -118,6 +119,7 @@ impl NodeBuilder {
             root_dir,
             #[cfg(feature = "upnp")]
             upnp: false,
+            was_node_restarted: false,
         }
     }
 
@@ -146,6 +148,12 @@ impl NodeBuilder {
     #[cfg(feature = "upnp")]
     pub fn upnp(&mut self, upnp: bool) {
         self.upnp = upnp;
+    }
+
+    /// Set to true to indicate that the node was restarted instead of being started for the first time.
+    /// This is used to trigger replication on restart.
+    pub fn was_node_restarted(&mut self, was_node_restarted: bool) {
+        self.was_node_restarted = was_node_restarted;
     }
 
     /// Asynchronously runs a new node instance, setting up the swarm driver,
@@ -213,12 +221,16 @@ impl NodeBuilder {
             inner: Arc::new(node),
         };
         let running_node = RunningNode {
-            network,
+            network: network.clone(),
             node_events_channel,
         };
 
         // Run the node
         node.run(swarm_driver, network_event_receiver);
+
+        if self.was_node_restarted {
+            network.request_peers_for_replication();
+        }
 
         Ok(running_node)
     }

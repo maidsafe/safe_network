@@ -42,19 +42,6 @@ pub enum Query {
     CheckNodeInProblem(NetworkAddress),
 }
 
-impl Query {
-    /// Used to send a query to the close group of the address.
-    pub fn dst(&self) -> NetworkAddress {
-        match self {
-            Query::GetStoreCost(address) | Query::CheckNodeInProblem(address) => address.clone(),
-            // Shall not be called for this, as this is a `one-to-one` message,
-            // and the destination shall be decided by the requester already.
-            Query::GetReplicatedRecord { key, .. } => key.clone(),
-            Query::GetChunkExistenceProof { key, .. } => key.clone(),
-        }
-    }
-}
-
 impl std::fmt::Display for Query {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

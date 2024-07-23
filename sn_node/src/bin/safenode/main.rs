@@ -186,6 +186,7 @@ fn main() -> Result<()> {
     let opt = Opt::parse();
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
+    let was_node_restarted = does_keypair_exist(&opt.root_dir);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
 
     let (log_output_dest, log_reload_handle, _log_appender_guard) =
@@ -223,6 +224,7 @@ fn main() -> Result<()> {
         }
         #[cfg(feature = "upnp")]
         node_builder.upnp(opt.upnp);
+        node_builder.was_node_restarted(was_node_restarted);
 
         // if enable flag is provided or only if the port is specified then enable the server by setting Some()
         #[cfg(feature = "open-metrics")]
@@ -508,6 +510,15 @@ fn keypair_from_path(path: impl AsRef<Path>) -> Result<Keypair> {
     };
 
     Ok(keypair)
+}
+
+/// Check if the keypair file exists in the root directory. This means that the node was restarted.
+fn does_keypair_exist(root_dir: &Option<PathBuf>) -> bool {
+    if let Some(dir) = root_dir {
+        dir.join(SECRET_KEY_FILENAME).exists()
+    } else {
+        false
+    }
 }
 
 /// The keypair is located inside the root directory. At the same time, when no dir is specified,

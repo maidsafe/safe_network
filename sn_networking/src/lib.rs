@@ -804,6 +804,11 @@ impl Network {
         self.send_local_swarm_cmd(LocalSwarmCmd::TriggerIntervalReplication { all_records })
     }
 
+    /// Request the closest peers to send in the records that we are missing.
+    pub fn request_peers_for_replication(&self) {
+        self.send_network_swarm_cmd(NetworkSwarmCmd::RequestPeersForReplication)
+    }
+
     pub fn record_node_issues(&self, peer_id: PeerId, issue: NodeIssue) {
         self.send_local_swarm_cmd(LocalSwarmCmd::RecordNodeIssue { peer_id, issue });
     }

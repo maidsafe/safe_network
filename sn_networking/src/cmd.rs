@@ -28,6 +28,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
+use std::collections::HashMap;
 use std::{collections::BTreeMap, fmt::Debug};
 use tokio::sync::oneshot;
 use xor_name::XorName;
@@ -176,6 +177,8 @@ pub enum NetworkSwarmCmd {
         sender: oneshot::Sender<Result<()>>,
         quorum: Quorum,
     },
+    /// Request peers to replicate the data that we are missing
+    RequestPeersForReplication,
 }
 
 /// Debug impl for LocalSwarmCmd to avoid printing full Record, instead only RecodKey
@@ -317,6 +320,9 @@ impl Debug for NetworkSwarmCmd {
                     f,
                     "NetworkSwarmCmd::SendRequest req: {req:?}, peer: {peer:?}"
                 )
+            }
+            NetworkSwarmCmd::RequestPeersForReplication => {
+                write!(f, "NetworkSwarmCmd::RequestPeersForReplication")
             }
         }
     }
@@ -523,6 +529,10 @@ impl SwarmDriver {
                             .map_err(NetworkError::OutgoingResponseDropped)?;
                     }
                 }
+            }
+            NetworkSwarmCmd::RequestPeersForReplication => {
+                cmd_string = "RequestPeersForReplication";
+                self.request_peers_for_replication();
             }
         }
 
@@ -892,7 +902,20 @@ impl SwarmDriver {
         let _ = self.quotes_history.insert(peer_id, quote);
     }
 
-    fn try_interval_replication(&mut self, all_records: bool) -> Result<()> {
+    /// Request the closest peers to send replication list to us. This is used to fetch the records that we might have
+    /// missed during a restart.
+    fn request_peers_for_replication(&mut self) {
+        #[allow(clippy::mutable_key_type)]
+        let our_keys = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_keys_ref()
+            .values()
+            .map(|(address, record_type, _)| (address.clone(), record_type.clone()))
+            .collect::<HashMap<_, _>>();
+
         // get closest peers from buckets, sorted by increasing distance to us
         let our_peer_id = self.self_peer_id.into();
         let closest_k_peers = self
@@ -900,7 +923,79 @@ impl SwarmDriver {
             .behaviour_mut()
             .kademlia
             .get_closest_local_peers(&our_peer_id)
-            // Map KBucketKey<PeerId> to PeerId.
+            .map(|key| key.into_preimage());
+
+        // Only grab the closest nodes within the REPLICATE_RANGE
+        let close_group = closest_k_peers
+            .into_iter()
+            // add some leeway to allow for divergent knowledge
+            .take(REPLICATION_PEERS_COUNT)
+            .collect::<Vec<_>>();
+
+        for peer_id in close_group {
+            let request = Request::Cmd(Cmd::RequestReplication {
+                keys: our_keys.clone(),
+            });
+            let request_id = self
+                .swarm
+                .behaviour_mut()
+                .request_response
+                .send_request(&peer_id, request.clone());
+            debug!("Sending RequestReplication cmd {request_id:?} to peer {peer_id:?}. We currently have {} keys", our_keys.len());
+            let _ = self.pending_requests.insert(request_id, None);
+        }
+    }
+
+    /// Send Replicate Cmd to a peer who requested for it.
+    #[allow(clippy::mutable_key_type)]
+    pub fn trigger_replication_to_a_peer(
+        &mut self,
+        peer_id: PeerId,
+        their_keys: HashMap<NetworkAddress, RecordType>,
+    ) {
+        let records_to_replicate = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_keys_ref()
+            .values()
+            .filter_map(|(key, kind, _)| {
+                if let Some(their_record_type) = their_keys.get(key) {
+                    if their_record_type != kind {
+                        Some((key.clone(), kind.clone()))
+                    } else {
+                        None
+                    }
+                } else {
+                    Some((key.clone(), kind.clone()))
+                }
+            })
+            .collect_vec();
+        let len = records_to_replicate.len();
+
+        let request = Request::Cmd(Cmd::Replicate {
+            holder: NetworkAddress::from_peer(self.self_peer_id),
+            keys: records_to_replicate,
+        });
+        let request_id = self
+            .swarm
+            .behaviour_mut()
+            .request_response
+            .send_request(&peer_id, request.clone());
+        debug!("Sending Replicate cmd {request_id:?} with {len} keys to peer {peer_id:?} as RequestReplication was called by that peer",);
+        let _ = self.pending_requests.insert(request_id, None);
+        let _ = self.replication_targets.insert(peer_id, Instant::now());
+    }
+
+    pub fn try_interval_replication(&mut self, all_records: bool) -> Result<()> {
+        // get closest peers from buckets, sorted by increasing distance to us
+        let our_peer_id = self.self_peer_id.into();
+        let closest_k_peers = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .get_closest_local_peers(&our_peer_id)
             .map(|key| key.into_preimage());
 
         // Only grab the closest nodes within the REPLICATE_RANGE

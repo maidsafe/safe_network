@@ -7,6 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
 
+use std::collections::HashMap;
+
 use crate::{storage::RecordType, NetworkAddress};
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
@@ -29,6 +31,11 @@ pub enum Cmd {
         holder: NetworkAddress,
         /// Keys of copy that shall be replicated.
         keys: Vec<(NetworkAddress, RecordType)>,
+    },
+    /// Ask the peer to trigger replication of the data that we are missing
+    RequestReplication {
+        /// Keys of the data that we currently hold.
+        keys: HashMap<NetworkAddress, RecordType>,
     },
     /// Write operation to notify nodes a list of PaymentQuote collected.
     QuoteVerification {
@@ -54,6 +61,13 @@ impl std::fmt::Debug for Cmd {
                     .field("first_ten_keys", &first_ten_keys)
                     .finish()
             }
+            Cmd::RequestReplication { keys: holding_keys } => {
+                let first_ten_keys: Vec<_> = holding_keys.iter().take(10).collect();
+                f.debug_struct("Cmd::RequestReplication")
+                    .field("keys_len", &holding_keys.len())
+                    .field("first_ten_keys", &first_ten_keys)
+                    .finish()
+            }
             Cmd::QuoteVerification { target, quotes } => f
                 .debug_struct("Cmd::QuoteVerification")
                 .field("target", target)
@@ -73,17 +87,6 @@ impl std::fmt::Debug for Cmd {
     }
 }
 
-impl Cmd {
-    /// Used to send a cmd to the close group of the address.
-    pub fn dst(&self) -> NetworkAddress {
-        match self {
-            Cmd::Replicate { holder, .. } => holder.clone(),
-            Cmd::QuoteVerification { target, .. } => target.clone(),
-            Cmd::PeerConsideredAsBad { bad_peer, .. } => bad_peer.clone(),
-        }
-    }
-}
-
 impl std::fmt::Display for Cmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -94,6 +97,9 @@ impl std::fmt::Display for Cmd {
                     holder.as_peer_id(),
                     keys.len()
                 )
+            }
+            Cmd::RequestReplication { keys: holding_keys } => {
+                write!(f, "Cmd::RequestReplication({} keys)", holding_keys.len())
             }
             Cmd::QuoteVerification { target, quotes } => {
                 write!(

@@ -50,6 +50,20 @@ impl SwarmDriver {
 
                             self.add_keys_to_replication_fetcher(holder, keys);
                         }
+                        Request::Cmd(sn_protocol::messages::Cmd::RequestReplication {
+                            keys: holding_keys,
+                        }) => {
+                            let response = Response::Cmd(
+                                sn_protocol::messages::CmdResponse::RequestReplication(Ok(())),
+                            );
+                            self.swarm
+                                .behaviour_mut()
+                                .request_response
+                                .send_response(channel, response)
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+
+                            self.trigger_replication_to_a_peer(peer, holding_keys);
+                        }
                         Request::Cmd(sn_protocol::messages::Cmd::QuoteVerification {
                             quotes,
                             ..
