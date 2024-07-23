@@ -34,7 +34,6 @@ use futures::future::Either;
 use futures::StreamExt;
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
-use libp2p::Transport as _;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
@@ -47,6 +46,7 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
+use libp2p::{swarm::behaviour::toggle::Toggle, Transport as _};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use sn_protocol::{
@@ -203,9 +203,9 @@ pub(super) struct NodeBehaviour {
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
     #[cfg(feature = "upnp")]
-    pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
+    pub(super) upnp: Toggle<libp2p::upnp::tokio::Behaviour>,
     pub(super) relay_client: libp2p::relay::client::Behaviour,
-    pub(super) relay_server: libp2p::relay::Behaviour,
+    pub(super) relay_server: Toggle<libp2p::relay::Behaviour>,
     pub(super) dcutr: libp2p::dcutr::Behaviour,
     pub(super) kademlia: kad::Behaviour<UnifiedRecordStore>,
     pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
@@ -561,7 +561,7 @@ impl NetworkBuilder {
             })
             .boxed();
 
-        let relay_server = {
+        let relay_server = if !self.is_behind_home_network {
             let relay_server_cfg = relay::Config {
                 max_reservations: 128,             // Amount of peers we are relaying for
                 max_circuits: 1024, // The total amount of relayed connections at any given moment.
@@ -569,8 +569,11 @@ impl NetworkBuilder {
                 circuit_src_rate_limiters: vec![], // No extra rate limiting for now
                 ..Default::default()
             };
-            libp2p::relay::Behaviour::new(peer_id, relay_server_cfg)
-        };
+            Some(libp2p::relay::Behaviour::new(peer_id, relay_server_cfg))
+        } else {
+            None
+        }
+        .into(); // Into `Toggle<T>`
 
         let behaviour = NodeBehaviour {
             blocklist: libp2p::allow_block_list::Behaviour::default(),
