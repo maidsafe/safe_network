@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721703541304,
+  "lastUpdate": 1721703543990,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "47e2510eec5068a1a471c9ddd61f1779fb49c8e1",
-          "message": "chore(cli): removing the folders upload command for cleaner UX",
-          "timestamp": "2024-04-02T16:41:38Z",
-          "tree_id": "7bcd2050b7d1e52cc04493976b515050c7e5d694",
-          "url": "https://github.com/maidsafe/safe_network/commit/47e2510eec5068a1a471c9ddd61f1779fb49c8e1"
-        },
-        "date": 1712079275224,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7613,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34747,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 35941,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c688b7eafc6075bd9ce2dd34025d3688d5d7cbe3",
+          "message": "chore(cli): use Quick strategy during chunk upload",
+          "timestamp": "2024-07-23T02:00:48Z",
+          "tree_id": "97cf57b1b8d1d156c7fc15969661e173575047d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/c688b7eafc6075bd9ce2dd34025d3688d5d7cbe3"
+        },
+        "date": 1721703542986,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 9417,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 52794,
             "unit": "ms"
           },
           {
