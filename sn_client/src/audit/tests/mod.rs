@@ -29,11 +29,11 @@ fn test_spend_dag_verify_valid_simple() -> Result<()> {
     let owner5 = net.new_pk_with_balance(0)?;
     let owner6 = net.new_pk_with_balance(0)?;
 
-    net.send(&owner1, &owner2, 100, false)?;
-    net.send(&owner2, &owner3, 100, false)?;
-    net.send(&owner3, &owner4, 100, false)?;
-    net.send(&owner4, &owner5, 100, false)?;
-    net.send(&owner5, &owner6, 100, false)?;
+    net.send(&owner1, &owner2, 100)?;
+    net.send(&owner2, &owner3, 100)?;
+    net.send(&owner3, &owner4, 100)?;
+    net.send(&owner4, &owner5, 100)?;
+    net.send(&owner5, &owner6, 100)?;
 
     let mut dag = SpendDag::new(genesis);
     for spend in net.spends {
@@ -60,32 +60,32 @@ fn test_spend_dag_double_spend_poisonning() -> Result<()> {
     let owner_cheat = net.new_pk_with_balance(0)?;
 
     // spend normaly and save a cashnote to reuse later
-    net.send(&owner1, &owner2, 100, false)?;
+    net.send(&owner1, &owner2, 100)?;
     let cn_to_reuse_later = net
         .wallets
         .get(&owner2)
         .expect("owner2 wallet to exist")
         .cn
         .clone();
-    let spend1 = net.send(&owner2, &owner3, 100, false)?;
-    let spend_ko3 = net.send(&owner3, &owner4, 100, false)?;
-    let spend_ok4 = net.send(&owner4, &owner5, 100, false)?;
-    let spend_ok5 = net.send(&owner5, &owner6, 100, false)?;
+    let spend1 = net.send(&owner2, &owner3, 100)?;
+    let spend_ko3 = net.send(&owner3, &owner4, 100)?;
+    let spend_ok4 = net.send(&owner4, &owner5, 100)?;
+    let spend_ok5 = net.send(&owner5, &owner6, 100)?;
 
     // reuse that cashnote to perform a double spend far back in history
     net.wallets
         .get_mut(&owner2)
         .expect("owner2 wallet to still exist")
         .cn = cn_to_reuse_later;
-    let spend2 = net.send(&owner2, &owner_cheat, 100, false)?;
+    let spend2 = net.send(&owner2, &owner_cheat, 100)?;
 
     // create dag
     let mut dag = SpendDag::new(genesis);
     for spend in net.spends {
         dag.insert(spend.address(), spend.clone());
     }
-    // dag.dump_to_file("/tmp/test_spend_dag_double_spend_poisonning")?;
     assert_eq!(dag.record_faults(&genesis), Ok(()));
+    dag.dump_to_file("/tmp/test_spend_dag_double_spend_poisonning")?;
 
     // make sure double spend is detected
     assert_eq!(spend1, spend2, "both spends should be at the same address");
@@ -144,26 +144,26 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     let owner5a = net.new_pk_with_balance(0)?;
 
     // spend normaly and save a cashnote to reuse later
-    net.send(&owner1, &owner2, 100, false)?;
+    net.send(&owner1, &owner2, 100)?;
     let cn_to_reuse_later = net
         .wallets
         .get(&owner2)
         .expect("owner2 wallet to exist")
         .cn
         .clone();
-    let spend2 = net.send(&owner2, &owner3, 100, false)?;
-    let spend3 = net.send(&owner3, &owner4, 100, false)?;
-    let spend4 = net.send(&owner4, &owner5, 100, false)?;
-    let spend5 = net.send(&owner5, &owner6, 100, false)?;
+    let spend2 = net.send(&owner2, &owner3, 100)?;
+    let spend3 = net.send(&owner3, &owner4, 100)?;
+    let spend4 = net.send(&owner4, &owner5, 100)?;
+    let spend5 = net.send(&owner5, &owner6, 100)?;
 
     // reuse that cashnote to perform a double spend and create a branch
     net.wallets
         .get_mut(&owner2)
         .expect("owner2 wallet to still exist")
         .cn = cn_to_reuse_later;
-    let spend2a = net.send(&owner2, &owner3a, 100, false)?;
-    let spend3a = net.send(&owner3a, &owner4a, 100, false)?;
-    let spend4a = net.send(&owner4a, &owner5a, 100, false)?;
+    let spend2a = net.send(&owner2, &owner3a, 100)?;
+    let spend3a = net.send(&owner3a, &owner4a, 100)?;
+    let spend4a = net.send(&owner4a, &owner5a, 100)?;
 
     // create dag
     let mut dag = SpendDag::new(genesis);
@@ -173,7 +173,7 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     }
 
     assert_eq!(dag.record_faults(&genesis), Ok(()));
-    // dag.dump_to_file("/tmp/test_spend_dag_double_spend_branches")?;
+    dag.dump_to_file("/tmp/test_spend_dag_double_spend_branches")?;
 
     // make sure double spend is detected
     assert_eq!(spend2, spend2a, "both spends should be at the same address");
@@ -192,6 +192,10 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     assert_eq!(got, expected, "spend3 should be unspendable");
     let s3a = spend3a.first().expect("spend3a to have an element");
     let got = dag.get_spend_faults(s3a);
+    let expected = BTreeSet::from_iter([SpendFault::DoubleSpentAncestor {
+        addr: *s3a,
+        ancestor: *double_spent,
+    }]);
     assert_eq!(got, expected, "spend3a should be unspendable");
 
     // make sure all the descendants further down the branch are poisoned due to a double spent ancestor
@@ -243,12 +247,12 @@ fn test_spend_dag_double_spend_detection() -> Result<()> {
         .expect("owner1 wallet to exist")
         .cn
         .clone();
-    let spend1_addr = net.send(&owner1, &owner2a, 100, false)?;
+    let spend1_addr = net.send(&owner1, &owner2a, 100)?;
     net.wallets
         .get_mut(&owner1)
         .expect("owner1 wallet to still exist")
         .cn = cn_to_reuse;
-    let spend2_addr = net.send(&owner1, &owner2b, 100, false)?;
+    let spend2_addr = net.send(&owner1, &owner2b, 100)?;
 
     // get the UTXOs of the two spends
     let upk_of_2a = net
@@ -327,20 +331,20 @@ fn test_spend_dag_missing_ancestry() -> Result<()> {
     let owner5 = net.new_pk_with_balance(0)?;
     let owner6 = net.new_pk_with_balance(0)?;
 
-    net.send(&owner1, &owner2, 100, false)?;
-    net.send(&owner2, &owner3, 100, false)?;
+    net.send(&owner1, &owner2, 100)?;
+    net.send(&owner2, &owner3, 100)?;
     let spend_missing = net
-        .send(&owner3, &owner4, 100, false)?
+        .send(&owner3, &owner4, 100)?
         .first()
         .expect("spend_missing should have 1 element")
         .to_owned();
     let spent_after1 = net
-        .send(&owner4, &owner5, 100, false)?
+        .send(&owner4, &owner5, 100)?
         .first()
         .expect("spent_after1 should have 1 element")
         .to_owned();
     let spent_after2 = net
-        .send(&owner5, &owner6, 100, false)?
+        .send(&owner5, &owner6, 100)?
         .first()
         .expect("spent_after2 should have 1 element")
         .to_owned();
@@ -408,20 +412,20 @@ fn test_spend_dag_orphans() -> Result<()> {
     let owner5 = net.new_pk_with_balance(0)?;
     let owner6 = net.new_pk_with_balance(0)?;
 
-    net.send(&owner1, &owner2, 100, false)?;
-    net.send(&owner2, &owner3, 100, false)?;
+    net.send(&owner1, &owner2, 100)?;
+    net.send(&owner2, &owner3, 100)?;
     let spend_missing1 = net
-        .send(&owner3, &owner4, 100, false)?
+        .send(&owner3, &owner4, 100)?
         .first()
         .expect("spend_missing should have 1 element")
         .to_owned();
     let spend_missing2 = net
-        .send(&owner4, &owner5, 100, false)?
+        .send(&owner4, &owner5, 100)?
         .first()
         .expect("spend_missing2 should have 1 element")
         .to_owned();
     let spent_after1 = net
-        .send(&owner5, &owner6, 100, false)?
+        .send(&owner5, &owner6, 100)?
         .first()
         .expect("spent_after1 should have 1 element")
         .to_owned();
