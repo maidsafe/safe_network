@@ -85,17 +85,15 @@ const UPTIME_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
-    keypair: Keypair,
     addr: SocketAddr,
-    initial_peers: Vec<Multiaddr>,
+    is_behind_home_network: bool,
+    keypair: Keypair,
     local: bool,
-    root_dir: PathBuf,
     #[cfg(feature = "open-metrics")]
-    /// Set to Some to enable the metrics server
     metrics_server_port: Option<u16>,
-    /// Enable hole punching for nodes connecting from home networks.
-    pub is_behind_home_network: bool,
+    initial_peers: Vec<Multiaddr>,
     owner: Option<String>,
+    root_dir: PathBuf,
     #[cfg(feature = "upnp")]
     upnp: bool,
 }
@@ -103,33 +101,51 @@ pub struct NodeBuilder {
 impl NodeBuilder {
     /// Instantiate the builder
     pub fn new(
-        keypair: Keypair,
         addr: SocketAddr,
+        keypair: Keypair,
         initial_peers: Vec<Multiaddr>,
-        local: bool,
         root_dir: PathBuf,
-        owner: Option<String>,
-        #[cfg(feature = "upnp")] upnp: bool,
     ) -> Self {
         Self {
-            keypair,
             addr,
-            initial_peers,
-            local,
-            root_dir,
+            is_behind_home_network: false,
+            keypair,
+            local: false,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: None,
-            is_behind_home_network: false,
-            owner,
+            initial_peers,
+            owner: None,
+            root_dir,
             #[cfg(feature = "upnp")]
-            upnp,
+            upnp: false,
         }
     }
 
-    #[cfg(feature = "open-metrics")]
+    /// Set to true to enable hole-punching
+    pub fn is_behind_home_network(&mut self, is_behind_home_network: bool) {
+        self.is_behind_home_network = is_behind_home_network;
+    }
+
+    /// Set to true to allow private addresses. This is used when running a node on a local network.
+    pub fn local(&mut self, local: bool) {
+        self.local = local;
+    }
+
     /// Set the port for the OpenMetrics server. Defaults to a random port if not set
+    #[cfg(feature = "open-metrics")]
     pub fn metrics_server_port(&mut self, port: Option<u16>) {
         self.metrics_server_port = port;
+    }
+
+    /// Set the owner of the node. This is used to forward rewards during the beta network phase.
+    pub fn set_owner(&mut self, owner: String) {
+        self.owner = Some(owner);
+    }
+
+    /// Set to true to enable UPnP port forwarding
+    #[cfg(feature = "upnp")]
+    pub fn upnp(&mut self, upnp: bool) {
+        self.upnp = upnp;
     }
 
     /// Asynchronously runs a new node instance, setting up the swarm driver,
