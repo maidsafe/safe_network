@@ -85,7 +85,7 @@ fn test_spend_dag_double_spend_poisonning() -> Result<()> {
         dag.insert(spend.address(), spend.clone());
     }
     assert_eq!(dag.record_faults(&genesis), Ok(()));
-    dag.dump_to_file("/tmp/test_spend_dag_double_spend_poisonning")?;
+    // dag.dump_to_file("/tmp/test_spend_dag_double_spend_poisonning")?;
 
     // make sure double spend is detected
     assert_eq!(spend1, spend2, "both spends should be at the same address");
@@ -173,7 +173,7 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     }
 
     assert_eq!(dag.record_faults(&genesis), Ok(()));
-    dag.dump_to_file("/tmp/test_spend_dag_double_spend_branches")?;
+    // dag.dump_to_file("/tmp/test_spend_dag_double_spend_branches")?;
 
     // make sure double spend is detected
     assert_eq!(spend2, spend2a, "both spends should be at the same address");
