@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721741868829,
+  "lastUpdate": 1721741872157,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "e3fe44004a694154be3359676affcfa956193f22",
-          "message": "feat(node): check peer quotes are properly signed",
-          "timestamp": "2024-04-03T06:15:00Z",
-          "tree_id": "ed8124ffedf4e6c9fe77fc5688383e4645cc9f4f",
-          "url": "https://github.com/maidsafe/safe_network/commit/e3fe44004a694154be3359676affcfa956193f22"
-        },
-        "date": 1712127435247,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7426,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34682,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 34534,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "Roland Sherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "distinct": true,
+          "id": "a48b8007f4d7325e1689d3ff9a19d6127faba390",
+          "message": "chore: remove dcutr",
+          "timestamp": "2024-07-23T12:39:01Z",
+          "tree_id": "4a01c1940af7eed8d7b14c6568c796a2f788bd73",
+          "url": "https://github.com/maidsafe/safe_network/commit/a48b8007f4d7325e1689d3ff9a19d6127faba390"
+        },
+        "date": 1721741871130,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6633,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 37176,
             "unit": "ms"
           },
           {
