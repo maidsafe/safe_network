@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721703414856,
+  "lastUpdate": 1721703538876,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": false,
-          "id": "47e2510eec5068a1a471c9ddd61f1779fb49c8e1",
-          "message": "chore(cli): removing the folders upload command for cleaner UX",
-          "timestamp": "2024-04-02T16:41:38Z",
-          "tree_id": "7bcd2050b7d1e52cc04493976b515050c7e5d694",
-          "url": "https://github.com/maidsafe/safe_network/commit/47e2510eec5068a1a471c9ddd61f1779fb49c8e1"
-        },
-        "date": 1712079271237,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 47,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 151,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "qima",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "distinct": true,
+          "id": "c688b7eafc6075bd9ce2dd34025d3688d5d7cbe3",
+          "message": "chore(cli): use Quick strategy during chunk upload",
+          "timestamp": "2024-07-23T02:00:48Z",
+          "tree_id": "97cf57b1b8d1d156c7fc15969661e173575047d9",
+          "url": "https://github.com/maidsafe/safe_network/commit/c688b7eafc6075bd9ce2dd34025d3688d5d7cbe3"
+        },
+        "date": 1721703537874,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 169,
             "unit": "MB"
           }
         ]
