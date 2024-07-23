@@ -66,7 +66,6 @@ impl UnsignedTransaction {
             .iter()
             .map(|(amount, main_pk, derivation_index, purpose)| {
                 let cn = CashNote {
-                    unique_pubkey: main_pk.new_unique_pubkey(derivation_index),
                     parent_spends: BTreeSet::new(),
                     main_pubkey: *main_pk,
                     derivation_index: *derivation_index,
@@ -112,7 +111,6 @@ impl UnsignedTransaction {
 
                     // assign the change cash note
                     change_cn = Some(CashNote {
-                        unique_pubkey: change_key,
                         parent_spends: BTreeSet::new(),
                         main_pubkey: change_to,
                         derivation_index: change_derivation_index,

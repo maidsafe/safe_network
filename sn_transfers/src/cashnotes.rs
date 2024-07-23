@@ -69,7 +69,6 @@ pub(crate) mod tests {
         );
 
         let cashnote = CashNote {
-            unique_pubkey: derived_key.unique_pubkey(),
             parent_spends,
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
@@ -98,7 +97,6 @@ pub(crate) mod tests {
         );
 
         let cashnote = CashNote {
-            unique_pubkey: derived_key.unique_pubkey(),
             parent_spends,
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
@@ -129,7 +127,6 @@ pub(crate) mod tests {
         );
 
         let cashnote = CashNote {
-            unique_pubkey: derived_key.unique_pubkey(),
             parent_spends,
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
@@ -150,18 +147,16 @@ pub(crate) mod tests {
 
         let main_key = MainSecretKey::random_from_rng(&mut rng);
         let derivation_index = DerivationIndex::random(&mut rng);
-        let derived_key = main_key.derive_key(&derivation_index);
 
         let cashnote = CashNote {
-            unique_pubkey: derived_key.unique_pubkey(),
             parent_spends: Default::default(),
             main_pubkey: main_key.main_pubkey(),
             derivation_index,
         };
 
         assert!(matches!(
-            cashnote.verify(&main_key),
-            Err(TransferError::MissingTxInputs)
+            cashnote.verify(),
+            Err(TransferError::CashNoteMissingAncestors)
         ));
 
         Ok(())

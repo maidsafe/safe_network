@@ -482,8 +482,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
     info!("Got result while verifying double spend from B -> Y: {result:?}");
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-        let spend_did_not_happen = str.starts_with("The spends in network were not the same as the ones in the CashNote") || str.starts_with("Network Error Double spend(s) attempt was detected");
-        assert!(spend_did_not_happen);
+        assert!(str.starts_with("Network Error Double spend(s) was detected"));
     });
 
     info!("Verifying the original cashnote of A -> B");
@@ -496,7 +495,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         assert!(spend_did_not_happen);
     });
 
-    println!("Verifying the original cashnote of B -> C");
+    info!("Verifying the original cashnote of B -> C");
 
     // arbitrary time sleep to allow for network accumulation of double spend.
     tokio::time::sleep(Duration::from_secs(15)).await;
@@ -650,7 +649,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
 
     // Try to double spend A -> n different random keys
     for _ in 0..20 {
-        println!("Spamming double spends on A");
+        info!("Spamming double spends on A");
         let wallet_dir_y = TempDir::new()?;
         let wallet_y = get_wallet(wallet_dir_y.path());
         assert_eq!(wallet_y.balance(), NanoTokens::zero());
