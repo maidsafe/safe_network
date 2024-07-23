@@ -77,6 +77,9 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let cash_notes_for_2: Vec<_> = transfer_to_2.cash_notes_for_recipient.clone();
     let cash_notes_for_3: Vec<_> = transfer_to_3.cash_notes_for_recipient.clone();
 
+    // we wait 5s to ensure that the double spend attempt is detected and accumulated
+    tokio::time::sleep(Duration::from_secs(5)).await;
+
     let should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
     let should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
     info!("Both should fail during GET record accumulation : {should_err1:?} {should_err2:?}");
@@ -457,22 +460,22 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     println!("Verifying the original cashnote of B -> C");
 
     // arbitrary time sleep to allow for network accumulation of double spend.
-    tokio::time::sleep(Duration::from_secs(5)).await;
+    tokio::time::sleep(Duration::from_secs(15)).await;
 
     let result = client.verify_cashnote(&cash_notes_for_c[0]).await;
     info!("Got result while verifying the original spend from B -> C: {result:?}");
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "cashnote for c should show double spend attempt");
-    });
+    }, "result should be verify error, it was {result:?}");
 
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "cashnote for y should show double spend attempt");
-    });
+    }, "result should be verify error, it was {result:?}");
     let result = client.verify_cashnote(&cash_notes_for_b[0]).await;
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "cashnote for y should show double spend attempt");
-    });
+    }, "result should be verify error, it was {result:?}");
 
     Ok(())
 }
@@ -577,12 +580,12 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
     let cash_notes_for_x: Vec<_> = transfer_to_x.cash_notes_for_recipient.clone();
 
     // sleep for a bit to allow the network to process and accumulate the double spend
-    tokio::time::sleep(Duration::from_secs(5)).await;
+    tokio::time::sleep(Duration::from_secs(10)).await;
 
     let result = client.verify_cashnote(&cash_notes_for_x[0]).await;
     info!("Got result while verifying double spend from A -> X: {result:?}");
     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-        assert!(str.starts_with("Network Error Double spend(s) attempt was detected"));
+        assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "non double spend error found: {str:?}");
     });
 
     // the original A should still be present as one of the double spends
