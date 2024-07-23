@@ -8,12 +8,6 @@ concurrency:
   group: "version-bump-release-${{ github.ref }}"
 
 on:
-  push:
-    branches:
-      - stable*
-      - alpha*
-      - beta*
-      - rc*
   workflow_dispatch:
     inputs:
       network_version_mode:
