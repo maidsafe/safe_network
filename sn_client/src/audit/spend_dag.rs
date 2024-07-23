@@ -768,15 +768,8 @@ impl SpendDag {
         };
         recorded_faults.extend(faults);
 
-        let mut parents_collector = BTreeSet::new();
-        for ancestor in ancestor_spends {
-            let mut collector = BTreeSet::new();
-            let _ = collector.insert(ancestor);
-            let _ = parents_collector.insert(collector);
-        }
-
         // verify the parents
-        if let Err(e) = spend.verify_parent_spends(parents_collector.iter()) {
+        if let Err(e) = spend.verify_parent_spends(&ancestor_spends) {
             warn!("Parent verfication failed for spend at: {spend:?}: {e}");
             recorded_faults.insert(SpendFault::InvalidTransaction(addr, format!("{e}")));
             let poison = format!("ancestor transaction was poisoned at: {spend:?}: {e}");

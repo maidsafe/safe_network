@@ -68,10 +68,9 @@ impl SignedSpend {
 
     /// Verify a SignedSpend
     ///
-    /// Checks that
+    /// Checks that:
     /// - it was signed by the DerivedSecretKey that owns the CashNote for this Spend
     /// - the signature is valid
-    /// - its value didn't change between the two transactions it is involved in (creation and spending)
     ///
     /// It does NOT check:
     /// - if the spend exists on the Network
@@ -95,40 +94,47 @@ impl SignedSpend {
     /// - Also handles the case of parent double spends.
     /// - verifies that the parent_spends contains self as an output
     /// - verifies the sum of total inputs equals to the sum of outputs
-    pub fn verify_parent_spends<'a, T>(&self, parent_spends: T) -> Result<()>
-    where
-        T: IntoIterator<Item = &'a BTreeSet<SignedSpend>> + Clone,
-    {
+    pub fn verify_parent_spends(&self, parent_spends: &BTreeSet<SignedSpend>) -> Result<()> {
         let unique_key = self.unique_pubkey();
-        trace!("Verifying parent_spends for {unique_key}");
+        trace!("Verifying parent_spends for {self:?}");
+
+        // sort parents by key (identify double spent parents)
+        let mut parents_by_key = BTreeMap::new();
+        for s in parent_spends {
+            parents_by_key
+                .entry(s.unique_pubkey())
+                .or_insert_with(Vec::new)
+                .push(s);
+        }
 
         let mut total_inputs: u64 = 0;
-        for p in parent_spends {
-            if p.len() > 1 {
-                error!("While verifying parents of {unique_key}, found a parent double spend, but it contained more than one unique_pubkey. This is invalid. Erroring out.");
-                return Err(TransferError::InvalidParentSpend("Invalid parent double spend. More than one unique_pubkey in the parent double spend.".to_string()));
+        for (_, spends) in parents_by_key {
+            // check for double spend parents
+            if spends.len() > 1 {
+                error!("While verifying parents of {unique_key}, found a double spend parent: {spends:?}");
+                return Err(TransferError::DoubleSpentParent);
             }
 
-            if let Some(parent) = p.first() {
-                if let Some(amount) = parent.spend.get_output_amount(unique_key) {
-                    total_inputs += amount.as_nano();
-                } else {
-                    return Err(TransferError::InvalidParentSpend(format!(
-                        "Parent spend {:?} doesn't contain self spend {unique_key:?} as one of its output", parent.unique_pubkey()
-                    )));
+            // check that the parent refers to self
+            if let Some(parent) = spends.first() {
+                match parent.spend.get_output_amount(unique_key) {
+                    Some(amount) => {
+                        total_inputs += amount.as_nano();
+                    }
+                    None => {
+                        return Err(TransferError::InvalidParentSpend(format!(
+                            "Parent spend {:?} doesn't contain self spend {unique_key:?} as one of its output",
+                            parent.unique_pubkey()
+                        )));
+                    }
                 }
-            } else {
-                warn!("While verifying parents of {unique_key}, found a parent with empty spend");
-                return Err(TransferError::InvalidParentSpend(
-                    "Invalid parent empty spend.".to_string(),
-                ));
             }
         }
 
         let total_outputs = self.amount().as_nano();
         if total_outputs != total_inputs {
             return Err(TransferError::InvalidParentSpend(format!(
-                "Parents total_inputs {total_inputs:?} doesn't match total_outputs {total_outputs:?}"
+                "Parents total input value {total_inputs:?} doesn't match Spend's value {total_outputs:?}"
             )));
         }
 
