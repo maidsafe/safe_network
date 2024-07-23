@@ -57,6 +57,14 @@ use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
 /// This is the max time it should take. Minimum interval at any node will be half this
 pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
 
+/// Interval to trigger bad node detection.
+/// This is the max time it should take. Minimum interval at any node will be half this
+const PERIODIC_BAD_NODE_DETECTION_INTERVAL_MAX_S: u64 = 600;
+
+/// Interval to trigger reward forwarding.
+/// This is the max time it should take. Minimum interval at any node will be half this
+const PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S: u64 = 450;
+
 /// Max number of attempts that chunk proof verification will be carried out against certain target,
 /// before classifying peer as a bad peer.
 const MAX_CHUNK_PROOF_VERIFY_ATTEMPTS: usize = 3;
@@ -286,8 +294,9 @@ impl Node {
             let _ = replication_interval.tick().await; // first tick completes immediately
 
             // use a random timeout to ensure not sync when transmit messages.
-            let bad_nodes_check_interval: u64 = 5 * rng.gen_range(
-                PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
+            let bad_nodes_check_interval: u64 = rng.gen_range(
+                PERIODIC_BAD_NODE_DETECTION_INTERVAL_MAX_S / 2
+                    ..PERIODIC_BAD_NODE_DETECTION_INTERVAL_MAX_S,
             );
             let bad_nodes_check_time = Duration::from_secs(bad_nodes_check_interval);
             debug!("BadNodesCheck interval set to {bad_nodes_check_time:?}");
@@ -298,10 +307,9 @@ impl Node {
             let mut rolling_index = 0;
 
             // use a random timeout to ensure not sync when transmit messages.
-            let balance_forward_interval: u64 = 10
-                * rng.gen_range(
-                    PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
-                );
+            let balance_forward_interval: u64 = rng.gen_range(
+                PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S / 2..PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S,
+            );
             let balance_forward_time = Duration::from_secs(balance_forward_interval);
             debug!(
                 "BalanceForward interval set to {balance_forward_time:?} to: {:?}",
