@@ -11,7 +11,7 @@ use libp2p::{
     kad::{Quorum, Record, RecordKey},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetRecordCfg, Network, REPLICATION_PEERS_COUNT};
+use sn_networking::{sort_peers_by_address, GetRecordCfg, REPLICATION_PEERS_COUNT};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -20,11 +20,6 @@ use sn_protocol::{
 use tokio::task::{spawn, JoinHandle};
 
 impl Node {
-    /// Sends _all_ record keys every interval to all peers within the REPLICATE_RANGE.
-    pub(crate) fn try_interval_replication(network: Network) {
-        network.trigger_interval_replication()
-    }
-
     /// Get the Record from a peer or from the network without waiting.
     pub(crate) fn fetch_replication_keys_without_wait(
         &self,

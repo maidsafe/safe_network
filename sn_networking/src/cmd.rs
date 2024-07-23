@@ -102,6 +102,7 @@ pub enum LocalSwarmCmd {
         key: RecordKey,
         record_type: RecordType,
     },
+
     /// Notify whether peer is in trouble
     RecordNodeIssue {
         peer_id: PeerId,
@@ -118,9 +119,11 @@ pub enum LocalSwarmCmd {
     },
     // Notify a fetch completion
     FetchCompleted((RecordKey, RecordType)),
-    /// Triggers interval repliation
+    /// Triggers interval replication. If all_records is set to false, only the latest records are replicated.
     /// NOTE: This does result in outgoing messages, but is produced locally
-    TriggerIntervalReplication,
+    TriggerIntervalReplication {
+        all_records: bool,
+    },
 }
 
 /// Commands to send to the Swarm
@@ -264,8 +267,11 @@ impl Debug for LocalSwarmCmd {
                     PrettyPrintRecordKey::from(key)
                 )
             }
-            LocalSwarmCmd::TriggerIntervalReplication => {
-                write!(f, "LocalSwarmCmd::TriggerIntervalReplication")
+            LocalSwarmCmd::TriggerIntervalReplication { all_records } => {
+                write!(
+                    f,
+                    "LocalSwarmCmd::TriggerIntervalReplication {{ all_records: {all_records:?} }}"
+                )
             }
         }
     }
@@ -528,9 +534,9 @@ impl SwarmDriver {
         let start = Instant::now();
         let mut cmd_string;
         match cmd {
-            LocalSwarmCmd::TriggerIntervalReplication => {
+            LocalSwarmCmd::TriggerIntervalReplication { all_records } => {
                 cmd_string = "TriggerIntervalReplication";
-                self.try_interval_replication()?;
+                self.try_interval_replication(all_records)?;
             }
             LocalSwarmCmd::GetLocalStoreCost { key, sender } => {
                 cmd_string = "GetLocalStoreCost";
@@ -886,7 +892,7 @@ impl SwarmDriver {
         let _ = self.quotes_history.insert(peer_id, quote);
     }
 
-    fn try_interval_replication(&mut self) -> Result<()> {
+    fn try_interval_replication(&mut self, all_records: bool) -> Result<()> {
         // get closest peers from buckets, sorted by increasing distance to us
         let our_peer_id = self.self_peer_id.into();
         let closest_k_peers = self
@@ -918,6 +924,16 @@ impl SwarmDriver {
         let mut replication_targets = Vec::new();
 
         for target in targets {
+            // If all_records is set or if we have never replicated to this target, replicate all records.
+            if all_records || !self.replication_targets.contains_key(&target) {
+                let records_to_replicate = record_keys_ref
+                    .iter()
+                    .map(|(_, (address, record_type, _))| (address.clone(), record_type.clone()))
+                    .collect_vec();
+                replication_targets.push((target, records_to_replicate));
+                continue;
+            }
+
             if let Some(replication_timestamp) = self.replication_targets.get(&target) {
                 // replicate to the target if the last replication was a while ago
                 if *replication_timestamp + REPLICATION_INTERVAL < now {
@@ -938,12 +954,6 @@ impl SwarmDriver {
                     }
                     replication_targets.push((target, records_to_replicate));
                 }
-            } else {
-                let records_to_replicate = record_keys_ref
-                    .iter()
-                    .map(|(_, (address, record_type, _))| (address.clone(), record_type.clone()))
-                    .collect_vec();
-                replication_targets.push((target, records_to_replicate));
             }
         }
 
@@ -954,6 +964,7 @@ impl SwarmDriver {
         if replication_targets.is_empty() {
             return Ok(());
         }
+
         for (peer_id, record_to_replicate) in replication_targets {
             let len = record_to_replicate.len();
             let request = Request::Cmd(Cmd::Replicate {

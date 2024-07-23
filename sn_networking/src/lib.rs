@@ -797,8 +797,11 @@ impl Network {
         Ok(state)
     }
 
-    pub fn trigger_interval_replication(&self) {
-        self.send_local_swarm_cmd(LocalSwarmCmd::TriggerIntervalReplication)
+    /// Trigger interval replication which tries to replicate the records to the closest peers.
+    /// If `all_records` is true, then all records are replicated, otherwise only the records
+    /// that are not yet replicated are considered.
+    pub fn trigger_interval_replication(&self, all_records: bool) {
+        self.send_local_swarm_cmd(LocalSwarmCmd::TriggerIntervalReplication { all_records })
     }
 
     pub fn record_node_issues(&self, peer_id: PeerId, issue: NodeIssue) {

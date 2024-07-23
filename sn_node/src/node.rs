@@ -53,9 +53,13 @@ use sn_networking::PutRecordCfg;
 #[cfg(feature = "reward-forward")]
 use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
 
-/// Interval to trigger replication of all records to all peers.
+/// Interval to trigger replication of the latest records
 /// This is the max time it should take. Minimum interval at any node will be half this
-pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = REPLICATION_INTERVAL.as_secs();
+pub const PERIODIC_LATEST_RECORD_REPLICATION_INTERVAL_MAX_S: u64 = REPLICATION_INTERVAL.as_secs();
+
+/// Interval to trigger replication of all records.
+/// This happens every 5 hours.
+const PERIODIC_ALL_RECORD_REPLICATION_INTERVAL_MAX_S: u64 = 5 * 3600;
 
 /// Interval to trigger bad node detection.
 /// This is the max time it should take. Minimum interval at any node will be half this
@@ -282,16 +286,29 @@ impl Node {
 
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
-            // use a random inactivity timeout to ensure that the nodes do not sync when messages
-            // are being transmitted.
-            let replication_interval: u64 = rng.gen_range(
-                PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
+            let latest_record_replication_interval: u64 = rng.gen_range(
+                PERIODIC_LATEST_RECORD_REPLICATION_INTERVAL_MAX_S / 2
+                    ..PERIODIC_LATEST_RECORD_REPLICATION_INTERVAL_MAX_S,
             );
-            let replication_interval_time = Duration::from_secs(replication_interval);
-            debug!("Replication interval set to {replication_interval_time:?}");
+            let latest_record_replication_interval =
+                Duration::from_secs(latest_record_replication_interval);
+            debug!(
+                "Latest record replication interval set to {latest_record_replication_interval:?}"
+            );
+            let mut latest_record_replication_interval =
+                tokio::time::interval(latest_record_replication_interval);
+            let _ = latest_record_replication_interval.tick().await; // first tick completes immediately
 
-            let mut replication_interval = tokio::time::interval(replication_interval_time);
-            let _ = replication_interval.tick().await; // first tick completes immediately
+            let all_record_replication_interval: u64 = rng.gen_range(
+                PERIODIC_ALL_RECORD_REPLICATION_INTERVAL_MAX_S
+                    ..(PERIODIC_ALL_RECORD_REPLICATION_INTERVAL_MAX_S as f64 * 1.05) as u64,
+            );
+            let all_replication_interval_time =
+                Duration::from_secs(all_record_replication_interval);
+            debug!("All record replication interval set to {all_replication_interval_time:?}");
+            let mut all_record_replication_interval =
+                tokio::time::interval(all_replication_interval_time);
+            let _ = all_record_replication_interval.tick().await; // first tick completes immediately
 
             // use a random timeout to ensure not sync when transmit messages.
             let bad_nodes_check_interval: u64 = rng.gen_range(
@@ -344,19 +361,18 @@ impl Node {
                             }
                         }
                     }
-                    // runs every replication_interval time
-                    _ = replication_interval.tick() => {
-                        let start = Instant::now();
-                        debug!("Periodic replication triggered");
-                        let network = self.network().clone();
+                    _ = latest_record_replication_interval.tick() => {
+                        debug!("Latest record periodic replication triggered");
                         self.record_metrics(Marker::IntervalReplicationTriggered);
 
-                        let _handle = spawn(async move {
-                            Self::try_interval_replication(network);
-                            trace!("Periodic replication took {:?}", start.elapsed());
-                        });
+                        self.network().trigger_interval_replication(false);
                     }
-                    // runs every bad_nodes_check_time time
+                    _ = all_record_replication_interval.tick() => {
+                        debug!("All record periodic replication triggered");
+                        self.record_metrics(Marker::IntervalReplicationTriggered);
+
+                        self.network().trigger_interval_replication(true);
+                    }
                     _ = bad_nodes_check_interval.tick() => {
                         let start = Instant::now();
                         debug!("Periodic bad_nodes check triggered");
@@ -374,7 +390,6 @@ impl Node {
                             rolling_index += 1;
                         }
                     }
-                    // runs every balance_forward_interval time
                     _ = balance_forward_interval.tick() => {
                         if cfg!(feature = "reward-forward") {
                             if let Some(owner) = self.owner() {
@@ -442,23 +457,17 @@ impl Node {
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerAddedToRoutingTable(&peer_id));
 
-                // try replication here
-                let network = self.network().clone();
+                // trigger replication here
                 self.record_metrics(Marker::IntervalReplicationTriggered);
-                let _handle = spawn(async move {
-                    Self::try_interval_replication(network);
-                });
+                self.network().trigger_interval_replication(false);
             }
             NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
                 event_header = "PeerRemoved";
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerRemovedFromRoutingTable(&peer_id));
 
-                let network = self.network().clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
-                let _handle = spawn(async move {
-                    Self::try_interval_replication(network);
-                });
+                self.network().trigger_interval_replication(false);
             }
             NetworkEvent::PeerWithUnsupportedProtocol { .. } => {
                 event_header = "PeerWithUnsupportedProtocol";

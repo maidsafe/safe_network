@@ -40,7 +40,7 @@ mod replication;
 pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
     log_markers::Marker,
-    node::{NodeBuilder, PERIODIC_REPLICATION_INTERVAL_MAX_S},
+    node::{NodeBuilder, PERIODIC_LATEST_RECORD_REPLICATION_INTERVAL_MAX_S},
 };
 
 use crate::error::{Error, Result};
