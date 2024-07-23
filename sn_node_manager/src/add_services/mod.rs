@@ -12,10 +12,11 @@ mod tests;
 use self::config::{
     AddAuditorServiceOptions, AddDaemonServiceOptions, AddFaucetServiceOptions,
     AddNodeServiceOptions, InstallAuditorServiceCtxBuilder, InstallFaucetServiceCtxBuilder,
-    InstallNodeServiceCtxBuilder, PortRange,
+    InstallNodeServiceCtxBuilder,
 };
 use crate::{
     config::{create_owned_dir, get_user_safenode_data_dir},
+    helpers::{check_port_availability, get_start_port_if_applicable, increment_port_option},
     VerbosityLevel, DAEMON_SERVICE_NAME,
 };
 use color_eyre::{
@@ -62,39 +63,18 @@ pub async fn add_node(
         }
     }
 
-    if let Some(ref port_range) = options.node_port {
-        match port_range {
-            PortRange::Single(_) => {
-                let count = options.count.unwrap_or(1);
-                if count != 1 {
-                    error!("The number of services to add ({count}) does not match the number of ports (1)");
-                    return Err(eyre!(
-                        "The number of services to add ({count}) does not match the number of ports (1)"
-                    ));
-                }
-            }
-            PortRange::Range(start, end) => {
-                let port_count = end - start + 1;
-                let service_count = options.count.unwrap_or(1);
-                if port_count != service_count {
-                    error!("The number of services to add ({service_count}) does not match the number of ports ({port_count})");
-                    return Err(eyre!(
-                        "The number of services to add ({service_count}) does not match the number of ports ({port_count})"
-                    ));
-                }
-            }
-        }
-    }
-
     if let Some(port_option) = &options.node_port {
+        port_option.validate(options.count.unwrap_or(1))?;
         check_port_availability(port_option, &node_registry.nodes)?;
     }
 
     if let Some(port_option) = &options.metrics_port {
+        port_option.validate(options.count.unwrap_or(1))?;
         check_port_availability(port_option, &node_registry.nodes)?;
     }
 
     if let Some(port_option) = &options.rpc_port {
+        port_option.validate(options.count.unwrap_or(1))?;
         check_port_availability(port_option, &node_registry.nodes)?;
     }
 
@@ -574,53 +554,4 @@ pub fn add_faucet(
             Err(e.into())
         }
     }
-}
-
-fn get_start_port_if_applicable(range: Option<PortRange>) -> Option<u16> {
-    if let Some(port) = range {
-        match port {
-            PortRange::Single(val) => return Some(val),
-            PortRange::Range(start, _) => return Some(start),
-        }
-    }
-    None
-}
-
-fn increment_port_option(port: Option<u16>) -> Option<u16> {
-    if let Some(port) = port {
-        let incremented_port = port + 1;
-        return Some(incremented_port);
-    }
-    None
-}
-
-fn check_port_availability(port_option: &PortRange, nodes: &[NodeServiceData]) -> Result<()> {
-    let mut all_ports = Vec::new();
-    for node in nodes {
-        if let Some(port) = node.metrics_port {
-            all_ports.push(port);
-        }
-        if let Some(port) = node.node_port {
-            all_ports.push(port);
-        }
-        all_ports.push(node.rpc_socket_addr.port());
-    }
-
-    match port_option {
-        PortRange::Single(port) => {
-            if all_ports.iter().any(|p| *p == *port) {
-                error!("Port {port} is being used by another service");
-                return Err(eyre!("Port {port} is being used by another service"));
-            }
-        }
-        PortRange::Range(start, end) => {
-            for i in *start..=*end {
-                if all_ports.iter().any(|p| *p == i) {
-                    error!("Port {i} is being used by another service");
-                    return Err(eyre!("Port {i} is being used by another service"));
-                }
-            }
-        }
-    }
-    Ok(())
 }

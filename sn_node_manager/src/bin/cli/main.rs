@@ -11,7 +11,7 @@ use color_eyre::{eyre::eyre, Result};
 use libp2p::Multiaddr;
 use sn_logging::{LogBuilder, LogFormat};
 use sn_node_manager::{
-    add_services::config::{parse_port_range, PortRange},
+    add_services::config::PortRange,
     cmd::{self},
     VerbosityLevel,
 };
@@ -93,6 +93,9 @@ pub enum SubCmd {
         data_dir_path: Option<PathBuf>,
         /// Set this flag to enable the metrics server. The ports will be selected at random.
         ///
+        /// If you're passing the compiled safenode via --path, make sure to enable the open-metrics feature
+        /// when compiling.
+        ///
         /// If you want to specify the ports, use the --metrics-port argument.
         #[clap(long)]
         enable_metrics_server: bool,
@@ -132,8 +135,8 @@ pub enum SubCmd {
         log_format: Option<LogFormat>,
         /// Specify a port for the open metrics server.
         ///
-        /// This argument should only be used with a safenode binary that has the open-metrics
-        /// feature enabled.
+        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature
+        /// when compiling.
         ///
         /// If not set, metrics server will not be started. Use --enable-metrics-server to start
         /// the metrics server without specifying a port.
@@ -141,7 +144,7 @@ pub enum SubCmd {
         /// If multiple services are being added and this argument is used, you must specify a
         /// range. For example, '12000-12004'. The length of the range must match the number of
         /// services, which in this case would be 5. The range must also go from lower to higher.
-        #[clap(long, value_parser = parse_port_range)]
+        #[clap(long, value_parser = PortRange::parse)]
         metrics_port: Option<PortRange>,
         /// Specify a port for the safenode service(s).
         ///
@@ -150,7 +153,7 @@ pub enum SubCmd {
         /// If multiple services are being added and this argument is used, you must specify a
         /// range. For example, '12000-12004'. The length of the range must match the number of
         /// services, which in this case would be 5. The range must also go from lower to higher.
-        #[clap(long, value_parser = parse_port_range)]
+        #[clap(long, value_parser = PortRange::parse)]
         node_port: Option<PortRange>,
         /// Provide a path for the safenode binary to be used by the service.
         ///
@@ -182,7 +185,7 @@ pub enum SubCmd {
         /// If multiple services are being added and this argument is used, you must specify a
         /// range. For example, '12000-12004'. The length of the range must match the number of
         /// services, which in this case would be 5. The range must also go from lower to higher.
-        #[clap(long, value_parser = parse_port_range)]
+        #[clap(long, value_parser = PortRange::parse)]
         rpc_port: Option<PortRange>,
         /// Try to use UPnP to open a port in the home router and allow incoming connections.
         ///
@@ -728,6 +731,15 @@ pub enum LocalSubCmd {
         /// The number of nodes to run.
         #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
         count: u16,
+        /// Set this flag to enable the metrics server. The ports will be selected at random.
+        ///
+        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature flag
+        /// on the safenode when compiling. If you're using --build, then make sure to enable the feature flag on the
+        /// safenode-manager.
+        ///
+        /// If you want to specify the ports, use the --metrics-port argument.
+        #[clap(long)]
+        enable_metrics_server: bool,
         /// Path to a faucet binary
         ///
         /// The path and version arguments are mutually exclusive.
@@ -752,11 +764,36 @@ pub enum LocalSubCmd {
         /// If the argument is not used, the default format will be applied.
         #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
         log_format: Option<LogFormat>,
-        /// Path to a safenode binary
+        /// Specify a port for the open metrics server.
+        ///
+        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature flag
+        /// on the safenode when compiling. If you're using --build, then make sure to enable the feature flag on the
+        /// safenode-manager.
+        ///
+        /// If not set, metrics server will not be started. Use --enable-metrics-server to start
+        /// the metrics server without specifying a port.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = PortRange::parse)]
+        metrics_port: Option<PortRange>,
+        /// Path to a safenode binary.
+        ///
+        /// Make sure to enable the local-discovery feature flag on the safenode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version")]
         node_path: Option<PathBuf>,
+        /// Specify a port for the safenode service(s).
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = PortRange::parse)]
+        node_port: Option<PortRange>,
         /// The version of safenode to use.
         ///
         /// The version number should be in the form X.Y.Z, with no 'v' prefix.
@@ -779,6 +816,15 @@ pub enum LocalSubCmd {
         /// The argument exists to support testing scenarios.
         #[clap(long, conflicts_with = "owner")]
         owner_prefix: Option<String>,
+        /// Specify a port for the RPC service(s).
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = PortRange::parse)]
+        rpc_port: Option<PortRange>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -803,6 +849,15 @@ pub enum LocalSubCmd {
         /// The number of nodes to run.
         #[clap(long, default_value_t = DEFAULT_NODE_COUNT)]
         count: u16,
+        /// Set this flag to enable the metrics server. The ports will be selected at random.
+        ///
+        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature flag
+        /// on the safenode when compiling. If you're using --build, then make sure to enable the feature flag on the
+        /// safenode-manager.
+        ///
+        /// If you want to specify the ports, use the --metrics-port argument.
+        #[clap(long)]
+        enable_metrics_server: bool,
         /// Path to a faucet binary.
         ///
         /// The path and version arguments are mutually exclusive.
@@ -827,11 +882,36 @@ pub enum LocalSubCmd {
         /// If the argument is not used, the default format will be applied.
         #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
         log_format: Option<LogFormat>,
+        /// Specify a port for the open metrics server.
+        ///
+        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature flag
+        /// on the safenode when compiling. If you're using --build, then make sure to enable the feature flag on the
+        /// safenode-manager.
+        ///
+        /// If not set, metrics server will not be started. Use --enable-metrics-server to start
+        /// the metrics server without specifying a port.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = PortRange::parse)]
+        metrics_port: Option<PortRange>,
         /// Path to a safenode binary
+        ///
+        /// Make sure to enable the local-discovery feature flag on the safenode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version", conflicts_with = "build")]
         node_path: Option<PathBuf>,
+        /// Specify a port for the safenode service(s).
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = PortRange::parse)]
+        node_port: Option<PortRange>,
         /// The version of safenode to use.
         ///
         /// The version number should be in the form X.Y.Z, with no 'v' prefix.
@@ -853,6 +933,15 @@ pub enum LocalSubCmd {
         #[clap(long)]
         #[clap(long, conflicts_with = "owner")]
         owner_prefix: Option<String>,
+        /// Specify a port for the RPC service(s).
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = PortRange::parse)]
+        rpc_port: Option<PortRange>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -1034,29 +1123,37 @@ async fn main() -> Result<()> {
             LocalSubCmd::Join {
                 build,
                 count,
+                enable_metrics_server,
                 faucet_path,
                 faucet_version,
                 interval,
+                metrics_port,
                 node_path,
+                node_port,
                 node_version,
                 log_format,
                 owner,
                 owner_prefix,
                 peers,
+                rpc_port,
                 skip_validation: _,
             } => {
                 cmd::local::join(
                     build,
                     count,
+                    enable_metrics_server,
                     faucet_path,
                     faucet_version,
                     interval,
+                    metrics_port,
                     node_path,
+                    node_port,
                     node_version,
                     log_format,
                     owner,
                     owner_prefix,
                     peers,
+                    rpc_port,
                     true,
                     verbosity,
                 )
@@ -1067,28 +1164,36 @@ async fn main() -> Result<()> {
                 build,
                 clean,
                 count,
+                enable_metrics_server,
                 faucet_path,
                 faucet_version,
                 interval,
+                log_format,
+                metrics_port,
+                node_path,
+                node_port,
+                node_version,
                 owner,
                 owner_prefix,
-                node_path,
-                node_version,
-                log_format,
+                rpc_port,
                 skip_validation: _,
             } => {
                 cmd::local::run(
                     build,
                     clean,
                     count,
+                    enable_metrics_server,
                     faucet_path,
                     faucet_version,
                     interval,
+                    metrics_port,
                     node_path,
+                    node_port,
                     node_version,
                     log_format,
                     owner,
                     owner_prefix,
+                    rpc_port,
                     true,
                     verbosity,
                 )
