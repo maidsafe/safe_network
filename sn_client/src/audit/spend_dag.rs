@@ -226,7 +226,11 @@ impl SpendDag {
                 }
                 DagEntry::DoubleSpend(multiple_ancestors) => {
                     for (ancestor_spend, ancestor_idx) in multiple_ancestors {
-                        if ancestor_spend.address() == spend.address() {
+                        if ancestor_spend
+                            .spend
+                            .descendants
+                            .contains_key(spend.unique_pubkey())
+                        {
                             let ancestor_idx = NodeIndex::new(*ancestor_idx);
                             let ancestor_given_amount = ancestor_spend
                                 .spend
@@ -485,12 +489,12 @@ impl SpendDag {
                     });
                     let actual_ancestor: Vec<_> = multiple_ancestors
                         .iter()
-                        .filter(|(s, _)| s.address() == spend.address())
+                        .filter(|(s, _)| s.spend.descendants.contains_key(spend.unique_pubkey()))
                         .map(|(s, _)| s.clone())
                         .collect();
                     match actual_ancestor.as_slice() {
                         [ancestor_spend] => {
-                            debug!("Direct ancestor of {spend:?} at {ancestor_addr:?} is a double spend but one of those match our parent_tx hash, using it for verification");
+                            warn!("Direct ancestor of {spend:?} at {ancestor_addr:?} is a double spend but one of those match our parent_tx hash, using it for verification");
                             ancestors.insert(ancestor_spend.clone());
                         }
                         [ancestor1, _ancestor2, ..] => {

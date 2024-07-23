@@ -13,7 +13,6 @@ use eyre::{eyre, Result};
 use sn_transfers::{
     get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens,
     OutputPurpose, SignedSpend, SignedTransaction, SpendAddress, SpendReason, GENESIS_CASHNOTE,
-    GENESIS_OUTPUT_DERIVATION_INDEX,
 };
 
 pub struct MockWallet {
@@ -46,6 +45,20 @@ impl MockNetwork {
             },
         );
 
+        // spend genesis
+        let everything = GENESIS_CASHNOTE.value().as_nano();
+        let spent_addrs = net
+            .send(&genesis_pk, &genesis_pk, everything)
+            .map_err(|e| eyre!("failed to send genesis: {e}"))?;
+        net.genesis_spend = match spent_addrs.as_slice() {
+            [one] => *one,
+            _ => {
+                return Err(eyre!(
+                    "Expected Genesis spend to be unique but got {spent_addrs:?}"
+                ))
+            }
+        };
+
         Ok(net)
     }
 
@@ -62,11 +75,8 @@ impl MockNetwork {
 
         if balance > 0 {
             let genesis_pk = GENESIS_CASHNOTE.main_pubkey();
-
-            let genesis_sk_main_pubkey = get_genesis_sk().main_pubkey();
-
             println!("Sending {balance} from genesis {genesis_pk:?} to {owner_pk:?}");
-            self.send(&genesis_sk_main_pubkey, &owner_pk, balance, false)
+            self.send(genesis_pk, &owner_pk, balance)
                 .map_err(|e| eyre!("failed to get money from genesis: {e}"))?;
         }
         Ok(owner_pk)
@@ -77,7 +87,6 @@ impl MockNetwork {
         from: &MainPubkey,
         to: &MainPubkey,
         amount: u64,
-        is_genesis: bool,
     ) -> Result<Vec<SpendAddress>> {
         let mut rng = rand::thread_rng();
         let from_wallet = self
@@ -90,12 +99,7 @@ impl MockNetwork {
             .ok_or_else(|| eyre!("to wallet not found: {to:?}"))?;
 
         // perform offline transfer
-        let derivation_index = if is_genesis {
-            GENESIS_OUTPUT_DERIVATION_INDEX
-        } else {
-            DerivationIndex::random(&mut rng)
-        };
-
+        let derivation_index = DerivationIndex::random(&mut rng);
         let recipient = vec![(
             NanoTokens::from(amount),
             to_wallet.sk.main_pubkey(),
