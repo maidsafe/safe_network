@@ -27,7 +27,7 @@ check_and_install_safe() {
 # Function to generate a 10MB file of random data
 generate_random_data_file() {
   tmpfile=$(mktemp)
-  dd if=/dev/urandom of="$tmpfile" bs=2M count=1 iflag=fullblock &> /dev/null
+  dd if=/dev/urandom of="$tmpfile" bs=15M count=1 iflag=fullblock &> /dev/null
 
   echo "Generated random data file at $tmpfile"
 
@@ -42,9 +42,9 @@ generate_random_data_file() {
   # Remove the temporary file
   rm "$tmpfile"
 
-  # Log and sleep for 60 seconds
-  echo "Sleeping for 60 seconds..."
-  sleep 60
+  # Log and sleep for 10 seconds
+  echo "Sleeping for 10 seconds..."
+  sleep 10
 }
 
 # Check and install 'safe' if necessary
