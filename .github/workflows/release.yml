@@ -8,18 +8,7 @@ concurrency:
   group: "version-bump-release-${{ github.ref }}"
 
 on:
-  push:
-    branches:
-      - stable*
-      - alpha*
-      - beta*
-      - rc*
   workflow_dispatch:
-    inputs:
-      network_version_mode:
-        description: "Set NETWORK_VERSION_MODE if desired. (This restricts the network from contacting any other network mode. If left empty, the default protocol is used)"
-        required: false
-        default: ""
 
 # During the build step, the env variable has to be manually sent to the containers for cross platform builds.
 # Update the Justfile as well.
@@ -48,6 +37,8 @@ jobs:
             target: x86_64-pc-windows-msvc
           - os: macos-latest
             target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
           - os: ubuntu-latest
