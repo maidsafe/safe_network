@@ -157,6 +157,7 @@ pub enum NetworkEvent {
 #[derive(Debug, Clone)]
 pub enum TerminateNodeReason {
     HardDiskWriteError,
+    UpnpGatewayNotFound,
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
