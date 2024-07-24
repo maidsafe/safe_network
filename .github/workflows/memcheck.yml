@@ -261,7 +261,7 @@ jobs:
         # As the bootstrap_node using separate folder for logging,
         # hence the folder input to rg needs to cover that as well.
         run: |
-          sending_list_count=$(rg "Sending a replication list" $NODE_DATA_PATH -c --stats | \
+          sending_list_count=$(rg "Sending Replicate cmd" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Sent $sending_list_count replication lists"
           received_list_count=$(rg "Received replication list from" $NODE_DATA_PATH -c --stats | \
