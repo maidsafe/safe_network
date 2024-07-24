@@ -44,30 +44,27 @@ impl UploadedFile {
                 self.filename
             );
         }
-        let serialized = rmp_serde::to_vec(&(&self.filename, &self.data_map)).map_err(|err| {
-            error!("Failed to serialize UploadedFile");
-            err
-        })?;
+        let serialized =
+            rmp_serde::to_vec(&(&self.filename, &self.data_map)).inspect_err(|_err| {
+                error!("Failed to serialize UploadedFile");
+            })?;
 
-        std::fs::write(&uploaded_file_path, serialized).map_err(|err| {
+        std::fs::write(&uploaded_file_path, serialized).inspect_err(|_err| {
             error!(
                 "Could not write UploadedFile of {:?} to {uploaded_file_path:?}",
                 self.filename
             );
-            err
         })?;
 
         Ok(())
     }
 
     pub fn read(path: &Path) -> Result<Self> {
-        let bytes = std::fs::read(path).map_err(|err| {
+        let bytes = std::fs::read(path).inspect_err(|_err| {
             error!("Error while reading the UploadedFile from {path:?}");
-            err
         })?;
-        let metadata = rmp_serde::from_slice(&bytes).map_err(|err| {
+        let metadata = rmp_serde::from_slice(&bytes).inspect_err(|_err| {
             error!("Error while deserializing UploadedFile for {path:?}");
-            err
         })?;
         Ok(metadata)
     }
