@@ -37,6 +37,8 @@ const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
 
 const REPLICATION_RETRIES_BEFORE_UPDATING_THE_RECORDS_TO_CONSIDER_TIMESTAMP: usize = 3;
 
+const MAX_REPLICATION_TARGETS_COUNT: usize = 100;
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeIssue {
     /// Connection issues observed
@@ -920,6 +922,20 @@ impl SwarmDriver {
                 let _ = self.replication_targets.insert(*peer_id, (now, now, 1));
             }
         }
+
+        // We store more peers than our replication_group to account for any shaky node that might join and leave
+        // the group.
+        while self.replication_targets.len() > MAX_REPLICATION_TARGETS_COUNT {
+            let oldest_peer = self
+                .replication_targets
+                .iter()
+                // timestamp with high value = happened recently, so oldest is the one with the lowest value.
+                .min_by_key(|(_, (_, last_replication_timestamp, _))| last_replication_timestamp)
+                .map(|(peer_id, _)| *peer_id);
+            if let Some(oldest_peer) = oldest_peer {
+                self.replication_targets.remove(&oldest_peer);
+            }
+        }
     }
 
     /// Request the closest peers to send replication list to us. This is used to fetch the records that we might have
@@ -1094,14 +1110,6 @@ impl SwarmDriver {
 
             self.insert_peer_to_replication_targets(&peer_id, now);
         }
-
-        // remove targets that we haven't replicated in a long while. Should happen after we've updated our targets
-        self.replication_targets.retain(
-            |_peer_id, (_record_to_consider_timestamp, last_replication_timestamp, _count)| {
-                // if current time is less than "last replication threshold", then keep it.
-                (*last_replication_timestamp + (5 * REPLICATION_INTERVAL)) > now
-            },
-        );
 
         Ok(())
     }
