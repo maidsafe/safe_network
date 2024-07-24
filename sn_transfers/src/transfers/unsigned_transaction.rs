@@ -43,6 +43,25 @@ impl Debug for UnsignedTransaction {
 
 impl UnsignedTransaction {
     /// Create a new `UnsignedTransaction` with the given inputs and outputs
+    /// This function will perform a distribution of the input value to the outputs
+    /// In the figure below, inputs and outputs represent `CashNote`s,
+    /// which are spent thus creating spends that commit to a transfer of value to the outputs.
+    /// The value of the outputs is the sum of the values given to them by the inputs.
+    ///
+    /// ```text
+    ///
+    ///           inputA(7)     inputB(5)
+    ///               |            |
+    ///               |            |
+    ///             spend1        spend2
+    ///             /    \        /  \  \__________
+    ///            5      2      2    1             2
+    ///           /        \    /      \             \
+    ///  outputA(5)      outputB(4)   outputC(1)    change(2)
+    ///
+    /// ```
+    ///
+    /// Once created, the `UnsignedTransaction` can be signed with the owner's `MainSecretKey` using the `sign` method
     pub fn new(
         available_cash_notes: Vec<CashNote>,
         recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex, OutputPurpose)>,

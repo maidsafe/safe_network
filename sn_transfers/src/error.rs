@@ -54,8 +54,11 @@ pub enum TransferError {
     CashNoteRedemptionDecryptionFailed,
     #[error("CashNoteRedemption encryption failed")]
     CashNoteRedemptionEncryptionFailed,
+
     #[error("Transaction serialization error: {0}")]
     TransactionSerialization(String),
+    #[error("Unsigned transaction is invalid: {0}")]
+    InvalidUnsignedTransaction(String),
 
     #[error("Transfer serialisation failed")]
     TransferSerializationFailed,
