@@ -35,6 +35,8 @@ use xor_name::XorName;
 
 const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
 
+const REPLICATION_RETRIES_BEFORE_UPDATING_THE_RECORDS_TO_CONSIDER_TIMESTAMP: usize = 3;
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeIssue {
     /// Connection issues observed
@@ -902,6 +904,24 @@ impl SwarmDriver {
         let _ = self.quotes_history.insert(peer_id, quote);
     }
 
+    fn insert_peer_to_replication_targets(&mut self, peer_id: &PeerId, now: Instant) {
+        match self.replication_targets.get_mut(peer_id) {
+            Some((record_to_consider_timestamp, last_replication_timestamp, count)) => {
+                *last_replication_timestamp = now;
+
+                if *count >= REPLICATION_RETRIES_BEFORE_UPDATING_THE_RECORDS_TO_CONSIDER_TIMESTAMP {
+                    *record_to_consider_timestamp = now;
+                    *count = 1;
+                } else {
+                    *count += 1;
+                }
+            }
+            None => {
+                let _ = self.replication_targets.insert(*peer_id, (now, now, 1));
+            }
+        }
+    }
+
     /// Request the closest peers to send replication list to us. This is used to fetch the records that we might have
     /// missed during a restart.
     fn request_peers_for_replication(&mut self) {
@@ -985,7 +1005,7 @@ impl SwarmDriver {
             .send_request(&peer_id, request.clone());
         debug!("Sending Replicate cmd {request_id:?} with {len} keys to peer {peer_id:?} as RequestReplication was called by that peer",);
         let _ = self.pending_requests.insert(request_id, None);
-        let _ = self.replication_targets.insert(peer_id, Instant::now());
+        self.insert_peer_to_replication_targets(&peer_id, Instant::now());
     }
 
     pub fn try_interval_replication(&mut self, all_records: bool) -> Result<()> {
@@ -1029,14 +1049,16 @@ impl SwarmDriver {
                 continue;
             }
 
-            if let Some(replication_timestamp) = self.replication_targets.get(&target) {
+            if let Some((record_to_consider_timestamp, last_replication_timestamp, _)) =
+                self.replication_targets.get(&target)
+            {
                 // replicate to the target if the last replication was a while ago
-                if *replication_timestamp + REPLICATION_INTERVAL < now {
+                if *last_replication_timestamp + REPLICATION_INTERVAL < now {
                     let records_to_replicate = record_keys_ref
                         .iter()
                         .filter_map(|(_, (address, record_type, stored_timestamp))| {
                             // only send the records that are new/updated
-                            if stored_timestamp > replication_timestamp {
+                            if stored_timestamp > record_to_consider_timestamp {
                                 Some((address.clone(), record_type.clone()))
                             } else {
                                 None
@@ -1051,10 +1073,6 @@ impl SwarmDriver {
                 }
             }
         }
-
-        // remove old replication targets
-        self.replication_targets
-            .retain(|_peer_id, timestamp| *timestamp + REPLICATION_INTERVAL > now);
 
         if replication_targets.is_empty() {
             return Ok(());
@@ -1074,8 +1092,16 @@ impl SwarmDriver {
                 sender: None,
             });
 
-            let _ = self.replication_targets.insert(peer_id, now);
+            self.insert_peer_to_replication_targets(&peer_id, now);
         }
+
+        // remove targets that we haven't replicated in a long while. Should happen after we've updated our targets
+        self.replication_targets.retain(
+            |_peer_id, (_record_to_consider_timestamp, last_replication_timestamp, _count)| {
+                // if current time is less than "last replication threshold", then keep it.
+                (*last_replication_timestamp + (5 * REPLICATION_INTERVAL)) > now
+            },
+        );
 
         Ok(())
     }

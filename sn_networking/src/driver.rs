@@ -656,8 +656,8 @@ pub struct SwarmDriver {
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) relay_manager: RelayManager,
     pub(crate) replication_fetcher: ReplicationFetcher,
-    /// The peers we are currently replicating to and the time we last replicated to them.
-    pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
+    /// The peers we are currently replicating to and the (records to consider with > timestamp than this, last replication time, count before updating the records to consider timestamp)
+    pub(crate) replication_targets: BTreeMap<PeerId, (Instant, Instant, usize)>,
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,
 
