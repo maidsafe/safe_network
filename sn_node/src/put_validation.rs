@@ -138,6 +138,7 @@ impl Node {
                 let result = self.validate_and_store_register(register, true).await;
 
                 if result.is_ok() {
+                    debug!("Successfully stored register update at {pretty_key:?}");
                     Marker::ValidPaidRegisterPutFromClient(&pretty_key).log();
                     // we dont try and force replicaiton here as there's state to be kept in sync
                     // which we leave up to the client to enforce
@@ -151,6 +152,8 @@ impl Node {
                         record.key.clone(),
                         RecordType::NonChunk(content_hash),
                     );
+                } else {
+                    warn!("Failed to store register update at {pretty_key:?}");
                 }
                 result
             }
@@ -336,8 +339,12 @@ impl Node {
 
         // check register and merge if needed
         let updated_register = match self.register_validation(&register, present_locally).await? {
-            Some(reg) => reg,
+            Some(reg) => {
+                debug!("Register needed to be updated");
+                reg
+            }
             None => {
+                debug!("No update needed for register");
                 return Ok(());
             }
         };

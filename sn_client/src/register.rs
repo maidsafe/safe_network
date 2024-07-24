@@ -843,7 +843,7 @@ impl ClientRegister {
 
         let verification_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
-            retry_strategy: Some(RetryStrategy::Balanced),
+            retry_strategy: Some(RetryStrategy::Quick),
             target_record: record_to_verify,
             expected_holders,
         };

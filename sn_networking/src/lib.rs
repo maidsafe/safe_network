@@ -580,6 +580,8 @@ impl Network {
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
 
+        // Here we only retry after a failed validation.
+        // So a long validation time will limit the number of PUT retries we attempt here.
         let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
             ExponentialBackoff {
