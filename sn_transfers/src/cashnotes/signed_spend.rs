@@ -18,12 +18,15 @@ use std::{
     collections::{BTreeMap, BTreeSet},
 };
 
-/// SignedSpend's are constructed when a CashNote is logged to the spentbook.
+/// `SignedSpend`s are the core of the Network's transaction system.
+/// They are the data type on the Network used to commit to a transfer of value. Analogous to a transaction in Bitcoin.
+/// They are signed piece of data proving the owner's commitment to transfer value.
+/// `Spend`s refer to their ancestors and descendants, forming a directed acyclic graph that starts from Genesis.
 #[derive(Debug, Clone, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct SignedSpend {
-    /// The Spend, which together with signature over it, constitutes the SignedSpend.
+    /// The Spend, together with the owner's signature over it, constitutes the SignedSpend.
     pub spend: Spend,
-    /// The DerivedSecretKey's signature over (the hash of) Spend, confirming that the CashNote was intended to be spent.
+    /// The DerivedSecretKey's signature over the Spend, proving the owner's commitment to the Spend.
     #[debug(skip)]
     pub derived_key_sig: Signature,
 }
@@ -159,18 +162,22 @@ impl std::hash::Hash for SignedSpend {
     }
 }
 
-/// Represents the data to be signed by the DerivedSecretKey of the CashNote being spent.
-/// The claimed `spend.unique_pubkey` must appears in the `ancestor` spends, and the total sum of amount
-/// must be equal to the total sum of amount of all outputs (descendants)
+/// Represents a spent UniquePubkey on the Network.
+/// When a CashNote is spent, a Spend is created with the UniquePubkey of the CashNote.
+/// It is then sent to the Network along with the signature of the owner using the DerivedSecretKey matching its UniquePubkey.
+/// A Spend can have multiple ancestors (other spends) which will refer to it as a descendant.
+/// A Spend's value is equal to the total value given by its ancestors, which one can fetch on the Network to check.
+/// A Spend can have multiple descendants (other spends) which will refer to it as an ancestor.
+/// A Spend's value is equal to the total value of given to its descendants.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Spend {
     /// UniquePubkey of input CashNote that this SignedSpend is proving to be spent.
     pub unique_pubkey: UniquePubkey,
     /// Reason why this CashNote was spent.
     pub reason: SpendReason,
-    /// Inputs (parent spends) of this spend
+    /// parent spends of this spend
     pub ancestors: BTreeSet<UniquePubkey>,
-    /// Outputs of this spend
+    /// spends we are parents of along with the amount we commited to give them
     pub descendants: BTreeMap<UniquePubkey, (NanoTokens, OutputPurpose)>,
 }
 
