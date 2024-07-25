@@ -3736,7 +3736,6 @@ dependencies = [
  "libp2p-autonat",
  "libp2p-connection-limits",
  "libp2p-core",
- "libp2p-dcutr",
  "libp2p-dns",
  "libp2p-gossipsub",
  "libp2p-identify",
@@ -3834,29 +3833,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libp2p-dcutr"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4f7bb7fa2b9e6cad9c30a6f67e3ff5c1e4b658c62b6375e35861a85f9c97bf3"
-dependencies = [
- "asynchronous-codec 0.6.2",
- "either",
- "futures",
- "futures-bounded",
- "futures-timer",
- "instant",
- "libp2p-core",
- "libp2p-identity",
- "libp2p-swarm",
- "lru 0.11.1",
- "quick-protobuf",
- "quick-protobuf-codec 0.2.0",
- "thiserror",
- "tracing",
- "void",
-]
-
-[[package]]
 name = "libp2p-dns"
 version = "0.41.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3917,7 +3893,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-identity",
  "libp2p-swarm",
- "lru 0.12.3",
+ "lru",
  "quick-protobuf",
  "quick-protobuf-codec 0.3.1",
  "smallvec",
@@ -4003,7 +3979,6 @@ dependencies = [
  "futures",
  "instant",
  "libp2p-core",
- "libp2p-dcutr",
  "libp2p-identify",
  "libp2p-identity",
  "libp2p-kad",
@@ -4125,7 +4100,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-identity",
  "libp2p-swarm-derive",
- "lru 0.12.3",
+ "lru",
  "multistream-select",
  "once_cell",
  "rand 0.8.5",
@@ -4296,15 +4271,6 @@ name = "log"
 version = "0.4.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
-
-[[package]]
-name = "lru"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a83fb7698b3643a0e34f9ae6f2e8f0178c0fd42f8b59d493aa271ff3a5bf21"
-dependencies = [
- "hashbrown 0.14.5",
-]
 
 [[package]]
 name = "lru"
@@ -4559,7 +4525,7 @@ dependencies = [
 
 [[package]]
 name = "nat-detection"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
@@ -4674,7 +4640,7 @@ dependencies = [
 
 [[package]]
 name = "node-launchpad"
-version = "0.3.10"
+version = "0.3.11"
 dependencies = [
  "atty",
  "better-panic",
@@ -5998,7 +5964,7 @@ dependencies = [
  "compact_str",
  "crossterm",
  "itertools 0.12.1",
- "lru 0.12.3",
+ "lru",
  "paste",
  "serde",
  "stability",
@@ -6299,6 +6265,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rpassword"
+version = "7.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80472be3c897911d0137b2d2b9055faf6eeac5b14e324073d83bc17b191d7e3f"
+dependencies = [
+ "libc",
+ "rtoolbox",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "rtnetlink"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6311,6 +6288,16 @@ dependencies = [
  "nix 0.24.3",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "rtoolbox"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c247d24e63230cdb56463ae328478bd5eac8b8faa8c69461a77e8e323afac90e"
+dependencies = [
+ "libc",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -6617,6 +6604,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
+dependencies = [
+ "zeroize",
+]
+
+[[package]]
 name = "self_encryption"
 version = "0.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6917,7 +6913,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -6979,7 +6975,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "blsttc",
  "clap",
@@ -7013,14 +7009,14 @@ dependencies = [
 
 [[package]]
 name = "sn_build_info"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "vergen",
 ]
 
 [[package]]
 name = "sn_cli"
-version = "0.93.9"
+version = "0.94.0"
 dependencies = [
  "aes 0.7.5",
  "base64 0.22.1",
@@ -7044,6 +7040,7 @@ dependencies = [
  "rayon",
  "reqwest 0.12.4",
  "rmp-serde",
+ "rpassword",
  "serde",
  "sn_build_info",
  "sn_client",
@@ -7061,7 +7058,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.108.0"
+version = "0.109.0"
 dependencies = [
  "assert_matches",
  "async-trait",
@@ -7146,7 +7143,7 @@ dependencies = [
 
 [[package]]
 name = "sn_faucet"
-version = "0.4.30"
+version = "0.4.31"
 dependencies = [
  "assert_fs",
  "base64 0.22.1",
@@ -7178,7 +7175,7 @@ dependencies = [
 
 [[package]]
 name = "sn_logging"
-version = "0.2.30"
+version = "0.2.31"
 dependencies = [
  "chrono",
  "color-eyre",
@@ -7203,7 +7200,7 @@ dependencies = [
 
 [[package]]
 name = "sn_metrics"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "clap",
  "color-eyre",
@@ -7217,7 +7214,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -7251,6 +7248,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "void",
  "walkdir",
  "wasm-bindgen-futures",
  "wasmtimer",
@@ -7259,7 +7257,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.109.0"
+version = "0.110.0"
 dependencies = [
  "assert_fs",
  "assert_matches",
@@ -7314,7 +7312,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.6.25"
+version = "0.6.26"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -7341,7 +7339,7 @@ dependencies = [
 
 [[package]]
 name = "sn_peers_acquisition"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "clap",
  "lazy_static",
@@ -7357,7 +7355,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.17.5"
+version = "0.17.6"
 dependencies = [
  "blsttc",
  "bytes",
@@ -7384,7 +7382,7 @@ dependencies = [
 
 [[package]]
 name = "sn_registers"
-version = "0.3.15"
+version = "0.3.16"
 dependencies = [
  "blsttc",
  "crdts",
@@ -7401,7 +7399,7 @@ dependencies = [
 
 [[package]]
 name = "sn_service_management"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "async-trait",
  "dirs-next",
@@ -7427,10 +7425,11 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.18.8"
+version = "0.18.9"
 dependencies = [
  "assert_fs",
  "blsttc",
+ "chrono",
  "criterion",
  "custom_debug",
  "dirs-next",
@@ -7442,10 +7441,13 @@ dependencies = [
  "pprof",
  "rand 0.8.5",
  "rayon",
+ "ring 0.17.8",
  "rmp-serde",
+ "secrecy",
  "serde",
  "serde_bytes",
  "serde_json",
+ "tempfile",
  "thiserror",
  "tiny-keccak",
  "tokio",
@@ -7756,7 +7758,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "test_utils"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "color-eyre",
  "dirs-next",
@@ -7888,7 +7890,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token_supplies"
-version = "0.1.48"
+version = "0.1.49"
 dependencies = [
  "dirs-next",
  "reqwest 0.11.27",

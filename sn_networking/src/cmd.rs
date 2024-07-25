@@ -734,7 +734,6 @@ impl SwarmDriver {
 
             SwarmCmd::RecordNodeIssue { peer_id, issue } => {
                 cmd_string = "RecordNodeIssues";
-                let _ = self.bad_nodes_ongoing_verifications.remove(&peer_id);
                 self.record_node_issue(peer_id, issue);
             }
             SwarmCmd::IsPeerShunned { target, sender } => {
@@ -829,11 +828,11 @@ impl SwarmDriver {
         }
 
         if *is_bad {
-            warn!("Cleaning out bad_peer {peer_id:?}");
+            warn!("Cleaning out bad_peer {peer_id:?} and adding it to the blocklist");
             if let Some(dead_peer) = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id) {
                 self.update_on_peer_removal(*dead_peer.node.key.preimage());
-                let _ = self.check_for_change_in_our_close_group();
             }
+            self.swarm.behaviour_mut().blocklist.block_peer(peer_id);
 
             if is_new_bad {
                 self.send_event(NetworkEvent::PeerConsideredAsBad {

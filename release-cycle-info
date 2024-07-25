@@ -1,0 +1,10 @@
+# The release-cycle is the cycle within the current month. It will be 1 or 2. It is set at the
+# beginning of the cycle.
+#
+# The release-cycle-counter is initially set to 1 at the beginning of each cycle, and during the
+# cycle, it will be incremented for each RC build.
+#
+# Both of these numbers are used in the packaged version number, which is a collective version
+# number for all the released binaries.
+release-cycle: 1
+release-cycle-counter: 1

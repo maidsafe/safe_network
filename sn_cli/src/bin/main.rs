@@ -79,7 +79,8 @@ async fn main() -> Result<()> {
         | WalletCmds::Balance { .. }
         | WalletCmds::Create { .. }
         | WalletCmds::Sign { .. }
-        | WalletCmds::Status = cmds
+        | WalletCmds::Status { .. }
+        | WalletCmds::Encrypt { .. } = cmds
         {
             wallet_cmds_without_client(cmds, &client_data_dir_path).await?;
             return Ok(());
@@ -242,5 +243,110 @@ fn get_stdin_response(prompt: &str) -> String {
         // consider if error should process::exit(1) here
         return "".to_string();
     };
-    buffer
+    // Remove leading and trailing whitespace
+    buffer.trim().to_owned()
+}
+
+fn get_stdin_password_response(prompt: &str) -> String {
+    rpassword::prompt_password(prompt)
+        .map(|v| v.trim().to_owned())
+        .unwrap_or("".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::subcommands::wallet::hot_wallet::{wallet_cmds_without_client, WalletCmds};
+    use crate::subcommands::wallet::WalletApiHelper;
+    use bls::SecretKey;
+    use color_eyre::Result;
+    use sn_client::acc_packet::{load_or_create_mnemonic, secret_key_from_mnemonic};
+    use sn_client::transfers::HotWallet;
+    use std::path::Path;
+
+    fn create_wallet(root_dir: &Path, derivation_passphrase: Option<String>) -> Result<HotWallet> {
+        let mnemonic = load_or_create_mnemonic(root_dir)?;
+        let secret_key = secret_key_from_mnemonic(mnemonic, derivation_passphrase)?;
+        let wallet = HotWallet::create_from_key(root_dir, secret_key, None)?;
+        Ok(wallet)
+    }
+
+    #[tokio::test]
+    async fn test_wallet_address_command() {
+        let tmp_dir = tempfile::tempdir().expect("Could not create temp dir");
+        let root_dir = tmp_dir.path().to_path_buf();
+
+        // Create wallet
+        let _wallet = create_wallet(&root_dir, None).expect("Could not create wallet");
+
+        let cmds = WalletCmds::Address;
+
+        let result = wallet_cmds_without_client(&cmds, &root_dir).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_wallet_address_command_should_fail_with_no_existing_wallet() {
+        let tmp_dir = tempfile::tempdir().expect("Could not create temp dir");
+        let client_data_dir = tmp_dir.path().to_path_buf();
+
+        let cmds = WalletCmds::Address;
+
+        // Runs command without a wallet being present, thus should fail
+        let result = wallet_cmds_without_client(&cmds, &client_data_dir).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_wallet_create_command() {
+        let tmp_dir = tempfile::tempdir().expect("Could not create temp dir");
+        let root_dir = tmp_dir.path().to_path_buf();
+
+        let cmds = WalletCmds::Create {
+            no_replace: false,
+            no_password: true,
+            key: None,
+            derivation_passphrase: None,
+            password: None,
+        };
+
+        // Run command and hopefully create a wallet
+        let result = wallet_cmds_without_client(&cmds, &root_dir).await;
+        assert!(result.is_ok());
+
+        // Check if valid wallet exists
+        let result = WalletApiHelper::load_from(&root_dir);
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_wallet_create_command_with_hex_key() {
+        let tmp_dir = tempfile::tempdir().expect("Could not create temp dir");
+        let root_dir = tmp_dir.path().to_path_buf();
+
+        let secret_key = SecretKey::random();
+        let secret_key_hex = secret_key.to_hex();
+
+        let cmds = WalletCmds::Create {
+            no_replace: false,
+            no_password: true,
+            key: Some(secret_key_hex),
+            derivation_passphrase: None,
+            password: None,
+        };
+
+        // Run command and hopefully create a wallet
+        let result = wallet_cmds_without_client(&cmds, &root_dir).await;
+        assert!(result.is_ok());
+
+        // Check if valid wallet exists
+        let result = WalletApiHelper::load_from(&root_dir);
+        assert!(result.is_ok());
+
+        if let WalletApiHelper::HotWallet(wallet) = result.expect("No valid wallet found") {
+            // Compare public addresses (secret keys are the same if the public addresses are)
+            assert_eq!(wallet.address().to_hex(), secret_key.public_key().to_hex());
+        } else {
+            panic!("Did not expect a watch only wallet");
+        }
+    }
 }

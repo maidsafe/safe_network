@@ -203,7 +203,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -221,7 +221,7 @@ jobs:
           build: true
 
       - name: execute the sequential transfers test
-        run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture
+        run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture --test-threads=1
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           SN_LOG: "all"
@@ -240,8 +240,67 @@ jobs:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
 
+      - name: Small wait to allow reward receipt
+        run: sleep 30
+        timeout-minutes: 1
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_spend
+          platform: ${{ matrix.os }}
+
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Nightly Spend Test Run Failed"
+
+  # runs with increased node count
+  spend_simulation:
+    name: spend simulation
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        continue-on-error: true
+
+      - name: Build binaries
+        run: cargo build --release --features=local-discovery --bin safenode --bin faucet
+        timeout-minutes: 30
+
+      - name: Build testing executable
+        run: cargo test --release -p sn_node --features=local-discovery --test spend_simulation --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 30
+
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          interval: 2000
+          node-count: 50
+          node-path: target/release/safenode
+          faucet-path: target/release/faucet
+          platform: ${{ matrix.os }}
+          build: true
+
       - name: execute the spend simulation test
-        run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture --test-threads=1
+        run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
@@ -255,7 +314,7 @@ jobs:
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_spend
+          log_file_prefix: safe_test_logs_spend_simulation
           platform: ${{ matrix.os }}
 
       - name: post notification to slack on failure

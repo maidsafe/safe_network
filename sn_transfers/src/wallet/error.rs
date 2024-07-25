@@ -58,6 +58,24 @@ pub enum Error {
     /// Main secret key not found when loading wallet from path
     #[error("Main secret key not found: {0:#?}")]
     MainSecretKeyNotFound(std::path::PathBuf),
+    /// Encrypted main secret key not found when loading wallet from path
+    #[error("Encrypted main secret key not found: {0:#?}")]
+    EncryptedMainSecretKeyNotFound(std::path::PathBuf),
+    /// Encrypted main secret key requires a password to decrypt
+    #[error("Encrypted main secret key requires a password")]
+    EncryptedMainSecretKeyRequiresPassword,
+    /// Failed to serialize encrypted secret key
+    #[error("Failed to serialize encrypted secret key: {0}")]
+    FailedToSerializeEncryptedKey(String),
+    /// Failed to deserialize encrypted secret key
+    #[error("Failed to deserialize encrypted secret key: {0}")]
+    FailedToDeserializeEncryptedKey(String),
+    /// Failed to encrypt a secret key
+    #[error("Failed to encrypt secret key: {0}")]
+    FailedToEncryptKey(String),
+    /// Failed to decrypt a secret key
+    #[error("Failed to decrypt secret key: {0}")]
+    FailedToDecryptKey(String),
     /// Failed to parse bytes into a bls key
     #[error("Failed to parse bls key")]
     FailedToParseBlsKey,
@@ -98,4 +116,17 @@ pub enum Error {
     /// I/O error
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
+
+    /// Wallet password is incorrect
+    #[error("Wallet password is incorrect")]
+    WalletPasswordIncorrect,
+    /// Wallet is password protected
+    #[error("Wallet password required")]
+    WalletPasswordRequired,
+    /// Wallet password is only valid for a certain time until the user has to provide it again
+    #[error("Wallet password expired")]
+    WalletPasswordExpired,
+    /// Wallet is already encrypted
+    #[error("Wallet is already encrypted")]
+    WalletAlreadyEncrypted,
 }

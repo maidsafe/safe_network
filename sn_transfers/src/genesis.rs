@@ -187,7 +187,7 @@ fn create_genesis_wallet() -> HotWallet {
     let wallet_dir = root_dir.join("wallet");
     std::fs::create_dir_all(&wallet_dir).expect("Genesis wallet path to be successfully created.");
 
-    crate::wallet::store_new_keypair(&wallet_dir, &get_genesis_sk())
+    crate::wallet::store_new_keypair(&wallet_dir, &get_genesis_sk(), None)
         .expect("Genesis key shall be successfully stored.");
 
     HotWallet::load_from(&root_dir)

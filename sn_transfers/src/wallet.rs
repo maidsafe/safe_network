@@ -53,7 +53,9 @@
 //!
 
 mod api;
+mod authentication;
 mod data_payments;
+mod encryption;
 mod error;
 mod hot_wallet;
 mod keys;

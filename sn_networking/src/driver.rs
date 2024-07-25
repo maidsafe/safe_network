@@ -56,7 +56,7 @@ use sn_protocol::{
 };
 use sn_transfers::PaymentQuote;
 use std::{
-    collections::{btree_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
     fmt::Debug,
     net::SocketAddr,
     num::NonZeroUsize,
@@ -184,20 +184,23 @@ pub enum VerificationKind {
     },
 }
 
-/// NodeBehaviour struct
+/// The behaviors are polled in the order they are defined.
+/// The first struct member is polled until it returns Poll::Pending before moving on to later members.
+/// Prioritize the behaviors related to connection handling.
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm = "NodeEvent")]
 pub(super) struct NodeBehaviour {
-    #[cfg(feature = "upnp")]
-    pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
-    pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
-    pub(super) kademlia: kad::Behaviour<UnifiedRecordStore>,
+    pub(super) blocklist:
+        libp2p::allow_block_list::Behaviour<libp2p::allow_block_list::BlockedPeers>,
+    pub(super) identify: libp2p::identify::Behaviour,
     #[cfg(feature = "local-discovery")]
     pub(super) mdns: mdns::tokio::Behaviour,
-    pub(super) identify: libp2p::identify::Behaviour,
-    pub(super) dcutr: libp2p::dcutr::Behaviour,
+    #[cfg(feature = "upnp")]
+    pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
     pub(super) relay_client: libp2p::relay::client::Behaviour,
     pub(super) relay_server: libp2p::relay::Behaviour,
+    pub(super) kademlia: kad::Behaviour<UnifiedRecordStore>,
+    pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
 }
 
 #[derive(Debug)]
@@ -549,11 +552,18 @@ impl NetworkBuilder {
             .boxed();
 
         let relay_server = {
-            let relay_server_cfg = relay::Config::default();
+            let relay_server_cfg = relay::Config {
+                max_reservations: 128,             // Amount of peers we are relaying for
+                max_circuits: 1024, // The total amount of relayed connections at any given moment.
+                max_circuits_per_peer: 256, // Amount of relayed connections per peer (both dst and src)
+                circuit_src_rate_limiters: vec![], // No extra rate limiting for now
+                ..Default::default()
+            };
             libp2p::relay::Behaviour::new(peer_id, relay_server_cfg)
         };
 
         let behaviour = NodeBehaviour {
+            blocklist: libp2p::allow_block_list::Behaviour::default(),
             relay_client: relay_behaviour,
             relay_server,
             #[cfg(feature = "upnp")]
@@ -563,7 +573,6 @@ impl NetworkBuilder {
             identify,
             #[cfg(feature = "local-discovery")]
             mdns,
-            dcutr: libp2p::dcutr::Behaviour::new(peer_id),
         };
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -577,7 +586,7 @@ impl NetworkBuilder {
 
         let bootstrap = ContinuousBootstrap::new();
         let replication_fetcher = ReplicationFetcher::new(peer_id, network_event_sender.clone());
-        let mut relay_manager = RelayManager::new(self.initial_peers, peer_id);
+        let mut relay_manager = RelayManager::new(peer_id);
         if !is_client {
             relay_manager.enable_hole_punching(self.is_behind_home_network);
         }
@@ -592,7 +601,6 @@ impl NetworkBuilder {
             peers_in_rt: 0,
             bootstrap,
             relay_manager,
-            close_group: Default::default(),
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
@@ -611,7 +619,6 @@ impl NetworkBuilder {
             handled_times: 0,
             hard_disk_write_error: 0,
             bad_nodes: Default::default(),
-            bad_nodes_ongoing_verifications: Default::default(),
             quotes_history: Default::default(),
             replication_targets: Default::default(),
         };
@@ -635,7 +642,6 @@ pub struct SwarmDriver {
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) relay_manager: RelayManager,
     /// The peers that are closer to our PeerId. Includes self.
-    pub(crate) close_group: Vec<PeerId>,
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,
@@ -662,7 +668,6 @@ pub struct SwarmDriver {
     handled_times: usize,
     pub(crate) hard_disk_write_error: usize,
     pub(crate) bad_nodes: BadNodes,
-    pub(crate) bad_nodes_ongoing_verifications: BTreeSet<PeerId>,
     pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
     pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
 }

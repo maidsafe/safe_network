@@ -34,6 +34,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{NanoTokens, QuotingMetrics, TOTAL_SUPPLY};
+use std::collections::VecDeque;
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -54,6 +55,9 @@ use xor_name::XorName;
 // this shall allow around 4K records.
 const MAX_RECORDS_COUNT: usize = 4096;
 
+/// The maximum number of records to cache in memory.
+const MAX_RECORDS_CACHE_SIZE: usize = 100;
+
 /// File name of the recorded historical quoting metrics.
 const HISTORICAL_QUOTING_METRICS_FILENAME: &str = "historic_quoting_metrics";
 
@@ -67,6 +71,8 @@ pub struct NodeRecordStore {
     config: NodeRecordStoreConfig,
     /// A set of keys, each corresponding to a data `Record` stored on disk.
     records: HashMap<Key, (NetworkAddress, RecordType)>,
+    /// FIFO simple cache of records to reduce read times
+    records_cache: VecDeque<Record>,
     /// Send network events to the node layer.
     network_event_sender: mpsc::Sender<NetworkEvent>,
     /// Send cmds to the network layer. Used to interact with self in an async fashion.
@@ -101,6 +107,8 @@ pub struct NodeRecordStoreConfig {
     pub max_records: usize,
     /// The maximum size of record values, in bytes.
     pub max_value_bytes: usize,
+    /// The maximum number of records to cache in memory.
+    pub records_cache_size: usize,
 }
 
 impl Default for NodeRecordStoreConfig {
@@ -111,6 +119,7 @@ impl Default for NodeRecordStoreConfig {
             historic_quote_dir,
             max_records: MAX_RECORDS_COUNT,
             max_value_bytes: MAX_PACKET_SIZE,
+            records_cache_size: MAX_RECORDS_CACHE_SIZE,
         }
     }
 }
@@ -262,11 +271,14 @@ impl NodeRecordStore {
         };
 
         let records = Self::update_records_from_an_existing_store(&config, &encryption_details);
+
+        let cache_size = config.records_cache_size;
         let mut record_store = NodeRecordStore {
             local_key: KBucketKey::from(local_id),
             local_address: NetworkAddress::from_peer(local_id),
             config,
             records,
+            records_cache: VecDeque::with_capacity(cache_size),
             network_event_sender,
             swarm_cmd_sender,
             responsible_distance_range: None,
@@ -353,6 +365,7 @@ impl NodeRecordStore {
     ) -> Option<Cow<'a, Record>> {
         let start = Instant::now();
         let filename = Self::generate_filename(key);
+
         let file_path = storage_dir.join(&filename);
 
         // we should only be reading if we know the record is written to disk properly
@@ -506,6 +519,17 @@ impl NodeRecordStore {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         trace!("PUT a verified Record: {record_key:?}");
 
+        // if the cache already has this record in it (eg, a conflicting spend)
+        // remove it from the cache
+        self.records_cache.retain(|record| record.key != r.key);
+
+        // store in the FIFO records cache, removing the oldest if needed
+        if self.records_cache.len() > self.config.records_cache_size {
+            self.records_cache.pop_front();
+        }
+
+        self.records_cache.push_back(r.clone());
+
         self.prune_records_if_needed(&r.key)?;
 
         let filename = Self::generate_filename(&r.key);
@@ -634,6 +658,13 @@ impl RecordStore for NodeRecordStore {
         // with the record. Thus a node can be bombarded with GET reqs for random keys. These can be safely
         // ignored if we don't have the record locally.
         let key = PrettyPrintRecordKey::from(k);
+
+        let cached_record = self.records_cache.iter().find(|r| r.key == *k);
+        // first return from FIFO cache if existing there
+        if let Some(record) = cached_record {
+            return Some(Cow::Borrowed(record));
+        }
+
         if !self.records.contains_key(k) {
             trace!("Record not found locally: {key:?}");
             return None;
@@ -708,6 +739,8 @@ impl RecordStore for NodeRecordStore {
 
     fn remove(&mut self, k: &Key) {
         let _ = self.records.remove(k);
+        self.records_cache.retain(|r| r.key != *k);
+
         #[cfg(feature = "open-metrics")]
         if let Some(metric) = &self.record_count_metric {
             let _ = metric.set(self.records.len() as i64);

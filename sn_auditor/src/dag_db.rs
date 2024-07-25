@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use sn_client::transfers::{
     Hash, NanoTokens, SignedSpend, SpendAddress, DEFAULT_PAYMENT_FORWARD_SK,
 };
+use sn_client::transfers::{DEFAULT_NETWORK_ROYALTIES_PK, NETWORK_ROYALTIES_PK};
 use sn_client::{Client, SpendDag, SpendDagGet};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
@@ -61,6 +62,7 @@ pub struct SpendDagDb {
     dag: Arc<RwLock<SpendDag>>,
     beta_tracking: Arc<RwLock<BetaTracking>>,
     beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
+    utxo_addresses: Arc<RwLock<BTreeMap<SpendAddress, (Instant, NanoTokens)>>>,
     encryption_sk: Option<SecretKey>,
 }
 
@@ -70,10 +72,16 @@ struct BetaTracking {
     processed_spends: u64,
     total_accumulated_utxo: u64,
     total_on_track_utxo: u64,
+    total_royalties: BTreeMap<SpendAddress, u64>,
 }
 
 /// Map of Discord usernames to their tracked forwarded payments
 type ForwardedPayments = BTreeMap<String, BTreeSet<(SpendAddress, NanoTokens)>>;
+
+type UtxoStatus = (
+    BTreeMap<SpendAddress, (Instant, NanoTokens)>,
+    BTreeMap<SpendAddress, (Instant, NanoTokens)>,
+);
 
 #[derive(Clone, Serialize, Deserialize)]
 struct SpendJsonResponse {
@@ -92,15 +100,19 @@ impl SpendDagDb {
         client: Client,
         encryption_sk: Option<SecretKey>,
     ) -> Result<Self> {
+        if !path.exists() {
+            debug!("Creating directory {path:?}...");
+            std::fs::create_dir_all(&path)?;
+        }
         let dag_path = path.join(SPEND_DAG_FILENAME);
         info!("Loading DAG from {dag_path:?}...");
         let dag = match SpendDag::load_from_file(&dag_path) {
             Ok(d) => {
-                println!("Found a local spend DAG file");
+                info!("Found a local spend DAG file");
                 d
             }
             Err(_) => {
-                println!("Found no local spend DAG file, starting from Genesis");
+                info!("Found no local spend DAG file, starting from Genesis");
                 client.new_dag_with_genesis_only().await?
             }
         };
@@ -111,6 +123,7 @@ impl SpendDagDb {
             dag: Arc::new(RwLock::new(dag)),
             beta_tracking: Arc::new(RwLock::new(Default::default())),
             beta_participants: Arc::new(RwLock::new(BTreeMap::new())),
+            utxo_addresses: Arc::new(RwLock::new(BTreeMap::new())),
             encryption_sk,
         })
     }
@@ -133,6 +146,7 @@ impl SpendDagDb {
             dag: Arc::new(RwLock::new(dag)),
             beta_tracking: Arc::new(RwLock::new(Default::default())),
             beta_participants: Arc::new(RwLock::new(BTreeMap::new())),
+            utxo_addresses: Arc::new(RwLock::new(BTreeMap::new())),
             encryption_sk,
         })
     }
@@ -204,7 +218,7 @@ impl SpendDagDb {
     }
 
     /// Update DAG from Network continuously
-    pub async fn continuous_background_update(self) -> Result<()> {
+    pub async fn continuous_background_update(self, storage_dir: PathBuf) -> Result<()> {
         let client = if let Some(client) = &self.client {
             client.clone()
         } else {
@@ -213,26 +227,73 @@ impl SpendDagDb {
 
         // init utxos to fetch
         let start_dag = { Arc::clone(&self.dag).read().await.clone() };
-        let mut utxo_addresses: BTreeMap<SpendAddress, Instant> = start_dag
-            .get_utxos()
-            .into_iter()
-            .map(|a| (a, Instant::now()))
-            .collect();
+        {
+            let mut utxo_addresses = self.utxo_addresses.write().await;
+            for addr in start_dag.get_utxos().iter() {
+                let _ = utxo_addresses.insert(*addr, (Instant::now(), NanoTokens::zero()));
+            }
+        }
 
         // beta rewards processing
         let self_clone = self.clone();
         let spend_processing = if let Some(sk) = self.encryption_sk.clone() {
-            let (tx, mut rx) = tokio::sync::mpsc::channel(SPENDS_PROCESSING_BUFFER_SIZE);
+            let (tx, mut rx) = tokio::sync::mpsc::channel::<(SignedSpend, u64, bool)>(
+                SPENDS_PROCESSING_BUFFER_SIZE,
+            );
             tokio::spawn(async move {
-                while let Some((spend, utxos_for_further_track)) = rx.recv().await {
-                    self_clone
-                        .beta_background_process_spend(spend, &sk, utxos_for_further_track)
-                        .await;
+                let mut double_spends = BTreeSet::new();
+                let mut detected_spends = BTreeSet::new();
+
+                while let Some((spend, utxos_for_further_track, is_double_spend)) = rx.recv().await
+                {
+                    let content_hash = spend.spend.hash();
+
+                    if detected_spends.insert(content_hash) {
+                        let hex_content_hash = content_hash.to_hex();
+                        let addr_hex = spend.address().to_hex();
+                        let file_name = format!("{addr_hex}_{hex_content_hash}");
+                        let spend_copy = spend.clone();
+                        let file_path = storage_dir.join(&file_name);
+
+                        tokio::spawn(async move {
+                            let bytes = spend_copy.to_bytes();
+                            match std::fs::write(&file_path, bytes) {
+                                Ok(_) => {
+                                    info!("Wrote spend {file_name} to disk!");
+                                }
+                                Err(err) => {
+                                    error!("Error writing spend {file_name}, error: {err:?}");
+                                }
+                            }
+                        });
+                    }
+
+                    if is_double_spend {
+                        self_clone
+                            .beta_background_process_double_spend(
+                                spend.clone(),
+                                &sk,
+                                utxos_for_further_track,
+                            )
+                            .await;
+
+                        // For double_spend, only credit the owner first time
+                        // The performance track only count the received spend & utxos once.
+                        if double_spends.insert(spend.address()) {
+                            self_clone
+                                .beta_background_process_spend(spend, &sk, utxos_for_further_track)
+                                .await;
+                        }
+                    } else {
+                        self_clone
+                            .beta_background_process_spend(spend, &sk, utxos_for_further_track)
+                            .await;
+                    }
                 }
             });
             Some(tx)
         } else {
-            eprintln!("Foundation secret key not set! Beta rewards will not be processed.");
+            warn!("Foundation secret key not set! Beta rewards will not be processed.");
             None
         };
 
@@ -241,12 +302,19 @@ impl SpendDagDb {
         loop {
             // `addrs_to_get` is always empty when reaching this point
             // get expired utxos for the further fetch
-            let utxos_to_fetch;
-            let now = Instant::now();
-            (utxo_addresses, utxos_to_fetch) = utxo_addresses
-                .into_iter()
-                .partition(|(_address, time_stamp)| *time_stamp > now);
-            addrs_to_get.extend(utxos_to_fetch.keys().cloned().collect::<BTreeSet<_>>());
+            {
+                let now = Instant::now();
+                let mut utxo_addresses = self.utxo_addresses.write().await;
+                let mut utxos_to_fetch = BTreeSet::new();
+                utxo_addresses.retain(|address, (time_stamp, amount)| {
+                    let not_expired = *time_stamp > now;
+                    if !not_expired {
+                        let _ = utxos_to_fetch.insert((*address, *amount));
+                    }
+                    not_expired
+                });
+                addrs_to_get.extend(utxos_to_fetch);
+            }
 
             if addrs_to_get.is_empty() {
                 debug!(
@@ -260,17 +328,23 @@ impl SpendDagDb {
             if cfg!(feature = "dag-collection") {
                 let new_utxos = self
                     .crawl_and_generate_local_dag(
-                        addrs_to_get.clone(),
+                        addrs_to_get.iter().map(|(addr, _amount)| *addr).collect(),
                         spend_processing.clone(),
                         client.clone(),
                     )
                     .await;
                 addrs_to_get.clear();
-                utxo_addresses.extend(
-                    new_utxos
-                        .into_iter()
-                        .map(|a| (a, Instant::now() + *UTXO_REATTEMPT_INTERVAL)),
-                );
+
+                let mut utxo_addresses = self.utxo_addresses.write().await;
+                utxo_addresses.extend(new_utxos.into_iter().map(|a| {
+                    (
+                        a,
+                        (
+                            Instant::now() + *UTXO_REATTEMPT_INTERVAL,
+                            NanoTokens::zero(),
+                        ),
+                    )
+                }));
             } else if let Some(sender) = spend_processing.clone() {
                 if let Ok(reattempt_addrs) = client
                     .crawl_to_next_utxos(
@@ -280,6 +354,7 @@ impl SpendDagDb {
                     )
                     .await
                 {
+                    let mut utxo_addresses = self.utxo_addresses.write().await;
                     utxo_addresses.extend(reattempt_addrs);
                 }
             } else {
@@ -291,7 +366,7 @@ impl SpendDagDb {
     async fn crawl_and_generate_local_dag(
         &self,
         from: BTreeSet<SpendAddress>,
-        spend_processing: Option<Sender<(SignedSpend, u64)>>,
+        spend_processing: Option<Sender<(SignedSpend, u64, bool)>>,
         client: Client,
     ) -> BTreeSet<SpendAddress> {
         // get a copy of the current DAG
@@ -337,17 +412,87 @@ impl SpendDagDb {
         beta_tracking.total_accumulated_utxo += spend.spend.spent_tx.outputs.len() as u64;
         beta_tracking.total_on_track_utxo += utxos_for_further_track;
 
+        // Collect royalties
+        let royalty_pubkeys: BTreeSet<_> = spend
+            .spend
+            .network_royalties
+            .iter()
+            .map(|derivation_idx| NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+            .collect();
+        let default_royalty_pubkeys: BTreeSet<_> = spend
+            .spend
+            .network_royalties
+            .iter()
+            .map(|derivation_idx| DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+            .collect();
+        let mut royalties = BTreeMap::new();
+        for output in spend.spend.spent_tx.outputs.iter() {
+            if default_royalty_pubkeys.contains(&output.unique_pubkey)
+                || royalty_pubkeys.contains(&output.unique_pubkey)
+            {
+                let _ = royalties.insert(
+                    SpendAddress::from_unique_pubkey(&output.unique_pubkey),
+                    output.amount.as_nano(),
+                );
+            }
+        }
+
+        if royalties.len() > (spend.spend.spent_tx.outputs.len() - 1) / 2 {
+            eprintln!(
+                "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
+                spend.spend.unique_pubkey,
+                royalties.len(),
+                spend.spend.amount.as_nano(),
+                spend.spend.reason
+            );
+            eprintln!(
+                "Incorrect royalty spend has {} royalties, {:?} - {:?}",
+                spend.spend.network_royalties.len(),
+                spend.spend.spent_tx.inputs,
+                spend.spend.spent_tx.outputs
+            );
+            warn!(
+                "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
+                spend.spend.unique_pubkey,
+                royalties.len(),
+                spend.spend.amount.as_nano(),
+                spend.spend.reason
+            );
+            warn!(
+                "Incorrect royalty spend has {} royalties, {:?} - {:?}",
+                spend.spend.network_royalties.len(),
+                spend.spend.spent_tx.inputs,
+                spend.spend.spent_tx.outputs
+            );
+        }
+        beta_tracking.total_royalties.extend(royalties);
+
+        let addr = spend.address();
+        let amount = spend.spend.amount;
+
         // check for beta rewards reason
         let user_name_hash = match spend.reason().get_sender_hash(sk) {
             Some(n) => n,
             None => {
-                return;
+                if let Some(default_user_name_hash) =
+                    spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
+                {
+                    warn!("With default key, got forwarded reward of {amount} at {addr:?}");
+                    println!("With default key, got forwarded reward of {amount} at {addr:?}");
+                    default_user_name_hash
+                } else {
+                    warn!(
+                        "Can't descrypt discord_id from {addr:?} with compile key nor default key"
+                    );
+                    println!(
+                        "Can't descrypt discord_id from {addr:?} with compile key nor default key"
+                    );
+                    return;
+                }
             }
         };
 
         // add to local rewards
-        let addr = spend.address();
-        let amount = spend.spend.amount;
         let beta_participants_read = self.beta_participants.read().await;
 
         if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
@@ -363,8 +508,8 @@ impl SpendDagDb {
                 spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
             {
                 if let Some(user_name) = beta_participants_read.get(&default_user_name_hash) {
-                    warn!("With default key, got forwarded reward {amount} from {user_name} of {amount} at {addr:?}");
-                    println!("With default key, got forwarded reward {amount} from {user_name} of {amount} at {addr:?}");
+                    warn!("With default key, got forwarded reward from {user_name} of {amount} at {addr:?}");
+                    println!("With default key, got forwarded reward from {user_name} of {amount} at {addr:?}");
                     beta_tracking
                         .forwarded_payments
                         .entry(user_name.to_owned())
@@ -375,12 +520,46 @@ impl SpendDagDb {
             }
 
             warn!("Found a forwarded reward {amount} for an unknown participant at {addr:?}: {user_name_hash:?}");
-            println!("Found a forwarded reward {amount} for an unknown participant at {addr:?}: {user_name_hash:?}");
             beta_tracking
                 .forwarded_payments
                 .entry(format!("unknown participant: {user_name_hash:?}"))
                 .or_default()
                 .insert((addr, amount));
+        }
+    }
+
+    async fn beta_background_process_double_spend(
+        &self,
+        spend: SignedSpend,
+        sk: &SecretKey,
+        _utxos_for_further_track: u64,
+    ) {
+        let user_name_hash = match spend.reason().get_sender_hash(sk) {
+            Some(n) => n,
+            None => {
+                return;
+            }
+        };
+
+        let addr = spend.address();
+
+        let beta_participants_read = self.beta_participants.read().await;
+
+        if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
+            println!("Found double spend from {user_name} at {addr:?}");
+        } else {
+            if let Some(default_user_name_hash) =
+                spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
+            {
+                if let Some(user_name) = beta_participants_read.get(&default_user_name_hash) {
+                    println!("Found double spend from {user_name} at {addr:?} using default key");
+                    return;
+                }
+            }
+
+            println!(
+                "Found double spend from an unknown participant {user_name_hash:?} at {addr:?}"
+            );
         }
     }
 
@@ -399,6 +578,8 @@ impl SpendDagDb {
     pub(crate) async fn beta_program_json(&self) -> Result<(String, String)> {
         let r_handle = Arc::clone(&self.beta_tracking);
         let beta_tracking = r_handle.read().await;
+        let r_utxo_handler = Arc::clone(&self.utxo_addresses);
+        let utxo_addresses = r_utxo_handler.read().await;
         let mut rewards_output = vec![];
         let mut total_hits = 0_u64;
         let mut total_amount = 0_u64;
@@ -413,10 +594,49 @@ impl SpendDagDb {
             rewards_output.push((participant.clone(), total_rewards));
         }
         let json = serde_json::to_string_pretty(&rewards_output)?;
-        let tracking_performance = format!("processed_spends: {}\ntotal_accumulated_utxo:{}\ntotal_on_track_utxo:{}\nskipped_utxo:{}\nrepeated_utxo:{}\ntotal_hits:{}\ntotal_amount:{}",
+
+        let mut tracking_performance = format!("processed_spends: {}\ntotal_accumulated_utxo:{}\ntotal_on_track_utxo:{}\nskipped_utxo:{}\nrepeated_utxo:{}\ntotal_hits:{}\ntotal_amount:{}",
             beta_tracking.processed_spends, beta_tracking.total_accumulated_utxo, beta_tracking.total_on_track_utxo, beta_tracking.total_accumulated_utxo - beta_tracking.total_on_track_utxo,
-            beta_tracking.total_on_track_utxo - beta_tracking.processed_spends, total_hits, total_amount
+            utxo_addresses.len(), total_hits, total_amount
             );
+
+        tracking_performance = format!(
+            "{tracking_performance}\ntotal_royalties hits: {}",
+            beta_tracking.total_royalties.len()
+        );
+        let total_royalties = beta_tracking.total_royalties.values().sum::<u64>();
+        tracking_performance =
+            format!("{tracking_performance}\ntotal_royalties amount: {total_royalties}");
+
+        // UTXO amount that greater than 100000 nanos shall be considered as `change`
+        // which indicates the `wallet balance`
+        let (big_utxos, small_utxos): UtxoStatus = utxo_addresses
+            .iter()
+            .partition(|(_address, (_time_stamp, amount))| amount.as_nano() > 100000);
+
+        let total_big_utxo_amount = big_utxos
+            .iter()
+            .map(|(_addr, (_time, amount))| amount.as_nano())
+            .sum::<u64>();
+        tracking_performance =
+            format!("{tracking_performance}\ntotal_big_utxo_amount: {total_big_utxo_amount}");
+
+        let total_small_utxo_amount = small_utxos
+            .iter()
+            .map(|(_addr, (_time, amount))| amount.as_nano())
+            .sum::<u64>();
+        tracking_performance =
+            format!("{tracking_performance}\ntotal_small_utxo_amount: {total_small_utxo_amount}");
+
+        for (addr, (_time, amount)) in big_utxos.iter() {
+            tracking_performance =
+                format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
+        }
+        for (addr, (_time, amount)) in small_utxos.iter() {
+            tracking_performance =
+                format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
+        }
+
         Ok((json, tracking_performance))
     }
 

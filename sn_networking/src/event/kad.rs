@@ -263,7 +263,6 @@ impl SwarmDriver {
                     info!("Evicted old peer on new peer join: {old_peer:?}");
                     self.update_on_peer_removal(old_peer);
                 }
-                let _ = self.check_for_change_in_our_close_group();
             }
             kad::Event::InboundRequest {
                 request: InboundRequest::PutRecord { .. },

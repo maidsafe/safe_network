@@ -8,10 +8,7 @@
 
 use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
-use sn_networking::{
-    get_raw_signed_spends_from_record, GetRecordError, NetworkError, SpendVerificationOk,
-    MAX_PACKET_SIZE,
-};
+use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
@@ -27,12 +24,6 @@ use sn_transfers::{
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 use xor_name::XorName;
-
-/// The maximum number of double spend attempts to store that we got from PUTs
-const MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_FROM_PUTS: usize = 15;
-
-/// The maximum number of double spend attempts to store inside a record
-const MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_PER_RECORD: usize = 30;
 
 impl Node {
     /// Validate a record and it's payment, and store the record to the RecordStore
@@ -99,7 +90,7 @@ impl Node {
                 let value_to_hash = record.value.clone();
                 let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
                 let result = self
-                    .validate_merge_and_store_spends(spends, &record_key, true)
+                    .validate_merge_and_store_spends(spends, &record_key)
                     .await;
                 if result.is_ok() {
                     Marker::ValidSpendPutFromClient(&PrettyPrintRecordKey::from(&record_key)).log();
@@ -207,7 +198,7 @@ impl Node {
             RecordKind::Spend => {
                 let record_key = record.key.clone();
                 let spends = try_deserialize_record::<Vec<SignedSpend>>(&record)?;
-                self.validate_merge_and_store_spends(spends, &record_key, false)
+                self.validate_merge_and_store_spends(spends, &record_key)
                     .await
             }
             RecordKind::Register => {
@@ -342,7 +333,6 @@ impl Node {
         &self,
         signed_spends: Vec<SignedSpend>,
         record_key: &RecordKey,
-        from_put: bool,
     ) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(record_key);
         debug!("Validating spends before storage at {pretty_key:?}");
@@ -381,10 +371,11 @@ impl Node {
         // validate the signed spends against the network and the local knowledge
         debug!("Validating spends for {pretty_key:?} with unique key: {unique_pubkey:?}");
         let validated_spends = match self
-            .signed_spends_to_keep(spends_for_key.clone(), *unique_pubkey, from_put)
+            .signed_spends_to_keep(spends_for_key.clone(), *unique_pubkey)
             .await
         {
-            Ok(s) => s,
+            Ok((one, None)) => vec![one],
+            Ok((one, Some(two))) => vec![one, two],
             Err(e) => {
                 warn!("Failed to validate spends at {pretty_key:?} with unique key {unique_pubkey:?}: {e}");
                 return Err(e);
@@ -648,47 +639,31 @@ impl Node {
     }
 
     /// Determine which spends our node should keep and store
-    /// - if our local copy has reached the len/size limits, we don't store anymore from kad::PUT and return the local copy
-    /// - else if the request is from replication OR if limit not reached during kad::PUT, then:
-    /// - trust local spends
-    /// - downloads spends from the network
-    /// - verifies incoming spend + network spends and ignores the invalid ones.
-    /// - orders all the verified spends from local + incoming + network
-    /// - returns a maximum of MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_PER_RECORD spends
+    /// - get local spends and trust them
+    /// - get spends from the network
+    /// - verify incoming spend + network spends and ignore the invalid ones
+    /// - orders all the verified spends by:
+    ///     - if they have spent descendants (meaning live branch)
+    ///     - deterministicaly by their order in the BTreeSet
+    /// - returns the spend to keep along with another spend if it was a double spend
+    /// - when we get more than two spends, only keeps 2 that are chosen deterministically so
+    ///     all nodes running this code are eventually consistent
     async fn signed_spends_to_keep(
         &self,
         signed_spends: Vec<SignedSpend>,
         unique_pubkey: UniquePubkey,
-        from_put: bool,
-    ) -> Result<Vec<SignedSpend>> {
+    ) -> Result<(SignedSpend, Option<SignedSpend>)> {
         let spend_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
         debug!(
             "Validating before storing spend at {spend_addr:?} with unique key: {unique_pubkey}"
         );
 
+        // trust local spends as we've verified them before
         let local_spends = self.get_local_spends(spend_addr).await?;
-        let size_of_local_spends = try_serialize_record(&local_spends, RecordKind::Spend)?
-            .to_vec()
-            .len();
-        let max_spend_len_reached =
-            local_spends.len() >= MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_FROM_PUTS;
-        let max_spend_size_reached = {
-            // todo: limit size of a single signed spend to < max_packet_size/2
-            let size_limit = size_of_local_spends >= MAX_PACKET_SIZE / 2;
-            // just so that we can store the double spend
-            size_limit && local_spends.len() > 1
-        };
-
-        if (max_spend_len_reached || max_spend_size_reached) && from_put {
-            info!("We already have {MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_FROM_PUTS} spends locally or have maximum size of spends, skipping spends received via PUT for {unique_pubkey:?}");
-            return Ok(local_spends);
-        }
-        let mut all_verified_spends = BTreeSet::from_iter(local_spends.into_iter());
 
         // get spends from the network at the address for that unique pubkey
         let network_spends = match self.network().get_raw_spends(spend_addr).await {
             Ok(spends) => spends,
-            Err(NetworkError::GetRecordError(GetRecordError::RecordNotFound)) => vec![],
             Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
                 warn!("Got a split record (double spend) for {unique_pubkey:?} from the network");
                 let mut spends = vec![];
@@ -700,33 +675,65 @@ impl Node {
                 }
                 spends
             }
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
+                record,
+                got,
+                ..
+            })) => {
+                info!(
+                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network"
+                );
+                match get_raw_signed_spends_from_record(&record) {
+                    Ok(spends) => spends,
+                    Err(err) => {
+                        warn!("Ignoring invalid record received from the network for spend: {unique_pubkey:?}: {err}");
+                        vec![]
+                    }
+                }
+            }
+
             Err(e) => {
                 warn!("Continuing without network spends as failed to get spends from the network for {unique_pubkey:?}: {e}");
                 vec![]
             }
         };
+        debug!(
+            "For {unique_pubkey:?} got {} local spends, {} from network and {} provided",
+            local_spends.len(),
+            network_spends.len(),
+            signed_spends.len()
+        );
+        debug!("Local spends {local_spends:?}; from network {network_spends:?}; provided {signed_spends:?}");
 
-        let mut parent_is_a_double_spend = false;
-        // check the received spends and the spends got from the network
+        // only verify spends we don't know of
+        let mut all_verified_spends = BTreeSet::from_iter(local_spends.into_iter());
+        let unverified_spends =
+            BTreeSet::from_iter(network_spends.into_iter().chain(signed_spends.into_iter()));
+        let known_spends = all_verified_spends.clone();
+        let new_unverified_spends: BTreeSet<_> =
+            unverified_spends.difference(&known_spends).collect();
+
         let mut tasks = JoinSet::new();
-        for s in signed_spends.into_iter().chain(network_spends.into_iter()) {
+        for s in new_unverified_spends.into_iter() {
             let self_clone = self.clone();
+            let spend_clone = s.clone();
             let _ = tasks.spawn(async move {
-                let res = self_clone.network().verify_spend(&s).await;
-                (s, res)
+                let res = self_clone.network().verify_spend(&spend_clone).await;
+                (spend_clone, res)
             });
         }
 
-        // collect spends until we have a double spend or until we have all the results
+        // gather verified spends
+        let mut double_spent_parent = BTreeSet::new();
         while let Some(res) = tasks.join_next().await {
             match res {
-                Ok((spend, Ok(spend_verification_ok))) => {
-                    info!("Successfully verified {spend:?} with result: {spend_verification_ok:?}");
-                    if let SpendVerificationOk::ParentDoubleSpend = spend_verification_ok {
-                        // the parent is a double spend, but we will store it incase our spend is also a double spend.
-                        parent_is_a_double_spend = true;
-                    }
-                    let _inserted = all_verified_spends.insert(spend);
+                Ok((spend, Ok(()))) => {
+                    info!("Successfully verified {spend:?}");
+                    let _inserted = all_verified_spends.insert(spend.to_owned().clone());
+                }
+                Ok((spend, Err(NetworkError::Transfer(TransferError::DoubleSpentParent)))) => {
+                    warn!("Parent of {spend:?} was double spent, keeping aside in case we're a double spend as well");
+                    let _ = double_spent_parent.insert(spend.clone());
                 }
                 Ok((spend, Err(e))) => {
                     // an error here most probably means the received spend is invalid
@@ -741,33 +748,100 @@ impl Node {
             }
         }
 
-        if parent_is_a_double_spend && all_verified_spends.len() == 1 {
-            warn!("Parent is a double spend for {unique_pubkey:?}, ignoring this spend");
-            return Err(Error::Transfers(TransferError::InvalidParentSpend(
-                format!("Parent is a double spend for {unique_pubkey:?}"),
-            )));
-        } else if parent_is_a_double_spend && all_verified_spends.len() > 1 {
-            warn!("Parent is a double spend for {unique_pubkey:?}, but we're also a double spend. So storing our double spend attempt.");
+        // keep track of double spend with double spent parent
+        if !all_verified_spends.is_empty() && !double_spent_parent.is_empty() {
+            warn!("Parent of {unique_pubkey:?} was double spent, but it's also a double spend. So keeping track of this double spend attempt.");
+            all_verified_spends.extend(double_spent_parent.into_iter())
         }
 
-        // todo: should we also check the size of spends here? Maybe just limit the size of a single
-        // SignedSpend to < max_packet_size/2 so that we can store atleast 2 of them.
-        let verified_spends = all_verified_spends
-            .into_iter()
-            .take(MAX_DOUBLE_SPEND_ATTEMPTS_TO_KEEP_PER_RECORD)
-            .collect::<Vec<SignedSpend>>();
+        // return 2 spends max
+        let all_verified_spends: Vec<_> = all_verified_spends.into_iter().collect();
+        match all_verified_spends.as_slice() {
+            [one_spend] => Ok((one_spend.clone(), None)),
+            [one, two] => Ok((one.clone(), Some(two.clone()))),
+            [] => {
+                warn!("Invalid request: none of the spends were valid for {unique_pubkey:?}");
+                Err(Error::InvalidRequest(format!(
+                    "Found no valid spends while validating Spends for {unique_pubkey:?}"
+                )))
+            }
+            more => {
+                warn!("Got more than 2 verified spends, this might be a double spend spam attack, making sure to favour live branches (branches with spent descendants)");
+                let (one, two) = self.verified_spends_select_2_live(more).await?;
+                Ok((one, Some(two)))
+            }
+        }
+    }
 
-        if verified_spends.is_empty() {
-            debug!("No valid spends found while validating Spend PUT. Who is sending us garbage?");
-            Err(Error::InvalidRequest(format!(
-                "Found no valid spends while validating Spend PUT for {unique_pubkey:?}"
-            )))
-        } else if verified_spends.len() > 1 {
-            warn!("Got a double spend for {unique_pubkey:?}");
-            Ok(verified_spends)
-        } else {
-            debug!("Got a single valid spend for {unique_pubkey:?}");
-            Ok(verified_spends)
+    async fn verified_spends_select_2_live(
+        &self,
+        many_spends: &[SignedSpend],
+    ) -> Result<(SignedSpend, SignedSpend)> {
+        // get all spends descendants
+        let mut tasks = JoinSet::new();
+        for spend in many_spends {
+            let descendants: BTreeSet<_> = spend
+                .spend
+                .spent_tx
+                .outputs
+                .iter()
+                .map(|o| o.unique_pubkey())
+                .map(SpendAddress::from_unique_pubkey)
+                .collect();
+            for d in descendants {
+                let self_clone = self.clone();
+                let spend_clone = spend.to_owned();
+                let _ = tasks.spawn(async move {
+                    let res = self_clone.network().get_raw_spends(d).await;
+                    (spend_clone, res)
+                });
+            }
+        }
+
+        // identify up to two live spends (aka spends with spent descendants)
+        let mut live_spends = BTreeSet::new();
+        while let Some(res) = tasks.join_next().await {
+            match res {
+                Ok((spend, Ok(_descendant))) => {
+                    trace!("Spend {spend:?} has a live descendant");
+                    let _inserted = live_spends.insert(spend);
+                }
+                Ok((spend, Err(NetworkError::GetRecordError(GetRecordError::RecordNotFound)))) => {
+                    trace!("Spend {spend:?} descendant was not found, continuing...");
+                }
+                Ok((spend, Err(e))) => {
+                    warn!(
+                        "Error fetching spend descendant while checking if {spend:?} is live: {e}"
+                    );
+                }
+                Err(e) => {
+                    let s = format!("Async thread error while selecting live spends: {e}");
+                    error!("{}", s);
+                    return Err(Error::JoinErrorInAsyncThread(s))?;
+                }
+            }
+        }
+
+        // order by live or not live, then order in the BTreeSet and take first 2
+        let not_live_spends: BTreeSet<_> = many_spends
+            .iter()
+            .filter(|s| !live_spends.contains(s))
+            .collect();
+        debug!(
+            "Got {} live spends and {} not live ones, keeping only the favoured 2",
+            live_spends.len(),
+            not_live_spends.len()
+        );
+        let ordered_spends: Vec<_> = live_spends
+            .iter()
+            .chain(not_live_spends.into_iter())
+            .collect();
+        match ordered_spends.as_slice() {
+            [one, two, ..] => Ok((one.to_owned().clone(), two.to_owned().clone())),
+            _ => Err(Error::InvalidRequest(format!(
+                "Expected many spends but got {}",
+                many_spends.len()
+            ))),
         }
     }
 }

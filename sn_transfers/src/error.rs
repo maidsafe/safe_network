@@ -31,6 +31,8 @@ pub enum TransferError {
     InvalidSpentTx(String),
     #[error("Invalid parent spend: {0}")]
     InvalidParentSpend(String),
+    #[error("Parent spend was double spent")]
+    DoubleSpentParent,
     #[error("Invalid Spend Signature for {0:?}")]
     InvalidSpendSignature(UniquePubkey),
     #[error("Transaction hash is different from the hash in the the Spend: {0:?} != {1:?}")]

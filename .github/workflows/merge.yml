@@ -5,9 +5,9 @@ on:
   # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
   # the merge run checks should show on master and enable this clear test/passing history
   merge_group:
-    branches: [main, alpha*, beta*, rc*]
+    branches: [ main, alpha*, beta*, rc* ]
   pull_request:
-    branches: ["*"]
+    branches: [ "*" ]
 
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
@@ -95,7 +95,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
       - uses: actions/checkout@v4
 
@@ -207,6 +207,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
+          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
           ./target/release/faucet --log-output-dest=data-dir send 1000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
@@ -341,7 +342,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
       - uses: actions/checkout@v4
 
@@ -359,7 +360,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
+        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -406,8 +407,69 @@ jobs:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
 
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_spend
+          platform: ${{ matrix.os }}
+
+  # runs with increased node count
+  spend_simulation:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: spend simulation
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build binaries
+        run: cargo build --release --features=local-discovery --bin safenode
+        timeout-minutes: 30
+
+      - name: Build faucet binary
+        run: cargo build --release --bin faucet --features="local-discovery,gifting"
+        timeout-minutes: 30
+
+      - name: Build testing executable
+        run: cargo test --release -p sn_node --features=local-discovery --test spend_simulation --no-run
+        env:
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 30
+
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          interval: 2000
+          node-count: 50
+          node-path: target/release/safenode
+          faucet-path: target/release/faucet
+          platform: ${{ matrix.os }}
+          build: true
+
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+          fi
+
       - name: execute the spend simulation
-        run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture --test-threads=1
+        run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
@@ -417,7 +479,7 @@ jobs:
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_spend
+          log_file_prefix: safe_test_logs_spend_simulation
           platform: ${{ matrix.os }}
 
   token_distribution_test:
@@ -426,7 +488,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
       - uses: actions/checkout@v4
 
@@ -794,6 +856,7 @@ jobs:
 
       - name: Create and fund a wallet first time
         run: |
+          ~/safe --log-output-dest=data-dir wallet create --no-password
           ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
           echo "----------"
           cat first.txt
@@ -808,6 +871,7 @@ jobs:
           rm -rf /home/runner/.local/share/safe/test_faucet
           rm -rf /home/runner/.local/share/safe/test_genesis
           rm -rf /home/runner/.local/share/safe/client
+          ~/safe --log-output-dest=data-dir wallet create --no-password
           ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
           echo "----------"
           cat second.txt
@@ -828,6 +892,7 @@ jobs:
           rm -rf /home/runner/.local/share/safe/test_faucet
           rm -rf /home/runner/.local/share/safe/test_genesis
           rm -rf /home/runner/.local/share/safe/client
+          ~/safe --log-output-dest=data-dir wallet create --no-password
           if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
             echo "Faucet with different genesis key not rejected!"
             exit 1
@@ -966,6 +1031,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
+          ~/safe --log-output-dest=data-dir wallet create --no-password
           ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
@@ -1098,6 +1164,7 @@ jobs:
 
       - name: Create and fund a wallet to pay for files storage
         run: |
+          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
           ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
@@ -1182,6 +1249,7 @@ jobs:
           ls -l $SAFE_DATA_PATH
           mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
           ls -l $CLIENT_DATA_PATH
+          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
           ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:

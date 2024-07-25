@@ -18,6 +18,12 @@ use super::{
     watch_only::WatchOnlyWallet,
     Error, Result,
 };
+use crate::wallet::authentication::AuthenticationManager;
+use crate::wallet::encryption::EncryptedSecretKey;
+use crate::wallet::keys::{
+    delete_encrypted_main_secret_key, delete_unencrypted_main_secret_key, get_main_pubkey,
+    store_main_secret_key,
+};
 use crate::{
     calculate_royalties_fee,
     cashnotes::UnsignedTransfer,
@@ -47,6 +53,8 @@ pub struct HotWallet {
     /// These have not yet been successfully sent to the network
     /// and need to be, to reach network validity.
     unconfirmed_spend_requests: BTreeSet<SignedSpend>,
+    /// Handles authentication of (encrypted) wallets.
+    authentication_manager: AuthenticationManager,
 }
 
 impl HotWallet {
@@ -63,15 +71,25 @@ impl HotWallet {
         self.watchonly_wallet.api().wallet_dir()
     }
 
+    /// Returns whether a wallet in the specified directory is encrypted or not.
+    pub fn is_encrypted(root_dir: &Path) -> bool {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        EncryptedSecretKey::file_exists(&wallet_dir)
+    }
+
     /// Stores the wallet to disk.
     /// This requires having exclusive access to the wallet to prevent concurrent processes from writing to it
     fn store(&self, exclusive_access: WalletExclusiveAccess) -> Result<()> {
         self.watchonly_wallet.store(exclusive_access)
     }
 
-    /// reloads the wallet from disk.
+    /// Reloads the wallet from disk. If the wallet secret key is encrypted, you'll need to specify the password.
     fn reload(&mut self) -> Result<()> {
-        let wallet = Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None)?;
+        // Password needed to decrypt wallet if it is encrypted
+        let opt_password = self.authenticate()?;
+
+        let wallet =
+            Self::load_from_path_and_key(self.watchonly_wallet.wallet_dir(), None, opt_password)?;
 
         if *wallet.key.secret_key() != *self.key.secret_key() {
             return Err(WalletError::CurrentAndLoadedKeyMismatch(
@@ -81,6 +99,50 @@ impl HotWallet {
 
         // if it's a matching key, we can overwrite our wallet
         *self = wallet;
+        Ok(())
+    }
+
+    /// Authenticates the wallet and returns the password if it is encrypted.
+    ///
+    /// # Returns
+    /// - `Ok(Some(String))`: The wallet is encrypted and the password is available.
+    /// - `Ok(None)`: The wallet is not encrypted.
+    /// - `Err`: The wallet is encrypted, but no password is available.
+    ///
+    /// # Errors
+    /// Returns an error if the wallet is encrypted and the password is not available.
+    /// In such cases, the password needs to be set using `authenticate_with_password()`.
+    pub fn authenticate(&mut self) -> Result<Option<String>> {
+        self.authentication_manager.authenticate()
+    }
+
+    /// Authenticates the wallet and saves the password for a certain amount of time.
+    pub fn authenticate_with_password(&mut self, password: String) -> Result<()> {
+        self.authentication_manager
+            .authenticate_with_password(password)
+    }
+
+    /// Encrypts wallet with a password.
+    ///
+    /// Fails if wallet is already encrypted.
+    pub fn encrypt(root_dir: &Path, password: &str) -> Result<()> {
+        if Self::is_encrypted(root_dir) {
+            return Err(Error::WalletAlreadyEncrypted);
+        }
+
+        let wallet_key = Self::load_from(root_dir)?.key;
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+
+        // Save the secret key as an encrypted file
+        store_main_secret_key(&wallet_dir, &wallet_key, Some(password.to_owned()))?;
+
+        // Delete the unencrypted secret key file
+        // Cleanup if it fails
+        if let Err(err) = delete_unencrypted_main_secret_key(&wallet_dir) {
+            let _ = delete_encrypted_main_secret_key(&wallet_dir);
+            return Err(err);
+        }
+
         Ok(())
     }
 
@@ -150,17 +212,21 @@ impl HotWallet {
         // This creates the received_cash_notes dir if it doesn't exist.
         std::fs::create_dir_all(&wallet_dir)?;
         // This creates the main_key file if it doesn't exist.
-        Self::load_from_path_and_key(&wallet_dir, Some(main_key))
+        Self::load_from_path_and_key(&wallet_dir, Some(main_key), None)
     }
 
     /// Creates a serialized wallet for a path and main key.
     /// This will overwrite any existing wallet, unlike load_from_main_key
-    pub fn create_from_key(root_dir: &Path, key: MainSecretKey) -> Result<Self> {
+    pub fn create_from_key(
+        root_dir: &Path,
+        key: MainSecretKey,
+        password: Option<String>,
+    ) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
         // This creates the received_cash_notes dir if it doesn't exist.
         std::fs::create_dir_all(&wallet_dir)?;
         // Create the new wallet for this key
-        store_new_keypair(&wallet_dir, &key)?;
+        store_new_keypair(&wallet_dir, &key, password)?;
         let unconfirmed_spend_requests =
             (get_unconfirmed_spend_requests(&wallet_dir)?).unwrap_or_default();
         let watchonly_wallet = WatchOnlyWallet::load_from(&wallet_dir, key.main_pubkey())?;
@@ -169,6 +235,7 @@ impl HotWallet {
             key,
             watchonly_wallet,
             unconfirmed_spend_requests,
+            authentication_manager: AuthenticationManager::new(wallet_dir),
         })
     }
 
@@ -181,14 +248,21 @@ impl HotWallet {
     /// Tries to loads a serialized wallet from a path, bailing out if it doesn't exist.
     pub fn try_load_from(root_dir: &Path) -> Result<Self> {
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        Self::load_from_path_and_key(&wallet_dir, None)
+        Self::load_from_path_and_key(&wallet_dir, None, None)
     }
 
     /// Loads a serialized wallet from a given path, no additional element will
     /// be added to the provided path and strictly taken as the wallet files location.
     pub fn load_from_path(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
         std::fs::create_dir_all(wallet_dir)?;
-        Self::load_from_path_and_key(wallet_dir, main_key)
+        Self::load_from_path_and_key(wallet_dir, main_key, None)
+    }
+
+    /// Loads an encrypted serialized wallet from a given root path.
+    pub fn load_encrypted_from_path(root_dir: &Path, password: String) -> Result<Self> {
+        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
+        std::fs::create_dir_all(&wallet_dir)?;
+        Self::load_from_path_and_key(&wallet_dir, None, Some(password))
     }
 
     pub fn address(&self) -> MainPubkey {
@@ -202,12 +276,13 @@ impl HotWallet {
     /// Moves all files for the current wallet, including keys and cashnotes
     /// to directory root_dir/wallet_ADDRESS
     pub fn stash(root_dir: &Path) -> Result<PathBuf> {
-        let wallet = HotWallet::load_from(root_dir)?;
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let addr_hex = &format!("{:?}", wallet.address());
+        let wallet_pub_key =
+            get_main_pubkey(&wallet_dir)?.ok_or(Error::PubkeyNotFound(wallet_dir.clone()))?;
+        let addr_hex = wallet_pub_key.to_hex();
         let new_name = format!("{WALLET_DIR_NAME}_{addr_hex}");
         let moved_dir = root_dir.join(new_name);
-        let _ = std::fs::rename(wallet_dir, moved_dir.clone());
+        std::fs::rename(wallet_dir, &moved_dir)?;
         Ok(moved_dir)
     }
 
@@ -216,7 +291,17 @@ impl HotWallet {
         let cleared_name = format!("{WALLET_DIR_NAME}_{addr_hex}");
         let cleared_dir = root_dir.join(cleared_name);
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        std::fs::rename(cleared_dir, wallet_dir.clone())?;
+
+        // Stash old wallet if it exists
+        if wallet_dir.exists() {
+            if let Ok(_wallet) = HotWallet::load_from(root_dir) {
+                Self::stash(root_dir)?;
+            }
+
+            std::fs::remove_dir_all(&wallet_dir)?;
+        }
+
+        std::fs::rename(cleared_dir, wallet_dir)?;
         Ok(())
     }
 
@@ -419,6 +504,14 @@ impl HotWallet {
         let signed_spends = transfer.all_spend_requests.clone();
 
         self.update_local_wallet(transfer, exclusive_access, false)?;
+
+        // cash_notes better to be removed from disk
+        let _ =
+            self.remove_cash_notes_from_disk(signed_spends.iter().map(|s| &s.spend.unique_pubkey));
+
+        // signed_spends need to be flushed to the disk as confirmed_spends as well.
+        let ss_btree: BTreeSet<_> = signed_spends.iter().cloned().collect();
+        let _ = remove_unconfirmed_spend_requests(self.watchonly_wallet.wallet_dir(), &ss_btree);
 
         Ok(signed_spends)
     }
@@ -660,8 +753,12 @@ impl HotWallet {
 
     /// Loads a serialized wallet from a path.
     // TODO: what's the behaviour here if path has stored key and we pass one in?
-    fn load_from_path_and_key(wallet_dir: &Path, main_key: Option<MainSecretKey>) -> Result<Self> {
-        let key = match get_main_key_from_disk(wallet_dir) {
+    fn load_from_path_and_key(
+        wallet_dir: &Path,
+        main_key: Option<MainSecretKey>,
+        main_key_password: Option<String>,
+    ) -> Result<Self> {
+        let key = match get_main_key_from_disk(wallet_dir, main_key_password.to_owned()) {
             Ok(key) => {
                 if let Some(passed_key) = main_key {
                     if key.secret_key() != passed_key.secret_key() {
@@ -673,7 +770,7 @@ impl HotWallet {
             }
             Err(error) => {
                 if let Some(key) = main_key {
-                    store_new_keypair(wallet_dir, &key)?;
+                    store_new_keypair(wallet_dir, &key, main_key_password)?;
                     key
                 } else {
                     error!(
@@ -693,6 +790,7 @@ impl HotWallet {
             key,
             watchonly_wallet,
             unconfirmed_spend_requests,
+            authentication_manager: AuthenticationManager::new(wallet_dir.to_path_buf()),
         })
     }
 }
@@ -702,6 +800,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::HotWallet;
+    use crate::wallet::authentication::AuthenticationManager;
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
         wallet::{
@@ -748,6 +847,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         assert_eq!(main_pubkey, deposit_only.address());
@@ -775,6 +875,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![])?;
@@ -800,6 +901,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis])?;
@@ -821,6 +923,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         local_wallet.deposit_and_store_to_disk(&vec![genesis])?;
@@ -844,6 +947,7 @@ mod tests {
             key,
             watchonly_wallet: WatchOnlyWallet::new(main_pubkey, &dir, KeyLessWallet::default()),
             unconfirmed_spend_requests: Default::default(),
+            authentication_manager: AuthenticationManager::new(dir.to_path_buf()),
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis_0.clone()])?;
@@ -864,7 +968,7 @@ mod tests {
         let root_dir = dir.path().to_path_buf();
 
         let new_wallet = MainSecretKey::random();
-        let mut depositor = HotWallet::create_from_key(&root_dir, new_wallet)?;
+        let mut depositor = HotWallet::create_from_key(&root_dir, new_wallet, None)?;
         let genesis =
             create_first_cash_note_from_key(&depositor.key).expect("Genesis creation to succeed.");
         depositor.deposit_and_store_to_disk(&vec![genesis])?;
@@ -908,7 +1012,7 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
         let new_wallet = MainSecretKey::random();
-        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet, None)?;
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
@@ -941,7 +1045,7 @@ mod tests {
         let root_dir = dir.path().to_path_buf();
 
         let new_wallet = MainSecretKey::random();
-        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet, None)?;
 
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
@@ -995,7 +1099,7 @@ mod tests {
         let sender_root_dir = create_temp_dir();
         let sender_root_dir = sender_root_dir.path().to_path_buf();
         let new_wallet = MainSecretKey::random();
-        let mut sender = HotWallet::create_from_key(&sender_root_dir, new_wallet)?;
+        let mut sender = HotWallet::create_from_key(&sender_root_dir, new_wallet, None)?;
 
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
@@ -1008,7 +1112,7 @@ mod tests {
         let recipient_root_dir = recipient_root_dir.path().to_path_buf();
 
         let new_wallet = MainSecretKey::random();
-        let mut recipient = HotWallet::create_from_key(&recipient_root_dir, new_wallet)?;
+        let mut recipient = HotWallet::create_from_key(&recipient_root_dir, new_wallet, None)?;
 
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
@@ -1057,7 +1161,7 @@ mod tests {
         let root_dir = dir.path().to_path_buf();
 
         let new_wallet = MainSecretKey::random();
-        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet)?;
+        let mut sender = HotWallet::create_from_key(&root_dir, new_wallet, None)?;
 
         let sender_cash_note =
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
@@ -1097,6 +1201,71 @@ mod tests {
 
         let expected_price: u64 = map.values().map(|(_, quote, _)| quote.cost.as_nano()).sum();
         assert_eq!(price.as_nano(), expected_price);
+
+        Ok(())
+    }
+
+    /// --------------------------------
+    /// <-------> Encryption <--------->
+    /// --------------------------------
+
+    #[test]
+    fn test_encrypting_existing_unencrypted_wallet() -> Result<()> {
+        let password: &'static str = "safenetwork";
+        let wrong_password: &'static str = "unsafenetwork";
+
+        let dir = create_temp_dir();
+        let root_dir = dir.path().to_path_buf();
+        let wallet_key = MainSecretKey::random();
+
+        let unencrypted_wallet = HotWallet::create_from_key(&root_dir, wallet_key, None)?;
+
+        HotWallet::encrypt(&root_dir, password)?;
+
+        let mut encrypted_wallet =
+            HotWallet::load_encrypted_from_path(&root_dir, password.to_owned())?;
+
+        // Should fail when not authenticated with password yet
+        assert!(encrypted_wallet.authenticate().is_err());
+
+        // Authentication should fail with wrong password
+        assert!(encrypted_wallet
+            .authenticate_with_password(wrong_password.to_owned())
+            .is_err());
+
+        encrypted_wallet.authenticate_with_password(password.to_owned())?;
+
+        encrypted_wallet.reload()?;
+
+        assert_eq!(encrypted_wallet.address(), unencrypted_wallet.address());
+
+        Ok(())
+    }
+
+    /// --------------------------------
+    /// <-------> Other <--------->
+    /// --------------------------------
+
+    #[test]
+    fn test_stashing_and_unstashing() -> Result<()> {
+        let dir = create_temp_dir();
+        let root_dir = dir.path().to_path_buf();
+        let wallet_key = MainSecretKey::random();
+        let wallet = HotWallet::create_from_key(&root_dir, wallet_key, None)?;
+        let pub_key_hex_str = wallet.address().to_hex();
+
+        // Stash wallet
+        HotWallet::stash(&root_dir)?;
+
+        // There should be no active wallet now
+        assert!(HotWallet::load_from(&root_dir).is_err());
+
+        // Unstash wallet
+        HotWallet::unstash(&root_dir, &pub_key_hex_str)?;
+
+        let unstashed_wallet = HotWallet::load_from(&root_dir)?;
+
+        assert_eq!(unstashed_wallet.address().to_hex(), pub_key_hex_str);
 
         Ok(())
     }
