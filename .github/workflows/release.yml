@@ -131,21 +131,6 @@ jobs:
           just package-all-bins
           just upload-all-packaged-bins-to-s3
 
-      - name: upload 'latest' release
-        if: ${{ github.repository_owner == 'maidsafe' && github.ref == 'refs/heads/stable' }}
-        shell: bash
-        run: |
-          just package-bin "faucet" "latest"
-          just package-bin "nat-detection" "latest"
-          just package-bin "node-launchpad" "latest"
-          just package-bin "safe" "latest"
-          just package-bin "safenode" "latest"
-          just package-bin "safenode_rpc_client" "latest"
-          just package-bin "safenode-manager" "latest"
-          just package-bin "safenodemand" "latest"
-          just package-bin "sn_auditor" "latest"
-          just upload-all-packaged-bins-to-s3
-
   github-release:
     if: ${{
         github.repository_owner == 'maidsafe' &&
