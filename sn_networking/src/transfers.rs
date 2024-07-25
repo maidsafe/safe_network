@@ -66,10 +66,11 @@ impl Network {
                 expected,
                 got,
             })) => {
-                // if majority holds the spend, it might be worth it to try again.
+                // if majority holds the spend, it might be worth to be trusted.
                 if got >= close_group_majority() {
-                    debug!("At least a majority nodes hold the spend {address:?}, so trying to get it again.");
-                    get_cfg.retry_strategy = Some(RetryStrategy::Persistent);
+                    debug!("At least a majority nodes hold the spend {address:?}, going to trust it if can fetch with majority again.");
+                    get_cfg.get_quorum = Quorum::Majority;
+                    get_cfg.retry_strategy = Some(RetryStrategy::Balanced);
                     self.get_record_from_network(key, &get_cfg).await?
                 } else {
                     return Err(NetworkError::GetRecordError(
