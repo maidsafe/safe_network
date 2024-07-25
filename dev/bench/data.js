@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721936077901,
+  "lastUpdate": 1721936079458,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "c58ed056661ccdcd634ba9ce79717f58879ada62",
-          "message": "fix: use correct release type in upgrade process\n\nThe faucet and daemon upgrades did not work correctly because the release type was hard coded to\n`ReleaseType::Safenode` and was not changed when this code was refactored.",
-          "timestamp": "2024-04-03T11:05:47Z",
-          "tree_id": "e39ee6caa1ccc9a68f3df3acfcf9d378ff689f0c",
-          "url": "https://github.com/maidsafe/safe_network/commit/c58ed056661ccdcd634ba9ce79717f58879ada62"
-        },
-        "date": 1712145134635,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7123,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34280,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 38172,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "3c14e0b0671156191a08ca6b63b741d1bc5f4eda",
+          "message": "Merge branch '2024-07-23.alpha.1'",
+          "timestamp": "2024-07-25T20:13:46+01:00",
+          "tree_id": "00f62a21e72b96ec5c7d7cd375aa70e2674f7f6b",
+          "url": "https://github.com/maidsafe/safe_network/commit/3c14e0b0671156191a08ca6b63b741d1bc5f4eda"
+        },
+        "date": 1721936079149,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 6584,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 35039,
             "unit": "ms"
           },
           {
