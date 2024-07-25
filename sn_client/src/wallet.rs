@@ -705,6 +705,29 @@ impl WalletClient {
                 .unconfirmed_spend_requests()
                 .iter()
                 .map(|s| {
+                    info!(
+                        "Unconfirmed spend {:?} of amount {}",
+                        s.spend.unique_pubkey, s.spend.amount
+                    );
+                    info!("====== spent_tx.inputs : {:?} ", s.spend.spent_tx.inputs);
+                    info!("====== spent_tx.outputs : {:?} ", s.spend.spent_tx.outputs);
+                    info!("====== parent_tx.inputs : {:?} ", s.spend.parent_tx.inputs);
+                    info!(
+                        "====== parent_tx.outputs : {:?} ",
+                        s.spend.parent_tx.outputs
+                    );
+                    println!(
+                        "Unconfirmed spend {:?} of amount {}",
+                        s.spend.unique_pubkey, s.spend.amount
+                    );
+                    println!("====== spent_tx.inputs : {:?} ", s.spend.spent_tx.inputs);
+                    println!("====== spent_tx.outputs : {:?} ", s.spend.spent_tx.outputs);
+                    println!("====== parent_tx.inputs : {:?} ", s.spend.parent_tx.inputs);
+                    println!(
+                        "====== parent_tx.outputs : {:?} ",
+                        s.spend.parent_tx.outputs
+                    );
+
                     let parent_spends: BTreeSet<_> = s
                         .spend
                         .parent_tx
@@ -737,9 +760,49 @@ impl WalletClient {
                         if let Some(parent_spends) = spends_to_check.get(&addr) {
                             for parent_addr in parent_spends.iter() {
                                 match self.client.peek_a_spend(*parent_addr).await {
-                                    Ok(_) => {
+                                    Ok(s) => {
                                         info!("Parent {parent_addr:?} of unconfirmed Spend {addr:?} is find having at least one copy in the network !");
                                         println!("Parent {parent_addr:?} of unconfirmed Spend {addr:?} is find having at least one copy in the network !");
+                                        info!(
+                                            "Parent spend {:?} of amount {}",
+                                            s.spend.unique_pubkey, s.spend.amount
+                                        );
+                                        info!(
+                                            "====== spent_tx.inputs : {:?} ",
+                                            s.spend.spent_tx.inputs
+                                        );
+                                        info!(
+                                            "====== spent_tx.outputs : {:?} ",
+                                            s.spend.spent_tx.outputs
+                                        );
+                                        info!(
+                                            "====== parent_tx.inputs : {:?} ",
+                                            s.spend.parent_tx.inputs
+                                        );
+                                        info!(
+                                            "====== parent_tx.outputs : {:?} ",
+                                            s.spend.parent_tx.outputs
+                                        );
+                                        println!(
+                                            "Parent spend {:?} of amount {}",
+                                            s.spend.unique_pubkey, s.spend.amount
+                                        );
+                                        println!(
+                                            "====== spent_tx.inputs : {:?} ",
+                                            s.spend.spent_tx.inputs
+                                        );
+                                        println!(
+                                            "====== spent_tx.outputs : {:?} ",
+                                            s.spend.spent_tx.outputs
+                                        );
+                                        println!(
+                                            "====== parent_tx.inputs : {:?} ",
+                                            s.spend.parent_tx.inputs
+                                        );
+                                        println!(
+                                            "====== parent_tx.outputs : {:?} ",
+                                            s.spend.parent_tx.outputs
+                                        );
                                     }
                                     Err(err) => {
                                         warn!(

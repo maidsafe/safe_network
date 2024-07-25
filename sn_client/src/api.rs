@@ -895,7 +895,7 @@ impl Client {
             expected_holders,
         };
         let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::All,
+            put_quorum: Quorum::Majority,
             retry_strategy: Some(RetryStrategy::Persistent),
             use_put_record_to: None,
             verification: Some((VerificationKind::Network, verification_cfg)),
