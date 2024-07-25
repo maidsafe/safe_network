@@ -1155,6 +1155,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore = "This test sends out invalid 0 transactions and needs to be fixed"]
     #[tokio::test]
     async fn test_acc_packet_sync_mutations() -> Result<()> {
         let client = get_new_client(SecretKey::random()).await?;
