@@ -144,6 +144,39 @@ impl SignedSpend {
         trace!("Validated parent_spends for {unique_key}");
         Ok(())
     }
+
+    /// Create a random Spend for testing
+    #[cfg(test)]
+    pub(crate) fn random_spend_to(
+        rng: &mut rand::prelude::ThreadRng,
+        output: UniquePubkey,
+        value: u64,
+    ) -> Self {
+        use crate::MainSecretKey;
+
+        let sk = MainSecretKey::random();
+        let index = DerivationIndex::random(rng);
+        let derived_sk = sk.derive_key(&index);
+        let unique_pubkey = derived_sk.unique_pubkey();
+        let reason = SpendReason::default();
+        let ancestor = MainSecretKey::random()
+            .derive_key(&DerivationIndex::random(rng))
+            .unique_pubkey();
+        let spend = Spend {
+            unique_pubkey,
+            reason,
+            ancestors: BTreeSet::from_iter(vec![ancestor]),
+            descendants: BTreeMap::from_iter(vec![(
+                output,
+                (NanoTokens::from(value), OutputPurpose::None),
+            )]),
+        };
+        let derived_key_sig = derived_sk.sign(&spend.to_bytes_for_signing());
+        Self {
+            spend,
+            derived_key_sig,
+        }
+    }
 }
 
 // Impl manually to avoid clippy complaint about Hash conflict.
