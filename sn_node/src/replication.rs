@@ -11,11 +11,9 @@ use libp2p::{
     kad::{Quorum, Record, RecordKey},
     PeerId,
 };
-use sn_networking::{
-    sort_peers_by_address_and_limit, GetRecordCfg, Network, REPLICATION_PEERS_COUNT,
-};
+use sn_networking::{GetRecordCfg, Network};
 use sn_protocol::{
-    messages::{Cmd, Query, QueryResponse, Request, Response},
+    messages::{Query, QueryResponse, Request, Response},
     storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -100,87 +98,9 @@ impl Node {
         let network = self.network().clone();
 
         let _handle = spawn(async move {
-            let start = std::time::Instant::now();
-            let pretty_key = PrettyPrintRecordKey::from(&paid_key);
-
-            // first we wait until our own network store can return the record
-            // otherwise it may not be fully written yet
-            let mut retry_count = 0;
-            debug!("Checking we have successfully stored the fresh record {pretty_key:?} in the store before replicating");
-            loop {
-                let record = match network.get_local_record(&paid_key).await {
-                    Ok(record) => record,
-                    Err(err) => {
-                        error!(
-                            "Replicating fresh record {pretty_key:?} get_record_from_store errored: {err:?}"
-                        );
-                        None
-                    }
-                };
-
-                if record.is_some() {
-                    break;
-                }
-
-                if retry_count > 10 {
-                    error!(
-                        "Could not get record from store for replication: {pretty_key:?} after 10 retries"
-                    );
-                    return;
-                }
-
-                retry_count += 1;
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-            }
-
-            debug!("Start replication of fresh record {pretty_key:?} from store");
-
-            // Already contains self_peer_id
-            let mut closest_k_peers = match network.get_closest_k_value_local_peers().await {
-                Ok(peers) => peers,
-                Err(err) => {
-                    error!("Replicating fresh record {pretty_key:?} get_closest_local_peers errored: {err:?}");
-                    return;
-                }
-            };
-
-            // remove ourself from these calculations
-            closest_k_peers.retain(|peer_id| peer_id != &network.peer_id());
-
-            let data_addr = NetworkAddress::from_record_key(&paid_key);
-
-            let sorted_based_on_addr = match sort_peers_by_address_and_limit(
-                &closest_k_peers,
-                &data_addr,
-                REPLICATION_PEERS_COUNT,
-            ) {
-                Ok(result) => result,
-                Err(err) => {
-                    error!(
-                            "When replicating fresh record {pretty_key:?}, having error when sort {err:?}"
-                        );
-                    return;
-                }
-            };
-
-            let our_peer_id = network.peer_id();
-            let our_address = NetworkAddress::from_peer(our_peer_id);
-            #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-            let keys = vec![(data_addr.clone(), record_type.clone())];
-
-            for peer_id in sorted_based_on_addr {
-                debug!("Replicating fresh record {pretty_key:?} to {peer_id:?}");
-                let request = Request::Cmd(Cmd::Replicate {
-                    holder: our_address.clone(),
-                    keys: keys.clone(),
-                });
-
-                network.send_req_ignore_reply(request, *peer_id);
-            }
-            debug!(
-                "Completed replicate fresh record {pretty_key:?} on store, in {:?}",
-                start.elapsed()
-            );
+            network
+                .replicate_valid_fresh_record(paid_key, record_type)
+                .await;
         });
     }
 }

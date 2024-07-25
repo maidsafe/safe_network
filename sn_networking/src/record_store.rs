@@ -84,7 +84,7 @@ pub struct NodeRecordStore {
     /// ilog2 distance range of responsible records
     /// AKA: how many buckets of data do we consider "close"
     /// None means accept all records.
-    responsible_distance_range: Option<u32>,
+    responsible_distance_range: Option<Distance>,
     #[cfg(feature = "open-metrics")]
     /// Used to report the number of records held by the store to the metrics server.
     record_count_metric: Option<Gauge>,
@@ -307,11 +307,6 @@ impl NodeRecordStore {
     pub fn set_record_count_metric(mut self, metric: Gauge) -> Self {
         self.record_count_metric = Some(metric);
         self
-    }
-
-    /// Returns the current distance ilog2 (aka bucket) range of CLOSE_GROUP nodes.
-    pub fn get_responsible_distance_range(&self) -> Option<u32> {
-        self.responsible_distance_range
     }
 
     // Converts a Key into a Hex string.
@@ -654,7 +649,7 @@ impl NodeRecordStore {
     pub fn get_records_within_distance_range(
         &self,
         records: HashSet<&Key>,
-        distance_range: u32,
+        distance_range: Distance,
     ) -> usize {
         debug!(
             "Total record count is {:?}. Distance is: {distance_range:?}",
@@ -665,7 +660,7 @@ impl NodeRecordStore {
             .iter()
             .filter(|key| {
                 let kbucket_key = KBucketKey::new(key.to_vec());
-                distance_range >= self.local_key.distance(&kbucket_key).ilog2().unwrap_or(0)
+                distance_range >= self.local_key.distance(&kbucket_key)
             })
             .count();
 
@@ -674,8 +669,8 @@ impl NodeRecordStore {
     }
 
     /// Setup the distance range.
-    pub(crate) fn set_responsible_distance_range(&mut self, farthest_responsible_bucket: u32) {
-        self.responsible_distance_range = Some(farthest_responsible_bucket);
+    pub(crate) fn set_responsible_distance_range(&mut self, farthest_distance: Distance) {
+        self.responsible_distance_range = Some(farthest_distance);
     }
 }
 
@@ -931,7 +926,7 @@ pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
 mod tests {
 
     use super::*;
-    use crate::{close_group_majority, sort_peers_by_key_and_limit, REPLICATION_PEERS_COUNT};
+    use crate::{close_group_majority, sort_peers_by_key_and_limit};
     use bytes::Bytes;
     use eyre::ContextCompat;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
@@ -1357,10 +1352,7 @@ mod tests {
                 .wrap_err("Could not parse record store key")?,
         );
         // get the distance to this record from our local key
-        let distance = self_address
-            .distance(&halfway_record_address)
-            .ilog2()
-            .unwrap_or(0);
+        let distance = self_address.distance(&halfway_record_address);
 
         // must be plus one bucket from the halfway record
         store.set_responsible_distance_range(distance);
@@ -1444,7 +1436,7 @@ mod tests {
                 match sort_peers_by_key_and_limit(
                     &peers_vec,
                     &address.as_kbucket_key(),
-                    REPLICATION_PEERS_COUNT,
+                    7, // old replication range
                 ) {
                     Ok(peers_in_replicate_range) => {
                         let peers_in_replicate_range: Vec<PeerId> = peers_in_replicate_range

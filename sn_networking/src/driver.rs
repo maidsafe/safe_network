@@ -23,6 +23,7 @@ use crate::{
     record_store_api::UnifiedRecordStore,
     relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
+    sort_peers_by_address_and_limit,
     target_arch::{interval, spawn, Instant},
     version::{
         IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
@@ -76,7 +77,7 @@ pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(15
 pub(crate) const RELAY_MANAGER_RESERVATION_INTERVAL: Duration = Duration::from_secs(30);
 
 // Number of range distances to keep in the circular buffer
-pub const X_RANGE_STORAGE_LIMIT: usize = 100;
+pub const GET_RANGE_STORAGE_LIMIT: usize = 100;
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
@@ -639,7 +640,7 @@ impl NetworkBuilder {
             bad_nodes: Default::default(),
             quotes_history: Default::default(),
             replication_targets: Default::default(),
-            range_distances: VecDeque::with_capacity(X_RANGE_STORAGE_LIMIT),
+            range_distances: VecDeque::with_capacity(GET_RANGE_STORAGE_LIMIT),
         };
 
         let network = Network::new(
@@ -675,7 +676,7 @@ pub struct SwarmDriver {
     pub(crate) local_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     local_cmd_receiver: mpsc::Receiver<LocalSwarmCmd>,
     network_cmd_receiver: mpsc::Receiver<NetworkSwarmCmd>,
-    event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
+    pub(crate) event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
 
     /// Trackers for underlying behaviour related events
     pub(crate) pending_get_closest_peers: PendingGetClosest,
@@ -760,22 +761,19 @@ impl SwarmDriver {
 
                 // runs every bootstrap_interval time
                 _ = bootstrap_interval.tick() => {
-                    if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {
-                        bootstrap_interval = new_interval;
-                    }
+                    self.run_bootstrap_continuously();
                 }
                 _ = set_farthest_record_interval.tick() => {
                     if !self.is_client {
-                        let closest_k_peers = self.get_closest_k_value_local_peers();
+                        let get_range = self.get_request_range();
+                        // set any new distance to farthest record in the store
+                        self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(get_range);
 
-                        if let Some(distance) = self.get_farthest_data_address_estimate(&closest_k_peers) {
-                            // set any new distance to farthest record in the store
-                            self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+                        // the distance range within the replication_fetcher shall be in sync as well
+                        self.replication_fetcher.set_replication_distance_range(get_range);
 
-                            let replication_distance = self.swarm.behaviour_mut().kademlia.store_mut().get_farthest_replication_distance_bucket().unwrap_or(1);
-                            // the distance range within the replication_fetcher shall be in sync as well
-                            self.replication_fetcher.set_replication_distance_range(replication_distance);
-                        }
+
+
                     }
                 }
                 _ = relay_manager_reservation_interval.tick() => self.relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes),
@@ -788,116 +786,104 @@ impl SwarmDriver {
     // --------------------------------------------
 
     /// Defines a new X distance range to be used for GETs and data replication
-    pub(crate) fn add_distance_range_for_gets(&mut self) {
-        // TODO: define how/where this distance comes from
-
-        const TARGET_PEER: usize = 42;
+    ///
+    /// Enumerates buckets and generates a random distance in the first bucket
+    /// that has at least `MIN_PEERS_IN_BUCKET` peers.
+    ///
+    pub(crate) fn set_request_range(&mut self, network_discovery_peers: &Vec<PeerId>) {
+        info!(
+            "Adding a GetRange to our stash deriving from {:?} peers",
+            network_discovery_peers.len()
+        );
 
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
-        let our_key = our_address.as_kbucket_key();
-        let mut sorted_peers_iter = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .get_closest_local_peers(&our_key);
 
-        let mut last_peers_distance = KBucketDistance::default();
-        let mut prior_peer = sorted_peers_iter.next();
+        // get the farthest distance between these peers:
+        let mut new_distance_range = KBucketDistance::default();
 
-        // get 42nd or farthest
-        for (i, peer) in sorted_peers_iter.enumerate() {
-            if let Some(prior_peer) = prior_peer {
-                let this_last_peers_distance = prior_peer.distance(&peer);
-
-                // only override it if it's larger!
-                //
-                // how does this play with keeping 100?
-                // We only update with peers changes... Perhaps this negates the need for a buffer?
-                //
-                //
-                // if this_last_peers_distance > last_peers_distance {
-                last_peers_distance = this_last_peers_distance;
-                // }
+        // sort all peers by distance to us.
+        let sorted_discovery_peers = match sort_peers_by_address_and_limit(
+            network_discovery_peers,
+            &our_address,
+            network_discovery_peers.len(),
+        ) {
+            Ok(sorted_peers) => sorted_peers,
+            Err(err) => {
+                warn!("Problem while sorting peers by address during set_request_range : {err}");
+                return;
             }
+        };
 
-            // info!("Peeeeeer {i}: {peer:?} - distance: {last_peers_distance:?}");
-            prior_peer = Some(peer);
+        let closest_peer = sorted_discovery_peers.first();
+        let farthest_peer = if sorted_discovery_peers.len() >= CLOSE_GROUP_SIZE {
+            sorted_discovery_peers.get(CLOSE_GROUP_SIZE - 1)
+        } else {
+            sorted_discovery_peers.last()
+        };
 
-            if i == TARGET_PEER {
-                break;
+        if let Some(closest_peer) = closest_peer {
+            let closest_addr = NetworkAddress::from_peer(**closest_peer);
+            if let Some(farthest_peer) = farthest_peer {
+                let farthest_addr = NetworkAddress::from_peer(**farthest_peer);
+                new_distance_range = farthest_addr
+                    .as_kbucket_key()
+                    .distance(&closest_addr.as_kbucket_key());
+
+                info!(
+                    "Distance between peers after discovery is {new_distance_range:?}: {:?}, Farthest peer distance: {:?}",
+                    closest_peer, farthest_peer
+                );
             }
         }
 
-        // last_peers_distance = last_peers_distance * DISTANCE_MULTIPLIER;
-
-        if last_peers_distance == KBucketDistance::default() {
+        if new_distance_range == KBucketDistance::default() {
             warn!("No peers found, no range distance can be set/added");
             return;
         }
 
-        if self.range_distances.len() == X_RANGE_STORAGE_LIMIT {
-            self.range_distances.pop_front();
-        }
-
-        info!("Adding new distance range: {last_peers_distance:?}");
-
-        self.range_distances.push_back(last_peers_distance);
-    }
-
-    pub(crate) fn get_peers_within_get_range(&mut self) -> Option<KBucketDistance> {
-        // TODO: Is this the correct keytype for comparisons?
-        let our_address = NetworkAddress::from_peer(self.self_peer_id);
-        let our_key = our_address.as_kbucket_key();
-
-        let sorted_peers_iter = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .get_closest_local_peers(&our_key);
-
-        let farthest_get_range_record_distance = self.range_distances.iter().max();
-
-        if let Some(farthest_range) = farthest_get_range_record_distance {
-            // lets print how many are within range
-            for (i, peer) in sorted_peers_iter.enumerate() {
-                let peer_distance_from_us = peer.distance(&our_key);
-
-                if &peer_distance_from_us < farthest_range {
-                    info!("Peer {peer:?} is {peer_distance_from_us:?} and would be within the range based search group!");
-                    info!("That's {i:?} peers within the range!");
-                }
+        if self.range_distances.len() >= GET_RANGE_STORAGE_LIMIT {
+            if let Some(distance) = self.range_distances.pop_front() {
+                trace!("Removed distance range: {:?}", distance.ilog2());
             }
-        } else {
-            warn!("No range distance has been set, no peers can be found within the range");
-            return None;
         }
 
-        farthest_get_range_record_distance.copied()
+        info!(
+            "Adding new distance range: {:?}",
+            new_distance_range.ilog2()
+        );
+
+        self.range_distances.push_back(new_distance_range);
     }
 
-    /// Returns the farthest bucket, close to but probably farther than our responsibilty range.
-    /// This simply uses the closest k peers to estimate the farthest address as
-    /// `K_VALUE`th peer's bucket.
-    fn get_farthest_data_address_estimate(
-        &mut self,
-        // Sorted list of closest k peers to our peer id.
-        closest_k_peers: &[PeerId],
-    ) -> Option<u32> {
-        // if we don't have enough peers we don't set the distance range yet.
-        let mut farthest_distance = None;
+    /// Returns the KBucketDistance we are currently using as our X value
+    /// for range based search.
+    pub(crate) fn get_request_range(&self) -> KBucketDistance {
+        let mut sorted_distances = self.range_distances.iter().collect::<Vec<_>>();
 
-        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+        sorted_distances.sort_unstable();
 
-        // get K_VALUEth peer's address distance
-        // This is a rough estimate of the farthest address we might be responsible for.
-        // We want this to be higher than actually necessary, so we retain more data
-        // and can be sure to pass bad node checks
-        if let Some(peer) = closest_k_peers.last() {
-            let address = NetworkAddress::from_peer(*peer);
-            farthest_distance = our_address.distance(&address).ilog2();
+        let median_index = sorted_distances.len() / 2;
+
+        let default = KBucketDistance::default();
+        let median = sorted_distances.get(median_index).cloned();
+
+        if let Some(dist) = median {
+            *dist
+        } else {
+            default
         }
+    }
 
-        farthest_distance
+    /// get all the peers from our local RoutingTable. Contains self
+    pub(crate) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
+        let mut all_peers: Vec<PeerId> = vec![];
+        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+            for entry in kbucket.iter() {
+                all_peers.push(entry.node.key.clone().into_preimage());
+            }
+        }
+        all_peers.push(self.self_peer_id);
+        all_peers
     }
 
     /// Pushes NetworkSwarmCmd off thread so as to be non-blocking

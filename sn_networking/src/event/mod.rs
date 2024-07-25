@@ -227,8 +227,6 @@ impl SwarmDriver {
         self.log_kbuckets(&added_peer);
         self.send_event(NetworkEvent::PeerAdded(added_peer, self.peers_in_rt));
 
-        self.add_distance_range_for_gets();
-        self.get_peers_within_get_range();
         #[cfg(feature = "open-metrics")]
         if let Some(metrics) = &self.network_metrics {
             metrics.peers_in_routing_table.set(self.peers_in_rt as i64);

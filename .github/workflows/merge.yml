@@ -740,6 +740,10 @@ jobs:
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
 
+      - name: Wait from network to stabilise
+        shell: bash
+        run: sleep 30
+
       - name: Verify the routing tables of the nodes
         run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture
         env:
@@ -765,7 +769,7 @@ jobs:
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_data_location
+          log_file_prefix: safe_test_logs_data_location_routing_table
           platform: ${{ matrix.os }}
 
       - name: Verify restart of nodes using rg

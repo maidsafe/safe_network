@@ -7,17 +7,22 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    driver::PendingGetClosestType, get_quorum_value, get_raw_signed_spends_from_record,
-    GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    cmd::NetworkSwarmCmd, driver::PendingGetClosestType, get_quorum_value,
+    get_raw_signed_spends_from_record, GetRecordCfg, GetRecordError, NetworkError, Result,
+    SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
-use libp2p::kad::{
-    self, GetClosestPeersError, InboundRequest, PeerRecord, ProgressStep, QueryId, QueryResult,
-    QueryStats, Record, K_VALUE,
+use libp2p::{
+    kad::{
+        self, GetClosestPeersError, InboundRequest, KBucketDistance, PeerRecord, ProgressStep,
+        QueryId, QueryResult, QueryStats, Quorum, Record, K_VALUE,
+    },
+    PeerId,
 };
 use sn_protocol::{
+    messages::{Cmd, Request},
     storage::{try_serialize_record, RecordKind},
-    PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::SignedSpend;
 use std::{
@@ -33,6 +38,9 @@ impl SwarmDriver {
         let event_string;
 
         match kad_event {
+            // We use this query both to bootstrap and populate our routing table,
+            // but also to define our GetRange as defined by the largest distance between
+            // peers in any recent GetClosest call.
             kad::Event::OutboundQueryProgressed {
                 id,
                 result: QueryResult::GetClosestPeers(Ok(ref closest_peers)),
@@ -56,10 +64,12 @@ impl SwarmDriver {
                     current_closest.extend(closest_peers.peers.clone());
                     if current_closest.len() >= usize::from(K_VALUE) || step.last {
                         let (get_closest_type, current_closest) = entry.remove();
+                        self.network_discovery
+                            .handle_get_closest_query(&current_closest);
                         match get_closest_type {
-                            PendingGetClosestType::NetworkDiscovery => self
-                                .network_discovery
-                                .handle_get_closest_query(current_closest),
+                            PendingGetClosestType::NetworkDiscovery => {
+                                self.set_request_range(&current_closest);
+                            }
                             PendingGetClosestType::FunctionCall(sender) => {
                                 sender
                                     .send(current_closest)
@@ -108,7 +118,7 @@ impl SwarmDriver {
                 match get_closest_type {
                     PendingGetClosestType::NetworkDiscovery => self
                         .network_discovery
-                        .handle_get_closest_query(current_closest),
+                        .handle_get_closest_query(&current_closest),
                     PendingGetClosestType::FunctionCall(sender) => {
                         sender
                             .send(current_closest)
@@ -252,10 +262,8 @@ impl SwarmDriver {
                     self.update_on_peer_addition(peer);
 
                     // This should only happen once
-                    if self.bootstrap.notify_new_peer() {
-                        info!("Performing the first bootstrap");
-                        self.trigger_network_discovery();
-                    }
+                    info!("Performing the first bootstrap");
+                    self.trigger_network_discovery();
                 }
 
                 info!("kad_event::RoutingUpdated {:?}: {peer:?}, is_new_peer: {is_new_peer:?} old_peer: {old_peer:?}", self.peers_in_rt);
@@ -322,6 +330,7 @@ impl SwarmDriver {
     //          `QueryStats::requests` to be 20 (K-Value)
     //          `QueryStats::success` to be over majority of the requests
     //          `err::NotFound::closest_peers` contains a list of CLOSE_GROUP_SIZE peers
+    //
     //   2, targeting an existing entry
     //     there will a sequence of (at least CLOSE_GROUP_SIZE) events of
     //     `kad::Event::OutboundQueryProgressed` to be received
@@ -335,13 +344,16 @@ impl SwarmDriver {
     //     where: `cache_candidates`: being the peers supposed to hold the record but not
     //            `ProgressStep::count`: to be `number of received copies plus one`
     //            `ProgressStep::last` to be `true`
+    //
+    //
 
     /// Accumulates the GetRecord query results
-    /// If we get enough responses (quorum) for a record with the same content hash:
+    /// If we get enough responses (ie exceed GetRange) for a record with the same content hash:
     /// - we return the Record after comparing with the target record. This might return RecordDoesNotMatch if the
     ///   check fails.
     /// - if multiple content hashes are found, we return a SplitRecord Error
     ///   And then we stop the kad query as we are done here.
+    ///   We do not need to wait for GetRange to be exceeded here and should return early.
     fn accumulate_get_record_found(
         &mut self,
         query_id: QueryId,
@@ -349,12 +361,16 @@ impl SwarmDriver {
         _stats: QueryStats,
         step: ProgressStep,
     ) -> Result<()> {
+        let expected_get_range = self.get_request_range();
+        let key = peer_record.record.key.clone();
+        let all_local_peers = self.get_all_local_peers();
+
         let peer_id = if let Some(peer_id) = peer_record.peer {
             peer_id
         } else {
             self.self_peer_id
         };
-        let pretty_key = PrettyPrintRecordKey::from(&peer_record.record.key).into_owned();
+        let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
 
         if let Entry::Occupied(mut entry) = self.pending_get_record.entry(query_id) {
             let (_key, _senders, result_map, cfg) = entry.get_mut();
@@ -369,83 +385,124 @@ impl SwarmDriver {
 
             // Insert the record and the peer into the result_map.
             let record_content_hash = XorName::from_content(&peer_record.record.value);
-            let responded_peers =
+
+            let peer_list =
                 if let Entry::Occupied(mut entry) = result_map.entry(record_content_hash) {
                     let (_, peer_list) = entry.get_mut();
+
                     let _ = peer_list.insert(peer_id);
-                    peer_list.len()
+                    peer_list.clone()
                 } else {
                     let mut peer_list = HashSet::new();
                     let _ = peer_list.insert(peer_id);
-                    result_map.insert(record_content_hash, (peer_record.record.clone(), peer_list));
-                    1
+                    result_map.insert(
+                        record_content_hash,
+                        (peer_record.record.clone(), peer_list.clone()),
+                    );
+
+                    peer_list
                 };
 
+            let responded_peers = peer_list.len();
+
+            // TODO: With GetRange, do we still need quorum here?
             let expected_answers = get_quorum_value(&cfg.get_quorum);
+            trace!("Expecting {expected_answers:?} answers to exceed {expected_get_range:?} for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
 
-            debug!("Expecting {expected_answers:?} answers for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
+            let data_key_address = NetworkAddress::from_record_key(&key);
+            let is_sensitive_data = cfg.get_quorum == Quorum::All;
 
-            if responded_peers >= expected_answers {
-                if !cfg.expected_holders.is_empty() {
-                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {:?}", cfg.expected_holders);
-                }
-                let cfg = cfg.clone();
+            let we_have_searched_thoroughly = Self::have_we_have_searched_full_get_range(
+                expected_get_range,
+                &peer_list,
+                &data_key_address,
+            );
 
-                // Remove the query task and consume the variables.
-                let (_key, senders, result_map, _) = entry.remove();
+            let required_quorum = get_quorum_value(&cfg.get_quorum);
 
-                if result_map.len() == 1 {
-                    Self::send_record_after_checking_target(senders, peer_record.record, &cfg)?;
-                } else {
-                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
-                    let mut accumulated_spends = BTreeSet::new();
-                    for (record, _) in result_map.values() {
-                        match get_raw_signed_spends_from_record(record) {
-                            Ok(spends) => {
-                                accumulated_spends.extend(spends);
-                            }
-                            Err(_) => {
-                                continue;
-                            }
+            let we_have_quorum_from_known_nodes = Self::have_we_asked_quorum_nodes_that_we_know(
+                all_local_peers,
+                &peer_list,
+                &data_key_address,
+                required_quorum,
+            )?;
+
+            let mut accumulated_spends = BTreeSet::new();
+
+            // try and accumulate any SpendAttempts
+            if result_map.len() > 1 {
+                // Allow for early bail if we've already seen a split SpendAttempt
+                for (record, _) in result_map.values() {
+                    match get_raw_signed_spends_from_record(record) {
+                        Ok(spends) => {
+                            accumulated_spends.extend(spends);
                         }
-                    }
-                    if !accumulated_spends.is_empty() {
-                        info!("For record {pretty_key:?} task {query_id:?}, found split record for a spend, accumulated and sending them as a single record");
-                        let accumulated_spends =
-                            accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
-
-                        let bytes = try_serialize_record(&accumulated_spends, RecordKind::Spend)?;
-
-                        let new_accumulated_record = Record {
-                            key: peer_record.record.key,
-                            value: bytes.to_vec(),
-                            publisher: None,
-                            expires: None,
-                        };
-                        for sender in senders {
-                            let new_accumulated_record = new_accumulated_record.clone();
-
-                            sender
-                                .send(Ok(new_accumulated_record))
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
-                        }
-                    } else {
-                        for sender in senders {
-                            let result_map = result_map.clone();
-                            sender
-                                .send(Err(GetRecordError::SplitRecord { result_map }))
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                        Err(_) => {
+                            continue;
                         }
                     }
                 }
+            }
 
-                // Stop the query; possibly stops more nodes from being queried.
-                if let Some(mut query) = self.swarm.behaviour_mut().kademlia.query_mut(&query_id) {
-                    query.finish();
+            // we have a Double SpendAttempt
+            if !accumulated_spends.is_empty() {
+                info!("For record {pretty_key:?} task {query_id:?}, found split record for a spend, accumulated and sending them as a single record");
+                let accumulated_spends =
+                    accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
+
+                let bytes = try_serialize_record(&accumulated_spends, RecordKind::Spend)?;
+
+                let new_accumulated_record = Record {
+                    key,
+                    value: bytes.to_vec(),
+                    publisher: None,
+                    expires: None,
+                };
+                let (_key, senders, _result_map, _) = entry.remove();
+
+                for sender in senders {
+                    let new_accumulated_record = new_accumulated_record.clone();
+
+                    sender
+                        .send(Ok(new_accumulated_record))
+                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
                 }
-            } else if usize::from(step.count) >= CLOSE_GROUP_SIZE {
+                warn!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record over a SpendAttempt");
+
+                return Ok(());
+            }
+
+            if !we_have_searched_thoroughly && !we_have_quorum_from_known_nodes {
+                // TODO: here if spend and split bail out early.
+                warn!("RANGE: {pretty_key:?} During accumulate: Not enough of the network has responded, we need to extend the range and PUT the data.");
                 debug!("For record {pretty_key:?} task {query_id:?}, got {:?} with {} versions so far.",
                    step.count, result_map.len());
+                return Ok(());
+            }
+
+            warn!(
+                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded... we_have_searched_thoroughly {:?} we_have_quorum_from_known_nodes {:?} (quorum is: {:?})", we_have_searched_thoroughly, we_have_quorum_from_known_nodes, cfg.get_quorum
+            );
+
+            if !cfg.expected_holders.is_empty() {
+                debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {:?}", cfg.expected_holders);
+            }
+            let cfg = cfg.clone();
+
+            // Remove the query task and consume the variables.
+            let (_key, senders, result_map, _) = entry.remove();
+
+            if result_map.len() == 1 {
+                Self::send_record_after_checking_target(senders, peer_record.record, &cfg)?;
+            } else {
+                warn!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record ");
+
+                for sender in senders {
+                    let result_map = result_map.clone();
+                    sender
+                        .send(Err(GetRecordError::SplitRecord { result_map }))
+                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                }
             }
         } else {
             // return error if the entry cannot be found
@@ -457,6 +514,75 @@ impl SwarmDriver {
         Ok(())
     }
 
+    /// Checks passed peers from a request and checks they are sufficiently spaced to
+    /// ensure we have searched enough of the network range as determined by our `get_range`
+    fn have_we_have_searched_full_get_range(
+        expected_get_range: KBucketDistance,
+        searched_peers_list: &HashSet<PeerId>,
+        data_key_address: &NetworkAddress,
+    ) -> bool {
+        // get the farthest distance between peers in the response
+        let mut current_distance_searched = KBucketDistance::default();
+
+        // iterate over peers and see if the distance to the data is greater than the get_range
+        for peer_id in searched_peers_list.iter() {
+            let peer_address = NetworkAddress::from_peer(*peer_id);
+            let distance_to_data = peer_address.distance(data_key_address);
+            if current_distance_searched < distance_to_data {
+                current_distance_searched = distance_to_data;
+            }
+        }
+
+        // use ilog2 as simplified distance check
+        // It allows us to say "we've searched up to and including this bucket"
+        // as opposed to the concrete distance itself (which statistically seems like we can fall outwith a range
+        // quite easily with a small number of peers)
+        if current_distance_searched.ilog2() < expected_get_range.ilog2() {
+            let ilog2 = current_distance_searched.ilog2();
+            let expected_ilog2 = expected_get_range.ilog2();
+
+            warn!("RANGE: {data_key_address:?} Insufficient GetRange searched. {ilog2:?} {expected_ilog2:?} {current_distance_searched:?} is less than expcted GetRange of {expected_get_range:?}");
+
+            false
+        } else {
+            true
+        }
+    }
+
+    /// Checks passed peers from a request and checks if we've asked
+    /// all peers we know of in that range
+    ///
+    /// We allow a successful return here if we pass quorum from nodes we _know_
+    ///
+    /// TODO: issue with this question is peers without the data do not respond.
+    /// Do we want to actually return "not found" error and parse out of the returned record?
+    fn have_we_asked_quorum_nodes_that_we_know(
+        local_peers: Vec<PeerId>,
+        responded_peers_list: &HashSet<PeerId>,
+        data_key_address: &NetworkAddress,
+        required_quorum: usize,
+    ) -> Result<bool> {
+        let known_nodes_returning_data = {
+            info!(
+                "We know of {:?} peers.  There are {:?} peers in the responded peers list.",
+                local_peers.len(),
+                responded_peers_list.len()
+            );
+
+            let mut known_nodes_returning_data = 0;
+            // are all closest peers we know in the peer_list?
+            for peer in local_peers.iter() {
+                if !responded_peers_list.contains(peer) {
+                    known_nodes_returning_data += 1;
+                }
+            }
+            known_nodes_returning_data
+        };
+
+        info!("RANGE: have_have_we_asked_quorum_nodes_withinin_range_that_we_know {data_key_address:?} known_nodes_returning_data: {known_nodes_returning_data:?}");
+        Ok(required_quorum <= known_nodes_returning_data)
+    }
+
     /// Handles the possible cases when a GetRecord Query completes.
     /// The accumulate_get_record_found returns the record if the quorum is satisfied, but, if we have reached this point
     /// then we did not get enough records or we got split records (which prevented the quorum to pass).
@@ -465,22 +591,117 @@ impl SwarmDriver {
     /// NotEnoughCopies if there is only a single content hash version.
     /// SplitRecord if there are multiple content hash versions.
     fn handle_get_record_finished(&mut self, query_id: QueryId, step: ProgressStep) -> Result<()> {
+        let all_local_peers = self.get_all_local_peers();
+
         // return error if the entry cannot be found
         if let Some((_key, senders, result_map, cfg)) = self.pending_get_record.remove(&query_id) {
             let num_of_versions = result_map.len();
             let (result, log_string) = if let Some((record, from_peers)) =
                 result_map.values().next()
             {
-                let result = if num_of_versions == 1 {
-                    Err(GetRecordError::NotEnoughCopies {
-                        record: record.clone(),
-                        expected: get_quorum_value(&cfg.get_quorum),
-                        got: from_peers.len(),
-                    })
-                } else {
+                let data_key_address = NetworkAddress::from_record_key(&record.key);
+                let expected_get_range = self.get_request_range();
+
+                let we_have_searched_far_enough = Self::have_we_have_searched_full_get_range(
+                    expected_get_range,
+                    from_peers,
+                    &data_key_address,
+                );
+
+                let required_quorum = get_quorum_value(&cfg.get_quorum);
+
+                let we_have_quorum_from_known_nodes =
+                    Self::have_we_asked_quorum_nodes_that_we_know(
+                        all_local_peers,
+                        from_peers,
+                        &data_key_address,
+                        required_quorum,
+                    )?;
+
+                let we_have_quorum_count_unconflicted_copies =
+                    num_of_versions == 1 && we_have_quorum_from_known_nodes;
+
+                let pretty_key = PrettyPrintRecordKey::from(&record.key);
+                info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_far_enough:?} we_have_quorum_from_known_nodes: {we_have_quorum_from_known_nodes:?}");
+
+                let is_sensitive_data = cfg.get_quorum == Quorum::All;
+
+                let result = if num_of_versions > 1 {
+                    warn!("RANGE: more than one version found!");
                     Err(GetRecordError::SplitRecord {
                         result_map: result_map.clone(),
                     })
+                } else if !is_sensitive_data
+                    || we_have_searched_far_enough
+                    || we_have_quorum_count_unconflicted_copies
+                {
+                    warn!("RANGE: Get record finished: {pretty_key:?} Enough of the network has responded or it's not sensitive data... and we only have one copy...");
+
+                    if from_peers.len() < get_quorum_value(&cfg.get_quorum) {
+                        // If we don't have enough copies, we need to reseed the data.
+                        // We can't return here, as we need to reseed the data.
+                        warn!("RANGE: {pretty_key:?} Enough of the network has responded, BUT: we dont have quorum responses we need to reseed the data.");
+                    }
+
+                    Ok(record.clone())
+                } else {
+                    // We have not searched enough of the network range.
+
+                    let mut result = Err(GetRecordError::NotEnoughCopiesInRange {
+                        record: record.clone(),
+                        expected: get_quorum_value(&cfg.get_quorum),
+                        got: from_peers.len(),
+                    });
+
+                    warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need to extend the range and PUT the data.");
+
+                    let record_type = Self::get_type_from_record(record)?;
+
+                    let replicate_targets: HashSet<_> = self
+                        .get_filtered_peers_exceeding_range_or_close_group(&data_key_address)
+                        .iter()
+                        .cloned()
+                        .collect();
+
+                    if from_peers == &replicate_targets {
+                        warn!("RANGE: {pretty_key:?} We asked everyone we know of in that range already!");
+                    }
+
+                    if from_peers.len() >= get_quorum_value(&cfg.get_quorum)
+                        && replicate_targets.len() <= get_quorum_value(&cfg.get_quorum)
+                    {
+                        warn!("RANGE: {pretty_key:?} We have asked the majority of the network already!");
+                        warn!("We don't have too many respondents to worry about.");
+                        // Right now, this could happen in smaller networks.
+                        // TODO: We need to verify that this is _not_ happening with any frequency in larger networks.
+                        //
+                        // we know we have only one version of the record
+                        result = Ok(record.clone());
+                    }
+
+                    if !self.is_client {
+                        for peer in replicate_targets {
+                            warn!("Not a client, reputting data to {peer:?} for {pretty_key:?} if needed...");
+                            // Do not send to any peer that has already informed us
+                            if from_peers.contains(&peer) {
+                                continue;
+                            }
+
+                            debug!("RANGE: (insufficient, so ) Sending data to unresponded peer: {peer:?} for {pretty_key:?}");
+
+                            // nodes will try/fail to trplicate it from us, but grab from the network thereafter
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                                req: Request::Cmd(Cmd::Replicate {
+                                    holder: NetworkAddress::from_peer(self.self_peer_id),
+                                    keys: vec![(data_key_address.clone(), record_type.clone())],
+                                }),
+                                peer,
+                                sender: None,
+                            });
+                        }
+                    }
+
+                    result
                 };
 
                 (
@@ -510,8 +731,6 @@ impl SwarmDriver {
                     .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
             }
         } else {
-            // We manually perform `query.finish()` if we return early from accumulate fn.
-            // Thus we will still get FinishedWithNoAdditionalRecord.
             debug!("Can't locate query task {query_id:?} during GetRecord finished. We might have already returned the result to the sender.");
         }
         Ok(())
