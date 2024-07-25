@@ -17,7 +17,6 @@ use sn_transfers::{HotWallet, NanoTokens};
 use bls::SecretKey;
 use bytes::Bytes;
 use eyre::{bail, Result};
-use lazy_static::lazy_static;
 use rand::distributions::{Distribution, Standard};
 use std::path::Path;
 use tokio::{
@@ -32,10 +31,8 @@ pub const AMOUNT_TO_FUND_WALLETS: u64 = 100 * 1_000_000_000;
 // The number of times to try to load the faucet wallet
 const LOAD_FAUCET_WALLET_RETRIES: usize = 6;
 
-lazy_static! {
-    // mutex to restrict access to faucet wallet from concurrent tests
-    static ref FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::new(());
-}
+// mutex to restrict access to faucet wallet from concurrent tests
+static FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::const_new(());
 
 /// Get a new Client for testing
 pub async fn get_new_client(owner_sk: SecretKey) -> Result<Client> {
