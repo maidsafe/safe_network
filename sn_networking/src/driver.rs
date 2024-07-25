@@ -243,7 +243,7 @@ impl NetworkBuilder {
         }
     }
 
-    pub fn is_behind_home_network(&mut self, enable: bool) {
+    pub fn set_behind_home_network(&mut self, enable: bool) {
         self.is_behind_home_network = enable;
     }
 
@@ -656,7 +656,7 @@ pub struct SwarmDriver {
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) relay_manager: RelayManager,
     pub(crate) replication_fetcher: ReplicationFetcher,
-    /// The peers we are currently replicating to and the (records to consider with > timestamp than this, last replication time, count before updating the records to consider timestamp)
+    /// The peers we are currently replicating to and the (records_to_consider with > timestamp than this, last replication time, count before updating the records_to_consider timestamp)
     pub(crate) replication_targets: BTreeMap<PeerId, (Instant, Instant, usize)>,
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,

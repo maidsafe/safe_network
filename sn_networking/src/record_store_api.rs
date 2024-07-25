@@ -15,6 +15,7 @@ use libp2p::kad::{
 };
 use sn_protocol::{storage::RecordType, NetworkAddress};
 use sn_transfers::{NanoTokens, QuotingMetrics};
+use std::collections::HashSet;
 use std::{borrow::Cow, collections::HashMap};
 
 pub enum UnifiedRecordStore {
@@ -91,7 +92,7 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn record_addresses(&self) -> Vec<NetworkAddress> {
+    pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
         match self {
             Self::Client(store) => store.record_addresses(),
             Self::Node(store) => store.record_addresses(),

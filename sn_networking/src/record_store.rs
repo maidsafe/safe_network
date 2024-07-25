@@ -458,7 +458,7 @@ impl NodeRecordStore {
 
     /// Returns the set of `NetworkAddress::RecordKey` held by the store
     /// Use `record_addresses_ref` to get a borrowed type
-    pub(crate) fn record_addresses(&self) -> Vec<NetworkAddress> {
+    pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
         self.records
             .iter()
             .map(|(_record_key, (addr, ..))| addr)
@@ -840,8 +840,8 @@ impl ClientRecordStore {
         false
     }
 
-    pub(crate) fn record_addresses(&self) -> Vec<NetworkAddress> {
-        vec![]
+    pub(crate) fn record_addresses(&self) -> HashSet<NetworkAddress> {
+        Default::default()
     }
 
     #[allow(clippy::mutable_key_type)]

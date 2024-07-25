@@ -65,7 +65,7 @@ use sn_protocol::{
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     path::PathBuf,
     sync::Arc,
 };
@@ -719,7 +719,7 @@ impl Network {
     }
 
     /// Returns the Addresses of all the locally stored Records
-    pub async fn get_all_local_record_addresses(&self) -> Result<Vec<NetworkAddress>> {
+    pub async fn get_all_local_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalRecordAddresses { sender });
 

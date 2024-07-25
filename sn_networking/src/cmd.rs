@@ -28,15 +28,18 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
-use std::collections::HashMap;
-use std::{collections::BTreeMap, fmt::Debug};
+use std::collections::HashSet;
+use std::{collections::BTreeMap, collections::HashMap, fmt::Debug};
 use tokio::sync::oneshot;
 use xor_name::XorName;
 
 const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
 
-const REPLICATION_RETRIES_BEFORE_UPDATING_THE_RECORDS_TO_CONSIDER_TIMESTAMP: usize = 3;
+/// The number of times to resend the same set of keys before updating the records_to_consider timestamp.
+/// This is so that nodes do not miss the updates by chance.
+const N_REPLICATOIN_OF_SAME_SET_OF_KEYS: usize = 3;
 
+/// The max number of replication targets we store. This it to account for shaky nodes that might join and leave our group.
 const MAX_REPLICATION_TARGETS_COUNT: usize = 100;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -78,7 +81,7 @@ pub enum LocalSwarmCmd {
     },
     /// Get the Addresses of all the Records held locally
     GetAllLocalRecordAddresses {
-        sender: oneshot::Sender<Vec<NetworkAddress>>,
+        sender: oneshot::Sender<HashSet<NetworkAddress>>,
     },
     /// Get data from the local RecordStore
     GetLocalRecord {
@@ -716,6 +719,7 @@ impl SwarmDriver {
             }
             LocalSwarmCmd::GetAllLocalRecordAddresses { sender } => {
                 cmd_string = "GetAllLocalRecordAddresses";
+                #[allow(clippy::mutable_key_type)]
                 let addresses = self
                     .swarm
                     .behaviour_mut()
@@ -908,11 +912,11 @@ impl SwarmDriver {
 
     fn insert_peer_to_replication_targets(&mut self, peer_id: &PeerId, now: Instant) {
         match self.replication_targets.get_mut(peer_id) {
-            Some((record_to_consider_timestamp, last_replication_timestamp, count)) => {
+            Some((records_to_consider_timestamp, last_replication_timestamp, count)) => {
                 *last_replication_timestamp = now;
 
-                if *count >= REPLICATION_RETRIES_BEFORE_UPDATING_THE_RECORDS_TO_CONSIDER_TIMESTAMP {
-                    *record_to_consider_timestamp = now;
+                if *count >= N_REPLICATOIN_OF_SAME_SET_OF_KEYS {
+                    *records_to_consider_timestamp = now;
                     *count = 1;
                 } else {
                     *count += 1;
@@ -968,16 +972,15 @@ impl SwarmDriver {
             .take(REPLICATION_PEERS_COUNT)
             .collect::<Vec<_>>();
 
+        let len = our_keys.len();
+        let request = Request::Cmd(Cmd::RequestReplication { keys: our_keys });
         for peer_id in close_group {
-            let request = Request::Cmd(Cmd::RequestReplication {
-                keys: our_keys.clone(),
-            });
             let request_id = self
                 .swarm
                 .behaviour_mut()
                 .request_response
                 .send_request(&peer_id, request.clone());
-            debug!("Sending RequestReplication cmd {request_id:?} to peer {peer_id:?}. We currently have {} keys", our_keys.len());
+            debug!("Sending RequestReplication cmd {request_id:?} to peer {peer_id:?}. We currently have {len} keys", );
             let _ = self.pending_requests.insert(request_id, None);
         }
     }
@@ -1065,7 +1068,7 @@ impl SwarmDriver {
                 continue;
             }
 
-            if let Some((record_to_consider_timestamp, last_replication_timestamp, _)) =
+            if let Some((records_to_consider_timestamp, last_replication_timestamp, _)) =
                 self.replication_targets.get(&target)
             {
                 // replicate to the target if the last replication was a while ago
@@ -1074,7 +1077,7 @@ impl SwarmDriver {
                         .iter()
                         .filter_map(|(_, (address, record_type, stored_timestamp))| {
                             // only send the records that are new/updated
-                            if stored_timestamp > record_to_consider_timestamp {
+                            if stored_timestamp > records_to_consider_timestamp {
                                 Some((address.clone(), record_type.clone()))
                             } else {
                                 None

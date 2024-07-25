@@ -124,7 +124,7 @@ impl NodeBuilder {
     }
 
     /// Set to true to enable hole-punching
-    pub fn is_behind_home_network(&mut self, is_behind_home_network: bool) {
+    pub fn set_behind_home_network(&mut self, is_behind_home_network: bool) {
         self.is_behind_home_network = is_behind_home_network;
     }
 
@@ -200,7 +200,7 @@ impl NodeBuilder {
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_server_port(self.metrics_server_port);
         network_builder.initial_peers(self.initial_peers.clone());
-        network_builder.is_behind_home_network(self.is_behind_home_network);
+        network_builder.set_behind_home_network(self.is_behind_home_network);
 
         #[cfg(feature = "upnp")]
         network_builder.upnp(self.upnp);
@@ -327,12 +327,8 @@ impl Node {
                 tokio::time::interval(latest_record_replication_interval);
             let _ = latest_record_replication_interval.tick().await; // first tick completes immediately
 
-            let all_record_replication_interval: u64 = rng.gen_range(
-                PERIODIC_ALL_RECORD_REPLICATION_INTERVAL_MAX_S
-                    ..(PERIODIC_ALL_RECORD_REPLICATION_INTERVAL_MAX_S as f64 * 1.05) as u64,
-            );
             let all_replication_interval_time =
-                Duration::from_secs(all_record_replication_interval);
+                Duration::from_secs(PERIODIC_ALL_RECORD_REPLICATION_INTERVAL_MAX_S);
             debug!("All record replication interval set to {all_replication_interval_time:?}");
             let mut all_record_replication_interval =
                 tokio::time::interval(all_replication_interval_time);

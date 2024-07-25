@@ -217,7 +217,7 @@ fn main() -> Result<()> {
         let mut node_builder =
             NodeBuilder::new(node_socket_addr, keypair, bootstrap_peers, root_dir);
 
-        node_builder.is_behind_home_network(opt.home_network);
+        node_builder.set_behind_home_network(opt.home_network);
         node_builder.local(opt.local);
         if let Some(owner) = opt.owner {
             node_builder.set_owner(owner);
