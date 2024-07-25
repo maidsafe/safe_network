@@ -59,6 +59,8 @@ pub enum TransferError {
     TransactionSerialization(String),
     #[error("Unsigned transaction is invalid: {0}")]
     InvalidUnsignedTransaction(String),
+    #[error("Cannot create a Transaction with outputs equal to zero")]
+    ZeroOutputs,
 
     #[error("Transfer serialisation failed")]
     TransferSerializationFailed,

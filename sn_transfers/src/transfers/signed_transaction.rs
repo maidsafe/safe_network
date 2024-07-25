@@ -79,3 +79,100 @@ impl SignedTransaction {
         })?))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unsigned_tx_serialization() -> Result<()> {
+        let mut rng = rand::thread_rng();
+        let cnr_sk = MainSecretKey::random();
+        let cnr_pk = cnr_sk.main_pubkey();
+        let cnr_di = DerivationIndex::random(&mut rng);
+        let cnr_upk = cnr_pk.new_unique_pubkey(&cnr_di);
+        let spend = SignedSpend::random_spend_to(&mut rng, cnr_upk, 100);
+
+        let available_cash_notes = vec![CashNote {
+            parent_spends: BTreeSet::from_iter([spend]),
+            main_pubkey: cnr_pk,
+            derivation_index: cnr_di,
+        }];
+        let recipients = vec![
+            (
+                NanoTokens::from(1),
+                MainSecretKey::random().main_pubkey(),
+                DerivationIndex::random(&mut rng),
+                OutputPurpose::None,
+            ),
+            (
+                NanoTokens::from(1),
+                MainSecretKey::random().main_pubkey(),
+                DerivationIndex::random(&mut rng),
+                OutputPurpose::None,
+            ),
+        ];
+        let change_to = MainSecretKey::random().main_pubkey();
+        let input_reason_hash = Default::default();
+        let tx = UnsignedTransaction::new(
+            available_cash_notes,
+            recipients,
+            change_to,
+            input_reason_hash,
+        )
+        .expect("UnsignedTransaction creation to succeed");
+
+        let signed_tx = tx.sign(&cnr_sk).expect("Sign to succeed");
+
+        let hex = signed_tx.to_hex()?;
+        let signed_tx2 = SignedTransaction::from_hex(&hex)?;
+
+        assert_eq!(signed_tx, signed_tx2);
+        Ok(())
+    }
+
+    #[test]
+    fn test_unsigned_tx_verify_simple() -> Result<()> {
+        let mut rng = rand::thread_rng();
+        let cnr_sk = MainSecretKey::random();
+        let cnr_pk = cnr_sk.main_pubkey();
+        let cnr_di = DerivationIndex::random(&mut rng);
+        let cnr_upk = cnr_pk.new_unique_pubkey(&cnr_di);
+        let spend = SignedSpend::random_spend_to(&mut rng, cnr_upk, 100);
+
+        let available_cash_notes = vec![CashNote {
+            parent_spends: BTreeSet::from_iter([spend]),
+            main_pubkey: cnr_pk,
+            derivation_index: cnr_di,
+        }];
+        let recipients = vec![
+            (
+                NanoTokens::from(1),
+                MainSecretKey::random().main_pubkey(),
+                DerivationIndex::random(&mut rng),
+                OutputPurpose::None,
+            ),
+            (
+                NanoTokens::from(1),
+                MainSecretKey::random().main_pubkey(),
+                DerivationIndex::random(&mut rng),
+                OutputPurpose::None,
+            ),
+        ];
+        let change_to = MainSecretKey::random().main_pubkey();
+        let input_reason_hash = Default::default();
+        let tx = UnsignedTransaction::new(
+            available_cash_notes,
+            recipients,
+            change_to,
+            input_reason_hash,
+        )
+        .expect("UnsignedTransaction creation to succeed");
+
+        let signed_tx = tx.sign(&cnr_sk).expect("Sign to succeed");
+
+        let res = signed_tx.verify();
+        assert_eq!(res, Ok(()));
+        Ok(())
+    }
+}
