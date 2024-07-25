@@ -202,14 +202,6 @@ impl SwarmDriver {
             incoming_keys.len()
         );
 
-        // accept replication requests from the K_VALUE peers away,
-        // giving us some margin for replication
-        let closest_k_peers = self.get_closest_k_value_local_peers();
-        if !closest_k_peers.contains(&holder) || holder == self.self_peer_id {
-            debug!("Holder {holder:?} is self or not in replication range.");
-            return;
-        }
-
         let more_than_one_key = incoming_keys.len() > 1;
 
         // On receive a replication_list from a close_group peer, we undertake two tasks:
@@ -286,6 +278,8 @@ impl SwarmDriver {
             .values()
             .filter_map(|(addr, record_type)| {
                 if RecordType::Chunk == *record_type {
+                    // Here we take the actual closest, as this is where we want to be
+                    // strict about who does have the data...
                     match sort_peers_by_address_and_limit(&closest_peers, addr, CLOSE_GROUP_SIZE) {
                         Ok(close_group) => {
                             if close_group.contains(&&target_peer) {

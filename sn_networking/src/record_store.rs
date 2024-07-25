@@ -931,7 +931,7 @@ pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
 mod tests {
 
     use super::*;
-    use crate::{close_group_majority, sort_peers_by_key_and_limit, REPLICATION_PEERS_COUNT};
+    use crate::{close_group_majority, sort_peers_by_key_and_limit};
     use bytes::Bytes;
     use eyre::ContextCompat;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
@@ -1357,10 +1357,7 @@ mod tests {
                 .wrap_err("Could not parse record store key")?,
         );
         // get the distance to this record from our local key
-        let distance = self_address
-            .distance(&halfway_record_address)
-            .ilog2()
-            .unwrap_or(0);
+        let distance = self_address.distance(&halfway_record_address);
 
         // must be plus one bucket from the halfway record
         store.set_responsible_distance_range(distance);
@@ -1444,7 +1441,7 @@ mod tests {
                 match sort_peers_by_key_and_limit(
                     &peers_vec,
                     &address.as_kbucket_key(),
-                    REPLICATION_PEERS_COUNT,
+                    7, // old replication range
                 ) {
                     Ok(peers_in_replicate_range) => {
                         let peers_in_replicate_range: Vec<PeerId> = peers_in_replicate_range

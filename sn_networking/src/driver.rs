@@ -839,7 +839,9 @@ impl SwarmDriver {
         self.range_distances.push_back(last_peers_distance);
     }
 
-    pub(crate) fn get_peers_within_get_range(&mut self) -> Option<KBucketDistance> {
+    /// Returns the KBucketDistance we are currently using as our X value
+    /// for range based search.
+    pub(crate) fn get_request_range(&mut self) -> Option<KBucketDistance> {
         // TODO: Is this the correct keytype for comparisons?
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
         let our_key = our_address.as_kbucket_key();
@@ -868,6 +870,18 @@ impl SwarmDriver {
         }
 
         farthest_get_range_record_distance.copied()
+    }
+
+    /// get all the peers from our local RoutingTable. Contains self
+    pub(crate) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
+        let mut all_peers: Vec<PeerId> = vec![];
+        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
+            for entry in kbucket.iter() {
+                all_peers.push(entry.node.key.clone().into_preimage());
+            }
+        }
+        all_peers.push(self.self_peer_id);
+        all_peers
     }
 
     /// Returns the farthest bucket, close to but probably farther than our responsibilty range.

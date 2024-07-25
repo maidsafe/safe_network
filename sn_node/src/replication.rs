@@ -11,9 +11,7 @@ use libp2p::{
     kad::{Quorum, Record, RecordKey},
     PeerId,
 };
-use sn_networking::{
-    sort_peers_by_address_and_limit, GetRecordCfg, Network, REPLICATION_PEERS_COUNT,
-};
+use sn_networking::{sort_peers_by_address_and_limit_by_distance, GetRecordCfg, Network};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -136,30 +134,42 @@ impl Node {
             debug!("Start replication of fresh record {pretty_key:?} from store");
 
             // Already contains self_peer_id
-            let mut closest_k_peers = match network.get_closest_k_value_local_peers().await {
+            let mut all_peers = match network.get_all_local_peers().await {
                 Ok(peers) => peers,
                 Err(err) => {
-                    error!("Replicating fresh record {pretty_key:?} get_closest_local_peers errored: {err:?}");
+                    error!("Replicating fresh record {pretty_key:?} get_all_local_peers errored: {err:?}");
                     return;
                 }
             };
 
             // remove ourself from these calculations
-            closest_k_peers.retain(|peer_id| peer_id != &network.peer_id());
+            all_peers.retain(|peer_id| peer_id != &network.peer_id());
 
             let data_addr = NetworkAddress::from_record_key(&paid_key);
+            let sorted_based_on_addr = match network.get_range().await {
+                Err(error) => {
+                    error!("Replicating fresh record {pretty_key:?} get_range errored: {error:?}");
 
-            let sorted_based_on_addr = match sort_peers_by_address_and_limit(
-                &closest_k_peers,
-                &data_addr,
-                REPLICATION_PEERS_COUNT,
-            ) {
-                Ok(result) => result,
-                Err(err) => {
-                    error!(
-                            "When replicating fresh record {pretty_key:?}, having error when sort {err:?}"
-                        );
                     return;
+                }
+                Ok(None) => {
+                    error!("Replicating fresh record {pretty_key:?} get_range returned None");
+                    return;
+                }
+                Ok(Some(our_get_range)) => {
+                    match sort_peers_by_address_and_limit_by_distance(
+                        &all_peers,
+                        &data_addr,
+                        our_get_range,
+                    ) {
+                        Ok(result) => result,
+                        Err(err) => {
+                            error!(
+                                    "When replicating fresh record {pretty_key:?}, having error when sort {err:?}"
+                                );
+                            return;
+                        }
+                    }
                 }
             };
 

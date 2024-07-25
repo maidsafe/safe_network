@@ -57,6 +57,15 @@ pub enum NodeIssue {
 
 /// Commands to send to the Swarm
 pub enum LocalSwarmCmd {
+    // Returns all the peers from all the k-buckets from the local Routing Table.
+    // This includes our PeerId as well.
+    GetAllLocalPeers {
+        sender: oneshot::Sender<Vec<PeerId>>,
+    },
+    /// Return the current GetRange as determined by the SwarmDriver
+    GetCurrentRange {
+        sender: oneshot::Sender<Option<KBucketDistance>>,
+    },
     /// Get a map where each key is the ilog2 distance of that Kbucket and each value is a vector of peers in that
     /// bucket.
     GetKBuckets {
@@ -212,7 +221,6 @@ impl Debug for LocalSwarmCmd {
                     PrettyPrintRecordKey::from(key)
                 )
             }
-
             LocalSwarmCmd::GetClosestKLocalPeers { .. } => {
                 write!(f, "LocalSwarmCmd::GetClosestKLocalPeers")
             }
@@ -240,6 +248,12 @@ impl Debug for LocalSwarmCmd {
             }
             LocalSwarmCmd::GetKBuckets { .. } => {
                 write!(f, "LocalSwarmCmd::GetKBuckets")
+            }
+            LocalSwarmCmd::GetCurrentRange { .. } => {
+                write!(f, "SwarmCmd::GetCurrentRange")
+            }
+            LocalSwarmCmd::GetAllLocalPeers { .. } => {
+                write!(f, "SwarmCmd::GetAllLocalPeers")
             }
             LocalSwarmCmd::GetSwarmLocalState { .. } => {
                 write!(f, "LocalSwarmCmd::GetSwarmLocalState")
@@ -544,7 +558,7 @@ impl SwarmDriver {
             LocalSwarmCmd::TriggerIntervalReplication => {
                 cmd_string = "TriggerIntervalReplication";
 
-                let our_acceptable_range = self.get_peers_within_get_range();
+                let our_acceptable_range = self.get_request_range();
                 self.try_interval_replication(our_acceptable_range)?;
             }
             LocalSwarmCmd::GetLocalStoreCost { key, sender } => {
@@ -721,6 +735,10 @@ impl SwarmDriver {
                     .record_addresses();
                 let _ = sender.send(addresses);
             }
+            LocalSwarmCmd::GetCurrentRange { sender } => {
+                cmd_string = "GetCurrentRange";
+                let _ = sender.send(self.get_request_range());
+            }
             LocalSwarmCmd::GetKBuckets { sender } => {
                 cmd_string = "GetKBuckets";
                 let mut ilog2_kbuckets = BTreeMap::new();
@@ -738,6 +756,10 @@ impl SwarmDriver {
                     }
                 }
                 let _ = sender.send(ilog2_kbuckets);
+            }
+            LocalSwarmCmd::GetAllLocalPeers { sender } => {
+                cmd_string = "GetAllLocalPeers";
+                let _ = sender.send(self.get_all_local_peers());
             }
             LocalSwarmCmd::GetCloseGroupLocalPeers { key, sender } => {
                 cmd_string = "GetCloseGroupLocalPeers";

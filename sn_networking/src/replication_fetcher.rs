@@ -477,7 +477,7 @@ mod tests {
 
         // Set distance range
         let distance_target = NetworkAddress::from_peer(PeerId::random());
-        let distance_range = self_address.distance(&distance_target).ilog2().unwrap_or(1);
+        let distance_range = self_address.distance(&distance_target);
         replication_fetcher.set_replication_distance_range(distance_range);
 
         let mut incoming_keys = Vec::new();
@@ -486,7 +486,7 @@ mod tests {
             let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
             let key = NetworkAddress::from_record_key(&RecordKey::from(random_data));
 
-            if key.distance(&self_address).ilog2().unwrap_or(0) <= distance_range {
+            if key.distance(&self_address) <= distance_range {
                 in_range_keys += 1;
             }
 

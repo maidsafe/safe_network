@@ -78,10 +78,6 @@ use tokio::time::Duration;
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
 
-/// The count of peers that will be considered as close to a record target,
-/// that a replication of the record shall be sent/accepted to/by the peer.
-pub const REPLICATION_PEERS_COUNT: usize = CLOSE_GROUP_SIZE + 2;
-
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
 pub const fn close_group_majority() -> usize {
@@ -104,6 +100,16 @@ pub fn sort_peers_by_address_and_limit<'a>(
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
     sort_peers_by_key_and_limit(peers, &address.as_kbucket_key(), expected_entries)
+}
+/// Sort the provided peers by their distance to the given `NetworkAddress`.
+/// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
+pub fn sort_peers_by_address_and_limit_by_distance<'a>(
+    peers: &'a Vec<PeerId>,
+    address: &NetworkAddress,
+    distance: KBucketDistance,
+) -> Result<Vec<&'a PeerId>> {
+    limit_peers_by_distance(peers, &address.as_kbucket_key(), distance)
 }
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
@@ -145,6 +151,49 @@ pub fn sort_peers_by_key_and_limit<'a, T>(
         .collect();
 
     Ok(sorted_peers)
+}
+/// Only return peers closer to key than the provided distance
+/// Their distance is measured by closeness to the given `KBucketKey`.
+/// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
+pub fn limit_peers_by_distance<'a, T>(
+    peers: &'a Vec<PeerId>,
+    key: &KBucketKey<T>,
+    distance: KBucketDistance,
+) -> Result<Vec<&'a PeerId>> {
+    // Check if there are enough peers to satisfy the request.
+    // bail early if that's not the case
+    if CLOSE_GROUP_SIZE > peers.len() {
+        warn!("Not enough peers in the k-bucket to satisfy the request");
+        return Err(NetworkError::NotEnoughPeers {
+            found: peers.len(),
+            required: CLOSE_GROUP_SIZE,
+        });
+    }
+
+    // Create a vector of tuples where each tuple is a reference to a peer and its distance to the key.
+    // This avoids multiple computations of the same distance in the sorting process.
+    let mut peers_within_distance: Vec<&PeerId> = Vec::with_capacity(peers.len());
+
+    for peer_id in peers {
+        let addr = NetworkAddress::from_peer(*peer_id);
+        let peer_distance = key.distance(&addr.as_kbucket_key());
+
+        if peer_distance < distance {
+            peers_within_distance.push(peer_id);
+        }
+    }
+
+    // // Sort the vector of tuples by the distance.
+    // valid_distances.sort_by(|a, b| a.1.cmp(&b.1));
+
+    // Collect the sorted peers into a new vector.
+    // let peers: Vec<_> = valid_distances
+    //     .into_iter()
+    //     .map(|(peer_id, _)| peer_id)
+    //     .collect();
+
+    Ok(peers_within_distance)
 }
 
 #[derive(Clone)]
@@ -204,6 +253,13 @@ impl Network {
     /// Get the sender to send a `LocalSwarmCmd` to the underlying `Swarm`.
     pub(crate) fn local_swarm_cmd_sender(&self) -> &mpsc::Sender<LocalSwarmCmd> {
         &self.inner.local_swarm_cmd_sender
+    }
+
+    /// Return the GetRange as determined by the internal SwarmDriver
+    pub async fn get_range(&self) -> Result<Option<KBucketDistance>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetCurrentRange { sender });
+        receiver.await.map_err(NetworkError::from)
     }
 
     /// Signs the given data with the node's keypair.
@@ -340,6 +396,17 @@ impl Network {
         Err(NetworkError::FailedToVerifyChunkProof(
             chunk_address.clone(),
         ))
+    }
+
+    /// Returns all the PeerId from all the KBuckets from our local Routing Table
+    /// Also contains our own PeerId.
+    pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeers { sender });
+
+        receiver
+            .await
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
     }
 
     /// Get the store costs from the majority of the closest peers to the provided RecordKey.
