@@ -59,6 +59,12 @@ def main(last_released_pr_number):
         closed_date = pr["closed_at"].date()
         breaking_text = "[BREAKING]" if pr["breaking"] else ""
         print(f"{closed_date} #{pr['number']} -- {pr['title']} [@{pr['author']}] {breaking_text}")
+    print("Flat list markdown:")
+    for pr in filtered_pulls:
+        pr_number = pr["number"]
+        closed_date = pr["closed_at"].date()
+        breaking_text = "[BREAKING]" if pr["breaking"] else ""
+        print(f"{closed_date} [#{pr_number}](https://github.com/maidsafe/safe_network/pull/{pr_number}) -- {pr['title']} [@{pr['author']}] {breaking_text}")
 
     print()
     grouped_pulls = defaultdict(list)
