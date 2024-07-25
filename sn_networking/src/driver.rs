@@ -62,10 +62,7 @@ use std::{
     num::NonZeroUsize,
     path::PathBuf,
 };
-use tokio::sync::{
-    mpsc::{self, error::TryRecvError},
-    oneshot,
-};
+use tokio::sync::{mpsc, oneshot};
 use tokio::time::Duration;
 use tracing::warn;
 use xor_name::XorName;
@@ -700,38 +697,24 @@ impl SwarmDriver {
         let mut relay_manager_reservation_interval = interval(RELAY_MANAGER_RESERVATION_INTERVAL);
 
         loop {
-            // Prioritise any local cmds pending.
-            // https://github.com/libp2p/rust-libp2p/blob/master/docs/coding-guidelines.md#prioritize-local-work-over-new-work-from-a-remote
-            match self.local_cmd_receiver.try_recv() {
-                Ok(cmd) => {
-                    let start = Instant::now();
-                    let cmd_string = format!("{cmd:?}");
-                    if let Err(err) = self.handle_local_cmd(cmd) {
-                        warn!("Error while handling local cmd: {err}");
-                    }
-                    trace!("LocalCmd handled in {:?}: {cmd_string:?}", start.elapsed());
-
-                    continue;
-                }
-                Err(error) => match error {
-                    TryRecvError::Empty => {
-                        // no local cmds pending, continue
-                    }
-                    TryRecvError::Disconnected => {
-                        error!("LocalCmd channel disconnected, shutting down SwarmDriver");
-                        return;
-                    }
-                },
-            }
-
             tokio::select! {
-                swarm_event = self.swarm.select_next_some() => {
-                    // logging for handling events happens inside handle_swarm_events
-                    // otherwise we're rewriting match statements etc around this anwyay
-                    if let Err(err) = self.handle_swarm_events(swarm_event) {
-                        warn!("Error while handling swarm event: {err}");
-                    }
+                // polls futures in order they appear here (as opposed to random)
+                biased;
+
+                // Prioritise any local cmds pending.
+                // https://github.com/libp2p/rust-libp2p/blob/master/docs/coding-guidelines.md#prioritize-local-work-over-new-work-from-a-remote
+                local_cmd = self.local_cmd_receiver.recv() => match local_cmd {
+                    Some(cmd) => {
+                        let start = Instant::now();
+                        let cmd_string = format!("{cmd:?}");
+                        if let Err(err) = self.handle_local_cmd(cmd) {
+                            warn!("Error while handling local cmd: {err}");
+                        }
+                        trace!("LocalCmd handled in {:?}: {cmd_string:?}", start.elapsed());
+                    },
+                    None =>  continue,
                 },
+                // next check if we have locally generated network cmds
                 some_cmd = self.network_cmd_receiver.recv() => match some_cmd {
                     Some(cmd) => {
                         let start = Instant::now();
@@ -743,6 +726,16 @@ impl SwarmDriver {
                     },
                     None =>  continue,
                 },
+                // next take and react to external swarm events
+                swarm_event = self.swarm.select_next_some() => {
+                    // logging for handling events happens inside handle_swarm_events
+                    // otherwise we're rewriting match statements etc around this anwyay
+                    if let Err(err) = self.handle_swarm_events(swarm_event) {
+                        warn!("Error while handling swarm event: {err}");
+                    }
+                },
+                // thereafter we can check our intervals
+
                 // runs every bootstrap_interval time
                 _ = bootstrap_interval.tick() => {
                     if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {
