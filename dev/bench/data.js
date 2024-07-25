@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721764978724,
+  "lastUpdate": 1721935962609,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "c58ed056661ccdcd634ba9ce79717f58879ada62",
-          "message": "fix: use correct release type in upgrade process\n\nThe faucet and daemon upgrades did not work correctly because the release type was hard coded to\n`ReleaseType::Safenode` and was not changed when this code was refactored.",
-          "timestamp": "2024-04-03T11:05:47Z",
-          "tree_id": "e39ee6caa1ccc9a68f3df3acfcf9d378ff689f0c",
-          "url": "https://github.com/maidsafe/safe_network/commit/c58ed056661ccdcd634ba9ce79717f58879ada62"
-        },
-        "date": 1712145019141,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2329224494786375,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.637908969874266,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.64817406663618,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.46225818873117,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "3c14e0b0671156191a08ca6b63b741d1bc5f4eda",
+          "message": "Merge branch '2024-07-23.alpha.1'",
+          "timestamp": "2024-07-25T20:13:46+01:00",
+          "tree_id": "00f62a21e72b96ec5c7d7cd375aa70e2674f7f6b",
+          "url": "https://github.com/maidsafe/safe_network/commit/3c14e0b0671156191a08ca6b63b741d1bc5f4eda"
+        },
+        "date": 1721935956661,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.226759542292592,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.679056618081259,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.43739394301007,
             "unit": "MiB/s"
           }
         ]
