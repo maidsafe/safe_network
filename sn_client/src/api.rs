@@ -14,7 +14,7 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use libp2p::{
     identity::Keypair,
-    kad::{Quorum, Record},
+    kad::{KBucketDistance, Quorum, Record},
     Multiaddr, PeerId,
 };
 use rand::{thread_rng, Rng};
@@ -303,6 +303,11 @@ impl Client {
     /// ```
     pub fn events_channel(&self) -> ClientEventsReceiver {
         self.events_broadcaster.subscribe()
+    }
+
+    /// Return the underlying network GetRange
+    pub async fn get_range(&self) -> Result<KBucketDistance> {
+        self.network.get_range().await.map_err(Error::from)
     }
 
     /// Sign the given data.
@@ -854,18 +859,26 @@ impl Client {
 
         // When there is retry on Put side, no need to have a retry on Get
         let verification_cfg = GetRecordCfg {
-            get_quorum: Quorum::Majority,
+            get_quorum: Quorum::All,
             retry_strategy: None,
             target_record: record_to_verify,
             expected_holders,
             is_register: false,
         };
+
+        let verification = if verify_store {
+            Some((VerificationKind::Network, verification_cfg))
+        } else {
+            None
+        };
+
         let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::Majority,
+            put_quorum: Quorum::All,
             retry_strategy: Some(RetryStrategy::Persistent),
             use_put_record_to: None,
-            verification: Some((VerificationKind::Network, verification_cfg)),
+            verification,
         };
+
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
@@ -902,7 +915,7 @@ impl Client {
         self.try_fetch_spend_from_network(
             address,
             GetRecordCfg {
-                get_quorum: Quorum::Majority,
+                get_quorum: Quorum::All,
                 retry_strategy: Some(RetryStrategy::Balanced),
                 target_record: None,
                 expected_holders: Default::default(),
@@ -935,7 +948,7 @@ impl Client {
         self.try_fetch_spend_from_network(
             address,
             GetRecordCfg {
-                get_quorum: Quorum::Majority,
+                get_quorum: Quorum::All,
                 retry_strategy: None,
                 target_record: None,
                 expected_holders: Default::default(),
@@ -992,9 +1005,7 @@ impl Client {
             }
             Err(err) => {
                 warn!("Invalid signed spend got from network for {address:?}: {err:?}.");
-                Err(Error::CouldNotVerifyTransfer(format!(
-                    "Verification failed for spent at {address:?} with error {err:?}"
-                )))
+                Err(Error::from(err))
             }
         }
     }
