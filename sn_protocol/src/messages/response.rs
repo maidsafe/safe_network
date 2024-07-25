@@ -6,9 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{error::Result, NetworkAddress};
-
 use super::ChunkProof;
+use crate::{error::Result, storage::RecordType, NetworkAddress};
 use bytes::Bytes;
 use core::fmt;
 use serde::{Deserialize, Serialize};
@@ -110,7 +109,7 @@ pub enum CmdResponse {
     // ===== RequestReplication =====
     //
     /// Response to request replication cmd
-    RequestReplication(Result<()>),
+    RequestReplication(Vec<(NetworkAddress, RecordType)>),
     //
     // ===== QuoteVerification =====
     //

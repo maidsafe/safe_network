@@ -975,23 +975,24 @@ impl SwarmDriver {
         let len = our_keys.len();
         let request = Request::Cmd(Cmd::RequestReplication { keys: our_keys });
         for peer_id in close_group {
-            let request_id = self
-                .swarm
-                .behaviour_mut()
-                .request_response
-                .send_request(&peer_id, request.clone());
-            debug!("Sending RequestReplication cmd {request_id:?} to peer {peer_id:?}. We currently have {len} keys", );
-            let _ = self.pending_requests.insert(request_id, None);
+            debug!(
+                "Sending RequestReplication cmd to peer {peer_id:?}. We currently have {len} keys",
+            );
+            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                req: request.clone(),
+                peer: peer_id,
+                sender: None,
+            });
         }
     }
 
     /// Send Replicate Cmd to a peer who requested for it.
     #[allow(clippy::mutable_key_type)]
-    pub fn trigger_replication_to_a_peer(
+    pub fn respond_to_replication_request(
         &mut self,
         peer_id: PeerId,
         their_keys: HashMap<NetworkAddress, RecordType>,
-    ) {
+    ) -> Vec<(NetworkAddress, RecordType)> {
         let records_to_replicate = self
             .swarm
             .behaviour_mut()
@@ -1011,20 +1012,14 @@ impl SwarmDriver {
                 }
             })
             .collect_vec();
-        let len = records_to_replicate.len();
 
-        let request = Request::Cmd(Cmd::Replicate {
-            holder: NetworkAddress::from_peer(self.self_peer_id),
-            keys: records_to_replicate,
-        });
-        let request_id = self
-            .swarm
-            .behaviour_mut()
-            .request_response
-            .send_request(&peer_id, request.clone());
-        debug!("Sending Replicate cmd {request_id:?} with {len} keys to peer {peer_id:?} as RequestReplication was called by that peer",);
-        let _ = self.pending_requests.insert(request_id, None);
+        debug!(
+            "Sending response to RequestReplication msg with {} keys to peer {peer_id:?}",
+            records_to_replicate.len()
+        );
         self.insert_peer_to_replication_targets(&peer_id, Instant::now());
+
+        records_to_replicate
     }
 
     pub fn try_interval_replication(&mut self, all_records: bool) -> Result<()> {
