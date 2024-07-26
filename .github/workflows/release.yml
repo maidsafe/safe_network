@@ -1,25 +1,13 @@
-# Will automatically generate relases for version bumped code.
-# Can optionally be run as workflow action to generate a soft release (no publish steps, just s3 and github release)
-
 name: release
-
-# prevent concurrent version bumps + releases from running at the same time
-concurrency:
-  group: "version-bump-release-${{ github.ref }}"
 
 on:
   workflow_dispatch:
-    inputs:
-      network_version_mode:
-        description: "Set NETWORK_VERSION_MODE if desired. (This restricts the network from contacting any other network mode. If left empty, the default protocol is used)"
-        required: false
-        default: ""
 
-# During the build step, the env variable has to be manually sent to the containers for cross platform builds.
-# Update the Justfile as well.
+# The key variables also need to be passed to `cross`, which runs in a container and does not
+# inherit variables from the parent environment. The `cross` tool is used in the `build`
+# job. If any keys are added, the `build-release-artifacts` target in the Justfile must
+# also be updated.
 env:
-  RELEASE_PLZ_BIN_URL: https://github.com/MarcoIeni/release-plz/releases/download/release-plz-v0.3.43/release-plz-x86_64-unknown-linux-gnu.tar.gz
-  JUST_BIN_URL: https://github.com/casey/just/releases/download/1.25.2/just-1.25.2-x86_64-unknown-linux-musl.tar.gz
   WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
   GENESIS_PK: ${{ secrets.STABLE_GENESIS_PK }}
   GENESIS_SK: ${{ secrets.STABLE_GENESIS_SK }}
@@ -29,10 +17,10 @@ env:
 
 jobs:
   build:
-    if: |
-      github.repository_owner == 'maidsafe' &&
-      startsWith(github.event.head_commit.message, 'chore(release):') ||
-      github.event_name == 'workflow_dispatch'
+    if: ${{
+        github.repository_owner == 'maidsafe' &&
+        (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/heads/rc'))
+      }}
     name: build
     runs-on: ${{ matrix.os }}
     strategy:
@@ -42,6 +30,8 @@ jobs:
             target: x86_64-pc-windows-msvc
           - os: macos-latest
             target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
           - os: ubuntu-latest
@@ -53,17 +43,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      # cargo-binstall will try and use pre-built binaries if they are available and also speeds up
-      # installing `cross`
       - uses: cargo-bins/cargo-binstall@main
       - shell: bash
         run: cargo binstall --no-confirm just
-
-      # Set the network versioning based on our branch or workflow input
-      - name: provide network versioning
-        shell: bash
-        run: |
-          echo "NETWORK_VERSION_MODE=${{ github.event.inputs.network_version_mode || '' }}" >> $GITHUB_ENV
 
       - name: build release artifacts
         shell: bash
@@ -76,6 +58,7 @@ jobs:
           path: |
             artifacts
             !artifacts/.cargo-lock
+
       - name: post notification to slack on failure
         if: ${{ failure() }}
         uses: bryannice/gitactions-slack-notification@2.0.0
@@ -84,26 +67,20 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Release Failed"
 
-  release:
-    if: |
-      github.repository_owner == 'maidsafe' &&
-      startsWith(github.event.head_commit.message, 'chore(release):') ||
-      github.event_name == 'workflow_dispatch'
-    name: publish flows and release creation
+  s3-release:
+    if: ${{
+        github.repository_owner == 'maidsafe' &&
+        (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/heads/rc'))
+      }}
+    name: s3 release
     runs-on: ubuntu-latest
     needs: [ build ]
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.S3_DEPLOY_AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_DEPLOY_AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: eu-west-2
-      GH_TOKEN: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
-
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: "0"
-          token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
-
       - uses: actions/download-artifact@master
         with:
           name: safe_network-x86_64-pc-windows-msvc
@@ -132,42 +109,13 @@ jobs:
         with:
           name: safe_network-aarch64-unknown-linux-musl
           path: artifacts/aarch64-unknown-linux-musl/release
-      - shell: bash
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-      # It's possible to `cargo install` these tools, but it's very slow to compile on GHA infra.
-      # Therefore we just pull some binaries from the Github Releases.
-      - name: install tools
+
+      - uses: cargo-bins/cargo-binstall@main
+      - name: install just
         shell: bash
-        run: |
-          curl -L -O $RELEASE_PLZ_BIN_URL
-          tar xvf release-plz-x86_64-unknown-linux-gnu.tar.gz
-          rm release-plz-x86_64-unknown-linux-gnu.tar.gz
-          sudo mv release-plz /usr/local/bin
+        run: cargo binstall --no-confirm just
 
-          curl -L -O $JUST_BIN_URL
-          mkdir just
-          tar xvf just-1.25.2-x86_64-unknown-linux-musl.tar.gz -C just
-          rm just-1.25.2-x86_64-unknown-linux-musl.tar.gz
-          sudo mv just/just /usr/local/bin
-          rm -rf just
-
-      # only publish if we're on the stable branch
-      - name: Conditionally remove 'publish = false' from workspace in release-plz.toml on stable branch
-        if: startsWith(github.ref_name, 'stable')
-        run: |
-          ls -la
-          sed -i '/^\[workspace\]/,/^\[/ {/^publish = false$/d;}' ./release-plz.toml
-          sed -i '/^\[workspace\]/,/^\[/ {/^git_release_draft = true$/d;}' ./release-plz.toml
-          sed -i '/^\[workspace\]/,/^\[/ {/^git_tag_enable = false$/d;}' ./release-plz.toml
-
-      # only publish if we're on the stable branch
-      - name: Conditionally remove 'git_release_draft = true' from workspace in release-plz.toml on stable branch
-        if: startsWith(github.ref_name, 'stable')
-        run: |
-
-      - name: upload to s3
+      - name: upload binaries to S3
         shell: bash
         run: |
           # Package versioned assets as tar.gz and zip archives, and upload them to S3.
@@ -180,68 +128,125 @@ jobs:
           # because the process gets the latest version from `crates.io` then downloads the binaries
           # from S3, using that version number. Uploading the binaries to S3 before publishing
           # ensures that they will exist after the new crate has been published.
+          just package-all-bins
+          just upload-all-packaged-bins-to-s3
 
-          just package-release-assets "faucet"
-          just package-release-assets "nat-detection"
-          just package-release-assets "node-launchpad"
-          just package-release-assets "safe"
-          just package-release-assets "safenode"
-          just package-release-assets "safenode_rpc_client"
-          just package-release-assets "safenode-manager"
-          just package-release-assets "safenodemand"
-          just package-release-assets "sn_auditor"
-          just upload-release-assets-to-s3 "faucet"
-          just upload-release-assets-to-s3 "nat-detection"
-          just upload-release-assets-to-s3 "node-launchpad"
-          just upload-release-assets-to-s3 "safe"
-          just upload-release-assets-to-s3 "safenode"
-          just upload-release-assets-to-s3 "safenode-manager"
-          just upload-release-assets-to-s3 "safenodemand"
-          just upload-release-assets-to-s3 "safenode_rpc_client"
-          just upload-release-assets-to-s3 "sn_auditor"
+  github-release:
+    if: ${{
+        github.repository_owner == 'maidsafe' &&
+        (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/heads/rc'))
+      }}
+    name: github release
+    runs-on: ubuntu-latest
+    needs: [ build ]
 
-      # unless release plz toml is changed (as above removing certain limits)
-      # github releases are drafts, and we do not publish to crates.io
-      - name: publish and release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-x86_64-pc-windows-msvc
+          path: artifacts/x86_64-pc-windows-msvc/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-x86_64-unknown-linux-musl
+          path: artifacts/x86_64-unknown-linux-musl/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-x86_64-apple-darwin
+          path: artifacts/x86_64-apple-darwin/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-aarch64-apple-darwin
+          path: artifacts/aarch64-apple-darwin/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-arm-unknown-linux-musleabi
+          path: artifacts/arm-unknown-linux-musleabi/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-armv7-unknown-linux-musleabihf
+          path: artifacts/armv7-unknown-linux-musleabihf/release
+      - uses: actions/download-artifact@master
+        with:
+          name: safe_network-aarch64-unknown-linux-musl
+          path: artifacts/aarch64-unknown-linux-musl/release
+
+      - uses: cargo-bins/cargo-binstall@main
+      - name: install just
+        shell: bash
+        run: cargo binstall --no-confirm just
+
+      - name: set package version
         shell: bash
         run: |
-          # The `release-plz` command publishes crates which had their versions bumped, and also
-          # creates Github releases. The binaries are then attached to the releases in the
-          # `upload-github-release-assets` target.
+          current_date=$(date +%Y.%m)
+          release_cycle=$(grep 'release-cycle:' release-cycle-info | awk '{print $2}')
+          release_cycle_counter=$(grep 'release-cycle-counter:' release-cycle-info | awk '{print $2}')
+          version="$current_date.$release_cycle.$release_cycle_counter"
+          echo "PACKAGE_VERSION=$version" >> $GITHUB_ENV
+
+      - name: package release artifacts
+        shell: bash
+        run: just package-all-architectures
+
+      # For the next two steps, it seems to be necessary to set `GITHUB_TOKEN` on the step rather
+      # than the job level.
+      - name: create release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+        with:
+          tag_name: ${{ env.PACKAGE_VERSION }}
+          release_name: ${{ env.PACKAGE_VERSION }}
+          draft: false
+          prerelease: ${{ startsWith(github.ref, 'refs/heads/rc') && true || false }}
+
+      - name: upload artifacts as assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+        shell: bash
+        run: |
+          (
+            cd packaged_architectures
+            ls | xargs gh release upload ${{ env.PACKAGE_VERSION }}
+          )
+
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Release Failed"
+
+  publish-crates:
+    if: ${{ github.repository_owner == 'maidsafe' && github.ref == 'refs/heads/stable' }}
+    needs: [ build, s3-release ]
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+          token: ${{ secrets.VERSION_BUMP_COMMIT_PAT }}
+
+      # Required for the creation of tags
+      - shell: bash
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - uses: cargo-bins/cargo-binstall@main
+      - shell: bash
+        run: cargo binstall --no-confirm release-plz
+
+      - name: publish crates
+        shell: bash
+        run: |
           cargo login "${{ secrets.CRATES_IO_TOKEN }}"
-          # The use of 'awk' suppresses the annoying instrumentation output
-          # that makes the log difficult to read.
+          # The use of 'awk' suppresses the annoying instrumentation output that makes the log
+          # difficult to read.
           release-plz release --git-token ${{ secrets.VERSION_BUMP_COMMIT_PAT }} | \
             awk '{ if (!/^\s*in release with input/ && !/^\s{4}/) print }'
-
-      - name: create github release assets
-        shell: bash
-        run: just upload-github-release-assets
-
-      - name: upload as latest release
-        shell: bash
-        if: github.event_name != 'workflow_dispatch'
-        run: |
-          # Now upload the 'latest' versions to S3. This can be done later because the node manager
-          # does not depend on these existing.
-          just package-release-assets "faucet" "latest"
-          just package-release-assets "nat-detection" "latest"
-          just package-release-assets "node-launchpad" "latest"
-          just package-release-assets "safe" "latest"
-          just package-release-assets "safenode" "latest"
-          just package-release-assets "safenode_rpc_client" "latest"
-          just package-release-assets "safenode-manager" "latest"
-          just package-release-assets "safenodemand" "latest"
-          just package-release-assets "sn_auditor" "latest"
-          just upload-release-assets-to-s3 "faucet"
-          just upload-release-assets-to-s3 "nat-detection"
-          just upload-release-assets-to-s3 "node-launchpad"
-          just upload-release-assets-to-s3 "safe"
-          just upload-release-assets-to-s3 "safenode"
-          just upload-release-assets-to-s3 "safenode-manager"
-          just upload-release-assets-to-s3 "safenodemand"
-          just upload-release-assets-to-s3 "safenode_rpc_client"
-          just upload-release-assets-to-s3 "sn_auditor"
 
       - name: post notification to slack on failure
         if: ${{ failure() }}

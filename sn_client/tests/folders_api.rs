@@ -190,6 +190,9 @@ async fn test_folder_remove_replace_entries() -> Result<()> {
 
 #[tokio::test]
 async fn test_folder_retrieve() -> Result<()> {
+    let _log_guards =
+        sn_logging::LogBuilder::init_single_threaded_tokio_test("test_folder_retrieve", false);
+
     let owner_sk = SecretKey::random();
     let client = get_new_client(owner_sk).await?;
     let tmp_dir = tempfile::tempdir()?;
@@ -267,6 +270,9 @@ async fn test_folder_retrieve() -> Result<()> {
 
 #[tokio::test]
 async fn test_folder_merge_changes() -> Result<()> {
+    let _log_guards =
+        sn_logging::LogBuilder::init_single_threaded_tokio_test("test_folder_merge_changes", false);
+
     let owner_sk = SecretKey::random();
     let client = get_new_client(owner_sk.clone()).await?;
     let tmp_dir = tempfile::tempdir()?;
