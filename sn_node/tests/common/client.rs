@@ -44,8 +44,8 @@ pub const LOCAL_NODE_COUNT: usize = 25;
 // The number of times to try to load the faucet wallet
 const LOAD_FAUCET_WALLET_RETRIES: usize = 6;
 
-    // mutex to restrict access to faucet wallet from concurrent tests
-    static FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::const_new(());
+// mutex to restrict access to faucet wallet from concurrent tests
+static FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::const_new(());
 
 /// Load HotWallet from dir
 pub fn get_wallet(root_dir: &Path) -> HotWallet {
