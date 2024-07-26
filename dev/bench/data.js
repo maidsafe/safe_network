@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721976968863,
+  "lastUpdate": 1721977085934,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "10acc176e7d8790d7f7bd3b7834008c73a33d915",
-          "message": "chore(node): extend distance range",
-          "timestamp": "2024-04-03T12:16:13Z",
-          "tree_id": "aa23530a4cd6289da8eb8777d8dcfe35b1685429",
-          "url": "https://github.com/maidsafe/safe_network/commit/10acc176e7d8790d7f7bd3b7834008c73a33d915"
-        },
-        "date": 1712149614674,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 158,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bc375972346a6c6456977509c0f4331d7d40bafd",
+          "message": "Merge pull request #1981 from joshuef/LocalFirstSwarm\n\nLocalFirst Swarm",
+          "timestamp": "2024-07-26T06:05:35Z",
+          "tree_id": "158e1ae5f58a98424dc16d8a5af3c1a7b0d951e3",
+          "url": "https://github.com/maidsafe/safe_network/commit/bc375972346a6c6456977509c0f4331d7d40bafd"
+        },
+        "date": 1721977085620,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 130,
             "unit": "MB"
           }
         ]
