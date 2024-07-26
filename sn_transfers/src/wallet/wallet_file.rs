@@ -69,7 +69,7 @@ pub(super) fn remove_unconfirmed_spend_requests(
         let spend_hex_name = spend.address().to_hex();
         let spend_file_path = spends_dir.join(&spend_hex_name);
         debug!("Writing spend to: {spend_file_path:?}");
-        fs::write(spend_file_path, &spend.to_bytes())?;
+        fs::write(spend_file_path, spend.to_bytes())?;
     }
 
     let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFIRMED_TX_NAME);

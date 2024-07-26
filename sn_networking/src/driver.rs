@@ -13,7 +13,7 @@ use crate::metrics_service::run_metrics_server;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
-    cmd::SwarmCmd,
+    cmd::{LocalSwarmCmd, NetworkSwarmCmd},
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
     multiaddr_pop_p2p,
@@ -457,7 +457,10 @@ impl NetworkBuilder {
         };
 
         let (network_event_sender, network_event_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
-        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
+        let (network_swarm_cmd_sender, network_swarm_cmd_receiver) =
+            mpsc::channel(NETWORKING_CHANNEL_SIZE);
+        let (local_swarm_cmd_sender, local_swarm_cmd_receiver) =
+            mpsc::channel(NETWORKING_CHANNEL_SIZE);
 
         // Kademlia Behaviour
         let kademlia = {
@@ -467,7 +470,7 @@ impl NetworkBuilder {
                         peer_id,
                         store_cfg,
                         network_event_sender.clone(),
-                        swarm_cmd_sender.clone(),
+                        local_swarm_cmd_sender.clone(),
                     );
                     #[cfg(feature = "open-metrics")]
                     let mut node_record_store = node_record_store;
@@ -604,7 +607,8 @@ impl NetworkBuilder {
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
-            cmd_receiver: swarm_cmd_receiver,
+            network_cmd_receiver: network_swarm_cmd_receiver,
+            local_cmd_receiver: local_swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
@@ -623,7 +627,13 @@ impl NetworkBuilder {
             replication_targets: Default::default(),
         };
 
-        let network = Network::new(swarm_cmd_sender, peer_id, self.root_dir, self.keypair);
+        let network = Network::new(
+            network_swarm_cmd_sender,
+            local_swarm_cmd_sender,
+            peer_id,
+            self.root_dir,
+            self.keypair,
+        );
 
         Ok((network, network_event_receiver, swarm_driver))
     }
@@ -646,7 +656,8 @@ pub struct SwarmDriver {
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,
 
-    cmd_receiver: mpsc::Receiver<SwarmCmd>,
+    local_cmd_receiver: mpsc::Receiver<LocalSwarmCmd>,
+    network_cmd_receiver: mpsc::Receiver<NetworkSwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
 
     /// Trackers for underlying behaviour related events
@@ -687,6 +698,35 @@ impl SwarmDriver {
 
         loop {
             tokio::select! {
+                // polls futures in order they appear here (as opposed to random)
+                biased;
+
+                // Prioritise any local cmds pending.
+                // https://github.com/libp2p/rust-libp2p/blob/master/docs/coding-guidelines.md#prioritize-local-work-over-new-work-from-a-remote
+                local_cmd = self.local_cmd_receiver.recv() => match local_cmd {
+                    Some(cmd) => {
+                        let start = Instant::now();
+                        let cmd_string = format!("{cmd:?}");
+                        if let Err(err) = self.handle_local_cmd(cmd) {
+                            warn!("Error while handling local cmd: {err}");
+                        }
+                        trace!("LocalCmd handled in {:?}: {cmd_string:?}", start.elapsed());
+                    },
+                    None =>  continue,
+                },
+                // next check if we have locally generated network cmds
+                some_cmd = self.network_cmd_receiver.recv() => match some_cmd {
+                    Some(cmd) => {
+                        let start = Instant::now();
+                        let cmd_string = format!("{cmd:?}");
+                        if let Err(err) = self.handle_network_cmd(cmd) {
+                            warn!("Error while handling cmd: {err}");
+                        }
+                        trace!("SwarmCmd handled in {:?}: {cmd_string:?}", start.elapsed());
+                    },
+                    None =>  continue,
+                },
+                // next take and react to external swarm events
                 swarm_event = self.swarm.select_next_some() => {
                     // logging for handling events happens inside handle_swarm_events
                     // otherwise we're rewriting match statements etc around this anwyay
@@ -694,17 +734,8 @@ impl SwarmDriver {
                         warn!("Error while handling swarm event: {err}");
                     }
                 },
-                some_cmd = self.cmd_receiver.recv() => match some_cmd {
-                    Some(cmd) => {
-                        let start = Instant::now();
-                        let cmd_string = format!("{cmd:?}");
-                        if let Err(err) = self.handle_cmd(cmd) {
-                            warn!("Error while handling cmd: {err}");
-                        }
-                        trace!("SwarmCmd handled in {:?}: {cmd_string:?}", start.elapsed());
-                    },
-                    None =>  continue,
-                },
+                // thereafter we can check our intervals
+
                 // runs every bootstrap_interval time
                 _ = bootstrap_interval.tick() => {
                     if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {

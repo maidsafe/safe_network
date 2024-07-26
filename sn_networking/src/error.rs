@@ -138,7 +138,7 @@ pub enum NetworkError {
     // ---------- Spend Errors
     #[error("Spend not found: {0:?}")]
     NoSpendFoundInsideRecord(SpendAddress),
-    #[error("Double spend(s) was detected. The signed spends are: {0:?}")]
+    #[error("Double spend(s) attempt was detected. The signed spends are: {0:?}")]
     DoubleSpendAttempt(Vec<SignedSpend>),
 
     // ---------- Store Error
