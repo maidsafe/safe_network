@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721936079458,
+  "lastUpdate": 1721976968863,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "10acc176e7d8790d7f7bd3b7834008c73a33d915",
-          "message": "chore(node): extend distance range",
-          "timestamp": "2024-04-03T12:16:13Z",
-          "tree_id": "aa23530a4cd6289da8eb8777d8dcfe35b1685429",
-          "url": "https://github.com/maidsafe/safe_network/commit/10acc176e7d8790d7f7bd3b7834008c73a33d915"
-        },
-        "date": 1712149502463,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2285523736346047,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6565586890061859,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.54861160520272,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.43739394301007,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bc375972346a6c6456977509c0f4331d7d40bafd",
+          "message": "Merge pull request #1981 from joshuef/LocalFirstSwarm\n\nLocalFirst Swarm",
+          "timestamp": "2024-07-26T06:05:35Z",
+          "tree_id": "158e1ae5f58a98424dc16d8a5af3c1a7b0d951e3",
+          "url": "https://github.com/maidsafe/safe_network/commit/bc375972346a6c6456977509c0f4331d7d40bafd"
+        },
+        "date": 1721976962948,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.238312261081526,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6933598483545855,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.0650914019279,
             "unit": "MiB/s"
           }
         ]
