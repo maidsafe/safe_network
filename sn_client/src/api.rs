@@ -450,7 +450,7 @@ impl Client {
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
         let get_quorum = if is_verifying {
-            Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?)
+            Quorum::Majority
         } else {
             Quorum::One
         };

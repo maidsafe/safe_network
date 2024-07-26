@@ -865,7 +865,7 @@ impl ClientRegister {
     ) -> Result<Register> {
         debug!("Retrieving Register from: {address}");
         let reg = client
-            .get_signed_register_from_network(address, false)
+            .get_signed_register_from_network(address, true)
             .await?;
         reg.verify_with_address(address)?;
         Ok(reg.register()?)
