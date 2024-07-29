@@ -50,13 +50,13 @@ impl Component for Footer {
                 // for the rest of the home scene
                 Constraint::Min(1),
                 // our footer
-                Constraint::Max(5),
+                Constraint::Max(4),
             ],
         )
         .split(area);
         let border = Paragraph::new("").block(
             Block::default()
-                .title("Key Commands")
+                .title(" Key Commands ")
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(COOL_GREY)),
         );

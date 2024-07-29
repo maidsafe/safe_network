@@ -378,11 +378,11 @@ impl Component for Home {
                 // header
                 Constraint::Max(1),
                 // device status
-                Constraint::Max(10),
+                Constraint::Max(6),
                 // node status
                 Constraint::Min(3),
                 // footer
-                Constraint::Max(5),
+                Constraint::Max(4),
             ],
         )
         .split(area);
@@ -391,29 +391,18 @@ impl Component for Home {
 
         let layer_one_header = Layout::new(
             Direction::Horizontal,
-            vec![Constraint::Min(40), Constraint::Fill(20)],
+            [Constraint::Percentage(100), Constraint::Percentage(0)], // We leave space for future tabs
         )
         .split(layer_zero[0]);
 
         f.render_widget(
             Paragraph::new(format!(
-                "Autonomi Node Launchpad (v{})",
+                " Autonomi Node Launchpad (v{})",
                 self.launchpad_version_str
             ))
             .alignment(Alignment::Left)
             .fg(LIGHT_PERIWINKLE),
             layer_one_header[0],
-        );
-        let discord_user_name_text = if self.discord_username.is_empty() {
-            "".to_string()
-        } else {
-            format!("Discord Username: {} ", &self.discord_username)
-        };
-        f.render_widget(
-            Paragraph::new(discord_user_name_text)
-                .alignment(Alignment::Right)
-                .fg(VERY_LIGHT_AZURE),
-            layer_one_header[1],
         );
 
         // ==== Device Status =====
@@ -434,7 +423,7 @@ impl Component for Home {
             f.render_widget(
                 Paragraph::new(vec![line1, line2]).block(
                     Block::default()
-                        .title("Device Status")
+                        .title(" Device Status ")
                         .title_style(Style::new().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
                         .padding(Padding::uniform(1))
@@ -462,26 +451,49 @@ impl Component for Home {
                 Cell::new("Memory Use".to_string()).fg(GHOST_WHITE),
                 Cell::new(memory_use_val).fg(GHOST_WHITE),
             ]);
-            let total_nanos_earned_row = Row::new(vec![
+
+            // Combine "Total Nanos Earned" and "Discord Username" into a single row
+            let mut username_color = GHOST_WHITE;
+            let total_nanos_earned_and_discord = Row::new(vec![
                 Cell::new("Total Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
                 Cell::new(self.node_stats.forwarded_rewards.to_string())
                     .fg(VIVID_SKY_BLUE)
                     .bold(),
+                Cell::new("".to_string()),
+                Cell::new("Discord Username:".to_string()).fg(VIVID_SKY_BLUE),
+                Cell::new(if self.discord_username.is_empty() {
+                    "[Ctrl+B] to set".to_string()
+                } else {
+                    username_color = VIVID_SKY_BLUE;
+                    self.discord_username.clone()
+                })
+                .fg(username_color)
+                .bold(),
             ]);
+
             let stats_rows = vec![
                 storage_allocated_row,
-                memory_use_row.bottom_margin(2),
-                total_nanos_earned_row,
+                memory_use_row.bottom_margin(1),
+                total_nanos_earned_and_discord,
             ];
-            let stats_width = [Constraint::Max(25), Constraint::Min(5)];
-            let stats_table = Table::new(stats_rows, stats_width).block(
-                Block::default()
-                    .title("Device Status")
-                    .title_style(Style::default().fg(GHOST_WHITE))
-                    .borders(Borders::ALL)
-                    .padding(Padding::uniform(1))
-                    .style(Style::default().fg(VERY_LIGHT_AZURE)),
-            );
+            let stats_width = [Constraint::Length(5)];
+            let column_constraints = [
+                Constraint::Percentage(25),
+                Constraint::Percentage(5),
+                Constraint::Percentage(35), // empty cell to avoid alignment left <> right
+                Constraint::Percentage(20),
+                Constraint::Percentage(15),
+            ];
+            let stats_table = Table::new(stats_rows, stats_width)
+                .block(
+                    Block::default()
+                        .title(" Device Status ")
+                        .title_style(Style::default().fg(GHOST_WHITE))
+                        .borders(Borders::ALL)
+                        .padding(Padding::horizontal(1))
+                        .style(Style::default().fg(VERY_LIGHT_AZURE)),
+                )
+                .widths(column_constraints);
             f.render_widget(stats_table, layer_zero[1]);
         };
 
@@ -515,7 +527,7 @@ impl Component for Home {
                     .fg(LIGHT_PERIWINKLE)
                     .block(
                         Block::default()
-                            .title("Node Status")
+                            .title(" Node Status ")
                             .title_style(Style::default().fg(LIGHT_PERIWINKLE))
                             .borders(Borders::ALL)
                             .border_style(style::Style::default().fg(COOL_GREY))
@@ -526,8 +538,8 @@ impl Component for Home {
         } else {
             let node_widths = [
                 Constraint::Max(15),
-                Constraint::Min(30),
-                Constraint::Max(20),
+                Constraint::Min(40),
+                Constraint::Max(10),
                 Constraint::Max(10),
             ];
             let table = Table::new(node_rows, node_widths)
@@ -535,7 +547,7 @@ impl Component for Home {
                 .highlight_style(Style::new().reversed())
                 .block(
                     Block::default()
-                        .title("Node Status")
+                        .title(" Node Status ")
                         .padding(Padding::new(2, 2, 1, 1))
                         .title_style(Style::default().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
