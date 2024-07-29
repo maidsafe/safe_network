@@ -13,6 +13,7 @@ use color_eyre::{
 use indicatif::{ProgressBar, ProgressStyle};
 use semver::Version;
 use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepoActions};
+use sn_service_management::NodeServiceData;
 use std::{
     io::Read,
     path::{Path, PathBuf},
@@ -20,7 +21,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{config, VerbosityLevel};
+use crate::{add_services::config::PortRange, config, VerbosityLevel};
 
 const MAX_DOWNLOAD_RETRIES: u8 = 3;
 
@@ -324,4 +325,56 @@ pub fn create_temp_dir() -> Result<PathBuf> {
     std::fs::create_dir_all(&new_temp_dir)
         .inspect_err(|err| error!("Failed to crete temp dir: {err:?}"))?;
     Ok(new_temp_dir)
+}
+
+/// Get the start port from the `PortRange` if applicable.
+pub fn get_start_port_if_applicable(range: Option<PortRange>) -> Option<u16> {
+    if let Some(port) = range {
+        match port {
+            PortRange::Single(val) => return Some(val),
+            PortRange::Range(start, _) => return Some(start),
+        }
+    }
+    None
+}
+
+/// Increment the port by 1.
+pub fn increment_port_option(port: Option<u16>) -> Option<u16> {
+    if let Some(port) = port {
+        let incremented_port = port + 1;
+        return Some(incremented_port);
+    }
+    None
+}
+
+/// Make sure the port is not already in use by another node.
+pub fn check_port_availability(port_option: &PortRange, nodes: &[NodeServiceData]) -> Result<()> {
+    let mut all_ports = Vec::new();
+    for node in nodes {
+        if let Some(port) = node.metrics_port {
+            all_ports.push(port);
+        }
+        if let Some(port) = node.node_port {
+            all_ports.push(port);
+        }
+        all_ports.push(node.rpc_socket_addr.port());
+    }
+
+    match port_option {
+        PortRange::Single(port) => {
+            if all_ports.iter().any(|p| *p == *port) {
+                error!("Port {port} is being used by another service");
+                return Err(eyre!("Port {port} is being used by another service"));
+            }
+        }
+        PortRange::Range(start, end) => {
+            for i in *start..=*end {
+                if all_ports.iter().any(|p| *p == i) {
+                    error!("Port {i} is being used by another service");
+                    return Err(eyre!("Port {i} is being used by another service"));
+                }
+            }
+        }
+    }
+    Ok(())
 }

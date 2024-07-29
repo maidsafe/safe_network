@@ -10,6 +10,7 @@
 
 use super::get_bin_path;
 use crate::{
+    add_services::config::PortRange,
     local::{kill_network, run_network, LocalNetworkOptions},
     print_banner, status_report, VerbosityLevel,
 };
@@ -25,15 +26,19 @@ use std::path::PathBuf;
 pub async fn join(
     build: bool,
     count: u16,
+    enable_metrics_server: bool,
     faucet_path: Option<PathBuf>,
     faucet_version: Option<String>,
     interval: u64,
+    metrics_port: Option<PortRange>,
     node_path: Option<PathBuf>,
+    node_port: Option<PortRange>,
     node_version: Option<String>,
     log_format: Option<LogFormat>,
     owner: Option<String>,
     owner_prefix: Option<String>,
     peers_args: PeersArgs,
+    rpc_port: Option<PortRange>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
 ) -> Result<(), Report> {
@@ -42,11 +47,18 @@ pub async fn join(
     }
     info!("Joining local network");
 
+    if (enable_metrics_server || metrics_port.is_some()) && !cfg!(feature = "open-metrics") && build
+    {
+        return Err(eyre!(
+        "Metrics server is not available. Please enable the open-metrics feature flag. Run the command with the --features open-metrics"
+    ));
+    }
+
     let local_node_reg_path = &get_local_node_registry_path()?;
     let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
-    let faucet_path = get_bin_path(
+    let faucet_bin_path = get_bin_path(
         build,
         faucet_path,
         ReleaseType::Faucet,
@@ -55,7 +67,7 @@ pub async fn join(
         verbosity,
     )
     .await?;
-    let node_path = get_bin_path(
+    let safenode_bin_path = get_bin_path(
         build,
         node_path,
         ReleaseType::Safenode,
@@ -81,14 +93,18 @@ pub async fn join(
         },
     };
     let options = LocalNetworkOptions {
-        faucet_bin_path: faucet_path,
+        enable_metrics_server,
+        faucet_bin_path,
         interval,
         join: true,
+        metrics_port,
         node_count: count,
+        node_port,
         owner,
         owner_prefix,
         peers,
-        safenode_bin_path: node_path,
+        rpc_port,
+        safenode_bin_path,
         skip_validation,
         log_format,
     };
@@ -117,17 +133,28 @@ pub async fn run(
     build: bool,
     clean: bool,
     count: u16,
+    enable_metrics_server: bool,
     faucet_path: Option<PathBuf>,
     faucet_version: Option<String>,
     interval: u64,
+    metrics_port: Option<PortRange>,
     node_path: Option<PathBuf>,
+    node_port: Option<PortRange>,
     node_version: Option<String>,
     log_format: Option<LogFormat>,
     owner: Option<String>,
     owner_prefix: Option<String>,
+    rpc_port: Option<PortRange>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
 ) -> Result<(), Report> {
+    if (enable_metrics_server || metrics_port.is_some()) && !cfg!(feature = "open-metrics") && build
+    {
+        return Err(eyre!(
+        "Metrics server is not available. Please enable the open-metrics feature flag. Run the command with the --features open-metrics"
+    ));
+    }
+
     // In the clean case, the node registry must be loaded *after* the existing network has
     // been killed, which clears it out.
     let local_node_reg_path = &get_local_node_registry_path()?;
@@ -158,7 +185,7 @@ pub async fn run(
     info!("Launching local network");
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
-    let faucet_path = get_bin_path(
+    let faucet_bin_path = get_bin_path(
         build,
         faucet_path,
         ReleaseType::Faucet,
@@ -167,7 +194,7 @@ pub async fn run(
         verbosity,
     )
     .await?;
-    let node_path = get_bin_path(
+    let safenode_bin_path = get_bin_path(
         build,
         node_path,
         ReleaseType::Safenode,
@@ -178,14 +205,18 @@ pub async fn run(
     .await?;
 
     let options = LocalNetworkOptions {
-        faucet_bin_path: faucet_path,
+        enable_metrics_server,
+        faucet_bin_path,
         join: false,
         interval,
+        metrics_port,
+        node_port,
         node_count: count,
         owner,
         owner_prefix,
         peers: None,
-        safenode_bin_path: node_path,
+        rpc_port,
+        safenode_bin_path,
         skip_validation,
         log_format,
     };
