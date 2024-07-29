@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722260015314,
+  "lastUpdate": 1722260017297,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "84bd567816c4b5691f1ceea0a9d1255092f60483",
-          "message": "fix(protocol): pre release versions should be backward compatible",
-          "timestamp": "2024-04-04T14:23:39Z",
-          "tree_id": "d97753f6856f8fdc76c2b46fb4d9af0e8535dbfe",
-          "url": "https://github.com/maidsafe/safe_network/commit/84bd567816c4b5691f1ceea0a9d1255092f60483"
-        },
-        "date": 1712242805197,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7469,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34113,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 27574,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b486acc3ed31a2b7286c773d9ad5612971f9850f",
+          "message": "Merge pull request #2009 from mazzi/chore_popup_crate_and_cleanup\n\nchore(launchpad): popup crate and del unused code",
+          "timestamp": "2024-07-29T12:40:45Z",
+          "tree_id": "571894591fb78b4a465ebc4a8eb6a5f3e7e341b2",
+          "url": "https://github.com/maidsafe/safe_network/commit/b486acc3ed31a2b7286c773d9ad5612971f9850f"
+        },
+        "date": 1722260016763,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5169,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 27176,
             "unit": "ms"
           },
           {
