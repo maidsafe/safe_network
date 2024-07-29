@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{utils::centered_rect_fixed, Component};
+use super::super::{utils::centered_rect_fixed, Component};
 use crate::{
     action::{Action, HomeActions},
     mode::{InputMode, Scene},

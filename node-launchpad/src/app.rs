@@ -10,10 +10,11 @@ use std::path::PathBuf;
 
 use crate::{
     action::Action,
-    components::{
-        beta_programme::BetaProgramme, footer::Footer, help::HelpPopUp, home::Home,
-        manage_nodes::ManageNodes, reset_popup::ResetNodesPopup, Component,
+    components::popup::{
+        beta_programme::BetaProgramme, help::HelpPopUp, manage_nodes::ManageNodes,
+        reset::ResetNodesPopup,
     },
+    components::{footer::Footer, home::Home, Component},
     config::{AppData, Config},
     mode::{InputMode, Scene},
     style::SPACE_CADET,

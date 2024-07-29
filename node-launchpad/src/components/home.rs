@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{manage_nodes::GB_PER_NODE, utils::centered_rect_fixed, Component, Frame};
+use super::{popup::manage_nodes::GB_PER_NODE, utils::centered_rect_fixed, Component, Frame};
 use crate::{
     action::{Action, HomeActions},
     config::Config,
@@ -527,7 +527,7 @@ impl Component for Home {
                     .fg(LIGHT_PERIWINKLE)
                     .block(
                         Block::default()
-                            .title(" Node Status ")
+                            .title(format!(" Nodes ({}) ", self.nodes_to_start))
                             .title_style(Style::default().fg(LIGHT_PERIWINKLE))
                             .borders(Borders::ALL)
                             .border_style(style::Style::default().fg(COOL_GREY))
@@ -547,7 +547,7 @@ impl Component for Home {
                 .highlight_style(Style::new().reversed())
                 .block(
                     Block::default()
-                        .title(" Node Status ")
+                        .title(format!(" Nodes ({}) ", self.nodes_to_start))
                         .padding(Padding::new(2, 2, 1, 1))
                         .title_style(Style::default().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
