@@ -19,7 +19,7 @@ use crate::{
     style::{clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
 };
 
-use super::{utils::centered_rect_fixed, Component};
+use super::super::{utils::centered_rect_fixed, Component};
 
 pub const GB_PER_NODE: usize = 5;
 pub const MB: usize = 1000 * 1000;
@@ -240,7 +240,7 @@ impl Component for ManageNodes {
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Manage Nodes")
+                .title(" Manage Nodes ")
                 .title_style(Style::new().fg(GHOST_WHITE))
                 .title_style(Style::new().fg(EUCALYPTUS))
                 .padding(Padding::uniform(2))

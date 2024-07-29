@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{utils::centered_rect_fixed, Component};
+use super::super::{utils::centered_rect_fixed, Component};
 use crate::{
     action::Action,
     mode::{InputMode, Scene},
@@ -95,38 +95,45 @@ impl Component for HelpPopUp {
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Get Help")
+                .title(" Get Help ")
                 .title_style(style::Style::default().fg(EUCALYPTUS))
                 .border_style(Style::new().fg(EUCALYPTUS)),
         );
 
-        let line1 = Paragraph::new(" See the quick start guides:");
+        let line1 = Paragraph::new(" See the quick start guides:")
+            .block(Block::default().padding(Padding::horizontal(1)));
         f.render_widget(line1.fg(GHOST_WHITE), layer_one[1]);
+
         let link1 = Hyperlink::new(
             Span::styled(
-                " https://autonomi.com/getting-started",
+                "  https://autonomi.com/getting-started",
                 Style::default().fg(VIVID_SKY_BLUE),
             ),
             "https://autonomi.com/getting-started",
         );
         f.render_widget_ref(link1, layer_one[2]);
 
-        let line2 = Paragraph::new(" Get direct help via Discord:").fg(GHOST_WHITE);
+        let line2 = Paragraph::new(" Get direct help via Discord:")
+            .fg(GHOST_WHITE)
+            .block(Block::default().padding(Padding::horizontal(1)));
         f.render_widget(line2, layer_one[3]);
+
         let link2 = Hyperlink::new(
             Span::styled(
-                " https://discord.gg/autonomi",
+                "  https://discord.gg/autonomi",
                 Style::default().fg(VIVID_SKY_BLUE),
             ),
             "https://discord.gg/autonomi",
         );
         f.render_widget_ref(link2, layer_one[4]);
 
-        let line3 = Paragraph::new(" To join the Beta Rewards Program:").fg(GHOST_WHITE);
+        let line3 = Paragraph::new(" To join the Beta Rewards Program:")
+            .fg(GHOST_WHITE)
+            .block(Block::default().padding(Padding::horizontal(1)));
         f.render_widget(line3, layer_one[5]);
         let link3 = Hyperlink::new(
             Span::styled(
-                " https://autonomi.com/beta",
+                "  https://autonomi.com/beta",
                 Style::default().fg(VIVID_SKY_BLUE),
             ),
             "https://autonomi.com/beta",

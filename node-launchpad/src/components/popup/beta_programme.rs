@@ -6,7 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{utils::centered_rect_fixed, Component};
+use super::super::utils::centered_rect_fixed;
+use super::super::Component;
 use crate::{
     action::Action,
     mode::{InputMode, Scene},
@@ -181,7 +182,7 @@ impl Component for BetaProgramme {
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Beta Rewards Program")
+                .title(" Beta Rewards Program ")
                 .title_style(Style::new().fg(VIVID_SKY_BLUE))
                 .padding(Padding::uniform(2))
                 .border_style(Style::new().fg(VIVID_SKY_BLUE)),
