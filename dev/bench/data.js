@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722219492248,
+  "lastUpdate": 1722219608332,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "1776619c0ee33fa5ca841f5194ecc1112125ca60",
-          "message": "feat(release): set network versioning during build process not the release",
-          "timestamp": "2024-04-04T00:16:23Z",
-          "tree_id": "d9e57195eacc0b853b351ef9c21288b0e16ed0c5",
-          "url": "https://github.com/maidsafe/safe_network/commit/1776619c0ee33fa5ca841f5194ecc1112125ca60"
-        },
-        "date": 1712192417402,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 130,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4b0be6d4c7e1c059b1611cf0c1596b1aa65d84cc",
+          "message": "Merge pull request #2006 from b-zee/refactor-deps-lazy-static\n\nrefactor: remove some lazy_static deps; unused dep",
+          "timestamp": "2024-07-29T01:19:47Z",
+          "tree_id": "1e654e79fb3e6d7db53ec384d60f5c13880c395d",
+          "url": "https://github.com/maidsafe/safe_network/commit/4b0be6d4c7e1c059b1611cf0c1596b1aa65d84cc"
+        },
+        "date": 1722219607766,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 161,
             "unit": "MB"
           }
         ]
