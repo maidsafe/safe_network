@@ -90,6 +90,9 @@ pub enum Error {
     #[error("Total price exceed possible token amount")]
     TotalPriceTooHigh,
 
+    #[error("Logic error: NonZeroUsize was initialised as zero")]
+    NonZeroUsizeWasInitialisedAsZero,
+
     #[error("Could not connect to the network in {0:?}")]
     ConnectionTimeout(Duration),
 

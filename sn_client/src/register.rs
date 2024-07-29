@@ -843,7 +843,7 @@ impl ClientRegister {
 
         let verification_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
-            retry_strategy: Some(RetryStrategy::Balanced),
+            retry_strategy: Some(RetryStrategy::Quick),
             target_record: record_to_verify,
             expected_holders,
         };
@@ -865,7 +865,7 @@ impl ClientRegister {
     ) -> Result<Register> {
         debug!("Retrieving Register from: {address}");
         let reg = client
-            .get_signed_register_from_network(address, false)
+            .get_signed_register_from_network(address, true)
             .await?;
         reg.verify_with_address(address)?;
         Ok(reg.register()?)

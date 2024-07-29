@@ -13,7 +13,7 @@ use crate::metrics_service::run_metrics_server;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
-    cmd::SwarmCmd,
+    cmd::{LocalSwarmCmd, NetworkSwarmCmd},
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
     multiaddr_pop_p2p,
@@ -116,13 +116,6 @@ const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
 /// Time before a Kad query times out if no response is received
 const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(10);
-
-// Init during compilation, instead of runtime error that should never happen
-// Option<T>::expect will be stabilised as const in the future (https://github.com/rust-lang/rust/issues/67441)
-const REPLICATION_FACTOR: NonZeroUsize = match NonZeroUsize::new(CLOSE_GROUP_SIZE) {
-    Some(v) => v,
-    None => panic!("CLOSE_GROUP_SIZE should not be zero"),
-};
 
 /// The various settings to apply to when fetching a record from network
 #[derive(Clone)]
@@ -311,7 +304,10 @@ impl NetworkBuilder {
             // 1mb packet size
             .set_max_packet_size(MAX_PACKET_SIZE)
             // How many nodes _should_ store data.
-            .set_replication_factor(REPLICATION_FACTOR)
+            .set_replication_factor(
+                NonZeroUsize::new(CLOSE_GROUP_SIZE)
+                    .ok_or_else(|| NetworkError::InvalidCloseGroupSize)?,
+            )
             .set_query_timeout(KAD_QUERY_TIMEOUT_S)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
@@ -380,12 +376,7 @@ impl NetworkBuilder {
     }
 
     /// Same as `build_node` API but creates the network components in client mode
-    pub fn build_client(
-        self,
-    ) -> std::result::Result<
-        (Network, mpsc::Receiver<NetworkEvent>, SwarmDriver),
-        MdnsBuildBehaviourError,
-    > {
+    pub fn build_client(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
         let mut kad_cfg = kad::Config::default(); // default query timeout is 60 secs
@@ -397,7 +388,10 @@ impl NetworkBuilder {
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
             // How many nodes _should_ store data.
-            .set_replication_factor(REPLICATION_FACTOR);
+            .set_replication_factor(
+                NonZeroUsize::new(CLOSE_GROUP_SIZE)
+                    .ok_or_else(|| NetworkError::InvalidCloseGroupSize)?,
+            );
 
         let (network, net_event_recv, driver) = self.build(
             kad_cfg,
@@ -421,10 +415,7 @@ impl NetworkBuilder {
         req_res_protocol: ProtocolSupport,
         identify_version: String,
         #[cfg(feature = "upnp")] upnp: bool,
-    ) -> std::result::Result<
-        (Network, mpsc::Receiver<NetworkEvent>, SwarmDriver),
-        MdnsBuildBehaviourError,
-    > {
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let peer_id = PeerId::from(self.keypair.public());
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         #[cfg(not(target_arch = "wasm32"))]
@@ -466,7 +457,10 @@ impl NetworkBuilder {
         };
 
         let (network_event_sender, network_event_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
-        let (swarm_cmd_sender, swarm_cmd_receiver) = mpsc::channel(NETWORKING_CHANNEL_SIZE);
+        let (network_swarm_cmd_sender, network_swarm_cmd_receiver) =
+            mpsc::channel(NETWORKING_CHANNEL_SIZE);
+        let (local_swarm_cmd_sender, local_swarm_cmd_receiver) =
+            mpsc::channel(NETWORKING_CHANNEL_SIZE);
 
         // Kademlia Behaviour
         let kademlia = {
@@ -476,7 +470,7 @@ impl NetworkBuilder {
                         peer_id,
                         store_cfg,
                         network_event_sender.clone(),
-                        swarm_cmd_sender.clone(),
+                        local_swarm_cmd_sender.clone(),
                     );
                     #[cfg(feature = "open-metrics")]
                     let mut node_record_store = node_record_store;
@@ -613,7 +607,8 @@ impl NetworkBuilder {
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
-            cmd_receiver: swarm_cmd_receiver,
+            network_cmd_receiver: network_swarm_cmd_receiver,
+            local_cmd_receiver: local_swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
             pending_requests: Default::default(),
@@ -632,7 +627,13 @@ impl NetworkBuilder {
             replication_targets: Default::default(),
         };
 
-        let network = Network::new(swarm_cmd_sender, peer_id, self.root_dir, self.keypair);
+        let network = Network::new(
+            network_swarm_cmd_sender,
+            local_swarm_cmd_sender,
+            peer_id,
+            self.root_dir,
+            self.keypair,
+        );
 
         Ok((network, network_event_receiver, swarm_driver))
     }
@@ -655,7 +656,8 @@ pub struct SwarmDriver {
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,
 
-    cmd_receiver: mpsc::Receiver<SwarmCmd>,
+    local_cmd_receiver: mpsc::Receiver<LocalSwarmCmd>,
+    network_cmd_receiver: mpsc::Receiver<NetworkSwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
 
     /// Trackers for underlying behaviour related events
@@ -696,6 +698,35 @@ impl SwarmDriver {
 
         loop {
             tokio::select! {
+                // polls futures in order they appear here (as opposed to random)
+                biased;
+
+                // Prioritise any local cmds pending.
+                // https://github.com/libp2p/rust-libp2p/blob/master/docs/coding-guidelines.md#prioritize-local-work-over-new-work-from-a-remote
+                local_cmd = self.local_cmd_receiver.recv() => match local_cmd {
+                    Some(cmd) => {
+                        let start = Instant::now();
+                        let cmd_string = format!("{cmd:?}");
+                        if let Err(err) = self.handle_local_cmd(cmd) {
+                            warn!("Error while handling local cmd: {err}");
+                        }
+                        trace!("LocalCmd handled in {:?}: {cmd_string:?}", start.elapsed());
+                    },
+                    None =>  continue,
+                },
+                // next check if we have locally generated network cmds
+                some_cmd = self.network_cmd_receiver.recv() => match some_cmd {
+                    Some(cmd) => {
+                        let start = Instant::now();
+                        let cmd_string = format!("{cmd:?}");
+                        if let Err(err) = self.handle_network_cmd(cmd) {
+                            warn!("Error while handling cmd: {err}");
+                        }
+                        trace!("SwarmCmd handled in {:?}: {cmd_string:?}", start.elapsed());
+                    },
+                    None =>  continue,
+                },
+                // next take and react to external swarm events
                 swarm_event = self.swarm.select_next_some() => {
                     // logging for handling events happens inside handle_swarm_events
                     // otherwise we're rewriting match statements etc around this anwyay
@@ -703,17 +734,8 @@ impl SwarmDriver {
                         warn!("Error while handling swarm event: {err}");
                     }
                 },
-                some_cmd = self.cmd_receiver.recv() => match some_cmd {
-                    Some(cmd) => {
-                        let start = Instant::now();
-                        let cmd_string = format!("{cmd:?}");
-                        if let Err(err) = self.handle_cmd(cmd) {
-                            warn!("Error while handling cmd: {err}");
-                        }
-                        trace!("SwarmCmd handled in {:?}: {cmd_string:?}", start.elapsed());
-                    },
-                    None =>  continue,
-                },
+                // thereafter we can check our intervals
+
                 // runs every bootstrap_interval time
                 _ = bootstrap_interval.tick() => {
                     if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {
@@ -875,7 +897,3 @@ impl SwarmDriver {
         Ok(())
     }
 }
-
-#[derive(Debug, thiserror::Error)]
-#[error("building the mDNS behaviour failed: {0}")]
-pub struct MdnsBuildBehaviourError(#[from] std::io::Error);
