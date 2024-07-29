@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722243890084,
+  "lastUpdate": 1722243891824,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "c6553fdd57c1751127e88669cb09f5f3becd0b01",
-          "message": "test(transfer): unit tests for PaymentQuote",
-          "timestamp": "2024-04-04T13:10:50Z",
-          "tree_id": "c8ac5cd63ab20b60f50597695d1e50bbd5d4b256",
-          "url": "https://github.com/maidsafe/safe_network/commit/c6553fdd57c1751127e88669cb09f5f3becd0b01"
-        },
-        "date": 1712238808135,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7182,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33675,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 29146,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "114653031ed4f487d0b80ff058ac65ee05e4d55d",
+          "message": "Merge pull request #1997 from RolandSherwin/local_metrics\n\nfeat(manager): optionally set the different ports when running local network",
+          "timestamp": "2024-07-29T08:07:00Z",
+          "tree_id": "65310cfdbefd3f2c3ee1f7a4266e071f851562f3",
+          "url": "https://github.com/maidsafe/safe_network/commit/114653031ed4f487d0b80ff058ac65ee05e4d55d"
+        },
+        "date": 1722243891328,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5191,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 27574,
             "unit": "ms"
           },
           {
