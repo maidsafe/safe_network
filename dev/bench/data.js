@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722261978754,
+  "lastUpdate": 1722261980629,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "06fc9839a9969ea8e7909b308983f3fbb2132e05",
-          "message": "chore(deps): bump dependencies",
-          "timestamp": "2024-04-04T20:46:43Z",
-          "tree_id": "ec6035708cb84babda6799b5cd976e7f2e68c70d",
-          "url": "https://github.com/maidsafe/safe_network/commit/06fc9839a9969ea8e7909b308983f3fbb2132e05"
-        },
-        "date": 1712266463824,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7527,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35320,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 27176,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b5bb768f8251d7193837fa24904ab054e57eee19",
+          "message": "Merge pull request #2005 from maqi/debug_resend_spend\n\nchore(client): debug resend spend",
+          "timestamp": "2024-07-29T13:13:21Z",
+          "tree_id": "149db33fc0a4fbea939698608c67abf8360c2853",
+          "url": "https://github.com/maidsafe/safe_network/commit/b5bb768f8251d7193837fa24904ab054e57eee19"
+        },
+        "date": 1722261980139,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4785,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 26092,
             "unit": "ms"
           },
           {
