@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722243891824,
+  "lastUpdate": 1722259892692,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "84bd567816c4b5691f1ceea0a9d1255092f60483",
-          "message": "fix(protocol): pre release versions should be backward compatible",
-          "timestamp": "2024-04-04T14:23:39Z",
-          "tree_id": "d97753f6856f8fdc76c2b46fb4d9af0e8535dbfe",
-          "url": "https://github.com/maidsafe/safe_network/commit/84bd567816c4b5691f1ceea0a9d1255092f60483"
-        },
-        "date": 1712242688036,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2222218011600217,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6264354976607267,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.203897816185275,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.452654492072455,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b486acc3ed31a2b7286c773d9ad5612971f9850f",
+          "message": "Merge pull request #2009 from mazzi/chore_popup_crate_and_cleanup\n\nchore(launchpad): popup crate and del unused code",
+          "timestamp": "2024-07-29T12:40:45Z",
+          "tree_id": "571894591fb78b4a465ebc4a8eb6a5f3e7e341b2",
+          "url": "https://github.com/maidsafe/safe_network/commit/b486acc3ed31a2b7286c773d9ad5612971f9850f"
+        },
+        "date": 1722259886203,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2253441114844816,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.64497211435014,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.491842738997114,
             "unit": "MiB/s"
           }
         ]
