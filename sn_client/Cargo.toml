@@ -14,7 +14,7 @@ version = "0.109.0"
 default = []
 local-discovery = ["sn_networking/local-discovery"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
-test-utils = ["sn_peers_acquisition", "lazy_static", "eyre"]
+test-utils = ["sn_peers_acquisition", "eyre"]
 # required to pass on flag to node builds
 websockets = ["sn_networking/websockets", "sn_protocol/websockets"]
 
@@ -51,7 +51,6 @@ self_encryption = "~0.29.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
 sn_networking = { path = "../sn_networking", version = "0.17.1" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.6" }
-serde_json = "1.0"
 sn_registers = { path = "../sn_registers", version = "0.3.16" }
 sn_transfers = { path = "../sn_transfers", version = "0.18.9" }
 tempfile = "3.6.0"
@@ -61,7 +60,6 @@ tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.4.1", optional = true }
 eyre = { version = "0.6.8", optional = true }
-lazy_static = { version = "~1.4.0", optional = true }
 
 [dev-dependencies]
 assert_matches = "1.5.0"
