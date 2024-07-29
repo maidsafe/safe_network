@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1721977088850,
+  "lastUpdate": 1722219492248,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "1776619c0ee33fa5ca841f5194ecc1112125ca60",
-          "message": "feat(release): set network versioning during build process not the release",
-          "timestamp": "2024-04-04T00:16:23Z",
-          "tree_id": "d9e57195eacc0b853b351ef9c21288b0e16ed0c5",
-          "url": "https://github.com/maidsafe/safe_network/commit/1776619c0ee33fa5ca841f5194ecc1112125ca60"
-        },
-        "date": 1712192302599,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.187655878130461,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6237427153878536,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.434082072002624,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.0650914019279,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4b0be6d4c7e1c059b1611cf0c1596b1aa65d84cc",
+          "message": "Merge pull request #2006 from b-zee/refactor-deps-lazy-static\n\nrefactor: remove some lazy_static deps; unused dep",
+          "timestamp": "2024-07-29T01:19:47Z",
+          "tree_id": "1e654e79fb3e6d7db53ec384d60f5c13880c395d",
+          "url": "https://github.com/maidsafe/safe_network/commit/4b0be6d4c7e1c059b1611cf0c1596b1aa65d84cc"
+        },
+        "date": 1722219485971,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2152573014306862,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6780235336902682,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.76334715636233,
             "unit": "MiB/s"
           }
         ]
