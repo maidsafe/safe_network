@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722242698273,
+  "lastUpdate": 1722242817502,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11713,35 +11713,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "b662acff0fbcf0801364e8bfb0b649b360c88945",
-          "message": "chore(node): pass entire QuotingMetrics into calculate_cost_for_records",
-          "timestamp": "2024-04-04T08:27:43Z",
-          "tree_id": "af4a404d19b5c0642fc5776a179081f9fb9f4e08",
-          "url": "https://github.com/maidsafe/safe_network/commit/b662acff0fbcf0801364e8bfb0b649b360c88945"
-        },
-        "date": 1712222586811,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 161,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "eb0f61ddef67fa8e58df2804917d63a236f53d7e",
+          "message": "Merge pull request #2008 from mazzi/feat_launchpad_ui_adjustments\n\nfeat(launchpad): user interface tweaks",
+          "timestamp": "2024-07-29T07:48:00Z",
+          "tree_id": "1127595244b4bbe8594ad8dad9db651c0ba02783",
+          "url": "https://github.com/maidsafe/safe_network/commit/eb0f61ddef67fa8e58df2804917d63a236f53d7e"
+        },
+        "date": 1722242817261,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 131,
             "unit": "MB"
           }
         ]
