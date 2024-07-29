@@ -662,26 +662,18 @@ impl WalletClient {
                 .map(|s| {
                     info!(
                         "Unconfirmed spend {:?} of amount {}",
-                        s.spend.unique_pubkey, s.spend.amount
+                        s.spend.unique_pubkey,
+                        s.spend.amount()
                     );
-                    info!("====== spent_tx.inputs : {:?} ", s.spend.spent_tx.inputs);
-                    info!("====== spent_tx.outputs : {:?} ", s.spend.spent_tx.outputs);
-                    info!("====== parent_tx.inputs : {:?} ", s.spend.parent_tx.inputs);
-                    info!(
-                        "====== parent_tx.outputs : {:?} ",
-                        s.spend.parent_tx.outputs
-                    );
+                    info!("====== descendants : {:?} ", s.spend.descendants);
+                    info!("====== ancestors : {:?} ", s.spend.ancestors);
                     println!(
                         "Unconfirmed spend {:?} of amount {}",
-                        s.spend.unique_pubkey, s.spend.amount
+                        s.spend.unique_pubkey,
+                        s.spend.amount()
                     );
-                    println!("====== spent_tx.inputs : {:?} ", s.spend.spent_tx.inputs);
-                    println!("====== spent_tx.outputs : {:?} ", s.spend.spent_tx.outputs);
-                    println!("====== parent_tx.inputs : {:?} ", s.spend.parent_tx.inputs);
-                    println!(
-                        "====== parent_tx.outputs : {:?} ",
-                        s.spend.parent_tx.outputs
-                    );
+                    println!("====== descendants : {:?} ", s.spend.descendants);
+                    println!("====== ancestors : {:?} ", s.spend.ancestors);
 
                     let parent_spends: BTreeSet<_> = s
                         .spend
@@ -719,44 +711,18 @@ impl WalletClient {
                                         println!("Parent {parent_addr:?} of unconfirmed Spend {addr:?} is find having at least one copy in the network !");
                                         info!(
                                             "Parent spend {:?} of amount {}",
-                                            s.spend.unique_pubkey, s.spend.amount
+                                            s.spend.unique_pubkey,
+                                            s.spend.amount()
                                         );
-                                        info!(
-                                            "====== spent_tx.inputs : {:?} ",
-                                            s.spend.spent_tx.inputs
-                                        );
-                                        info!(
-                                            "====== spent_tx.outputs : {:?} ",
-                                            s.spend.spent_tx.outputs
-                                        );
-                                        info!(
-                                            "====== parent_tx.inputs : {:?} ",
-                                            s.spend.parent_tx.inputs
-                                        );
-                                        info!(
-                                            "====== parent_tx.outputs : {:?} ",
-                                            s.spend.parent_tx.outputs
-                                        );
+                                        info!("====== descendants : {:?} ", s.spend.descendants);
+                                        info!("====== ancestors : {:?} ", s.spend.ancestors);
                                         println!(
                                             "Parent spend {:?} of amount {}",
-                                            s.spend.unique_pubkey, s.spend.amount
+                                            s.spend.unique_pubkey,
+                                            s.spend.amount()
                                         );
-                                        println!(
-                                            "====== spent_tx.inputs : {:?} ",
-                                            s.spend.spent_tx.inputs
-                                        );
-                                        println!(
-                                            "====== spent_tx.outputs : {:?} ",
-                                            s.spend.spent_tx.outputs
-                                        );
-                                        println!(
-                                            "====== parent_tx.inputs : {:?} ",
-                                            s.spend.parent_tx.inputs
-                                        );
-                                        println!(
-                                            "====== parent_tx.outputs : {:?} ",
-                                            s.spend.parent_tx.outputs
-                                        );
+                                        println!("====== descendants : {:?} ", s.spend.descendants);
+                                        println!("====== ancestors : {:?} ", s.spend.ancestors);
                                     }
                                     Err(err) => {
                                         warn!(
