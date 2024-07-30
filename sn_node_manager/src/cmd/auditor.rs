@@ -210,7 +210,7 @@ pub async fn upgrade(
         ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
     match service_manager.upgrade(options).await {
-        Ok(upgrade_result) => {
+        Ok((upgrade_result, _)) => {
             info!("Upgrade the auditor service successfully");
             print_upgrade_summary(vec![("auditor".to_string(), upgrade_result)]);
             node_registry.save()?;
