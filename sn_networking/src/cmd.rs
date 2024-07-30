@@ -338,6 +338,22 @@ impl SwarmDriver {
         match cmd {
             NetworkSwarmCmd::GetNetworkRecord { key, sender, cfg } => {
                 cmd_string = "GetNetworkRecord";
+
+                for (pending_query, (inflight_record_query_key, senders, _, _)) in
+                    self.pending_get_record.iter_mut()
+                {
+                    if *inflight_record_query_key == key {
+                        debug!(
+                            "GetNetworkRecord for {:?} is already in progress. Adding sender to {pending_query:?}",
+                            PrettyPrintRecordKey::from(&key)
+                        );
+                        senders.push(sender);
+
+                        // early exit as we're already processing this query
+                        return Ok(());
+                    }
+                }
+
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
                 debug!(
@@ -348,7 +364,7 @@ impl SwarmDriver {
 
                 if self
                     .pending_get_record
-                    .insert(query_id, (sender, Default::default(), cfg))
+                    .insert(query_id, (key, vec![sender], Default::default(), cfg))
                     .is_some()
                 {
                     warn!("An existing get_record task {query_id:?} got replaced");
@@ -358,7 +374,7 @@ impl SwarmDriver {
                 let total_records: usize = self
                     .pending_get_record
                     .iter()
-                    .map(|(_, (_, result_map, _))| result_map.len())
+                    .map(|(_, (_, _, result_map, _))| result_map.len())
                     .sum();
                 info!("We now have {} pending get record attempts and cached {total_records} fetched copies",
                       self.pending_get_record.len());
@@ -623,6 +639,7 @@ impl SwarmDriver {
                 let new_keys_to_fetch = self
                     .replication_fetcher
                     .notify_about_new_put(key.clone(), record_type);
+
                 if !new_keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
                 }
@@ -924,18 +941,16 @@ impl SwarmDriver {
                 keys: all_records,
             });
             for peer_id in replicate_targets {
-                let request_id = self
-                    .swarm
-                    .behaviour_mut()
-                    .request_response
-                    .send_request(&peer_id, request.clone());
-                debug!("Sending request {request_id:?} to peer {peer_id:?}");
-                let _ = self.pending_requests.insert(request_id, None);
+                self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                    req: request.clone(),
+                    peer: peer_id,
+                    sender: None,
+                });
+
                 let _ = self
                     .replication_targets
                     .insert(peer_id, now + REPLICATION_TIMEOUT);
             }
-            debug!("Pending Requests now: {:?}", self.pending_requests.len());
         }
 
         Ok(())

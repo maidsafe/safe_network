@@ -74,6 +74,9 @@ pub struct NodeRecordStore {
     records: HashMap<Key, (NetworkAddress, RecordType)>,
     /// FIFO simple cache of records to reduce read times
     records_cache: VecDeque<Record>,
+    /// A map from record keys to their indices in the cache
+    /// allowing for more efficient cache management
+    records_cache_map: HashMap<Key, usize>,
     /// Send network events to the node layer.
     network_event_sender: mpsc::Sender<NetworkEvent>,
     /// Send cmds to the network layer. Used to interact with self in an async fashion.
@@ -280,6 +283,7 @@ impl NodeRecordStore {
             config,
             records,
             records_cache: VecDeque::with_capacity(cache_size),
+            records_cache_map: HashMap::with_capacity(cache_size),
             network_event_sender,
             local_swarm_cmd_sender: swarm_cmd_sender,
             responsible_distance_range: None,
@@ -517,23 +521,43 @@ impl NodeRecordStore {
     /// The record is marked as written to disk once `mark_as_stored` is called,
     /// this avoids us returning half-written data or registering it as stored before it is.
     pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
+        let key = &r.key;
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
-        debug!("PUT a verified Record: {record_key:?}");
+        debug!("PUTting a verified Record: {record_key:?}");
 
         // if the cache already has this record in it (eg, a conflicting spend)
         // remove it from the cache
-        self.records_cache.retain(|record| record.key != r.key);
+        // self.records_cache.retain(|record| record.key != r.key);
+        // Remove from cache if it already exists
+        if let Some(&index) = self.records_cache_map.get(key) {
+            if let Some(existing_record) = self.records_cache.remove(index) {
+                if existing_record.value == r.value {
+                    // we actually just want to keep what we have, and can assume it's been stored properly.
 
-        // store in the FIFO records cache, removing the oldest if needed
-        if self.records_cache.len() > self.config.records_cache_size {
-            self.records_cache.pop_front();
+                    // so we put it back in the cache
+                    self.records_cache.insert(index, existing_record);
+                    // and exit early.
+                    return Ok(());
+                }
+            }
+            self.update_cache_indices(index);
         }
 
+        // Store in the FIFO records cache, removing the oldest if needed
+        if self.records_cache.len() >= self.config.records_cache_size {
+            if let Some(old_record) = self.records_cache.pop_front() {
+                self.records_cache_map.remove(&old_record.key);
+            }
+        }
+
+        // Push the new record to the back of the cache
         self.records_cache.push_back(r.clone());
+        self.records_cache_map
+            .insert(key.clone(), self.records_cache.len() - 1);
 
-        self.prune_records_if_needed(&r.key)?;
+        self.prune_records_if_needed(key)?;
 
-        let filename = Self::generate_filename(&r.key);
+        let filename = Self::generate_filename(key);
         let file_path = self.config.storage_dir.join(&filename);
 
         #[cfg(feature = "open-metrics")]
@@ -543,19 +567,21 @@ impl NodeRecordStore {
 
         let encryption_details = self.encryption_details.clone();
         let cloned_cmd_sender = self.local_swarm_cmd_sender.clone();
+
+        let record_key2 = record_key.clone();
         spawn(async move {
             let key = r.key.clone();
             if let Some(bytes) = Self::prepare_record_bytes(r, encryption_details) {
                 let cmd = match fs::write(&file_path, bytes) {
                     Ok(_) => {
                         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-                        info!("Wrote record {record_key:?} to disk! filename: {filename}");
+                        info!("Wrote record {record_key2:?} to disk! filename: {filename}");
 
                         LocalSwarmCmd::AddLocalRecordAsStored { key, record_type }
                     }
                     Err(err) => {
                         error!(
-                        "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
+                        "Error writing record {record_key2:?} filename: {filename}, error: {err:?}"
                     );
                         LocalSwarmCmd::RemoveFailedLocalRecord { key }
                     }
@@ -566,6 +592,15 @@ impl NodeRecordStore {
         });
 
         Ok(())
+    }
+
+    /// Update the cache indices after removing an element
+    fn update_cache_indices(&mut self, start_index: usize) {
+        for index in start_index..self.records_cache.len() {
+            if let Some(record) = self.records_cache.get(index) {
+                self.records_cache_map.insert(record.key.clone(), index);
+            }
+        }
     }
 
     /// Calculate the cost to store data for our current store state

@@ -29,6 +29,7 @@ pub(super) type Result<T, E = NetworkError> = std::result::Result<T, E>;
 /// GetRecord Query errors
 #[derive(Error)]
 #[allow(missing_docs)]
+#[derive(Clone)]
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
     NotEnoughCopies {
