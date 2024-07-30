@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722331329557,
+  "lastUpdate": 1722331332317,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "131efe1c7a08850c2391a042dd27c15cf5139e1d",
-          "message": "fix(network): clients should not perform farthest relevant record check",
-          "timestamp": "2024-04-05T00:51:02Z",
-          "tree_id": "1d3a40e89b319c9c47d9596524555e6f94a258ee",
-          "url": "https://github.com/maidsafe/safe_network/commit/131efe1c7a08850c2391a042dd27c15cf5139e1d"
-        },
-        "date": 1712282537303,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7348,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33300,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 26092,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bfa50a3f6c3181bfce7c5ae0c134fb9e95683329",
+          "message": "Merge pull request #2010 from joshuef/FurtherNetCodeSeperation\n\nnetworking: Performance tweaks",
+          "timestamp": "2024-07-30T08:20:11Z",
+          "tree_id": "b5d45b3dd158bc63339076e3d7f4b219c0551d94",
+          "url": "https://github.com/maidsafe/safe_network/commit/bfa50a3f6c3181bfce7c5ae0c134fb9e95683329"
+        },
+        "date": 1722331331316,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4889,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 26051,
             "unit": "ms"
           },
           {
