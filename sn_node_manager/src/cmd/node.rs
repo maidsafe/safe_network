@@ -16,7 +16,8 @@ use crate::{
     },
     config::{self, is_running_as_root},
     helpers::{download_and_extract_release, get_bin_version},
-    print_banner, refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
+    print_banner, refresh_node_registry, status_report, DynamicInterval, ServiceManager,
+    VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
@@ -326,7 +327,8 @@ pub async fn start(
     }
 
     let mut failed_services = Vec::new();
-    let mut interval = interval;
+    let mut dyn_interval = DynamicInterval::new();
+    dyn_interval.add_interval_ms(interval);
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
@@ -339,10 +341,13 @@ pub async fn start(
             // `start` is called below, the user will get a message to say the service was already
             // started, which I think is useful behaviour to retain.
             debug!(
-                "Sleeping for {interval} milliseconds ({}sec)",
-                interval / 1000
+                "Sleeping for {} milliseconds ({}sec)",
+                dyn_interval.get_interval_ms(),
+                dyn_interval.get_interval_ms() / 1000
             );
-            std::thread::sleep(std::time::Duration::from_millis(interval));
+            std::thread::sleep(std::time::Duration::from_millis(
+                dyn_interval.get_interval_ms(),
+            ));
         }
         match service_manager.start().await {
             Ok(start_duration) => {
@@ -351,13 +356,7 @@ pub async fn start(
                     node.service_name
                 );
                 if let Some(duration) = start_duration {
-                    if duration.as_millis() as u64 > interval {
-                        warn!(
-                            "Service {} took longer to start than the interval, increasing interval to {} milliseconds",
-                            node.service_name, duration.as_millis()
-                        );
-                        interval = duration.as_millis() as u64;
-                    }
+                    dyn_interval.add_interval_ms(duration.as_millis() as u64);
                 }
                 node_registry.save()?;
             }
