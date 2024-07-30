@@ -338,6 +338,22 @@ impl SwarmDriver {
         match cmd {
             NetworkSwarmCmd::GetNetworkRecord { key, sender, cfg } => {
                 cmd_string = "GetNetworkRecord";
+
+                for (pending_query, (inflight_record_query_key, senders, _, _)) in
+                    self.pending_get_record.iter_mut()
+                {
+                    if *inflight_record_query_key == key {
+                        debug!(
+                            "GetNetworkRecord for {:?} is already in progress. Adding sender to {pending_query:?}",
+                            PrettyPrintRecordKey::from(&key)
+                        );
+                        senders.push(sender);
+
+                        // early exit as we're already processing this query
+                        return Ok(());
+                    }
+                }
+
                 let query_id = self.swarm.behaviour_mut().kademlia.get_record(key.clone());
 
                 debug!(
@@ -348,7 +364,7 @@ impl SwarmDriver {
 
                 if self
                     .pending_get_record
-                    .insert(query_id, (sender, Default::default(), cfg))
+                    .insert(query_id, (key, vec![sender], Default::default(), cfg))
                     .is_some()
                 {
                     warn!("An existing get_record task {query_id:?} got replaced");
@@ -358,7 +374,7 @@ impl SwarmDriver {
                 let total_records: usize = self
                     .pending_get_record
                     .iter()
-                    .map(|(_, (_, result_map, _))| result_map.len())
+                    .map(|(_, (_, _, result_map, _))| result_map.len())
                     .sum();
                 info!("We now have {} pending get record attempts and cached {total_records} fetched copies",
                       self.pending_get_record.len());

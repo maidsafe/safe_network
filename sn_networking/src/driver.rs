@@ -38,7 +38,7 @@ use libp2p::Transport as _;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
-    kad::{self, QueryId, Quorum, Record, K_VALUE},
+    kad::{self, QueryId, Quorum, Record, RecordKey, K_VALUE},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, OutboundRequestId, ProtocolSupport},
     swarm::{
@@ -89,7 +89,8 @@ type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
 pub(crate) type PendingGetRecord = HashMap<
     QueryId,
     (
-        oneshot::Sender<std::result::Result<Record, GetRecordError>>,
+        RecordKey, // record we're fetching, to dedupe repeat requests
+        Vec<oneshot::Sender<std::result::Result<Record, GetRecordError>>>, // vec of senders waiting for this record
         GetRecordResultMap,
         GetRecordCfg,
     ),
