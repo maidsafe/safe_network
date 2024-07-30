@@ -303,7 +303,7 @@ pub async fn start(
         print_banner("Start Safenode Services");
     }
     info!(
-        "Starting safenode services with interval={interval} for: {peer_ids:?}, {service_names:?}"
+        "Starting safenode services with dynamic interval (starting at {interval}) for: {peer_ids:?}, {service_names:?}"
     );
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
@@ -326,6 +326,7 @@ pub async fn start(
     }
 
     let mut failed_services = Vec::new();
+    let mut interval = interval;
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
@@ -337,12 +338,27 @@ pub async fn start(
             // continue without applying the delay. The reason for not doing so is because when
             // `start` is called below, the user will get a message to say the service was already
             // started, which I think is useful behaviour to retain.
-            debug!("Sleeping for {} milliseconds", interval);
+            debug!(
+                "Sleeping for {interval} milliseconds ({}sec)",
+                interval / 1000
+            );
             std::thread::sleep(std::time::Duration::from_millis(interval));
         }
         match service_manager.start().await {
-            Ok(()) => {
-                debug!("Started service {}", node.service_name);
+            Ok(start_duration) => {
+                debug!(
+                    "Started service {} in {start_duration:?}",
+                    node.service_name
+                );
+                if let Some(duration) = start_duration {
+                    if duration.as_millis() as u64 > interval {
+                        warn!(
+                            "Service {} took longer to start than the interval, increasing interval to {} milliseconds",
+                            node.service_name, duration.as_millis()
+                        );
+                        interval = duration.as_millis() as u64;
+                    }
+                }
                 node_registry.save()?;
             }
             Err(err) => {

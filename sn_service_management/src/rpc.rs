@@ -48,6 +48,8 @@ pub trait RpcActions: Sync {
     async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> Result<()>;
     async fn node_stop(&self, delay_millis: u64) -> Result<()>;
     async fn node_update(&self, delay_millis: u64) -> Result<()>;
+    /// Try to connect to the RPC endpoint and return the Duration it took to connect.
+    async fn try_connect(&self, max_attempts: u8) -> Result<Duration>;
     async fn update_log_level(&self, log_levels: String) -> Result<()>;
 }
 
@@ -220,6 +222,35 @@ impl RpcActions for RpcClient {
                 Error::RpcNodeUpdateError(e.to_string())
             })?;
         Ok(())
+    }
+
+    async fn try_connect(&self, max_attempts: u8) -> Result<Duration> {
+        let mut attempts = 0;
+        loop {
+            debug!(
+                "Attempting connection to node RPC endpoint at {}...",
+                self.endpoint
+            );
+            match SafeNodeClient::connect(self.endpoint.clone()).await {
+                Ok(_) => {
+                    debug!("Connection successful");
+                    break Ok(Duration::from_secs(
+                        attempts as u64 * self.retry_delay.as_secs(),
+                    ));
+                }
+                Err(_) => {
+                    attempts += 1;
+                    tokio::time::sleep(self.retry_delay).await;
+                    if attempts >= max_attempts {
+                        return Err(Error::RpcConnectionError(self.endpoint.clone()));
+                    }
+                    error!(
+                        "Could not connect to RPC endpoint {:?}. Retrying {attempts}/{}",
+                        self.endpoint, max_attempts
+                    );
+                }
+            }
+        }
     }
 
     async fn update_log_level(&self, log_levels: String) -> Result<()> {

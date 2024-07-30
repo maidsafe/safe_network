@@ -14,7 +14,7 @@ use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_logging::LogFormat;
 use sn_protocol::get_port_from_multiaddr;
 use sn_transfers::NanoTokens;
-use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr};
+use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
 
 pub struct NodeService<'a> {
     pub service_data: &'a mut NodeServiceData,
@@ -133,12 +133,13 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         self.service_data.status = ServiceStatus::Removed;
     }
 
-    async fn on_start(&mut self, pid: Option<u32>, full_refresh: bool) -> Result<()> {
-        let (connected_peers, pid, peer_id) = if full_refresh {
+    async fn on_start(&mut self, pid: Option<u32>, full_refresh: bool) -> Result<Option<Duration>> {
+        let (start_duration, connected_peers, pid, peer_id) = if full_refresh {
             debug!(
                 "Performing full refresh for {}",
                 self.service_data.service_name
             );
+            let connection_duration = self.rpc_actions.try_connect(120).await?;
             let node_info = self
                 .rpc_actions
                 .node_info()
@@ -175,6 +176,7 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             }
 
             (
+                Some(connection_duration),
                 Some(network_info.connected_peers),
                 pid,
                 Some(node_info.peer_id),
@@ -186,6 +188,7 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             );
             debug!("Previously assigned data will be used");
             (
+                None,
                 self.service_data.connected_peers.clone(),
                 pid,
                 self.service_data.peer_id,
@@ -196,7 +199,7 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         self.service_data.peer_id = peer_id;
         self.service_data.pid = pid;
         self.service_data.status = ServiceStatus::Running;
-        Ok(())
+        Ok(start_duration)
     }
 
     async fn on_stop(&mut self) -> Result<()> {

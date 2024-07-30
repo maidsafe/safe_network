@@ -12,7 +12,7 @@ use crate::{
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use service_manager::ServiceInstallCtx;
-use std::{ffi::OsString, path::PathBuf};
+use std::{ffi::OsString, path::PathBuf, time::Duration};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AuditorServiceData {
@@ -108,10 +108,14 @@ impl<'a> ServiceStateActions for AuditorService<'a> {
         self.service_data.status = ServiceStatus::Removed;
     }
 
-    async fn on_start(&mut self, pid: Option<u32>, _full_refresh: bool) -> Result<()> {
+    async fn on_start(
+        &mut self,
+        pid: Option<u32>,
+        _full_refresh: bool,
+    ) -> Result<Option<Duration>> {
         self.service_data.pid = pid;
         self.service_data.status = ServiceStatus::Running;
-        Ok(())
+        Ok(None)
     }
 
     async fn on_stop(&mut self) -> Result<()> {
