@@ -924,18 +924,16 @@ impl SwarmDriver {
                 keys: all_records,
             });
             for peer_id in replicate_targets {
-                let request_id = self
-                    .swarm
-                    .behaviour_mut()
-                    .request_response
-                    .send_request(&peer_id, request.clone());
-                debug!("Sending request {request_id:?} to peer {peer_id:?}");
-                let _ = self.pending_requests.insert(request_id, None);
+                self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                    req: request.clone(),
+                    peer: peer_id,
+                    sender: None,
+                });
+
                 let _ = self
                     .replication_targets
                     .insert(peer_id, now + REPLICATION_TIMEOUT);
             }
-            debug!("Pending Requests now: {:?}", self.pending_requests.len());
         }
 
         Ok(())
