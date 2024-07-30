@@ -530,7 +530,16 @@ impl NodeRecordStore {
         // self.records_cache.retain(|record| record.key != r.key);
         // Remove from cache if it already exists
         if let Some(&index) = self.records_cache_map.get(key) {
-            self.records_cache.remove(index);
+            if let Some(existing_record) = self.records_cache.remove(index) {
+                if existing_record.value == r.value {
+                    // we actually just want to keep what we have, and can assume it's been stored properly.
+
+                    // so we put it back in the cache
+                    self.records_cache.insert(index, existing_record);
+                    // and exit early.
+                    return Ok(());
+                }
+            }
             self.update_cache_indices(index);
         }
 
@@ -544,7 +553,7 @@ impl NodeRecordStore {
         // Push the new record to the back of the cache
         self.records_cache.push_back(r.clone());
         self.records_cache_map
-            .insert(r.key.clone(), self.records_cache.len() - 1);
+            .insert(key.clone(), self.records_cache.len() - 1);
 
         self.prune_records_if_needed(key)?;
 
