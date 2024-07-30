@@ -45,6 +45,7 @@ use sn_service_management::{
     UpgradeResult,
 };
 use sn_transfers::HotWallet;
+use std::time::Duration;
 use tracing::debug;
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
@@ -71,7 +72,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         }
     }
 
-    pub async fn start(&mut self) -> Result<()> {
+    pub async fn start(&mut self) -> Result<Option<Duration>> {
         info!("Starting the {} service", self.service.name());
         if ServiceStatus::Running == self.service.status() {
             // The last time we checked the service was running, but it doesn't mean it's actually
@@ -88,7 +89,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 if self.verbosity != VerbosityLevel::Minimal {
                     println!("The {} service is already running", self.service.name());
                 }
-                return Ok(());
+                return Ok(None);
             }
         }
 
@@ -106,7 +107,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         //
         // There might be many different `safenode` processes running, but since each service has
         // its own isolated binary, we use the binary path to uniquely identify it.
-        match self
+        let start_duration = match self
             .service_control
             .get_process_pid(&self.service.bin_path())
         {
@@ -116,11 +117,13 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                     self.service.name(),
                     pid
                 );
-                self.service.on_start(Some(pid), true).await?;
+                let start_duration = self.service.on_start(Some(pid), true).await?;
+
                 info!(
-                    "Service {} has been started successfully",
+                    "Service {} has been started successfully in {start_duration:?}",
                     self.service.name()
                 );
+                start_duration
             }
             Err(sn_service_management::error::Error::ServiceProcessNotFound(_)) => {
                 error!("The '{}' service has failed to start because ServiceProcessNotFound when fetching PID", self.service.name());
@@ -130,7 +133,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 error!("Failed to start service, because PID could not be obtained: {err}");
                 return Err(err.into());
             }
-        }
+        };
 
         if self.verbosity != VerbosityLevel::Minimal {
             println!("{} Started {} service", "✓".green(), self.service.name());
@@ -153,7 +156,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 self.service.log_dir_path().to_string_lossy()
             );
         }
-        Ok(())
+        Ok(start_duration)
     }
 
     pub async fn stop(&mut self) -> Result<()> {
@@ -337,7 +340,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
 
         if options.start_service {
             match self.start().await {
-                Ok(()) => {}
+                Ok(_) => {}
                 Err(err) => {
                     self.service
                         .set_version(&options.target_version.to_string());
@@ -654,6 +657,7 @@ mod tests {
             async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> ServiceControlResult<()>;
             async fn node_stop(&self, delay_millis: u64) -> ServiceControlResult<()>;
             async fn node_update(&self, delay_millis: u64) -> ServiceControlResult<()>;
+            async fn try_connect(&self, max_attempts: u8) -> ServiceControlResult<std::time::Duration>;
             async fn update_log_level(&self, log_levels: String) -> ServiceControlResult<()>;
         }
     }
