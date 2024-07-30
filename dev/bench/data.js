@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722261980629,
+  "lastUpdate": 1722331210146,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "131efe1c7a08850c2391a042dd27c15cf5139e1d",
-          "message": "fix(network): clients should not perform farthest relevant record check",
-          "timestamp": "2024-04-05T00:51:02Z",
-          "tree_id": "1d3a40e89b319c9c47d9596524555e6f94a258ee",
-          "url": "https://github.com/maidsafe/safe_network/commit/131efe1c7a08850c2391a042dd27c15cf5139e1d"
-        },
-        "date": 1712282422847,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2090688075615155,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6425651407868802,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.640969923593985,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.24979809162245,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bfa50a3f6c3181bfce7c5ae0c134fb9e95683329",
+          "message": "Merge pull request #2010 from joshuef/FurtherNetCodeSeperation\n\nnetworking: Performance tweaks",
+          "timestamp": "2024-07-30T08:20:11Z",
+          "tree_id": "b5d45b3dd158bc63339076e3d7f4b219c0551d94",
+          "url": "https://github.com/maidsafe/safe_network/commit/bfa50a3f6c3181bfce7c5ae0c134fb9e95683329"
+        },
+        "date": 1722331203217,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2130666551722455,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6361139722833036,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.45846501337534,
             "unit": "MiB/s"
           }
         ]
