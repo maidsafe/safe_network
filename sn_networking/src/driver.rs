@@ -607,6 +607,9 @@ impl NetworkBuilder {
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
+            // kept here to ensure we can push messages to the channel
+            // and not block the processing thread unintentionally
+            network_cmd_sender: network_swarm_cmd_sender.clone(),
             network_cmd_receiver: network_swarm_cmd_receiver,
             local_cmd_receiver: local_swarm_cmd_receiver,
             event_sender: network_event_sender,
@@ -656,6 +659,7 @@ pub struct SwarmDriver {
     #[cfg(feature = "open-metrics")]
     pub(crate) network_metrics: Option<NetworkMetrics>,
 
+    network_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
     local_cmd_receiver: mpsc::Receiver<LocalSwarmCmd>,
     network_cmd_receiver: mpsc::Receiver<NetworkSwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
@@ -788,6 +792,26 @@ impl SwarmDriver {
         }
 
         farthest_distance
+    }
+
+    /// Pushes NetworkSwarmCmd off thread so as to be non-blocking
+    /// this is a wrapper around the `mpsc::Sender::send` call
+    pub(crate) fn queue_network_swarm_cmd(&self, event: NetworkSwarmCmd) {
+        let event_sender = self.network_cmd_sender.clone();
+        let capacity = event_sender.capacity();
+
+        // push the event off thread so as to be non-blocking
+        let _handle = spawn(async move {
+            if capacity == 0 {
+                warn!(
+                    "NetworkSwarmCmd channel is full. Await capacity to send: {:?}",
+                    event
+                );
+            }
+            if let Err(error) = event_sender.send(event).await {
+                error!("SwarmDriver failed to send event: {}", error);
+            }
+        });
     }
 
     /// Sends an event after pushing it off thread so as to be non-blocking

@@ -7,7 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    sort_peers_by_address, MsgResponder, NetworkError, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+    cmd::NetworkSwarmCmd, sort_peers_by_address, MsgResponder, NetworkError, NetworkEvent,
+    SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::request_response::{self, Message};
@@ -41,11 +42,11 @@ impl SwarmDriver {
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::Replicate(Ok(())),
                             );
-                            self.swarm
-                                .behaviour_mut()
-                                .request_response
-                                .send_response(channel, response)
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendResponse {
+                                resp: response,
+                                channel: MsgResponder::FromPeer(channel),
+                            });
 
                             self.add_keys_to_replication_fetcher(holder, keys);
                         }
@@ -56,11 +57,10 @@ impl SwarmDriver {
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::QuoteVerification(Ok(())),
                             );
-                            self.swarm
-                                .behaviour_mut()
-                                .request_response
-                                .send_response(channel, response)
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendResponse {
+                                resp: response,
+                                channel: MsgResponder::FromPeer(channel),
+                            });
 
                             // The keypair is required to verify the quotes,
                             // hence throw it up to Network layer for further actions.
@@ -82,11 +82,11 @@ impl SwarmDriver {
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::PeerConsideredAsBad(Ok(())),
                             );
-                            self.swarm
-                                .behaviour_mut()
-                                .request_response
-                                .send_response(channel, response)
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendResponse {
+                                resp: response,
+                                channel: MsgResponder::FromPeer(channel),
+                            });
 
                             if bad_peer == NetworkAddress::from_peer(self.self_peer_id) {
                                 warn!("Peer {detected_by:?} consider us as BAD, due to {bad_behaviour:?}.");
