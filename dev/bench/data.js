@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722331326914,
+  "lastUpdate": 1722331329557,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "131efe1c7a08850c2391a042dd27c15cf5139e1d",
-          "message": "fix(network): clients should not perform farthest relevant record check",
-          "timestamp": "2024-04-05T00:51:02Z",
-          "tree_id": "1d3a40e89b319c9c47d9596524555e6f94a258ee",
-          "url": "https://github.com/maidsafe/safe_network/commit/131efe1c7a08850c2391a042dd27c15cf5139e1d"
-        },
-        "date": 1712282535317,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 182,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gabrielviganotti@gmail.com",
             "name": "bochaco",
             "username": "bochaco"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bfa50a3f6c3181bfce7c5ae0c134fb9e95683329",
+          "message": "Merge pull request #2010 from joshuef/FurtherNetCodeSeperation\n\nnetworking: Performance tweaks",
+          "timestamp": "2024-07-30T08:20:11Z",
+          "tree_id": "b5d45b3dd158bc63339076e3d7f4b219c0551d94",
+          "url": "https://github.com/maidsafe/safe_network/commit/bfa50a3f6c3181bfce7c5ae0c134fb9e95683329"
+        },
+        "date": 1722331328503,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 191,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
