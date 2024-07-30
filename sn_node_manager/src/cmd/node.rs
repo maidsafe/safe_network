@@ -508,6 +508,8 @@ pub async fn upgrade(
     trace!("service_indices len: {}", service_indices.len());
     let mut upgrade_summary = Vec::new();
 
+    let mut dyn_interval = DynamicInterval::new();
+    dyn_interval.add_interval_ms(interval);
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let env_variables = if provided_env_variables.is_some() {
@@ -532,13 +534,21 @@ pub async fn upgrade(
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
         match service_manager.upgrade(options).await {
-            Ok(upgrade_result) => {
+            Ok((upgrade_result, start_duration)) => {
+                if let Some(start_duration) = start_duration {
+                    dyn_interval.add_interval_ms(start_duration.as_millis() as u64);
+                }
                 info!("Service: {service_name} has been upgraded, result: {upgrade_result:?}",);
                 if upgrade_result != UpgradeResult::NotRequired {
                     // It doesn't seem useful to apply the interval if there was no upgrade
                     // required for the previous service.
-                    debug!("Sleeping for {} milliseconds", interval);
-                    std::thread::sleep(std::time::Duration::from_millis(interval));
+                    debug!(
+                        "Sleeping for {} milliseconds",
+                        dyn_interval.get_interval_ms()
+                    );
+                    std::thread::sleep(std::time::Duration::from_millis(
+                        dyn_interval.get_interval_ms(),
+                    ));
                 }
                 upgrade_summary.push((
                     service_manager.service.service_data.service_name.clone(),

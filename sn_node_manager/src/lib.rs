@@ -313,7 +313,10 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         Ok(())
     }
 
-    pub async fn upgrade(&mut self, options: UpgradeOptions) -> Result<UpgradeResult> {
+    pub async fn upgrade(
+        &mut self,
+        options: UpgradeOptions,
+    ) -> Result<(UpgradeResult, Option<Duration>)> {
         let current_version = Version::parse(&self.service.version())?;
         if !options.force
             && (current_version == options.target_version
@@ -323,7 +326,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 "The service {} is already at the latest version. No upgrade is required.",
                 self.service.name()
             );
-            return Ok(UpgradeResult::NotRequired);
+            return Ok((UpgradeResult::NotRequired, None));
         }
 
         debug!("Stopping the service and copying the binary");
@@ -338,33 +341,45 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
             self.service.is_user_mode(),
         )?;
 
-        if options.start_service {
+        let start_duration = if options.start_service {
             match self.start().await {
-                Ok(_) => {}
+                Ok(start_duration) => start_duration,
                 Err(err) => {
                     self.service
                         .set_version(&options.target_version.to_string());
                     info!("The service has been upgraded but could not be started: {err}");
-                    return Ok(UpgradeResult::UpgradedButNotStarted(
-                        current_version.to_string(),
-                        options.target_version.to_string(),
-                        err.to_string(),
+                    return Ok((
+                        UpgradeResult::UpgradedButNotStarted(
+                            current_version.to_string(),
+                            options.target_version.to_string(),
+                            err.to_string(),
+                        ),
+                        None,
                     ));
                 }
             }
-        }
+        } else {
+            None
+        };
         self.service
             .set_version(&options.target_version.to_string());
 
-        match options.force {
-            true => Ok(UpgradeResult::Forced(
-                current_version.to_string(),
-                options.target_version.to_string(),
-            )),
-            false => Ok(UpgradeResult::Upgraded(
-                current_version.to_string(),
-                options.target_version.to_string(),
-            )),
+        if options.force {
+            Ok((
+                UpgradeResult::Forced(
+                    current_version.to_string(),
+                    options.target_version.to_string(),
+                ),
+                start_duration,
+            ))
+        } else {
+            Ok((
+                UpgradeResult::Upgraded(
+                    current_version.to_string(),
+                    options.target_version.to_string(),
+                ),
+                start_duration,
+            ))
         }
     }
 }
@@ -1605,7 +1620,7 @@ mod tests {
             VerbosityLevel::Normal,
         );
 
-        let upgrade_result = service_manager
+        let (upgrade_result, _) = service_manager
             .upgrade(UpgradeOptions {
                 auto_restart: false,
                 bootstrap_peers: Vec::new(),
@@ -1692,7 +1707,7 @@ mod tests {
             VerbosityLevel::Normal,
         );
 
-        let upgrade_result = service_manager
+        let (upgrade_result, _) = service_manager
             .upgrade(UpgradeOptions {
                 auto_restart: false,
                 bootstrap_peers: Vec::new(),
@@ -1822,7 +1837,7 @@ mod tests {
             VerbosityLevel::Normal,
         );
 
-        let upgrade_result = service_manager
+        let (upgrade_result, _) = service_manager
             .upgrade(UpgradeOptions {
                 auto_restart: false,
                 bootstrap_peers: Vec::new(),
@@ -1965,7 +1980,7 @@ mod tests {
             VerbosityLevel::Normal,
         );
 
-        let upgrade_result = service_manager
+        let (upgrade_result, _) = service_manager
             .upgrade(UpgradeOptions {
                 auto_restart: false,
                 bootstrap_peers: Vec::new(),
@@ -2103,7 +2118,7 @@ mod tests {
             VerbosityLevel::Normal,
         );
 
-        let upgrade_result = service_manager
+        let (upgrade_result, _) = service_manager
             .upgrade(UpgradeOptions {
                 auto_restart: false,
                 bootstrap_peers: Vec::new(),
@@ -2242,7 +2257,7 @@ mod tests {
             VerbosityLevel::Normal,
         );
 
-        let upgrade_result = service_manager
+        let (upgrade_result, _) = service_manager
             .upgrade(UpgradeOptions {
                 auto_restart: false,
                 bootstrap_peers: Vec::new(),
