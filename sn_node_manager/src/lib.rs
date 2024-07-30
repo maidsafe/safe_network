@@ -45,7 +45,7 @@ use sn_service_management::{
     UpgradeResult,
 };
 use sn_transfers::HotWallet;
-use std::time::Duration;
+use std::{collections::VecDeque, time::Duration};
 use tracing::debug;
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
@@ -618,6 +618,34 @@ fn format_status_without_colour(status: &ServiceStatus) -> String {
         ServiceStatus::Stopped => "STOPPED".to_string(),
         ServiceStatus::Added => "ADDED".to_string(),
         ServiceStatus::Removed => "REMOVED".to_string(),
+    }
+}
+
+/// Moving average of intervals.
+/// This is used to determine the average sleep between starting node services.
+struct DynamicInterval {
+    last_reported_intervals_ms: VecDeque<u64>,
+    window_size: u8,
+}
+
+impl DynamicInterval {
+    pub fn new() -> Self {
+        DynamicInterval {
+            last_reported_intervals_ms: VecDeque::new(),
+            window_size: 3,
+        }
+    }
+
+    pub fn add_interval_ms(&mut self, interval_ms: u64) {
+        self.last_reported_intervals_ms.push_back(interval_ms);
+        if self.last_reported_intervals_ms.len() > self.window_size as usize {
+            self.last_reported_intervals_ms.pop_front();
+        }
+    }
+
+    pub fn get_interval_ms(&self) -> u64 {
+        self.last_reported_intervals_ms.iter().sum::<u64>()
+            / self.last_reported_intervals_ms.len() as u64
     }
 }
 
