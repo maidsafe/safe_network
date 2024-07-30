@@ -623,6 +623,7 @@ impl SwarmDriver {
                 let new_keys_to_fetch = self
                     .replication_fetcher
                     .notify_about_new_put(key.clone(), record_type);
+
                 if !new_keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
                 }
