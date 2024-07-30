@@ -284,6 +284,11 @@ pub enum SubCmd {
     /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "start")]
     Start {
+        /// The max time in milliseconds to wait for the RPC connection to the node to be established.
+        ///
+        /// The node is marked as failed if the connection is not established within this time.
+        #[clap(long, default_value = "120000")]
+        connection_timeout: u64,
         /// An interval applied between launching each service.
         ///
         /// Units are milliseconds.
@@ -343,6 +348,11 @@ pub enum SubCmd {
     /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "upgrade")]
     Upgrade {
+        /// The max time in milliseconds to wait for the RPC connection to the node to be established.
+        ///
+        /// The upgrade will fail if the connection is not established within this time.
+        #[clap(long, default_value = "120000")]
+        connection_timeout: u64,
         /// Set this flag to upgrade the nodes without automatically starting them.
         ///
         /// Can be useful for testing scenarios.
@@ -1221,10 +1231,20 @@ async fn main() -> Result<()> {
         } => cmd::node::remove(keep_directories, peer_ids, service_names, verbosity).await,
         SubCmd::Reset { force } => cmd::node::reset(force, verbosity).await,
         SubCmd::Start {
+            connection_timeout,
             interval,
             peer_id: peer_ids,
             service_name: service_names,
-        } => cmd::node::start(interval, peer_ids, service_names, verbosity).await,
+        } => {
+            cmd::node::start(
+                connection_timeout,
+                interval,
+                peer_ids,
+                service_names,
+                verbosity,
+            )
+            .await
+        }
         SubCmd::Status {
             details,
             fail,
@@ -1235,6 +1255,7 @@ async fn main() -> Result<()> {
             service_name: service_names,
         } => cmd::node::stop(peer_ids, service_names, verbosity).await,
         SubCmd::Upgrade {
+            connection_timeout,
             do_not_start,
             force,
             interval,
@@ -1246,6 +1267,7 @@ async fn main() -> Result<()> {
             version,
         } => {
             cmd::node::upgrade(
+                connection_timeout,
                 do_not_start,
                 path,
                 force,

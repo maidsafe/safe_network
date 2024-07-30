@@ -32,7 +32,7 @@ use sn_service_management::{
     NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
 use sn_transfers::HotWallet;
-use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
+use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr, time::Duration};
 use tracing::debug;
 
 /// Returns the added service names
@@ -295,6 +295,7 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
 }
 
 pub async fn start(
+    connection_timeout_ms: u64,
     interval: u64,
     peer_ids: Vec<String>,
     service_names: Vec<String>,
@@ -332,7 +333,8 @@ pub async fn start(
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node, Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client))
+            .with_connection_timeout(Duration::from_millis(connection_timeout_ms));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         if service_manager.service.status() != ServiceStatus::Running {
@@ -355,13 +357,15 @@ pub async fn start(
                     "Started service {} in {start_duration:?}",
                     node.service_name
                 );
-                if let Some(duration) = start_duration {
-                    dyn_interval.add_interval_ms(duration.as_millis() as u64);
+                if let Some(start_duration) = start_duration {
+                    dyn_interval.add_interval_ms(start_duration.as_millis() as u64);
                 }
                 node_registry.save()?;
             }
             Err(err) => {
                 error!("Failed to start service {}: {err}", node.service_name);
+                // increment the interval by 2x incase of a failure
+                dyn_interval.add_interval_ms(dyn_interval.get_interval_ms() * 2);
                 failed_services.push((node.service_name.clone(), err.to_string()))
             }
         }
@@ -441,6 +445,7 @@ pub async fn stop(
 }
 
 pub async fn upgrade(
+    connection_timeout_ms: u64,
     do_not_start: bool,
     custom_bin_path: Option<PathBuf>,
     force: bool,
@@ -529,7 +534,8 @@ pub async fn upgrade(
         let service_name = node.service_name.clone();
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node, Box::new(rpc_client));
+        let service = NodeService::new(node, Box::new(rpc_client))
+            .with_connection_timeout(Duration::from_millis(connection_timeout_ms));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
@@ -557,6 +563,8 @@ pub async fn upgrade(
             }
             Err(err) => {
                 error!("Error upgrading service {service_name}: {err}");
+                // increment the interval by 2x incase of a failure
+                dyn_interval.add_interval_ms(dyn_interval.get_interval_ms() * 2);
                 upgrade_summary.push((
                     node.service_name.clone(),
                     UpgradeResult::Error(format!("Error: {}", err)),
@@ -586,6 +594,7 @@ pub async fn upgrade(
 pub async fn maintain_n_running_nodes(
     auto_restart: bool,
     auto_set_nat_flags: bool,
+    connection_timeout_ms: u64,
     max_nodes_to_run: u16,
     data_dir_path: Option<PathBuf>,
     enable_metrics_server: bool,
@@ -665,7 +674,14 @@ pub async fn maintain_n_running_nodes(
                     ?to_start_count,
                     "We are starting these pre-existing services: {nodes_to_start:?}"
                 );
-                start(start_node_interval, vec![], nodes_to_start, verbosity).await?;
+                start(
+                    connection_timeout_ms,
+                    start_node_interval,
+                    vec![],
+                    nodes_to_start,
+                    verbosity,
+                )
+                .await?;
             } else {
                 // add + start nodes
                 let to_add_count = to_start_count - inactive_nodes.len();
@@ -703,7 +719,14 @@ pub async fn maintain_n_running_nodes(
                 .await?;
                 inactive_nodes.extend(added_service_list);
 
-                start(start_node_interval, vec![], inactive_nodes, verbosity).await?;
+                start(
+                    connection_timeout_ms,
+                    start_node_interval,
+                    vec![],
+                    inactive_nodes,
+                    verbosity,
+                )
+                .await?;
             }
         }
         Ordering::Equal => {

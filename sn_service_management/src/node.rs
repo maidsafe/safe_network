@@ -16,9 +16,13 @@ use sn_protocol::get_port_from_multiaddr;
 use sn_transfers::NanoTokens;
 use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
 
+const DEFAULT_RPC_CONNECTION_TIMEOUT: Duration = Duration::from_secs(120);
+
 pub struct NodeService<'a> {
     pub service_data: &'a mut NodeServiceData,
     pub rpc_actions: Box<dyn RpcActions + Send>,
+    /// Timeout for connecting to the node via RPC
+    pub connection_timeout: Duration,
 }
 
 impl<'a> NodeService<'a> {
@@ -29,7 +33,13 @@ impl<'a> NodeService<'a> {
         NodeService {
             rpc_actions,
             service_data,
+            connection_timeout: DEFAULT_RPC_CONNECTION_TIMEOUT,
         }
+    }
+
+    pub fn with_connection_timeout(mut self, connection_timeout: Duration) -> NodeService<'a> {
+        self.connection_timeout = connection_timeout;
+        self
     }
 }
 
@@ -139,7 +149,10 @@ impl<'a> ServiceStateActions for NodeService<'a> {
                 "Performing full refresh for {}",
                 self.service_data.service_name
             );
-            let connection_duration = self.rpc_actions.try_connect(120).await?;
+            let connection_duration = self
+                .rpc_actions
+                .try_connect(self.connection_timeout)
+                .await?;
             let node_info = self
                 .rpc_actions
                 .node_info()

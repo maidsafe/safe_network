@@ -49,7 +49,7 @@ pub trait RpcActions: Sync {
     async fn node_stop(&self, delay_millis: u64) -> Result<()>;
     async fn node_update(&self, delay_millis: u64) -> Result<()>;
     /// Try to connect to the RPC endpoint and return the Duration it took to connect.
-    async fn try_connect(&self, max_attempts: u8) -> Result<Duration>;
+    async fn try_connect(&self, timeout: Duration) -> Result<Duration>;
     async fn update_log_level(&self, log_levels: String) -> Result<()>;
 }
 
@@ -224,7 +224,12 @@ impl RpcActions for RpcClient {
         Ok(())
     }
 
-    async fn try_connect(&self, max_attempts: u8) -> Result<Duration> {
+    async fn try_connect(&self, timeout: Duration) -> Result<Duration> {
+        let max_attempts = std::cmp::max(1, timeout.as_secs() / self.retry_delay.as_secs());
+        trace!(
+            "RPC conneciton max attempts set to: {max_attempts} with retry_delay of {:?}",
+            self.retry_delay
+        );
         let mut attempts = 0;
         loop {
             debug!(
@@ -234,9 +239,7 @@ impl RpcActions for RpcClient {
             match SafeNodeClient::connect(self.endpoint.clone()).await {
                 Ok(_) => {
                     debug!("Connection successful");
-                    break Ok(Duration::from_secs(
-                        attempts as u64 * self.retry_delay.as_secs(),
-                    ));
+                    break Ok(Duration::from_secs(attempts * self.retry_delay.as_secs()));
                 }
                 Err(_) => {
                     attempts += 1;
