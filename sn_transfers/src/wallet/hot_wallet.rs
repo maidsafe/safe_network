@@ -359,6 +359,13 @@ impl HotWallet {
             .collect()
     }
 
+    /// Checks whether the specified cash_note already presents
+    pub fn cash_note_presents(&mut self, id: &UniquePubkey) -> bool {
+        self.watchonly_wallet
+            .available_cash_notes()
+            .contains_key(id)
+    }
+
     /// Returns all available cash_notes and an exclusive access to the wallet so no concurrent processes can
     /// get available cash_notes while we're modifying the wallet
     /// once the updated wallet is stored to disk it is safe to drop the WalletExclusiveAccess
