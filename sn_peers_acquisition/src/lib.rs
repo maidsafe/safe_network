@@ -192,7 +192,12 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
 pub async fn get_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
     let mut retries = 0;
 
+    #[cfg(not(target_arch = "wasm32"))]
     let request_client = Client::builder().timeout(Duration::from_secs(10)).build()?;
+    // Wasm does not have the timeout method yet.
+    #[cfg(target_arch = "wasm32")]
+    let request_client = Client::builder().build()?;
+
     loop {
         let response = request_client.get(url.clone()).send().await;
 
