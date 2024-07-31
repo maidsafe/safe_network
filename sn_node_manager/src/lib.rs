@@ -741,6 +741,10 @@ mod tests {
             )))
             .times(1)
             .returning(|_| Ok(1000));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -842,6 +846,10 @@ mod tests {
             )))
             .times(1)
             .returning(|_| Ok(1000));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -1014,6 +1022,10 @@ mod tests {
             )))
             .times(1)
             .returning(|_| Ok(1000));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -1180,6 +1192,10 @@ mod tests {
             )))
             .times(1)
             .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -1564,6 +1580,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(2000));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -1781,6 +1801,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(2000));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2201,6 +2225,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(2000));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2369,6 +2397,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2520,6 +2552,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2674,6 +2710,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2825,6 +2865,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2976,6 +3020,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -3130,6 +3178,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -3284,6 +3336,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -3438,6 +3494,10 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_try_connect()
+            .times(1)
+            .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
