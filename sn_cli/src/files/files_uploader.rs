@@ -462,10 +462,10 @@ impl StdOutPrinter {
         for (_, file_name, addr) in completed_files {
             let hex_addr = addr.to_hex();
             if let Some(file_name) = file_name.to_str() {
-                println!("\"{file_name}\" {hex_addr}");
+                println!("Uploaded \"{file_name}\" to address {hex_addr}");
                 info!("Uploaded {file_name} to {hex_addr}");
             } else {
-                println!("\"{file_name:?}\" {hex_addr}");
+                println!("Uploaded \"{file_name:?}\" to address {hex_addr}");
                 info!("Uploaded {file_name:?} to {hex_addr}");
             }
         }
