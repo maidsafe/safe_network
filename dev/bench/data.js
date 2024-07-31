@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722446885340,
+  "lastUpdate": 1722447004499,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "71ea622c1bcbed9917b778440d271eb4d6024f4e",
-          "message": "fix(protocol): evaluate NETWORK_VERSION_MODE at compile time",
-          "timestamp": "2024-04-08T07:29:16Z",
-          "tree_id": "6f546ba936b6081bb787d80346ebb2358fa9c007",
-          "url": "https://github.com/maidsafe/safe_network/commit/71ea622c1bcbed9917b778440d271eb4d6024f4e"
-        },
-        "date": 1712567017111,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 136,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "59d852815d5d827a091d9b3c18b8c00cc49c7f45",
+          "message": "Merge pull request #2016 from mickvandijke/2012-cli-add-download-duration\n\nchore(cli): [#2012] show download time per file",
+          "timestamp": "2024-07-31T16:36:08Z",
+          "tree_id": "b54e90c87d594597ed01851f275bd533311acc7b",
+          "url": "https://github.com/maidsafe/safe_network/commit/59d852815d5d827a091d9b3c18b8c00cc49c7f45"
+        },
+        "date": 1722447003977,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 135,
             "unit": "MB"
           }
         ]
