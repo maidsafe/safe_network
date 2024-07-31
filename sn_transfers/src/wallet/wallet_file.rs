@@ -68,7 +68,7 @@ pub(super) fn remove_unconfirmed_spend_requests(
     for spend in unconfirmed_spend_requests.iter() {
         let spend_hex_name = spend.address().to_hex();
         let spend_file_path = spends_dir.join(&spend_hex_name);
-        debug!("Writing spend to: {spend_file_path:?}");
+        debug!("Writing confirmed_spend instance to: {spend_file_path:?}");
         fs::write(spend_file_path, spend.to_bytes())?;
     }
 
@@ -87,6 +87,7 @@ pub(super) fn get_confirmed_spend(
     let spends_dir = wallet_dir.join(CONFIRMED_SPENDS_DIR_NAME);
     let spend_hex_name = spend_addr.to_hex();
     let spend_file_path = spends_dir.join(spend_hex_name);
+    debug!("Try to getting a confirmed_spend instance from: {spend_file_path:?}");
     if !spend_file_path.is_file() {
         return Ok(None);
     }
@@ -131,7 +132,7 @@ where
         fs::create_dir_all(&created_cash_notes_path)?;
 
         let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
-        debug!("Writing cash note to: {cash_note_file_path:?}");
+        debug!("Writing cash_note file to: {cash_note_file_path:?}");
 
         let hex = cash_note
             .to_hex()
@@ -152,9 +153,8 @@ where
         let unique_pubkey_name = *SpendAddress::from_unique_pubkey(cash_note_key).xorname();
         let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
 
-        debug!("Removing cash note from: {:?}", created_cash_notes_path);
-
         let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
+        debug!("Removing cash_note file from: {:?}", cash_note_file_path);
 
         fs::remove_file(cash_note_file_path)?;
     }
