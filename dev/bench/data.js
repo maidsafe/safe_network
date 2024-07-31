@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722445324159,
+  "lastUpdate": 1722445326024,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "65924b83b2ea7e1dc66784de7006dbb5a5984adc",
-          "message": "fix: orphan parent bug, improve fault detection and logging",
-          "timestamp": "2024-04-05T17:23:58Z",
-          "tree_id": "128e7e220d0395a89db66948f31604a66c580ada",
-          "url": "https://github.com/maidsafe/safe_network/commit/65924b83b2ea7e1dc66784de7006dbb5a5984adc"
-        },
-        "date": 1712340308198,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 186,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c26821584b0e4632ea825d5e9b1bdbbc4a9371a8",
+          "message": "Merge pull request #2018 from mickvandijke/2014-cli-upload-output-file-address\n\nchore(cli): [#2014] explicitly show the uploaded file's address",
+          "timestamp": "2024-07-31T16:08:14Z",
+          "tree_id": "63b7663fdf9ae6608cd8946a9d3a9ae11700097e",
+          "url": "https://github.com/maidsafe/safe_network/commit/c26821584b0e4632ea825d5e9b1bdbbc4a9371a8"
+        },
+        "date": 1722445325543,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 192,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
