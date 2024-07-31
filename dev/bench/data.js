@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722331332317,
+  "lastUpdate": 1722431346376,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "52d9673f6217674ac26e54d1274de5daec9fd058",
-          "message": "feat(register): expose API to get children of an entry",
-          "timestamp": "2024-04-05T13:40:58Z",
-          "tree_id": "8213f780fb9bdd18c182310c8f3f85873803a539",
-          "url": "https://github.com/maidsafe/safe_network/commit/52d9673f6217674ac26e54d1274de5daec9fd058"
-        },
-        "date": 1712327234765,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.218959397332568,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6456953804788355,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.121139334497784,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.45846501337534,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "79cc0a6f0bbfa3c6d6bdd235c67c1e0b197b11a7",
+          "message": "Merge pull request #2015 from maqi/check_confirmed_spend\n\nchore: correct logging of cash_note and confirmed_spend disk ops",
+          "timestamp": "2024-07-31T12:09:44Z",
+          "tree_id": "4c1be76628339be4bc6f8696b167fd284723a0fa",
+          "url": "https://github.com/maidsafe/safe_network/commit/79cc0a6f0bbfa3c6d6bdd235c67c1e0b197b11a7"
+        },
+        "date": 1722431339701,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.23555711930575,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6412139112012183,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.00361930629238,
             "unit": "MiB/s"
           }
         ]
