@@ -124,12 +124,13 @@ where
 {
     // The create cash_notes dir within the wallet dir.
     let created_cash_notes_path = wallet_dir.join(CASHNOTES_DIR_NAME);
-    for cash_note in created_cash_notes {
-        let unique_pubkey_name =
-            *SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey()).xorname();
-        let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
+    fs::create_dir_all(&created_cash_notes_path)?;
 
-        fs::create_dir_all(&created_cash_notes_path)?;
+    for cash_note in created_cash_notes {
+        let unique_pubkey_file_name = format!(
+            "{}.cash_note",
+            SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey()).to_hex()
+        );
 
         let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
         debug!("Writing cash_note file to: {cash_note_file_path:?}");

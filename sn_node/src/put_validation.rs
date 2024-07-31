@@ -545,6 +545,11 @@ impl Node {
         // check for cash notes that we have already spent
         // this can happen in cases where the client retries a failed PUT after we have already used the cash note
         cash_notes.retain(|cash_note| {
+            let already_present = wallet.cash_note_presents(&cash_note.unique_pubkey());
+            if already_present {
+                return !already_present;
+            }
+
             let spend_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
             let already_spent = matches!(wallet.get_confirmed_spend(spend_addr), Ok(Some(_spend)));
             if already_spent {
@@ -557,7 +562,7 @@ impl Node {
             !already_spent
         });
         if cash_notes.is_empty() {
-            info!("All incoming cash notes were already spent, no need to further process");
+            info!("All incoming cash notes were already received, no need to further process");
             return Err(Error::ReusedPayment);
         }
 
