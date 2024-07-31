@@ -20,6 +20,7 @@ use indicatif::ProgressBar;
 use walkdir::WalkDir;
 use xor_name::XorName;
 
+use crate::utils::duration_to_minute_seconds_miliseconds_string;
 use sn_client::{
     protocol::storage::{Chunk, ChunkAddress, RetryStrategy},
     FilesApi, FilesDownload, FilesDownloadEvent,
@@ -97,6 +98,8 @@ pub async fn download_file(
     batch_size: usize,
     retry_strategy: RetryStrategy,
 ) {
+    let start_time = std::time::Instant::now();
+
     let mut files_download = FilesDownload::new(files_api.clone())
         .set_batch_size(batch_size)
         .set_show_holders(show_holders)
@@ -110,6 +113,7 @@ pub async fn download_file(
 
     let progress_handler = tokio::spawn(async move {
         let mut progress_bar: Option<ProgressBar> = None;
+
         // The loop is guaranteed to end, as the channel will be closed when the download completes or errors out.
         while let Some(event) = download_events_rx.recv().await {
             match event {
@@ -145,6 +149,7 @@ pub async fn download_file(
                 }
             }
         }
+
         if let Some(progress_bar) = progress_bar {
             progress_bar.finish_and_clear();
         }
@@ -158,6 +163,8 @@ pub async fn download_file(
         )
         .await;
 
+    let duration = start_time.elapsed();
+
     // await on the progress handler first as we want to clear the progress bar before printing things.
     let _ = progress_handler.await;
     match download_result {
@@ -170,6 +177,8 @@ pub async fn download_file(
                 "Saved {file_name:?} at {}",
                 downloaded_file_path.to_string_lossy()
             );
+            let elapsed_time = duration_to_minute_seconds_miliseconds_string(duration);
+            println!("File downloaded in {elapsed_time}");
         }
         Err(error) => {
             error!("Error downloading {file_name:?}: {error}");

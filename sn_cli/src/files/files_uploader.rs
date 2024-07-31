@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::get_progress_bar;
+use crate::utils::duration_to_minute_seconds_string;
 use crate::ChunkManager;
 use bytes::Bytes;
 use color_eyre::{eyre::eyre, Report, Result};
@@ -424,13 +425,7 @@ impl FilesUploadStatusNotifier for StdOutPrinter {
         elapsed_time: Duration,
         chunks_to_upload_len: usize,
     ) {
-        let elapsed_minutes = elapsed_time.as_secs() / 60;
-        let elapsed_seconds = elapsed_time.as_secs() % 60;
-        let elapsed = if elapsed_minutes > 0 {
-            format!("{elapsed_minutes} minutes {elapsed_seconds} seconds")
-        } else {
-            format!("{elapsed_seconds} seconds")
-        };
+        let elapsed = duration_to_minute_seconds_string(elapsed_time);
 
         println!(
             "Among {chunks_to_upload_len} chunks, found {} already existed in network, uploaded \
