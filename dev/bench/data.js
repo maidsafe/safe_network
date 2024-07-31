@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722446009353,
+  "lastUpdate": 1722446010853,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "3233f69c2399efce6a1b8f99256a50db9fb6d6e6",
-          "message": "ci: ensure cross uses version-mode variable\n\nThe ARM builds are done using a tool called `cross`, which uses Docker containers, and therefore the\ncompile-time variables need to be passed to the containers. This is done using the\n`CROSS_CONTAINER_OPTS` variable.\n\nI tested this locally to confirm the desired effect.",
-          "timestamp": "2024-04-05T19:50:24Z",
-          "tree_id": "1b7b406c0a184f8c7733fd8b1d5faf9bc4d7208f",
-          "url": "https://github.com/maidsafe/safe_network/commit/3233f69c2399efce6a1b8f99256a50db9fb6d6e6"
-        },
-        "date": 1712349165094,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 6375,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 27068,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 26392,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "1136410bb24f3fa0a0585d904faecb169d430e7b",
+          "message": "Merge pull request #2017 from maqi/cash_note_name\n\nfix(node): check whether already received an incoming payment",
+          "timestamp": "2024-07-31T16:19:55Z",
+          "tree_id": "0812af9fda1f2cfafaeaa48eab9548a9e44909c1",
+          "url": "https://github.com/maidsafe/safe_network/commit/1136410bb24f3fa0a0585d904faecb169d430e7b"
+        },
+        "date": 1722446010501,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4325,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 22233,
             "unit": "ms"
           },
           {
