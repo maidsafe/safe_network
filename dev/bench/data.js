@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722447008314,
+  "lastUpdate": 1722507284975,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "f50a71f556fe4abe7313a608c2883ecf5fefdf9d",
-          "message": "feat: report protocol mismatch error",
-          "timestamp": "2024-04-08T08:37:28Z",
-          "tree_id": "cebec7cf4e27ccc8e0ee8f1f512f04dd8e80ee00",
-          "url": "https://github.com/maidsafe/safe_network/commit/f50a71f556fe4abe7313a608c2883ecf5fefdf9d"
-        },
-        "date": 1712567994906,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2208411018771808,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6481137189851083,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.97909303388285,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.00111424052652,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4255e0d2503b4c014b219a9570d79b00ae324885",
+          "message": "Merge pull request #2007 from maqi/relax_on_parent_spend_verification\n\nchore(node): trust a parent spend with majority",
+          "timestamp": "2024-08-01T09:16:31Z",
+          "tree_id": "83630f9fdbbec9e017921043d221d2d1304f962e",
+          "url": "https://github.com/maidsafe/safe_network/commit/4255e0d2503b4c014b219a9570d79b00ae324885"
+        },
+        "date": 1722507278037,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2365079040528426,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.5285742877814257,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.620812989850734,
             "unit": "MiB/s"
           }
         ]
