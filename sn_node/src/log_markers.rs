@@ -20,10 +20,10 @@ pub enum Marker<'a> {
     NodeConnectedToNetwork,
 
     /// Peer was added to the routing table
-    PeerAddedToRoutingTable(PeerId),
+    PeerAddedToRoutingTable(&'a PeerId),
 
     /// Peer was removed from the routing table
-    PeerRemovedFromRoutingTable(PeerId),
+    PeerRemovedFromRoutingTable(&'a PeerId),
 
     /// The number of peers in the routing table
     PeersInRoutingTable(usize),
@@ -50,6 +50,9 @@ pub enum Marker<'a> {
     ValidPaidRegisterPutFromClient(&'a PrettyPrintRecordKey<'a>),
     /// Valid spend stored
     ValidSpendPutFromClient(&'a PrettyPrintRecordKey<'a>),
+
+    /// The peer has been considered as bad
+    PeerConsideredAsBad(&'a PeerId),
 
     /// Record rejected
     RecordRejected(&'a PrettyPrintRecordKey<'a>, &'a Error),

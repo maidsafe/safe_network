@@ -440,7 +440,7 @@ impl Node {
                 }
 
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
-                self.record_metrics(Marker::PeerAddedToRoutingTable(peer_id));
+                self.record_metrics(Marker::PeerAddedToRoutingTable(&peer_id));
 
                 // try replication here
                 let network = self.network().clone();
@@ -452,7 +452,7 @@ impl Node {
             NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
                 event_header = "PeerRemoved";
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
-                self.record_metrics(Marker::PeerRemovedFromRoutingTable(peer_id));
+                self.record_metrics(Marker::PeerRemovedFromRoutingTable(&peer_id));
 
                 let network = self.network().clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
@@ -469,6 +469,8 @@ impl Node {
                 bad_behaviour,
             } => {
                 event_header = "PeerConsideredAsBad";
+                self.record_metrics(Marker::PeerConsideredAsBad(&bad_peer));
+
                 let request = Request::Cmd(Cmd::PeerConsideredAsBad {
                     detected_by: NetworkAddress::from_peer(detected_by),
                     bad_peer: NetworkAddress::from_peer(bad_peer),
