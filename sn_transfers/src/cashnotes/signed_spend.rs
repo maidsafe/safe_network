@@ -6,10 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::output_purpose::OutputPurpose;
 use super::spend_reason::SpendReason;
 use super::{Hash, NanoTokens, UniquePubkey};
-use crate::{DerivationIndex, DerivedSecretKey, Result, Signature, SpendAddress, TransferError};
+use crate::{
+    DerivationIndex, DerivedSecretKey, Result, Signature, SpendAddress, TransferError,
+    NETWORK_ROYALTIES_PK,
+};
 
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
@@ -166,10 +168,8 @@ impl SignedSpend {
             unique_pubkey,
             reason,
             ancestors: BTreeSet::from_iter(vec![ancestor]),
-            descendants: BTreeMap::from_iter(vec![(
-                output,
-                (NanoTokens::from(value), OutputPurpose::None),
-            )]),
+            descendants: BTreeMap::from_iter(vec![(output, (NanoTokens::from(value)))]),
+            royalties: vec![],
         };
         let derived_key_sig = derived_sk.sign(&spend.to_bytes_for_signing());
         Self {
@@ -211,7 +211,9 @@ pub struct Spend {
     /// parent spends of this spend
     pub ancestors: BTreeSet<UniquePubkey>,
     /// spends we are parents of along with the amount we commited to give them
-    pub descendants: BTreeMap<UniquePubkey, (NanoTokens, OutputPurpose)>,
+    pub descendants: BTreeMap<UniquePubkey, NanoTokens>,
+    /// royalties outputs' derivation indexes
+    pub royalties: Vec<DerivationIndex>,
 }
 
 impl core::fmt::Debug for Spend {
@@ -232,10 +234,13 @@ impl Spend {
             bytes.extend(&ancestor.to_bytes());
         }
         bytes.extend("descendants".as_bytes());
-        for (descendant, (amount, purpose)) in self.descendants.iter() {
+        for (descendant, amount) in self.descendants.iter() {
             bytes.extend(&descendant.to_bytes());
             bytes.extend(amount.to_bytes());
-            bytes.extend(purpose.hash().as_ref());
+        }
+        bytes.extend("royalties".as_bytes());
+        for royalty in self.royalties.iter() {
+            bytes.extend(royalty.as_bytes());
         }
         bytes
     }
@@ -250,33 +255,28 @@ impl Spend {
         let amount: u64 = self
             .descendants
             .values()
-            .map(|(amount, _)| amount.as_nano())
+            .map(|amount| amount.as_nano())
             .sum();
         NanoTokens::from(amount)
     }
 
     /// Returns the royalties descendants of this Spend
     pub fn network_royalties(&self) -> BTreeSet<(UniquePubkey, NanoTokens, DerivationIndex)> {
+        let roy_pks: BTreeMap<UniquePubkey, DerivationIndex> = self
+            .royalties
+            .iter()
+            .map(|di| (NETWORK_ROYALTIES_PK.new_unique_pubkey(di), *di))
+            .collect();
         self.descendants
             .iter()
-            .filter_map(|(unique_pubkey, (amount, purpose))| {
-                if let OutputPurpose::RoyaltyFee(derivation_index) = purpose {
-                    Some((*unique_pubkey, *amount, *derivation_index))
-                } else {
-                    None
-                }
-            })
+            .filter_map(|(pk, amount)| roy_pks.get(pk).map(|di| (*pk, *amount, *di)))
             .collect()
     }
 
     /// Returns the amount of a particual output target.
     /// None if the target is not one of the outputs
     pub fn get_output_amount(&self, target: &UniquePubkey) -> Option<NanoTokens> {
-        if let Some((amount, _)) = self.descendants.get(target) {
-            Some(*amount)
-        } else {
-            None
-        }
+        self.descendants.get(target).copied()
     }
 }
 

@@ -84,9 +84,9 @@ impl WalletApiHelper {
                         println!("Input spend {}", address.to_hex());
                     }
                     println!("Outputs in hex str:");
-                    for (output, (amount, purpose)) in spend.spend.descendants.iter() {
+                    for (output, amount) in spend.spend.descendants.iter() {
                         let address = SpendAddress::from_unique_pubkey(output);
-                        println!("Output {} with {amount} and {purpose:?}", address.to_hex());
+                        println!("Output {} with {amount}", address.to_hex());
                     }
                 }
                 println!("Available cash notes are:");

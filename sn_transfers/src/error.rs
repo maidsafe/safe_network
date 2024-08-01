@@ -66,8 +66,6 @@ pub enum TransferError {
     TransferSerializationFailed,
     #[error("Transfer deserialisation failed")]
     TransferDeserializationFailed,
-    #[error("The OutputPurpose bearing an invalid length")]
-    OutputPurposeTooShort,
 
     #[error("Bls error: {0}")]
     Blsttc(#[from] bls::error::Error),

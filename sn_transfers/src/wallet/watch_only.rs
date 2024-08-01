@@ -19,7 +19,7 @@ use super::{
 };
 use crate::{
     wallet::data_payments::PaymentDetails, CashNote, DerivationIndex, MainPubkey, NanoTokens,
-    OutputPurpose, SpendReason, UniquePubkey, UnsignedTransaction,
+    SpendReason, UniquePubkey, UnsignedTransaction,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use fs2::FileExt;
@@ -222,7 +222,7 @@ impl WatchOnlyWallet {
                     amount,
                     address,
                     DerivationIndex::random(&mut rng),
-                    OutputPurpose::None,
+                    false, // not a change output
                 )
             })
             .collect();

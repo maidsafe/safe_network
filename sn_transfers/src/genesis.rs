@@ -10,7 +10,7 @@ use super::wallet::HotWallet;
 
 use crate::{
     wallet::Result as WalletResult, CashNote, DerivationIndex, MainPubkey, MainSecretKey,
-    NanoTokens, OutputPurpose, SignedSpend, Spend, SpendReason, TransferError, UniquePubkey,
+    NanoTokens, SignedSpend, Spend, SpendReason, TransferError, UniquePubkey,
 };
 
 use bls::SecretKey;
@@ -204,7 +204,8 @@ pub fn create_first_cash_note_from_key(
         unique_pubkey: input_pk,
         reason: SpendReason::default(),
         ancestors: BTreeSet::new(),
-        descendants: BTreeMap::from_iter([(output_pk, (amount, OutputPurpose::None))]),
+        descendants: BTreeMap::from_iter([(output_pk, amount)]),
+        royalties: vec![],
     };
     let parent_spends = BTreeSet::from_iter([SignedSpend::sign(pre_genesis_spend, &input_sk)]);
 

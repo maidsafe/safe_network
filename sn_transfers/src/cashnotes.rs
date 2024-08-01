@@ -10,7 +10,6 @@ mod address;
 mod cashnote;
 mod hash;
 mod nano;
-mod output_purpose;
 mod signed_spend;
 mod spend_reason;
 mod unique_keys;
@@ -19,7 +18,6 @@ pub use address::SpendAddress;
 pub use cashnote::CashNote;
 pub use hash::Hash;
 pub use nano::NanoTokens;
-pub use output_purpose::OutputPurpose;
 pub use signed_spend::{SignedSpend, Spend};
 pub use spend_reason::SpendReason;
 pub use unique_keys::{DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, UniquePubkey};
@@ -27,7 +25,7 @@ pub use unique_keys::{DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretK
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::{cashnotes::output_purpose::OutputPurpose, TransferError};
+    use crate::TransferError;
 
     use std::collections::{BTreeMap, BTreeSet};
 
@@ -37,12 +35,13 @@ pub(crate) mod tests {
         output: UniquePubkey,
     ) -> BTreeSet<SignedSpend> {
         let mut descendants = BTreeMap::new();
-        let _ = descendants.insert(output, (NanoTokens::from(amount), OutputPurpose::default()));
+        let _ = descendants.insert(output, NanoTokens::from(amount));
         let spend = Spend {
             unique_pubkey: derived_sk.unique_pubkey(),
             reason: SpendReason::default(),
             ancestors: BTreeSet::new(),
             descendants,
+            royalties: vec![],
         };
         let mut parent_spends = BTreeSet::new();
         let derived_key_sig = derived_sk.sign(&spend.to_bytes_for_signing());

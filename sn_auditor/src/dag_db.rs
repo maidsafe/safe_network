@@ -428,7 +428,7 @@ impl SpendDagDb {
             })
             .collect();
         let mut royalties = BTreeMap::new();
-        for (unique_pk, (amount, _)) in spend.spend.descendants.iter() {
+        for (unique_pk, amount) in spend.spend.descendants.iter() {
             if default_royalty_pubkeys.contains(unique_pk) || royalty_pubkeys.contains(unique_pk) {
                 let _ = royalties.insert(
                     SpendAddress::from_unique_pubkey(unique_pk),

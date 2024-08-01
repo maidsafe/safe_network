@@ -11,8 +11,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use bls::SecretKey;
 use eyre::{eyre, Result};
 use sn_transfers::{
-    get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens,
-    OutputPurpose, SignedSpend, SignedTransaction, SpendAddress, SpendReason, GENESIS_CASHNOTE,
+    get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    SignedTransaction, SpendAddress, SpendReason, GENESIS_CASHNOTE,
 };
 
 pub struct MockWallet {
@@ -104,7 +104,7 @@ impl MockNetwork {
             NanoTokens::from(amount),
             to_wallet.sk.main_pubkey(),
             derivation_index,
-            OutputPurpose::None,
+            false,
         )];
         let tx = SignedTransaction::new(
             from_wallet.cn.clone(),

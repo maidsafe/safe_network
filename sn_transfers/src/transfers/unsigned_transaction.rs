@@ -12,8 +12,8 @@ use std::fmt::Debug;
 
 use crate::UniquePubkey;
 use crate::{
-    error::Result, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, OutputPurpose,
-    SignedSpend, SignedTransaction, Spend, SpendReason, TransferError,
+    error::Result, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    SignedTransaction, Spend, SpendReason, TransferError,
 };
 
 use serde::{Deserialize, Serialize};
@@ -64,7 +64,7 @@ impl UnsignedTransaction {
     /// Once created, the `UnsignedTransaction` can be signed with the owner's `MainSecretKey` using the `sign` method
     pub fn new(
         available_cash_notes: Vec<CashNote>,
-        recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex, OutputPurpose)>,
+        recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex, bool)>,
         change_to: MainPubkey,
         input_reason_hash: SpendReason,
     ) -> Result<Self> {
@@ -99,15 +99,15 @@ impl UnsignedTransaction {
         }
 
         // create empty output cash notes for recipients
-        let outputs: Vec<(CashNote, NanoTokens, OutputPurpose)> = recipients
+        let outputs: Vec<(CashNote, NanoTokens, bool)> = recipients
             .iter()
-            .map(|(amount, main_pk, derivation_index, purpose)| {
+            .map(|(amount, main_pk, derivation_index, is_royaltiy)| {
                 let cn = CashNote {
                     parent_spends: BTreeSet::new(),
                     main_pubkey: *main_pk,
                     derivation_index: *derivation_index,
                 };
-                (cn, *amount, purpose.clone())
+                (cn, *amount, *is_royaltiy)
             })
             .collect();
 
@@ -135,19 +135,20 @@ impl UnsignedTransaction {
                 .collect();
             let mut input_remaining_value = input_value.as_nano();
             let mut donate_to = BTreeMap::new();
+            let mut royalties = vec![];
 
             // take value from input and distribute it to outputs
             while input_remaining_value > 0 {
-                if let Some((output, _, purpose)) = current_output {
+                if let Some((output, _, is_royalty)) = current_output {
                     // give as much as possible to the current output
                     let amount_to_take = min(input_remaining_value, current_output_remaining_value);
                     input_remaining_value -= amount_to_take;
                     current_output_remaining_value -= amount_to_take;
                     let output_key = output.unique_pubkey();
-                    donate_to.insert(
-                        output_key,
-                        (NanoTokens::from(amount_to_take), purpose.clone()),
-                    );
+                    donate_to.insert(output_key, NanoTokens::from(amount_to_take));
+                    if *is_royalty {
+                        royalties.push(output.derivation_index);
+                    }
 
                     // move to the next output if the current one is fully funded
                     if current_output_remaining_value == 0 {
@@ -161,10 +162,7 @@ impl UnsignedTransaction {
                     let rng = &mut rand::thread_rng();
                     let change_derivation_index = DerivationIndex::random(rng);
                     let change_key = change_to.new_unique_pubkey(&change_derivation_index);
-                    donate_to.insert(
-                        change_key,
-                        (NanoTokens::from(input_remaining_value), OutputPurpose::None),
-                    );
+                    donate_to.insert(change_key, NanoTokens::from(input_remaining_value));
 
                     // assign the change cash note
                     change_cn = Some(CashNote {
@@ -173,7 +171,7 @@ impl UnsignedTransaction {
                         derivation_index: change_derivation_index,
                     });
                     let change_amount = NanoTokens::from(input_remaining_value);
-                    donate_to.insert(change_key, (change_amount, OutputPurpose::None));
+                    donate_to.insert(change_key, change_amount);
                     no_more_outputs = true;
                     break;
                 }
@@ -185,6 +183,7 @@ impl UnsignedTransaction {
                 ancestors: input_ancestors,
                 descendants: donate_to,
                 reason: input_reason_hash.clone(),
+                royalties,
             };
             spends.push((spend, input.derivation_index));
 
@@ -298,7 +297,7 @@ impl UnsignedTransaction {
         // verify that spends refer to the outputs and that the amounts match
         let mut amounts_by_unique_pubkey = BTreeMap::new();
         for (spend, _) in &self.spends {
-            for (k, (v, _)) in &spend.descendants {
+            for (k, v) in &spend.descendants {
                 amounts_by_unique_pubkey
                     .entry(*k)
                     .and_modify(|sum| *sum += v.as_nano())
@@ -334,7 +333,7 @@ impl UnsignedTransaction {
     pub fn output_unique_keys(&self) -> BTreeSet<(UniquePubkey, NanoTokens)> {
         self.spends
             .iter()
-            .flat_map(|(spend, _)| spend.descendants.iter().map(|(k, (v, _))| (*k, *v)))
+            .flat_map(|(spend, _)| spend.descendants.iter().map(|(k, v)| (*k, *v)))
             .collect()
     }
 
@@ -381,13 +380,13 @@ mod tests {
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();
@@ -415,13 +414,13 @@ mod tests {
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();
@@ -464,7 +463,7 @@ mod tests {
             NanoTokens::zero(),
             MainSecretKey::random().main_pubkey(),
             DerivationIndex::random(&mut rng),
-            OutputPurpose::None,
+            false,
         )];
         let tx = UnsignedTransaction::new(
             available_cash_notes,
@@ -500,13 +499,13 @@ mod tests {
                 NanoTokens::from(50),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(55),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();
@@ -552,13 +551,13 @@ mod tests {
                 NanoTokens::from(50),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(25),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();
@@ -629,7 +628,7 @@ mod tests {
             NanoTokens::from(75),
             MainSecretKey::random().main_pubkey(),
             DerivationIndex::random(&mut rng),
-            OutputPurpose::None,
+            false,
         )];
         let change_to = MainSecretKey::random().main_pubkey();
         let input_reason_hash = Default::default();
@@ -692,13 +691,13 @@ mod tests {
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(60),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();
@@ -780,13 +779,13 @@ mod tests {
                 NanoTokens::from(31),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(21),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();
@@ -868,73 +867,73 @@ mod tests {
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();
@@ -1020,73 +1019,73 @@ mod tests {
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
             (
                 NanoTokens::from(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                true,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();

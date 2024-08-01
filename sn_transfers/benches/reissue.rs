@@ -11,7 +11,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sn_transfers::{
     create_first_cash_note_from_key, rng, CashNote, DerivationIndex, MainSecretKey, NanoTokens,
-    OutputPurpose, SignedTransaction, SpendReason,
+    SignedTransaction, SpendReason,
 };
 use std::collections::BTreeSet;
 
@@ -28,7 +28,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
                 NanoTokens::from(1),
                 main_pubkey,
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             )
         })
         .collect::<Vec<_>>();
@@ -80,7 +80,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
                 NanoTokens::from(1),
                 recipient_of_100_mainkey.main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             )
         })
         .collect::<Vec<_>>();
@@ -115,7 +115,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         NanoTokens::from(total_amount),
         starting_main_key.main_pubkey(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     )];
 
     // create transfer to merge all of the cashnotes into one

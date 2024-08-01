@@ -258,7 +258,7 @@ async fn broadcast_signed_tx(
             bail!("Transaction is invalid: {err:?}");
         }
 
-        for (descendant, (amount, _purpose)) in signed_spend.spend.descendants.iter() {
+        for (descendant, amount) in signed_spend.spend.descendants.iter() {
             println!("\tOutput Key: {}", descendant.to_hex());
             println!("\tAmount: {amount}");
         }
