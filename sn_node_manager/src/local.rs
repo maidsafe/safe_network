@@ -540,7 +540,7 @@ mod tests {
             async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> RpcResult<()>;
             async fn node_stop(&self, delay_millis: u64) -> RpcResult<()>;
             async fn node_update(&self, delay_millis: u64) -> RpcResult<()>;
-            async fn try_connect(&self, timeout: std::time::Duration) -> RpcResult<std::time::Duration>;
+            async fn is_node_connected_to_network(&self, timeout: std::time::Duration) -> RpcResult<std::time::Duration>;
             async fn update_log_level(&self, log_levels: String) -> RpcResult<()>;
         }
     }

@@ -61,7 +61,7 @@ use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
     storage::{RecordType, RetryStrategy},
-    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
@@ -77,13 +77,6 @@ use tokio::time::Duration;
 
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
-
-/// The maximum number of peers to return in a `GetClosestPeers` response.
-/// This is the group size used in safe network protocol to be responsible for
-/// an item in the network.
-/// The peer should be present among the CLOSE_GROUP_SIZE if we're fetching the close_group(peer)
-/// The size has been set to 5 for improved performance.
-pub const CLOSE_GROUP_SIZE: usize = 5;
 
 /// The count of peers that will be considered as close to a record target,
 /// that a replication of the record shall be sent/accepted to/by the peer.

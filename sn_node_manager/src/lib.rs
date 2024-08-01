@@ -707,7 +707,7 @@ mod tests {
             async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> ServiceControlResult<()>;
             async fn node_stop(&self, delay_millis: u64) -> ServiceControlResult<()>;
             async fn node_update(&self, delay_millis: u64) -> ServiceControlResult<()>;
-            async fn try_connect(&self, timeout: std::time::Duration) -> ServiceControlResult<std::time::Duration>;
+            async fn is_node_connected_to_network(&self, timeout: std::time::Duration) -> ServiceControlResult<std::time::Duration>;
             async fn update_log_level(&self, log_levels: String) -> ServiceControlResult<()>;
         }
     }
@@ -749,7 +749,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(1000));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -854,7 +854,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(1000));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -1030,7 +1030,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(1000));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -1200,7 +1200,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(100));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -1588,7 +1588,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(2000));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -1809,7 +1809,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(2000));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -2233,7 +2233,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(2000));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -2405,7 +2405,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(100));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -2560,7 +2560,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(100));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -2718,7 +2718,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(100));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -2873,7 +2873,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(100));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -3028,7 +3028,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(100));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -3186,7 +3186,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(100));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -3344,7 +3344,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(100));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {
@@ -3502,7 +3502,7 @@ mod tests {
             .times(1)
             .returning(|_| Ok(100));
         mock_rpc_client
-            .expect_try_connect()
+            .expect_is_node_connected_to_network()
             .times(1)
             .returning(|_| Ok(Duration::from_secs(0)));
         mock_rpc_client.expect_node_info().times(1).returning(|| {

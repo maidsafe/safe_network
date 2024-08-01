@@ -151,7 +151,7 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             );
             let connection_duration = self
                 .rpc_actions
-                .try_connect(self.connection_timeout)
+                .is_node_connected_to_network(self.connection_timeout)
                 .await?;
             let node_info = self
                 .rpc_actions
