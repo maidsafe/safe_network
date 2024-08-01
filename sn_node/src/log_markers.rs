@@ -8,7 +8,7 @@
 
 use crate::Error;
 use libp2p::{kad::RecordKey, PeerId};
-use sn_protocol::PrettyPrintRecordKey;
+use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use strum::Display;
 
 /// Public Markers for generating log output,
@@ -53,6 +53,9 @@ pub enum Marker<'a> {
 
     /// The peer has been considered as bad
     PeerConsideredAsBad(&'a PeerId),
+
+    /// We have been flagged as a bad node by a peer.
+    FlaggedAsBadNode(&'a NetworkAddress),
 
     /// Record rejected
     RecordRejected(&'a PrettyPrintRecordKey<'a>, &'a Error),

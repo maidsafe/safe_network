@@ -90,6 +90,9 @@ impl SwarmDriver {
 
                             if bad_peer == NetworkAddress::from_peer(self.self_peer_id) {
                                 warn!("Peer {detected_by:?} consider us as BAD, due to {bad_behaviour:?}.");
+                                self.send_event(NetworkEvent::FlaggedAsBadNode {
+                                    flagged_by: detected_by,
+                                })
                                 // TODO: shall we terminate self after received such notifications
                                 //       from the majority close_group nodes around us?
                             } else {
