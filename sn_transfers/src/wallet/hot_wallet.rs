@@ -26,9 +26,9 @@ use crate::wallet::keys::{
 };
 use crate::{
     calculate_royalties_fee, transfers::SignedTransaction, CashNote, CashNoteRedemption,
-    DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, NanoTokens, OutputPurpose,
-    SignedSpend, SpendAddress, SpendReason, Transfer, UniquePubkey, UnsignedTransaction,
-    WalletError, NETWORK_ROYALTIES_PK,
+    DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    SpendAddress, SpendReason, Transfer, UniquePubkey, UnsignedTransaction, WalletError,
+    NETWORK_ROYALTIES_PK,
 };
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
@@ -424,14 +424,7 @@ impl HotWallet {
         // create a unique key for each output
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| {
-                (
-                    amount,
-                    address,
-                    DerivationIndex::random(&mut rng),
-                    OutputPurpose::None,
-                )
-            })
+            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng), false))
             .collect();
 
         let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
@@ -483,14 +476,7 @@ impl HotWallet {
         let mut rng = &mut rand::rngs::OsRng;
         let to_unique_keys: Vec<_> = to
             .into_iter()
-            .map(|(amount, address)| {
-                (
-                    amount,
-                    address,
-                    DerivationIndex::random(&mut rng),
-                    OutputPurpose::None,
-                )
-            })
+            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng), false))
             .collect();
 
         let signed_tx = SignedTransaction::new(
@@ -558,10 +544,7 @@ impl HotWallet {
         let recipients = recipients_by_xor
             .values()
             .flat_map(|(node, roy)| {
-                vec![
-                    (node.0, node.1, node.2, OutputPurpose::None),
-                    (roy.0, roy.1, roy.2, OutputPurpose::RoyaltyFee(roy.2)),
-                ]
+                vec![(node.0, node.1, node.2, false), (roy.0, roy.1, roy.2, true)]
             })
             .collect();
 

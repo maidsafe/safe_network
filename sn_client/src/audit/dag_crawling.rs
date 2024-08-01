@@ -261,7 +261,7 @@ impl Client {
 
             // list up all descendants
             let mut addrs = vec![];
-            for (descendant, (_amount, _purpose)) in descendants_to_follow.iter() {
+            for (descendant, _amount) in descendants_to_follow.iter() {
                 let addrs_to_follow = SpendAddress::from_unique_pubkey(descendant);
                 info!("Gen {gen} - Following descendant : {descendant:?}");
                 addrs.push(addrs_to_follow);
@@ -314,7 +314,7 @@ impl Client {
             known_descendants.extend(followed_descendants);
             descendants_to_follow = next_gen_descendants
                 .into_iter()
-                .filter(|(key, (_, _))| !known_descendants.contains(key))
+                .filter(|(key, _)| !known_descendants.contains(key))
                 .collect();
 
             // go on to next gen
@@ -548,7 +548,7 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, Nano
         .spend
         .descendants
         .iter()
-        .filter_map(|(unique_pubkey, (amount, _purpose))| {
+        .filter_map(|(unique_pubkey, amount)| {
             if default_royalty_pubkeys.contains(unique_pubkey)
                 || royalty_pubkeys.contains(unique_pubkey)
             {

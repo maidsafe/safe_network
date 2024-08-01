@@ -171,7 +171,7 @@ impl SpendDag {
         };
 
         // link to descendants
-        for (descendant, (amount, _purpose)) in spend.spend.descendants.iter() {
+        for (descendant, amount) in spend.spend.descendants.iter() {
             let descendant_addr = SpendAddress::from_unique_pubkey(descendant);
 
             // add descendant if not already in dag
@@ -216,10 +216,8 @@ impl SpendDag {
                         .spend
                         .descendants
                         .iter()
-                        .find(|(descendant, (_amount, _purpose))| {
-                            **descendant == spend.spend.unique_pubkey
-                        })
-                        .map(|(_descendant, (amount, _purpose))| *amount)
+                        .find(|(descendant, _amount)| **descendant == spend.spend.unique_pubkey)
+                        .map(|(_descendant, amount)| *amount)
                         .unwrap_or(PENDING_AMOUNT);
                     self.dag
                         .update_edge(ancestor_idx, new_node_idx, ancestor_given_amount);
@@ -236,10 +234,10 @@ impl SpendDag {
                                 .spend
                                 .descendants
                                 .iter()
-                                .find(|(descendant, (_amount, _purpose))| {
+                                .find(|(descendant, _amount)| {
                                     **descendant == spend.spend.unique_pubkey
                                 })
-                                .map(|(_descendant, (amount, _purpose))| *amount)
+                                .map(|(_descendant, amount)| *amount)
                                 .unwrap_or(PENDING_AMOUNT);
                             self.dag
                                 .update_edge(ancestor_idx, new_node_idx, ancestor_given_amount);
@@ -607,10 +605,8 @@ impl SpendDag {
             let gathered_descendants = spend
                 .spend
                 .descendants
-                .iter()
-                .map(|(descendant, (_amount, _purpose))| {
-                    SpendAddress::from_unique_pubkey(descendant)
-                })
+                .keys()
+                .map(SpendAddress::from_unique_pubkey)
                 .filter_map(|a| self.spends.get(&a))
                 .filter_map(|s| {
                     if matches!(s, DagEntry::NotGatheredYet(_)) {
@@ -794,8 +790,8 @@ impl SpendDag {
         let direct_descendants = spend
             .spend
             .descendants
-            .iter()
-            .map(|(descendant, (_amount, _purpose))| SpendAddress::from_unique_pubkey(descendant))
+            .keys()
+            .map(SpendAddress::from_unique_pubkey)
             .collect::<BTreeSet<_>>();
         let mut all_descendants = direct_descendants
             .iter()

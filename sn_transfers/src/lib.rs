@@ -18,7 +18,7 @@ mod wallet;
 /// Types used in the public API
 pub use cashnotes::{
     CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens,
-    OutputPurpose, SignedSpend, Spend, SpendAddress, SpendReason, UniquePubkey,
+    SignedSpend, Spend, SpendAddress, SpendReason, UniquePubkey,
 };
 pub use error::{Result, TransferError};
 /// Utilities exposed

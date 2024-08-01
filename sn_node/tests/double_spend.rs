@@ -16,8 +16,8 @@ use itertools::Itertools;
 use sn_logging::LogBuilder;
 use sn_networking::NetworkError;
 use sn_transfers::{
-    get_genesis_sk, rng, DerivationIndex, HotWallet, NanoTokens, OutputPurpose, SignedTransaction,
-    SpendReason, WalletError, GENESIS_CASHNOTE,
+    get_genesis_sk, rng, DerivationIndex, HotWallet, NanoTokens, SignedTransaction, SpendReason,
+    WalletError, GENESIS_CASHNOTE,
 };
 use std::time::Duration;
 use tracing::*;
@@ -51,18 +51,8 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let mut rng = rng::thread_rng();
 
     let reason = SpendReason::default();
-    let to2_unique_key = (
-        amount,
-        to2,
-        DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
-    );
-    let to3_unique_key = (
-        amount,
-        to3,
-        DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
-    );
+    let to2_unique_key = (amount, to2, DerivationIndex::random(&mut rng), false);
+    let to3_unique_key = (amount, to3, DerivationIndex::random(&mut rng), false);
 
     let transfer_to_2 = SignedTransaction::new(
         some_cash_notes,
@@ -133,7 +123,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
         genesis_amount,
         first_wallet_addr,
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let change_addr = second_wallet_addr;
     let reason = SpendReason::default();
@@ -160,7 +150,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
         genesis_amount,
         second_wallet_addr,
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let bad_genesis_descendant = genesis_cashnote_and_others
         .iter()
@@ -205,12 +195,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
 
     let to2 = wallet_2.address();
     let (cash_notes_1, _exclusive_access) = wallet_1.available_cash_notes()?;
-    let to_2_unique_key = (
-        amount,
-        to2,
-        DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
-    );
+    let to_2_unique_key = (amount, to2, DerivationIndex::random(&mut rng), false);
     let transfer_to_2 = SignedTransaction::new(
         cash_notes_1.clone(),
         vec![to_2_unique_key],
@@ -240,7 +225,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         wallet_2.balance(),
         wallet_22.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_22 = SignedTransaction::new(
         cash_notes_2,
@@ -268,7 +253,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         amount,
         wallet_3.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_3 = SignedTransaction::new(
         cash_notes_1,
@@ -297,7 +282,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         wallet_22.balance(),
         wallet_222.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_222 = SignedTransaction::new(
         cash_notes_22,
@@ -366,7 +351,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         amount,
         wallet_b.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_b = SignedTransaction::new(
         cash_notes_a.clone(),
@@ -397,7 +382,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         wallet_b.balance(),
         wallet_c.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_c = SignedTransaction::new(
         cash_notes_b.clone(),
@@ -426,7 +411,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         amount,
         wallet_x.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_x = SignedTransaction::new(
         cash_notes_a,
@@ -459,7 +444,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
         amount,
         wallet_y.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_y = SignedTransaction::new(
         cash_notes_b,
@@ -539,7 +524,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         amount,
         wallet_b.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_b = SignedTransaction::new(
         cash_notes_a.clone(),
@@ -578,7 +563,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         wallet_b.balance(),
         wallet_c.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_c = SignedTransaction::new(
         cash_notes_b.clone(),
@@ -606,7 +591,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         amount,
         wallet_x.address(),
         DerivationIndex::random(&mut rng),
-        OutputPurpose::None,
+        false,
     );
     let transfer_to_x = SignedTransaction::new(
         cash_notes_a.clone(),
@@ -655,7 +640,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
             amount,
             wallet_y.address(),
             DerivationIndex::random(&mut rng),
-            OutputPurpose::None,
+            false,
         );
         let transfer_to_y = SignedTransaction::new(
             cash_notes_a.clone(),

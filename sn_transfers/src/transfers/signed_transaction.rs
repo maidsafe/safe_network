@@ -10,8 +10,8 @@ use std::collections::BTreeSet;
 
 use crate::error::Result;
 use crate::{
-    CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, OutputPurpose, SignedSpend,
-    SpendReason, TransferError, UnsignedTransaction,
+    CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, SignedSpend, SpendReason,
+    TransferError, UnsignedTransaction,
 };
 use serde::{Deserialize, Serialize};
 
@@ -30,9 +30,14 @@ pub struct SignedTransaction {
 
 impl SignedTransaction {
     /// Create a new `SignedTransaction`
+    /// - `available_cash_notes`: provide the available cash notes assumed to be not spent yet
+    /// - `recipients`: recipient amounts, mainpubkey, the random derivation index to use, and whether it is royalty fee
+    /// - `change_to`: what mainpubkey to give the change to
+    /// - `input_reason_hash`: an optional `SpendReason`
+    /// - `main_key`: the main secret key that owns the available cash notes, used for signature
     pub fn new(
         available_cash_notes: Vec<CashNote>,
-        recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex, OutputPurpose)>,
+        recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex, bool)>,
         change_to: MainPubkey,
         input_reason_hash: SpendReason,
         main_key: &MainSecretKey,
@@ -103,13 +108,13 @@ mod tests {
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();
@@ -150,13 +155,13 @@ mod tests {
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
             (
                 NanoTokens::from(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
-                OutputPurpose::None,
+                false,
             ),
         ];
         let change_to = MainSecretKey::random().main_pubkey();
