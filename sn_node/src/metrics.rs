@@ -32,7 +32,8 @@ pub(crate) struct NodeMetrics {
     // routing table
     peer_added_to_routing_table: Counter,
     peer_removed_from_routing_table: Counter,
-    bad_node_count: Counter,
+    bad_peers_count: Counter,
+    shunned_count: Counter,
 
     // wallet
     pub(crate) current_reward_wallet_balance: Gauge,
@@ -101,11 +102,18 @@ impl NodeMetrics {
             peer_removed_from_routing_table.clone(),
         );
 
-        let bad_node_count = Counter::default();
+        let shunned_count = Counter::default();
         sub_registry.register(
-            "bad_node_count",
-            "Number of bad nodes that have been detected and added to the blocklist",
-            bad_node_count.clone(),
+            "shunned_count",
+            "Number of peers that have shunned our node",
+            shunned_count.clone(),
+        );
+
+        let bad_peers_count = Counter::default();
+        sub_registry.register(
+            "bad_peers_count",
+            "Number of bad peers that have been detected by us and been added to the blocklist",
+            bad_peers_count.clone(),
         );
 
         let current_reward_wallet_balance = Gauge::default();
@@ -136,7 +144,8 @@ impl NodeMetrics {
             replication_keys_to_fetch,
             peer_added_to_routing_table,
             peer_removed_from_routing_table,
-            bad_node_count,
+            bad_peers_count,
+            shunned_count,
             current_reward_wallet_balance,
             total_forwarded_rewards,
             started_instant: Instant::now(),
@@ -195,7 +204,11 @@ impl NodeMetrics {
             }
 
             Marker::PeerConsideredAsBad(_) => {
-                let _ = self.bad_node_count.inc();
+                let _ = self.bad_peers_count.inc();
+            }
+
+            Marker::FlaggedAsBadNode(_) => {
+                let _ = self.shunned_count.inc();
             }
 
             _ => {}

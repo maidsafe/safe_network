@@ -482,6 +482,10 @@ impl Node {
                     network.send_req_ignore_reply(request, bad_peer);
                 });
             }
+            NetworkEvent::FlaggedAsBadNode { flagged_by } => {
+                event_header = "FlaggedAsBadNode";
+                self.record_metrics(Marker::FlaggedAsBadNode(&flagged_by));
+            }
             NetworkEvent::NewListenAddr(_) => {
                 event_header = "NewListenAddr";
                 if !cfg!(feature = "local-discovery") {
