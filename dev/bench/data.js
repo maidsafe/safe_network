@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722507402100,
+  "lastUpdate": 1722507404685,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "f50a71f556fe4abe7313a608c2883ecf5fefdf9d",
-          "message": "feat: report protocol mismatch error",
-          "timestamp": "2024-04-08T08:37:28Z",
-          "tree_id": "cebec7cf4e27ccc8e0ee8f1f512f04dd8e80ee00",
-          "url": "https://github.com/maidsafe/safe_network/commit/f50a71f556fe4abe7313a608c2883ecf5fefdf9d"
-        },
-        "date": 1712568110832,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 182,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "49699333+dependabot[bot]@users.noreply.github.com",
             "name": "dependabot[bot]",
             "username": "dependabot[bot]"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4255e0d2503b4c014b219a9570d79b00ae324885",
+          "message": "Merge pull request #2007 from maqi/relax_on_parent_spend_verification\n\nchore(node): trust a parent spend with majority",
+          "timestamp": "2024-08-01T09:16:31Z",
+          "tree_id": "83630f9fdbbec9e017921043d221d2d1304f962e",
+          "url": "https://github.com/maidsafe/safe_network/commit/4255e0d2503b4c014b219a9570d79b00ae324885"
+        },
+        "date": 1722507403607,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 180,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
