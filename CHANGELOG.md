@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-08-DD
+
+### Binaries
+
+* `faucet` v0.4.32
+* `nat-detection` v0.2.2
+* `node-launchpad` v0.3.12
+* `safe` v0.94.1
+* `safenode` v0.110.1
+* `safenode-manager` v0.10.2
+* `safenodemand` v0.10.2
+* `safenode_rpc_client` v0.6.27
+* `sn_auditor` v0.2.4
+
+### Merged Pull Requests
+
+2024-07-23 [#1996](https://github.com/maidsafe/safe_network/pull/1996) -- chore(cli): use Quick strategy during chunk upload
+
+2024-07-23 [#1988](https://github.com/maidsafe/safe_network/pull/1988) -- refactor(network): reserver trace log level for tracking event stats
+
+2024-07-23 [#1995](https://github.com/maidsafe/safe_network/pull/1995) -- chore: remove dcutr
+
+2024-07-23 [#2001](https://github.com/maidsafe/safe_network/pull/2001) -- chore: remove push triggers for release workflow
+
+2024-07-23 [#2000](https://github.com/maidsafe/safe_network/pull/2000) -- chore(node): increase bad node & bootstrap interval
+
+2024-07-24 [#1990](https://github.com/maidsafe/safe_network/pull/1990) -- chore: implement new process in release workflow
+
+2024-07-26 [#1981](https://github.com/maidsafe/safe_network/pull/1981) -- LocalFirst Swarm
+
+2024-07-29 [#2006](https://github.com/maidsafe/safe_network/pull/2006) -- refactor: remove some lazy_static deps; unused dep
+
+2024-07-29 [#2008](https://github.com/maidsafe/safe_network/pull/2008) -- feat(launchpad): user interface tweaks
+
+2024-07-29 [#1997](https://github.com/maidsafe/safe_network/pull/1997) -- feat(manager): optionally set the different ports when running local network
+
+2024-07-29 [#2009](https://github.com/maidsafe/safe_network/pull/2009) -- chore(launchpad): popup crate and del unused code
+
+2024-07-29 [#2005](https://github.com/maidsafe/safe_network/pull/2005) -- chore(client): debug resend spend
+
+2024-07-30 [#2010](https://github.com/maidsafe/safe_network/pull/2010) -- networking: Performance tweaks 
+
+2024-07-31 [#2015](https://github.com/maidsafe/safe_network/pull/2015) -- chore: correct logging of cash_note and confirmed_spend disk ops
+
+2024-07-31 [#2018](https://github.com/maidsafe/safe_network/pull/2018) -- chore(cli): [#2014] explicitly show the uploaded file's address
+
+2024-07-31 [#2017](https://github.com/maidsafe/safe_network/pull/2017) -- fix(node): check whether already received an incoming payment
+
+2024-07-31 [#2016](https://github.com/maidsafe/safe_network/pull/2016) -- chore(cli): [#2012] show download time per file
+
+2024-08-01 [#2007](https://github.com/maidsafe/safe_network/pull/2007) -- chore(node): trust a parent spend with majority
+
 ## 2024-07-25
 
 ### Binaries
