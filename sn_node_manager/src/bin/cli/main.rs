@@ -278,19 +278,23 @@ pub enum SubCmd {
     },
     /// Start safenode service(s).
     ///
+    /// By default, the interval between starting each service is scaled automatically. The 'connection-timeout'
+    /// controls the maximum time to wait between starting each service. Use the 'interval' argument to set a fixed
+    /// interval and override the dynamic interval.
+    ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be started.
     ///
     /// On Windows, this command must run as the administrative user. On Linux/macOS, run using
     /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "start")]
     Start {
-        /// The max time in milliseconds to wait for the RPC connection to the node to be established.
+        /// The max time in seconds to wait between starting each node service. If the connection is not established
+        /// within this time, the node is considered failed and the dynamic interval is increased drastically.
         ///
-        /// Setting this will automatically scale the interval between each service launch. This argument
-        /// is mutually exclusive with the 'interval' argument.
+        /// This argument is mutually exclusive with the 'interval' argument.
         ///
-        /// The upgrade will fail if the connection is not established within this time.
-        #[clap(long, default_value = "120000", conflicts_with = "interval")]
+        /// Defaults to 120s.
+        #[clap(long, default_value = "120", conflicts_with = "interval")]
         connection_timeout: u64,
         /// An interval applied between launching each service.
         ///
@@ -346,7 +350,9 @@ pub enum SubCmd {
     /// Upgrade safenode services.
     ///
     /// The running node will be stopped, its binary will be replaced, then it will be started
-    /// again.
+    /// again. By default, the interval between starting each service is scaled automatically. The 'connection-timeout'
+    /// controls the maximum time to wait between starting each service. Use the 'interval' argument to set a fixed
+    /// interval and override the dynamic interval.
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be upgraded.
     ///
@@ -354,13 +360,13 @@ pub enum SubCmd {
     /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "upgrade")]
     Upgrade {
-        /// The max time in milliseconds to wait for the RPC connection to the node to be established.
+        /// The max time in seconds to wait between starting each node service. If the connection is not established
+        /// within this time, the node is considered failed and the dynamic interval is increased drastically.
         ///
-        /// Setting this will automatically scale the interval between each service upgrade. This argument
-        /// is mutually exclusive with the 'interval' argument.
+        /// This argument is mutually exclusive with the 'interval' argument.
         ///
-        /// The upgrade will fail if the connection is not established within this time.
-        #[clap(long, default_value = "120000", conflicts_with = "interval")]
+        /// Defaults to 120s.
+        #[clap(long, default_value = "120", conflicts_with = "interval")]
         connection_timeout: u64,
         /// Set this flag to upgrade the nodes without automatically starting them.
         ///

@@ -295,7 +295,7 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
 }
 
 pub async fn start(
-    connection_timeout_ms: u64,
+    connection_timeout_s: u64,
     fixed_interval: Option<u64>,
     peer_ids: Vec<String>,
     service_names: Vec<String>,
@@ -331,7 +331,7 @@ pub async fn start(
         let node = &mut node_registry.nodes[index];
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client))
-            .with_connection_timeout(Duration::from_millis(connection_timeout_ms));
+            .with_connection_timeout(Duration::from_secs(connection_timeout_s));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         if service_manager.service.status() != ServiceStatus::Running {
@@ -445,7 +445,7 @@ pub async fn stop(
 }
 
 pub async fn upgrade(
-    connection_timeout_ms: u64,
+    connection_timeout_s: u64,
     do_not_start: bool,
     custom_bin_path: Option<PathBuf>,
     force: bool,
@@ -534,7 +534,7 @@ pub async fn upgrade(
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client))
-            .with_connection_timeout(Duration::from_millis(connection_timeout_ms));
+            .with_connection_timeout(Duration::from_secs(connection_timeout_s));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
@@ -596,7 +596,7 @@ pub async fn upgrade(
 pub async fn maintain_n_running_nodes(
     auto_restart: bool,
     auto_set_nat_flags: bool,
-    connection_timeout_ms: u64,
+    connection_timeout_s: u64,
     max_nodes_to_run: u16,
     data_dir_path: Option<PathBuf>,
     enable_metrics_server: bool,
@@ -677,7 +677,7 @@ pub async fn maintain_n_running_nodes(
                     "We are starting these pre-existing services: {nodes_to_start:?}"
                 );
                 start(
-                    connection_timeout_ms,
+                    connection_timeout_s,
                     start_node_interval,
                     vec![],
                     nodes_to_start,
@@ -722,7 +722,7 @@ pub async fn maintain_n_running_nodes(
                 inactive_nodes.extend(added_service_list);
 
                 start(
-                    connection_timeout_ms,
+                    connection_timeout_s,
                     start_node_interval,
                     vec![],
                     inactive_nodes,
