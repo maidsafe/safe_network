@@ -644,11 +644,18 @@ struct DynamicInterval {
 }
 
 impl DynamicInterval {
-    pub fn new() -> Self {
-        DynamicInterval {
+    /// Create a new `DynamicInterval` with a starting average interval.
+    pub fn new(starting_average_ms: u64) -> Self {
+        let mut dyn_interval = DynamicInterval {
             last_reported_intervals_ms: VecDeque::new(),
             window_size: 3,
+        };
+
+        for _ in 0..dyn_interval.window_size {
+            dyn_interval.add_interval_ms(starting_average_ms);
         }
+
+        dyn_interval
     }
 
     pub fn add_interval_ms(&mut self, interval_ms: u64) {

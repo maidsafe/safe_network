@@ -296,7 +296,7 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
 
 pub async fn start(
     connection_timeout_ms: u64,
-    interval: u64,
+    fixed_interval: Option<u64>,
     peer_ids: Vec<String>,
     service_names: Vec<String>,
     verbosity: VerbosityLevel,
@@ -304,9 +304,7 @@ pub async fn start(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Start Safenode Services");
     }
-    info!(
-        "Starting safenode services with dynamic interval (starting at {interval}) for: {peer_ids:?}, {service_names:?}"
-    );
+    info!("Starting safenode services for: {peer_ids:?}, {service_names:?}");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(
@@ -328,8 +326,7 @@ pub async fn start(
     }
 
     let mut failed_services = Vec::new();
-    let mut dyn_interval = DynamicInterval::new();
-    dyn_interval.add_interval_ms(interval);
+    let mut dyn_interval = DynamicInterval::new(fixed_interval.unwrap_or(200));
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
@@ -357,15 +354,18 @@ pub async fn start(
                     "Started service {} in {start_duration:?}",
                     node.service_name
                 );
-                if let Some(start_duration) = start_duration {
+                if let (Some(start_duration), None) = (start_duration, fixed_interval) {
                     dyn_interval.add_interval_ms(start_duration.as_millis() as u64);
                 }
+
                 node_registry.save()?;
             }
             Err(err) => {
                 error!("Failed to start service {}: {err}", node.service_name);
                 // increment the interval by 2x incase of a failure
-                dyn_interval.add_interval_ms(dyn_interval.get_interval_ms() * 2);
+                if fixed_interval.is_none() {
+                    dyn_interval.add_interval_ms(dyn_interval.get_interval_ms() * 2);
+                }
                 failed_services.push((node.service_name.clone(), err.to_string()))
             }
         }
@@ -449,7 +449,7 @@ pub async fn upgrade(
     do_not_start: bool,
     custom_bin_path: Option<PathBuf>,
     force: bool,
-    interval: u64,
+    fixed_interval: Option<u64>,
     peer_ids: Vec<String>,
     provided_env_variables: Option<Vec<(String, String)>>,
     service_names: Vec<String>,
@@ -513,8 +513,7 @@ pub async fn upgrade(
     trace!("service_indices len: {}", service_indices.len());
     let mut upgrade_summary = Vec::new();
 
-    let mut dyn_interval = DynamicInterval::new();
-    dyn_interval.add_interval_ms(interval);
+    let mut dyn_interval = DynamicInterval::new(fixed_interval.unwrap_or(200));
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let env_variables = if provided_env_variables.is_some() {
@@ -541,9 +540,10 @@ pub async fn upgrade(
 
         match service_manager.upgrade(options).await {
             Ok((upgrade_result, start_duration)) => {
-                if let Some(start_duration) = start_duration {
+                if let (Some(start_duration), None) = (start_duration, fixed_interval) {
                     dyn_interval.add_interval_ms(start_duration.as_millis() as u64);
                 }
+
                 info!("Service: {service_name} has been upgraded, result: {upgrade_result:?}",);
                 if upgrade_result != UpgradeResult::NotRequired {
                     // It doesn't seem useful to apply the interval if there was no upgrade
@@ -564,7 +564,9 @@ pub async fn upgrade(
             Err(err) => {
                 error!("Error upgrading service {service_name}: {err}");
                 // increment the interval by 2x incase of a failure
-                dyn_interval.add_interval_ms(dyn_interval.get_interval_ms() * 2);
+                if fixed_interval.is_none() {
+                    dyn_interval.add_interval_ms(dyn_interval.get_interval_ms() * 2);
+                }
                 upgrade_summary.push((
                     node.service_name.clone(),
                     UpgradeResult::Error(format!("Error: {}", err)),
@@ -615,7 +617,7 @@ pub async fn maintain_n_running_nodes(
     user: Option<String>,
     version: Option<String>,
     verbosity: VerbosityLevel,
-    start_node_interval: u64,
+    start_node_interval: Option<u64>,
 ) -> Result<()> {
     let node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let running_nodes = node_registry
