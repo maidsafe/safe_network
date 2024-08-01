@@ -551,15 +551,23 @@ impl Node {
             }
 
             let spend_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
-            let already_spent = matches!(wallet.get_confirmed_spend(spend_addr), Ok(Some(_spend)));
-            if already_spent {
-                warn!(
-                    "Double spend {} detected for record payment {pretty_key}",
-                    cash_note.unique_pubkey()
-                );
+            match wallet.get_confirmed_spend(spend_addr) {
+                Ok(None) => true,
+                Ok(Some(_spend)) => {
+                    warn!(
+                        "Burnt spend {} detected for record payment {pretty_key}",
+                        cash_note.unique_pubkey()
+                    );
+                    false
+                }
+                Err(err) => {
+                    error!(
+                        "When checking confirmed_spend {}, enountered error {err:?}",
+                        cash_note.unique_pubkey()
+                    );
+                    true
+                }
             }
-            // retain the `CashNote` if it's not already spent
-            !already_spent
         });
         if cash_notes.is_empty() {
             info!("All incoming cash notes were already received, no need to further process");

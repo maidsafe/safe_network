@@ -88,7 +88,7 @@ pub(super) fn get_confirmed_spend(
     let spend_hex_name = spend_addr.to_hex();
     let spend_file_path = spends_dir.join(spend_hex_name);
     debug!("Try to getting a confirmed_spend instance from: {spend_file_path:?}");
-    if !spend_file_path.is_file() {
+    if !spend_file_path.exists() {
         return Ok(None);
     }
 
