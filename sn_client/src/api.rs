@@ -24,7 +24,7 @@ use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
     GetRecordCfg, GetRecordError, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg,
-    VerificationKind, CLOSE_GROUP_SIZE,
+    VerificationKind,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -33,7 +33,7 @@ use sn_protocol::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
         RecordKind, RegisterAddress, RetryStrategy, SpendAddress,
     },
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_registers::{Permissions, SignedRegister};
 use sn_transfers::{

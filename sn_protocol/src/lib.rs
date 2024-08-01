@@ -42,6 +42,13 @@ use std::{
 };
 use xor_name::XorName;
 
+/// The maximum number of peers to return in a `GetClosestPeers` response.
+/// This is the group size used in safe network protocol to be responsible for
+/// an item in the network.
+/// The peer should be present among the CLOSE_GROUP_SIZE if we're fetching the close_group(peer)
+/// The size has been set to 5 for improved performance.
+pub const CLOSE_GROUP_SIZE: usize = 5;
+
 /// Returns the UDP port from the provided MultiAddr.
 pub fn get_port_from_multiaddr(multi_addr: &Multiaddr) -> Option<u16> {
     // assuming the listening addr contains /ip4/127.0.0.1/udp/56215/quic-v1/p2p/<peer_id>

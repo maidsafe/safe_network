@@ -24,12 +24,12 @@ use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
 use sn_networking::{
     close_group_majority, Instant, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
-    SwarmDriver, CLOSE_GROUP_SIZE,
+    SwarmDriver,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, CmdResponse, Query, QueryResponse, Request, Response},
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens, PAYMENT_FORWARD_PK};
 use std::{
