@@ -659,7 +659,7 @@ fn maintain_n_running_nodes(
         if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
             false,
             true,
-            120000,
+            120,
             count,
             None,
             true,
