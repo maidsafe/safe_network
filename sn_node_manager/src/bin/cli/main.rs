@@ -286,14 +286,20 @@ pub enum SubCmd {
     Start {
         /// The max time in milliseconds to wait for the RPC connection to the node to be established.
         ///
-        /// The node is marked as failed if the connection is not established within this time.
-        #[clap(long, default_value = "120000")]
+        /// Setting this will automatically scale the interval between each service launch. This argument
+        /// is mutually exclusive with the 'interval' argument.
+        ///
+        /// The upgrade will fail if the connection is not established within this time.
+        #[clap(long, default_value = "120000", conflicts_with = "interval")]
         connection_timeout: u64,
         /// An interval applied between launching each service.
         ///
+        /// Use connection-timeout to scale the interval automatically. This argument is mutually exclusive with the
+        /// 'connection-timeout' argument.
+        ///
         /// Units are milliseconds.
-        #[clap(long, default_value_t = 200)]
-        interval: u64,
+        #[clap(long, conflicts_with = "connection-timeout")]
+        interval: Option<u64>,
         /// The peer ID of the service to start.
         ///
         /// The argument can be used multiple times to start many services.
@@ -350,8 +356,11 @@ pub enum SubCmd {
     Upgrade {
         /// The max time in milliseconds to wait for the RPC connection to the node to be established.
         ///
+        /// Setting this will automatically scale the interval between each service upgrade. This argument
+        /// is mutually exclusive with the 'interval' argument.
+        ///
         /// The upgrade will fail if the connection is not established within this time.
-        #[clap(long, default_value = "120000")]
+        #[clap(long, default_value = "120000", conflicts_with = "interval")]
         connection_timeout: u64,
         /// Set this flag to upgrade the nodes without automatically starting them.
         ///
@@ -376,9 +385,12 @@ pub enum SubCmd {
         force: bool,
         /// An interval applied between upgrading each service.
         ///
+        /// Use connection-timeout to scale the interval automatically. This argument is mutually exclusive with the
+        /// 'connection-timeout' argument.
+        ///
         /// Units are milliseconds.
-        #[clap(long, default_value_t = 200)]
-        interval: u64,
+        #[clap(long, conflicts_with = "connection-timeout")]
+        interval: Option<u64>,
         /// Provide a path for the safenode binary to be used by the service.
         ///
         /// Useful for upgrading the service using a custom built binary.
