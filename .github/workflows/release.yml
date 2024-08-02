@@ -219,7 +219,7 @@ jobs:
         run: |
           (
             cd packaged_architectures
-            ls | xargs gh release upload ${{ env.PACKAGE_VERSION }}
+            ls | xargs gh release upload ${{ env.RELEASE_PREFIX }}-${{ env.PACKAGE_VERSION }}
           )
 
       - name: post notification to slack on failure
