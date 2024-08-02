@@ -184,15 +184,6 @@ pub fn limit_peers_by_distance<'a, T>(
         }
     }
 
-    // // Sort the vector of tuples by the distance.
-    // valid_distances.sort_by(|a, b| a.1.cmp(&b.1));
-
-    // Collect the sorted peers into a new vector.
-    // let peers: Vec<_> = valid_distances
-    //     .into_iter()
-    //     .map(|(peer_id, _)| peer_id)
-    //     .collect();
-
     Ok(peers_within_distance)
 }
 
@@ -425,9 +416,6 @@ impl Network {
         &self,
         address: NetworkAddress,
     ) -> Result<Vec<PeerId>> {
-        // let (sender, receiver) = oneshot::channel();
-        // self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeers { sender });
-
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetCloseRangeLocalPeers { address, sender });
 

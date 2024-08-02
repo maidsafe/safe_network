@@ -262,10 +262,8 @@ impl SwarmDriver {
                     self.update_on_peer_addition(peer);
 
                     // This should only happen once
-                    // if self.bootstrap.notify_new_peer() {
                     info!("Performing the first bootstrap");
                     self.trigger_network_discovery();
-                    // }
                 }
 
                 info!("kad_event::RoutingUpdated {:?}: {peer:?}, is_new_peer: {is_new_peer:?} old_peer: {old_peer:?}", self.peers_in_rt);
@@ -333,10 +331,6 @@ impl SwarmDriver {
     //          `QueryStats::success` to be over majority of the requests
     //          `err::NotFound::closest_peers` contains a list of CLOSE_GROUP_SIZE peers
     //
-    // TODO: if we havent hit the GetRange distance between peers here, we should ask
-    // for closer peers to the farthest peer in the list.
-    // This then allows us to ask for the record from those peers directly?
-    //
     //   2, targeting an existing entry
     //     there will a sequence of (at least CLOSE_GROUP_SIZE) events of
     //     `kad::Event::OutboundQueryProgressed` to be received
@@ -352,9 +346,6 @@ impl SwarmDriver {
     //            `ProgressStep::last` to be `true`
     //
     //
-    // TODO: only remove and return query as/when we have enough responses from GetRange.
-    // For chunks/registers that can be done relatively fast.
-    // For spends, we'll need to smaple the whole range.
 
     /// Accumulates the GetRecord query results
     /// If we get enough responses (ie exceed GetRange) for a record with the same content hash:
@@ -373,24 +364,7 @@ impl SwarmDriver {
         let expected_get_range = self.get_request_range();
         let key = peer_record.record.key.clone();
 
-        // let all_local_peers = self.get_all_local_peers();
         let peer_id = if let Some(peer_id) = peer_record.peer {
-            // check if we know this peer
-            let mut we_know_them = false;
-            for bucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
-                if bucket
-                    .iter()
-                    .any(|entry| entry.node.key.preimage() == &peer_id)
-                {
-                    we_know_them = true;
-                }
-            }
-            if we_know_them {
-                info!("WE KNOW THIS PEER");
-            } else {
-                info!("WE DO NOT KNOW THIS PEER");
-            }
-
             peer_id
         } else {
             self.self_peer_id
@@ -577,7 +551,6 @@ impl SwarmDriver {
             // are all closest peers we know in the peer_list?
             for peer in closest_peers_we_know.iter() {
                 if !searched_peers_list.contains(peer) {
-                    // warn!("RANGE: have_we_have_searched_full_get_range {data_key_address:?} Not all closest peers we know are in the peer_list, returning false");
                     we_asked_all = false;
                 }
             }
@@ -679,18 +652,16 @@ impl SwarmDriver {
                         // we know we have only one version of the record
                         result = Ok(record.clone());
                     }
-                    // TODO: if not client...
-                    //
 
                     if !self.is_client {
-                        // TODO: ensure this falls into NetworkSwarmCmds channel instead of calling direct
                         for peer in replicate_targets {
+                            warn!("Not a client, reputting data to {peer:?} for {pretty_key:?} if needed...");
                             // Do not send to any peer that has already informed us
                             if from_peers.contains(&peer) {
                                 continue;
                             }
 
-                            debug!("RANGE: (insufficient, so ) Checking unresponded peer for data: {peer:?} for {pretty_key:?}");
+                            debug!("RANGE: (insufficient, so ) Sending data to unresponded peer: {peer:?} for {pretty_key:?}");
 
                             self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
                                 req: Request::Cmd(Cmd::Replicate {

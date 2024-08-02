@@ -195,12 +195,6 @@ impl SwarmDriver {
         incoming_keys: Vec<(NetworkAddress, RecordType)>,
     ) {
         let peers = self.get_all_local_peers();
-        // let get_range = self.get_request_range();
-
-        // if get_range.is_none() {
-        //     warn!("No get range set, ignoring replication list.");
-        //     return;
-        // }
         let our_peer_id = self.self_peer_id;
 
         let holder = if let Some(peer_id) = sender.as_peer_id() {
@@ -216,8 +210,7 @@ impl SwarmDriver {
         );
 
         let more_than_one_key = incoming_keys.len() > 1;
-        // accept replication requests from all peers within our
-        // X-range
+        // accept replication requests from all peers within our GetRange
         if !peers.contains(&holder) || holder == our_peer_id {
             trace!("Holder {holder:?} is self or not in replication range.");
             return;
