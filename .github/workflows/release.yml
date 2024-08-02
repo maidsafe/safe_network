@@ -9,11 +9,6 @@ on:
 # also be updated.
 env:
   WORKFLOW_URL: https://github.com/maidsafe/safe_network/actions/runs
-  GENESIS_PK: ${{ secrets.STABLE_GENESIS_PK }}
-  GENESIS_SK: ${{ secrets.STABLE_GENESIS_SK }}
-  FOUNDATION_PK: ${{ secrets.STABLE_FOUNDATION_PK }}
-  NETWORK_ROYALTIES_PK: ${{ secrets.STABLE_NETWORK_ROYALTIES_PK }}
-  PAYMENT_FORWARD_PK: ${{ secrets.STABLE_REWARD_FORWARDING_PK }}
 
 jobs:
   build:
@@ -22,6 +17,13 @@ jobs:
         (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/heads/rc'))
       }}
     name: build
+    environment: ${{ github.ref == 'refs/heads/stable' && 'stable' || 'release-candidate' }}
+    env:
+      FOUNDATION_PK: ${{ vars.FOUNDATION_PK }}
+      GENESIS_PK: ${{ vars.GENESIS_PK }}
+      GENESIS_SK: ${{ secrets.GENESIS_SK }}
+      NETWORK_ROYALTIES_PK: ${{ vars.NETWORK_ROYALTIES_PK }}
+      PAYMENT_FORWARD_PK: ${{ vars.PAYMENT_FORWARD_PK }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
