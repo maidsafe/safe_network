@@ -11,7 +11,8 @@ use crate::{
     error::{NetworkError, Result},
     event::TerminateNodeReason,
     log_markers::Marker,
-    multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent,
+    multiaddr_pop_p2p, sort_peers_by_address_and_limit, GetRecordCfg, GetRecordError, MsgResponder,
+    NetworkEvent, CLOSE_GROUP_SIZE,
 };
 use libp2p::{
     kad::{
@@ -975,11 +976,36 @@ impl SwarmDriver {
 
         peers
     }
+    /// From all local peers, returns any within current get_range for a given key
+    pub(crate) fn get_filtered_peers_within_range_or_close_group(
+        &mut self,
+        target_address: &NetworkAddress,
+    ) -> Vec<PeerId> {
+        let filtered_peers = self.get_filtered_peers_within_range(target_address);
+
+        if filtered_peers.len() >= CLOSE_GROUP_SIZE {
+            filtered_peers
+        } else {
+            warn!("Insufficient peers within range. Falling back to CLOSE_GROUP closest nodes");
+            let all_peers = self.get_all_local_peers();
+            match sort_peers_by_address_and_limit(&all_peers, target_address, CLOSE_GROUP_SIZE) {
+                Ok(peers) => peers.iter().map(|p| **p).collect(),
+                Err(err) => {
+                    error!("sorting peers close to {target_address:?} failed, sort error: {err:?}");
+                    warn!(
+                        "Using all peers within range even though it's less than CLOSE_GROUP_SIZE."
+                    );
+                    filtered_peers
+                }
+            }
+        }
+    }
 
     fn try_interval_replication(&mut self) -> Result<()> {
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
-        let mut replicate_targets = self.get_filtered_peers_within_range(&our_address);
+        let mut replicate_targets =
+            self.get_filtered_peers_within_range_or_close_group(&our_address);
 
         let now = Instant::now();
         self.replication_targets

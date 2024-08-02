@@ -632,7 +632,7 @@ impl SwarmDriver {
                     let record_type = Self::get_type_from_record(record)?;
 
                     let replicate_targets: HashSet<_> = self
-                        .get_filtered_peers_within_range(&data_key_address)
+                        .get_filtered_peers_within_range_or_close_group(&data_key_address)
                         .iter()
                         .cloned()
                         .collect();

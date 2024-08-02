@@ -331,7 +331,7 @@ impl Network {
         all_peers.retain(|peer_id| peer_id != &network.peer_id());
 
         let data_addr = NetworkAddress::from_record_key(&paid_key);
-        let sorted_based_on_addr = match network.get_range().await {
+        let mut peers_to_replicate_to = match network.get_range().await {
             Err(error) => {
                 error!("Replicating fresh record {pretty_key:?} get_range errored: {error:?}");
 
@@ -346,31 +346,45 @@ impl Network {
                 ) {
                     Ok(result) => result,
                     Err(err) => {
-                        error!(
-                                    "When replicating fresh record {pretty_key:?}, having error when sort {err:?}"
-                                );
+                        error!("When replicating fresh record {pretty_key:?}, sort error: {err:?}");
                         return;
                     }
                 }
             }
         };
 
+        if peers_to_replicate_to.len() < CLOSE_GROUP_SIZE {
+            warn!(
+                "Replicating fresh record {pretty_key:?} current GetRange insufficient for secure replication. Falling back to CLOSE_GROUP_SIZE"
+            );
+
+            peers_to_replicate_to =
+                match sort_peers_by_address_and_limit(&all_peers, &data_addr, CLOSE_GROUP_SIZE) {
+                    Ok(result) => result,
+                    Err(err) => {
+                        error!("When replicating fresh record {pretty_key:?}, sort error: {err:?}");
+                        return;
+                    }
+                };
+        }
+
         let our_peer_id = network.peer_id();
         let our_address = NetworkAddress::from_peer(our_peer_id);
         #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
         let keys = vec![(data_addr.clone(), record_type.clone())];
 
-        for peer_id in sorted_based_on_addr {
+        for peer_id in &peers_to_replicate_to {
             trace!("Replicating fresh record {pretty_key:?} to {peer_id:?}");
             let request = Request::Cmd(Cmd::Replicate {
                 holder: our_address.clone(),
                 keys: keys.clone(),
             });
 
-            network.send_req_ignore_reply(request, *peer_id);
+            network.send_req_ignore_reply(request, **peer_id);
         }
         trace!(
-            "Completed replicate fresh record {pretty_key:?} on store, in {:?}",
+            "Completed replicate fresh record {pretty_key:?} to {:?} peers on store, in {:?}",
+            peers_to_replicate_to.len(),
             start.elapsed()
         );
     }

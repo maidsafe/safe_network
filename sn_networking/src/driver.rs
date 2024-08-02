@@ -790,7 +790,7 @@ impl SwarmDriver {
     ///
     pub(crate) fn set_request_range(&mut self, network_discovery_peers: &Vec<PeerId>) {
         info!(
-            "Adding a GetRange to our stash, defined by NetworkDiscovery which retruend {:?} peers",
+            "Adding a GetRange to our stash deriving from {:?} peers",
             network_discovery_peers.len()
         );
 
