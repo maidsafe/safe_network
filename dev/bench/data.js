@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722561010957,
+  "lastUpdate": 1722561013116,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "49699333+dependabot[bot]@users.noreply.github.com",
-            "name": "dependabot[bot]",
-            "username": "dependabot[bot]"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f86f758711c5c54a8a810b3f18c69f931c1726eb",
-          "message": "chore(deps): bump wagoid/commitlint-github-action from 5.4.5 to 6.0.0\n\nBumps [wagoid/commitlint-github-action](https://github.com/wagoid/commitlint-github-action) from 5.4.5 to 6.0.0.\n- [Changelog](https://github.com/wagoid/commitlint-github-action/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/wagoid/commitlint-github-action/compare/5ce82f5d814d4010519d15f0552aec4f17a1e1fe...3c75220e8d20774b68eea48e869a706ff7249b54)\n\n---\nupdated-dependencies:\n- dependency-name: wagoid/commitlint-github-action\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
-          "timestamp": "2024-04-09T09:32:21+09:00",
-          "tree_id": "9f44daadc68da1f72635322071cdd8d2e6f133fa",
-          "url": "https://github.com/maidsafe/safe_network/commit/f86f758711c5c54a8a810b3f18c69f931c1726eb"
-        },
-        "date": 1712623598749,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 182,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "13b885acbeb3ce5f5d2205f6aadd1ff393865a65",
+          "message": "Merge pull request #2020 from maqi/check_spent\n\nchore(node): check confirmed_spend existence",
+          "timestamp": "2024-08-02T00:15:11Z",
+          "tree_id": "b49834d63f498bc70be3aa7f220b90ca6d086500",
+          "url": "https://github.com/maidsafe/safe_network/commit/13b885acbeb3ce5f5d2205f6aadd1ff393865a65"
+        },
+        "date": 1722561012378,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 205,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
