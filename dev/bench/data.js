@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722852084682,
+  "lastUpdate": 1722852086106,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "523373996931c400d98dca64475fed5c2fbd4852",
-          "message": "feat: unit testing dag, double spend poisoning tweaks",
-          "timestamp": "2024-04-09T00:02:36Z",
-          "tree_id": "dd9c9197ece2b3d5bd2790b86de1e5dedc72756e",
-          "url": "https://github.com/maidsafe/safe_network/commit/523373996931c400d98dca64475fed5c2fbd4852"
-        },
-        "date": 1712625772828,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7258,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34454,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 23937,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "898446f65ee75d0ae340bf423da3da163d8c16f7",
+          "message": "Merge pull request #2022 from RolandSherwin/fix_ci\n\nfix(ci): clean out target directory to save space",
+          "timestamp": "2024-08-05T08:59:05Z",
+          "tree_id": "851de75d15113c8cd6af7a65064aba353b04c844",
+          "url": "https://github.com/maidsafe/safe_network/commit/898446f65ee75d0ae340bf423da3da163d8c16f7"
+        },
+        "date": 1722852085854,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4850,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 25758,
             "unit": "ms"
           },
           {
