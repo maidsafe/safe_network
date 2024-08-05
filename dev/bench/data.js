@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722561015363,
+  "lastUpdate": 1722851970380,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "523373996931c400d98dca64475fed5c2fbd4852",
-          "message": "feat: unit testing dag, double spend poisoning tweaks",
-          "timestamp": "2024-04-09T00:02:36Z",
-          "tree_id": "dd9c9197ece2b3d5bd2790b86de1e5dedc72756e",
-          "url": "https://github.com/maidsafe/safe_network/commit/523373996931c400d98dca64475fed5c2fbd4852"
-        },
-        "date": 1712625659627,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2473014715297175,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6538885779300372,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.20724820733236,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.985813241371886,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "898446f65ee75d0ae340bf423da3da163d8c16f7",
+          "message": "Merge pull request #2022 from RolandSherwin/fix_ci\n\nfix(ci): clean out target directory to save space",
+          "timestamp": "2024-08-05T08:59:05Z",
+          "tree_id": "851de75d15113c8cd6af7a65064aba353b04c844",
+          "url": "https://github.com/maidsafe/safe_network/commit/898446f65ee75d0ae340bf423da3da163d8c16f7"
+        },
+        "date": 1722851964347,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2332126701637367,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6586373999765713,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.06933308839793,
             "unit": "MiB/s"
           }
         ]
