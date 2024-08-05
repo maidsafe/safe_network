@@ -135,7 +135,7 @@ pub enum NetworkEvent {
         bad_behaviour: String,
     },
     /// We have been flagged as a bad node by a peer.
-    FlaggedAsBadNode { flagged_by: NetworkAddress },
+    FlaggedAsBadNode { flagged_by: PeerId },
     /// The records bearing these keys are to be fetched from the holder or the network
     KeysToFetchForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
