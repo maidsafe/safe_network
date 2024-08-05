@@ -627,7 +627,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         let cash_notes_for_y: Vec<_> = transfer_to_y.cash_notes_for_recipient.clone();
 
         // sleep for a bit to allow the network to process and accumulate the double spend
-        tokio::time::sleep(Duration::from_millis(500)).await;
+        tokio::time::sleep(Duration::from_millis(1500)).await;
 
         let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
         info!("Got result while verifying double spend from A -> Y: {result:?}");
