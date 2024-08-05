@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722868446399,
+  "lastUpdate": 1722870685804,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "17d292b2c2a2700a38b2a68ed69833c8ac81985a",
-          "message": "feat(networking): shift to use ilog2 bucket distance for close data calcs\n\nilog2 is about magnitude rather than specifics as distance is already being estimated\nwe can use this to easily render a buffer zone of data we replicate\nvs a close bucket which we deem to be our responsibility",
-          "timestamp": "2024-04-09T15:15:02Z",
-          "tree_id": "10a720c91547f595bbeafb4754b815a84d54805e",
-          "url": "https://github.com/maidsafe/safe_network/commit/17d292b2c2a2700a38b2a68ed69833c8ac81985a"
-        },
-        "date": 1712678221689,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.214859619679891,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.655992385869222,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.59401664507749,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.855222850557766,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5200a00225d9965d09ce83c5e284b4b8c92e6bbf",
+          "message": "Merge pull request #2023 from maqi/upload_un-recoverable_error_during_make_payment\n\nfix(node): terminate make_payment process during unrecoverable error",
+          "timestamp": "2024-08-05T14:17:08Z",
+          "tree_id": "597906977fa9ce06a7d204e8232a62af90e0ad62",
+          "url": "https://github.com/maidsafe/safe_network/commit/5200a00225d9965d09ce83c5e284b4b8c92e6bbf"
+        },
+        "date": 1722870679774,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1947593897318025,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.668034912725876,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.92314785534412,
             "unit": "MiB/s"
           }
         ]
