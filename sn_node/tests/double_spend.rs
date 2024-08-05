@@ -85,10 +85,10 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     info!("Both should fail during GET record accumulation : {should_err1:?} {should_err2:?}");
     assert!(should_err1.is_err() && should_err2.is_err());
     assert_matches!(should_err1, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-        assert!(str.starts_with("Network Error Double spend(s) attempt was detected"));
+        assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "string was {str:?}");
     });
     assert_matches!(should_err2, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-        assert!(str.starts_with("Network Error Double spend(s) attempt was detected"));
+        assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "string was {str:?}");
     });
 
     Ok(())
@@ -549,7 +549,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
     )?;
 
     client
-        .send_spends(transfer_to_c.all_spend_requests.iter(), false)
+        .send_spends(transfer_to_c.all_spend_requests.iter(), true)
         .await?;
 
     info!("Verifying the transfers from B -> C wallet...");
