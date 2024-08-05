@@ -757,9 +757,7 @@ impl SwarmDriver {
 
                 // runs every bootstrap_interval time
                 _ = bootstrap_interval.tick() => {
-                    if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {
-                        bootstrap_interval = new_interval;
-                    }
+                    self.run_bootstrap_continuously();
                 }
                 _ = set_farthest_record_interval.tick() => {
                     if !self.is_client {
