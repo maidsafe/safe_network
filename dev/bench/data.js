@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722868218176,
+  "lastUpdate": 1722868219699,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "committer": {
-            "email": "gabrielviganotti@gmail.com",
-            "name": "bochaco",
-            "username": "bochaco"
-          },
-          "distinct": true,
-          "id": "1d4761a731f2c8b440c69284c81a5e9e94aae77d",
-          "message": "feat(cli): implement FilesUploadStatusNotifier trait for lib code\n\nThis would allow users of this struct to override the default stdout\nprinting and instead provide thier own custom impl",
-          "timestamp": "2024-04-09T12:43:51Z",
-          "tree_id": "b47e8dcc662f27c88e3871759d0cd3a0718d1e02",
-          "url": "https://github.com/maidsafe/safe_network/commit/1d4761a731f2c8b440c69284c81a5e9e94aae77d"
-        },
-        "date": 1712670552057,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 191,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
             "email": "RolandSherwin@protonmail.com",
             "name": "RolandSherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mickvd99@gmail.com",
+            "name": "Mick van Dijke",
+            "username": "mickvandijke"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5e617460b63fbe85d3a2c6ebc3a1e3ecbd482a70",
+          "message": "Merge pull request #2003 from mickvandijke/1999-node-should-panic-on-upnp-failure\n\nchore(node): [#1999] panic on upnp event `GatewayNotFound`",
+          "timestamp": "2024-08-05T13:28:37Z",
+          "tree_id": "ddb8e7412a303a051768821ea22727b558194539",
+          "url": "https://github.com/maidsafe/safe_network/commit/5e617460b63fbe85d3a2c6ebc3a1e3ecbd482a70"
+        },
+        "date": 1722868219382,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 184,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
