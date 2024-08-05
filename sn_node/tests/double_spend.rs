@@ -620,9 +620,13 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
             wallet_a.address(),
             reason.clone(),
         )?; // reuse the old cash notes
-        client
+
+        // we actually don't care about the result here, we just want to spam the network with double spends
+        let _ = client
             .send_spends(transfer_to_y.all_spend_requests.iter(), false)
-            .await?;
+            .await;
+
+        // and then we verify the double spend attempt
         info!("Verifying the transfers from A -> Y wallet... It should error out.");
         let cash_notes_for_y: Vec<_> = transfer_to_y.cash_notes_for_recipient.clone();
 
