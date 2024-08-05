@@ -88,7 +88,14 @@ impl SwarmDriver {
                                 channel: MsgResponder::FromPeer(channel),
                             });
 
-                            if bad_peer == NetworkAddress::from_peer(self.self_peer_id) {
+                            let (Some(detected_by), Some(bad_peer)) =
+                                (detected_by.as_peer_id(), bad_peer.as_peer_id())
+                            else {
+                                error!("Could not get PeerId from detected_by or bad_peer NetworkAddress {detected_by:?}, {bad_peer:?}");
+                                return Ok(());
+                            };
+
+                            if bad_peer == self.self_peer_id {
                                 warn!("Peer {detected_by:?} consider us as BAD, due to {bad_behaviour:?}.");
                                 self.send_event(NetworkEvent::FlaggedAsBadNode {
                                     flagged_by: detected_by,
