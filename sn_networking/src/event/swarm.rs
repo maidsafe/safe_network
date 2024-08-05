@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::event::TerminateNodeReason;
 use crate::{
     cmd::LocalSwarmCmd,
     event::NodeEvent,
@@ -80,6 +81,12 @@ impl SwarmDriver {
                 }
                 event_string = "upnp_event";
                 info!(?upnp_event, "UPnP event");
+                if let libp2p::upnp::Event::GatewayNotFound = upnp_event {
+                    warn!("UPnP is not enabled/supported on the gateway. Please rerun without the `--upnp` flag");
+                    self.send_event(NetworkEvent::TerminateNode {
+                        reason: TerminateNodeReason::UpnpGatewayNotFound,
+                    });
+                }
             }
 
             SwarmEvent::Behaviour(NodeEvent::RelayServer(event)) => {
