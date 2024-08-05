@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722868320032,
+  "lastUpdate": 1722868442723,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "ec62653f134b3d7d8341bb5b284c14a034fe9d24",
-          "message": "fix(protocol): get proper version str for pre releases",
-          "timestamp": "2024-04-09T13:42:25Z",
-          "tree_id": "ae2955f18d14a15332a3546d3eb71fa4573731f7",
-          "url": "https://github.com/maidsafe/safe_network/commit/ec62653f134b3d7d8341bb5b284c14a034fe9d24"
-        },
-        "date": 1712672964583,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 135,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b4da842247cad294591ef396757214453b3aa6a2",
+          "message": "Merge pull request #2021 from RolandSherwin/bad_node_metric\n\nfeat(metrics): track the bad node count",
+          "timestamp": "2024-08-05T13:30:42Z",
+          "tree_id": "ece90c99eb0327e71a9f74760089929fa5464fa5",
+          "url": "https://github.com/maidsafe/safe_network/commit/b4da842247cad294591ef396757214453b3aa6a2"
+        },
+        "date": 1722868442198,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 133,
             "unit": "MB"
           }
         ]
