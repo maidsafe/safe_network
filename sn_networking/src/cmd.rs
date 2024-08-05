@@ -950,8 +950,8 @@ impl SwarmDriver {
         let _ = self.quotes_history.insert(peer_id, quote);
     }
 
-    /// From all local peers, returns any within current get_range for a given key
-    pub(crate) fn get_filtered_peers_within_range(
+    /// From all local peers, returns any within (and just exceeding) current get_range for a given key
+    pub(crate) fn get_filtered_peers_exceeding_range(
         &mut self,
         target_address: &NetworkAddress,
     ) -> Vec<PeerId> {
@@ -964,11 +964,14 @@ impl SwarmDriver {
             .kademlia
             .get_closest_local_peers(&target_key)
             .filter_map(|key| {
-                // Map KBucketKey<PeerId> to PeerId.
-                if acceptable_distance_range < target_key.distance(&key) {
+                // here we compare _bucket_, not the exact distance.
+                // We want to include peers that are just outside the range
+                // Such that we can and will exceed the range in a search eventually
+                if acceptable_distance_range.ilog2() < target_key.distance(&key).ilog2() {
                     return None;
                 }
 
+                // Map KBucketKey<PeerId> to PeerId.
                 let peer_id = key.into_preimage();
                 Some(peer_id)
             })
@@ -976,12 +979,13 @@ impl SwarmDriver {
 
         peers
     }
+
     /// From all local peers, returns any within current get_range for a given key
-    pub(crate) fn get_filtered_peers_within_range_or_close_group(
+    pub(crate) fn get_filtered_peers_exceeding_range_or_close_group(
         &mut self,
         target_address: &NetworkAddress,
     ) -> Vec<PeerId> {
-        let filtered_peers = self.get_filtered_peers_within_range(target_address);
+        let filtered_peers = self.get_filtered_peers_exceeding_range(target_address);
 
         if filtered_peers.len() >= CLOSE_GROUP_SIZE {
             filtered_peers
@@ -1005,7 +1009,7 @@ impl SwarmDriver {
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
         let mut replicate_targets =
-            self.get_filtered_peers_within_range_or_close_group(&our_address);
+            self.get_filtered_peers_exceeding_range_or_close_group(&our_address);
 
         let now = Instant::now();
         self.replication_targets
