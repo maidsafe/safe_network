@@ -8,8 +8,8 @@
 
 use crate::{
     cmd::NetworkSwarmCmd, driver::PendingGetClosestType, get_quorum_value,
-    get_raw_signed_spends_from_record, sort_peers_by_address_and_limit_by_distance, GetRecordCfg,
-    GetRecordError, NetworkError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    get_raw_signed_spends_from_record, GetRecordCfg, GetRecordError, NetworkError, Result,
+    SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::{
@@ -363,6 +363,7 @@ impl SwarmDriver {
     ) -> Result<()> {
         let expected_get_range = self.get_request_range();
         let key = peer_record.record.key.clone();
+        let all_local_peers = self.get_all_local_peers();
 
         let peer_id = if let Some(peer_id) = peer_record.peer {
             peer_id
@@ -418,14 +419,23 @@ impl SwarmDriver {
                 &data_key_address,
             );
 
+            let required_quorum = get_quorum_value(&cfg.get_quorum);
+
+            let we_have_quorum_from_known_nodes = Self::have_we_asked_quorum_nodes_that_we_know(
+                all_local_peers,
+                &peer_list,
+                &data_key_address,
+                required_quorum,
+            )?;
+
             // if it's deemed sensitive data, keep searching
-            if is_sensitive_data && !we_have_searched_thoroughly {
+            if !we_have_searched_thoroughly || !we_have_quorum_from_known_nodes {
                 warn!("RANGE: {pretty_key:?} During accumulate: Not enough of the network has responded, we need to extend the range and PUT the data.");
                 return Ok(());
             }
 
             warn!(
-                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded... {:?}", cfg.get_quorum
+                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded... we_have_searched_thoroughly{:?} we_have_quorum_from_known_nodes {:?} (quorum is: {:?})", we_have_searched_thoroughly, we_have_quorum_from_known_nodes, cfg.get_quorum
             );
 
             if responded_peers >= expected_answers {
@@ -533,36 +543,35 @@ impl SwarmDriver {
     /// Checks passed peers from a request and checks if we've asked
     /// all peers we know of in that range
     ///
+    /// We allow a successful return here if we pass quorum from nodes we _know_
+    ///
     /// TODO: issue with this question is peers without the data do not respond.
     /// Do we want to actually return "not found" error and parse out of the returned record?
-    fn have_we_asked_all_nodes_in_range_we_know(
+    fn have_we_asked_quorum_nodes_that_we_know(
         local_peers: Vec<PeerId>,
-        expected_get_range: KBucketDistance,
-        searched_peers_list: &HashSet<PeerId>,
+        responded_peers_list: &HashSet<PeerId>,
         data_key_address: &NetworkAddress,
+        required_quorum: usize,
     ) -> Result<bool> {
-        let we_asked_everyone_close_we_know = {
-            // find all closest peers to the data_key_address
-            let closest_peers_we_know = sort_peers_by_address_and_limit_by_distance(
-                &local_peers,
-                data_key_address,
-                expected_get_range,
-            )?;
+        let known_nodes_returning_data = {
+            info!(
+                "We know of {:?} peers.  There are {:?} peers in the responded peers list.",
+                local_peers.len(),
+                responded_peers_list.len()
+            );
 
-            info!("We know of {:?} closest peers to the data_key_address {data_key_address:?} within the distance {expected_get_range:?} we are looking for. there are {:?} in the peers list.", closest_peers_we_know.len(), searched_peers_list.len());
-
-            let mut we_asked_all = true;
+            let mut known_nodes_returning_data = 0;
             // are all closest peers we know in the peer_list?
-            for peer in closest_peers_we_know.iter() {
-                if !searched_peers_list.contains(peer) {
-                    we_asked_all = false;
+            for peer in local_peers.iter() {
+                if !responded_peers_list.contains(peer) {
+                    known_nodes_returning_data += 1;
                 }
             }
-            we_asked_all
+            known_nodes_returning_data
         };
 
-        info!("RANGE: have_we_asked_all_nodes_in_range_we_know {data_key_address:?} we_asked_everyone_close_we_know: {we_asked_everyone_close_we_know:?}");
-        Ok(we_asked_everyone_close_we_know)
+        info!("RANGE: have_have_we_asked_quorum_nodes_withinin_range_that_we_know {data_key_address:?} known_nodes_returning_data: {known_nodes_returning_data:?}");
+        Ok(required_quorum <= known_nodes_returning_data)
     }
 
     /// Handles the possible cases when a GetRecord Query completes.
@@ -590,16 +599,21 @@ impl SwarmDriver {
                     &data_key_address,
                 );
 
-                let we_have_asked_all_nodes_we_know =
-                    Self::have_we_asked_all_nodes_in_range_we_know(
+                let required_quorum = get_quorum_value(&cfg.get_quorum);
+
+                let we_have_quorum_from_known_nodes =
+                    Self::have_we_asked_quorum_nodes_that_we_know(
                         all_local_peers,
-                        expected_get_range,
                         from_peers,
                         &data_key_address,
+                        required_quorum,
                     )?;
 
+                let we_have_quorum_count_unconflicted_copies =
+                    num_of_versions == 1 && we_have_quorum_from_known_nodes;
+
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
-                info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_far_enough:?} we_have_asked_all_nodes_we_know: {we_have_asked_all_nodes_we_know:?}");
+                info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_far_enough:?} we_have_quorum_from_known_nodes: {we_have_quorum_from_known_nodes:?}");
 
                 let is_sensitive_data =
                     cfg.get_quorum == Quorum::Majority || cfg.get_quorum == Quorum::All;
@@ -611,9 +625,9 @@ impl SwarmDriver {
                     })
                 } else if !is_sensitive_data
                     || we_have_searched_far_enough
-                    || we_have_asked_all_nodes_we_know
+                    || we_have_quorum_count_unconflicted_copies
                 {
-                    warn!("RANGE: Get record finished: {pretty_key:?} Enough of the network has responded, and we only have one copy...");
+                    warn!("RANGE: Get record finished: {pretty_key:?} Enough of the network has responded or it's not sensitive data... and we only have one copy...");
 
                     if from_peers.len() < get_quorum_value(&cfg.get_quorum) {
                         // If we don't have enough copies, we need to reseed the data.
@@ -667,6 +681,7 @@ impl SwarmDriver {
 
                             debug!("RANGE: (insufficient, so ) Sending data to unresponded peer: {peer:?} for {pretty_key:?}");
 
+                            // nodes will try/fail to trplicate it from us, but grab from the network thereafter
                             self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
                                 req: Request::Cmd(Cmd::Replicate {
                                     holder: NetworkAddress::from_peer(self.self_peer_id),
