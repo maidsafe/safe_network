@@ -77,6 +77,9 @@ jobs:
         shell: bash
         run: if [[ ! $(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].features.default[]? | select(. == "local-discovery")') ]]; then echo "local-discovery is not a default feature in any package."; else echo "local-discovery is a default feature in at least one package." && exit 1; fi
 
+      - name: Clean out the target directory
+        run: cargo clean
+
       # In a cargo workspace, feature unification can occur, allowing a crate to be built successfully even if it
       # doesn't explicitly specify a feature it uses, provided another crate in the workspace enables that feature.
       # To detect such cases, we must build each crate using `--package` flag, building all packages at once does not work.
