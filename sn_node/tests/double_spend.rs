@@ -157,7 +157,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
 
     // send the transfer to the network which should reject it
     let res = client
-        .send_spends(transfer2.all_spend_requests.iter(), false)
+        .send_spends(transfer2.all_spend_requests.iter(), true)
         .await;
     std::mem::drop(exclusive_access);
     assert_matches!(res, Err(WalletError::CouldNotSendMoney(_)));
