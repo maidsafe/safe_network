@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722868221612,
+  "lastUpdate": 1722868320032,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "ec62653f134b3d7d8341bb5b284c14a034fe9d24",
-          "message": "fix(protocol): get proper version str for pre releases",
-          "timestamp": "2024-04-09T13:42:25Z",
-          "tree_id": "ae2955f18d14a15332a3546d3eb71fa4573731f7",
-          "url": "https://github.com/maidsafe/safe_network/commit/ec62653f134b3d7d8341bb5b284c14a034fe9d24"
-        },
-        "date": 1712672853632,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2074503109723527,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.629138716207531,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.006680692072116,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.74526751280863,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b4da842247cad294591ef396757214453b3aa6a2",
+          "message": "Merge pull request #2021 from RolandSherwin/bad_node_metric\n\nfeat(metrics): track the bad node count",
+          "timestamp": "2024-08-05T13:30:42Z",
+          "tree_id": "ece90c99eb0327e71a9f74760089929fa5464fa5",
+          "url": "https://github.com/maidsafe/safe_network/commit/b4da842247cad294591ef396757214453b3aa6a2"
+        },
+        "date": 1722868313580,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1877480450629552,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6165697880541543,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.855222850557766,
             "unit": "MiB/s"
           }
         ]
