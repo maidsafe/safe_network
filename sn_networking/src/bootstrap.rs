@@ -41,7 +41,7 @@ impl SwarmDriver {
         }
 
         self.bootstrap.initiated();
-        debug!("Trigger network discovery took {:?}", now.elapsed());
+        info!("Trigger network discovery took {:?}", now.elapsed());
     }
 }
 
