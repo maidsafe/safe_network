@@ -514,7 +514,11 @@ impl SwarmDriver {
             }
         }
 
-        if current_distance_searched < expected_get_range {
+        // use ilog2 as simplified distance check
+        // It allows us to say "we've searched up to and including this bucket"
+        // as opposed to the concrete distance itself (which statistically seems like we can fall outwith a range
+        // quite easily with a small number of peers)
+        if current_distance_searched.ilog2() < expected_get_range.ilog2() {
             let ilog2 = current_distance_searched.ilog2();
             let expected_ilog2 = expected_get_range.ilog2();
 
