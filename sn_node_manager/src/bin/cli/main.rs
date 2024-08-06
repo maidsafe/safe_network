@@ -13,7 +13,7 @@ use sn_logging::{LogBuilder, LogFormat};
 use sn_node_manager::{
     add_services::config::PortRange,
     cmd::{self},
-    VerbosityLevel,
+    VerbosityLevel, DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S,
 };
 use sn_peers_acquisition::PeersArgs;
 use std::{net::Ipv4Addr, path::PathBuf};
@@ -278,17 +278,33 @@ pub enum SubCmd {
     },
     /// Start safenode service(s).
     ///
+    /// By default, each node service is started after the previous node has successfully connected to the network or
+    /// after the 'connection-timeout' period has been reached for that node. The timeout is 300 seconds by default.
+    /// The above behaviour can be overridden by setting a fixed interval between starting each node service using the
+    /// 'interval' argument.
+    ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be started.
     ///
     /// On Windows, this command must run as the administrative user. On Linux/macOS, run using
     /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "start")]
     Start {
+        /// The max time in seconds to wait for a node to connect to the network. If the node does not connect to the
+        /// network within this time, the node is considered failed.
+        ///
+        /// This argument is mutually exclusive with the 'interval' argument.
+        ///
+        /// Defaults to 300s.
+        #[clap(long, default_value_t = DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S, conflicts_with = "interval")]
+        connection_timeout: u64,
         /// An interval applied between launching each service.
         ///
+        /// Use connection-timeout to scale the interval automatically. This argument is mutually exclusive with the
+        /// 'connection-timeout' argument.
+        ///
         /// Units are milliseconds.
-        #[clap(long, default_value_t = 200)]
-        interval: u64,
+        #[clap(long, conflicts_with = "connection-timeout")]
+        interval: Option<u64>,
         /// The peer ID of the service to start.
         ///
         /// The argument can be used multiple times to start many services.
@@ -334,8 +350,10 @@ pub enum SubCmd {
     },
     /// Upgrade safenode services.
     ///
-    /// The running node will be stopped, its binary will be replaced, then it will be started
-    /// again.
+    /// By default, each node service is started after the previous node has successfully connected to the network or
+    /// after the 'connection-timeout' period has been reached for that node. The timeout is 300 seconds by default.
+    /// The above behaviour can be overridden by setting a fixed interval between starting each node service using the
+    /// 'interval' argument.
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be upgraded.
     ///
@@ -343,6 +361,14 @@ pub enum SubCmd {
     /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "upgrade")]
     Upgrade {
+        /// The max time in seconds to wait for a node to connect to the network. If the node does not connect to the
+        /// network within this time, the node is considered failed.
+        ///
+        /// This argument is mutually exclusive with the 'interval' argument.
+        ///
+        /// Defaults to 300s.
+        #[clap(long, default_value_t = DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S, conflicts_with = "interval")]
+        connection_timeout: u64,
         /// Set this flag to upgrade the nodes without automatically starting them.
         ///
         /// Can be useful for testing scenarios.
@@ -366,9 +392,12 @@ pub enum SubCmd {
         force: bool,
         /// An interval applied between upgrading each service.
         ///
+        /// Use connection-timeout to scale the interval automatically. This argument is mutually exclusive with the
+        /// 'connection-timeout' argument.
+        ///
         /// Units are milliseconds.
-        #[clap(long, default_value_t = 200)]
-        interval: u64,
+        #[clap(long, conflicts_with = "connection-timeout")]
+        interval: Option<u64>,
         /// Provide a path for the safenode binary to be used by the service.
         ///
         /// Useful for upgrading the service using a custom built binary.
@@ -1221,10 +1250,20 @@ async fn main() -> Result<()> {
         } => cmd::node::remove(keep_directories, peer_ids, service_names, verbosity).await,
         SubCmd::Reset { force } => cmd::node::reset(force, verbosity).await,
         SubCmd::Start {
+            connection_timeout,
             interval,
             peer_id: peer_ids,
             service_name: service_names,
-        } => cmd::node::start(interval, peer_ids, service_names, verbosity).await,
+        } => {
+            cmd::node::start(
+                connection_timeout,
+                interval,
+                peer_ids,
+                service_names,
+                verbosity,
+            )
+            .await
+        }
         SubCmd::Status {
             details,
             fail,
@@ -1235,6 +1274,7 @@ async fn main() -> Result<()> {
             service_name: service_names,
         } => cmd::node::stop(peer_ids, service_names, verbosity).await,
         SubCmd::Upgrade {
+            connection_timeout,
             do_not_start,
             force,
             interval,
@@ -1246,6 +1286,7 @@ async fn main() -> Result<()> {
             version,
         } => {
             cmd::node::upgrade(
+                connection_timeout,
                 do_not_start,
                 path,
                 force,

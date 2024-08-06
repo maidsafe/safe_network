@@ -9,9 +9,12 @@
 use crate::error::{Error, Result};
 use async_trait::async_trait;
 use libp2p::{kad::RecordKey, Multiaddr, PeerId};
-use sn_protocol::safenode_proto::{
-    safe_node_client::SafeNodeClient, NetworkInfoRequest, NodeInfoRequest, RecordAddressesRequest,
-    RestartRequest, StopRequest, UpdateLogLevelRequest, UpdateRequest,
+use sn_protocol::{
+    safenode_proto::{
+        safe_node_client::SafeNodeClient, NetworkInfoRequest, NodeInfoRequest,
+        RecordAddressesRequest, RestartRequest, StopRequest, UpdateLogLevelRequest, UpdateRequest,
+    },
+    CLOSE_GROUP_SIZE,
 };
 use std::{net::SocketAddr, path::PathBuf, str::FromStr};
 use tokio::time::Duration;
@@ -48,6 +51,7 @@ pub trait RpcActions: Sync {
     async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> Result<()>;
     async fn node_stop(&self, delay_millis: u64) -> Result<()>;
     async fn node_update(&self, delay_millis: u64) -> Result<()>;
+    async fn is_node_connected_to_network(&self, timeout: Duration) -> Result<()>;
     async fn update_log_level(&self, log_levels: String) -> Result<()>;
 }
 
@@ -220,6 +224,49 @@ impl RpcActions for RpcClient {
                 Error::RpcNodeUpdateError(e.to_string())
             })?;
         Ok(())
+    }
+
+    async fn is_node_connected_to_network(&self, timeout: Duration) -> Result<()> {
+        let max_attempts = std::cmp::max(1, timeout.as_secs() / self.retry_delay.as_secs());
+        trace!(
+            "RPC conneciton max attempts set to: {max_attempts} with retry_delay of {:?}",
+            self.retry_delay
+        );
+        let mut attempts = 0;
+        loop {
+            debug!(
+                "Attempting connection to node RPC endpoint at {}...",
+                self.endpoint
+            );
+            if let Ok(mut client) = SafeNodeClient::connect(self.endpoint.clone()).await {
+                debug!("Connection to RPC successful");
+                if let Ok(response) = client
+                    .network_info(Request::new(NetworkInfoRequest {}))
+                    .await
+                {
+                    if response.get_ref().connected_peers.len() > CLOSE_GROUP_SIZE {
+                        return Ok(());
+                    } else {
+                        error!(
+                            "Node does not have enough peers connected yet. Retrying {attempts}/{max_attempts}",
+                        );
+                    }
+                } else {
+                    error!("Could not obtain NetworkInfo through RPC. Retrying {attempts}/{max_attempts}");
+                }
+            } else {
+                error!(
+                    "Could not connect to RPC endpoint {:?}. Retrying {attempts}/{max_attempts}",
+                    self.endpoint
+                );
+            }
+
+            attempts += 1;
+            tokio::time::sleep(self.retry_delay).await;
+            if attempts >= max_attempts {
+                return Err(Error::RpcConnectionError(self.endpoint.clone()));
+            }
+        }
     }
 
     async fn update_log_level(&self, log_levels: String) -> Result<()> {

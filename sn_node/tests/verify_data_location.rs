@@ -23,10 +23,10 @@ use libp2p::{
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, FilesApi, Uploader, WalletClient};
 use sn_logging::LogBuilder;
-use sn_networking::{sort_peers_by_key, CLOSE_GROUP_SIZE};
+use sn_networking::sort_peers_by_key;
 use sn_protocol::{
     safenode_proto::{NodeInfoRequest, RecordAddressesRequest},
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_registers::{Permissions, RegisterAddress};
 use std::{

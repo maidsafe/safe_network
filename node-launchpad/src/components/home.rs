@@ -31,7 +31,6 @@ use std::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 
-const NODE_START_INTERVAL: usize = 10;
 const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 /// If nat detection fails for more than 3 times, we don't want to waste time running during every node start.
 const MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION: usize = 3;
@@ -660,6 +659,7 @@ fn maintain_n_running_nodes(
         if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
             false,
             true,
+            120,
             count,
             None,
             true,
@@ -680,7 +680,7 @@ fn maintain_n_running_nodes(
             None,
             None,
             VerbosityLevel::Minimal,
-            NODE_START_INTERVAL as u64,
+            None,
         )
         .await
         {

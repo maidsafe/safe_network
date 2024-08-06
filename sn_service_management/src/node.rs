@@ -14,11 +14,13 @@ use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_logging::LogFormat;
 use sn_protocol::get_port_from_multiaddr;
 use sn_transfers::NanoTokens;
-use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr};
+use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
 
 pub struct NodeService<'a> {
     pub service_data: &'a mut NodeServiceData,
     pub rpc_actions: Box<dyn RpcActions + Send>,
+    /// Used to enable dynamic startup delay based on the time it takes for a node to connect to the network.
+    pub connection_timeout: Option<Duration>,
 }
 
 impl<'a> NodeService<'a> {
@@ -29,7 +31,15 @@ impl<'a> NodeService<'a> {
         NodeService {
             rpc_actions,
             service_data,
+            connection_timeout: None,
         }
+    }
+
+    /// Set the max time to wait for the node to connect to the network.
+    /// If not set, we do not perform a dynamic startup delay.
+    pub fn with_connection_timeout(mut self, connection_timeout: Duration) -> NodeService<'a> {
+        self.connection_timeout = Some(connection_timeout);
+        self
     }
 }
 
@@ -139,6 +149,16 @@ impl<'a> ServiceStateActions for NodeService<'a> {
                 "Performing full refresh for {}",
                 self.service_data.service_name
             );
+            if let Some(connection_timeout) = self.connection_timeout {
+                debug!(
+                    "Performing dynamic startup delay for {}",
+                    self.service_data.service_name
+                );
+                self.rpc_actions
+                    .is_node_connected_to_network(connection_timeout)
+                    .await?;
+            }
+
             let node_info = self
                 .rpc_actions
                 .node_info()
