@@ -16,13 +16,11 @@ use sn_protocol::get_port_from_multiaddr;
 use sn_transfers::NanoTokens;
 use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
 
-const DEFAULT_RPC_CONNECTION_TIMEOUT: Duration = Duration::from_secs(120);
-
 pub struct NodeService<'a> {
     pub service_data: &'a mut NodeServiceData,
     pub rpc_actions: Box<dyn RpcActions + Send>,
-    /// Timeout for connecting to the node via RPC
-    pub connection_timeout: Duration,
+    /// Used to enable dynamic startup delay based on the time it takes for a node to connect to the network.
+    pub connection_timeout: Option<Duration>,
 }
 
 impl<'a> NodeService<'a> {
@@ -33,12 +31,14 @@ impl<'a> NodeService<'a> {
         NodeService {
             rpc_actions,
             service_data,
-            connection_timeout: DEFAULT_RPC_CONNECTION_TIMEOUT,
+            connection_timeout: None,
         }
     }
 
+    /// Set the max time to wait for the node to connect to the network.
+    /// If not set, we do not perform a dynamic startup delay.
     pub fn with_connection_timeout(mut self, connection_timeout: Duration) -> NodeService<'a> {
-        self.connection_timeout = connection_timeout;
+        self.connection_timeout = Some(connection_timeout);
         self
     }
 }
@@ -143,16 +143,22 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         self.service_data.status = ServiceStatus::Removed;
     }
 
-    async fn on_start(&mut self, pid: Option<u32>, full_refresh: bool) -> Result<Option<Duration>> {
-        let (start_duration, connected_peers, pid, peer_id) = if full_refresh {
+    async fn on_start(&mut self, pid: Option<u32>, full_refresh: bool) -> Result<()> {
+        let (connected_peers, pid, peer_id) = if full_refresh {
             debug!(
                 "Performing full refresh for {}",
                 self.service_data.service_name
             );
-            let connection_duration = self
-                .rpc_actions
-                .is_node_connected_to_network(self.connection_timeout)
-                .await?;
+            if let Some(connection_timeout) = self.connection_timeout {
+                debug!(
+                    "Performing dynamic startup delay for {}",
+                    self.service_data.service_name
+                );
+                self.rpc_actions
+                    .is_node_connected_to_network(connection_timeout)
+                    .await?;
+            }
+
             let node_info = self
                 .rpc_actions
                 .node_info()
@@ -189,7 +195,6 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             }
 
             (
-                Some(connection_duration),
                 Some(network_info.connected_peers),
                 pid,
                 Some(node_info.peer_id),
@@ -201,7 +206,6 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             );
             debug!("Previously assigned data will be used");
             (
-                None,
                 self.service_data.connected_peers.clone(),
                 pid,
                 self.service_data.peer_id,
@@ -212,7 +216,7 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         self.service_data.peer_id = peer_id;
         self.service_data.pid = pid;
         self.service_data.status = ServiceStatus::Running;
-        Ok(start_duration)
+        Ok(())
     }
 
     async fn on_stop(&mut self) -> Result<()> {

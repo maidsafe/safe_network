@@ -13,7 +13,7 @@ use sn_logging::{LogBuilder, LogFormat};
 use sn_node_manager::{
     add_services::config::PortRange,
     cmd::{self},
-    VerbosityLevel,
+    VerbosityLevel, DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S,
 };
 use sn_peers_acquisition::PeersArgs;
 use std::{net::Ipv4Addr, path::PathBuf};
@@ -278,9 +278,10 @@ pub enum SubCmd {
     },
     /// Start safenode service(s).
     ///
-    /// By default, the interval between starting each service is scaled automatically. The 'connection-timeout'
-    /// controls the maximum time to wait between starting each service. Use the 'interval' argument to set a fixed
-    /// interval and override the dynamic interval.
+    /// By default, each node service is started after the previous node has successfully connected to the network or
+    /// after the 'connection-timeout' period has been reached for that node. The timeout is 300 seconds by default.
+    /// The above behaviour can be overridden by setting a fixed interval between starting each node service using the
+    /// 'interval' argument.
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be started.
     ///
@@ -288,13 +289,13 @@ pub enum SubCmd {
     /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "start")]
     Start {
-        /// The max time in seconds to wait between starting each node service. If the connection is not established
-        /// within this time, the node is considered failed and the dynamic interval is increased drastically.
+        /// The max time in seconds to wait for a node to connect to the network. If the node does not connect to the
+        /// network within this time, the node is considered failed.
         ///
         /// This argument is mutually exclusive with the 'interval' argument.
         ///
-        /// Defaults to 120s.
-        #[clap(long, default_value = "120", conflicts_with = "interval")]
+        /// Defaults to 300s.
+        #[clap(long, default_value_t = DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S, conflicts_with = "interval")]
         connection_timeout: u64,
         /// An interval applied between launching each service.
         ///
@@ -349,10 +350,10 @@ pub enum SubCmd {
     },
     /// Upgrade safenode services.
     ///
-    /// The running node will be stopped, its binary will be replaced, then it will be started
-    /// again. By default, the interval between starting each service is scaled automatically. The 'connection-timeout'
-    /// controls the maximum time to wait between starting each service. Use the 'interval' argument to set a fixed
-    /// interval and override the dynamic interval.
+    /// By default, each node service is started after the previous node has successfully connected to the network or
+    /// after the 'connection-timeout' period has been reached for that node. The timeout is 300 seconds by default.
+    /// The above behaviour can be overridden by setting a fixed interval between starting each node service using the
+    /// 'interval' argument.
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be upgraded.
     ///
@@ -360,13 +361,13 @@ pub enum SubCmd {
     /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "upgrade")]
     Upgrade {
-        /// The max time in seconds to wait between starting each node service. If the connection is not established
-        /// within this time, the node is considered failed and the dynamic interval is increased drastically.
+        /// The max time in seconds to wait for a node to connect to the network. If the node does not connect to the
+        /// network within this time, the node is considered failed.
         ///
         /// This argument is mutually exclusive with the 'interval' argument.
         ///
-        /// Defaults to 120s.
-        #[clap(long, default_value = "120", conflicts_with = "interval")]
+        /// Defaults to 300s.
+        #[clap(long, default_value_t = DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S, conflicts_with = "interval")]
         connection_timeout: u64,
         /// Set this flag to upgrade the nodes without automatically starting them.
         ///

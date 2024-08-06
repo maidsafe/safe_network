@@ -14,7 +14,7 @@ use crate::{
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use service_manager::ServiceInstallCtx;
-use std::{ffi::OsString, net::SocketAddr, path::PathBuf, time::Duration};
+use std::{ffi::OsString, net::SocketAddr, path::PathBuf};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DaemonServiceData {
@@ -101,14 +101,10 @@ impl<'a> ServiceStateActions for DaemonService<'a> {
         self.service_data.status = ServiceStatus::Removed;
     }
 
-    async fn on_start(
-        &mut self,
-        pid: Option<u32>,
-        _full_refresh: bool,
-    ) -> Result<Option<Duration>> {
+    async fn on_start(&mut self, pid: Option<u32>, _full_refresh: bool) -> Result<()> {
         self.service_data.pid = pid;
         self.service_data.status = ServiceStatus::Running;
-        Ok(None)
+        Ok(())
     }
 
     async fn on_stop(&mut self) -> Result<()> {

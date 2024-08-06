@@ -30,7 +30,6 @@ use service_manager::ServiceInstallCtx;
 use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 pub use daemon::{DaemonService, DaemonServiceData};
@@ -87,8 +86,7 @@ pub trait ServiceStateActions {
     fn name(&self) -> String;
     fn pid(&self) -> Option<u32>;
     fn on_remove(&mut self);
-    /// Optionally returns the duration it took to start the service
-    async fn on_start(&mut self, pid: Option<u32>, full_refresh: bool) -> Result<Option<Duration>>;
+    async fn on_start(&mut self, pid: Option<u32>, full_refresh: bool) -> Result<()>;
     async fn on_stop(&mut self) -> Result<()>;
     fn set_version(&mut self, version: &str);
     fn status(&self) -> ServiceStatus;
