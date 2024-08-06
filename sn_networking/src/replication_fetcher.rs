@@ -136,7 +136,7 @@ impl ReplicationFetcher {
         // Filter out those out_of_range ones among the incoming_keys.
         if let Some(ref distance_range) = self.distance_range {
             new_incoming_keys.retain(|(addr, _record_type)| {
-                let is_in_range = self_address.distance(addr) <= *distance_range;
+                let is_in_range = self_address.distance(addr).ilog2() <= distance_range.ilog2();
                 if !is_in_range {
                     out_of_range_keys.push(addr.clone());
                 }
@@ -485,7 +485,7 @@ mod tests {
             let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
             let key = NetworkAddress::from_record_key(&RecordKey::from(random_data));
 
-            if key.distance(&self_address) <= distance_range {
+            if key.distance(&self_address).ilog2() <= distance_range.ilog2() {
                 in_range_keys += 1;
             }
 
