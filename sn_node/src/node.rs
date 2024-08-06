@@ -24,7 +24,7 @@ use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
 use sn_networking::{
     close_group_majority, Instant, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
-    SwarmDriver, CLOSE_GROUP_SIZE,
+    SwarmDriver, CLOSE_GROUP_SIZE, REPLICATION_INTERVAL,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -53,9 +53,13 @@ use sn_networking::PutRecordCfg;
 #[cfg(feature = "reward-forward")]
 use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
 
-/// Interval to trigger replication of all records to all peers.
+/// Interval to trigger replication of the latest records
 /// This is the max time it should take. Minimum interval at any node will be half this
-pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
+pub const PERIODIC_LATEST_RECORD_REPLICATION_INTERVAL_MAX_S: u64 = REPLICATION_INTERVAL.as_secs();
+
+/// Interval to trigger replication of all records.
+/// This happens every 5 hours.
+const PERIODIC_ALL_RECORD_REPLICATION_INTERVAL_MAX_S: u64 = 5 * 3600;
 
 /// Interval to trigger bad node detection.
 /// This is the max time it should take. Minimum interval at any node will be half this
@@ -81,51 +85,75 @@ const UPTIME_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
-    keypair: Keypair,
     addr: SocketAddr,
-    initial_peers: Vec<Multiaddr>,
+    is_behind_home_network: bool,
+    keypair: Keypair,
     local: bool,
-    root_dir: PathBuf,
     #[cfg(feature = "open-metrics")]
-    /// Set to Some to enable the metrics server
     metrics_server_port: Option<u16>,
-    /// Enable hole punching for nodes connecting from home networks.
-    pub is_behind_home_network: bool,
+    initial_peers: Vec<Multiaddr>,
     owner: Option<String>,
+    root_dir: PathBuf,
     #[cfg(feature = "upnp")]
     upnp: bool,
+    was_node_restarted: bool,
 }
 
 impl NodeBuilder {
     /// Instantiate the builder
     pub fn new(
-        keypair: Keypair,
         addr: SocketAddr,
+        keypair: Keypair,
         initial_peers: Vec<Multiaddr>,
-        local: bool,
         root_dir: PathBuf,
-        owner: Option<String>,
-        #[cfg(feature = "upnp")] upnp: bool,
     ) -> Self {
         Self {
-            keypair,
             addr,
-            initial_peers,
-            local,
-            root_dir,
+            is_behind_home_network: false,
+            keypair,
+            local: false,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: None,
-            is_behind_home_network: false,
-            owner,
+            initial_peers,
+            owner: None,
+            root_dir,
             #[cfg(feature = "upnp")]
-            upnp,
+            upnp: false,
+            was_node_restarted: false,
         }
     }
 
-    #[cfg(feature = "open-metrics")]
+    /// Set to true to enable hole-punching
+    pub fn set_behind_home_network(&mut self, is_behind_home_network: bool) {
+        self.is_behind_home_network = is_behind_home_network;
+    }
+
+    /// Set to true to allow private addresses. This is used when running a node on a local network.
+    pub fn local(&mut self, local: bool) {
+        self.local = local;
+    }
+
     /// Set the port for the OpenMetrics server. Defaults to a random port if not set
+    #[cfg(feature = "open-metrics")]
     pub fn metrics_server_port(&mut self, port: Option<u16>) {
         self.metrics_server_port = port;
+    }
+
+    /// Set the owner of the node. This is used to forward rewards during the beta network phase.
+    pub fn set_owner(&mut self, owner: String) {
+        self.owner = Some(owner);
+    }
+
+    /// Set to true to enable UPnP port forwarding
+    #[cfg(feature = "upnp")]
+    pub fn upnp(&mut self, upnp: bool) {
+        self.upnp = upnp;
+    }
+
+    /// Set to true to indicate that the node was restarted instead of being started for the first time.
+    /// This is used to trigger replication on restart.
+    pub fn was_node_restarted(&mut self, was_node_restarted: bool) {
+        self.was_node_restarted = was_node_restarted;
     }
 
     /// Asynchronously runs a new node instance, setting up the swarm driver,
@@ -172,7 +200,7 @@ impl NodeBuilder {
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_server_port(self.metrics_server_port);
         network_builder.initial_peers(self.initial_peers.clone());
-        network_builder.is_behind_home_network(self.is_behind_home_network);
+        network_builder.set_behind_home_network(self.is_behind_home_network);
 
         #[cfg(feature = "upnp")]
         network_builder.upnp(self.upnp);
@@ -193,12 +221,16 @@ impl NodeBuilder {
             inner: Arc::new(node),
         };
         let running_node = RunningNode {
-            network,
+            network: network.clone(),
             node_events_channel,
         };
 
         // Run the node
         node.run(swarm_driver, network_event_receiver);
+
+        if self.was_node_restarted {
+            network.request_peers_for_replication();
+        }
 
         Ok(running_node)
     }
@@ -282,16 +314,25 @@ impl Node {
 
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
-            // use a random inactivity timeout to ensure that the nodes do not sync when messages
-            // are being transmitted.
-            let replication_interval: u64 = rng.gen_range(
-                PERIODIC_REPLICATION_INTERVAL_MAX_S / 2..PERIODIC_REPLICATION_INTERVAL_MAX_S,
+            let latest_record_replication_interval: u64 = rng.gen_range(
+                PERIODIC_LATEST_RECORD_REPLICATION_INTERVAL_MAX_S / 2
+                    ..PERIODIC_LATEST_RECORD_REPLICATION_INTERVAL_MAX_S,
             );
-            let replication_interval_time = Duration::from_secs(replication_interval);
-            debug!("Replication interval set to {replication_interval_time:?}");
+            let latest_record_replication_interval =
+                Duration::from_secs(latest_record_replication_interval);
+            debug!(
+                "Latest record replication interval set to {latest_record_replication_interval:?}"
+            );
+            let mut latest_record_replication_interval =
+                tokio::time::interval(latest_record_replication_interval);
+            let _ = latest_record_replication_interval.tick().await; // first tick completes immediately
 
-            let mut replication_interval = tokio::time::interval(replication_interval_time);
-            let _ = replication_interval.tick().await; // first tick completes immediately
+            let all_replication_interval_time =
+                Duration::from_secs(PERIODIC_ALL_RECORD_REPLICATION_INTERVAL_MAX_S);
+            debug!("All record replication interval set to {all_replication_interval_time:?}");
+            let mut all_record_replication_interval =
+                tokio::time::interval(all_replication_interval_time);
+            let _ = all_record_replication_interval.tick().await; // first tick completes immediately
 
             // use a random timeout to ensure not sync when transmit messages.
             let bad_nodes_check_interval: u64 = rng.gen_range(
@@ -344,19 +385,18 @@ impl Node {
                             }
                         }
                     }
-                    // runs every replication_interval time
-                    _ = replication_interval.tick() => {
-                        let start = Instant::now();
-                        debug!("Periodic replication triggered");
-                        let network = self.network().clone();
+                    _ = latest_record_replication_interval.tick() => {
+                        debug!("Latest record periodic replication triggered");
                         self.record_metrics(Marker::IntervalReplicationTriggered);
 
-                        let _handle = spawn(async move {
-                            Self::try_interval_replication(network);
-                            trace!("Periodic replication took {:?}", start.elapsed());
-                        });
+                        self.network().trigger_interval_replication(false);
                     }
-                    // runs every bad_nodes_check_time time
+                    _ = all_record_replication_interval.tick() => {
+                        debug!("All record periodic replication triggered");
+                        self.record_metrics(Marker::IntervalReplicationTriggered);
+
+                        self.network().trigger_interval_replication(true);
+                    }
                     _ = bad_nodes_check_interval.tick() => {
                         let start = Instant::now();
                         debug!("Periodic bad_nodes check triggered");
@@ -374,7 +414,6 @@ impl Node {
                             rolling_index += 1;
                         }
                     }
-                    // runs every balance_forward_interval time
                     _ = balance_forward_interval.tick() => {
                         if cfg!(feature = "reward-forward") {
                             if let Some(owner) = self.owner() {
@@ -442,23 +481,17 @@ impl Node {
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerAddedToRoutingTable(&peer_id));
 
-                // try replication here
-                let network = self.network().clone();
+                // trigger replication here
                 self.record_metrics(Marker::IntervalReplicationTriggered);
-                let _handle = spawn(async move {
-                    Self::try_interval_replication(network);
-                });
+                self.network().trigger_interval_replication(false);
             }
             NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
                 event_header = "PeerRemoved";
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
                 self.record_metrics(Marker::PeerRemovedFromRoutingTable(&peer_id));
 
-                let network = self.network().clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
-                let _handle = spawn(async move {
-                    Self::try_interval_replication(network);
-                });
+                self.network().trigger_interval_replication(false);
             }
             NetworkEvent::PeerWithUnsupportedProtocol { .. } => {
                 event_header = "PeerWithUnsupportedProtocol";

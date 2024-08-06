@@ -50,6 +50,23 @@ impl SwarmDriver {
 
                             self.add_keys_to_replication_fetcher(holder, keys);
                         }
+                        Request::Cmd(sn_protocol::messages::Cmd::RequestReplication {
+                            keys: holding_keys,
+                        }) => {
+                            let records_to_replicate =
+                                self.respond_to_replication_request(peer, holding_keys);
+
+                            let response = Response::Cmd(
+                                sn_protocol::messages::CmdResponse::RequestReplication(
+                                    records_to_replicate,
+                                ),
+                            );
+                            self.swarm
+                                .behaviour_mut()
+                                .request_response
+                                .send_response(channel, response)
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                        }
                         Request::Cmd(sn_protocol::messages::Cmd::QuoteVerification {
                             quotes,
                             ..
@@ -119,26 +136,41 @@ impl SwarmDriver {
                     response,
                 } => {
                     debug!("Got response {request_id:?} from peer {peer:?}, res: {response}.");
-                    if let Some(sender) = self.pending_requests.remove(&request_id) {
+                    if let Some(response_sender) = self.pending_requests.remove(&request_id) {
                         // The sender will be provided if the caller (Requester) is awaiting for a response
                         // at the call site.
                         // Else the Request was just sent to the peer and the Response was
                         // meant to be handled in another way and is not awaited.
-                        match sender {
+                        match response_sender {
                             Some(sender) => sender
                                 .send(Ok(response))
                                 .map_err(|_| NetworkError::InternalMsgChannelDropped)?,
                             None => {
-                                if let Response::Cmd(CmdResponse::Replicate(Ok(()))) = response {
-                                    // Nothing to do, response was fine
-                                    // This only exists to ensure we dont drop the handle and
-                                    // exit early, potentially logging false connection woes
-                                } else {
-                                    // responses that are not awaited at the call site must be handled
-                                    // separately
-                                    self.send_event(NetworkEvent::ResponseReceived {
-                                        res: response,
-                                    });
+                                match response {
+                                    Response::Cmd(CmdResponse::Replicate(res)) => {
+                                        // Nothing to do, response was fine
+                                        // This only exists to ensure we dont drop the handle and
+                                        // exit early, potentially logging false connection woes
+                                        debug!(
+                                            "CmdResponse::Replicate received from peer {peer:?} with result: {res:?}"
+                                        );
+                                    }
+                                    Response::Cmd(CmdResponse::RequestReplication(
+                                        records_to_replicate,
+                                    )) => {
+                                        debug!("CmdResponse::RequestReplication received from peer {peer:?} with records_to_replicate len: {:?}", records_to_replicate.len());
+                                        self.add_keys_to_replication_fetcher(
+                                            NetworkAddress::from_peer(peer),
+                                            records_to_replicate,
+                                        );
+                                    }
+                                    _ => {
+                                        // responses that are not awaited at the call site must be handled
+                                        // separately
+                                        self.send_event(NetworkEvent::ResponseReceived {
+                                            res: response,
+                                        });
+                                    }
                                 }
                             }
                         }
@@ -224,7 +256,7 @@ impl SwarmDriver {
             .behaviour_mut()
             .kademlia
             .store_mut()
-            .record_addresses_ref();
+            .record_keys_ref();
         let keys_to_fetch = self
             .replication_fetcher
             .add_keys(holder, incoming_keys, all_keys);
@@ -278,12 +310,12 @@ impl SwarmDriver {
             .behaviour_mut()
             .kademlia
             .store_mut()
-            .record_addresses_ref();
+            .record_keys_ref();
 
         // Targeted chunk type record shall be expected within the close range from our perspective.
         let mut verify_candidates: Vec<NetworkAddress> = all_keys
             .values()
-            .filter_map(|(addr, record_type)| {
+            .filter_map(|(addr, record_type, _)| {
                 if RecordType::Chunk == *record_type {
                     match sort_peers_by_address(&closest_peers, addr, CLOSE_GROUP_SIZE) {
                         Ok(close_group) => {

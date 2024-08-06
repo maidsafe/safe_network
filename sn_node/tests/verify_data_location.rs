@@ -55,7 +55,7 @@ const VERIFICATION_ATTEMPTS: usize = 5;
 
 /// Length of time to wait before re-verifying the data location
 const REVERIFICATION_DELAY: Duration =
-    Duration::from_secs(sn_node::PERIODIC_REPLICATION_INTERVAL_MAX_S);
+    Duration::from_secs(sn_node::PERIODIC_LATEST_RECORD_REPLICATION_INTERVAL_MAX_S);
 
 // Default number of churns that should be performed. After each churn, we
 // wait for VERIFICATION_DELAY time before verifying the data location.

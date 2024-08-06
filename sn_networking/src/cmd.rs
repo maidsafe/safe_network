@@ -6,13 +6,15 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::target_arch::Instant;
 use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     event::TerminateNodeReason,
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
-    REPLICATION_PEERS_COUNT,
+    REPLICATION_INTERVAL, REPLICATION_PEERS_COUNT,
 };
+use itertools::Itertools;
 use libp2p::{
     kad::{
         store::{Error as StoreError, RecordStore},
@@ -26,20 +28,19 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
-use std::{
-    collections::{BTreeMap, HashMap},
-    fmt::Debug,
-    time::Duration,
-};
+use std::collections::HashSet;
+use std::{collections::BTreeMap, collections::HashMap, fmt::Debug};
 use tokio::sync::oneshot;
 use xor_name::XorName;
 
-use crate::target_arch::Instant;
-
 const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
 
-// Shall be synced with `sn_node::PERIODIC_REPLICATION_INTERVAL_MAX_S`
-const REPLICATION_TIMEOUT: Duration = Duration::from_secs(45);
+/// The number of times to resend the same set of keys before updating the records_to_consider timestamp.
+/// This is so that nodes do not miss the updates by chance.
+const N_REPLICATOIN_OF_SAME_SET_OF_KEYS: usize = 3;
+
+/// The max number of replication targets we store. This it to account for shaky nodes that might join and leave our group.
+const MAX_REPLICATION_TARGETS_COUNT: usize = 100;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeIssue {
@@ -80,7 +81,7 @@ pub enum LocalSwarmCmd {
     },
     /// Get the Addresses of all the Records held locally
     GetAllLocalRecordAddresses {
-        sender: oneshot::Sender<HashMap<NetworkAddress, RecordType>>,
+        sender: oneshot::Sender<HashSet<NetworkAddress>>,
     },
     /// Get data from the local RecordStore
     GetLocalRecord {
@@ -109,6 +110,7 @@ pub enum LocalSwarmCmd {
         key: RecordKey,
         record_type: RecordType,
     },
+
     /// Notify whether peer is in trouble
     RecordNodeIssue {
         peer_id: PeerId,
@@ -125,9 +127,11 @@ pub enum LocalSwarmCmd {
     },
     // Notify a fetch completion
     FetchCompleted((RecordKey, RecordType)),
-    /// Triggers interval repliation
+    /// Triggers interval replication. If all_records is set to false, only the latest records are replicated.
     /// NOTE: This does result in outgoing messages, but is produced locally
-    TriggerIntervalReplication,
+    TriggerIntervalReplication {
+        all_records: bool,
+    },
 }
 
 /// Commands to send to the Swarm
@@ -180,6 +184,8 @@ pub enum NetworkSwarmCmd {
         sender: oneshot::Sender<Result<()>>,
         quorum: Quorum,
     },
+    /// Request peers to replicate the data that we are missing
+    RequestPeersForReplication,
 }
 
 /// Debug impl for LocalSwarmCmd to avoid printing full Record, instead only RecodKey
@@ -271,8 +277,11 @@ impl Debug for LocalSwarmCmd {
                     PrettyPrintRecordKey::from(key)
                 )
             }
-            LocalSwarmCmd::TriggerIntervalReplication => {
-                write!(f, "LocalSwarmCmd::TriggerIntervalReplication")
+            LocalSwarmCmd::TriggerIntervalReplication { all_records } => {
+                write!(
+                    f,
+                    "LocalSwarmCmd::TriggerIntervalReplication {{ all_records: {all_records:?} }}"
+                )
             }
         }
     }
@@ -318,6 +327,9 @@ impl Debug for NetworkSwarmCmd {
                     f,
                     "NetworkSwarmCmd::SendRequest req: {req:?}, peer: {peer:?}"
                 )
+            }
+            NetworkSwarmCmd::RequestPeersForReplication => {
+                write!(f, "NetworkSwarmCmd::RequestPeersForReplication")
             }
         }
     }
@@ -525,6 +537,10 @@ impl SwarmDriver {
                     }
                 }
             }
+            NetworkSwarmCmd::RequestPeersForReplication => {
+                cmd_string = "RequestPeersForReplication";
+                self.request_peers_for_replication();
+            }
         }
 
         self.log_handling(cmd_string.to_string(), start.elapsed());
@@ -535,9 +551,9 @@ impl SwarmDriver {
         let start = Instant::now();
         let mut cmd_string;
         match cmd {
-            LocalSwarmCmd::TriggerIntervalReplication => {
+            LocalSwarmCmd::TriggerIntervalReplication { all_records } => {
                 cmd_string = "TriggerIntervalReplication";
-                self.try_interval_replication()?;
+                self.try_interval_replication(all_records)?;
             }
             LocalSwarmCmd::GetLocalStoreCost { key, sender } => {
                 cmd_string = "GetLocalStoreCost";
@@ -703,7 +719,7 @@ impl SwarmDriver {
             }
             LocalSwarmCmd::GetAllLocalRecordAddresses { sender } => {
                 cmd_string = "GetAllLocalRecordAddresses";
-                #[allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
+                #[allow(clippy::mutable_key_type)]
                 let addresses = self
                     .swarm
                     .behaviour_mut()
@@ -894,7 +910,52 @@ impl SwarmDriver {
         let _ = self.quotes_history.insert(peer_id, quote);
     }
 
-    fn try_interval_replication(&mut self) -> Result<()> {
+    fn insert_peer_to_replication_targets(&mut self, peer_id: &PeerId, now: Instant) {
+        match self.replication_targets.get_mut(peer_id) {
+            Some((records_to_consider_timestamp, last_replication_timestamp, count)) => {
+                *last_replication_timestamp = now;
+
+                if *count >= N_REPLICATOIN_OF_SAME_SET_OF_KEYS {
+                    *records_to_consider_timestamp = now;
+                    *count = 1;
+                } else {
+                    *count += 1;
+                }
+            }
+            None => {
+                let _ = self.replication_targets.insert(*peer_id, (now, now, 1));
+            }
+        }
+
+        // We store more peers than our replication_group to account for any shaky node that might join and leave
+        // the group.
+        while self.replication_targets.len() > MAX_REPLICATION_TARGETS_COUNT {
+            let oldest_peer = self
+                .replication_targets
+                .iter()
+                // timestamp with high value = happened recently, so oldest is the one with the lowest value.
+                .min_by_key(|(_, (_, last_replication_timestamp, _))| last_replication_timestamp)
+                .map(|(peer_id, _)| *peer_id);
+            if let Some(oldest_peer) = oldest_peer {
+                self.replication_targets.remove(&oldest_peer);
+            }
+        }
+    }
+
+    /// Request the closest peers to send replication list to us. This is used to fetch the records that we might have
+    /// missed during a restart.
+    fn request_peers_for_replication(&mut self) {
+        #[allow(clippy::mutable_key_type)]
+        let our_keys = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_keys_ref()
+            .values()
+            .map(|(address, record_type, _)| (address.clone(), record_type.clone()))
+            .collect::<HashMap<_, _>>();
+
         // get closest peers from buckets, sorted by increasing distance to us
         let our_peer_id = self.self_peer_id.into();
         let closest_k_peers = self
@@ -902,55 +963,150 @@ impl SwarmDriver {
             .behaviour_mut()
             .kademlia
             .get_closest_local_peers(&our_peer_id)
-            // Map KBucketKey<PeerId> to PeerId.
             .map(|key| key.into_preimage());
 
         // Only grab the closest nodes within the REPLICATE_RANGE
-        let mut replicate_targets = closest_k_peers
+        let close_group = closest_k_peers
             .into_iter()
             // add some leeway to allow for divergent knowledge
             .take(REPLICATION_PEERS_COUNT)
             .collect::<Vec<_>>();
 
-        let now = Instant::now();
-        self.replication_targets
-            .retain(|_peer_id, timestamp| *timestamp > now);
-        // Only carry out replication to peer that not replicated to it recently
-        replicate_targets.retain(|peer_id| !self.replication_targets.contains_key(peer_id));
-        if replicate_targets.is_empty() {
-            return Ok(());
+        let len = our_keys.len();
+        let request = Request::Cmd(Cmd::RequestReplication { keys: our_keys });
+        for peer_id in close_group {
+            debug!(
+                "Sending RequestReplication cmd to peer {peer_id:?}. We currently have {len} keys",
+            );
+            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                req: request.clone(),
+                peer: peer_id,
+                sender: None,
+            });
         }
+    }
 
-        let all_records: Vec<_> = self
+    /// Send Replicate Cmd to a peer who requested for it.
+    #[allow(clippy::mutable_key_type)]
+    pub fn respond_to_replication_request(
+        &mut self,
+        peer_id: PeerId,
+        their_keys: HashMap<NetworkAddress, RecordType>,
+    ) -> Vec<(NetworkAddress, RecordType)> {
+        let records_to_replicate = self
             .swarm
             .behaviour_mut()
             .kademlia
             .store_mut()
-            .record_addresses_ref()
+            .record_keys_ref()
             .values()
-            .cloned()
-            .collect();
+            .filter_map(|(key, kind, _)| {
+                if let Some(their_record_type) = their_keys.get(key) {
+                    if their_record_type != kind {
+                        Some((key.clone(), kind.clone()))
+                    } else {
+                        None
+                    }
+                } else {
+                    Some((key.clone(), kind.clone()))
+                }
+            })
+            .collect_vec();
 
-        if !all_records.is_empty() {
-            debug!(
-                "Sending a replication list of {} keys to {replicate_targets:?} ",
-                all_records.len()
-            );
+        debug!(
+            "Sending response to RequestReplication msg with {} keys to peer {peer_id:?}",
+            records_to_replicate.len()
+        );
+        self.insert_peer_to_replication_targets(&peer_id, Instant::now());
+
+        records_to_replicate
+    }
+
+    pub fn try_interval_replication(&mut self, all_records: bool) -> Result<()> {
+        // get closest peers from buckets, sorted by increasing distance to us
+        let our_peer_id = self.self_peer_id.into();
+        let closest_k_peers = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .get_closest_local_peers(&our_peer_id)
+            .map(|key| key.into_preimage());
+
+        // Only grab the closest nodes within the REPLICATE_RANGE
+        let targets = closest_k_peers
+            .into_iter()
+            // add some leeway to allow for divergent knowledge
+            .take(REPLICATION_PEERS_COUNT)
+            .collect::<Vec<_>>();
+        #[allow(clippy::mutable_key_type)]
+        let record_keys_ref = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .record_keys_ref();
+        if record_keys_ref.is_empty() {
+            return Ok(());
+        }
+
+        let now = Instant::now();
+        let mut replication_targets = Vec::new();
+
+        for target in targets {
+            // If all_records is set or if we have never replicated to this target, replicate all records.
+            if all_records || !self.replication_targets.contains_key(&target) {
+                let records_to_replicate = record_keys_ref
+                    .iter()
+                    .map(|(_, (address, record_type, _))| (address.clone(), record_type.clone()))
+                    .collect_vec();
+                replication_targets.push((target, records_to_replicate));
+                continue;
+            }
+
+            if let Some((records_to_consider_timestamp, last_replication_timestamp, _)) =
+                self.replication_targets.get(&target)
+            {
+                // replicate to the target if the last replication was a while ago
+                if *last_replication_timestamp + REPLICATION_INTERVAL < now {
+                    let records_to_replicate = record_keys_ref
+                        .iter()
+                        .filter_map(|(_, (address, record_type, stored_timestamp))| {
+                            // only send the records that are new/updated
+                            if stored_timestamp > records_to_consider_timestamp {
+                                Some((address.clone(), record_type.clone()))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect_vec();
+                    if records_to_replicate.is_empty() {
+                        debug!("No new records to replicate to peer {target:?}");
+                        continue;
+                    }
+                    replication_targets.push((target, records_to_replicate));
+                }
+            }
+        }
+
+        if replication_targets.is_empty() {
+            return Ok(());
+        }
+
+        for (peer_id, record_to_replicate) in replication_targets {
+            let len = record_to_replicate.len();
             let request = Request::Cmd(Cmd::Replicate {
                 holder: NetworkAddress::from_peer(self.self_peer_id),
-                keys: all_records,
+                keys: record_to_replicate,
             });
-            for peer_id in replicate_targets {
-                self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
-                    req: request.clone(),
-                    peer: peer_id,
-                    sender: None,
-                });
+            debug!("Sending Replicate cmd with {len} keys to peer {peer_id:?}",);
 
-                let _ = self
-                    .replication_targets
-                    .insert(peer_id, now + REPLICATION_TIMEOUT);
-            }
+            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                req: request.clone(),
+                peer: peer_id,
+                sender: None,
+            });
+
+            self.insert_peer_to_replication_targets(&peer_id, now);
         }
 
         Ok(())

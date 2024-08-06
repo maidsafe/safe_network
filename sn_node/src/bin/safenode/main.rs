@@ -35,6 +35,8 @@ use tokio::{
 };
 use tracing_appender::non_blocking::WorkerGuard;
 
+const SECRET_KEY_FILENAME: &str = "secret-key";
+
 #[derive(Debug, Clone)]
 pub enum LogOutputDestArg {
     Stdout,
@@ -184,6 +186,7 @@ fn main() -> Result<()> {
     let opt = Opt::parse();
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
+    let was_node_restarted = does_keypair_exist(&opt.root_dir);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
 
     let (log_output_dest, log_reload_handle, _log_appender_guard) =
@@ -211,19 +214,18 @@ fn main() -> Result<()> {
     rt.spawn(init_metrics(std::process::id()));
     debug!("Node's owner set to: {:?}", opt.owner);
     let restart_options = rt.block_on(async move {
-        let mut node_builder = NodeBuilder::new(
-            keypair,
-            node_socket_addr,
-            bootstrap_peers,
-            opt.local,
-            root_dir,
-            opt.owner.clone(),
-            #[cfg(feature = "upnp")]
-            opt.upnp,
-        );
-        node_builder.is_behind_home_network = opt.home_network;
-        #[cfg(feature = "open-metrics")]
-        let mut node_builder = node_builder;
+        let mut node_builder =
+            NodeBuilder::new(node_socket_addr, keypair, bootstrap_peers, root_dir);
+
+        node_builder.set_behind_home_network(opt.home_network);
+        node_builder.local(opt.local);
+        if let Some(owner) = opt.owner {
+            node_builder.set_owner(owner);
+        }
+        #[cfg(feature = "upnp")]
+        node_builder.upnp(opt.upnp);
+        node_builder.was_node_restarted(was_node_restarted);
+
         // if enable flag is provided or only if the port is specified then enable the server by setting Some()
         #[cfg(feature = "open-metrics")]
         let metrics_server_port = if opt.enable_metrics_server || opt.metrics_server_port != 0 {
@@ -510,6 +512,15 @@ fn keypair_from_path(path: impl AsRef<Path>) -> Result<Keypair> {
     Ok(keypair)
 }
 
+/// Check if the keypair file exists in the root directory. This means that the node was restarted.
+fn does_keypair_exist(root_dir: &Option<PathBuf>) -> bool {
+    if let Some(dir) = root_dir {
+        dir.join(SECRET_KEY_FILENAME).exists()
+    } else {
+        false
+    }
+}
+
 /// The keypair is located inside the root directory. At the same time, when no dir is specified,
 /// the dir name is derived from the keypair used in the application: the peer ID is used as the directory name.
 fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keypair)> {
@@ -517,7 +528,7 @@ fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keyp
         Some(dir) => {
             std::fs::create_dir_all(dir)?;
 
-            let secret_key_path = dir.join("secret-key");
+            let secret_key_path = dir.join(SECRET_KEY_FILENAME);
             Ok((dir.clone(), keypair_from_path(secret_key_path)?))
         }
         None => {
@@ -529,7 +540,7 @@ fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keyp
             let dir = get_safenode_root_dir(peer_id)?;
             std::fs::create_dir_all(&dir)?;
 
-            let secret_key_path = dir.join("secret-key");
+            let secret_key_path = dir.join(SECRET_KEY_FILENAME);
 
             let mut file = create_secret_key_file(secret_key_path)
                 .map_err(|err| eyre!("could not create secret key file: {err}"))?;

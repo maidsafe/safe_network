@@ -23,8 +23,6 @@ pub use self::{
     response::{CmdResponse, QueryResponse},
 };
 
-use super::NetworkAddress;
-
 use serde::{Deserialize, Serialize};
 
 #[allow(clippy::large_enum_variant)]
@@ -44,16 +42,6 @@ pub enum Response {
     Cmd(CmdResponse),
     /// The response to a query.
     Query(QueryResponse),
-}
-
-impl Request {
-    /// Used to send a request to the close group of the address.
-    pub fn dst(&self) -> NetworkAddress {
-        match self {
-            Request::Cmd(cmd) => cmd.dst(),
-            Request::Query(query) => query.dst(),
-        }
-    }
 }
 
 impl std::fmt::Display for Response {

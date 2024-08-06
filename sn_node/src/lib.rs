@@ -40,7 +40,7 @@ mod replication;
 pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
     log_markers::Marker,
-    node::{NodeBuilder, PERIODIC_REPLICATION_INTERVAL_MAX_S},
+    node::{NodeBuilder, PERIODIC_LATEST_RECORD_REPLICATION_INTERVAL_MAX_S},
 };
 
 use crate::error::{Error, Result};
@@ -109,15 +109,9 @@ impl RunningNode {
     }
 
     /// Returns the list of all the RecordKeys held by the node
+    #[allow(clippy::mutable_key_type)]
     pub async fn get_all_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
-        #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
-        let addresses: HashSet<_> = self
-            .network
-            .get_all_local_record_addresses()
-            .await?
-            .keys()
-            .cloned()
-            .collect();
+        let addresses = self.network.get_all_local_record_addresses().await?;
         Ok(addresses)
     }
 
