@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722939868927,
+  "lastUpdate": 1722947388475,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5cd1a19fefb649b7011f1c370ce81fb4a24f8787",
-          "message": "feat(node): restore historic quoting metrics to allow restart",
-          "timestamp": "2024-04-10T01:22:48Z",
-          "tree_id": "ac4c36da9fd683b37676e7f8ff5720cd5d361c96",
-          "url": "https://github.com/maidsafe/safe_network/commit/5cd1a19fefb649b7011f1c370ce81fb4a24f8787"
-        },
-        "date": 1712715221880,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2174441233093265,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6367384715338762,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.97673060118537,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.57920063506035,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d5efb2f3615f1dfc059401f86e3802580700d454",
+          "message": "Merge pull request #2013 from RolandSherwin/dynamic_startup_time\n\nfix(manager): dynamic sleep interval during start and upgrade",
+          "timestamp": "2024-08-06T11:37:52Z",
+          "tree_id": "3c9b74cc3002d558720ea8400894f01d2aca78b9",
+          "url": "https://github.com/maidsafe/safe_network/commit/d5efb2f3615f1dfc059401f86e3802580700d454"
+        },
+        "date": 1722947382275,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2413066983802372,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6999755757836623,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.517590974954565,
             "unit": "MiB/s"
           }
         ]
