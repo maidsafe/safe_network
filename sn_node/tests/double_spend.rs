@@ -72,23 +72,23 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
 
     // check the CashNotes, it should fail
     info!("Verifying the transfers from first wallet... Sleeping for 3 seconds.");
-    tokio::time::sleep(Duration::from_secs(3)).await;
+    // we wait 15s to ensure that the double spend attempt is detected and accumulated
+    tokio::time::sleep(Duration::from_secs(15)).await;
 
     let cash_notes_for_2: Vec<_> = transfer_to_2.cash_notes_for_recipient.clone();
     let cash_notes_for_3: Vec<_> = transfer_to_3.cash_notes_for_recipient.clone();
 
-    // we wait 5s to ensure that the double spend attempt is detected and accumulated
-    tokio::time::sleep(Duration::from_secs(5)).await;
-
     let should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
     let should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
-    info!("Both should fail during GET record accumulation : {should_err1:?} {should_err2:?}");
+    info!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
+    println!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
+
     assert!(should_err1.is_err() && should_err2.is_err());
     assert_matches!(should_err1, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-        assert!(str.starts_with("Network Error Double SpendAttempt was detected"), "string was {str:?}");
+        assert!(str.starts_with("The spends in network were not the same as the ones in the CashNote."), "string was {str:?}");
     });
     assert_matches!(should_err2, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-        assert!(str.starts_with("Network Error Double SpendAttempt was detected"), "string was {str:?}");
+        assert!(str.starts_with("The spends in network were not the same as the ones in the CashNote."), "string was {str:?}");
     });
 
     Ok(())
