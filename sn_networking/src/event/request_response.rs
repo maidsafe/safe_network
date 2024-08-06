@@ -232,9 +232,9 @@ impl SwarmDriver {
             .record_addresses_ref()
             .clone();
 
-        let keys_to_fetch = self
-            .replication_fetcher
-            .add_keys(holder, incoming_keys, &all_keys);
+        let keys_to_fetch =
+            self.replication_fetcher
+                .add_keys(holder, incoming_keys, &all_keys, &peers);
 
         if keys_to_fetch.is_empty() {
             debug!("no waiting keys to fetch from the network");

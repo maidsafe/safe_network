@@ -16,10 +16,7 @@ use crate::common::{
 use assert_fs::TempDir;
 use common::client::get_wallet;
 use eyre::{eyre, Result};
-use libp2p::{
-    kad::{KBucketDistance, KBucketKey, RecordKey},
-    PeerId,
-};
+use libp2p::{kad::RecordKey, PeerId};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, FilesApi, Uploader, WalletClient};
 use sn_logging::LogBuilder;
@@ -122,7 +119,7 @@ async fn verify_data_location() -> Result<()> {
     .await?;
 
     // Verify data location initially
-    verify_location(&all_peers, &node_rpc_address, client).await?;
+    verify_location(&all_peers, &node_rpc_address, client.clone()).await?;
 
     // Churn nodes and verify the location of the data after VERIFICATION_DELAY
     let mut current_churn_count = 0;
@@ -169,7 +166,7 @@ async fn verify_data_location() -> Result<()> {
 
         print_node_close_groups(&all_peers);
 
-        verify_location(&all_peers, &node_rpc_address, client_get_range).await?;
+        verify_location(&all_peers, &node_rpc_address, client.clone()).await?;
     }
 }
 
@@ -238,7 +235,7 @@ async fn verify_location(
         for (key, actual_holders_idx) in record_holders.iter() {
             println!("Verifying {:?}", PrettyPrintRecordKey::from(key));
             info!("Verifying {:?}", PrettyPrintRecordKey::from(key));
-            let record_address = NetworkAddress::from_record_key(&key);
+            let record_address = NetworkAddress::from_record_key(key);
             let expected_holders = sort_peers_by_address_and_limit_by_distance(
                 all_peers,
                 &record_address,
