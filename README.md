@@ -210,22 +210,27 @@ cargo run --bin safe --features local-discovery -- folders download <target dir 
 
 Use your local wallet to demonstrate sending tokens and receiving transfers.
 
-First, get your wallet address:
+First, get your wallet address, this address can be safely shared publicly
 
 ```
 cargo run --bin safe -- wallet address
 ```
 
-Now send some tokens to that address:
+You can also get your balance with:
+
+```
+cargo run --bin safe -- wallet balance
+```
+
+Now to send some tokens to an address:
 
 ```
 cargo run --bin safe --features local-discovery -- wallet send 2 [address]
 ```
 
-This will output a transfer as a hex string, which should be sent to the recipient out-of-band.
-
-For demonstration purposes, copy the transfer string and use it to receive the transfer in your own
-wallet:
+This will output a transfer as a hex string, which should be sent to the recipient.
+This transfer is encrypted to the recipient so only the recipient can read and redeem it. 
+To receive a transfer, simply paste it after the wallet receive command:
 
 ```
 cargo run --bin safe --features local-discovery -- wallet receive [transfer]
