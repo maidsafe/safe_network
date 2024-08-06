@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722947501780,
+  "lastUpdate": 1722947503077,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5cd1a19fefb649b7011f1c370ce81fb4a24f8787",
-          "message": "feat(node): restore historic quoting metrics to allow restart",
-          "timestamp": "2024-04-10T01:22:48Z",
-          "tree_id": "ac4c36da9fd683b37676e7f8ff5720cd5d361c96",
-          "url": "https://github.com/maidsafe/safe_network/commit/5cd1a19fefb649b7011f1c370ce81fb4a24f8787"
-        },
-        "date": 1712715332238,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 192,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d5efb2f3615f1dfc059401f86e3802580700d454",
+          "message": "Merge pull request #2013 from RolandSherwin/dynamic_startup_time\n\nfix(manager): dynamic sleep interval during start and upgrade",
+          "timestamp": "2024-08-06T11:37:52Z",
+          "tree_id": "3c9b74cc3002d558720ea8400894f01d2aca78b9",
+          "url": "https://github.com/maidsafe/safe_network/commit/d5efb2f3615f1dfc059401f86e3802580700d454"
+        },
+        "date": 1722947502812,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 201,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
