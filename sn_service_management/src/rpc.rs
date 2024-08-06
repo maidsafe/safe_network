@@ -51,9 +51,7 @@ pub trait RpcActions: Sync {
     async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> Result<()>;
     async fn node_stop(&self, delay_millis: u64) -> Result<()>;
     async fn node_update(&self, delay_millis: u64) -> Result<()>;
-    /// Returns Ok(duration) if the node has been successfully connected to the network and the duration
-    /// it took to connect to the node via RPC.
-    async fn is_node_connected_to_network(&self, timeout: Duration) -> Result<Duration>;
+    async fn is_node_connected_to_network(&self, timeout: Duration) -> Result<()>;
     async fn update_log_level(&self, log_levels: String) -> Result<()>;
 }
 
@@ -228,7 +226,7 @@ impl RpcActions for RpcClient {
         Ok(())
     }
 
-    async fn is_node_connected_to_network(&self, timeout: Duration) -> Result<Duration> {
+    async fn is_node_connected_to_network(&self, timeout: Duration) -> Result<()> {
         let max_attempts = std::cmp::max(1, timeout.as_secs() / self.retry_delay.as_secs());
         trace!(
             "RPC conneciton max attempts set to: {max_attempts} with retry_delay of {:?}",
@@ -247,7 +245,7 @@ impl RpcActions for RpcClient {
                     .await
                 {
                     if response.get_ref().connected_peers.len() > CLOSE_GROUP_SIZE {
-                        return Ok(Duration::from_secs(attempts * self.retry_delay.as_secs()));
+                        return Ok(());
                     } else {
                         error!(
                             "Node does not have enough peers connected yet. Retrying {attempts}/{max_attempts}",

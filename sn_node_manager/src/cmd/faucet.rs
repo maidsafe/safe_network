@@ -206,7 +206,7 @@ pub async fn upgrade(
         ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
     match service_manager.upgrade(options).await {
-        Ok((upgrade_result, _)) => {
+        Ok(upgrade_result) => {
             print_upgrade_summary(vec![("faucet".to_string(), upgrade_result)]);
             node_registry.save()?;
             Ok(())

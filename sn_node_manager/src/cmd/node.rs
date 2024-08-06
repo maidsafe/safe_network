@@ -16,8 +16,7 @@ use crate::{
     },
     config::{self, is_running_as_root},
     helpers::{download_and_extract_release, get_bin_version},
-    print_banner, refresh_node_registry, status_report, DynamicInterval, ServiceManager,
-    VerbosityLevel,
+    print_banner, refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
@@ -326,12 +325,19 @@ pub async fn start(
     }
 
     let mut failed_services = Vec::new();
-    let mut dyn_interval = DynamicInterval::new(fixed_interval.unwrap_or(200));
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node, Box::new(rpc_client))
-            .with_connection_timeout(Duration::from_secs(connection_timeout_s));
+
+        let service = NodeService::new(node, Box::new(rpc_client));
+
+        // set dynamic startup delay if fixed_interval is not set
+        let service = if fixed_interval.is_none() {
+            service.with_connection_timeout(Duration::from_secs(connection_timeout_s))
+        } else {
+            service
+        };
+
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         if service_manager.service.status() != ServiceStatus::Running {
@@ -339,14 +345,10 @@ pub async fn start(
             // continue without applying the delay. The reason for not doing so is because when
             // `start` is called below, the user will get a message to say the service was already
             // started, which I think is useful behaviour to retain.
-            debug!(
-                "Sleeping for {} milliseconds ({}sec)",
-                dyn_interval.get_interval_ms(),
-                dyn_interval.get_interval_ms() / 1000
-            );
-            std::thread::sleep(std::time::Duration::from_millis(
-                dyn_interval.get_interval_ms(),
-            ));
+            if let Some(interval) = fixed_interval {
+                debug!("Sleeping for {} milliseconds", interval);
+                std::thread::sleep(std::time::Duration::from_millis(interval));
+            }
         }
         match service_manager.start().await {
             Ok(start_duration) => {
@@ -354,18 +356,11 @@ pub async fn start(
                     "Started service {} in {start_duration:?}",
                     node.service_name
                 );
-                if let (Some(start_duration), None) = (start_duration, fixed_interval) {
-                    dyn_interval.add_interval_ms(start_duration.as_millis() as u64);
-                }
 
                 node_registry.save()?;
             }
             Err(err) => {
                 error!("Failed to start service {}: {err}", node.service_name);
-                // increment the interval by 2x incase of a failure
-                if fixed_interval.is_none() {
-                    dyn_interval.add_interval_ms(dyn_interval.get_interval_ms() * 2);
-                }
                 failed_services.push((node.service_name.clone(), err.to_string()))
             }
         }
@@ -513,7 +508,6 @@ pub async fn upgrade(
     trace!("service_indices len: {}", service_indices.len());
     let mut upgrade_summary = Vec::new();
 
-    let mut dyn_interval = DynamicInterval::new(fixed_interval.unwrap_or(200));
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let env_variables = if provided_env_variables.is_some() {
@@ -533,28 +527,27 @@ pub async fn upgrade(
         let service_name = node.service_name.clone();
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
-        let service = NodeService::new(node, Box::new(rpc_client))
-            .with_connection_timeout(Duration::from_secs(connection_timeout_s));
+        let service = NodeService::new(node, Box::new(rpc_client));
+        // set dynamic startup delay if fixed_interval is not set
+        let service = if fixed_interval.is_none() {
+            service.with_connection_timeout(Duration::from_secs(connection_timeout_s))
+        } else {
+            service
+        };
+
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
         match service_manager.upgrade(options).await {
-            Ok((upgrade_result, start_duration)) => {
-                if let (Some(start_duration), None) = (start_duration, fixed_interval) {
-                    dyn_interval.add_interval_ms(start_duration.as_millis() as u64);
-                }
-
+            Ok(upgrade_result) => {
                 info!("Service: {service_name} has been upgraded, result: {upgrade_result:?}",);
                 if upgrade_result != UpgradeResult::NotRequired {
                     // It doesn't seem useful to apply the interval if there was no upgrade
                     // required for the previous service.
-                    debug!(
-                        "Sleeping for {} milliseconds",
-                        dyn_interval.get_interval_ms()
-                    );
-                    std::thread::sleep(std::time::Duration::from_millis(
-                        dyn_interval.get_interval_ms(),
-                    ));
+                    if let Some(interval) = fixed_interval {
+                        debug!("Sleeping for {interval} milliseconds",);
+                        std::thread::sleep(std::time::Duration::from_millis(interval));
+                    }
                 }
                 upgrade_summary.push((
                     service_manager.service.service_data.service_name.clone(),
@@ -563,13 +556,9 @@ pub async fn upgrade(
             }
             Err(err) => {
                 error!("Error upgrading service {service_name}: {err}");
-                // increment the interval by 2x incase of a failure
-                if fixed_interval.is_none() {
-                    dyn_interval.add_interval_ms(dyn_interval.get_interval_ms() * 2);
-                }
                 upgrade_summary.push((
                     node.service_name.clone(),
-                    UpgradeResult::Error(format!("Error: {}", err)),
+                    UpgradeResult::Error(format!("Error: {err}")),
                 ));
             }
         }
