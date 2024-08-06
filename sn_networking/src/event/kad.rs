@@ -428,30 +428,11 @@ impl SwarmDriver {
                 required_quorum,
             )?;
 
-            // if it's deemed sensitive data, keep searching
+            let mut accumulated_spends = BTreeSet::new();
+
             if !we_have_searched_thoroughly || !we_have_quorum_from_known_nodes {
-                warn!("RANGE: {pretty_key:?} During accumulate: Not enough of the network has responded, we need to extend the range and PUT the data.");
-                return Ok(());
-            }
-
-            warn!(
-                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded... we_have_searched_thoroughly{:?} we_have_quorum_from_known_nodes {:?} (quorum is: {:?})", we_have_searched_thoroughly, we_have_quorum_from_known_nodes, cfg.get_quorum
-            );
-
-            if responded_peers >= expected_answers {
-                if !cfg.expected_holders.is_empty() {
-                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {:?}", cfg.expected_holders);
-                }
-                let cfg = cfg.clone();
-
-                // Remove the query task and consume the variables.
-                let (_key, senders, result_map, _) = entry.remove();
-
-                if result_map.len() == 1 {
-                    Self::send_record_after_checking_target(senders, peer_record.record, &cfg)?;
-                } else {
-                    debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
-                    let mut accumulated_spends = BTreeSet::new();
+                if result_map.len() > 1 {
+                    // Allow for early bail if we've already seen a split SpendAttempt
                     for (record, _) in result_map.values() {
                         match get_raw_signed_spends_from_record(record) {
                             Ok(spends) => {
@@ -462,38 +443,66 @@ impl SwarmDriver {
                             }
                         }
                     }
-                    if !accumulated_spends.is_empty() {
-                        info!("For record {pretty_key:?} task {query_id:?}, found split record for a spend, accumulated and sending them as a single record");
-                        let accumulated_spends =
-                            accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
-
-                        let bytes = try_serialize_record(&accumulated_spends, RecordKind::Spend)?;
-
-                        let new_accumulated_record = Record {
-                            key,
-                            value: bytes.to_vec(),
-                            publisher: None,
-                            expires: None,
-                        };
-                        for sender in senders {
-                            let new_accumulated_record = new_accumulated_record.clone();
-
-                            sender
-                                .send(Ok(new_accumulated_record))
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
-                        }
-                    } else {
-                        for sender in senders {
-                            let result_map = result_map.clone();
-                            sender
-                                .send(Err(GetRecordError::SplitRecord { result_map }))
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
-                        }
-                    }
                 }
-            } else if usize::from(step.count) >= CLOSE_GROUP_SIZE {
+
+                // we have a Double SpendAttempt
+                if !accumulated_spends.is_empty() {
+                    info!("For record {pretty_key:?} task {query_id:?}, found split record for a spend, accumulated and sending them as a single record");
+                    let accumulated_spends =
+                        accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
+
+                    let bytes = try_serialize_record(&accumulated_spends, RecordKind::Spend)?;
+
+                    let new_accumulated_record = Record {
+                        key,
+                        value: bytes.to_vec(),
+                        publisher: None,
+                        expires: None,
+                    };
+                    let (_key, senders, _result_map, _) = entry.remove();
+
+                    for sender in senders {
+                        let new_accumulated_record = new_accumulated_record.clone();
+
+                        sender
+                            .send(Ok(new_accumulated_record))
+                            .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                    }
+                    warn!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record over a SpendAttempt");
+
+                    return Ok(());
+                }
+
+                // TODO: here if spend and split bail out early.
+                warn!("RANGE: {pretty_key:?} During accumulate: Not enough of the network has responded, we need to extend the range and PUT the data.");
                 debug!("For record {pretty_key:?} task {query_id:?}, got {:?} with {} versions so far.",
                    step.count, result_map.len());
+                return Ok(());
+            }
+
+            warn!(
+                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded... we_have_searched_thoroughly{:?} we_have_quorum_from_known_nodes {:?} (quorum is: {:?})", we_have_searched_thoroughly, we_have_quorum_from_known_nodes, cfg.get_quorum
+            );
+
+            if !cfg.expected_holders.is_empty() {
+                debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with non-responded expected holders {:?}", cfg.expected_holders);
+            }
+            let cfg = cfg.clone();
+
+            // Remove the query task and consume the variables.
+            let (_key, senders, result_map, _) = entry.remove();
+
+            if result_map.len() == 1 {
+                Self::send_record_after_checking_target(senders, peer_record.record, &cfg)?;
+            } else {
+                warn!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record ");
+
+                for sender in senders {
+                    let result_map = result_map.clone();
+                    sender
+                        .send(Err(GetRecordError::SplitRecord { result_map }))
+                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                }
             }
         } else {
             // return error if the entry cannot be found
