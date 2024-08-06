@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722870804441,
+  "lastUpdate": 1722939748092,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "db8098cac9219ee7748cf5d07daeb9d2223c77f1",
-          "message": "fix: incorrect release type reference\n\nAlready tried to fix this bug with the faucet upgrade process downloading the wrong, but somehow\nstill managed to miss another hard-coded `ReleaseType` reference.",
-          "timestamp": "2024-04-09T19:39:26Z",
-          "tree_id": "515672dce86fbca97c24f6737a086068f854a4fd",
-          "url": "https://github.com/maidsafe/safe_network/commit/db8098cac9219ee7748cf5d07daeb9d2223c77f1"
-        },
-        "date": 1712694541070,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2169133159399592,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6540645299811834,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.86963188270402,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.92314785534412,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "52b1faaa2400bdb0467845d5fa158363b16c52c2",
+          "message": "Merge pull request #2024 from grumbach/update_readme_transfers\n\ndocs: update readme about transfers",
+          "timestamp": "2024-08-06T09:24:16Z",
+          "tree_id": "388f252176647b8ac664fa36ff0394295435bcfe",
+          "url": "https://github.com/maidsafe/safe_network/commit/52b1faaa2400bdb0467845d5fa158363b16c52c2"
+        },
+        "date": 1722939741103,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.257936773286789,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.5022051391253508,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.57920063506035,
             "unit": "MiB/s"
           }
         ]
