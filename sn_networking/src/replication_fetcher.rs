@@ -138,6 +138,10 @@ impl ReplicationFetcher {
             new_incoming_keys.retain(|(addr, _record_type)| {
                 let is_in_range = self_address.distance(addr).ilog2() <= distance_range.ilog2();
                 if !is_in_range {
+                    warn!(
+                    "Rejecting incoming key: {addr:?} as out of range. {:?} is larger than {:?} ",
+                    self_address.distance(addr).ilog2(),
+                    distance_range.ilog2());
                     out_of_range_keys.push(addr.clone());
                 }
                 is_in_range

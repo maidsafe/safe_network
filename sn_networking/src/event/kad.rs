@@ -410,8 +410,7 @@ impl SwarmDriver {
             trace!("Expecting {expected_answers:?} answers to exceed {expected_get_range:?} for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
 
             let data_key_address = NetworkAddress::from_record_key(&key);
-            let is_sensitive_data =
-                cfg.get_quorum == Quorum::Majority || cfg.get_quorum == Quorum::All;
+            let is_sensitive_data = cfg.get_quorum == Quorum::All;
 
             let we_have_searched_thoroughly = Self::have_we_have_searched_full_get_range(
                 expected_get_range,
@@ -430,49 +429,50 @@ impl SwarmDriver {
 
             let mut accumulated_spends = BTreeSet::new();
 
-            if !we_have_searched_thoroughly || !we_have_quorum_from_known_nodes {
-                if result_map.len() > 1 {
-                    // Allow for early bail if we've already seen a split SpendAttempt
-                    for (record, _) in result_map.values() {
-                        match get_raw_signed_spends_from_record(record) {
-                            Ok(spends) => {
-                                accumulated_spends.extend(spends);
-                            }
-                            Err(_) => {
-                                continue;
-                            }
+            // try and accumulate any SpendAttempts
+            if result_map.len() > 1 {
+                // Allow for early bail if we've already seen a split SpendAttempt
+                for (record, _) in result_map.values() {
+                    match get_raw_signed_spends_from_record(record) {
+                        Ok(spends) => {
+                            accumulated_spends.extend(spends);
+                        }
+                        Err(_) => {
+                            continue;
                         }
                     }
                 }
+            }
 
-                // we have a Double SpendAttempt
-                if !accumulated_spends.is_empty() {
-                    info!("For record {pretty_key:?} task {query_id:?}, found split record for a spend, accumulated and sending them as a single record");
-                    let accumulated_spends =
-                        accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
+            // we have a Double SpendAttempt
+            if !accumulated_spends.is_empty() {
+                info!("For record {pretty_key:?} task {query_id:?}, found split record for a spend, accumulated and sending them as a single record");
+                let accumulated_spends =
+                    accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
 
-                    let bytes = try_serialize_record(&accumulated_spends, RecordKind::Spend)?;
+                let bytes = try_serialize_record(&accumulated_spends, RecordKind::Spend)?;
 
-                    let new_accumulated_record = Record {
-                        key,
-                        value: bytes.to_vec(),
-                        publisher: None,
-                        expires: None,
-                    };
-                    let (_key, senders, _result_map, _) = entry.remove();
+                let new_accumulated_record = Record {
+                    key,
+                    value: bytes.to_vec(),
+                    publisher: None,
+                    expires: None,
+                };
+                let (_key, senders, _result_map, _) = entry.remove();
 
-                    for sender in senders {
-                        let new_accumulated_record = new_accumulated_record.clone();
+                for sender in senders {
+                    let new_accumulated_record = new_accumulated_record.clone();
 
-                        sender
-                            .send(Ok(new_accumulated_record))
-                            .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
-                    }
-                    warn!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record over a SpendAttempt");
-
-                    return Ok(());
+                    sender
+                        .send(Ok(new_accumulated_record))
+                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
                 }
+                warn!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record over a SpendAttempt");
 
+                return Ok(());
+            }
+
+            if !we_have_searched_thoroughly && !we_have_quorum_from_known_nodes {
                 // TODO: here if spend and split bail out early.
                 warn!("RANGE: {pretty_key:?} During accumulate: Not enough of the network has responded, we need to extend the range and PUT the data.");
                 debug!("For record {pretty_key:?} task {query_id:?}, got {:?} with {} versions so far.",
@@ -481,7 +481,7 @@ impl SwarmDriver {
             }
 
             warn!(
-                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded... we_have_searched_thoroughly{:?} we_have_quorum_from_known_nodes {:?} (quorum is: {:?})", we_have_searched_thoroughly, we_have_quorum_from_known_nodes, cfg.get_quorum
+                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded... we_have_searched_thoroughly {:?} we_have_quorum_from_known_nodes {:?} (quorum is: {:?})", we_have_searched_thoroughly, we_have_quorum_from_known_nodes, cfg.get_quorum
             );
 
             if !cfg.expected_holders.is_empty() {
@@ -624,8 +624,7 @@ impl SwarmDriver {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
                 info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_far_enough:?} we_have_quorum_from_known_nodes: {we_have_quorum_from_known_nodes:?}");
 
-                let is_sensitive_data =
-                    cfg.get_quorum == Quorum::Majority || cfg.get_quorum == Quorum::All;
+                let is_sensitive_data = cfg.get_quorum == Quorum::All;
 
                 let result = if num_of_versions > 1 {
                     warn!("RANGE: more than one version found!");

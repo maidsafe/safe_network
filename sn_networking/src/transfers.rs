@@ -31,7 +31,7 @@ impl Network {
     pub async fn get_raw_spends(&self, address: SpendAddress) -> Result<Vec<SignedSpend>> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
         let get_cfg = GetRecordCfg {
-            get_quorum: Quorum::Majority,
+            get_quorum: Quorum::All,
             retry_strategy: None,
             // This should not be set here. This function is used as a quick check to find the spends around the key during
             // validation. The returned records might possibly be double spend attempt and the record will not match
@@ -53,37 +53,13 @@ impl Network {
     /// If we get a quorum error, we increase the RetryStrategy
     pub async fn get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
-        let mut get_cfg = GetRecordCfg {
+        let get_cfg = GetRecordCfg {
             get_quorum: Quorum::All,
             retry_strategy: Some(RetryStrategy::Quick),
             target_record: None,
             expected_holders: Default::default(),
         };
-        let record = match self.get_record_from_network(key.clone(), &get_cfg).await {
-            Ok(record) => record,
-            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopiesInRange {
-                record,
-                expected,
-                got,
-            })) => {
-                // if majority holds the spend, it might be worth to be trusted.
-                if got >= close_group_majority() {
-                    debug!("At least a majority nodes hold the spend {address:?}, going to trust it if can fetch with majority again.");
-                    get_cfg.get_quorum = Quorum::Majority;
-                    get_cfg.retry_strategy = Some(RetryStrategy::Balanced);
-                    self.get_record_from_network(key, &get_cfg).await?
-                } else {
-                    return Err(NetworkError::GetRecordError(
-                        GetRecordError::NotEnoughCopiesInRange {
-                            record,
-                            expected,
-                            got,
-                        },
-                    ));
-                }
-            }
-            Err(err) => return Err(err),
-        };
+        let record = self.get_record_from_network(key.clone(), &get_cfg).await?;
         debug!(
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
