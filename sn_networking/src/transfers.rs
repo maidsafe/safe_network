@@ -6,9 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    close_group_majority, driver::GetRecordCfg, GetRecordError, Network, NetworkError, Result,
-};
+use crate::{driver::GetRecordCfg, Network, NetworkError, Result};
 use libp2p::kad::{Quorum, Record};
 use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, RetryStrategy, SpendAddress},
