@@ -1,5 +1,7 @@
 #[cfg(feature = "websockets")]
 use futures::future::Either;
+#[cfg(feature = "open-metrics")]
+use libp2p::metrics::Registry;
 #[cfg(feature = "websockets")]
 use libp2p::{core::upgrade, noise, yamux};
 use libp2p::{
@@ -8,8 +10,13 @@ use libp2p::{
     PeerId, Transport as _,
 };
 
-pub(crate) fn build_transport(keypair: &Keypair) -> transport::Boxed<(PeerId, StreamMuxerBox)> {
+pub(crate) fn build_transport(
+    keypair: &Keypair,
+    #[cfg(feature = "open-metrics")] registry: &mut Registry,
+) -> transport::Boxed<(PeerId, StreamMuxerBox)> {
     let trans = generate_quic_transport(keypair);
+    #[cfg(feature = "open-metrics")]
+    let trans = libp2p::metrics::BandwidthTransport::new(trans, registry);
 
     #[cfg(feature = "websockets")]
     // Using a closure here due to the complex return type
