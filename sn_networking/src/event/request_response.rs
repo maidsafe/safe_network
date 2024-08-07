@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::NetworkSwarmCmd, sort_peers_by_address, MsgResponder, NetworkError, NetworkEvent,
-    SwarmDriver, CLOSE_GROUP_SIZE,
+    cmd::NetworkSwarmCmd, log_markers::Marker, sort_peers_by_address, MsgResponder, NetworkError,
+    NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::request_response::{self, Message};
@@ -97,9 +97,10 @@ impl SwarmDriver {
 
                             if bad_peer == self.self_peer_id {
                                 warn!("Peer {detected_by:?} consider us as BAD, due to {bad_behaviour:?}.");
-                                self.send_event(NetworkEvent::FlaggedAsBadNode {
-                                    flagged_by: detected_by,
-                                })
+                                self.record_metrics(Marker::FlaggedAsBadNode {
+                                    flagged_by: &detected_by,
+                                });
+
                                 // TODO: shall we terminate self after received such notifications
                                 //       from the majority close_group nodes around us?
                             } else {

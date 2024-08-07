@@ -51,12 +51,6 @@ pub enum Marker<'a> {
     /// Valid spend stored
     ValidSpendPutFromClient(&'a PrettyPrintRecordKey<'a>),
 
-    /// The peer has been considered as bad
-    PeerConsideredAsBad(&'a PeerId),
-
-    /// We have been flagged as a bad node by a peer.
-    FlaggedAsBadNode(&'a PeerId),
-
     /// Record rejected
     RecordRejected(&'a PrettyPrintRecordKey<'a>, &'a Error),
 

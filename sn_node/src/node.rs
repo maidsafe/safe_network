@@ -469,14 +469,6 @@ impl Node {
             NetworkEvent::PeerWithUnsupportedProtocol { .. } => {
                 event_header = "PeerWithUnsupportedProtocol";
             }
-            NetworkEvent::PeerConsideredAsBad { bad_peer, .. } => {
-                event_header = "PeerConsideredAsBad";
-                self.record_metrics(Marker::PeerConsideredAsBad(&bad_peer));
-            }
-            NetworkEvent::FlaggedAsBadNode { flagged_by } => {
-                event_header = "FlaggedAsBadNode";
-                self.record_metrics(Marker::FlaggedAsBadNode(&flagged_by));
-            }
             NetworkEvent::NewListenAddr(_) => {
                 event_header = "NewListenAddr";
                 if !cfg!(feature = "local-discovery") {

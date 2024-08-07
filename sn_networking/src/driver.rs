@@ -16,6 +16,7 @@ use crate::{
     cmd::{LocalSwarmCmd, NetworkSwarmCmd},
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
+    log_markers::Marker,
     multiaddr_pop_p2p,
     network_discovery::NetworkDiscovery,
     record_store::{ClientRecordStore, NodeRecordStore, NodeRecordStoreConfig},
@@ -914,6 +915,16 @@ impl SwarmDriver {
             trace!("SwarmDriver Handling Statistics: {:?}", stats);
             // now we've logged, lets clear the stats from the btreemap
             self.handling_statistics.clear();
+        }
+    }
+
+    /// Calls Marker::log() to insert the marker into the log files.
+    /// Also calls NodeMetrics::record() to record the metric if the `open-metrics` feature flag is enabled.
+    pub(crate) fn record_metrics(&self, marker: Marker) {
+        marker.log();
+        #[cfg(feature = "open-metrics")]
+        if let Some(network_metrics) = self.network_metrics.as_ref() {
+            network_metrics.record_from_marker(marker)
         }
     }
 

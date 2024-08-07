@@ -10,6 +10,7 @@ use crate::{
     driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     event::TerminateNodeReason,
+    log_markers::Marker,
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
     REPLICATION_PEERS_COUNT,
 };
@@ -547,18 +548,19 @@ impl SwarmDriver {
             }
             LocalSwarmCmd::GetLocalStoreCost { key, sender } => {
                 cmd_string = "GetLocalStoreCost";
-                let cost = self
+                let (cost, quoting_metrics) = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
                     .store_cost(&key);
-                #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    let _ = metrics.store_cost.set(cost.0.as_nano() as i64);
-                }
 
-                let _res = sender.send(cost);
+                self.record_metrics(Marker::StoreCost {
+                    cost: cost.as_nano(),
+                    quoting_metrics: &quoting_metrics,
+                });
+
+                let _res = sender.send((cost, quoting_metrics));
             }
             LocalSwarmCmd::PaymentReceived => {
                 cmd_string = "PaymentReceived";
@@ -877,13 +879,7 @@ impl SwarmDriver {
             }
 
             if is_new_bad {
-                // bubble up the event to be handled if needed.
-                self.send_event(NetworkEvent::PeerConsideredAsBad {
-                    detected_by: self.self_peer_id,
-                    bad_peer: peer_id,
-                    bad_behaviour: bad_behaviour.clone(),
-                });
-
+                self.record_metrics(Marker::PeerConsideredAsBad { bad_peer: &peer_id });
                 // inform the bad node about it and add to the blocklist after that.
 
                 // response handling

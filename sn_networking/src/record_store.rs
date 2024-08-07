@@ -639,12 +639,6 @@ impl NodeRecordStore {
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
 
-        Marker::StoreCost {
-            cost,
-            quoting_metrics: &quoting_metrics,
-        }
-        .log();
-
         (NanoTokens::from(cost), quoting_metrics)
     }
 
