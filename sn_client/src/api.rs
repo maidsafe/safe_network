@@ -1036,9 +1036,7 @@ impl Client {
             }
             Err(err) => {
                 warn!("Invalid signed spend got from network for {address:?}: {err:?}.");
-                Err(Error::CouldNotVerifyTransfer(format!(
-                    "Verification failed for spent at {address:?} with error {err:?}"
-                )))
+                Err(Error::from(err))
             }
         }
     }

@@ -1090,9 +1090,7 @@ impl Client {
         }
 
         if cash_notes.is_empty() {
-            return Err(WalletError::CouldNotVerifyTransfer(
-                "All the redeemed CashNotes are already spent".to_string(),
-            ));
+            return Err(WalletError::AllRedeemedCashnotesSpent);
         }
 
         Ok(cash_notes)
@@ -1145,8 +1143,17 @@ impl Client {
 
         let mut received_spends = std::collections::BTreeSet::new();
         for result in join_all(tasks).await {
-            let network_valid_spend =
-                result.map_err(|err| WalletError::CouldNotVerifyTransfer(err.to_string()))?;
+            let network_valid_spend = match result {
+                Ok(spend) => Ok(spend),
+                Err(error) => match error {
+                    Error::Network(sn_networking::NetworkError::DoubleSpendAttempt(spends)) => {
+                        warn!("DoubleSpentAttempt found with {spends:?}");
+                        Err(WalletError::BurntSpendAttempt)
+                    }
+                    err => Err(WalletError::CouldNotVerifyTransfer(format!("{err:?}"))),
+                },
+            }?;
+
             let _ = received_spends.insert(network_valid_spend);
         }
 
@@ -1155,9 +1162,8 @@ impl Client {
         if received_spends == cash_note.parent_spends {
             return Ok(());
         }
-        Err(WalletError::CouldNotVerifyTransfer(
-            "The spends in network were not the same as the ones in the CashNote. The parents of this CashNote are probably double spends.".into(),
-        ))
+
+        Err(WalletError::DifferingSpendAttemptsFound)
     }
 }
 

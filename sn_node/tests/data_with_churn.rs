@@ -616,16 +616,9 @@ async fn query_content(
     match net_addr {
         NetworkAddress::SpendAddress(addr) => {
             if let Some(cash_note) = cash_notes.read().await.get(addr) {
-                match client.verify_cashnote(cash_note).await {
-                    Ok(_) => Ok(()),
-                    Err(err) => Err(Error::CouldNotVerifyTransfer(format!(
-                        "Verification of cash_note {addr:?} failed with error: {err:?}"
-                    ))),
-                }
+                Ok(client.verify_cashnote(cash_note).await?)
             } else {
-                Err(Error::CouldNotVerifyTransfer(format!(
-                    "Do not have the CashNote: {addr:?}"
-                )))
+                Err(Error::NoCashNoteFound(*addr))
             }
         }
         NetworkAddress::RegisterAddress(addr) => {

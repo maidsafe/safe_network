@@ -38,8 +38,17 @@ pub enum Error {
     #[error("Failed to receive transfer due to {0}")]
     CouldNotReceiveMoney(String),
     /// A general error when verifying a transfer validity in the network
+    #[error("Failed to verify transfer validity in the network, a burnt SpendAttempt was found")]
+    BurntSpendAttempt,
+    ///No valid unspent cashnotes found
+    #[error("All the redeemed CashNotes are already spent")]
+    AllRedeemedCashnotesSpent,
+    /// A general error when verifying a transfer validity in the network
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
+    /// Returned spend was
+    #[error("Received SpendAttempt was not as expected in the provided CashNote")]
+    DifferingSpendAttemptsFound,
     /// Failed to fetch spend from network
     #[error("Failed to fetch spend from network: {0}")]
     FailedToGetSpend(String),
