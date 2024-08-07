@@ -28,8 +28,10 @@ impl Network {
     /// If we get a quorum error, we enable re-try
     pub async fn get_raw_spends(&self, address: SpendAddress) -> Result<Vec<SignedSpend>> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
+        // use Quorum::One not All here, as we want to collect and return all the spends we can find
+        // Quorum all may be prohibitive to this end
         let get_cfg = GetRecordCfg {
-            get_quorum: Quorum::All,
+            get_quorum: Quorum::One,
             retry_strategy: None,
             // This should not be set here. This function is used as a quick check to find the spends around the key during
             // validation. The returned records might possibly be double spend attempt and the record will not match
@@ -39,7 +41,7 @@ impl Network {
         };
         let record = self.get_record_from_network(key.clone(), &get_cfg).await?;
         debug!(
-            "Got record from the network, {:?}",
+            "Got raw spends from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
         get_raw_signed_spends_from_record(&record)

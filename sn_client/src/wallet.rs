@@ -1162,8 +1162,13 @@ impl Client {
         if received_spends == cash_note.parent_spends {
             return Ok(());
         }
+        let address = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
 
-        Err(WalletError::DifferingSpendAttemptsFound)
+        warn!(
+            "BurntSpendAttempt found in CashNote verification at {:?}.",
+            address
+        );
+        Err(WalletError::BurntSpendAttempt)
     }
 }
 

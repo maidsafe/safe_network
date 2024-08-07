@@ -718,10 +718,11 @@ impl Node {
             Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopiesInRange {
                 record,
                 got,
+                range,
                 ..
             })) => {
                 info!(
-                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network"
+                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network in range {range}"
                 );
                 match get_raw_signed_spends_from_record(&record) {
                     Ok(spends) => spends,
