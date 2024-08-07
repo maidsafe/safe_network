@@ -98,6 +98,18 @@ pub(super) fn get_confirmed_spend(
     Ok(Some(confirmed_spend))
 }
 
+/// Returns whether a spend is put as `confirmed`.
+///
+/// Note: due to the disk operations' async behaviour.
+///       reading a `exist` spend file, could end with a deserialization error.
+pub(super) fn has_confirmed_spend(wallet_dir: &Path, spend_addr: SpendAddress) -> bool {
+    let spends_dir = wallet_dir.join(CONFIRMED_SPENDS_DIR_NAME);
+    let spend_hex_name = spend_addr.to_hex();
+    let spend_file_path = spends_dir.join(spend_hex_name);
+    debug!("Try to getting a confirmed_spend instance from: {spend_file_path:?}");
+    spend_file_path.exists()
+}
+
 /// Returns `Some(Vec<SpendRequest>)` or None if file doesn't exist.
 pub(super) fn get_unconfirmed_spend_requests(
     wallet_dir: &Path,
