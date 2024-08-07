@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1722947504612,
+  "lastUpdate": 1723045788316,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "40b11f98cf6acb40d00c8d5eb5e3d79e6ea5481f",
-          "message": "feat(faucet): log from sn_client",
-          "timestamp": "2024-04-10T06:58:23Z",
-          "tree_id": "4cd3cadffde41fb091e3051f51e9abf647ea9f23",
-          "url": "https://github.com/maidsafe/safe_network/commit/40b11f98cf6acb40d00c8d5eb5e3d79e6ea5481f"
-        },
-        "date": 1712735507069,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2372919798520619,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6581747104816458,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.711290584019636,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.517590974954565,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4afef002779382c87a2e0648e5b6717b66113348",
+          "message": "Merge pull request #2027 from maqi/check_confirmed_spend_existence_without_deserialization\n\nfix(node): avoid deserialise error cause a confirmed_spend to be non-exist",
+          "timestamp": "2024-08-07T14:44:09Z",
+          "tree_id": "8dc95f179dbfcb465aec8c9cd14dbde65c597c77",
+          "url": "https://github.com/maidsafe/safe_network/commit/4afef002779382c87a2e0648e5b6717b66113348"
+        },
+        "date": 1723045782045,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2252035497982214,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6748302075125394,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.97486238846945,
             "unit": "MiB/s"
           }
         ]
