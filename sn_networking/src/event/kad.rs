@@ -466,7 +466,6 @@ impl SwarmDriver {
             }
 
             if !we_have_searched_thoroughly {
-                // TODO: here if spend and split bail out early.
                 warn!("RANGE: {pretty_key:?} During accumulate: Not enough of the network has responded, we need to extend the range and PUT the data.");
                 warn!("For record {pretty_key:?} task {query_id:?}, got {:?} with {} versions so far.",
                    step.count, result_map.len());
@@ -518,30 +517,6 @@ impl SwarmDriver {
         // as far as we can
         is_last_step: bool,
     ) -> bool {
-        let required_quorum = get_quorum_value(quorum);
-
-        // if we don't even meet quorum, that's it.
-        if !is_last_step && searched_peers_list.len() < required_quorum {
-            return false;
-        }
-
-        // if it's sensitive data, and we don't have required peers... bail out.
-        if !is_last_step
-            && matches!(quorum, Quorum::All)
-            && searched_peers_list.len() < required_quorum
-        {
-            return false;
-        }
-
-        // We assume a finalised query has searched as far as it can in libp2p
-        // TODO: Do we only allow this if quorum is from known peers?
-        if is_last_step && searched_peers_list.len() >= required_quorum {
-            return true;
-        }
-
-        // Otherwise, if we don't have quorum, we can accept ressponses if
-        // the distance is sufficient...
-
         // get the farthest distance between peers in the response
         let mut current_distance_searched = KBucketDistance::default();
 
@@ -558,7 +533,9 @@ impl SwarmDriver {
         // It allows us to say "we've searched up to and including this bucket"
         // as opposed to the concrete distance itself (which statistically seems like we can fall outwith a range
         // quite easily with a small number of peers)
-        if current_distance_searched.ilog2() < expected_get_range.ilog2() {
+        let exceeded_request_range = if current_distance_searched.ilog2()
+            < expected_get_range.ilog2()
+        {
             let ilog2 = current_distance_searched.ilog2();
             let expected_ilog2 = expected_get_range.ilog2();
 
@@ -567,7 +544,26 @@ impl SwarmDriver {
             false
         } else {
             true
+        };
+
+        let required_quorum = get_quorum_value(quorum);
+
+        // if we don't even meet quorum, that's it.
+        if !is_last_step && searched_peers_list.len() < required_quorum {
+            return false;
         }
+
+        // We assume a finalised query has searched as far as it can in libp2p
+        // TODO: Do we only allow this if quorum is from known peers?
+        // TODO: Do we only bail early if NOT Quorum::All? (And so we need to search the full range?)
+        if is_last_step && searched_peers_list.len() >= required_quorum {
+            return true;
+        }
+
+        // Otherwise, if we don't have quorum, we can accept ressponses if
+        // the distance is sufficient...
+
+        exceeded_request_range
     }
 
     /// Handles the possible cases when a GetRecord Query completes.
