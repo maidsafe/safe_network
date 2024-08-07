@@ -20,9 +20,7 @@ use libp2p::{kad::RecordKey, PeerId};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, FilesApi, Uploader, WalletClient};
 use sn_logging::LogBuilder;
-use sn_networking::{
-    sort_peers_by_address_and_limit, sort_peers_by_key_and_limit, CLOSE_GROUP_SIZE,
-};
+use sn_networking::{sort_peers_by_address_and_limit, sort_peers_by_key_and_limit};
 use sn_protocol::{
     safenode_proto::{NodeInfoRequest, RecordAddressesRequest},
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,

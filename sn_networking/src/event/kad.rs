@@ -363,7 +363,6 @@ impl SwarmDriver {
     ) -> Result<()> {
         let expected_get_range = self.get_request_range();
         let key = peer_record.record.key.clone();
-        let all_local_peers = self.get_all_local_peers();
 
         let peer_id = if let Some(peer_id) = peer_record.peer {
             peer_id
@@ -375,6 +374,7 @@ impl SwarmDriver {
         if let Entry::Occupied(mut entry) = self.pending_get_record.entry(query_id) {
             let (_key, _senders, result_map, cfg) = entry.get_mut();
 
+            let results_count = result_map.len();
             if !cfg.expected_holders.is_empty() {
                 if cfg.expected_holders.remove(&peer_id) {
                     debug!("For record {pretty_key:?} task {query_id:?}, received a copy from an expected holder {peer_id:?}");
@@ -405,32 +405,25 @@ impl SwarmDriver {
 
             let responded_peers = peer_list.len();
 
-            // TODO: With GetRange, do we still need quorum here?
             let expected_answers = get_quorum_value(&cfg.get_quorum);
             trace!("Expecting {expected_answers:?} answers to exceed {expected_get_range:?} for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
 
             let data_key_address = NetworkAddress::from_record_key(&key);
             let is_sensitive_data = cfg.get_quorum == Quorum::All;
 
-            let we_have_searched_thoroughly = Self::have_we_have_searched_full_get_range(
+            let we_have_searched_thoroughly = Self::have_we_have_searched_thoroughly_for_quorum(
                 expected_get_range,
                 &peer_list,
                 &data_key_address,
+                &cfg.get_quorum,
+                false,
             );
-
-            let required_quorum = get_quorum_value(&cfg.get_quorum);
-
-            let we_have_quorum_from_known_nodes = Self::have_we_asked_quorum_nodes_that_we_know(
-                all_local_peers,
-                &peer_list,
-                &data_key_address,
-                required_quorum,
-            )?;
 
             let mut accumulated_spends = BTreeSet::new();
 
             // try and accumulate any SpendAttempts
-            if result_map.len() > 1 {
+            if results_count > 1 {
+                info!("For record {pretty_key:?} task {query_id:?}, we have more than one result returned.");
                 // Allow for early bail if we've already seen a split SpendAttempt
                 for (record, _) in result_map.values() {
                     match get_raw_signed_spends_from_record(record) {
@@ -444,8 +437,8 @@ impl SwarmDriver {
                 }
             }
 
-            // we have a Double SpendAttempt
-            if !accumulated_spends.is_empty() {
+            // we have a Double SpendAttempt and should bail early
+            if accumulated_spends.len() > 1 {
                 info!("For record {pretty_key:?} task {query_id:?}, found split record for a spend, accumulated and sending them as a single record");
                 let accumulated_spends =
                     accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
@@ -472,16 +465,15 @@ impl SwarmDriver {
                 return Ok(());
             }
 
-            if !we_have_searched_thoroughly && !we_have_quorum_from_known_nodes {
-                // TODO: here if spend and split bail out early.
+            if !we_have_searched_thoroughly {
                 warn!("RANGE: {pretty_key:?} During accumulate: Not enough of the network has responded, we need to extend the range and PUT the data.");
-                debug!("For record {pretty_key:?} task {query_id:?}, got {:?} with {} versions so far.",
+                warn!("For record {pretty_key:?} task {query_id:?}, got {:?} with {} versions so far.",
                    step.count, result_map.len());
                 return Ok(());
             }
 
             warn!(
-                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded... we_have_searched_thoroughly {:?} we_have_quorum_from_known_nodes {:?} (quorum is: {:?})", we_have_searched_thoroughly, we_have_quorum_from_known_nodes, cfg.get_quorum
+                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded within {expected_get_range:?}... we_have_searched_thoroughly {:?}", we_have_searched_thoroughly
             );
 
             if !cfg.expected_holders.is_empty() {
@@ -516,10 +508,14 @@ impl SwarmDriver {
 
     /// Checks passed peers from a request and checks they are sufficiently spaced to
     /// ensure we have searched enough of the network range as determined by our `get_range`
-    fn have_we_have_searched_full_get_range(
+    fn have_we_have_searched_thoroughly_for_quorum(
         expected_get_range: KBucketDistance,
         searched_peers_list: &HashSet<PeerId>,
         data_key_address: &NetworkAddress,
+        quorum: &Quorum,
+        // if it's the last step, we can be more lenient with the quorum as we've searched
+        // as far as we can
+        is_last_step: bool,
     ) -> bool {
         // get the farthest distance between peers in the response
         let mut current_distance_searched = KBucketDistance::default();
@@ -537,7 +533,9 @@ impl SwarmDriver {
         // It allows us to say "we've searched up to and including this bucket"
         // as opposed to the concrete distance itself (which statistically seems like we can fall outwith a range
         // quite easily with a small number of peers)
-        if current_distance_searched.ilog2() < expected_get_range.ilog2() {
+        let exceeded_request_range = if current_distance_searched.ilog2()
+            < expected_get_range.ilog2()
+        {
             let ilog2 = current_distance_searched.ilog2();
             let expected_ilog2 = expected_get_range.ilog2();
 
@@ -546,41 +544,26 @@ impl SwarmDriver {
             false
         } else {
             true
-        }
-    }
-
-    /// Checks passed peers from a request and checks if we've asked
-    /// all peers we know of in that range
-    ///
-    /// We allow a successful return here if we pass quorum from nodes we _know_
-    ///
-    /// TODO: issue with this question is peers without the data do not respond.
-    /// Do we want to actually return "not found" error and parse out of the returned record?
-    fn have_we_asked_quorum_nodes_that_we_know(
-        local_peers: Vec<PeerId>,
-        responded_peers_list: &HashSet<PeerId>,
-        data_key_address: &NetworkAddress,
-        required_quorum: usize,
-    ) -> Result<bool> {
-        let known_nodes_returning_data = {
-            info!(
-                "We know of {:?} peers.  There are {:?} peers in the responded peers list.",
-                local_peers.len(),
-                responded_peers_list.len()
-            );
-
-            let mut known_nodes_returning_data = 0;
-            // are all closest peers we know in the peer_list?
-            for peer in local_peers.iter() {
-                if !responded_peers_list.contains(peer) {
-                    known_nodes_returning_data += 1;
-                }
-            }
-            known_nodes_returning_data
         };
 
-        info!("RANGE: have_have_we_asked_quorum_nodes_withinin_range_that_we_know {data_key_address:?} known_nodes_returning_data: {known_nodes_returning_data:?}");
-        Ok(required_quorum <= known_nodes_returning_data)
+        let required_quorum = get_quorum_value(quorum);
+
+        // if we don't even meet quorum, that's it.
+        if !is_last_step && searched_peers_list.len() < required_quorum {
+            return false;
+        }
+
+        // We assume a finalised query has searched as far as it can in libp2p
+        // TODO: Do we only allow this if quorum is from known peers?
+        // TODO: Do we only bail early if NOT Quorum::All? (And so we need to search the full range?)
+        if is_last_step && searched_peers_list.len() >= required_quorum {
+            return true;
+        }
+
+        // Otherwise, if we don't have quorum, we can accept ressponses if
+        // the distance is sufficient...
+
+        exceeded_request_range
     }
 
     /// Handles the possible cases when a GetRecord Query completes.
@@ -591,8 +574,6 @@ impl SwarmDriver {
     /// NotEnoughCopies if there is only a single content hash version.
     /// SplitRecord if there are multiple content hash versions.
     fn handle_get_record_finished(&mut self, query_id: QueryId, step: ProgressStep) -> Result<()> {
-        let all_local_peers = self.get_all_local_peers();
-
         // return error if the entry cannot be found
         if let Some((_key, senders, result_map, cfg)) = self.pending_get_record.remove(&query_id) {
             let num_of_versions = result_map.len();
@@ -602,55 +583,34 @@ impl SwarmDriver {
                 let data_key_address = NetworkAddress::from_record_key(&record.key);
                 let expected_get_range = self.get_request_range();
 
-                let we_have_searched_far_enough = Self::have_we_have_searched_full_get_range(
+                let we_have_searched_thoroughly = Self::have_we_have_searched_thoroughly_for_quorum(
                     expected_get_range,
                     from_peers,
                     &data_key_address,
+                    &cfg.get_quorum,
+                    true,
                 );
 
-                let required_quorum = get_quorum_value(&cfg.get_quorum);
-
-                let we_have_quorum_from_known_nodes =
-                    Self::have_we_asked_quorum_nodes_that_we_know(
-                        all_local_peers,
-                        from_peers,
-                        &data_key_address,
-                        required_quorum,
-                    )?;
-
-                let we_have_quorum_count_unconflicted_copies =
-                    num_of_versions == 1 && we_have_quorum_from_known_nodes;
-
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
-                info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_far_enough:?} we_have_quorum_from_known_nodes: {we_have_quorum_from_known_nodes:?}");
-
-                let is_sensitive_data = cfg.get_quorum == Quorum::All;
+                info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_thoroughly:?}");
 
                 let result = if num_of_versions > 1 {
                     warn!("RANGE: more than one version found!");
                     Err(GetRecordError::SplitRecord {
                         result_map: result_map.clone(),
                     })
-                } else if !is_sensitive_data
-                    || we_have_searched_far_enough
-                    || we_have_quorum_count_unconflicted_copies
-                {
+                } else if we_have_searched_thoroughly {
                     warn!("RANGE: Get record finished: {pretty_key:?} Enough of the network has responded or it's not sensitive data... and we only have one copy...");
-
-                    if from_peers.len() < get_quorum_value(&cfg.get_quorum) {
-                        // If we don't have enough copies, we need to reseed the data.
-                        // We can't return here, as we need to reseed the data.
-                        warn!("RANGE: {pretty_key:?} Enough of the network has responded, BUT: we dont have quorum responses we need to reseed the data.");
-                    }
 
                     Ok(record.clone())
                 } else {
                     // We have not searched enough of the network range.
 
-                    let mut result = Err(GetRecordError::NotEnoughCopiesInRange {
+                    let result = Err(GetRecordError::NotEnoughCopiesInRange {
                         record: record.clone(),
                         expected: get_quorum_value(&cfg.get_quorum),
                         got: from_peers.len(),
+                        range: expected_get_range.ilog2().unwrap_or(0),
                     });
 
                     warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need to extend the range and PUT the data.");
@@ -667,18 +627,7 @@ impl SwarmDriver {
                         warn!("RANGE: {pretty_key:?} We asked everyone we know of in that range already!");
                     }
 
-                    if from_peers.len() >= get_quorum_value(&cfg.get_quorum)
-                        && replicate_targets.len() <= get_quorum_value(&cfg.get_quorum)
-                    {
-                        warn!("RANGE: {pretty_key:?} We have asked the majority of the network already!");
-                        warn!("We don't have too many respondents to worry about.");
-                        // Right now, this could happen in smaller networks.
-                        // TODO: We need to verify that this is _not_ happening with any frequency in larger networks.
-                        //
-                        // we know we have only one version of the record
-                        result = Ok(record.clone());
-                    }
-
+                    // let a_holder = from_peers.iter().first();
                     if !self.is_client {
                         for peer in replicate_targets {
                             warn!("Not a client, reputting data to {peer:?} for {pretty_key:?} if needed...");

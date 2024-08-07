@@ -139,11 +139,6 @@ impl ReplicationFetcher {
 
         // Filter out those out_of_range ones among the incoming_keys.
         if let Some(ref distance_range) = self.distance_range {
-            // TODO: ensure that we're not within a minimum replication distance...
-            //
-
-            // sort_peers_by_address_and_limit(all_local_peers, address, expected_entries)
-
             new_incoming_keys.retain(|(addr, _record_type)| {
                 // find all closer peers to the data
                 let closer_peers_len = all_local_peers

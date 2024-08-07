@@ -36,6 +36,7 @@ pub enum GetRecordError {
         record: Record,
         expected: usize,
         got: usize,
+        range: u32,
     },
 
     #[error("Record not found in the network")]
@@ -61,12 +62,14 @@ impl Debug for GetRecordError {
                 record,
                 expected,
                 got,
+                range,
             } => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
                 f.debug_struct("NotEnoughCopiesInRange")
                     .field("record_key", &pretty_key)
                     .field("expected", &expected)
                     .field("got", &got)
+                    .field("range", &range)
                     .finish()
             }
             Self::RecordNotFound => write!(f, "RecordNotFound"),

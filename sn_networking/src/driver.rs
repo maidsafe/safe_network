@@ -13,6 +13,7 @@ use crate::metrics_service::run_metrics_server;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
+    close_group_majority,
     cmd::{LocalSwarmCmd, NetworkSwarmCmd},
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
@@ -815,8 +816,8 @@ impl SwarmDriver {
         };
 
         let closest_peer = sorted_discovery_peers.first();
-        let farthest_peer = if sorted_discovery_peers.len() >= CLOSE_GROUP_SIZE {
-            sorted_discovery_peers.get(CLOSE_GROUP_SIZE - 1)
+        let farthest_peer = if sorted_discovery_peers.len() >= close_group_majority() {
+            sorted_discovery_peers.get(close_group_majority() - 1)
         } else {
             sorted_discovery_peers.last()
         };
