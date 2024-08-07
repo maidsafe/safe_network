@@ -28,7 +28,7 @@ use sn_networking::{
 };
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, Cmd, CmdResponse, Query, QueryResponse, Request, Response},
+    messages::{ChunkProof, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens, PAYMENT_FORWARD_PK};
@@ -463,24 +463,9 @@ impl Node {
             NetworkEvent::PeerWithUnsupportedProtocol { .. } => {
                 event_header = "PeerWithUnsupportedProtocol";
             }
-            NetworkEvent::PeerConsideredAsBad {
-                detected_by,
-                bad_peer,
-                bad_behaviour,
-            } => {
+            NetworkEvent::PeerConsideredAsBad { bad_peer, .. } => {
                 event_header = "PeerConsideredAsBad";
                 self.record_metrics(Marker::PeerConsideredAsBad(&bad_peer));
-
-                let request = Request::Cmd(Cmd::PeerConsideredAsBad {
-                    detected_by: NetworkAddress::from_peer(detected_by),
-                    bad_peer: NetworkAddress::from_peer(bad_peer),
-                    bad_behaviour,
-                });
-
-                let network = self.network().clone();
-                let _handle = spawn(async move {
-                    network.send_req_ignore_reply(request, bad_peer);
-                });
             }
             NetworkEvent::FlaggedAsBadNode { flagged_by } => {
                 event_header = "FlaggedAsBadNode";

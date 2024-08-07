@@ -109,6 +109,10 @@ pub enum LocalSwarmCmd {
         key: RecordKey,
         record_type: RecordType,
     },
+    /// Add a peer to the blocklist
+    AddPeerToBlockList {
+        peer_id: PeerId,
+    },
     /// Notify whether peer is in trouble
     RecordNodeIssue {
         peer_id: PeerId,
@@ -247,7 +251,9 @@ impl Debug for LocalSwarmCmd {
                     PrettyPrintRecordKey::from(key)
                 )
             }
-
+            LocalSwarmCmd::AddPeerToBlockList { peer_id } => {
+                write!(f, "LocalSwarmCmd::AddPeerToBlockList {peer_id:?}")
+            }
             LocalSwarmCmd::RecordNodeIssue { peer_id, issue } => {
                 write!(
                     f,
@@ -763,7 +769,10 @@ impl SwarmDriver {
                     .send(current_state)
                     .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
             }
-
+            LocalSwarmCmd::AddPeerToBlockList { peer_id } => {
+                cmd_string = "AddPeerToBlockList";
+                self.swarm.behaviour_mut().blocklist.block_peer(peer_id);
+            }
             LocalSwarmCmd::RecordNodeIssue { peer_id, issue } => {
                 cmd_string = "RecordNodeIssues";
                 self.record_node_issue(peer_id, issue);
@@ -862,17 +871,51 @@ impl SwarmDriver {
         }
 
         if *is_bad {
-            warn!("Cleaning out bad_peer {peer_id:?} and adding it to the blocklist");
+            warn!("Cleaning out bad_peer {peer_id:?}. Will be added to the blocklist after informing that peer.");
             if let Some(dead_peer) = self.swarm.behaviour_mut().kademlia.remove_peer(&peer_id) {
                 self.update_on_peer_removal(*dead_peer.node.key.preimage());
             }
-            self.swarm.behaviour_mut().blocklist.block_peer(peer_id);
 
             if is_new_bad {
+                // bubble up the event to be handled if needed.
                 self.send_event(NetworkEvent::PeerConsideredAsBad {
                     detected_by: self.self_peer_id,
                     bad_peer: peer_id,
+                    bad_behaviour: bad_behaviour.clone(),
+                });
+
+                // inform the bad node about it and add to the blocklist after that.
+
+                // response handling
+                let (tx, rx) = oneshot::channel();
+                let local_swarm_cmd_sender = self.local_cmd_sender.clone();
+                tokio::spawn(async move {
+                    match rx.await {
+                        Ok(result) => {
+                            debug!("Got response for Cmd::PeerConsideredAsBad from {peer_id:?} {result:?}");
+                            if let Err(err) = local_swarm_cmd_sender
+                                .send(LocalSwarmCmd::AddPeerToBlockList { peer_id })
+                                .await
+                            {
+                                error!("SwarmDriver failed to send LocalSwarmCmd: {err}");
+                            }
+                        }
+                        Err(err) => {
+                            error!("Failed to get response from one shot channel for Cmd::PeerConsideredAsBad : {err:?}");
+                        }
+                    }
+                });
+
+                // request
+                let request = Request::Cmd(Cmd::PeerConsideredAsBad {
+                    detected_by: NetworkAddress::from_peer(self.self_peer_id),
+                    bad_peer: NetworkAddress::from_peer(peer_id),
                     bad_behaviour,
+                });
+                self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                    req: request,
+                    peer: peer_id,
+                    sender: Some(tx),
                 });
             }
         }
