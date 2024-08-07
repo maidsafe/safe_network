@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723052247510,
+  "lastUpdate": 1723052250713,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "git@happybeing.com",
-            "name": "Mark",
-            "username": "happybeing"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "c3f724621e58bfda3394c234dadd257f24e6a832",
-          "message": "chore(cli): make FilesUploadSummary public",
-          "timestamp": "2024-04-10T11:05:23Z",
-          "tree_id": "98baca5225bfa661e56a653ad0d1fd7f8b78ad3e",
-          "url": "https://github.com/maidsafe/safe_network/commit/c3f724621e58bfda3394c234dadd257f24e6a832"
-        },
-        "date": 1712749827806,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 202,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "74af7596fd6fe38f5a6049e6ecf8e170d7b0ff02",
+          "message": "Merge pull request #2029 from RolandSherwin/metrics_update_current_wallet_bal\n\nfix(metrics): update current wallet balance after forwarding rewards",
+          "timestamp": "2024-08-07T16:42:31Z",
+          "tree_id": "2f2bd5f2d760e77e03581f6fc5c86db42a0d9fb4",
+          "url": "https://github.com/maidsafe/safe_network/commit/74af7596fd6fe38f5a6049e6ecf8e170d7b0ff02"
+        },
+        "date": 1723052249951,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 206,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
