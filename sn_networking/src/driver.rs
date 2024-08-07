@@ -612,6 +612,7 @@ impl NetworkBuilder {
             // and not block the processing thread unintentionally
             network_cmd_sender: network_swarm_cmd_sender.clone(),
             network_cmd_receiver: network_swarm_cmd_receiver,
+            local_cmd_sender: local_swarm_cmd_sender.clone(),
             local_cmd_receiver: local_swarm_cmd_receiver,
             event_sender: network_event_sender,
             pending_get_closest_peers: Default::default(),
@@ -661,6 +662,7 @@ pub struct SwarmDriver {
     pub(crate) network_metrics: Option<NetworkMetrics>,
 
     network_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
+    pub(crate) local_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     local_cmd_receiver: mpsc::Receiver<LocalSwarmCmd>,
     network_cmd_receiver: mpsc::Receiver<NetworkSwarmCmd>,
     event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
