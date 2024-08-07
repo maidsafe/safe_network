@@ -359,7 +359,7 @@ impl SwarmDriver {
         query_id: QueryId,
         peer_record: PeerRecord,
         _stats: QueryStats,
-        step: ProgressStep,
+        _step: ProgressStep,
     ) -> Result<()> {
         let expected_get_range = self.get_request_range();
         let key = peer_record.record.key.clone();
@@ -468,12 +468,12 @@ impl SwarmDriver {
             if !we_have_searched_thoroughly {
                 warn!("RANGE: {pretty_key:?} During accumulate: Not enough of the network has responded, we need to extend the range and PUT the data.");
                 warn!("For record {pretty_key:?} task {query_id:?}, got {:?} with {} versions so far.",
-                   step.count, result_map.len());
+                   peer_list.len(), result_map.len());
                 return Ok(());
             }
 
             warn!(
-                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded within {expected_get_range:?}... we_have_searched_thoroughly {:?}", we_have_searched_thoroughly
+                "RANGE: {is_sensitive_data:?} {pretty_key:?} During accumulate: Enough of the network has responded within {:?}... we_have_searched_thoroughly {:?}", expected_get_range.ilog2(), we_have_searched_thoroughly
             );
 
             if !cfg.expected_holders.is_empty() {
@@ -517,6 +517,15 @@ impl SwarmDriver {
         // as far as we can
         is_last_step: bool,
     ) -> bool {
+        warn!("Assessing search: range: {:?}, address: {data_key_address:?}, quorum required: {quorum:?}, peers_returned_count: {:?}", expected_get_range.ilog2(), searched_peers_list.len());
+
+        let required_quorum = get_quorum_value(quorum);
+
+        // if we don't even meet quorum, that's it.
+        if !is_last_step && searched_peers_list.len() < required_quorum {
+            return false;
+        }
+
         // get the farthest distance between peers in the response
         let mut current_distance_searched = KBucketDistance::default();
 
@@ -533,37 +542,26 @@ impl SwarmDriver {
         // It allows us to say "we've searched up to and including this bucket"
         // as opposed to the concrete distance itself (which statistically seems like we can fall outwith a range
         // quite easily with a small number of peers)
-        let exceeded_request_range = if current_distance_searched.ilog2()
-            < expected_get_range.ilog2()
-        {
-            let ilog2 = current_distance_searched.ilog2();
-            let expected_ilog2 = expected_get_range.ilog2();
+        let exceeded_request_range = if current_distance_searched < expected_get_range {
+            let dist = current_distance_searched.ilog2();
+            let expected_dist = expected_get_range.ilog2();
 
-            warn!("RANGE: {data_key_address:?} Insufficient GetRange searched. {ilog2:?} {expected_ilog2:?} {current_distance_searched:?} is less than expcted GetRange of {expected_get_range:?}");
+            warn!("RANGE: {data_key_address:?} Insufficient GetRange searched. {dist:?} {expected_dist:?} {current_distance_searched:?} is less than expcted GetRange of {expected_get_range:?}");
 
             false
         } else {
             true
         };
 
-        let required_quorum = get_quorum_value(quorum);
-
-        // if we don't even meet quorum, that's it.
-        if !is_last_step && searched_peers_list.len() < required_quorum {
-            return false;
-        }
-
         // We assume a finalised query has searched as far as it can in libp2p
         // TODO: Do we only allow this if quorum is from known peers?
         // TODO: Do we only bail early if NOT Quorum::All? (And so we need to search the full range?)
-        if is_last_step && searched_peers_list.len() >= required_quorum {
+        if is_last_step && (searched_peers_list.len() >= required_quorum || exceeded_request_range)
+        {
             return true;
         }
 
-        // Otherwise, if we don't have quorum, we can accept ressponses if
-        // the distance is sufficient...
-
-        exceeded_request_range
+        false
     }
 
     /// Handles the possible cases when a GetRecord Query completes.
