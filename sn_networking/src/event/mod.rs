@@ -128,14 +128,6 @@ pub enum NetworkEvent {
         our_protocol: String,
         their_protocol: String,
     },
-    /// A peer from our RT is considered as bad due to the included behaviour
-    PeerConsideredAsBad {
-        detected_by: PeerId,
-        bad_peer: PeerId,
-        bad_behaviour: String,
-    },
-    /// We have been flagged as a bad node by a peer.
-    FlaggedAsBadNode { flagged_by: PeerId },
     /// The records bearing these keys are to be fetched from the holder or the network
     KeysToFetchForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
@@ -186,19 +178,6 @@ impl Debug for NetworkEvent {
                 their_protocol,
             } => {
                 write!(f, "NetworkEvent::PeerWithUnsupportedProtocol({our_protocol:?}, {their_protocol:?})")
-            }
-            NetworkEvent::PeerConsideredAsBad {
-                bad_peer,
-                bad_behaviour,
-                ..
-            } => {
-                write!(
-                    f,
-                    "NetworkEvent::PeerConsideredAsBad({bad_peer:?}, {bad_behaviour:?})"
-                )
-            }
-            NetworkEvent::FlaggedAsBadNode { flagged_by } => {
-                write!(f, "NetworkEvent::FlaggedAsBadNode({flagged_by:?})")
             }
             NetworkEvent::KeysToFetchForReplication(list) => {
                 let keys_len = list.len();

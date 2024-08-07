@@ -6,11 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::target_arch::sleep;
+use crate::{log_markers::Marker, target_arch::sleep};
 use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
 #[cfg(feature = "upnp")]
-use prometheus_client::metrics::{counter::Counter, family::Family};
-use prometheus_client::{metrics::gauge::Gauge, registry::Registry};
+use prometheus_client::metrics::family::Family;
+use prometheus_client::{
+    metrics::{counter::Counter, gauge::Gauge},
+    registry::Registry,
+};
 use sysinfo::{Pid, ProcessRefreshKind, System};
 use tokio::time::Duration;
 
@@ -33,9 +36,11 @@ pub(crate) struct NetworkMetrics {
     pub(crate) open_connections: Gauge,
     pub(crate) peers_in_routing_table: Gauge,
     pub(crate) records_stored: Gauge,
-    pub(crate) store_cost: Gauge,
+    store_cost: Gauge,
+    bad_peers_count: Counter,
+    shunned_count: Counter,
     #[cfg(feature = "upnp")]
-    pub(crate) upnp_events: Family<upnp::UpnpEventLabels, Counter>,
+    upnp_events: Family<upnp::UpnpEventLabels, Counter>,
 
     // system info
     process_memory_used_mb: Gauge,
@@ -86,6 +91,20 @@ impl NetworkMetrics {
             store_cost.clone(),
         );
 
+        let shunned_count = Counter::default();
+        sub_registry.register(
+            "shunned_count",
+            "Number of peers that have shunned our node",
+            shunned_count.clone(),
+        );
+
+        let bad_peers_count = Counter::default();
+        sub_registry.register(
+            "bad_peers_count",
+            "Number of bad peers that have been detected by us and been added to the blocklist",
+            bad_peers_count.clone(),
+        );
+
         #[cfg(feature = "upnp")]
         let upnp_events = Family::default();
         #[cfg(feature = "upnp")]
@@ -117,6 +136,8 @@ impl NetworkMetrics {
             open_connections,
             peers_in_routing_table,
             store_cost,
+            bad_peers_count,
+            shunned_count,
             #[cfg(feature = "upnp")]
             upnp_events,
             process_memory_used_mb,
@@ -155,10 +176,25 @@ impl NetworkMetrics {
             }
         });
     }
+
+    // Records the metric
+    pub(crate) fn record_from_marker(&self, log_marker: Marker) {
+        match log_marker {
+            Marker::PeerConsideredAsBad { .. } => {
+                let _ = self.bad_peers_count.inc();
+            }
+            Marker::FlaggedAsBadNode { .. } => {
+                let _ = self.shunned_count.inc();
+            }
+            Marker::StoreCost { cost, .. } => {
+                let _ = self.store_cost.set(cost as i64);
+            }
+            _ => {}
+        }
+    }
 }
 
 /// Impl the Recorder traits again for our struct.
-
 impl Recorder<libp2p::kad::Event> for NetworkMetrics {
     fn record(&self, event: &libp2p::kad::Event) {
         self.libp2p_metrics.record(event)
