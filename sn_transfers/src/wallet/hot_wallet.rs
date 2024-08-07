@@ -11,9 +11,9 @@ use super::{
     data_payments::{PaymentDetails, PaymentQuote},
     keys::{get_main_key_from_disk, store_new_keypair},
     wallet_file::{
-        get_confirmed_spend, get_unconfirmed_spend_requests, load_created_cash_note,
-        remove_cash_notes, remove_unconfirmed_spend_requests, store_created_cash_notes,
-        store_unconfirmed_spend_requests,
+        get_confirmed_spend, get_unconfirmed_spend_requests, has_confirmed_spend,
+        load_created_cash_note, remove_cash_notes, remove_unconfirmed_spend_requests,
+        store_created_cash_notes, store_unconfirmed_spend_requests,
     },
     watch_only::WatchOnlyWallet,
     Error, Result,
@@ -179,6 +179,11 @@ impl HotWallet {
     /// Get confirmed spend from disk.
     pub fn get_confirmed_spend(&mut self, spend_addr: SpendAddress) -> Result<Option<SignedSpend>> {
         get_confirmed_spend(self.watchonly_wallet.wallet_dir(), spend_addr)
+    }
+
+    /// Check whether have the specific confirmed spend.
+    pub fn has_confirmed_spend(&mut self, spend_addr: SpendAddress) -> bool {
+        has_confirmed_spend(self.watchonly_wallet.wallet_dir(), spend_addr)
     }
 
     /// Remove unconfirmed_spend_requests from disk.
