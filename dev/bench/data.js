@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723053976305,
+  "lastUpdate": 1723053978205,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "a0e98ec1a58b5d8b7c95314f6c9f5f8d5530d86b",
-          "message": "feat(node): notify peer it is now considered as BAD",
-          "timestamp": "2024-04-10T12:13:57Z",
-          "tree_id": "b1ab4c760639806716b085d08c92aa7f0471985c",
-          "url": "https://github.com/maidsafe/safe_network/commit/a0e98ec1a58b5d8b7c95314f6c9f5f8d5530d86b"
-        },
-        "date": 1712754261646,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7612,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35432,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 23682,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9f5d728cfc19eae3ece75e3a24474cb3dcb450dc",
+          "message": "Merge pull request #2028 from RolandSherwin/move_metrics\n\nrefactor(network): remove some unused network events",
+          "timestamp": "2024-08-07T17:12:18Z",
+          "tree_id": "abcae2459010667eddf8a0a21dae476aa50332b8",
+          "url": "https://github.com/maidsafe/safe_network/commit/9f5d728cfc19eae3ece75e3a24474cb3dcb450dc"
+        },
+        "date": 1723053977725,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4269,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 23423,
             "unit": "ms"
           },
           {
