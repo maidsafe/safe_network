@@ -385,13 +385,19 @@ impl Node {
 
                                 #[cfg(feature = "open-metrics")]
                                 let total_forwarded_rewards = self.node_metrics().map(|metrics|metrics.total_forwarded_rewards.clone());
+                                #[cfg(feature = "open-metrics")]
+                                let current_reward_wallet_balance = self.node_metrics().map(|metrics|metrics.current_reward_wallet_balance.clone());
 
                                 let _handle = spawn(async move {
 
                                     #[cfg(feature = "open-metrics")]
-                                    let _ = Self::try_forward_balance(network, forwarding_reason, total_forwarded_rewards);
+                                    if let Err(err) =  Self::try_forward_balance(network, forwarding_reason, total_forwarded_rewards,current_reward_wallet_balance) {
+                                        error!("Error while trying to forward balance: {err:?}");
+                                    }
                                     #[cfg(not(feature = "open-metrics"))]
-                                    let _ = Self::try_forward_balance(network, forwarding_reason);
+                                    if let Err(err) = Self::try_forward_balance(network, forwarding_reason) {
+                                        error!("Error while trying to forward balance: {err:?}");
+                                    }
                                     info!("Periodic balance forward took {:?}", start.elapsed());
                                 });
                             }
@@ -834,39 +840,13 @@ impl Node {
         }
     }
 
-    #[cfg(not(feature = "open-metrics"))]
-    fn try_forward_balance(network: Network, forward_reason: String) -> Result<()> {
-        if let Err(err) = Self::try_forward_balance_inner(network, forward_reason) {
-            error!("Error while trying to forward balance: {err:?}");
-            return Err(err);
-        }
-        Ok(())
-    }
-
-    #[cfg(feature = "open-metrics")]
+    /// Forward received rewards to another address
     fn try_forward_balance(
         network: Network,
         forward_reason: String,
-        forwarded_balance_metric: Option<Gauge>,
+        #[cfg(feature = "open-metrics")] forwarded_balance_metric: Option<Gauge>,
+        #[cfg(feature = "open-metrics")] current_reward_wallet_balance: Option<Gauge>,
     ) -> Result<()> {
-        match Self::try_forward_balance_inner(network, forward_reason) {
-            Ok(cumulative_forwarded_amount) => {
-                if let Some(forwarded_balance_metric) = forwarded_balance_metric {
-                    let _ = forwarded_balance_metric.set(cumulative_forwarded_amount as i64);
-                }
-            }
-            Err(err) => {
-                error!("Error while trying to forward balance: {err:?}");
-                return Err(err);
-            }
-        };
-
-        Ok(())
-    }
-
-    /// Forward received rewards to another address
-    /// Returns the cumulative amount forwarded
-    fn try_forward_balance_inner(network: Network, forward_reason: String) -> Result<u64> {
         let mut spend_requests = vec![];
         {
             // load wallet
@@ -945,7 +925,20 @@ impl Node {
         debug!("Updating forwarded balance to {updated_balance}");
         write_forwarded_balance_value(&balance_file_path, updated_balance)?;
 
-        Ok(updated_balance)
+        #[cfg(feature = "open-metrics")]
+        {
+            if let Some(forwarded_balance_metric) = forwarded_balance_metric {
+                let _ = forwarded_balance_metric.set(updated_balance as i64);
+            }
+
+            let wallet = HotWallet::load_from(network.root_dir_path())?;
+            let balance = wallet.balance();
+            if let Some(current_reward_wallet_balance) = current_reward_wallet_balance {
+                let _ = current_reward_wallet_balance.set(balance.as_nano() as i64);
+            }
+        }
+
+        Ok(())
     }
 }
 
