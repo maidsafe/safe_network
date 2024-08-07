@@ -17,8 +17,7 @@ pub(crate) const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(30);
 
 impl SwarmDriver {
     /// This functions triggers network discovery based on when the last peer was added to the RT and the number of
-    /// peers in RT. The function also returns a new bootstrap interval that is proportional to the number of
-    /// peers in RT, so more peers in RT, the longer the interval.
+    /// peers in RT.
     pub(crate) fn run_bootstrap_continuously(&mut self) {
         self.trigger_network_discovery();
     }
@@ -36,7 +35,11 @@ impl SwarmDriver {
                 .get_closest_peers(addr.as_bytes());
             let _ = self.pending_get_closest_peers.insert(
                 query_id,
-                (PendingGetClosestType::NetworkDiscovery, Default::default()),
+                (
+                    addr,
+                    PendingGetClosestType::NetworkDiscovery,
+                    Default::default(),
+                ),
             );
         }
 

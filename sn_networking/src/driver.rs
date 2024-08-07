@@ -13,7 +13,6 @@ use crate::metrics_service::run_metrics_server;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
-    close_group_majority,
     cmd::{LocalSwarmCmd, NetworkSwarmCmd},
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
@@ -24,7 +23,7 @@ use crate::{
     record_store_api::UnifiedRecordStore,
     relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
-    sort_peers_by_address_and_limit,
+    sort_peers_by_distance_to,
     target_arch::{interval, spawn, Instant},
     version::{
         IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
@@ -88,7 +87,9 @@ pub(crate) enum PendingGetClosestType {
     /// These are queries made by a function at the upper layers and contains a channel to send the result back.
     FunctionCall(oneshot::Sender<Vec<PeerId>>),
 }
-type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, Vec<PeerId>)>;
+
+/// Maps a query to the address, the type of query and the peers that are being queried.
+type PendingGetClosest = HashMap<QueryId, (NetworkAddress, PendingGetClosestType, Vec<PeerId>)>;
 
 /// Using XorName to differentiate different record content under the same key.
 type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
@@ -755,7 +756,7 @@ impl SwarmDriver {
                     // logging for handling events happens inside handle_swarm_events
                     // otherwise we're rewriting match statements etc around this anwyay
                     if let Err(err) = self.handle_swarm_events(swarm_event) {
-                        warn!("Error while handling swarm event: {err}");
+                        trace!("Issue while handling swarm event: {err}");
                     }
                 },
                 // thereafter we can check our intervals
@@ -791,69 +792,52 @@ impl SwarmDriver {
     /// Enumerates buckets and generates a random distance in the first bucket
     /// that has at least `MIN_PEERS_IN_BUCKET` peers.
     ///
-    pub(crate) fn set_request_range(&mut self, network_discovery_peers: &Vec<PeerId>) {
+    pub(crate) fn set_request_range(
+        &mut self,
+        queried_address: NetworkAddress,
+        network_discovery_peers: &[PeerId],
+    ) {
         info!(
             "Adding a GetRange to our stash deriving from {:?} peers",
             network_discovery_peers.len()
         );
 
-        let our_address = NetworkAddress::from_peer(self.self_peer_id);
+        let sorted_distances = sort_peers_by_distance_to(network_discovery_peers, queried_address);
 
-        // get the farthest distance between these peers:
-        let mut new_distance_range = KBucketDistance::default();
+        let mapped: Vec<_> = sorted_distances.iter().map(|d| d.ilog2()).collect();
+        info!("Sorted distances: {:?}", mapped);
 
-        // sort all peers by distance to us.
-        let sorted_discovery_peers = match sort_peers_by_address_and_limit(
-            network_discovery_peers,
-            &our_address,
-            network_discovery_peers.len(),
-        ) {
-            Ok(sorted_peers) => sorted_peers,
-            Err(err) => {
-                warn!("Problem while sorting peers by address during set_request_range : {err}");
-                return;
-            }
-        };
+        // TODO: Test this calculation in larger networks
+        // We get around 5-7 peers returned here... We want to take further in larger networks
+        let farthest_peer_to_check = self
+            .get_all_local_peers_excluding_self()
+            .len()
+            .checked_div(3 * CLOSE_GROUP_SIZE)
+            .unwrap_or(1);
 
-        let closest_peer = sorted_discovery_peers.first();
-        let farthest_peer = if sorted_discovery_peers.len() >= close_group_majority() {
-            sorted_discovery_peers.get(close_group_majority() - 1)
+        info!("Farthest peer we'll check: {:?}", farthest_peer_to_check);
+
+        let yardstick = if sorted_distances.len() >= farthest_peer_to_check {
+            sorted_distances.get(farthest_peer_to_check - 1)
         } else {
-            sorted_discovery_peers.last()
+            sorted_distances.last()
         };
-
-        if let Some(closest_peer) = closest_peer {
-            let closest_addr = NetworkAddress::from_peer(**closest_peer);
-            if let Some(farthest_peer) = farthest_peer {
-                let farthest_addr = NetworkAddress::from_peer(**farthest_peer);
-                new_distance_range = farthest_addr
-                    .as_kbucket_key()
-                    .distance(&closest_addr.as_kbucket_key());
-
-                info!(
-                    "Distance between peers after discovery is {new_distance_range:?}: {:?}, Farthest peer distance: {:?}",
-                    closest_peer, farthest_peer
-                );
+        if let Some(distance) = yardstick {
+            if self.range_distances.len() >= GET_RANGE_STORAGE_LIMIT {
+                if let Some(distance) = self.range_distances.pop_front() {
+                    trace!("Removed distance range: {:?}", distance.ilog2());
+                }
             }
-        }
 
-        if new_distance_range == KBucketDistance::default() {
-            warn!("No peers found, no range distance can be set/added");
-            return;
-        }
+            info!("Adding new distance range: {:?}", distance.ilog2());
 
-        if self.range_distances.len() >= GET_RANGE_STORAGE_LIMIT {
-            if let Some(distance) = self.range_distances.pop_front() {
-                trace!("Removed distance range: {:?}", distance.ilog2());
-            }
+            self.range_distances.push_back(*distance);
         }
 
         info!(
-            "Adding new distance range: {:?}",
-            new_distance_range.ilog2()
+            "Distance between peers in set_request_range call: {:?}",
+            yardstick
         );
-
-        self.range_distances.push_back(new_distance_range);
     }
 
     /// Returns the KBucketDistance we are currently using as our X value
@@ -875,12 +859,17 @@ impl SwarmDriver {
         }
     }
 
-    /// get all the peers from our local RoutingTable. Contains self
-    pub(crate) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
+    /// get all the peers from our local RoutingTable. Excluding self
+    pub(crate) fn get_all_local_peers_excluding_self(&mut self) -> Vec<PeerId> {
+        let our_peer_id = self.self_peer_id;
         let mut all_peers: Vec<PeerId> = vec![];
         for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
             for entry in kbucket.iter() {
-                all_peers.push(entry.node.key.clone().into_preimage());
+                let id = entry.node.key.clone().into_preimage();
+
+                if id != our_peer_id {
+                    all_peers.push(id);
+                }
             }
         }
         all_peers.push(self.self_peer_id);

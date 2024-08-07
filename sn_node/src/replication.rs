@@ -14,7 +14,7 @@ use libp2p::{
 use sn_networking::{GetRecordCfg, Network};
 use sn_protocol::{
     messages::{Query, QueryResponse, Request, Response},
-    storage::RecordType,
+    storage::{try_serialize_record, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use tokio::task::{spawn, JoinHandle};
@@ -71,9 +71,30 @@ impl Node {
                         target_record: None,
                         expected_holders: Default::default(),
                     };
-                    node.network()
-                        .get_record_from_network(key, &get_cfg)
-                        .await?
+                    match node
+                        .network()
+                        .get_record_from_network(key.clone(), &get_cfg)
+                        .await
+                    {
+                        Ok(record) => record,
+                        // TODO: do we need to handle SplitRecord anywhere else?
+                        Err(error) => match error {
+                            sn_networking::NetworkError::DoubleSpendAttempt(spends) => {
+                                debug!("Failed to fetch record {pretty_key:?} from the network, double spend attempt {spends:?}");
+
+                                let bytes = try_serialize_record(&spends, RecordKind::Spend)?;
+
+                                // TODO: does this need merged with any local copy?
+                                Record {
+                                    key,
+                                    value: bytes.to_vec(),
+                                    publisher: None,
+                                    expires: None,
+                                }
+                            }
+                            other_error => return Err(other_error.into()),
+                        },
+                    }
                 };
 
                 debug!(

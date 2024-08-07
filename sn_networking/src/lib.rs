@@ -101,6 +101,26 @@ pub fn sort_peers_by_address_and_limit<'a>(
 ) -> Result<Vec<&'a PeerId>> {
     sort_peers_by_key_and_limit(peers, &address.as_kbucket_key(), expected_entries)
 }
+
+/// Sort the provided peers by their distance to the given `NetworkAddress`.
+/// Return with the closest expected number of entries if has.
+pub fn sort_peers_by_distance_to(
+    peers: &[PeerId],
+    queried_address: NetworkAddress,
+) -> Vec<KBucketDistance> {
+    let mut sorted_distances: Vec<_> = peers
+        .iter()
+        .map(|peer| {
+            let addr = NetworkAddress::from_peer(*peer);
+            queried_address.distance(&addr)
+        })
+        .collect();
+
+    sorted_distances.sort();
+
+    sorted_distances
+}
+
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
 #[allow(clippy::result_large_err)]
@@ -316,8 +336,7 @@ impl Network {
 
         trace!("Start replication of fresh record {pretty_key:?} from store");
 
-        // Already contains self_peer_id
-        let mut all_peers = match network.get_all_local_peers().await {
+        let all_peers = match network.get_all_local_peers_excluding_self().await {
             Ok(peers) => peers,
             Err(err) => {
                 error!(
@@ -326,9 +345,6 @@ impl Network {
                 return;
             }
         };
-
-        // remove ourself from these calculations
-        all_peers.retain(|peer_id| peer_id != &network.peer_id());
 
         let data_addr = NetworkAddress::from_record_key(&paid_key);
         let mut peers_to_replicate_to = match network.get_range().await {
@@ -395,13 +411,6 @@ impl Network {
         self.get_closest_peers(key, true).await
     }
 
-    /// Returns the closest peers to the given `NetworkAddress`, sorted by their distance to the key.
-    ///
-    /// Includes our node's `PeerId` while calculating the closest peers.
-    pub async fn node_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
-        self.get_closest_peers(key, false).await
-    }
-
     /// Returns a map where each key is the ilog2 distance of that Kbucket and each value is a vector of peers in that
     /// bucket.
     /// Does not include self
@@ -414,35 +423,10 @@ impl Network {
     }
 
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
-    /// Also contains our own PeerId.
-    pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
+    /// Excludes our own PeerId.
+    pub async fn get_all_local_peers_excluding_self(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeers { sender });
-
-        receiver
-            .await
-            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
-    }
-
-    /// Returns all the PeerId from all the KBuckets from our local Routing Table
-    /// Also contains our own PeerId.
-    pub async fn get_close_range_peers_for_record(
-        &self,
-        address: NetworkAddress,
-    ) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_local_swarm_cmd(LocalSwarmCmd::GetCloseRangeLocalPeers { address, sender });
-
-        receiver
-            .await
-            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
-    }
-
-    /// Returns all the PeerId from all the KBuckets from our local Routing Table
-    /// Also contains our own PeerId.
-    pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_local_swarm_cmd(LocalSwarmCmd::GetClosestKLocalPeers { sender });
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeersExcludingSelf { sender });
 
         receiver
             .await
@@ -646,6 +630,8 @@ impl Network {
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
+        use sn_transfers::SignedSpend;
+
         let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
             ExponentialBackoff {
@@ -685,8 +671,39 @@ impl Network {
                     Err(GetRecordError::RecordNotFound) => {
                         warn!("No holder of record '{pretty_key:?}' found.");
                     }
-                    Err(GetRecordError::SplitRecord { .. }) => {
+                    Err(GetRecordError::SplitRecord { result_map }) => {
                         error!("Encountered a split record for {pretty_key:?}.");
+
+                        // attempt to deserialise and accumulate any spends
+                        let mut accumulated_spends = BTreeSet::new();
+                        let results_count = result_map.len();
+                        // try and accumulate any SpendAttempts
+                        if results_count > 1 {
+                            info!("For record {pretty_key:?}, we have more than one result returned.");
+                            // Allow for early bail if we've already seen a split SpendAttempt
+                            for (record, _) in result_map.values() {
+                                match get_raw_signed_spends_from_record(record) {
+                                    Ok(spends) => {
+                                        accumulated_spends.extend(spends);
+                                    }
+                                    Err(_) => {
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+
+                        // we have a Double SpendAttempt and will exit
+                        if accumulated_spends.len() > 1 {
+                            info!("For record {pretty_key:?} task found split record for a spend, accumulated and sending them as a single record");
+                            let accumulated_spends =
+                                accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
+
+                            return Err(BackoffError::Permanent(NetworkError::DoubleSpendAttempt(
+                                accumulated_spends,
+                            )));
+                        }
+
                     }
                     Err(GetRecordError::QueryTimeout) => {
                         error!("Encountered query timeout for {pretty_key:?}.");

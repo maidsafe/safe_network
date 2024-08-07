@@ -71,15 +71,20 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     )?;
 
     // send both transfers to the network
-    // upload won't error out, only error out during verification.
+
     info!("Sending both transfers to the network...");
-    let res = client.send_spends(transfer_to_2.spends.iter(), false).await;
-    assert!(res.is_ok());
-    let res = client.send_spends(transfer_to_3.spends.iter(), false).await;
-    assert!(res.is_ok());
+    // These may error (but may not depending on network speed)
+    // so we're not going to rely on it here.
+    let _ = client
+        .send_spends(transfer_to_2.all_spend_requests.iter(), true)
+        .await;
+
+    let _ = client
+        .send_spends(transfer_to_3.all_spend_requests.iter(), true)
+        .await;
 
     // check the CashNotes, it should fail
-    info!("Verifying the transfers from first wallet... Sleeping for 3 seconds.");
+    info!("Verifying the transfers from first wallet...");
 
     let cash_notes_for_2: Vec<_> = transfer_to_2.output_cashnotes.clone();
     let cash_notes_for_3: Vec<_> = transfer_to_3.output_cashnotes.clone();
@@ -87,28 +92,32 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let mut should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
     let mut should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
 
-    while should_err1.is_ok() || should_err2.is_ok() {
-        println!("One spend still valid... retrying after 1s");
+    for i in 0..5 {
+        if should_err1.is_err() && should_err2.is_err() {
+            break;
+        }
+
         tokio::time::sleep(Duration::from_secs(1)).await;
+        info!("Retrying verification.{i}... for should_err1+2");
+        println!("Retrying verification{i} ... for should_err1+2");
         should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
         should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
     }
 
     info!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
     println!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
-
     assert!(should_err1.is_err() && should_err2.is_err());
 
     assert_eq!(
         format!("{should_err1:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
-        "Should have been BurntSpendAttempt error, was: {should_err1:?}"
+        format!("Err({:?})", WalletError::BurntSpend),
+        "Should have been BurntSpend error, was: {should_err1:?}"
     );
 
     assert_eq!(
         format!("{should_err2:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
-        "Should have been BurntSpendAttempt error, was: {should_err2:?}"
+        format!("Err({:?})", WalletError::BurntSpend),
+        "Should have been BurntSpend error, was: {should_err2:?}"
     );
 
     Ok(())
@@ -325,7 +334,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         Err(e) => {
             assert_eq!(
                 e.to_string(),
-                format!("{}", WalletError::BurntSpendAttempt),
+                format!("{}", WalletError::BurntSpend),
                 "error should reflect double spend attempt was: {e:?}",
             );
         }
@@ -336,7 +345,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         Err(e) => {
             assert_eq!(
                 e.to_string(),
-                format!("{}", WalletError::BurntSpendAttempt),
+                format!("{}", WalletError::BurntSpend),
                 "error should reflect double spend attempt was: {e:?}",
             );
         }
@@ -445,10 +454,9 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     let result = client.verify_cashnote(&cash_notes_for_x[0]).await;
     info!("Got result while verifying double spend from A -> X: {result:?}");
 
-    assert_eq!(
-        format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
-        "Should have been BurntSpendAttempt error, was: {result:?}"
+    assert!(
+        format!("{result:?}").starts_with("Err(UnexpectedParentSpends"),
+        "Should have been UnexpectedParentSpends error, was: {result:?}"
     );
 
     // Try to double spend from B -> Y
@@ -486,22 +494,21 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
 
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
     info!("Got result while verifying double spend from B -> Y: {result:?}");
-    assert_eq!(
-        format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
-        "Should have been BurntSpendAttempt error, was: {result:?}"
+    assert!(
+        format!("{result:?}").starts_with("Err(UnexpectedParentSpends"),
+        "Should have been UnexpectedParentSpends error, was: {result:?}"
     );
 
     info!("Verifying the original cashnote of A -> B");
 
     // arbitrary time sleep to allow for network accumulation of double spend.
-    tokio::time::sleep(Duration::from_secs(15)).await;
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     let result = client.verify_cashnote(&cash_notes_for_b[0]).await;
     info!("Got result while verifying the original spend from A -> B: {result:?}");
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
+        format!("Err({:?})", WalletError::BurntSpend),
         "Should have been BurntSpent error, was: {result:?}"
     );
 
@@ -511,21 +518,21 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     info!("Got result while verifying the original spend from B -> C: {result:?}");
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
+        format!("Err({:?})", WalletError::BurntSpend),
         "Should have been BurntSpent error, was: {result:?}"
     );
 
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
+        format!("Err({:?})", WalletError::BurntSpend),
         "Should have been BurntSpent error, was: {result:?}"
     );
 
     let result = client.verify_cashnote(&cash_notes_for_b[0]).await;
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
+        format!("Err({:?})", WalletError::BurntSpend),
         "Should have been BurntSpent error, was: {result:?}"
     );
 
@@ -645,7 +652,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
     info!("Got result while verifying double spend from A -> X: {result:?}");
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt)
+        format!("Err({:?})", WalletError::BurntSpend)
     );
 
     // the original A should still be present as one of the double spends
@@ -699,7 +706,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         info!("Got result while verifying double spend from A -> Y: {result:?}");
         assert_eq!(
             format!("{result:?}"),
-            format!("Err({:?})", WalletError::BurntSpendAttempt)
+            format!("Err({:?})", WalletError::BurntSpend)
         );
 
         // the original A should still be present as one of the double spends
