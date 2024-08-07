@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723053860877,
+  "lastUpdate": 1723053974581,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "a0e98ec1a58b5d8b7c95314f6c9f5f8d5530d86b",
-          "message": "feat(node): notify peer it is now considered as BAD",
-          "timestamp": "2024-04-10T12:13:57Z",
-          "tree_id": "b1ab4c760639806716b085d08c92aa7f0471985c",
-          "url": "https://github.com/maidsafe/safe_network/commit/a0e98ec1a58b5d8b7c95314f6c9f5f8d5530d86b"
-        },
-        "date": 1712754255559,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 142,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9f5d728cfc19eae3ece75e3a24474cb3dcb450dc",
+          "message": "Merge pull request #2028 from RolandSherwin/move_metrics\n\nrefactor(network): remove some unused network events",
+          "timestamp": "2024-08-07T17:12:18Z",
+          "tree_id": "abcae2459010667eddf8a0a21dae476aa50332b8",
+          "url": "https://github.com/maidsafe/safe_network/commit/9f5d728cfc19eae3ece75e3a24474cb3dcb450dc"
+        },
+        "date": 1723053974004,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 160,
             "unit": "MB"
           }
         ]
