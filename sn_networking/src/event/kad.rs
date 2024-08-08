@@ -52,7 +52,7 @@ impl SwarmDriver {
                 );
 
                 if let Entry::Occupied(mut entry) = self.pending_get_closest_peers.entry(id) {
-                    let (_, current_closest) = entry.get_mut();
+                    let (_, _, current_closest) = entry.get_mut();
 
                     // TODO: consider order the result and terminate when reach any of the
                     //       following criteria:
@@ -60,18 +60,15 @@ impl SwarmDriver {
                     //   2, `stats.duration()` is longer than a defined period
                     current_closest.extend(closest_peers.peers.clone());
                     if current_closest.len() >= usize::from(K_VALUE) || step.last {
-                        let (get_closest_type, current_closest) = entry.remove();
+                        let (address, get_closest_type, current_closest) = entry.remove();
                         self.network_discovery
                             .handle_get_closest_query(&current_closest);
-                        match get_closest_type {
-                            PendingGetClosestType::NetworkDiscovery => {
-                                self.set_request_range(&current_closest);
-                            }
-                            PendingGetClosestType::FunctionCall(sender) => {
-                                sender
-                                    .send(current_closest)
-                                    .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
-                            }
+                        self.set_request_range(address, &current_closest);
+
+                        if let PendingGetClosestType::FunctionCall(sender) = get_closest_type {
+                            sender
+                                .send(current_closest)
+                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
                         }
                     }
                 } else {
@@ -92,7 +89,7 @@ impl SwarmDriver {
                 event_string = "kad_event::get_closest_peers_err";
                 error!("GetClosest Query task {id:?} errored with {err:?}, {stats:?} - {step:?}");
 
-                let (get_closest_type, mut current_closest) =
+                let (_address, get_closest_type, mut current_closest) =
                     self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
                         debug!(
                             "Can't locate query task {id:?}, it has likely been completed already."
@@ -454,13 +451,8 @@ impl SwarmDriver {
         // We assume a finalised query has searched as far as it can in libp2p
         // TODO: Do we only allow this if quorum is from known peers?
         // TODO: Do we only bail early if NOT Quorum::All? (And so we need to search the full range?)
-        if searched_peers_list.len() >= required_quorum {
-            warn!("RANGE: {data_key_address:?} Quorum satisfied with {:?} peers exceeding quorum {required_quorum:?}", searched_peers_list.len());
-            return true;
-        }
-
-        if exceeded_request_range {
-            warn!("RANGE: {data_key_address:?} Request satisfied as exceeded request range : {exceeded_request_range:?}");
+        if searched_peers_list.len() >= required_quorum && exceeded_request_range {
+            warn!("RANGE: {data_key_address:?} Request satisfied as exceeded request range : {exceeded_request_range:?} and Quorum satisfied with {:?} peers exceeding quorum {required_quorum:?}", searched_peers_list.len());
             return true;
         }
 

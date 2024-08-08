@@ -80,9 +80,6 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let mut should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
     let mut should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
 
-    info!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
-    println!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
-
     for _ in 0..10 {
         if should_err1.is_err() && should_err2.is_err() {
             break;
@@ -95,6 +92,8 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
         should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
     }
 
+    info!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
+    println!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
     assert!(should_err1.is_err() && should_err2.is_err());
 
     assert_eq!(

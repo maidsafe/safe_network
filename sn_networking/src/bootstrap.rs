@@ -35,7 +35,11 @@ impl SwarmDriver {
                 .get_closest_peers(addr.as_bytes());
             let _ = self.pending_get_closest_peers.insert(
                 query_id,
-                (PendingGetClosestType::NetworkDiscovery, Default::default()),
+                (
+                    addr,
+                    PendingGetClosestType::NetworkDiscovery,
+                    Default::default(),
+                ),
             );
         }
 

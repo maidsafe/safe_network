@@ -63,9 +63,7 @@ use sn_protocol::{
     storage::{RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
-use sn_transfers::{
-    MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics, SpendAddress, GENESIS_SPEND_UNIQUE_KEY,
-};
+use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     path::PathBuf,
@@ -106,36 +104,21 @@ pub fn sort_peers_by_address_and_limit<'a>(
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
-#[allow(clippy::result_large_err)]
-pub fn sort_peers_by_distance_to_genesis(
+pub fn sort_peers_by_distance_to(
     peers: &[PeerId],
-    // expected_entries: usize,
-) -> Result<Vec<&PeerId>> {
-    // Check if there are enough peers to satisfy the request.
-    // bail early if that's not the case
-    if CLOSE_GROUP_SIZE > peers.len() {
-        warn!("Not enough peers in the k-bucket to satisfy the request");
-        return Err(NetworkError::NotEnoughPeers {
-            found: peers.len(),
-            required: CLOSE_GROUP_SIZE,
-        });
-    }
+    queried_address: NetworkAddress,
+) -> Vec<KBucketDistance> {
+    let mut sorted_distances: Vec<_> = peers
+        .iter()
+        .map(|peer| {
+            let addr = NetworkAddress::from_peer(*peer);
+            queried_address.distance(&addr)
+        })
+        .collect();
 
-    let genesis_address = NetworkAddress::from_spend_address(SpendAddress::from_unique_pubkey(
-        &GENESIS_SPEND_UNIQUE_KEY,
-    ));
+    sorted_distances.sort();
 
-    let mut sorted_peers: Vec<&PeerId> = peers.iter().collect();
-
-    sorted_peers.sort_by(|a, b| {
-        let addr_a = NetworkAddress::from_peer(**a);
-        let addr_b = NetworkAddress::from_peer(**b);
-        let distance_a = genesis_address.distance(&addr_a);
-        let distance_b = genesis_address.distance(&addr_b);
-        distance_a.cmp(&distance_b)
-    });
-
-    Ok(sorted_peers)
+    sorted_distances
 }
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.

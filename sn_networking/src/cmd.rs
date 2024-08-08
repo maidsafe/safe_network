@@ -480,6 +480,7 @@ impl SwarmDriver {
                 let _ = self.pending_get_closest_peers.insert(
                     query_id,
                     (
+                        key,
                         PendingGetClosestType::FunctionCall(sender),
                         Default::default(),
                     ),
