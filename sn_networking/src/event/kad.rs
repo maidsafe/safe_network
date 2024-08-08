@@ -437,7 +437,9 @@ impl SwarmDriver {
         // It allows us to say "we've searched up to and including this bucket"
         // as opposed to the concrete distance itself (which statistically seems like we can fall outwith a range
         // quite easily with a small number of peers)
-        let exceeded_request_range = if current_distance_searched < expected_get_range {
+        let exceeded_request_range = if current_distance_searched.ilog2()
+            < expected_get_range.ilog2()
+        {
             let dist = current_distance_searched.ilog2();
             let expected_dist = expected_get_range.ilog2();
 
