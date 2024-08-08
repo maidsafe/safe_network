@@ -391,13 +391,6 @@ impl Network {
         self.get_closest_peers(key, true).await
     }
 
-    /// Returns the closest peers to the given `NetworkAddress`, sorted by their distance to the key.
-    ///
-    /// Includes our node's `PeerId` while calculating the closest peers.
-    pub async fn node_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
-        self.get_closest_peers(key, false).await
-    }
-
     /// Returns a map where each key is the ilog2 distance of that Kbucket and each value is a vector of peers in that
     /// bucket.
     /// Does not include self
@@ -414,31 +407,6 @@ impl Network {
     pub async fn get_all_local_peers_excluding_self(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeersExcludingSelf { sender });
-
-        receiver
-            .await
-            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
-    }
-
-    /// Returns all the PeerId from all the KBuckets from our local Routing Table
-    /// Also contains our own PeerId.
-    pub async fn get_close_range_peers_for_record(
-        &self,
-        address: NetworkAddress,
-    ) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_local_swarm_cmd(LocalSwarmCmd::GetCloseRangeLocalPeers { address, sender });
-
-        receiver
-            .await
-            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
-    }
-
-    /// Returns all the PeerId from all the KBuckets from our local Routing Table
-    /// Also contains our own PeerId.
-    pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {
-        let (sender, receiver) = oneshot::channel();
-        self.send_local_swarm_cmd(LocalSwarmCmd::GetClosestKLocalPeers { sender });
 
         receiver
             .await
