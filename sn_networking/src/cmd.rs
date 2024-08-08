@@ -992,7 +992,7 @@ impl SwarmDriver {
         if filtered_peers.len() >= CLOSE_GROUP_SIZE {
             filtered_peers
         } else {
-            warn!("Insufficient peers within range. Falling back to CLOSE_GROUP closest nodes");
+            warn!("Insufficient peers within replication range. Falling back to use CLOSE_GROUP closest nodes");
             let all_peers = self.get_all_local_peers_excluding_self();
             match sort_peers_by_address_and_limit(&all_peers, target_address, CLOSE_GROUP_SIZE) {
                 Ok(peers) => peers.iter().map(|p| **p).collect(),

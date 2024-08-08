@@ -1128,14 +1128,22 @@ impl Client {
     /// # }
     /// ```
     pub async fn verify_cashnote(&self, cash_note: &CashNote) -> WalletResult<()> {
+        let address = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
+
         // We need to get all the spends in the cash_note from the network,
         // and compare them to the spends in the cash_note, to know if the
         // transfer is considered valid in the network.
         let mut tasks = Vec::new();
+
+        info!(
+            "parent spends for cn; {address:?}: {:?}",
+            &cash_note.parent_spends.len()
+        );
+
         for spend in &cash_note.parent_spends {
             let address = SpendAddress::from_unique_pubkey(spend.unique_pubkey());
-            debug!(
-                "Getting spend for pubkey {:?} from network at {address:?}",
+            warn!(
+                "Getting parent spend for cn {address:?} pubkey {:?} from network at {address:?}",
                 spend.unique_pubkey()
             );
             tasks.push(self.get_spend_from_network(address));
@@ -1162,10 +1170,9 @@ impl Client {
         if received_spends == cash_note.parent_spends {
             return Ok(());
         }
-        let address = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
 
         warn!(
-            "Unexpected parent spends found in CashNote verification at {:?}.",
+            "Unexpected parent spends found in CashNote verification at {:?}: {received_spends:?}.",
             address
         );
         Err(WalletError::UnexpectedParentSpends(address))

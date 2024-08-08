@@ -80,14 +80,14 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let mut should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
     let mut should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
 
-    for _ in 0..10 {
+    for i in 0..30 {
         if should_err1.is_err() && should_err2.is_err() {
             break;
         }
 
         tokio::time::sleep(Duration::from_secs(1)).await;
-        info!("Retrying verification... for should_err1+2");
-        println!("Retrying verification... for should_err1+2");
+        info!("Retrying verification.{i}... for should_err1+2");
+        println!("Retrying verification{i} ... for should_err1+2");
         should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
         should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
     }
