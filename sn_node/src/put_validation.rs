@@ -426,7 +426,7 @@ impl Node {
         };
 
         debug!(
-            "Got {} validated spends with key: {unique_pubkey:?} at {pretty_key:?}",
+            "Found {} spends with key: {unique_pubkey:?} at {pretty_key:?}",
             validated_spends.len()
         );
 
@@ -438,14 +438,12 @@ impl Node {
             expires: None,
         };
         self.network().put_local_record(record);
-        debug!(
-            "Successfully stored validated spends with key: {unique_pubkey:?} at {pretty_key:?}"
-        );
+        debug!("Successfully stored spends with key: {unique_pubkey:?} at {pretty_key:?}");
 
         // Just log the double spend attempt. DoubleSpend error during PUT is not used and would just lead to
         // RecordRejected marker (which is incorrect, since we store double spends).
         if validated_spends.len() > 1 {
-            warn!("Got double spend(s) of len {} for the Spend PUT with unique_pubkey {unique_pubkey}", validated_spends.len());
+            warn!("Got Burnt SpendAttempts of len {} for the Spend PUT with unique_pubkey {unique_pubkey} at {pretty_key:?}", validated_spends.len());
         }
 
         self.record_metrics(Marker::ValidSpendRecordPutFromNetwork(&pretty_key));

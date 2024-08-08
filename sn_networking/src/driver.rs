@@ -750,7 +750,7 @@ impl SwarmDriver {
                     // logging for handling events happens inside handle_swarm_events
                     // otherwise we're rewriting match statements etc around this anwyay
                     if let Err(err) = self.handle_swarm_events(swarm_event) {
-                        warn!("Error while handling swarm event: {err}");
+                        trace!("Issue while handling swarm event: {err}");
                     }
                 },
                 // thereafter we can check our intervals

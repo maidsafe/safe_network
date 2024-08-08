@@ -454,7 +454,13 @@ impl SwarmDriver {
         // We assume a finalised query has searched as far as it can in libp2p
         // TODO: Do we only allow this if quorum is from known peers?
         // TODO: Do we only bail early if NOT Quorum::All? (And so we need to search the full range?)
-        if searched_peers_list.len() >= required_quorum || exceeded_request_range {
+        if searched_peers_list.len() >= required_quorum {
+            warn!("RANGE: {data_key_address:?} Quorum satisfied with {:?} peers exceeding quorum {required_quorum:?}", searched_peers_list.len());
+            return true;
+        }
+
+        if exceeded_request_range {
+            warn!("RANGE: {data_key_address:?} Request satisfied as exceeded request range : {exceeded_request_range:?}");
             return true;
         }
 

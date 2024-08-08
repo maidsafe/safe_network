@@ -647,6 +647,8 @@ impl Network {
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
+        use sn_transfers::SignedSpend;
+
         let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
             ExponentialBackoff {
@@ -686,8 +688,39 @@ impl Network {
                     Err(GetRecordError::RecordNotFound) => {
                         warn!("No holder of record '{pretty_key:?}' found.");
                     }
-                    Err(GetRecordError::SplitRecord { .. }) => {
+                    Err(GetRecordError::SplitRecord { result_map }) => {
                         error!("Encountered a split record for {pretty_key:?}.");
+
+                        // attempt to deserialise and accumulate any spends
+                        let mut accumulated_spends = BTreeSet::new();
+                        let results_count = result_map.len();
+                        // try and accumulate any SpendAttempts
+                        if results_count > 1 {
+                            info!("For record {pretty_key:?}, we have more than one result returned.");
+                            // Allow for early bail if we've already seen a split SpendAttempt
+                            for (record, _) in result_map.values() {
+                                match get_raw_signed_spends_from_record(record) {
+                                    Ok(spends) => {
+                                        accumulated_spends.extend(spends);
+                                    }
+                                    Err(_) => {
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+
+                        // we have a Double SpendAttempt and will exit
+                        if accumulated_spends.len() > 1 {
+                            info!("For record {pretty_key:?} task found split record for a spend, accumulated and sending them as a single record");
+                            let accumulated_spends =
+                                accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
+
+                            return Err(BackoffError::Permanent(NetworkError::DoubleSpendAttempt(
+                                accumulated_spends,
+                            )));
+                        }
+
                     }
                     Err(GetRecordError::QueryTimeout) => {
                         error!("Encountered query timeout for {pretty_key:?}.");
