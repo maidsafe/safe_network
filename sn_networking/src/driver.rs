@@ -24,7 +24,7 @@ use crate::{
     record_store_api::UnifiedRecordStore,
     relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
-    sort_peers_by_address_and_limit,
+    sort_peers_by_distance_to_genesis,
     target_arch::{interval, spawn, Instant},
     version::{
         IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
@@ -786,22 +786,18 @@ impl SwarmDriver {
     /// Enumerates buckets and generates a random distance in the first bucket
     /// that has at least `MIN_PEERS_IN_BUCKET` peers.
     ///
-    pub(crate) fn set_request_range(&mut self, network_discovery_peers: &Vec<PeerId>) {
+    pub(crate) fn set_request_range(&mut self, network_discovery_peers: &[PeerId]) {
         info!(
             "Adding a GetRange to our stash deriving from {:?} peers",
             network_discovery_peers.len()
         );
 
-        let our_address = NetworkAddress::from_peer(self.self_peer_id);
-
         // get the farthest distance between these peers:
         let mut new_distance_range = KBucketDistance::default();
 
-        // sort all peers by distance to us.
-        let sorted_discovery_peers = match sort_peers_by_address_and_limit(
+        let sorted_discovery_peers = match sort_peers_by_distance_to_genesis(
             network_discovery_peers,
-            &our_address,
-            network_discovery_peers.len(),
+            // network_discovery_peers.len(),
         ) {
             Ok(sorted_peers) => sorted_peers,
             Err(err) => {
