@@ -39,7 +39,7 @@ pub enum Error {
     CouldNotReceiveMoney(String),
     /// A spend has been burnt (ie there was a DoubleSpendAttempt)
     #[error("Failed to verify transfer validity in the network, a burnt SpendAttempt was found")]
-    BurntSpendAttempt,
+    BurntSpend,
     /// Parents of a spend were not as expected in a provided cash note
     #[error("Failed to verify transfer's parents in the network, transfer could be invalid or a parent double spent")]
     UnexpectedParentSpends(crate::SpendAddress),

@@ -505,7 +505,7 @@ impl SwarmDriver {
                         range: expected_get_range.ilog2().unwrap_or(0),
                     });
 
-                    warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need to extend the range and PUT the data.");
+                    warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need to extend the range and PUT the data. {result:?}");
 
                     let record_type = Self::get_type_from_record(record)?;
 

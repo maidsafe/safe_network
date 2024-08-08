@@ -98,14 +98,14 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
 
     assert_eq!(
         format!("{should_err1:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
-        "Should have been BurntSpendAttempt error, was: {should_err1:?}"
+        format!("Err({:?})", WalletError::BurntSpend),
+        "Should have been BurntSpend error, was: {should_err1:?}"
     );
 
     assert_eq!(
         format!("{should_err2:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
-        "Should have been BurntSpendAttempt error, was: {should_err2:?}"
+        format!("Err({:?})", WalletError::BurntSpend),
+        "Should have been BurntSpend error, was: {should_err2:?}"
     );
 
     Ok(())
@@ -306,7 +306,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         Err(e) => {
             assert_eq!(
                 e.to_string(),
-                format!("{}", WalletError::BurntSpendAttempt),
+                format!("{}", WalletError::BurntSpend),
                 "error should reflect double spend attempt was: {e:?}",
             );
         }
@@ -317,7 +317,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         Err(e) => {
             assert_eq!(
                 e.to_string(),
-                format!("{}", WalletError::BurntSpendAttempt),
+                format!("{}", WalletError::BurntSpend),
                 "error should reflect double spend attempt was: {e:?}",
             );
         }
@@ -473,7 +473,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     info!("Got result while verifying the original spend from A -> B: {result:?}");
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
+        format!("Err({:?})", WalletError::BurntSpend),
         "Should have been BurntSpent error, was: {result:?}"
     );
 
@@ -483,21 +483,21 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     info!("Got result while verifying the original spend from B -> C: {result:?}");
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
+        format!("Err({:?})", WalletError::BurntSpend),
         "Should have been BurntSpent error, was: {result:?}"
     );
 
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
+        format!("Err({:?})", WalletError::BurntSpend),
         "Should have been BurntSpent error, was: {result:?}"
     );
 
     let result = client.verify_cashnote(&cash_notes_for_b[0]).await;
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt),
+        format!("Err({:?})", WalletError::BurntSpend),
         "Should have been BurntSpent error, was: {result:?}"
     );
 
@@ -610,7 +610,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
     info!("Got result while verifying double spend from A -> X: {result:?}");
     assert_eq!(
         format!("{result:?}"),
-        format!("Err({:?})", WalletError::BurntSpendAttempt)
+        format!("Err({:?})", WalletError::BurntSpend)
     );
 
     // the original A should still be present as one of the double spends
@@ -662,7 +662,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         info!("Got result while verifying double spend from A -> Y: {result:?}");
         assert_eq!(
             format!("{result:?}"),
-            format!("Err({:?})", WalletError::BurntSpendAttempt)
+            format!("Err({:?})", WalletError::BurntSpend)
         );
 
         // the original A should still be present as one of the double spends

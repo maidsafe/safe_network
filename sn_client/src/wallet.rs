@@ -1148,7 +1148,7 @@ impl Client {
                 Err(error) => match error {
                     Error::Network(sn_networking::NetworkError::DoubleSpendAttempt(spends)) => {
                         warn!("DoubleSpentAttempt found with {spends:?}");
-                        Err(WalletError::BurntSpendAttempt)
+                        Err(WalletError::BurntSpend)
                     }
                     err => Err(WalletError::CouldNotVerifyTransfer(format!("{err:?}"))),
                 },
