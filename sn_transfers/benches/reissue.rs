@@ -11,7 +11,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use sn_transfers::{
     create_first_cash_note_from_key, rng, CashNote, DerivationIndex, MainSecretKey, NanoTokens,
-    OfflineTransfer, SpendReason,
+    SignedTransaction, SpendReason,
 };
 use std::collections::BTreeSet;
 
@@ -21,36 +21,35 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
     // prepare transfer of genesis cashnote
     let mut rng = rng::from_seed([0u8; 32]);
     let (starting_cashnote, starting_main_key) = generate_cashnote();
+    let main_pubkey = starting_main_key.main_pubkey();
     let recipients = (0..N_OUTPUTS)
         .map(|_| {
-            let main_key = MainSecretKey::random_from_rng(&mut rng);
             (
                 NanoTokens::from(1),
-                main_key.main_pubkey(),
+                main_pubkey,
                 DerivationIndex::random(&mut rng),
+                false,
             )
         })
         .collect::<Vec<_>>();
 
     // transfer to N_OUTPUTS recipients
-    let zero = DerivationIndex([0u8; 32]);
-    let offline_transfer = OfflineTransfer::new(
-        vec![(starting_cashnote, Some(starting_main_key.derive_key(&zero)))],
+    let signed_tx = SignedTransaction::new(
+        vec![starting_cashnote],
         recipients,
         starting_main_key.main_pubkey(),
         SpendReason::default(),
+        &starting_main_key,
     )
-    .expect("transfer to succeed");
+    .expect("Transaction creation to succeed");
 
     // simulate spentbook to check for double spends
     let mut spentbook_node = BTreeSet::new();
-    for spend in &offline_transfer.all_spend_requests {
+    for spend in &signed_tx.spends {
         if !spentbook_node.insert(*spend.unique_pubkey()) {
             panic!("cashnote double spend");
         };
     }
-    let spent_tx = offline_transfer.tx;
-    let signed_spends: BTreeSet<_> = offline_transfer.all_spend_requests.into_iter().collect();
 
     // bench verification
     c.bench_function(&format!("reissue split 1 to {N_OUTPUTS}"), |b| {
@@ -58,9 +57,7 @@ fn bench_reissue_1_to_100(c: &mut Criterion) {
         let guard = pprof::ProfilerGuard::new(100).unwrap();
 
         b.iter(|| {
-            black_box(spent_tx.clone())
-                .verify_against_inputs_spent(&signed_spends)
-                .unwrap();
+            black_box(&signed_tx).verify().unwrap();
         });
 
         #[cfg(unix)]
@@ -83,30 +80,24 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
                 NanoTokens::from(1),
                 recipient_of_100_mainkey.main_pubkey(),
                 DerivationIndex::random(&mut rng),
+                false,
             )
         })
         .collect::<Vec<_>>();
 
     // transfer to N_OUTPUTS recipients derived from recipient_of_100_mainkey
-    let derive = starting_cashnote.derivation_index();
-    let offline_transfer = OfflineTransfer::new(
-        vec![(
-            starting_cashnote,
-            Some(starting_main_key.derive_key(&derive)),
-        )],
+    let signed_tx = SignedTransaction::new(
+        vec![starting_cashnote],
         recipients,
         starting_main_key.main_pubkey(),
         SpendReason::default(),
+        &starting_main_key,
     )
-    .expect("transfer to succeed");
+    .expect("Transaction creation to succeed");
 
     // simulate spentbook to check for double spends
     let mut spentbook_node = BTreeSet::new();
-    let signed_spends: BTreeSet<_> = offline_transfer
-        .all_spend_requests
-        .clone()
-        .into_iter()
-        .collect();
+    let signed_spends: BTreeSet<_> = signed_tx.spends.clone().into_iter().collect();
     for spend in signed_spends.into_iter() {
         if !spentbook_node.insert(*spend.unique_pubkey()) {
             panic!("cashnote double spend");
@@ -114,39 +105,28 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     }
 
     // prepare to send all of those cashnotes back to our starting_main_key
-    let total_amount = offline_transfer
-        .cash_notes_for_recipient
+    let total_amount = signed_tx
+        .output_cashnotes
         .iter()
-        .map(|cn| cn.value().unwrap().as_nano())
+        .map(|cn| cn.value().as_nano())
         .sum();
-    let many_cashnotes = offline_transfer
-        .cash_notes_for_recipient
-        .into_iter()
-        .map(|cn| {
-            let derivation_index = cn.derivation_index();
-            let sk = recipient_of_100_mainkey.derive_key(&derivation_index);
-            (cn, Some(sk))
-        })
-        .collect();
+    let many_cashnotes = signed_tx.output_cashnotes.into_iter().collect();
     let one_single_recipient = vec![(
         NanoTokens::from(total_amount),
         starting_main_key.main_pubkey(),
         DerivationIndex::random(&mut rng),
+        false,
     )];
 
     // create transfer to merge all of the cashnotes into one
-    let many_to_one_transfer = OfflineTransfer::new(
+    let many_to_one_tx = SignedTransaction::new(
         many_cashnotes,
         one_single_recipient,
         starting_main_key.main_pubkey(),
         SpendReason::default(),
+        &recipient_of_100_mainkey,
     )
-    .expect("transfer to succeed");
-    let merge_spent_tx = many_to_one_transfer.tx.clone();
-    let signed_spends: Vec<_> = many_to_one_transfer
-        .all_spend_requests
-        .into_iter()
-        .collect();
+    .expect("Many to one Transaction creation to succeed");
 
     // bench verification
     c.bench_function(&format!("reissue merge {N_OUTPUTS} to 1"), |b| {
@@ -154,9 +134,7 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
         let guard = pprof::ProfilerGuard::new(100).unwrap();
 
         b.iter(|| {
-            black_box(&merge_spent_tx)
-                .verify_against_inputs_spent(&signed_spends)
-                .unwrap();
+            black_box(&many_to_one_tx).verify().unwrap();
         });
 
         #[cfg(unix)]

@@ -562,7 +562,7 @@ mod tests {
         assert_eq!(cash_notes.len(), 1);
         let cash_note = cash_notes.pop().unwrap();
 
-        assert_eq!(cash_note.value()?, amount);
+        assert_eq!(cash_note.value(), amount);
 
         Ok(())
     }

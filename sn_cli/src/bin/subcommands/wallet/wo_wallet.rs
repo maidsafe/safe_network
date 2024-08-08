@@ -15,16 +15,9 @@ use color_eyre::{
     Result,
 };
 use dialoguer::Confirm;
-use sn_client::transfers::{
-    DerivationIndex, MainPubkey, NanoTokens, OfflineTransfer, SignedSpend, UniquePubkey,
-    WatchOnlyWallet,
-};
+use sn_client::transfers::{MainPubkey, NanoTokens, SignedTransaction, Transfer, WatchOnlyWallet};
 use sn_client::Client;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-    str::FromStr,
-};
+use std::{path::Path, str::FromStr};
 use walkdir::WalkDir;
 
 // Please do not remove the blank lines in these doc comments.
@@ -79,10 +72,9 @@ pub enum WatchOnlyWalletCmds {
         #[clap(name = "to")]
         to: String,
     },
-    /// This command will create the cash note for the recipient and broadcast it to the network.
-    ///
-    /// This cash note can then be shared with the recipient, who can then
-    /// use the 'deposit' command to use/claim the funds.
+    /// This command turns an offline signed transaction into a valid sendable Transfer
+    /// The signed transaction's SignedSpends are broadcasted to the Network and the recipient's Transfer is returned
+    /// This Transfer can then be sent and redeemed by the recipient using the 'receive' command
     Broadcast {
         /// Hex-encoded signed transaction.
         #[clap(name = "signed Tx")]
@@ -180,7 +172,7 @@ pub(crate) async fn wo_wallet_cmds(
 ) -> Result<()> {
     match cmds {
         WatchOnlyWalletCmds::Broadcast { signed_tx, force } => {
-            broadcast_signed_spends(signed_tx, client, verify_store, force).await
+            broadcast_signed_tx(signed_tx, client, verify_store, force).await
         }
         WatchOnlyWalletCmds::Verify {
             spend_address,
@@ -243,48 +235,34 @@ fn build_unsigned_transaction(from: &str, amount: &str, to: &str, root_dir: &Pat
     Ok(())
 }
 
-async fn broadcast_signed_spends(
+async fn broadcast_signed_tx(
     signed_tx: String,
     client: &Client,
     verify_store: bool,
     force: bool,
 ) -> Result<()> {
-    let (signed_spends, output_details, change_id): (
-        BTreeSet<SignedSpend>,
-        BTreeMap<UniquePubkey, (MainPubkey, DerivationIndex)>,
-        UniquePubkey,
-    ) = rmp_serde::from_slice(&hex::decode(signed_tx)?)?;
-
+    let signed_tx = match SignedTransaction::from_hex(&signed_tx) {
+        Ok(signed_tx) => signed_tx,
+        Err(err) => {
+            bail!("Failed to decode the signed transaction: {err:?}");
+        }
+    };
     println!("The signed transaction has been successfully decoded:");
-    let mut transaction = None;
-    for (i, signed_spend) in signed_spends.iter().enumerate() {
+
+    for (i, signed_spend) in signed_tx.spends.iter().enumerate() {
         println!("\nSpending input #{i}:");
         println!("\tKey: {}", signed_spend.unique_pubkey().to_hex());
-        println!("\tAmount: {}", signed_spend.token());
-        let linked_tx = signed_spend.spent_tx();
-        if let Some(ref tx) = transaction {
-            if tx != &linked_tx {
-                bail!("Transaction seems corrupted, not all Spends (inputs) refer to the same transaction");
-            }
-        } else {
-            transaction = Some(linked_tx);
-        }
+        println!("\tAmount: {}", signed_spend.amount());
 
-        if let Err(err) = signed_spend.verify(signed_spend.spent_tx_hash()) {
+        if let Err(err) = signed_spend.verify() {
             bail!("Transaction is invalid: {err:?}");
         }
-    }
 
-    let tx = if let Some(tx) = transaction {
-        for (i, output) in tx.outputs.iter().enumerate() {
-            println!("\nOutput #{i}:");
-            println!("\tKey: {}", output.unique_pubkey.to_hex());
-            println!("\tAmount: {}", output.amount);
+        for (descendant, amount) in signed_spend.spend.descendants.iter() {
+            println!("\tOutput Key: {}", descendant.to_hex());
+            println!("\tAmount: {amount}");
         }
-        tx
-    } else {
-        bail!("Transaction is corrupted, no transaction information found.");
-    };
+    }
 
     if !force {
         println!(
@@ -301,18 +279,16 @@ async fn broadcast_signed_spends(
     }
 
     println!("Broadcasting the transaction to the network...");
-    let transfer = OfflineTransfer::from_transaction(signed_spends, tx, change_id, output_details)?;
-
     // return the first CashNote (assuming there is only one because we only sent to one recipient)
-    let cash_note = match &transfer.cash_notes_for_recipient[..] {
-        [cashnote] => cashnote.to_hex()?,
+    let cash_note = match &signed_tx.output_cashnotes[..] {
+        [cashnote] => cashnote,
         [_multiple, ..] => bail!("Multiple CashNotes were returned from the transaction when only one was expected. This is a BUG."),
         [] =>bail!("No CashNotes were built from the Tx.")
     };
 
     // send to network
     client
-        .send_spends(transfer.all_spend_requests.iter(), verify_store)
+        .send_spends(signed_tx.spends.iter(), verify_store)
         .await
         .map_err(|err| {
             eyre!("The transfer was not successfully registered in the network: {err:?}")
@@ -320,15 +296,13 @@ async fn broadcast_signed_spends(
 
     println!("Transaction broadcasted!.");
 
-    println!("The recipient's cash note has been successfully created.");
-    println!("Please share this to the recipient:\n\n{cash_note}\n");
-    println!("The recipient can then use the wallet 'deposit' command to verify the transfer, and/or be able to use the funds.\n");
+    let transfer = Transfer::transfer_from_cash_note(cash_note)?.to_hex()?;
+    println!("Please share this to the recipient:\n\n{transfer}\n");
+    println!("The recipient can then use the wallet 'receive' command to claim the funds.\n");
 
-    if let Some(cash_note) = transfer.change_cash_note {
-        println!(
-            "A change cash note has also been created:\n\n{}\n",
-            cash_note.to_hex()?
-        );
+    if let Some(change_cn) = signed_tx.change_cashnote {
+        let change_transfer = Transfer::transfer_from_cash_note(&change_cn)?.to_hex()?;
+        println!("Please redeem the change from this Transaction:\n\n{change_transfer}\n");
         println!("You should use the wallet 'deposit' command to be able to use these funds.\n");
     }
 

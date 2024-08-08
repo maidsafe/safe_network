@@ -9,14 +9,17 @@
 use super::wallet::HotWallet;
 
 use crate::{
-    wallet::Result as WalletResult, CashNote, DerivationIndex, Input, MainPubkey, MainSecretKey,
-    NanoTokens, Output, SignedSpend, SpendReason, Transaction, TransactionBuilder,
-    TransferError as CashNoteError, UniquePubkey,
+    wallet::Result as WalletResult, CashNote, DerivationIndex, MainPubkey, MainSecretKey,
+    NanoTokens, SignedSpend, Spend, SpendReason, TransferError, UniquePubkey,
 };
 
 use bls::SecretKey;
 use lazy_static::lazy_static;
-use std::{fmt::Debug, path::PathBuf};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::Debug,
+    path::PathBuf,
+};
 use thiserror::Error;
 
 /// Number of tokens in the Genesis CashNote.
@@ -25,8 +28,10 @@ use thiserror::Error;
 /// thus creating a total of 1,288,490,189,000,000,000 available units.
 pub(super) const GENESIS_CASHNOTE_AMOUNT: u64 = (0.3 * TOTAL_SUPPLY as f64) as u64;
 
-/// The derivation index for the genesis Spend.
-const GENESIS_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0u8; 32]);
+/// The input derivation index for the genesis Spend.
+pub const GENESIS_INPUT_DERIVATION_INDEX: DerivationIndex = DerivationIndex([0u8; 32]);
+/// The output derivation index for the genesis Spend.
+pub const GENESIS_OUTPUT_DERIVATION_INDEX: DerivationIndex = DerivationIndex([1u8; 32]);
 
 /// Default genesis SK for testing purpose. Be sure to pass the correct `GENESIS_SK` value via env for release.
 const DEFAULT_LIVE_GENESIS_SK: &str =
@@ -57,7 +62,7 @@ pub enum Error {
     GenesisCashNoteError(String),
     /// The cash_note error reason that parsing failed.
     #[error("Failed to parse reason: {0}")]
-    FailedToParseReason(#[from] Box<CashNoteError>),
+    FailedToParseReason(#[from] Box<TransferError>),
 
     #[error("Failed to perform wallet action: {0}")]
     WalletError(String),
@@ -89,22 +94,7 @@ lazy_static! {
 
 lazy_static! {
     /// This is the unique key for the genesis Spend
-    pub static ref GENESIS_SPEND_UNIQUE_KEY: UniquePubkey = GENESIS_PK.new_unique_pubkey(&GENESIS_DERIVATION_INDEX);
-}
-
-lazy_static! {
-    pub static ref GENESIS_CASHNOTE_PARENT_TX: Transaction = {
-        let mut tx = Transaction::empty();
-        tx.inputs = vec![Input {
-            unique_pubkey: *GENESIS_SPEND_UNIQUE_KEY,
-            amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
-        }];
-        tx.outputs = vec![Output {
-            unique_pubkey: *GENESIS_SPEND_UNIQUE_KEY,
-            amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
-        }];
-        tx
-    };
+    pub static ref GENESIS_SPEND_UNIQUE_KEY: UniquePubkey = GENESIS_PK.new_unique_pubkey(&GENESIS_OUTPUT_DERIVATION_INDEX);
 }
 
 lazy_static! {
@@ -145,18 +135,12 @@ pub fn get_genesis_sk() -> MainSecretKey {
     }
 }
 
-/// Return if provided Transaction is genesis parent tx.
-pub fn is_genesis_parent_tx(parent_tx: &Transaction) -> bool {
-    parent_tx == &*GENESIS_CASHNOTE_PARENT_TX
-}
-
 /// Return if provided Spend is genesis spend.
 pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
     let bytes = spend.spend.to_bytes_for_signing();
     spend.spend.unique_pubkey == *GENESIS_SPEND_UNIQUE_KEY
         && GENESIS_SPEND_UNIQUE_KEY.verify(&spend.derived_key_sig, bytes)
-        && is_genesis_parent_tx(&spend.spend.parent_tx)
-        && spend.spend.amount == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
+        && spend.spend.amount() == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
 }
 
 pub fn load_genesis_wallet() -> Result<HotWallet, Error> {
@@ -211,44 +195,25 @@ pub fn create_first_cash_note_from_key(
 ) -> GenesisResult<CashNote> {
     let main_pubkey = first_cash_note_key.main_pubkey();
     debug!("genesis cashnote main_pubkey: {:?}", main_pubkey);
-    let derived_key = first_cash_note_key.derive_key(&GENESIS_DERIVATION_INDEX);
+    let input_sk = first_cash_note_key.derive_key(&GENESIS_INPUT_DERIVATION_INDEX);
+    let input_pk = input_sk.unique_pubkey();
+    let output_pk = main_pubkey.new_unique_pubkey(&GENESIS_OUTPUT_DERIVATION_INDEX);
+    let amount = NanoTokens::from(GENESIS_CASHNOTE_AMOUNT);
 
-    // Use the same key as the input and output of Genesis Tx.
-    // The src tx is empty as this is the first CashNote.
-    let genesis_input = Input {
-        unique_pubkey: derived_key.unique_pubkey(),
-        amount: NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
+    let pre_genesis_spend = Spend {
+        unique_pubkey: input_pk,
+        reason: SpendReason::default(),
+        ancestors: BTreeSet::new(),
+        descendants: BTreeMap::from_iter([(output_pk, amount)]),
+        royalties: vec![],
     };
+    let parent_spends = BTreeSet::from_iter([SignedSpend::sign(pre_genesis_spend, &input_sk)]);
 
-    let reason = SpendReason::default();
-
-    let cash_note_builder = TransactionBuilder::default()
-        .add_input(
-            genesis_input,
-            Some(derived_key),
-            Transaction::empty(),
-            GENESIS_DERIVATION_INDEX,
-        )
-        .add_output(
-            NanoTokens::from(GENESIS_CASHNOTE_AMOUNT),
-            main_pubkey,
-            GENESIS_DERIVATION_INDEX,
-        )
-        .build(reason, vec![]);
-
-    // build the output CashNotes
-    let output_cash_notes = cash_note_builder.build_without_verifying().map_err(|err| {
-        Error::GenesisCashNoteError(format!(
-            "CashNote builder failed to create output genesis CashNote: {err}",
-        ))
-    })?;
-
-    // just one output CashNote is expected which is the genesis CashNote
-    let (genesis_cash_note, _) = output_cash_notes.into_iter().next().ok_or_else(|| {
-        Error::GenesisCashNoteError(
-            "CashNote builder (unexpectedly) contains an empty set of outputs.".to_string(),
-        )
-    })?;
+    let genesis_cash_note = CashNote {
+        parent_spends,
+        main_pubkey,
+        derivation_index: GENESIS_OUTPUT_DERIVATION_INDEX,
+    };
 
     Ok(genesis_cash_note)
 }
@@ -299,7 +264,6 @@ mod tests {
                 "genesis_cn.unique_pubkey: {:?}",
                 genesis_cn.unique_pubkey().to_hex()
             );
-            println!("genesis_cn.parent_tx: {:?}", genesis_cn.parent_tx.to_hex());
         }
     }
 }
