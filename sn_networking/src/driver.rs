@@ -431,8 +431,41 @@ impl NetworkBuilder {
         );
 
         #[cfg(feature = "open-metrics")]
+        let mut metrics_registry = self.metrics_registry.unwrap_or_default();
+
+        // ==== Transport ====
+        #[cfg(feature = "open-metrics")]
+        let main_transport = transport::build_transport(&self.keypair, &mut metrics_registry);
+        #[cfg(not(feature = "open-metrics"))]
+        let main_transport = transport::build_transport(&self.keypair);
+        let transport = if !self.local {
+            debug!("Preventing non-global dials");
+            // Wrap upper in a transport that prevents dialing local addresses.
+            libp2p::core::transport::global_only::Transport::new(main_transport).boxed()
+        } else {
+            main_transport
+        };
+
+        let (relay_transport, relay_behaviour) =
+            libp2p::relay::client::new(self.keypair.public().to_peer_id());
+        let relay_transport = relay_transport
+            .upgrade(libp2p::core::upgrade::Version::V1Lazy)
+            .authenticate(
+                libp2p::noise::Config::new(&self.keypair)
+                    .expect("Signing libp2p-noise static DH keypair failed."),
+            )
+            .multiplex(libp2p::yamux::Config::default())
+            .or_transport(transport);
+
+        let transport = relay_transport
+            .map(|either_output, _| match either_output {
+                Either::Left((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
+                Either::Right((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
+            })
+            .boxed();
+
+        #[cfg(feature = "open-metrics")]
         let network_metrics = if let Some(port) = self.metrics_server_port {
-            let mut metrics_registry = self.metrics_registry.unwrap_or_default();
             let metrics = NetworkMetrics::new(&mut metrics_registry);
             run_metrics_server(metrics_registry, port);
             Some(metrics)
@@ -519,16 +552,6 @@ impl NetworkBuilder {
             libp2p::identify::Behaviour::new(cfg)
         };
 
-        let main_transport = transport::build_transport(&self.keypair);
-
-        let transport = if !self.local {
-            debug!("Preventing non-global dials");
-            // Wrap upper in a transport that prevents dialing local addresses.
-            libp2p::core::transport::global_only::Transport::new(main_transport).boxed()
-        } else {
-            main_transport
-        };
-
         #[cfg(feature = "upnp")]
         let upnp = if !self.local && !is_client && upnp {
             debug!("Enabling UPnP port opening behavior");
@@ -537,24 +560,6 @@ impl NetworkBuilder {
             None
         }
         .into(); // Into `Toggle<T>`
-
-        let (relay_transport, relay_behaviour) =
-            libp2p::relay::client::new(self.keypair.public().to_peer_id());
-        let relay_transport = relay_transport
-            .upgrade(libp2p::core::upgrade::Version::V1Lazy)
-            .authenticate(
-                libp2p::noise::Config::new(&self.keypair)
-                    .expect("Signing libp2p-noise static DH keypair failed."),
-            )
-            .multiplex(libp2p::yamux::Config::default())
-            .or_transport(transport);
-
-        let transport = relay_transport
-            .map(|either_output, _| match either_output {
-                Either::Left((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
-                Either::Right((peer_id, muxer)) => (peer_id, StreamMuxerBox::new(muxer)),
-            })
-            .boxed();
 
         let relay_server = {
             let relay_server_cfg = relay::Config {
