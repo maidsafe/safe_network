@@ -60,7 +60,7 @@ pub enum NodeIssue {
 pub enum LocalSwarmCmd {
     // Returns all the peers from all the k-buckets from the local Routing Table.
     // This includes our PeerId as well.
-    GetAllLocalPeers {
+    GetAllLocalPeersExcludingSelf {
         sender: oneshot::Sender<Vec<PeerId>>,
     },
     /// Return the current GetRange as determined by the SwarmDriver
@@ -250,7 +250,7 @@ impl Debug for LocalSwarmCmd {
             LocalSwarmCmd::GetCurrentRange { .. } => {
                 write!(f, "SwarmCmd::GetCurrentRange")
             }
-            LocalSwarmCmd::GetAllLocalPeers { .. } => {
+            LocalSwarmCmd::GetAllLocalPeersExcludingSelf { .. } => {
                 write!(f, "SwarmCmd::GetAllLocalPeers")
             }
             LocalSwarmCmd::GetSwarmLocalState { .. } => {
@@ -752,9 +752,9 @@ impl SwarmDriver {
                 }
                 let _ = sender.send(ilog2_kbuckets);
             }
-            LocalSwarmCmd::GetAllLocalPeers { sender } => {
-                cmd_string = "GetAllLocalPeers";
-                let _ = sender.send(self.get_all_local_peers());
+            LocalSwarmCmd::GetAllLocalPeersExcludingSelf { sender } => {
+                cmd_string = "GetAllLocalPeersExcludingSelf";
+                let _ = sender.send(self.get_all_local_peers_excluding_self());
             }
             LocalSwarmCmd::GetCloseRangeLocalPeers { address, sender } => {
                 cmd_string = "GetCloseRangeLocalPeers";
@@ -981,6 +981,7 @@ impl SwarmDriver {
     }
 
     /// From all local peers, returns any within current get_range for a given key
+    /// Excludes self
     pub(crate) fn get_filtered_peers_exceeding_range_or_close_group(
         &mut self,
         target_address: &NetworkAddress,
@@ -991,7 +992,7 @@ impl SwarmDriver {
             filtered_peers
         } else {
             warn!("Insufficient peers within range. Falling back to CLOSE_GROUP closest nodes");
-            let all_peers = self.get_all_local_peers();
+            let all_peers = self.get_all_local_peers_excluding_self();
             match sort_peers_by_address_and_limit(&all_peers, target_address, CLOSE_GROUP_SIZE) {
                 Ok(peers) => peers.iter().map(|p| **p).collect(),
                 Err(err) => {

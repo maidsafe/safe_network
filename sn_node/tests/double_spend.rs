@@ -77,15 +77,10 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let cash_notes_for_2: Vec<_> = transfer_to_2.cash_notes_for_recipient.clone();
     let cash_notes_for_3: Vec<_> = transfer_to_3.cash_notes_for_recipient.clone();
 
-    let mut should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
-    let mut should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
-
-    while should_err1.is_ok() || should_err2.is_ok() {
-        println!("One spend still valid... retrying after 1s");
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
-        should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
-    }
+    // tiny wait to allow the network to accumulate the GET records
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    let should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
+    let should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
 
     info!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
     println!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");

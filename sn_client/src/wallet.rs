@@ -1165,10 +1165,10 @@ impl Client {
         let address = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
 
         warn!(
-            "BurntSpendAttempt found in CashNote verification at {:?}.",
+            "Unexpected parent spends found in CashNote verification at {:?}.",
             address
         );
-        Err(WalletError::BurntSpendAttempt)
+        Err(WalletError::UnexpectedParentSpends(address))
     }
 }
 

@@ -316,8 +316,7 @@ impl Network {
 
         trace!("Start replication of fresh record {pretty_key:?} from store");
 
-        // Already contains self_peer_id
-        let mut all_peers = match network.get_all_local_peers().await {
+        let all_peers = match network.get_all_local_peers_excluding_self().await {
             Ok(peers) => peers,
             Err(err) => {
                 error!(
@@ -326,9 +325,6 @@ impl Network {
                 return;
             }
         };
-
-        // remove ourself from these calculations
-        all_peers.retain(|peer_id| peer_id != &network.peer_id());
 
         let data_addr = NetworkAddress::from_record_key(&paid_key);
         let mut peers_to_replicate_to = match network.get_range().await {
@@ -414,10 +410,10 @@ impl Network {
     }
 
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
-    /// Also contains our own PeerId.
-    pub async fn get_all_local_peers(&self) -> Result<Vec<PeerId>> {
+    /// Excludes our own PeerId.
+    pub async fn get_all_local_peers_excluding_self(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeers { sender });
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeersExcludingSelf { sender });
 
         receiver
             .await

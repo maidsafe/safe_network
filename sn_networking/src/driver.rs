@@ -870,12 +870,17 @@ impl SwarmDriver {
         }
     }
 
-    /// get all the peers from our local RoutingTable. Contains self
-    pub(crate) fn get_all_local_peers(&mut self) -> Vec<PeerId> {
+    /// get all the peers from our local RoutingTable. Excluding self
+    pub(crate) fn get_all_local_peers_excluding_self(&mut self) -> Vec<PeerId> {
+        let our_peer_id = self.self_peer_id;
         let mut all_peers: Vec<PeerId> = vec![];
         for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
             for entry in kbucket.iter() {
-                all_peers.push(entry.node.key.clone().into_preimage());
+                let id = entry.node.key.clone().into_preimage();
+
+                if id != our_peer_id {
+                    all_peers.push(id);
+                }
             }
         }
         all_peers.push(self.self_peer_id);
