@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723053978205,
+  "lastUpdate": 1723119459206,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2a796eee14217c42c6f51e90281f96965be33e88",
-          "message": "feat(faucet): fully limit any concurrency\n\nThis means we'll be able to await any verification\nsteps and retries (once we have that working properly)\nto avoid spend errors there (as wallet lock releases quite often)",
-          "timestamp": "2024-04-11T09:27:33+09:00",
-          "tree_id": "e897fc3160cfe1e4c05f88f5cac032b59f830022",
-          "url": "https://github.com/maidsafe/safe_network/commit/2a796eee14217c42c6f51e90281f96965be33e88"
-        },
-        "date": 1712795965194,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2222054104473001,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6452202088444141,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.618948599512564,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.602700519457116,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7ee0ff60045ff7957e2d0010a65f4baaab1bcae5",
+          "message": "Merge pull request #2031 from RolandSherwin/metrics_bw\n\nfeat(network): expose bandwidth per transport protocol",
+          "timestamp": "2024-08-08T11:21:44Z",
+          "tree_id": "a90f98568334700f9166633742c9ba4665237c7c",
+          "url": "https://github.com/maidsafe/safe_network/commit/7ee0ff60045ff7957e2d0010a65f4baaab1bcae5"
+        },
+        "date": 1723119452301,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1873295113591744,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6176520894634168,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.435164190404784,
             "unit": "MiB/s"
           }
         ]
