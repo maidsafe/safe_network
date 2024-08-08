@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723119578432,
+  "lastUpdate": 1723119580934,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2a796eee14217c42c6f51e90281f96965be33e88",
-          "message": "feat(faucet): fully limit any concurrency\n\nThis means we'll be able to await any verification\nsteps and retries (once we have that working properly)\nto avoid spend errors there (as wallet lock releases quite often)",
-          "timestamp": "2024-04-11T09:27:33+09:00",
-          "tree_id": "e897fc3160cfe1e4c05f88f5cac032b59f830022",
-          "url": "https://github.com/maidsafe/safe_network/commit/2a796eee14217c42c6f51e90281f96965be33e88"
-        },
-        "date": 1712796081357,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 192,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7ee0ff60045ff7957e2d0010a65f4baaab1bcae5",
+          "message": "Merge pull request #2031 from RolandSherwin/metrics_bw\n\nfeat(network): expose bandwidth per transport protocol",
+          "timestamp": "2024-08-08T11:21:44Z",
+          "tree_id": "a90f98568334700f9166633742c9ba4665237c7c",
+          "url": "https://github.com/maidsafe/safe_network/commit/7ee0ff60045ff7957e2d0010a65f4baaab1bcae5"
+        },
+        "date": 1723119579965,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 203,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
