@@ -425,20 +425,24 @@ impl SwarmDriver {
         let is_sensitive_data = matches!(quorum, Quorum::All);
 
         let required_quorum = get_quorum_value(quorum);
+
+        let met_quorum = searched_peers_list.len() >= required_quorum;
+
         // we only enforce range if we have sensitive data...for data spends quorum::all
-        if searched_peers_list.len() >= required_quorum && !is_sensitive_data {
+        if met_quorum && !is_sensitive_data {
             return true;
         }
 
         // get the farthest distance between peers in the response
-        let mut current_distance_searched = KBucketDistance::default();
+        let mut max_distance_to_data_from_responded_nodes = KBucketDistance::default();
 
         // iterate over peers and see if the distance to the data is greater than the get_range
+        // Fathest peer from the data that has returned it
         for peer_id in searched_peers_list.iter() {
             let peer_address = NetworkAddress::from_peer(*peer_id);
             let distance_to_data = peer_address.distance(data_key_address);
-            if current_distance_searched < distance_to_data {
-                current_distance_searched = distance_to_data;
+            if max_distance_to_data_from_responded_nodes < distance_to_data {
+                max_distance_to_data_from_responded_nodes = distance_to_data;
             }
         }
 
@@ -446,13 +450,13 @@ impl SwarmDriver {
         // It allows us to say "we've searched up to and including this bucket"
         // as opposed to the concrete distance itself (which statistically seems like we can fall outwith a range
         // quite easily with a small number of peers)
-        let exceeded_request_range = if current_distance_searched.ilog2()
+        let exceeded_request_range = if max_distance_to_data_from_responded_nodes.ilog2()
             < expected_get_range.ilog2()
         {
-            let dist = current_distance_searched.ilog2();
-            let expected_dist = expected_get_range.ilog2();
+            let dist = max_distance_to_data_from_responded_nodes.ilog2();
+            let expected_dist = expected_get_range.ilog2(); // 253 // 122
 
-            warn!("RANGE: {data_key_address:?} Insufficient GetRange searched. {dist:?} {expected_dist:?} {current_distance_searched:?} is less than expcted GetRange of {expected_get_range:?}");
+            warn!("RANGE: {data_key_address:?} Insufficient GetRange searched. {dist:?} {expected_dist:?} {max_distance_to_data_from_responded_nodes:?} is less than expcted GetRange of {expected_get_range:?}");
 
             false
         } else {
@@ -461,7 +465,7 @@ impl SwarmDriver {
 
         // We assume a finalised query has searched as far as it can in libp2p
 
-        if exceeded_request_range {
+        if exceeded_request_range && met_quorum {
             warn!("RANGE: {data_key_address:?} Request satisfied as exceeded request range : {exceeded_request_range:?} and Quorum satisfied with {:?} peers exceeding quorum {required_quorum:?}", searched_peers_list.len());
             return true;
         }
@@ -497,6 +501,7 @@ impl SwarmDriver {
                 info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_thoroughly:?}");
 
                 let result = if num_of_versions > 1 {
+                    // TODO: Do we want to repopulate a split record.and under what conditions?
                     warn!("RANGE: more than one version found!");
                     Err(GetRecordError::SplitRecord {
                         result_map: result_map.clone(),
@@ -506,7 +511,6 @@ impl SwarmDriver {
 
                     Ok(record.clone())
                 } else {
-                    //
                     // We have not searched enough of the network range.
                     let result = Err(GetRecordError::NotEnoughCopiesInRange {
                         record: record.clone(),
@@ -527,6 +531,12 @@ impl SwarmDriver {
 
                         let (sender, _receiver) = oneshot::channel();
 
+                        // TODO:
+                        //
+                        // Do we actively try and put to close peers?
+                        //
+                        // DO we put_record_to specific peers we know.
+                        //
                         // nodes will try/fail to replicate it from us, but grab from the network thereafter
                         self.queue_network_swarm_cmd(NetworkSwarmCmd::PutRecord {
                             record: record.clone(),
