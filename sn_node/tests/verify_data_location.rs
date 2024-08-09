@@ -16,14 +16,11 @@ use crate::common::{
 use assert_fs::TempDir;
 use common::client::get_wallet;
 use eyre::{eyre, Result};
-use libp2p::{
-    kad::{KBucketKey, RecordKey},
-    PeerId,
-};
+use libp2p::{kad::RecordKey, PeerId};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, FilesApi, Uploader, WalletClient};
 use sn_logging::LogBuilder;
-use sn_networking::sort_peers_by_key;
+use sn_networking::{sort_peers_by_address_and_limit, sort_peers_by_key_and_limit};
 use sn_protocol::{
     safenode_proto::{NodeInfoRequest, RecordAddressesRequest},
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
@@ -112,7 +109,12 @@ async fn verify_data_location() -> Result<()> {
     let (client, _paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
 
     store_chunks(client.clone(), chunk_count, paying_wallet_dir.to_path_buf()).await?;
-    store_registers(client, register_count, paying_wallet_dir.to_path_buf()).await?;
+    store_registers(
+        client.clone(),
+        register_count,
+        paying_wallet_dir.to_path_buf(),
+    )
+    .await?;
 
     // Verify data location initially
     verify_location(&all_peers, &node_rpc_address).await?;
@@ -172,8 +174,8 @@ fn print_node_close_groups(all_peers: &[PeerId]) {
 
     for (node_index, peer) in all_peers.iter().enumerate() {
         let key = NetworkAddress::from_peer(*peer).as_kbucket_key();
-        let closest_peers =
-            sort_peers_by_key(&all_peers, &key, CLOSE_GROUP_SIZE).expect("failed to sort peer");
+        let closest_peers = sort_peers_by_key_and_limit(&all_peers, &key, CLOSE_GROUP_SIZE)
+            .expect("failed to sort peer");
         let closest_peers_idx = closest_peers
             .iter()
             .map(|&&peer| {
@@ -224,11 +226,12 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
         for (key, actual_holders_idx) in record_holders.iter() {
             println!("Verifying {:?}", PrettyPrintRecordKey::from(key));
             info!("Verifying {:?}", PrettyPrintRecordKey::from(key));
-            let record_key = KBucketKey::from(key.to_vec());
-            let expected_holders = sort_peers_by_key(all_peers, &record_key, CLOSE_GROUP_SIZE)?
-                .into_iter()
-                .cloned()
-                .collect::<BTreeSet<_>>();
+            let record_address = NetworkAddress::from_record_key(key);
+            let expected_holders =
+                sort_peers_by_address_and_limit(all_peers, &record_address, CLOSE_GROUP_SIZE)?
+                    .into_iter()
+                    .cloned()
+                    .collect::<BTreeSet<_>>();
 
             let actual_holders = actual_holders_idx
                 .iter()

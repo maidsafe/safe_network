@@ -740,6 +740,10 @@ jobs:
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
 
+      - name: Wait from network to stabilise
+        shell: bash
+        run: sleep 30
+
       - name: Verify the routing tables of the nodes
         run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture
         env:
@@ -765,7 +769,7 @@ jobs:
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_data_location
+          log_file_prefix: safe_test_logs_data_location_routing_table
           platform: ${{ matrix.os }}
 
       - name: Verify restart of nodes using rg
@@ -866,6 +870,30 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 5
+
+      - name: Move faucet log to the working folder
+        run: |
+          echo "SAFE_DATA_PATH has: "
+          ls -l $SAFE_DATA_PATH
+          echo "test_faucet foder has: "
+          ls -l $SAFE_DATA_PATH/test_faucet
+          echo "logs folder has: "
+          ls -l $SAFE_DATA_PATH/test_faucet/logs
+          mv $SAFE_DATA_PATH/test_faucet/logs/faucet.log ./faucet_log.log
+        env:
+          SN_LOG: "all"
+          SAFE_DATA_PATH: /home/runner/.local/share/safe
+        continue-on-error: true
+        if: always()
+        timeout-minutes: 1
+
+      - name: Upload faucet log
+        uses: actions/upload-artifact@main
+        with:
+          name: faucet_test_first_faucet_log
+          path: faucet_log.log
+        continue-on-error: true
+        if: always()
 
       - name: Create and fund a wallet second time
         run: |

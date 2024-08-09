@@ -30,11 +30,16 @@ impl fmt::Debug for DerivationIndex {
 }
 
 impl DerivationIndex {
-    // generates a random derivation index
+    /// generates a random derivation index
     pub fn random(rng: &mut impl RngCore) -> DerivationIndex {
         let mut bytes = [0u8; 32];
         rng.fill_bytes(&mut bytes);
         DerivationIndex(bytes)
+    }
+
+    /// returns the inner bytes representation
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        &self.0
     }
 }
 

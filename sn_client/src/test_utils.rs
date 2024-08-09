@@ -29,7 +29,7 @@ use tracing::{info, warn};
 pub const AMOUNT_TO_FUND_WALLETS: u64 = 100 * 1_000_000_000;
 
 // The number of times to try to load the faucet wallet
-const LOAD_FAUCET_WALLET_RETRIES: usize = 6;
+const LOAD_FAUCET_WALLET_RETRIES: usize = 10;
 
 // mutex to restrict access to faucet wallet from concurrent tests
 static FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::const_new(());

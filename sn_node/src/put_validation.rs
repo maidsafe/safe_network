@@ -426,7 +426,7 @@ impl Node {
         };
 
         debug!(
-            "Got {} validated spends with key: {unique_pubkey:?} at {pretty_key:?}",
+            "Found {} spends with key: {unique_pubkey:?} at {pretty_key:?}",
             validated_spends.len()
         );
 
@@ -438,14 +438,12 @@ impl Node {
             expires: None,
         };
         self.network().put_local_record(record);
-        debug!(
-            "Successfully stored validated spends with key: {unique_pubkey:?} at {pretty_key:?}"
-        );
+        debug!("Successfully stored spends with key: {unique_pubkey:?} at {pretty_key:?}");
 
         // Just log the double spend attempt. DoubleSpend error during PUT is not used and would just lead to
         // RecordRejected marker (which is incorrect, since we store double spends).
         if validated_spends.len() > 1 {
-            warn!("Got double spend(s) of len {} for the Spend PUT with unique_pubkey {unique_pubkey}", validated_spends.len());
+            warn!("Got Burnt SpendAttempts of len {} for the Spend PUT with unique_pubkey {unique_pubkey} at {pretty_key:?}", validated_spends.len());
         }
 
         self.record_metrics(Marker::ValidSpendRecordPutFromNetwork(&pretty_key));
@@ -715,13 +713,14 @@ impl Node {
                 }
                 spends
             }
-            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopiesInRange {
                 record,
                 got,
+                range,
                 ..
             })) => {
                 info!(
-                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network"
+                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network in range {range}"
                 );
                 match get_raw_signed_spends_from_record(&record) {
                     Ok(spends) => spends,
@@ -822,10 +821,8 @@ impl Node {
         for spend in many_spends {
             let descendants: BTreeSet<_> = spend
                 .spend
-                .spent_tx
-                .outputs
-                .iter()
-                .map(|o| o.unique_pubkey())
+                .descendants
+                .keys()
                 .map(SpendAddress::from_unique_pubkey)
                 .collect();
             for d in descendants {
@@ -893,7 +890,7 @@ where
 {
     let mut received_fee = NanoTokens::zero();
     for cash_note in cash_notes {
-        let amount = cash_note.value()?;
+        let amount = cash_note.value();
         received_fee = received_fee
             .checked_add(amount)
             .ok_or(Error::NumericOverflow)?;

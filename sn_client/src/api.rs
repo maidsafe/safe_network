@@ -14,7 +14,7 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use libp2p::{
     identity::Keypair,
-    kad::{Quorum, Record},
+    kad::{KBucketDistance, Quorum, Record},
     Multiaddr, PeerId,
 };
 #[cfg(feature = "open-metrics")]
@@ -307,6 +307,11 @@ impl Client {
         self.events_broadcaster.subscribe()
     }
 
+    /// Return the underlying network GetRange
+    pub async fn get_range(&self) -> Result<KBucketDistance> {
+        self.network.get_range().await.map_err(Error::from)
+    }
+
     /// Sign the given data.
     ///
     /// # Arguments
@@ -450,9 +455,9 @@ impl Client {
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
         let get_quorum = if is_verifying {
-            Quorum::Majority
+            Quorum::All
         } else {
-            Quorum::One
+            Quorum::Majority
         };
         let retry_strategy = if is_verifying {
             Some(RetryStrategy::Balanced)
@@ -889,17 +894,25 @@ impl Client {
 
         // When there is retry on Put side, no need to have a retry on Get
         let verification_cfg = GetRecordCfg {
-            get_quorum: Quorum::Majority,
+            get_quorum: Quorum::All,
             retry_strategy: None,
             target_record: record_to_verify,
             expected_holders,
         };
+
+        let verification = if verify_store {
+            Some((VerificationKind::Network, verification_cfg))
+        } else {
+            None
+        };
+
         let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::Majority,
+            put_quorum: Quorum::All,
             retry_strategy: Some(RetryStrategy::Persistent),
             use_put_record_to: None,
-            verification: Some((VerificationKind::Network, verification_cfg)),
+            verification,
         };
+
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
@@ -936,7 +949,7 @@ impl Client {
         self.try_fetch_spend_from_network(
             address,
             GetRecordCfg {
-                get_quorum: Quorum::Majority,
+                get_quorum: Quorum::All,
                 retry_strategy: Some(RetryStrategy::Balanced),
                 target_record: None,
                 expected_holders: Default::default(),
@@ -967,7 +980,7 @@ impl Client {
         self.try_fetch_spend_from_network(
             address,
             GetRecordCfg {
-                get_quorum: Quorum::Majority,
+                get_quorum: Quorum::All,
                 retry_strategy: None,
                 target_record: None,
                 expected_holders: Default::default(),
@@ -1016,16 +1029,14 @@ impl Client {
         }
 
         // check spend
-        match signed_spend.verify(signed_spend.spent_tx_hash()) {
+        match signed_spend.verify() {
             Ok(()) => {
                 trace!("Verified signed spend got from network for {address:?}");
                 Ok(signed_spend.clone())
             }
             Err(err) => {
                 warn!("Invalid signed spend got from network for {address:?}: {err:?}.");
-                Err(Error::CouldNotVerifyTransfer(format!(
-                    "Verification failed for spent at {address:?} with error {err:?}"
-                )))
+                Err(Error::from(err))
             }
         }
     }
@@ -1057,7 +1068,7 @@ impl Client {
     /// let main_pub_key = MainPubkey::new(pk);
     /// // Create a Cash Note Redemption Vector
     /// let cash_note = CashNote::from_hex("&hex").unwrap();
-    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note).unwrap();
+    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note);
     /// let vector = vec![cashNoteRedemption.clone(), cashNoteRedemption.clone()];
     /// // Verify the cash note redemptions
     /// let cash_notes = client.verify_cash_notes_redemptions(main_pub_key,&vector);

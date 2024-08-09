@@ -13,6 +13,7 @@ use rayon::prelude::IntoParallelRefIterator;
 
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
+use std::collections::BTreeSet;
 use std::hash::{Hash, Hasher};
 
 use crate::error::{Result, TransferError};
@@ -59,7 +60,7 @@ impl Transfer {
     /// The recipients can then decrypt the data and use it to verify and reconstruct the CashNote
     pub fn transfer_from_cash_note(cash_note: &CashNote) -> Result<Self> {
         let recipient = cash_note.main_pubkey;
-        let u = CashNoteRedemption::from_cash_note(cash_note)?;
+        let u = CashNoteRedemption::from_cash_note(cash_note);
         let t = Self::create(vec![u], recipient)
             .map_err(|_| TransferError::CashNoteRedemptionEncryptionFailed)?;
         Ok(t)
@@ -69,7 +70,7 @@ impl Transfer {
     /// can be done offline, and sent to the recipient.
     /// Note that this type of transfer is not encrypted
     pub(crate) fn royalties_transfer_from_cash_note(cash_note: &CashNote) -> Result<Self> {
-        let cnr = CashNoteRedemption::from_cash_note(cash_note)?;
+        let cnr = CashNoteRedemption::from_cash_note(cash_note);
         Ok(Self::NetworkRoyalties(vec![cnr]))
     }
 
@@ -135,29 +136,28 @@ pub struct CashNoteRedemption {
     /// with this derivation index the owner can derive
     /// the secret key from their main key needed to spend this CashNoteRedemption
     pub derivation_index: DerivationIndex,
-    /// spentbook entry of one of one of the inputs (parent spends)
-    /// using data found at this address the owner can check that the output is valid money
-    pub parent_spend: SpendAddress,
+    /// address of parent spends
+    /// using data found at these addresses the owner can check that the output is valid money
+    pub parent_spends: BTreeSet<SpendAddress>,
 }
 
 impl CashNoteRedemption {
     /// Create a new CashNoteRedemption
-    pub fn new(derivation_index: DerivationIndex, parent_spend: SpendAddress) -> Self {
+    pub fn new(derivation_index: DerivationIndex, parent_spends: BTreeSet<SpendAddress>) -> Self {
         Self {
             derivation_index,
-            parent_spend,
+            parent_spends,
         }
     }
 
-    pub fn from_cash_note(cash_note: &CashNote) -> Result<Self> {
+    pub fn from_cash_note(cash_note: &CashNote) -> Self {
         let derivation_index = cash_note.derivation_index();
-        let parent_spend = match cash_note.parent_spends.iter().next() {
-            Some(s) => SpendAddress::from_unique_pubkey(s.unique_pubkey()),
-            None => {
-                return Err(TransferError::CashNoteHasNoParentSpends);
-            }
-        };
-        Ok(Self::new(derivation_index, parent_spend))
+        let parent_spends = cash_note
+            .parent_spends
+            .iter()
+            .map(|s| s.address())
+            .collect();
+        Self::new(derivation_index, parent_spends)
     }
 
     /// Serialize the CashNoteRedemption to bytes
@@ -198,7 +198,7 @@ mod tests {
         let rng = &mut bls::rand::thread_rng();
         let cashnote_redemption = CashNoteRedemption::new(
             DerivationIndex([42; 32]),
-            SpendAddress::new(XorName::random(rng)),
+            BTreeSet::from_iter([SpendAddress::new(XorName::random(rng))]),
         );
         let sk = MainSecretKey::random();
         let pk = sk.main_pubkey();
@@ -218,7 +218,7 @@ mod tests {
         let rng = &mut bls::rand::thread_rng();
         let cashnote_redemption = CashNoteRedemption::new(
             DerivationIndex([42; 32]),
-            SpendAddress::new(XorName::random(rng)),
+            BTreeSet::from_iter([SpendAddress::new(XorName::random(rng))]),
         );
         let sk = MainSecretKey::random();
         let pk = sk.main_pubkey();

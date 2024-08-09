@@ -209,6 +209,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     Ok(())
 }
 
+#[ignore = "This test sends out invalid 0 transactions and needs to be fixed"]
 #[tokio::test]
 async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments", true);

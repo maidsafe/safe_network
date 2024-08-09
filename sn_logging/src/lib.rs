@@ -298,14 +298,14 @@ mod tests {
         util::SubscriberInitExt,
         Layer, Registry,
     };
-    use tracing_test::internal::GLOBAL_BUF;
+    use tracing_test::internal::global_buf;
 
     #[test]
     // todo: break down the TracingLayers so that we can plug in the writer without having to rewrite the whole function
     // here.
     fn reload_handle_should_change_log_levels() -> Result<()> {
         // A mock write that writes to stdout + collects events to a global buffer. We can later read from this buffer.
-        let mock_writer = tracing_test::internal::MockWriter::new(&GLOBAL_BUF);
+        let mock_writer = tracing_test::internal::MockWriter::new(global_buf());
 
         // Constructing the fmt layer manually.
         let layer = tracing_fmt::layer()
@@ -332,7 +332,7 @@ mod tests {
         trace!("First trace event");
 
         {
-            let buf = GLOBAL_BUF.lock().unwrap();
+            let buf = global_buf().lock().unwrap();
 
             let events: Vec<&str> = std::str::from_utf8(&buf)
                 .expect("Logs contain invalid UTF8")
@@ -349,7 +349,7 @@ mod tests {
         warn!("First warn event");
 
         {
-            let buf = GLOBAL_BUF.lock().unwrap();
+            let buf = global_buf().lock().unwrap();
 
             let events: Vec<&str> = std::str::from_utf8(&buf)
                 .expect("Logs contain invalid UTF8")
