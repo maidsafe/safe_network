@@ -25,10 +25,8 @@ impl Network {
     /// If we get a quorum error, we enable re-try
     pub async fn get_raw_spends(&self, address: SpendAddress) -> Result<Vec<SignedSpend>> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
-        // use Quorum::One not All here, as we want to collect and return all the spends we can find
-        // Quorum all may be prohibitive to this end
         let get_cfg = GetRecordCfg {
-            get_quorum: Quorum::One,
+            get_quorum: Quorum::Majority,
             retry_strategy: None,
             // This should not be set here. This function is used as a quick check to find the spends around the key during
             // validation. The returned records might possibly be double spend attempt and the record will not match
