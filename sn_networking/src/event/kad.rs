@@ -18,10 +18,7 @@ use libp2p::{
     },
     PeerId,
 };
-use sn_protocol::{
-    messages::{Cmd, Request},
-    NetworkAddress, PrettyPrintRecordKey,
-};
+use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use std::{
     collections::{hash_map::Entry, HashSet},
     time::Instant,
@@ -63,12 +60,16 @@ impl SwarmDriver {
                         let (address, get_closest_type, current_closest) = entry.remove();
                         self.network_discovery
                             .handle_get_closest_query(&current_closest);
-                        self.set_request_range(address, &current_closest);
 
                         if let PendingGetClosestType::FunctionCall(sender) = get_closest_type {
                             sender
                                 .send(current_closest)
                                 .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                        } else {
+                            // do not set this via function calls, as that could potentially
+                            // skew the results in favour of heavily queried (and manipulated)
+                            // areas of the network
+                            self.set_request_range(address, &current_closest);
                         }
                     }
                 } else {
@@ -411,6 +412,9 @@ impl SwarmDriver {
 
     /// Checks passed peers from a request and checks they are sufficiently spaced to
     /// ensure we have searched enough of the network range as determined by our `get_range`
+    ///
+    /// We expect any conflicting records to have been reported prior ti this check,
+    /// so we assume we're returning unique records only.
     fn have_we_have_searched_thoroughly_for_quorum(
         expected_get_range: KBucketDistance,
         searched_peers_list: &HashSet<PeerId>,
@@ -450,10 +454,17 @@ impl SwarmDriver {
             true
         };
 
+        let is_sensitive_data = matches!(quorum, Quorum::All);
         // We assume a finalised query has searched as far as it can in libp2p
         // TODO: Do we only allow this if quorum is from known peers?
         // TODO: Do we only bail early if NOT Quorum::All? (And so we need to search the full range?)
-        if searched_peers_list.len() >= required_quorum && exceeded_request_range {
+        //
+        // we only enforce range if we have sensitive data...for data spends quorum::all
+        if searched_peers_list.len() >= required_quorum && !is_sensitive_data {
+            return true;
+        }
+
+        if exceeded_request_range {
             warn!("RANGE: {data_key_address:?} Request satisfied as exceeded request range : {exceeded_request_range:?} and Quorum satisfied with {:?} peers exceeding quorum {required_quorum:?}", searched_peers_list.len());
             return true;
         }
@@ -498,8 +509,8 @@ impl SwarmDriver {
 
                     Ok(record.clone())
                 } else {
+                    //
                     // We have not searched enough of the network range.
-
                     let result = Err(GetRecordError::NotEnoughCopiesInRange {
                         record: record.clone(),
                         expected: get_quorum_value(&cfg.get_quorum),
@@ -507,41 +518,24 @@ impl SwarmDriver {
                         range: expected_get_range.ilog2().unwrap_or(0),
                     });
 
-                    warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need to extend the range and PUT the data. {result:?}");
+                    // This should be a backstop...  Quorum::All is the only one that enforces
+                    // a full search of the network range.
+                    if matches!(cfg.get_quorum, Quorum::All) {
+                        warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need to extend the range and PUT the data. {result:?}");
 
-                    let record_type = Self::get_type_from_record(record)?;
+                        warn!("Reputting data to network {pretty_key:?}...");
 
-                    let replicate_targets: HashSet<_> = self
-                        .get_filtered_peers_exceeding_range_or_close_group(&data_key_address)
-                        .iter()
-                        .cloned()
-                        .collect();
+                        // let's ensure we have an updated network view
+                        self.trigger_network_discovery();
 
-                    if from_peers == &replicate_targets {
-                        warn!("RANGE: {pretty_key:?} We asked everyone we know of in that range already!");
-                    }
+                        let (sender, _receiver) = oneshot::channel();
 
-                    // let a_holder = from_peers.iter().first();
-                    if !self.is_client {
-                        for peer in replicate_targets {
-                            warn!("Not a client, reputting data to {peer:?} for {pretty_key:?} if needed...");
-                            // Do not send to any peer that has already informed us
-                            if from_peers.contains(&peer) {
-                                continue;
-                            }
-
-                            debug!("RANGE: (insufficient, so ) Sending data to unresponded peer: {peer:?} for {pretty_key:?}");
-
-                            // nodes will try/fail to trplicate it from us, but grab from the network thereafter
-                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
-                                req: Request::Cmd(Cmd::Replicate {
-                                    holder: NetworkAddress::from_peer(self.self_peer_id),
-                                    keys: vec![(data_key_address.clone(), record_type.clone())],
-                                }),
-                                peer,
-                                sender: None,
-                            });
-                        }
+                        // nodes will try/fail to replicate it from us, but grab from the network thereafter
+                        self.queue_network_swarm_cmd(NetworkSwarmCmd::PutRecord {
+                            record: record.clone(),
+                            sender,
+                            quorum: cfg.get_quorum,
+                        });
                     }
 
                     result
