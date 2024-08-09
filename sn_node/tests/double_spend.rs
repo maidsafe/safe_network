@@ -60,19 +60,20 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let transfer_to_3 = OfflineTransfer::new(same_cash_notes, vec![to3_unique_key], to1, reason)?;
 
     // send both transfers to the network
-    // upload won't error out, only error out during verification.
+
     info!("Sending both transfers to the network...");
-    let res = client
-        .send_spends(transfer_to_2.all_spend_requests.iter(), false)
+    // These may error (but may not depending on network speed)
+    // so we're not going to rely on it here.
+    let _ = client
+        .send_spends(transfer_to_2.all_spend_requests.iter(), true)
         .await;
-    assert!(res.is_ok());
-    let res = client
-        .send_spends(transfer_to_3.all_spend_requests.iter(), false)
+
+    let _ = client
+        .send_spends(transfer_to_3.all_spend_requests.iter(), true)
         .await;
-    assert!(res.is_ok());
 
     // check the CashNotes, it should fail
-    info!("Verifying the transfers from first wallet... Sleeping for 3 seconds.");
+    info!("Verifying the transfers from first wallet...");
 
     let cash_notes_for_2: Vec<_> = transfer_to_2.cash_notes_for_recipient.clone();
     let cash_notes_for_3: Vec<_> = transfer_to_3.cash_notes_for_recipient.clone();
@@ -80,7 +81,7 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let mut should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
     let mut should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
 
-    for i in 0..30 {
+    for i in 0..5 {
         if should_err1.is_err() && should_err2.is_err() {
             break;
         }
