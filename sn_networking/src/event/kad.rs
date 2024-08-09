@@ -18,7 +18,10 @@ use libp2p::{
     },
     PeerId,
 };
-use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
+use sn_protocol::{
+    messages::{Cmd, Request},
+    NetworkAddress, PrettyPrintRecordKey,
+};
 use std::{
     collections::{hash_map::Entry, HashSet},
     time::Instant,
@@ -529,20 +532,48 @@ impl SwarmDriver {
                         // let's ensure we have an updated network view
                         self.trigger_network_discovery();
 
-                        let (sender, _receiver) = oneshot::channel();
+                        warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need PUT the data back into nodes in that range.");
 
-                        // TODO:
-                        //
-                        // Do we actively try and put to close peers?
-                        //
-                        // DO we put_record_to specific peers we know.
-                        //
-                        // nodes will try/fail to replicate it from us, but grab from the network thereafter
-                        self.queue_network_swarm_cmd(NetworkSwarmCmd::PutRecord {
-                            record: record.clone(),
-                            sender,
-                            quorum: cfg.get_quorum,
-                        });
+                        let record_type = Self::get_type_from_record(record)?;
+
+                        let replicate_targets: HashSet<_> = self
+                            .get_filtered_peers_exceeding_range_or_close_group(&data_key_address)
+                            .iter()
+                            .cloned()
+                            .collect();
+
+                        if from_peers == &replicate_targets {
+                            warn!("RANGE: {pretty_key:?} We asked everyone we know of in that range already!");
+                        }
+
+                        // set holder to someone that has the data
+                        let holder = NetworkAddress::from_peer(
+                            from_peers
+                                .iter()
+                                .next()
+                                .cloned()
+                                .unwrap_or(self.self_peer_id),
+                        );
+
+                        for peer in replicate_targets {
+                            warn!("Reputting data to {peer:?} for {pretty_key:?} if needed...");
+                            // Do not send to any peer that has already informed us
+                            if from_peers.contains(&peer) {
+                                continue;
+                            }
+
+                            debug!("RANGE: (insufficient, so ) Sending data to unresponded peer: {peer:?} for {pretty_key:?}");
+
+                            // nodes will try/fail to trplicate it from us, but grab from the network thereafter
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                                req: Request::Cmd(Cmd::Replicate {
+                                    holder: holder.clone(),
+                                    keys: vec![(data_key_address.clone(), record_type.clone())],
+                                }),
+                                peer,
+                                sender: None,
+                            });
+                        }
                     }
 
                     result
