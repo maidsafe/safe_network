@@ -436,6 +436,7 @@ impl NetworkBuilder {
             .set_max_packet_size(MAX_PACKET_SIZE)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
+            // TODO: Do we want to reduce this from default still?
             // How many nodes _should_ store data.
             .set_replication_factor(REPLICATION_FACTOR);
 
@@ -869,6 +870,8 @@ impl SwarmDriver {
 
         // TODO: Test this calculation in larger networks
         // We get around 5-7 peers returned here... We want to take further in larger networks
+        //
+        // This value
         let farthest_peer_to_check = self
             .get_all_local_peers_excluding_self()
             .len()
