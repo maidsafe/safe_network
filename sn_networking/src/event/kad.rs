@@ -422,8 +422,13 @@ impl SwarmDriver {
         quorum: &Quorum,
     ) -> bool {
         warn!("Assessing search: range: {:?}, address: {data_key_address:?}, quorum required: {quorum:?}, peers_returned_count: {:?}", expected_get_range.ilog2(), searched_peers_list.len());
+        let is_sensitive_data = matches!(quorum, Quorum::All);
 
         let required_quorum = get_quorum_value(quorum);
+        // we only enforce range if we have sensitive data...for data spends quorum::all
+        if searched_peers_list.len() >= required_quorum && !is_sensitive_data {
+            return true;
+        }
 
         // get the farthest distance between peers in the response
         let mut current_distance_searched = KBucketDistance::default();
@@ -454,15 +459,7 @@ impl SwarmDriver {
             true
         };
 
-        let is_sensitive_data = matches!(quorum, Quorum::All);
         // We assume a finalised query has searched as far as it can in libp2p
-        // TODO: Do we only allow this if quorum is from known peers?
-        // TODO: Do we only bail early if NOT Quorum::All? (And so we need to search the full range?)
-        //
-        // we only enforce range if we have sensitive data...for data spends quorum::all
-        if searched_peers_list.len() >= required_quorum && !is_sensitive_data {
-            return true;
-        }
 
         if exceeded_request_range {
             warn!("RANGE: {data_key_address:?} Request satisfied as exceeded request range : {exceeded_request_range:?} and Quorum satisfied with {:?} peers exceeding quorum {required_quorum:?}", searched_peers_list.len());
