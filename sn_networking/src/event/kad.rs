@@ -18,7 +18,10 @@ use libp2p::{
     },
     PeerId,
 };
-use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
+use sn_protocol::{
+    messages::{Cmd, Request},
+    NetworkAddress, PrettyPrintRecordKey,
+};
 use std::{
     collections::{hash_map::Entry, HashSet},
     time::Instant,
@@ -422,18 +425,27 @@ impl SwarmDriver {
         quorum: &Quorum,
     ) -> bool {
         warn!("Assessing search: range: {:?}, address: {data_key_address:?}, quorum required: {quorum:?}, peers_returned_count: {:?}", expected_get_range.ilog2(), searched_peers_list.len());
+        let is_sensitive_data = matches!(quorum, Quorum::All);
 
         let required_quorum = get_quorum_value(quorum);
 
+        let met_quorum = searched_peers_list.len() >= required_quorum;
+
+        // we only enforce range if we have sensitive data...for data spends quorum::all
+        if met_quorum && !is_sensitive_data {
+            return true;
+        }
+
         // get the farthest distance between peers in the response
-        let mut current_distance_searched = KBucketDistance::default();
+        let mut max_distance_to_data_from_responded_nodes = KBucketDistance::default();
 
         // iterate over peers and see if the distance to the data is greater than the get_range
+        // Fathest peer from the data that has returned it
         for peer_id in searched_peers_list.iter() {
             let peer_address = NetworkAddress::from_peer(*peer_id);
             let distance_to_data = peer_address.distance(data_key_address);
-            if current_distance_searched < distance_to_data {
-                current_distance_searched = distance_to_data;
+            if max_distance_to_data_from_responded_nodes < distance_to_data {
+                max_distance_to_data_from_responded_nodes = distance_to_data;
             }
         }
 
@@ -441,30 +453,22 @@ impl SwarmDriver {
         // It allows us to say "we've searched up to and including this bucket"
         // as opposed to the concrete distance itself (which statistically seems like we can fall outwith a range
         // quite easily with a small number of peers)
-        let exceeded_request_range = if current_distance_searched.ilog2()
+        let exceeded_request_range = if max_distance_to_data_from_responded_nodes.ilog2()
             < expected_get_range.ilog2()
         {
-            let dist = current_distance_searched.ilog2();
-            let expected_dist = expected_get_range.ilog2();
+            let dist = max_distance_to_data_from_responded_nodes.ilog2();
+            let expected_dist = expected_get_range.ilog2(); // 253 // 122
 
-            warn!("RANGE: {data_key_address:?} Insufficient GetRange searched. {dist:?} {expected_dist:?} {current_distance_searched:?} is less than expcted GetRange of {expected_get_range:?}");
+            warn!("RANGE: {data_key_address:?} Insufficient GetRange searched. {dist:?} {expected_dist:?} {max_distance_to_data_from_responded_nodes:?} is less than expcted GetRange of {expected_get_range:?}");
 
             false
         } else {
             true
         };
 
-        let is_sensitive_data = matches!(quorum, Quorum::All);
         // We assume a finalised query has searched as far as it can in libp2p
-        // TODO: Do we only allow this if quorum is from known peers?
-        // TODO: Do we only bail early if NOT Quorum::All? (And so we need to search the full range?)
-        //
-        // we only enforce range if we have sensitive data...for data spends quorum::all
-        if searched_peers_list.len() >= required_quorum && !is_sensitive_data {
-            return true;
-        }
 
-        if exceeded_request_range {
+        if exceeded_request_range && met_quorum {
             warn!("RANGE: {data_key_address:?} Request satisfied as exceeded request range : {exceeded_request_range:?} and Quorum satisfied with {:?} peers exceeding quorum {required_quorum:?}", searched_peers_list.len());
             return true;
         }
@@ -500,6 +504,7 @@ impl SwarmDriver {
                 info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_thoroughly:?}");
 
                 let result = if num_of_versions > 1 {
+                    // TODO: Do we want to repopulate a split record.and under what conditions?
                     warn!("RANGE: more than one version found!");
                     Err(GetRecordError::SplitRecord {
                         result_map: result_map.clone(),
@@ -509,7 +514,6 @@ impl SwarmDriver {
 
                     Ok(record.clone())
                 } else {
-                    //
                     // We have not searched enough of the network range.
                     let result = Err(GetRecordError::NotEnoughCopiesInRange {
                         record: record.clone(),
@@ -528,14 +532,48 @@ impl SwarmDriver {
                         // let's ensure we have an updated network view
                         self.trigger_network_discovery();
 
-                        let (sender, _receiver) = oneshot::channel();
+                        warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need PUT the data back into nodes in that range.");
 
-                        // nodes will try/fail to replicate it from us, but grab from the network thereafter
-                        self.queue_network_swarm_cmd(NetworkSwarmCmd::PutRecord {
-                            record: record.clone(),
-                            sender,
-                            quorum: cfg.get_quorum,
-                        });
+                        let record_type = Self::get_type_from_record(record)?;
+
+                        let replicate_targets: HashSet<_> = self
+                            .get_filtered_peers_exceeding_range_or_close_group(&data_key_address)
+                            .iter()
+                            .cloned()
+                            .collect();
+
+                        if from_peers == &replicate_targets {
+                            warn!("RANGE: {pretty_key:?} We asked everyone we know of in that range already!");
+                        }
+
+                        // set holder to someone that has the data
+                        let holder = NetworkAddress::from_peer(
+                            from_peers
+                                .iter()
+                                .next()
+                                .cloned()
+                                .unwrap_or(self.self_peer_id),
+                        );
+
+                        for peer in replicate_targets {
+                            warn!("Reputting data to {peer:?} for {pretty_key:?} if needed...");
+                            // Do not send to any peer that has already informed us
+                            if from_peers.contains(&peer) {
+                                continue;
+                            }
+
+                            debug!("RANGE: (insufficient, so ) Sending data to unresponded peer: {peer:?} for {pretty_key:?}");
+
+                            // nodes will try/fail to trplicate it from us, but grab from the network thereafter
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                                req: Request::Cmd(Cmd::Replicate {
+                                    holder: holder.clone(),
+                                    keys: vec![(data_key_address.clone(), record_type.clone())],
+                                }),
+                                peer,
+                                sender: None,
+                            });
+                        }
                     }
 
                     result
