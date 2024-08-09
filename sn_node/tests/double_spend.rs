@@ -75,13 +75,9 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     info!("Sending both transfers to the network...");
     // These may error (but may not depending on network speed)
     // so we're not going to rely on it here.
-    let _ = client
-        .send_spends(transfer_to_2.all_spend_requests.iter(), true)
-        .await;
+    let _ = client.send_spends(transfer_to_2.spends.iter(), true).await;
 
-    let _ = client
-        .send_spends(transfer_to_3.all_spend_requests.iter(), true)
-        .await;
+    let _ = client.send_spends(transfer_to_3.spends.iter(), true).await;
 
     // check the CashNotes, it should fail
     info!("Verifying the transfers from first wallet...");
@@ -192,9 +188,7 @@ async fn genesis_double_spend_fail() -> Result<()> {
     )?;
 
     // send the transfer to the network which should reject it
-    let res = client
-        .send_spends(transfer2.spends.iter(), true)
-        .await;
+    let res = client.send_spends(transfer2.spends.iter(), true).await;
     std::mem::drop(exclusive_access);
     assert_matches!(res, Err(WalletError::CouldNotSendMoney(_)));
 
@@ -288,14 +282,18 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
         reason.clone(),
         wallet_1.key(),
     )?; // reuse the old cash notes
-    client
-        .send_spends(transfer_to_3.spends.iter(), false)
-        .await?;
+        // ignore response in case it errors out early, we verify below
+    let _res = client.send_spends(transfer_to_3.spends.iter(), true).await;
     info!("Verifying the transfers from 1 -> 3 wallet... It should error out.");
     let cash_notes_for_3: Vec<_> = transfer_to_3.output_cashnotes.clone();
-    assert!(client.verify_cashnote(&cash_notes_for_3[0]).await.is_err()); // the old spend has been poisoned
+
+    let res = client.verify_cashnote(&cash_notes_for_3[0]).await;
+    assert!(res.is_err(), "should be error, was {res:?}"); // the old spend has been poisoned
+
     info!("Verifying the original transfers from 1 -> 2 wallet... It should error out.");
-    assert!(client.verify_cashnote(&cash_notes_for_2[0]).await.is_err()); // the old spend has been poisoned
+
+    let res = client.verify_cashnote(&cash_notes_for_2[0]).await;
+    assert!(res.is_err(), "should be error, was {res:?}"); // the old spend has been poisoned
 
     // The old spend has been poisoned, but spends from 22 -> 222 should still work
     let wallet_dir_222 = TempDir::new()?;
@@ -494,9 +492,10 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
 
     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
     info!("Got result while verifying double spend from B -> Y: {result:?}");
-    assert!(
-        format!("{result:?}").starts_with("Err(UnexpectedParentSpends"),
-        "Should have been UnexpectedParentSpends error, was: {result:?}"
+    assert_eq!(
+        format!("{result:?}"),
+        format!("Err({:?})", WalletError::BurntSpend),
+        "Should have been BurntSpent error, was: {result:?}"
     );
 
     info!("Verifying the original cashnote of A -> B");
@@ -691,9 +690,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         )?; // reuse the old cash notes
 
         // we actually don't care about the result here, we just want to spam the network with double spends
-        let _ = client
-            .send_spends(transfer_to_y.spends.iter(), false)
-            .await;
+        let _ = client.send_spends(transfer_to_y.spends.iter(), false).await;
 
         // and then we verify the double spend attempt
         info!("Verifying the transfers from A -> Y wallet... It should error out.");
