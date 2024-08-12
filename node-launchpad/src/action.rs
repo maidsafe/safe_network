@@ -15,13 +15,16 @@ use strum::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
 pub enum Action {
-    HomeActions(HomeActions),
-    TabActions(TabActions),
+    MenuActions(MenuActions),
+    StatusActions(StatusActions),
+    OptionsActions(OptionsActions),
+
     SwitchScene(Scene),
     SwitchInputMode(InputMode),
 
     StoreDiscordUserName(String),
     StoreNodesToStart(usize),
+    StoreStorageDrive(String, String),
 
     Tick,
     Render,
@@ -32,11 +35,11 @@ pub enum Action {
     Refresh,
     Error(String),
     Help,
+    Noop,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
-pub enum HomeActions {
-    ResetNodes,
+pub enum StatusActions {
     StartNodes,
     StopNodes,
     StartNodesCompleted,
@@ -47,17 +50,28 @@ pub enum HomeActions {
 
     NodesStatsObtained(NodeStats),
 
-    TriggerBetaProgramme,
     TriggerManageNodes,
-    TriggerHelp,
-    TriggerResetNodesPopUp,
 
     PreviousTableItem,
     NextTableItem,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
-pub enum TabActions {
-    NextTab,
-    PreviousTab,
+pub enum OptionsActions {
+    ResetNodes,
+
+    TriggerChangeDrive,
+    TriggerChangeDriveConfirm(String, String),
+    TriggerBetaProgramme,
+    TriggerResetNodes,
+    TriggerAccessLogs,
+    UpdateBetaProgrammeUsername(String),
+    UpdateStorageDrive(String, String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
+pub enum MenuActions {
+    StatusTab,
+    OptionsTab,
+    HelpTab,
 }

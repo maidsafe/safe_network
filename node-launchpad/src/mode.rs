@@ -11,12 +11,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Scene {
     #[default]
-    Home,
+    Status,
     Options,
-    BetaProgramme,
-    ManageNodes,
-    HelpPopUp,
-    ResetPopUp,
+    Help,
+    ChangeDrivePopUp,
+    ChangeDriveConfirmPopup,
+    BetaProgrammePopUp,
+    ManageNodesPopUp,
+    ResetNodesPopUp,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
