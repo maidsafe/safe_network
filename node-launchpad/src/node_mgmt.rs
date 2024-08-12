@@ -7,8 +7,6 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::action::{Action, StatusActions};
 use color_eyre::eyre::Result;
 
-const NODE_START_INTERVAL: usize = 10;
-
 pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     tokio::task::spawn_local(async move {
         if let Err(err) =
@@ -50,10 +48,10 @@ pub fn maintain_n_running_nodes(
         }
 
         let owner = if owner.is_empty() { None } else { Some(owner) };
-        debug!("Maintaining {count} running nodes in data_dir_path: {data_dir_path:?}");
         if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
             false,
             true,
+            120,
             count,
             data_dir_path,
             true,
@@ -74,7 +72,7 @@ pub fn maintain_n_running_nodes(
             None,
             None,
             VerbosityLevel::Minimal,
-            NODE_START_INTERVAL as u64,
+            None,
         )
         .await
         {
