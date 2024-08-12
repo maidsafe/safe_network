@@ -13,7 +13,7 @@ use sn_service_management::{NodeServiceData, ServiceStatus};
 use std::{path::PathBuf, time::Instant};
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::action::{Action, HomeActions};
+use crate::action::{Action, StatusActions};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NodeStats {
@@ -86,9 +86,9 @@ impl NodeStats {
             }
         }
 
-        if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::NodesStatsObtained(
-            all_node_stats,
-        ))) {
+        if let Err(err) = action_sender.send(Action::StatusActions(
+            StatusActions::NodesStatsObtained(all_node_stats),
+        )) {
             error!("Error while sending action: {err:?}");
         }
     }

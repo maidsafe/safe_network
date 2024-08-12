@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::system;
 use crate::{action::Action, mode::Scene};
 use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -17,6 +18,26 @@ use std::path::PathBuf;
 
 const CONFIG: &str = include_str!("../.config/config.json5");
 
+// Where to store the Nodes data
+pub fn get_launchpad_nodes_data_dir_path(base_dir: PathBuf) -> Result<PathBuf> {
+    // We get the data dir and we remove the first character which is the / character
+    let mut data_directory = dirs_next::data_dir()
+        .expect("Data directory is obtainable")
+        .to_str()
+        .unwrap()
+        .to_string();
+    data_directory.remove(0);
+
+    let mut mount_point = base_dir.clone();
+    mount_point.push(data_directory);
+    mount_point.push("safe");
+    mount_point.push("node");
+    debug!("Creating nodes data dir: {:?}", mount_point.as_path());
+    std::fs::create_dir_all(mount_point.as_path())?;
+    Ok(mount_point)
+}
+
+// Where to store the Launchpad config & logs
 pub fn get_launchpad_data_dir_path() -> Result<PathBuf> {
     let mut home_dirs = dirs_next::data_dir().expect("Data directory is obtainable");
     home_dirs.push("safe");
@@ -52,6 +73,8 @@ pub async fn configure_winsw() -> Result<()> {
 pub struct AppData {
     pub discord_username: String,
     pub nodes_to_start: usize,
+    pub storage_mountpoint: Option<String>,
+    pub storage_drive: Option<String>,
 }
 
 impl AppData {
@@ -66,10 +89,22 @@ impl AppData {
 
         let data = std::fs::read_to_string(config_path)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to read app data file"))?;
+
         let app_data: AppData = serde_json::from_str(&data)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to parse app data"))?;
 
-        Ok(app_data)
+        let mut app_data_cloned = app_data.clone();
+        if app_data.storage_mountpoint.is_none() || app_data.storage_drive.is_none() {
+            // If the storage drive is not set, set it to the default mount point
+            let drive_info = system::get_default_mount_point();
+            app_data_cloned.storage_drive = Some(drive_info.0);
+            app_data_cloned.storage_mountpoint = Some(drive_info.1);
+            debug!(
+                "Setting storage drive to {:?}",
+                app_data_cloned.storage_mountpoint
+            );
+        }
+        Ok(app_data_cloned)
     }
 
     pub fn save(&self) -> Result<()> {
@@ -531,7 +566,7 @@ mod tests {
         let c = Config::new()?;
         assert_eq!(
             c.keybindings
-                .get(&Scene::Home)
+                .get(&Scene::Status)
                 .unwrap()
                 .get(&parse_key_sequence("<q>").unwrap_or_default())
                 .unwrap(),

@@ -75,10 +75,16 @@ pub fn initialize_panic_handler() -> Result<()> {
     Ok(())
 }
 
-// todo: use sn_logging
+// Gets the current logging path
+pub fn get_logging_path() -> Result<std::path::PathBuf> {
+    let log_path = get_launchpad_data_dir_path()?.join("logs");
+    Ok(log_path)
+}
+
+// TODO: use sn_logging
 pub fn initialize_logging() -> Result<()> {
     let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
-    let log_path = get_launchpad_data_dir_path()?.join("logs");
+    let log_path = get_logging_path()?;
     std::fs::create_dir_all(&log_path)?;
     let log_file = std::fs::File::create(log_path.join(format!("launchpad_{timestamp}.log")))
         .context(format!("Failed to create file {log_path:?}"))?;
