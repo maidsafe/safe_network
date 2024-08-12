@@ -8,9 +8,9 @@
 
 use super::super::{utils::centered_rect_fixed, Component};
 use crate::{
-    action::{Action, HomeActions},
+    action::{Action, OptionsActions},
     mode::{InputMode, Scene},
-    style::{clear_area, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
+    style::{clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
 };
 use color_eyre::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent};
@@ -34,19 +34,19 @@ impl Component for ResetNodesPopup {
                 let input = self.confirmation_input_field.value().to_string();
 
                 if input.to_lowercase() == "reset" {
-                    debug!("Got reset, sending Reset action and switching to home");
+                    debug!("Got reset, sending Reset action and switching to Options");
                     vec![
-                        Action::SwitchScene(Scene::Home),
-                        Action::HomeActions(HomeActions::ResetNodes),
+                        Action::OptionsActions(OptionsActions::ResetNodes),
+                        Action::SwitchScene(Scene::Options),
                     ]
                 } else {
-                    debug!("Got Enter, but RESET is not typed. Switching to home");
-                    vec![Action::SwitchScene(Scene::Home)]
+                    debug!("Got Enter, but RESET is not typed. Switching to Options");
+                    vec![Action::SwitchScene(Scene::Options)]
                 }
             }
             KeyCode::Esc => {
-                debug!("Got Esc, switching to home");
-                vec![Action::SwitchScene(Scene::Home)]
+                debug!("Got Esc, switching to Options");
+                vec![Action::SwitchScene(Scene::Options)]
             }
             KeyCode::Char(' ') => vec![],
             KeyCode::Backspace => {
@@ -68,7 +68,7 @@ impl Component for ResetNodesPopup {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::ResetPopUp => {
+                Scene::ResetNodesPopUp => {
                     self.active = true;
                     self.confirmation_input_field = self
                         .confirmation_input_field
@@ -112,7 +112,7 @@ impl Component for ResetNodesPopup {
         let pop_up_border = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Reset Nodes")
+                .title(" Reset Nodes ")
                 .title_style(Style::new().fg(VIVID_SKY_BLUE))
                 .padding(Padding::uniform(2))
                 .border_style(Style::new().fg(VIVID_SKY_BLUE)),
@@ -139,6 +139,7 @@ impl Component for ResetNodesPopup {
 
         let prompt = Paragraph::new("Type in 'reset' and press Enter to Reset all your nodes")
             .wrap(Wrap { trim: false })
+            .block(Block::new().padding(Padding::horizontal(2)))
             .alignment(Alignment::Center)
             .fg(GHOST_WHITE);
 
@@ -161,8 +162,12 @@ impl Component for ResetNodesPopup {
         );
         f.render_widget(input, layer_two[1]);
 
-        let text = Paragraph::new("  This will clear out all the nodes and all \n  the stored data. You should still keep all\n  your earned rewards.");
-        f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
+        let text = Paragraph::new("This will clear out all the nodes and all the stored data. You should still keep all your earned rewards.")
+            .wrap(Wrap { trim: false })
+            .block(Block::new().padding(Padding::horizontal(2)))
+            .alignment(Alignment::Center)
+            .fg(GHOST_WHITE);
+        f.render_widget(text, layer_two[2]);
 
         let dash = Block::new()
             .borders(Borders::BOTTOM)
@@ -174,17 +179,29 @@ impl Component for ResetNodesPopup {
                 .split(layer_two[4]);
 
         let button_no = Line::from(vec![Span::styled(
-            "  No, Cancel [Esc]",
+            "No, Cancel [Esc]",
             Style::default().fg(LIGHT_PERIWINKLE),
         )]);
 
-        f.render_widget(button_no, buttons_layer[0]);
+        f.render_widget(
+            Paragraph::new(button_no)
+                .block(Block::default().padding(Padding::horizontal(2)))
+                .alignment(Alignment::Left),
+            buttons_layer[0],
+        );
 
         let button_yes = Line::from(vec![Span::styled(
             "Reset Nodes [Enter]",
-            Style::default().fg(LIGHT_PERIWINKLE),
-        )]);
-        f.render_widget(button_yes, buttons_layer[1]);
+            Style::default().fg(EUCALYPTUS),
+        )])
+        .alignment(Alignment::Right);
+
+        f.render_widget(
+            Paragraph::new(button_yes)
+                .block(Block::default().padding(Padding::horizontal(2)))
+                .alignment(Alignment::Right),
+            buttons_layer[1],
+        );
 
         f.render_widget(pop_up_border, layer_zero);
 

@@ -36,7 +36,7 @@ pub struct ManageNodes {
 }
 
 impl ManageNodes {
-    pub fn new(nodes_to_start: usize) -> Result<Self> {
+    pub async fn new(nodes_to_start: usize) -> Result<Self> {
         let nodes_to_start = std::cmp::min(nodes_to_start, MAX_NODE_COUNT);
         let new = Self {
             active: false,
@@ -113,7 +113,7 @@ impl Component for ManageNodes {
                 );
                 vec![
                     Action::StoreNodesToStart(nodes_to_start),
-                    Action::SwitchScene(Scene::Home),
+                    Action::SwitchScene(Scene::Status),
                 ]
             }
             KeyCode::Esc => {
@@ -126,7 +126,7 @@ impl Component for ManageNodes {
                     .nodes_to_start_input
                     .clone()
                     .with_value(self.old_value.clone());
-                vec![Action::SwitchScene(Scene::Home)]
+                vec![Action::SwitchScene(Scene::Status)]
             }
             KeyCode::Char(c) if c.is_numeric() => {
                 // don't allow leading zeros
@@ -192,7 +192,7 @@ impl Component for ManageNodes {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::ManageNodes => {
+                Scene::ManageNodesPopUp => {
                     self.active = true;
                     self.old_value = self.nodes_to_start_input.value().to_string();
                     // set to entry input mode as we want to handle everything within our handle_key_events
@@ -227,7 +227,7 @@ impl Component for ManageNodes {
                 // gap before help
                 Constraint::Length(1),
                 // for the help
-                Constraint::Length(3),
+                Constraint::Length(7),
                 // for the dash
                 Constraint::Min(1),
                 // for the buttons
@@ -299,10 +299,18 @@ impl Component for ManageNodes {
         f.render_widget(info, layer_one[2]);
 
         // ==== help ====
-        let help = Paragraph::new(
-            format!("  Note: Each node will use a small amount of CPU\n  Memory and Network Bandwidth. We recommend\n  starting no more than 5 at a time (max {MAX_NODE_COUNT} nodes).")
-        )
-            .fg(GHOST_WHITE);
+        let help = Paragraph::new(vec![
+            Line::raw(format!(
+                "Note: Each node will use a small amount of CPU Memory and Network Bandwidth. \
+                 We recommend starting no more than 5 at a time (max {MAX_NODE_COUNT} nodes)."
+            )),
+            Line::raw(""),
+            Line::raw("▲▼ to change the number of nodes to start."),
+        ])
+        .wrap(Wrap { trim: false })
+        .block(Block::default().padding(Padding::horizontal(4)))
+        .alignment(Alignment::Center)
+        .fg(GHOST_WHITE);
         f.render_widget(help, layer_one[4]);
 
         // ==== dash ====
