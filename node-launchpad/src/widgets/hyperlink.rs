@@ -31,7 +31,7 @@ impl<'content> Hyperlink<'content> {
 // Underline solid \x1b[4m
 // Foreground color 45 \x1b[38;5;45m
 impl fmt::Display for Hyperlink<'_> {
-    //TODO: Parameterize the color, underline, bold, etc.
+    //TODO: Parameterize the color, underline, bold, etc. Use ratatui::Style.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
