@@ -1,3 +1,4 @@
+use super::header::SelectedMenuItem;
 use color_eyre::eyre::Result;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -10,7 +11,9 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use super::Component;
 use crate::{
-    action::Action,
+    action::{Action, MenuActions},
+    components::header::Header,
+    mode::{InputMode, Scene},
     style::{EUCALYPTUS, GHOST_WHITE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE},
     widgets::hyperlink::Hyperlink,
 };
@@ -25,7 +28,7 @@ pub struct Help {
 impl Help {
     pub async fn new() -> Result<Self> {
         Ok(Self {
-            active: true,
+            active: false,
             action_tx: None,
         })
     }
@@ -37,11 +40,22 @@ impl Component for Help {
     }
 
     fn draw(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
+        if !self.active {
+            return Ok(());
+        }
         // We define a layout, top and down box.
         let layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Percentage(55), Constraint::Percentage(45)])
+            .constraints(vec![
+                Constraint::Length(1),
+                Constraint::Min(7),
+                Constraint::Max(9),
+            ])
             .split(area);
+
+        // ==== Header =====
+        let header = Header::new();
+        f.render_stateful_widget(header, layout[0], &mut SelectedMenuItem::Help);
 
         // ---- Get Help & Support ----
         // Links
@@ -79,7 +93,8 @@ impl Component for Help {
                 Cell::from(beta_rewards_link.to_string().into_text().unwrap().clone()),
             ]),
             Row::new(vec![
-                Cell::from(Span::raw(" ")), // Empty row for padding
+                // Empty row for padding
+                Cell::from(Span::raw(" ")),
                 Cell::from(Span::raw(" ")),
             ]),
             Row::new(vec![
@@ -122,7 +137,7 @@ impl Component for Help {
                 .title_style(Style::default().bold()),
         );
 
-        f.render_widget(table_help_and_support, layout[0]);
+        f.render_widget(table_help_and_support, layout[1]);
 
         // ---- Keyboard shortcuts ----
         let rows_keyboard_shortcuts = vec![
@@ -144,7 +159,8 @@ impl Component for Help {
                 ])),
             ]),
             Row::new(vec![
-                Cell::from(Span::raw(" ")), // Empty row for padding
+                // Empty row for padding
+                Cell::from(Span::raw(" ")),
                 Cell::from(Span::raw(" ")),
                 Cell::from(Span::raw(" ")),
             ]),
@@ -166,7 +182,8 @@ impl Component for Help {
                 ])),
             ]),
             Row::new(vec![
-                Cell::from(Span::raw(" ")), // Empty row for padding
+                // Empty row for padding
+                Cell::from(Span::raw(" ")),
                 Cell::from(Span::raw(" ")),
                 Cell::from(Span::raw(" ")),
             ]),
@@ -185,7 +202,8 @@ impl Component for Help {
                 ])),
             ]),
             Row::new(vec![
-                Cell::from(Span::raw(" ")), // Empty row for padding
+                // Empty row for padding
+                Cell::from(Span::raw(" ")),
                 Cell::from(Span::raw(" ")),
                 Cell::from(Span::raw(" ")),
             ]),
@@ -218,8 +236,26 @@ impl Component for Help {
                 .title_style(Style::default().bold()),
         );
 
-        f.render_widget(table_keyboard_shortcuts, layout[1]);
+        f.render_widget(table_keyboard_shortcuts, layout[2]);
 
         Ok(())
+    }
+
+    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+        match action {
+            Action::SwitchScene(scene) => match scene {
+                Scene::Help => {
+                    self.active = true;
+                    // make sure we're in navigation mode
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
+                }
+                _ => self.active = false,
+            },
+            Action::MenuActions(MenuActions::HelpTab) => {
+                return Ok(Some(Action::SwitchScene(Scene::Help)));
+            }
+            _ => {}
+        }
+        Ok(None)
     }
 }
