@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723472060673,
+  "lastUpdate": 1723472063122,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30621,45 +30621,6 @@ window.BENCHMARK_DATA = {
             "name": "joshuef",
             "username": "joshuef"
           },
-          "distinct": false,
-          "id": "4658048772a1fac699af7a15f9a0dcfebf12ac8f",
-          "message": "test(node): unit test for recover historic quoting metrics",
-          "timestamp": "2024-04-11T00:28:23Z",
-          "tree_id": "22e12452a8749acaed653c0befef5f0019ac6c59",
-          "url": "https://github.com/maidsafe/safe_network/commit/4658048772a1fac699af7a15f9a0dcfebf12ac8f"
-        },
-        "date": 1712798410890,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7436,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34700,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
           "distinct": true,
           "id": "5c670793496e5e6f2fbe058cba0929c8984b2663",
           "message": "fix(node): not send out replication when failed read from local",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 31747,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2b02e0ef6166bb797c4b15e1115b09737325c553",
+          "message": "Merge pull request #2034 from maqi/bls_verification_with_child_key_test\n\ntest: verification involving child key",
+          "timestamp": "2024-08-12T13:14:02Z",
+          "tree_id": "de8c89531b71fb3f35f133460214effd978949ea",
+          "url": "https://github.com/maidsafe/safe_network/commit/2b02e0ef6166bb797c4b15e1115b09737325c553"
+        },
+        "date": 1723472062291,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5340,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 29193,
             "unit": "ms"
           },
           {
