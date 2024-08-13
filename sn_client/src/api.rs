@@ -17,8 +17,6 @@ use libp2p::{
     kad::{Quorum, Record},
     Multiaddr, PeerId,
 };
-#[cfg(feature = "open-metrics")]
-use prometheus_client::registry::Registry;
 use rand::{thread_rng, Rng};
 use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
@@ -106,13 +104,7 @@ impl Client {
         let root_dir = std::env::temp_dir();
         trace!("Starting Kad swarm in client mode..{root_dir:?}.");
 
-        #[cfg(not(feature = "open-metrics"))]
         let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
-
-        #[cfg(feature = "open-metrics")]
-        let mut network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
-        #[cfg(feature = "open-metrics")]
-        network_builder.metrics_registry(Some(Registry::default()));
 
         let (network, mut network_event_receiver, swarm_driver) = network_builder.build_client()?;
         info!("Client constructed network and swarm_driver");

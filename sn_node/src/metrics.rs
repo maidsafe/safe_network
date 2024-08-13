@@ -20,7 +20,8 @@ use prometheus_client::{
 use sn_networking::Instant;
 
 #[derive(Clone)]
-pub(crate) struct NodeMetrics {
+/// The shared recorders that are used to record metrics.
+pub(crate) struct NodeMetricsRecorder {
     /// put record
     put_record_ok: Family<PutRecordOk, Counter>,
     put_record_err: Counter,
@@ -54,7 +55,7 @@ enum RecordType {
     Spend,
 }
 
-impl NodeMetrics {
+impl NodeMetricsRecorder {
     pub(crate) fn new(registry: &mut Registry) -> Self {
         let sub_registry = registry.sub_registry_with_prefix("sn_node");
 
