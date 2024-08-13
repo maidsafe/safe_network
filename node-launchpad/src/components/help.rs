@@ -242,16 +242,14 @@ impl Component for Help {
     }
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        match action {
-            Action::SwitchScene(scene) => match scene {
-                Scene::Help => {
-                    self.active = true;
-                    // make sure we're in navigation mode
-                    return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
-                }
-                _ => self.active = false,
-            },
-            _ => {}
+        if let Action::SwitchScene(scene) = action {
+            if let Scene::Help = scene {
+                self.active = true;
+                // make sure we're in navigation mode
+                return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
+            } else {
+                self.active = false;
+            }
         }
         Ok(None)
     }
