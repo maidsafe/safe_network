@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::system::get_mount_point;
 use color_eyre::{eyre::ContextCompat, Result};
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
-use std::path::PathBuf;
 use sysinfo::Disks;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
@@ -55,10 +55,10 @@ impl ManageNodes {
         let disks = Disks::new_with_refreshed_list();
         if tracing::level_enabled!(tracing::Level::DEBUG) {
             for disk in disks.list() {
-                let res = disk.mount_point().ends_with(Self::get_mount_point());
+                let res = disk.mount_point().ends_with(get_mount_point());
                 debug!(
                     "Disk: {disk:?} ends with '{:?}': {res:?}",
-                    Self::get_mount_point()
+                    get_mount_point()
                 );
             }
         }
@@ -66,7 +66,7 @@ impl ManageNodes {
         let available_space_b = disks
             .list()
             .iter()
-            .find(|disk| disk.mount_point().ends_with(Self::get_mount_point()))
+            .find(|disk| disk.mount_point().ends_with(get_mount_point()))
             .context("Cannot find the primary disk")?
             .available_space() as usize;
 
@@ -77,15 +77,6 @@ impl ManageNodes {
     // It is the minimum of the available disk space and the max nodes limit
     fn max_nodes_to_start(&self) -> usize {
         std::cmp::min(self.available_disk_space_gb / GB_PER_NODE, MAX_NODE_COUNT)
-    }
-
-    #[cfg(unix)]
-    fn get_mount_point() -> PathBuf {
-        PathBuf::from("/")
-    }
-    #[cfg(windows)]
-    fn get_mount_point() -> PathBuf {
-        PathBuf::from("C:\\")
     }
 }
 

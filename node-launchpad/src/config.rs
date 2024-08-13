@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::system;
+use crate::system::get_mount_point;
 use crate::{action::Action, mode::Scene};
 use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -19,16 +20,20 @@ use std::path::PathBuf;
 const CONFIG: &str = include_str!("../.config/config.json5");
 
 // Where to store the Nodes data
+// If the base dir is the default mount point, we store in "$HOME/user_data_dir/safe/node"
+// if not we store in "$MOUNTPOINT/safe/node"
 pub fn get_launchpad_nodes_data_dir_path(base_dir: PathBuf) -> Result<PathBuf> {
-    // We get the data dir and we remove the first character which is the / character
-    let mut data_directory = dirs_next::data_dir()
-        .expect("Data directory is obtainable")
-        .to_str()
-        .unwrap()
-        .to_string();
-    data_directory.remove(0);
+    let mut mount_point = PathBuf::new();
 
-    let mut mount_point = base_dir.clone();
+    let data_directory = if base_dir == get_mount_point() {
+        dirs_next::data_dir()
+            .expect("Data directory is obtainable")
+            .to_str()
+            .unwrap()
+            .to_string()
+    } else {
+        base_dir.to_str().unwrap().to_string()
+    };
     mount_point.push(data_directory);
     mount_point.push("safe");
     mount_point.push("node");

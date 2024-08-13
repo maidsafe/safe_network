@@ -10,6 +10,7 @@ use std::env;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
 use sysinfo::Disks;
 
@@ -110,4 +111,13 @@ pub fn open_folder(path: &str) -> std::io::Result<()> {
         error!("Path does not exist: {}", path);
     }
     Ok(())
+}
+
+#[cfg(unix)]
+pub fn get_mount_point() -> PathBuf {
+    PathBuf::from("/")
+}
+#[cfg(windows)]
+pub fn get_mount_point() -> PathBuf {
+    PathBuf::from("C:\\")
 }
