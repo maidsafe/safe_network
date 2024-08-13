@@ -10,7 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use super::{header::SelectedMenuItem, Component};
 use crate::{
-    action::{Action, MenuActions, OptionsActions},
+    action::{Action, OptionsActions},
     components::header::Header,
     mode::{InputMode, Scene},
     style::{EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE},
@@ -239,9 +239,6 @@ impl Component for Options {
                 }
                 _ => self.active = false,
             },
-            Action::MenuActions(MenuActions::OptionsTab) => {
-                return Ok(Some(Action::SwitchScene(Scene::Options)));
-            }
             Action::OptionsActions(action) => match action {
                 OptionsActions::TriggerChangeDrive => {
                     return Ok(Some(Action::SwitchScene(Scene::ChangeDrivePopUp)));

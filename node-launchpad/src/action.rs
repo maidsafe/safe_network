@@ -15,7 +15,6 @@ use strum::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
 pub enum Action {
-    MenuActions(MenuActions),
     StatusActions(StatusActions),
     OptionsActions(OptionsActions),
 
@@ -67,11 +66,4 @@ pub enum OptionsActions {
     TriggerAccessLogs,
     UpdateBetaProgrammeUsername(String),
     UpdateStorageDrive(String, String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
-pub enum MenuActions {
-    StatusTab,
-    OptionsTab,
-    HelpTab,
 }

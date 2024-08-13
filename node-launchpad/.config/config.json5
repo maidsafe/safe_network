@@ -1,12 +1,12 @@
 {
   "keybindings": {
     "Status" : {
-      "<s>": {"MenuActions":"StatusTab"},
-      "<S>": {"MenuActions":"StatusTab"},
-      "<o>": {"MenuActions":"OptionsTab"},
-      "<O>": {"MenuActions":"OptionsTab"},
-      "<h>": {"MenuActions":"HelpTab"},
-      "<H>": {"MenuActions":"HelpTab"},
+      "<s>": {"SwitchScene":"Status"},
+      "<S>": {"SwitchScene":"Status"},
+      "<o>": {"SwitchScene":"Options"},
+      "<O>": {"SwitchScene":"Options"},
+      "<h>": {"SwitchScene":"Help"},
+      "<H>": {"SwitchScene":"Help"},
 
       "<Ctrl-s>": {"StatusActions":"StartNodes"},
       "<Ctrl-S>": {"StatusActions":"StartNodes"},
@@ -29,12 +29,12 @@
       "<Ctrl-z>": "Suspend" // Suspend the application
     },
     "Options": {
-      "<s>": {"MenuActions":"StatusTab"},
-      "<S>": {"MenuActions":"StatusTab"},
-      "<o>": {"MenuActions":"OptionsTab"},
-      "<O>": {"MenuActions":"OptionsTab"},
-      "<h>": {"MenuActions":"HelpTab"},
-      "<H>": {"MenuActions":"HelpTab"},
+      "<s>": {"SwitchScene":"Status"},
+      "<S>": {"SwitchScene":"Status"},
+      "<o>": {"SwitchScene":"Options"},
+      "<O>": {"SwitchScene":"Options"},
+      "<h>": {"SwitchScene":"Help"},
+      "<H>": {"SwitchScene":"Help"},
 
       "<Ctrl-d>": {"OptionsActions":"TriggerChangeDrive"},
       "<Ctrl-D>": {"OptionsActions":"TriggerChangeDrive"},
@@ -57,12 +57,12 @@
       "<Ctrl-z>": "Suspend" // Suspend the application
     },
     "Help": {
-      "<s>": {"MenuActions":"StatusTab"},
-      "<S>": {"MenuActions":"StatusTab"},
-      "<o>": {"MenuActions":"OptionsTab"},
-      "<O>": {"MenuActions":"OptionsTab"},
-      "<h>": {"MenuActions":"HelpTab"},
-      "<H>": {"MenuActions":"HelpTab"},
+      "<s>": {"SwitchScene":"Status"},
+      "<S>": {"SwitchScene":"Status"},
+      "<o>": {"SwitchScene":"Options"},
+      "<O>": {"SwitchScene":"Options"},
+      "<h>": {"SwitchScene":"Help"},
+      "<H>": {"SwitchScene":"Help"},
 
 
       "<q>": "Quit",

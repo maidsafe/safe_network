@@ -36,7 +36,7 @@ pub struct ManageNodes {
 }
 
 impl ManageNodes {
-    pub async fn new(nodes_to_start: usize) -> Result<Self> {
+    pub fn new(nodes_to_start: usize) -> Result<Self> {
         let nodes_to_start = std::cmp::min(nodes_to_start, MAX_NODE_COUNT);
         let new = Self {
             active: false,

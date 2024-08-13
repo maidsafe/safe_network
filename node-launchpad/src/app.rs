@@ -82,7 +82,7 @@ impl App {
         // Popups
         let reset_nodes = ResetNodesPopup::default();
         let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
-        let manage_nodes = ManageNodes::new(app_data.nodes_to_start).await?;
+        let manage_nodes = ManageNodes::new(app_data.nodes_to_start).unwrap();
         let change_drive = ChangeDrivePopup::new(app_data.storage_mountpoint.clone().unwrap());
         let change_drive_confirm = ChangeDriveConfirmPopup::default();
 

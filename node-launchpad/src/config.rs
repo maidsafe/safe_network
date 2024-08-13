@@ -90,21 +90,17 @@ impl AppData {
         let data = std::fs::read_to_string(config_path)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to read app data file"))?;
 
-        let app_data: AppData = serde_json::from_str(&data)
+        let mut app_data: AppData = serde_json::from_str(&data)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to parse app data"))?;
 
-        let mut app_data_cloned = app_data.clone();
         if app_data.storage_mountpoint.is_none() || app_data.storage_drive.is_none() {
             // If the storage drive is not set, set it to the default mount point
             let drive_info = system::get_default_mount_point();
-            app_data_cloned.storage_drive = Some(drive_info.0);
-            app_data_cloned.storage_mountpoint = Some(drive_info.1);
-            debug!(
-                "Setting storage drive to {:?}",
-                app_data_cloned.storage_mountpoint
-            );
+            app_data.storage_drive = Some(drive_info.0);
+            app_data.storage_mountpoint = Some(drive_info.1);
+            debug!("Setting storage drive to {:?}", app_data.storage_mountpoint);
         }
-        Ok(app_data_cloned)
+        Ok(app_data)
     }
 
     pub fn save(&self) -> Result<()> {

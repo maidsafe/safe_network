@@ -11,7 +11,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use super::Component;
 use crate::{
-    action::{Action, MenuActions},
+    action::Action,
     components::header::Header,
     mode::{InputMode, Scene},
     style::{EUCALYPTUS, GHOST_WHITE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE},
@@ -251,9 +251,6 @@ impl Component for Help {
                 }
                 _ => self.active = false,
             },
-            Action::MenuActions(MenuActions::HelpTab) => {
-                return Ok(Some(Action::SwitchScene(Scene::Help)));
-            }
             _ => {}
         }
         Ok(None)

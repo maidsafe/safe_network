@@ -15,7 +15,7 @@ use super::{
 use crate::action::OptionsActions;
 use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::{
-    action::{Action, MenuActions, StatusActions},
+    action::{Action, StatusActions},
     config::Config,
     mode::{InputMode, Scene},
     node_stats::NodeStats,
@@ -252,9 +252,6 @@ impl Component for Status {
                 Scene::ManageNodesPopUp => self.active = true,
                 _ => self.active = false,
             },
-            Action::MenuActions(MenuActions::StatusTab) => {
-                return Ok(Some(Action::SwitchScene(Scene::Status)));
-            }
             Action::StoreNodesToStart(count) => {
                 self.nodes_to_start = count;
                 if self.nodes_to_start == 0 {
