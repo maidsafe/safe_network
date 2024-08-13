@@ -60,7 +60,6 @@ pub enum OptionsActions {
     ResetNodes,
 
     TriggerChangeDrive,
-    TriggerChangeDriveConfirm(String, String),
     TriggerBetaProgramme,
     TriggerResetNodes,
     TriggerAccessLogs,

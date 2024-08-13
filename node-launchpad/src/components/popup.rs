@@ -8,6 +8,5 @@
 
 pub mod beta_programme;
 pub mod change_drive;
-pub mod change_drive_confirm;
 pub mod manage_nodes;
 pub mod reset_nodes;

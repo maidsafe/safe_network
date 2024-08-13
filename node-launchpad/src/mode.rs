@@ -15,7 +15,6 @@ pub enum Scene {
     Options,
     Help,
     ChangeDrivePopUp,
-    ChangeDriveConfirmPopup,
     BetaProgrammePopUp,
     ManageNodesPopUp,
     ResetNodesPopUp,

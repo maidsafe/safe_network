@@ -15,8 +15,7 @@ use crate::{
         options::Options,
         popup::{
             beta_programme::BetaProgramme, change_drive::ChangeDrivePopup,
-            change_drive_confirm::ChangeDriveConfirmPopup, manage_nodes::ManageNodes,
-            reset_nodes::ResetNodesPopup,
+            manage_nodes::ManageNodes, reset_nodes::ResetNodesPopup,
         },
         status::Status,
         Component,
@@ -72,8 +71,14 @@ impl App {
         )
         .await?;
         let options = Options::new(
-            app_data.storage_mountpoint.clone().unwrap(),
-            app_data.storage_drive.clone().unwrap(),
+            app_data
+                .storage_mountpoint
+                .clone()
+                .ok_or_else(|| eyre!("Creating Options screen, storage_mountpoint is None"))?,
+            app_data
+                .storage_drive
+                .clone()
+                .ok_or_else(|| eyre!("Creating Options screen, storage_drive is None"))?,
             app_data.discord_username.clone(),
         )
         .await?;
@@ -83,8 +88,10 @@ impl App {
         let reset_nodes = ResetNodesPopup::default();
         let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
         let manage_nodes = ManageNodes::new(app_data.nodes_to_start).unwrap();
-        let change_drive = ChangeDrivePopup::new(app_data.storage_mountpoint.clone().unwrap());
-        let change_drive_confirm = ChangeDriveConfirmPopup::default();
+        let change_drive =
+            ChangeDrivePopup::new(app_data.storage_mountpoint.clone().ok_or_else(|| {
+                eyre!("Creating Change Drive screen, storage_mountpoint is None")
+            })?);
 
         Ok(Self {
             config,
@@ -98,7 +105,6 @@ impl App {
                 Box::new(help),
                 // Popups
                 Box::new(change_drive),
-                Box::new(change_drive_confirm),
                 Box::new(reset_nodes),
                 Box::new(manage_nodes),
                 Box::new(discord_username_input),
