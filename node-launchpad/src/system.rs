@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use color_eyre::eyre::ContextCompat;
+use color_eyre::Result;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -120,4 +122,27 @@ pub fn get_mount_point() -> PathBuf {
 #[cfg(windows)]
 pub fn get_mount_point() -> PathBuf {
     PathBuf::from("C:\\")
+}
+
+// Gets available disk space in bytes for the given mountpoint
+pub fn get_available_space_b(storage_mountpoint: String) -> Result<usize> {
+    let disks = Disks::new_with_refreshed_list();
+    if tracing::level_enabled!(tracing::Level::DEBUG) {
+        for disk in disks.list() {
+            let res = disk.mount_point().to_string_lossy() == storage_mountpoint.clone();
+            debug!(
+                "Disk: {disk:?} is equal to '{:?}': {res:?}",
+                storage_mountpoint.clone(),
+            );
+        }
+    }
+
+    let available_space_b = disks
+        .list()
+        .iter()
+        .find(|disk| disk.mount_point().to_string_lossy() == storage_mountpoint.clone())
+        .context("Cannot find the primary disk")?
+        .available_space() as usize;
+
+    Ok(available_space_b)
 }

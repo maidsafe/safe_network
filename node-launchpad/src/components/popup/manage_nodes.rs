@@ -6,11 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::system::get_mount_point;
-use color_eyre::{eyre::ContextCompat, Result};
+use crate::action::OptionsActions;
+use crate::system::get_available_space_b;
+use color_eyre::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
-use sysinfo::Disks;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
 use crate::{
@@ -30,47 +30,27 @@ pub struct ManageNodes {
     /// Whether the component is active right now, capturing keystrokes + drawing things.
     active: bool,
     available_disk_space_gb: usize,
+    storage_mountpoint: String,
     nodes_to_start_input: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
 }
 
 impl ManageNodes {
-    pub fn new(nodes_to_start: usize) -> Result<Self> {
+    pub fn new(nodes_to_start: usize, storage_mountpoint: String) -> Result<Self> {
         let nodes_to_start = std::cmp::min(nodes_to_start, MAX_NODE_COUNT);
         let new = Self {
             active: false,
-            available_disk_space_gb: Self::get_available_space_b()? / GB,
+            available_disk_space_gb: get_available_space_b(storage_mountpoint.clone())? / GB,
             nodes_to_start_input: Input::default().with_value(nodes_to_start.to_string()),
             old_value: Default::default(),
+            storage_mountpoint: storage_mountpoint.clone(),
         };
         Ok(new)
     }
 
     fn get_nodes_to_start_val(&self) -> usize {
         self.nodes_to_start_input.value().parse().unwrap_or(0)
-    }
-
-    fn get_available_space_b() -> Result<usize> {
-        let disks = Disks::new_with_refreshed_list();
-        if tracing::level_enabled!(tracing::Level::DEBUG) {
-            for disk in disks.list() {
-                let res = disk.mount_point().ends_with(get_mount_point());
-                debug!(
-                    "Disk: {disk:?} ends with '{:?}': {res:?}",
-                    get_mount_point()
-                );
-            }
-        }
-
-        let available_space_b = disks
-            .list()
-            .iter()
-            .find(|disk| disk.mount_point().ends_with(get_mount_point()))
-            .context("Cannot find the primary disk")?
-            .available_space() as usize;
-
-        Ok(available_space_b)
     }
 
     // Returns the max number of nodes to start
@@ -100,8 +80,8 @@ impl Component for ManageNodes {
                     .with_value(nodes_to_start.to_string());
 
                 debug!(
-                    "Got Enter, value found to be {nodes_to_start} derived from input: {nodes_to_start_str:?} and switching scene",
-                );
+                        "Got Enter, value found to be {nodes_to_start} derived from input: {nodes_to_start_str:?} and switching scene",
+                    );
                 vec![
                     Action::StoreNodesToStart(nodes_to_start),
                     Action::SwitchScene(Scene::Status),
@@ -195,6 +175,11 @@ impl Component for ManageNodes {
                     None
                 }
             },
+            Action::OptionsActions(OptionsActions::UpdateStorageDrive(mountpoint, _drive_name)) => {
+                self.storage_mountpoint.clone_from(&mountpoint);
+                self.available_disk_space_gb = get_available_space_b(mountpoint.clone())? / GB;
+                None
+            }
             _ => None,
         };
         Ok(send_back)

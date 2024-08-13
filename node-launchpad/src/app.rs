@@ -87,7 +87,13 @@ impl App {
         // Popups
         let reset_nodes = ResetNodesPopup::default();
         let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
-        let manage_nodes = ManageNodes::new(app_data.nodes_to_start).unwrap();
+        let manage_nodes = ManageNodes::new(
+            app_data.nodes_to_start,
+            app_data
+                .storage_mountpoint
+                .clone()
+                .ok_or_else(|| eyre!("Creating Manage Nodes screen, storage_drive is None"))?,
+        )?;
         let change_drive =
             ChangeDrivePopup::new(app_data.storage_mountpoint.clone().ok_or_else(|| {
                 eyre!("Creating Change Drive screen, storage_mountpoint is None")

@@ -655,7 +655,7 @@ impl Component for Status {
     }
 
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
-        debug!("Key received in Home: {:?}", key);
+        debug!("Key received in Status: {:?}", key);
         Ok(vec![])
     }
 }
