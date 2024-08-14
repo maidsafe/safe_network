@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::system;
-use crate::system::get_mount_point;
+use crate::system::get_primary_mount_point;
 use crate::{action::Action, mode::Scene};
 use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -25,7 +25,7 @@ const CONFIG: &str = include_str!("../.config/config.json5");
 pub fn get_launchpad_nodes_data_dir_path(base_dir: PathBuf) -> Result<PathBuf> {
     let mut mount_point = PathBuf::new();
 
-    let data_directory = if base_dir == get_mount_point() {
+    let data_directory = if base_dir == get_primary_mount_point() {
         dirs_next::data_dir()
             .expect("Data directory is obtainable")
             .to_str()

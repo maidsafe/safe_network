@@ -116,11 +116,11 @@ pub fn open_folder(path: &str) -> std::io::Result<()> {
 }
 
 #[cfg(unix)]
-pub fn get_mount_point() -> PathBuf {
+pub fn get_primary_mount_point() -> PathBuf {
     PathBuf::from("/")
 }
 #[cfg(windows)]
-pub fn get_mount_point() -> PathBuf {
+pub fn get_primary_mount_point() -> PathBuf {
     PathBuf::from("C:\\")
 }
 
