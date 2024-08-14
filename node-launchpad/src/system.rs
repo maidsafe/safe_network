@@ -17,6 +17,8 @@ use std::path::PathBuf;
 use std::process::Command;
 use sysinfo::Disks;
 
+use crate::config::get_launchpad_nodes_data_dir_path;
+
 // Tries to get the default (drive name, mount point) of the current executable
 // to be used as the default drive
 pub fn get_default_mount_point() -> Result<(String, PathBuf)> {
@@ -33,6 +35,20 @@ pub fn get_default_mount_point() -> Result<(String, PathBuf)> {
                 disk.name().to_string_lossy().into(),
                 disk.mount_point().to_path_buf(),
             ));
+        }
+    }
+    Err(eyre!("Cannot find the default mount point"))
+}
+
+/// Checks if the given <path> is the default mount point of the current executable
+///
+/// We return an error if we cannot find the default mount point or the current executable
+pub fn is_default_mount_point(path: &Path) -> Result<bool> {
+    let disks = Disks::new_with_refreshed_list();
+    let exe_path = env::current_exe()?;
+    for disk in disks.list() {
+        if exe_path.starts_with(disk.mount_point()) {
+            return Ok(disk.mount_point() == path);
         }
     }
     Err(eyre!("Cannot find the default mount point"))
@@ -63,8 +79,11 @@ fn is_read_only<P: AsRef<Path>>(path: P) -> bool {
     }
 }
 
-// Gets a list of drives and their available space
-pub fn get_list_of_drives_and_available_space() -> Vec<(String, PathBuf, u64)> {
+/// Gets a list of available drives and their available space.
+///
+/// An available drive is a drive that is not read-only on the data directory.
+///
+pub fn get_list_of_available_drives_and_available_space() -> Result<Vec<(String, PathBuf, u64)>> {
     // Create a new System instance
     let disks = Disks::new_with_refreshed_list();
 
@@ -81,19 +100,41 @@ pub fn get_list_of_drives_and_available_space() -> Vec<(String, PathBuf, u64)> {
             disk.mount_point().to_path_buf(),
             disk.available_space(),
         );
-        // We don't check for write permission on removable drives
-        if !disk.is_removable() {
-            // Check if the disk is read-only and skip it
-            if is_read_only(disk.mount_point()) {
-                continue;
+
+        if is_read_only(get_launchpad_nodes_data_dir_path(
+            &disk.mount_point().to_path_buf(),
+            false,
+        )?) {
+            debug!(
+                "Data dir path on {:?} is read-only. We skip this disk.",
+                disk_info
+            );
+            continue;
+        }
+
+        // To handle the case where the same disk is mounted multiple times
+        // We check names and free space to determine if it's the same disk
+        let mut skip_drive = false;
+        for drive in &drives {
+            if drive.0 == disk_info.0 && drive.2 == disk_info.2 {
+                debug!(
+                    "Disk already in our list of available disks: {:?}",
+                    disk_info
+                );
+                skip_drive = true;
+                break;
             }
         }
-        if !drives.contains(&disk_info) {
+        if !skip_drive {
+            debug!(
+                "Adding disk to our list of available disks: {:?}",
+                disk_info
+            );
             drives.push(disk_info);
         }
     }
     debug!("Drives detected: {:?}", drives);
-    drives
+    Ok(drives)
 }
 
 // Opens a folder in the file explorer

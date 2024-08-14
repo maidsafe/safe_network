@@ -19,26 +19,53 @@ use std::path::PathBuf;
 
 const CONFIG: &str = include_str!("../.config/config.json5");
 
-// Where to store the Nodes data
-// If the base dir is the default mount point, we store in "$HOME/user_data_dir/safe/node"
-// if not we store in "$MOUNTPOINT/safe/node"
-pub fn get_launchpad_nodes_data_dir_path(base_dir: PathBuf) -> Result<PathBuf> {
+/// Where to store the Nodes data.
+///
+/// If <base_dir> is the primary mount point, we store in "<base_dir>/$HOME/user_data_dir/safe/node".
+///
+/// if not we store in "<base_dir>/safe/node".
+///
+/// If should_create is true, the directory will be created if it doesn't exists.
+pub fn get_launchpad_nodes_data_dir_path(
+    base_dir: &PathBuf,
+    should_create: bool,
+) -> Result<PathBuf> {
     let mut mount_point = PathBuf::new();
 
-    let data_directory: PathBuf = if base_dir == get_primary_mount_point() {
-        dirs_next::data_dir().ok_or_else(|| eyre!("Data directory is not obtainable"))?
+    let data_directory: PathBuf = if *base_dir == get_primary_mount_point() {
+        dirs_next::data_dir().ok_or_else(|| {
+            eyre!(
+                "Data directory is not obtainable for base_dir {:?}",
+                base_dir
+            )
+        })?
     } else {
-        base_dir
+        base_dir.clone()
     };
     mount_point.push(data_directory);
     mount_point.push("safe");
     mount_point.push("node");
     debug!("Creating nodes data dir: {:?}", mount_point.as_path());
-    std::fs::create_dir_all(mount_point.as_path())?;
+    if should_create {
+        match std::fs::create_dir_all(mount_point.as_path()) {
+            Ok(_) => debug!("Nodes {:?} data dir created successfully", mount_point),
+            Err(e) => {
+                error!(
+                    "Failed to create nodes data dir in {:?}: {:?}",
+                    mount_point, e
+                );
+                return Err(eyre!(
+                    "Failed to create nodes data dir in {:?}",
+                    mount_point
+                ));
+            }
+        }
+    }
     Ok(mount_point)
 }
 
-// Where to store the Launchpad config & logs
+/// Where to store the Launchpad config & logs.
+///
 pub fn get_launchpad_data_dir_path() -> Result<PathBuf> {
     let mut home_dirs =
         dirs_next::data_dir().ok_or_else(|| eyre!("Data directory is not obtainable"))?;

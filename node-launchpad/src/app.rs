@@ -56,7 +56,7 @@ impl App {
         let config = Config::new()?;
 
         let data_dir_path = match &app_data.storage_mountpoint {
-            Some(path) => get_launchpad_nodes_data_dir_path(PathBuf::from(path))?,
+            Some(path) => get_launchpad_nodes_data_dir_path(&PathBuf::from(path), true)?,
             None => return Err(eyre!("Storage mountpoint for node data is not set")),
         };
         debug!("Data dir path for nodes: {data_dir_path:?}");
@@ -97,7 +97,7 @@ impl App {
         let change_drive =
             ChangeDrivePopup::new(app_data.storage_mountpoint.clone().ok_or_else(|| {
                 eyre!("Creating Change Drive screen, storage_mountpoint is None")
-            })?);
+            })?)?;
 
         Ok(Self {
             config,

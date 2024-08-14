@@ -280,7 +280,7 @@ impl Component for Status {
                 let action_sender = self.get_actions_sender()?;
                 reset_nodes(action_sender, false);
                 self.data_dir_path =
-                    get_launchpad_nodes_data_dir_path(drive_mountpoint.to_path_buf())?;
+                    get_launchpad_nodes_data_dir_path(&drive_mountpoint.to_path_buf(), false)?;
             }
             Action::StatusActions(status_action) => {
                 match status_action {

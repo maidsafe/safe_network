@@ -24,6 +24,7 @@ use ratatui::{
 use crate::{
     action::{Action, OptionsActions},
     components::Component,
+    config::get_launchpad_nodes_data_dir_path,
     mode::{InputMode, Scene},
     style::{
         clear_area, COOL_GREY, DARK_GUNMETAL, EUCALYPTUS, GHOST_WHITE, INDIGO, LIGHT_PERIWINKLE,
@@ -50,8 +51,8 @@ pub struct ChangeDrivePopup {
 }
 
 impl ChangeDrivePopup {
-    pub fn new(storage_mountpoint: PathBuf) -> Self {
-        let drives_and_space = system::get_list_of_drives_and_available_space();
+    pub fn new(storage_mountpoint: PathBuf) -> Result<Self> {
+        let drives_and_space = system::get_list_of_available_drives_and_available_space()?;
 
         let mut selected_drive: DriveItem = DriveItem::default();
         // Create a vector of DriveItem from drives_and_space
@@ -81,24 +82,27 @@ impl ChangeDrivePopup {
         debug!("Drive Mountpoint in Config: {:?}", storage_mountpoint);
         debug!("Drives and space: {:?}", drives_and_space);
         let items = StatefulList::with_items(drives_items);
-        Self {
+        Ok(Self {
             active: false,
             state: ChangeDriveState::Selection,
             items,
             drive_selection: selected_drive.clone(),
             drive_selection_initial_state: selected_drive.clone(),
             user_moved: false,
-        }
+        })
     }
 
-    /// Interacts with the List of drives
-    // Deselect all drives
+    // --- Interactions with the List of drives ---
+
+    /// Deselects all drives in the list of items
+    ///
     fn deselect_all(&mut self) {
         for item in &mut self.items.items {
             item.status = DriveStatus::NotSelected;
         }
     }
-    // Change the status of the selected drive to Selected
+    /// Assigns to self.drive_selection the selected drive in the list
+    ///
     #[allow(dead_code)]
     fn assign_drive_selection(&mut self) {
         self.deselect_all();
@@ -107,7 +111,8 @@ impl ChangeDrivePopup {
             self.drive_selection = self.items.items[i].clone();
         }
     }
-    // Highlight the drive that is currently selected in this component members
+    /// Highlights the drive that is currently selected in the list of items.
+    ///
     fn select_drive(&mut self) {
         self.deselect_all();
         for (index, item) in self.items.items.iter_mut().enumerate() {
@@ -118,7 +123,8 @@ impl ChangeDrivePopup {
             }
         }
     }
-    // return the selected drive
+    /// Returns the highlighted drive in the list of items.
+    ///
     fn return_selection(&mut self) -> DriveItem {
         if let Some(i) = self.items.state.selected() {
             return self.items.items[i].clone();
@@ -126,7 +132,8 @@ impl ChangeDrivePopup {
         DriveItem::default()
     }
 
-    /// Draw functions
+    // -- Draw functions --
+
     // Draws the Drive Selection screen
     fn draw_selection_state(
         &mut self,
@@ -353,13 +360,12 @@ impl Component for ChangeDrivePopup {
                         // over the drive already selected
                         let drive = self.return_selection();
                         if self.items.items.len() > 1
-                            && (drive.name != self.drive_selection.name
-                                && drive.mountpoint != self.drive_selection.mountpoint)
+                            && (drive.mountpoint != self.drive_selection.mountpoint)
                         {
                             debug!(
                                 "Got Enter and there's a new selection, storing value and switching to Options"
                             );
-                            debug!("Drive selected: {:?}", self.drive_selection.name);
+                            debug!("Drive selected: {:?}", drive.name);
                             self.drive_selection_initial_state = self.drive_selection.clone();
                             self.assign_drive_selection();
                             self.state = ChangeDriveState::ConfirmChange;
@@ -374,20 +380,22 @@ impl Component for ChangeDrivePopup {
                         vec![Action::SwitchScene(Scene::Options)]
                     }
                     KeyCode::Up => {
-                        let drive = self.return_selection();
                         if self.items.items.len() > 1 {
-                            self.user_moved = drive.name == self.drive_selection.name
-                                && drive.mountpoint == self.drive_selection.mountpoint;
                             self.items.previous();
+                            let drive = self.return_selection();
+                            self.user_moved = drive.mountpoint != self.drive_selection.mountpoint;
                         }
                         vec![]
                     }
                     KeyCode::Down => {
-                        let drive = self.return_selection();
                         if self.items.items.len() > 1 {
-                            self.user_moved = drive.name == self.drive_selection.name
-                                && drive.mountpoint == self.drive_selection.mountpoint;
                             self.items.next();
+                            let drive = self.return_selection();
+                            debug!(
+                                "User moved: {:?} != {:?}",
+                                drive.mountpoint, self.drive_selection.mountpoint
+                            );
+                            self.user_moved = drive.mountpoint != self.drive_selection.mountpoint;
                         }
                         vec![]
                     }
@@ -399,17 +407,36 @@ impl Component for ChangeDrivePopup {
             ChangeDriveState::ConfirmChange => match key.code {
                 KeyCode::Enter => {
                     debug!("Got Enter, storing value and switching to Options");
-                    vec![
-                        Action::StoreStorageDrive(
-                            self.drive_selection.mountpoint.clone(),
-                            self.drive_selection.name.clone(),
-                        ),
-                        Action::OptionsActions(OptionsActions::UpdateStorageDrive(
-                            self.drive_selection.mountpoint.clone(),
-                            self.drive_selection.name.clone(),
-                        )),
-                        Action::SwitchScene(Scene::Options),
-                    ]
+                    // Let's create the data directory for the new drive
+                    self.drive_selection = self.return_selection();
+                    match get_launchpad_nodes_data_dir_path(&self.drive_selection.mountpoint, true)
+                    {
+                        Ok(_path) => {
+                            // TODO: probably delete the old data directory before switching
+                            // Taking in account if it's the default mountpoint
+                            // (were the executable is)
+                            vec![
+                                Action::StoreStorageDrive(
+                                    self.drive_selection.mountpoint.clone(),
+                                    self.drive_selection.name.clone(),
+                                ),
+                                Action::OptionsActions(OptionsActions::UpdateStorageDrive(
+                                    self.drive_selection.mountpoint.clone(),
+                                    self.drive_selection.name.clone(),
+                                )),
+                                Action::SwitchScene(Scene::Options),
+                            ]
+                        }
+                        Err(e) => {
+                            self.drive_selection = self.drive_selection_initial_state.clone();
+                            self.state = ChangeDriveState::Selection;
+                            error!(
+                                "Error creating folder {:?}: {}",
+                                self.drive_selection.mountpoint, e
+                            );
+                            vec![Action::SwitchScene(Scene::Options)]
+                        }
+                    }
                 }
                 KeyCode::Esc => {
                     debug!("Got Esc, switching to Options");
