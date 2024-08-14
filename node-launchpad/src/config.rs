@@ -9,7 +9,7 @@
 use crate::system;
 use crate::system::get_primary_mount_point;
 use crate::{action::Action, mode::Scene};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
 use ratatui::style::{Color, Modifier, Style};
@@ -25,14 +25,10 @@ const CONFIG: &str = include_str!("../.config/config.json5");
 pub fn get_launchpad_nodes_data_dir_path(base_dir: PathBuf) -> Result<PathBuf> {
     let mut mount_point = PathBuf::new();
 
-    let data_directory = if base_dir == get_primary_mount_point() {
-        dirs_next::data_dir()
-            .expect("Data directory is obtainable")
-            .to_str()
-            .unwrap()
-            .to_string()
+    let data_directory: PathBuf = if base_dir == get_primary_mount_point() {
+        dirs_next::data_dir().ok_or_else(|| eyre!("Data directory is not obtainable"))?
     } else {
-        base_dir.to_str().unwrap().to_string()
+        base_dir
     };
     mount_point.push(data_directory);
     mount_point.push("safe");
@@ -44,7 +40,8 @@ pub fn get_launchpad_nodes_data_dir_path(base_dir: PathBuf) -> Result<PathBuf> {
 
 // Where to store the Launchpad config & logs
 pub fn get_launchpad_data_dir_path() -> Result<PathBuf> {
-    let mut home_dirs = dirs_next::data_dir().expect("Data directory is obtainable");
+    let mut home_dirs =
+        dirs_next::data_dir().ok_or_else(|| eyre!("Data directory is not obtainable"))?;
     home_dirs.push("safe");
     home_dirs.push("launchpad");
     std::fs::create_dir_all(home_dirs.as_path())?;
@@ -78,7 +75,7 @@ pub async fn configure_winsw() -> Result<()> {
 pub struct AppData {
     pub discord_username: String,
     pub nodes_to_start: usize,
-    pub storage_mountpoint: Option<String>,
+    pub storage_mountpoint: Option<PathBuf>,
     pub storage_drive: Option<String>,
 }
 
@@ -100,7 +97,7 @@ impl AppData {
 
         if app_data.storage_mountpoint.is_none() || app_data.storage_drive.is_none() {
             // If the storage drive is not set, set it to the default mount point
-            let drive_info = system::get_default_mount_point();
+            let drive_info = system::get_default_mount_point()?;
             app_data.storage_drive = Some(drive_info.0);
             app_data.storage_mountpoint = Some(drive_info.1);
             debug!("Setting storage drive to {:?}", app_data.storage_mountpoint);

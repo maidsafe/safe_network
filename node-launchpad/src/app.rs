@@ -237,8 +237,7 @@ impl App {
                     }
                     Action::StoreStorageDrive(ref drive_mountpoint, ref drive_name) => {
                         debug!("Storing storage drive: {drive_mountpoint:?}, {drive_name:?}");
-                        self.app_data.storage_mountpoint =
-                            Some(drive_mountpoint.as_str().to_string());
+                        self.app_data.storage_mountpoint = Some(drive_mountpoint.clone());
                         self.app_data.storage_drive = Some(drive_name.as_str().to_string());
                         self.app_data.save()?;
                     }

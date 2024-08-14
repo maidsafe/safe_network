@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use color_eyre::eyre::Result;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -20,7 +22,7 @@ use sn_node_manager::config::get_user_safenode_data_dir;
 
 #[derive(Clone)]
 pub struct Options {
-    pub storage_mountpoint: String,
+    pub storage_mountpoint: PathBuf,
     pub storage_drive: String,
     pub discord_username: String,
     pub active: bool,
@@ -29,7 +31,7 @@ pub struct Options {
 
 impl Options {
     pub async fn new(
-        storage_mountpoint: String,
+        storage_mountpoint: PathBuf,
         storage_drive: String,
         discord_username: String,
     ) -> Result<Self> {

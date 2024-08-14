@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{default::Default, rc::Rc};
+use std::{default::Default, path::PathBuf, rc::Rc};
 
 use super::super::utils::centered_rect_fixed;
 
@@ -50,7 +50,7 @@ pub struct ChangeDrivePopup {
 }
 
 impl ChangeDrivePopup {
-    pub fn new(storage_mountpoint: String) -> Self {
+    pub fn new(storage_mountpoint: PathBuf) -> Self {
         let drives_and_space = system::get_list_of_drives_and_available_space();
 
         let mut selected_drive: DriveItem = DriveItem::default();
@@ -62,12 +62,12 @@ impl ChangeDrivePopup {
                 let size_str_cloned = size_str.clone();
                 DriveItem {
                     name: drive_name.to_string(),
-                    mountpoint: mountpoint.to_string(),
+                    mountpoint: mountpoint.clone(),
                     size: size_str,
                     status: if mountpoint == &storage_mountpoint {
                         selected_drive = DriveItem {
                             name: drive_name.to_string(),
-                            mountpoint: mountpoint.to_string(),
+                            mountpoint: mountpoint.clone(),
                             size: size_str_cloned,
                             status: DriveStatus::Selected,
                         };
@@ -78,7 +78,7 @@ impl ChangeDrivePopup {
                 }
             })
             .collect::<Vec<DriveItem>>();
-        debug!("Drive Mountpoint in Config: {}", storage_mountpoint);
+        debug!("Drive Mountpoint in Config: {:?}", storage_mountpoint);
         debug!("Drives and space: {:?}", drives_and_space);
         let items = StatefulList::with_items(drives_items);
         Self {
@@ -540,7 +540,7 @@ enum DriveStatus {
 #[derive(Default, Debug, Clone)]
 pub struct DriveItem {
     name: String,
-    mountpoint: String,
+    mountpoint: PathBuf,
     size: String,
     status: DriveStatus,
 }

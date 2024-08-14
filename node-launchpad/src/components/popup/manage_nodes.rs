@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::path::PathBuf;
+
 use crate::action::OptionsActions;
 use crate::system::get_available_space_b;
 use color_eyre::Result;
@@ -30,18 +32,18 @@ pub struct ManageNodes {
     /// Whether the component is active right now, capturing keystrokes + drawing things.
     active: bool,
     available_disk_space_gb: usize,
-    storage_mountpoint: String,
+    storage_mountpoint: PathBuf,
     nodes_to_start_input: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
 }
 
 impl ManageNodes {
-    pub fn new(nodes_to_start: usize, storage_mountpoint: String) -> Result<Self> {
+    pub fn new(nodes_to_start: usize, storage_mountpoint: PathBuf) -> Result<Self> {
         let nodes_to_start = std::cmp::min(nodes_to_start, MAX_NODE_COUNT);
         let new = Self {
             active: false,
-            available_disk_space_gb: get_available_space_b(storage_mountpoint.clone())? / GB,
+            available_disk_space_gb: get_available_space_b(&storage_mountpoint)? / GB,
             nodes_to_start_input: Input::default().with_value(nodes_to_start.to_string()),
             old_value: Default::default(),
             storage_mountpoint: storage_mountpoint.clone(),
@@ -177,7 +179,7 @@ impl Component for ManageNodes {
             },
             Action::OptionsActions(OptionsActions::UpdateStorageDrive(mountpoint, _drive_name)) => {
                 self.storage_mountpoint.clone_from(&mountpoint);
-                self.available_disk_space_gb = get_available_space_b(mountpoint.clone())? / GB;
+                self.available_disk_space_gb = get_available_space_b(&mountpoint)? / GB;
                 None
             }
             _ => None,
