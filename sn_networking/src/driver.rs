@@ -16,6 +16,7 @@ use crate::{
     cmd::{LocalSwarmCmd, NetworkSwarmCmd},
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
+    external_address::ExternalAddressManager,
     log_markers::Marker,
     multiaddr_pop_p2p,
     network_discovery::NetworkDiscovery,
@@ -631,6 +632,7 @@ impl NetworkBuilder {
         if !is_client {
             relay_manager.enable_hole_punching(self.is_behind_home_network);
         }
+        let external_address_manager = ExternalAddressManager::new(peer_id);
 
         let swarm_driver = SwarmDriver {
             swarm,
@@ -642,6 +644,7 @@ impl NetworkBuilder {
             peers_in_rt: 0,
             bootstrap,
             relay_manager,
+            external_address_manager,
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
@@ -692,6 +695,7 @@ pub struct SwarmDriver {
     pub(crate) listen_port: Option<u16>,
     pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
+    pub(crate) external_address_manager: ExternalAddressManager,
     pub(crate) relay_manager: RelayManager,
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) replication_fetcher: ReplicationFetcher,

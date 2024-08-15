@@ -15,6 +15,7 @@ mod cmd;
 mod driver;
 mod error;
 mod event;
+mod external_address;
 mod log_markers;
 #[cfg(feature = "open-metrics")]
 mod metrics;
@@ -66,6 +67,7 @@ use sn_protocol::{
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
+    net::IpAddr,
     path::PathBuf,
     sync::Arc,
 };
@@ -994,6 +996,19 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
             .filter(|p| !matches!(p, Protocol::P2p(_)))
             .collect()
     }
+}
+
+/// Get the `IpAddr` from the `Multiaddr`
+pub(crate) fn mulitaddr_get_ip(multiaddr: &Multiaddr) -> Option<IpAddr> {
+    for addr in multiaddr.iter() {
+        if let Protocol::Ip4(ip) = addr {
+            return Some(IpAddr::V4(ip));
+        }
+        if let Protocol::Ip6(ip) = addr {
+            return Some(IpAddr::V6(ip));
+        }
+    }
+    None
 }
 
 pub(crate) fn send_local_swarm_cmd(swarm_cmd_sender: Sender<LocalSwarmCmd>, cmd: LocalSwarmCmd) {
