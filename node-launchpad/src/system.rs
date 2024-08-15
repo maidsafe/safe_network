@@ -9,15 +9,14 @@
 use color_eyre::eyre::eyre;
 use color_eyre::eyre::ContextCompat;
 use color_eyre::Result;
+use faccess::{AccessMode, PathExt};
+
 use std::env;
-use std::fs::OpenOptions;
-use std::io::Write;
+
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use sysinfo::Disks;
-
-use crate::config::get_launchpad_nodes_data_dir_path;
 
 // Tries to get the default (drive name, mount point) of the current executable
 // to be used as the default drive
@@ -40,43 +39,23 @@ pub fn get_default_mount_point() -> Result<(String, PathBuf)> {
     Err(eyre!("Cannot find the default mount point"))
 }
 
-/// Checks if the given `path` is the default mount point of the current executable
-///
-/// We return an error if we cannot find the default mount point or the current executable
-pub fn is_default_mount_point(path: &Path) -> Result<bool> {
-    let disks = Disks::new_with_refreshed_list();
-    let exe_path = env::current_exe()?;
-    for disk in disks.list() {
-        if exe_path.starts_with(disk.mount_point()) {
-            return Ok(disk.mount_point() == path);
-        }
-    }
-    Err(eyre!("Cannot find the default mount point"))
-}
-
-// Checks if the given path (a drive) is read-only
-fn is_read_only<P: AsRef<Path>>(path: P) -> bool {
-    let test_file_path = path.as_ref().join("lauchpad_test_write_permission.tmp");
-
-    // Try to create and write to a temporary file
-    let result = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(&test_file_path)
-        .and_then(|mut file| file.write_all(b"test"));
-
-    match result {
+// Checks if the given path has read and write access
+fn has_read_write_access(path: PathBuf) -> bool {
+    let check_access = |mode, access_type| match path.access(mode) {
         Ok(_) => {
-            // Clean up the test file if write was successful
-            let _ = std::fs::remove_file(test_file_path);
+            debug!("{} access granted for {:?}", access_type, path);
+            true
+        }
+        Err(_) => {
+            debug!("{} access denied for {:?}", access_type, path);
             false
         }
-        Err(err) => {
-            // Check if the error is due to a read-only file system
-            err.kind() == std::io::ErrorKind::PermissionDenied
-        }
-    }
+    };
+
+    let read = check_access(AccessMode::READ, "Read");
+    let write = check_access(AccessMode::WRITE, "Write");
+
+    read && write
 }
 
 /// Gets a list of available drives and their available space.
@@ -101,10 +80,14 @@ pub fn get_list_of_available_drives_and_available_space() -> Result<Vec<(String,
             disk.available_space(),
         );
 
-        if is_read_only(get_launchpad_nodes_data_dir_path(
-            &disk.mount_point().to_path_buf(),
-            false,
-        )?) {
+        // If the disk is the main disk we add it to the list
+        if disk.mount_point() == get_primary_mount_point() {
+            drives.push(disk_info);
+            continue;
+        }
+
+        // If the disk doesn't have read and write access, we skip it
+        if !has_read_write_access(disk.mount_point().to_path_buf()) {
             debug!(
                 "Data dir path on {:?} is read-only. We skip this disk.",
                 disk_info
