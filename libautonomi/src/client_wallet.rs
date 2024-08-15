@@ -3,6 +3,7 @@ use std::collections::{BTreeSet, HashSet};
 use libp2p::{
     futures::future::join_all,
     kad::{Quorum, Record},
+    PeerId,
 };
 use sn_client::{
     networking::{
@@ -14,6 +15,8 @@ use sn_protocol::{
     storage::{try_serialize_record, RecordKind, RetryStrategy, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
+use sn_transfers::Payment;
+use xor_name::XorName;
 
 use crate::{Client, VERIFY_STORE};
 
@@ -116,6 +119,24 @@ impl Client {
             wallet.clear_confirmed_spend_requests();
         }
     }
+
+    /// Returns the most recent cached Payment for a provided NetworkAddress. This function does not check if the
+    /// quote has expired or not. Use get_non_expired_payment_for_addr if you want to get a non expired one.
+    ///
+    /// If multiple payments have been made to the same address, then we pick the last one as it is the most recent.
+    pub fn get_recent_payment_for_addr(
+        &self,
+        xor_name: &XorName,
+        wallet: &mut HotWallet,
+    ) -> Result<(Payment, PeerId), sn_transfers::WalletError> {
+        let payment_detail = wallet.api().get_recent_payment(xor_name)?;
+
+        let payment = payment_detail.to_payment();
+        let peer_id = PeerId::from_bytes(&payment_detail.peer_id_bytes)
+            .expect("payment detail should have a valid peer id");
+
+        Ok((payment, peer_id))
+    }
 }
 
 /// Send a `SpendCashNote` request to the network. Protected method.
@@ -160,5 +181,5 @@ async fn store_spend(network: Network, spend: SignedSpend) -> Result<(), Network
         use_put_record_to: None,
         verification: Some((VerificationKind::Network, verification_cfg)),
     };
-    Ok(network.put_record(record, &put_cfg).await?)
+    network.put_record(record, &put_cfg).await
 }
