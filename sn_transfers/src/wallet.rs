@@ -79,7 +79,7 @@ use std::{collections::BTreeMap, fs, path::Path};
 use wallet_file::wallet_file_name;
 
 #[derive(Default, Serialize, Deserialize)]
-pub(super) struct KeyLessWallet {
+pub struct KeyLessWallet {
     available_cash_notes: BTreeMap<UniquePubkey, NanoTokens>,
 }
 
