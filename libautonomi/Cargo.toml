@@ -3,6 +3,9 @@ name = "libautonomi"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+local-discovery = [ "sn_client/local-discovery" ]
+
 [dependencies]
 bip39 = "2.0.0"
 bytes = { version = "1.0.1", features = ["serde"] }
@@ -20,6 +23,7 @@ tokio = { version = "1.35.0", features = ["sync"] }
 xor_name = "5.0.0"
 
 [dev-dependencies]
+rand = "0.8.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [lints]

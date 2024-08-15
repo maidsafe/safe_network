@@ -3716,6 +3716,7 @@ dependencies = [
  "bytes",
  "eyre",
  "libp2p",
+ "rand 0.8.5",
  "rmp-serde",
  "self_encryption",
  "serde",
