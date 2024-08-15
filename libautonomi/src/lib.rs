@@ -2,7 +2,9 @@ pub use client::Client;
 /// (Re-export for convenience.)
 pub use libp2p::{multiaddr, Multiaddr};
 
+mod secrets;
 mod self_encryption;
+mod wallet;
 
 mod client {
     use std::{collections::HashSet, time::Duration};

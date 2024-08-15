@@ -44,13 +44,8 @@ pub struct WatchOnlyWallet {
 }
 
 impl WatchOnlyWallet {
-    #[cfg(test)]
     // Creates a new instance (only in memory) with provided info
-    pub(super) fn new(
-        main_pubkey: MainPubkey,
-        wallet_dir: &Path,
-        keyless_wallet: KeyLessWallet,
-    ) -> Self {
+    pub fn new(main_pubkey: MainPubkey, wallet_dir: &Path, keyless_wallet: KeyLessWallet) -> Self {
         Self {
             main_pubkey,
             api: WalletApi::new_from_wallet_dir(wallet_dir),

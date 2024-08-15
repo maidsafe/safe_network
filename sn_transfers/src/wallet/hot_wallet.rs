@@ -16,7 +16,7 @@ use super::{
         store_unconfirmed_spend_requests,
     },
     watch_only::WatchOnlyWallet,
-    Error, Result,
+    Error, KeyLessWallet, Result,
 };
 use crate::wallet::authentication::AuthenticationManager;
 use crate::wallet::encryption::EncryptedSecretKey;
@@ -58,6 +58,18 @@ pub struct HotWallet {
 }
 
 impl HotWallet {
+    pub fn new(key: MainSecretKey, wallet_dir: PathBuf) -> Self {
+        let watchonly_wallet =
+            WatchOnlyWallet::new(key.main_pubkey(), &wallet_dir, KeyLessWallet::default());
+
+        Self {
+            key,
+            watchonly_wallet,
+            unconfirmed_spend_requests: Default::default(),
+            authentication_manager: AuthenticationManager::new(wallet_dir),
+        }
+    }
+
     #[cfg(feature = "test-utils")]
     pub fn key(&self) -> &MainSecretKey {
         &self.key
