@@ -133,6 +133,8 @@ pub enum LocalSwarmCmd {
     /// Triggers interval repliation
     /// NOTE: This does result in outgoing messages, but is produced locally
     TriggerIntervalReplication,
+    /// Triggers unrelevant record cleanup
+    TriggerUnrelevantRecordCleanup,
 }
 
 /// Commands to send to the Swarm
@@ -280,6 +282,9 @@ impl Debug for LocalSwarmCmd {
             }
             LocalSwarmCmd::TriggerIntervalReplication => {
                 write!(f, "LocalSwarmCmd::TriggerIntervalReplication")
+            }
+            LocalSwarmCmd::TriggerUnrelevantRecordCleanup => {
+                write!(f, "LocalSwarmCmd::TriggerUnrelevantRecordCleanup")
             }
         }
     }
@@ -816,6 +821,14 @@ impl SwarmDriver {
                 if !new_keys_to_fetch.is_empty() {
                     self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
                 }
+            }
+            LocalSwarmCmd::TriggerUnrelevantRecordCleanup => {
+                cmd_string = "TriggerUnrelevantRecordCleanup";
+                self.swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .cleanup_unrelevant_records();
             }
         }
 

@@ -79,6 +79,9 @@ const FORWARDED_BALANCE_FILE_NAME: &str = "forwarded_balance";
 /// Interval to update the nodes uptime metric
 const UPTIME_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
 
+/// Interval to clean up unrelevant records
+const UNRELEVANT_RECORDS_CLEANUP_INTERVAL: Duration = Duration::from_secs(3600);
+
 /// Helper to build and run a Node
 pub struct NodeBuilder {
     keypair: Keypair,
@@ -323,6 +326,10 @@ impl Node {
                 tokio::time::interval(UPTIME_METRICS_UPDATE_INTERVAL);
             let _ = uptime_metrics_update_interval.tick().await; // first tick completes immediately
 
+            let mut unrelevant_records_cleanup_interval =
+                tokio::time::interval(UNRELEVANT_RECORDS_CLEANUP_INTERVAL);
+            let _ = unrelevant_records_cleanup_interval.tick().await; // first tick completes immediately
+
             loop {
                 let peers_connected = &peers_connected;
 
@@ -409,6 +416,13 @@ impl Node {
                         if let Some(node_metrics) = self.node_metrics() {
                             let _ = node_metrics.uptime.set(node_metrics.started_instant.elapsed().as_secs() as i64);
                         }
+                    }
+                    _ = unrelevant_records_cleanup_interval.tick() => {
+                        let network = self.network().clone();
+
+                        let _handle = spawn(async move {
+                            Self::trigger_unrelevant_record_cleanup(network);
+                        });
                     }
                 }
             }

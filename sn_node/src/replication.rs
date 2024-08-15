@@ -25,6 +25,11 @@ impl Node {
         network.trigger_interval_replication()
     }
 
+    /// Cleanup unrelevant records if accumulated too many.
+    pub(crate) fn trigger_unrelevant_record_cleanup(network: Network) {
+        network.trigger_unrelevant_record_cleanup()
+    }
+
     /// Get the Record from a peer or from the network without waiting.
     pub(crate) fn fetch_replication_keys_without_wait(
         &self,
