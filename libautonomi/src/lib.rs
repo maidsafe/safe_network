@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+
+pub use bytes::Bytes;
 pub use client::Client;
 /// (Re-export for convenience.)
 pub use libp2p::{multiaddr, Multiaddr};
@@ -15,16 +18,27 @@ mod client {
     };
 
     use bytes::Bytes;
-    use libp2p::{identity::Keypair, Multiaddr};
+    use libp2p::{
+        identity::Keypair,
+        kad::{Quorum, Record},
+        Multiaddr, PeerId,
+    };
     use sn_client::{
         networking::{
-            multiaddr_is_global, version::IDENTIFY_PROTOCOL_STR, Network, NetworkBuilder,
-            NetworkEvent, CLOSE_GROUP_SIZE,
+            multiaddr_is_global, version::IDENTIFY_PROTOCOL_STR, GetRecordCfg, Network,
+            NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg, CLOSE_GROUP_SIZE,
         },
         transfers::{HotWallet, MainPubkey, NanoTokens, PaymentQuote},
         StoragePaymentResult,
     };
-    use sn_protocol::{storage::ChunkAddress, NetworkAddress};
+    use sn_protocol::{
+        storage::{
+            try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
+            RecordKind,
+        },
+        NetworkAddress,
+    };
+    use sn_transfers::Payment;
     use tokio::{
         sync::mpsc::Receiver,
         task::{JoinError, JoinSet},
@@ -35,8 +49,16 @@ mod client {
     use crate::{client_wallet::SendSpendsError, self_encryption::encrypt};
 
     #[derive(Debug, thiserror::Error)]
-    #[error(transparent)]
-    pub struct PutError(#[from] crate::self_encryption::Error);
+    pub enum PutError {
+        #[error("Self encryption error: {0:?}")]
+        SelfEncryption(#[from] crate::self_encryption::Error),
+        #[error("Error serializing data")]
+        Serialization,
+        #[error("General networking error: {0:?}")]
+        Network(#[from] NetworkError),
+        #[error("General wallet error: {0:?}")]
+        Wallet(#[from] sn_transfers::WalletError),
+    }
 
     #[derive(Debug, thiserror::Error)]
     pub enum PayError {
@@ -48,6 +70,14 @@ mod client {
         WalletError(#[from] sn_transfers::WalletError),
         #[error("Hot wallet error: {0:?}")]
         SendSpendsError(#[from] SendSpendsError),
+    }
+
+    #[derive(Debug, thiserror::Error)]
+    pub enum GetError {
+        #[error("General networking error: {0:?}")]
+        Network(#[from] sn_client::networking::NetworkError),
+        #[error("General protocol error: {0:?}")]
+        Protocol(#[from] sn_client::protocol::Error),
     }
 
     #[derive(Debug, thiserror::Error)]
@@ -111,20 +141,50 @@ mod client {
             Ok(Self { network })
         }
 
-        pub async fn put(&mut self, data: Bytes, wallet: &mut HotWallet) -> Result<(), PutError> {
+        pub async fn get(&self, addr: XorName) -> Result<Chunk, GetError> {
+            tracing::info!("Getting chunk: {addr:?}");
+            let key = NetworkAddress::from_chunk_address(ChunkAddress::new(addr)).to_record_key();
+
+            let get_cfg = GetRecordCfg {
+                get_quorum: Quorum::One,
+                retry_strategy: None,
+                target_record: None,
+                expected_holders: HashSet::new(),
+            };
+            let record = self.network.get_record_from_network(key, &get_cfg).await?;
+            let header = RecordHeader::from_record(&record)?;
+            if let RecordKind::Chunk = header.kind {
+                let chunk: Chunk = try_deserialize_record(&record)?;
+                Ok(chunk)
+            } else {
+                Err(NetworkError::RecordKindMismatch(RecordKind::Chunk).into())
+            }
+        }
+
+        pub async fn put(
+            &mut self,
+            data: Bytes,
+            wallet: &mut HotWallet,
+        ) -> Result<XorName, PutError> {
             let (map, chunks) = encrypt(data)?;
+            let map_xor_name = *map.address().xorname();
 
             let mut xor_names = vec![];
-            xor_names.push(*map.address().xorname());
-            for chunk in chunks {
-                xor_names.push(*chunk.address().xorname());
+            xor_names.push(map_xor_name);
+            for chunk in &chunks {
+                xor_names.push(*chunk.name());
             }
 
             self.pay(xor_names.into_iter(), wallet)
                 .await
                 .expect("TODO: handle error");
 
-            Ok(())
+            self.upload_chunk(map, wallet).await?;
+            for chunk in chunks {
+                self.upload_chunk(chunk, wallet).await?;
+            }
+
+            Ok(map_xor_name)
         }
 
         async fn pay(
@@ -142,7 +202,7 @@ mod client {
                             vec![],
                         )
                         .await
-                        .map_err(|error| PayError::CouldNotGetStoreCosts(error));
+                        .map_err(PayError::CouldNotGetStoreCosts);
 
                     tracing::debug!("Storecosts retrieved for {content_addr:?} {cost:?}");
                     (content_addr, cost)
@@ -239,6 +299,52 @@ mod client {
 
             Ok(total_cost)
         }
+
+        /// Directly writes Chunks to the network in the form of immutable self encrypted chunks.
+        pub async fn upload_chunk(
+            &self,
+            chunk: Chunk,
+            wallet: &mut HotWallet,
+        ) -> Result<(), PutError> {
+            let xor_name = *chunk.name();
+            let (payment, payee) = self.get_recent_payment_for_addr(&xor_name, wallet)?;
+
+            self.store_chunk(chunk, payee, payment).await?;
+
+            wallet.api().remove_payment_transaction(&xor_name);
+
+            Ok(())
+        }
+
+        /// Store `Chunk` as a record. Protected method.
+        pub(super) async fn store_chunk(
+            &self,
+            chunk: Chunk,
+            payee: PeerId,
+            payment: Payment,
+        ) -> Result<(), PutError> {
+            tracing::debug!("Storing chunk: {chunk:?} to {payee:?}");
+
+            let key = chunk.network_address().to_record_key();
+
+            let record_kind = RecordKind::ChunkWithPayment;
+            let record = Record {
+                key: key.clone(),
+                value: try_serialize_record(&(payment, chunk.clone()), record_kind)
+                    .map_err(|_| PutError::Serialization)?
+                    .to_vec(),
+                publisher: None,
+                expires: None,
+            };
+
+            let put_cfg = PutRecordCfg {
+                put_quorum: Quorum::One,
+                retry_strategy: None,
+                use_put_record_to: Some(vec![payee]),
+                verification: None,
+            };
+            Ok(self.network.put_record(record, &put_cfg).await?)
+        }
     }
 
     fn build_client_and_run_swarm(local: bool) -> (Network, Receiver<NetworkEvent>) {
@@ -318,6 +424,10 @@ mod client {
 
     #[cfg(test)]
     mod tests {
+        use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
+        use sn_transfers::get_faucet_data_dir;
+        use tokio::time::sleep;
+
         use super::*;
 
         #[tokio::test]
@@ -326,13 +436,23 @@ mod client {
                 .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
                 .try_init();
 
-            let peers: Vec<Multiaddr> = vec!["/ip4/127.0.0.1/udp/46910/quic-v1"]
-                .into_iter()
-                .map(|addr| addr.parse().expect("valid multiaddr"))
-                .collect();
+            let mut client = Client::connect(&[]).await.unwrap();
 
-            let _client = Client::connect(&peers).await.unwrap();
-            // client.put(b"Hello, world!".to_vec().into()).await.unwrap();
+            let data = rand::random::<[u8; 10]>();
+
+            let root_dir = get_faucet_data_dir();
+            let mut funded_faucet =
+                load_account_wallet_or_create_with_mnemonic(&root_dir, None).unwrap();
+
+            let xor = client
+                .put(data.to_vec().into(), &mut funded_faucet)
+                .await
+                .unwrap();
+
+            sleep(Duration::from_secs(2)).await;
+
+            let chunk = client.get(xor).await.unwrap();
+            assert_eq!(chunk.name(), &xor);
         }
     }
 }
