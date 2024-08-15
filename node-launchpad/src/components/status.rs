@@ -20,8 +20,7 @@ use crate::{
     mode::{InputMode, Scene},
     node_stats::NodeStats,
     style::{
-        clear_area, COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE,
-        VIVID_SKY_BLUE,
+        clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE,
     },
 };
 use color_eyre::eyre::{OptionExt, Result};
@@ -558,7 +557,7 @@ impl Component for Status {
                             .title(" Nodes (0) ".to_string())
                             .title_style(Style::default().fg(LIGHT_PERIWINKLE))
                             .borders(Borders::ALL)
-                            .border_style(style::Style::default().fg(COOL_GREY))
+                            .border_style(style::Style::default().fg(EUCALYPTUS))
                             .padding(Padding::horizontal(1)),
                     ),
                 layout[2],

@@ -55,6 +55,7 @@ impl StatefulWidget for Footer {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
+                    .border_style(Style::default().fg(EUCALYPTUS))
                     .padding(Padding::horizontal(1)),
             )
             .widths(vec![
