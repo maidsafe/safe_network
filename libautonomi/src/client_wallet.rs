@@ -1,5 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
-
+use eyre::eyre;
 use libp2p::{
     futures::future::join_all,
     kad::{Quorum, Record},
@@ -19,6 +18,8 @@ use sn_transfers::Payment;
 use xor_name::XorName;
 
 use crate::{Client, VERIFY_STORE};
+use sn_transfers::{CashNote, WalletError};
+use std::collections::{BTreeSet, HashSet};
 
 #[derive(Debug, thiserror::Error)]
 pub enum SendSpendsError {
@@ -117,6 +118,24 @@ impl Client {
             .is_ok()
         {
             wallet.clear_confirmed_spend_requests();
+        }
+    }
+
+    /// Verify if a `CashNote` is unspent.
+    pub(super) async fn verify_if_cash_note_is_valid(
+        &self,
+        cash_note: &CashNote,
+    ) -> eyre::Result<()> {
+        let pk = cash_note.unique_pubkey();
+        let addr = SpendAddress::from_unique_pubkey(&pk);
+
+        match self.network.get_spend(addr).await {
+            // if we get a RecordNotFound, it means the CashNote is not spent, which is good
+            Err(NetworkError::GetRecordError(GetRecordError::RecordNotFound)) => Ok(()),
+            // if we get a spend, it means the CashNote is already spent
+            Ok(_) => Err(eyre!("CashNote is already spent")),
+            // report all other errors
+            Err(e) => return Err(WalletError::FailedToGetSpend(format!("{e}")).into()),
         }
     }
 
