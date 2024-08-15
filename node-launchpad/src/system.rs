@@ -63,13 +63,10 @@ fn has_read_write_access(path: PathBuf) -> bool {
 /// An available drive is a drive that is not read-only on the data directory.
 ///
 pub fn get_list_of_available_drives_and_available_space() -> Result<Vec<(String, PathBuf, u64)>> {
-    // Create a new System instance
     let disks = Disks::new_with_refreshed_list();
-
-    // Get the list of disks
     let mut drives: Vec<(String, PathBuf, u64)> = Vec::new();
+
     for disk in disks.list() {
-        // Check if the disk is already in the list
         let disk_info = (
             disk.name()
                 .to_string_lossy()
@@ -80,42 +77,25 @@ pub fn get_list_of_available_drives_and_available_space() -> Result<Vec<(String,
             disk.available_space(),
         );
 
-        // If the disk is the main disk we add it to the list
-        if disk.mount_point() == get_primary_mount_point() {
-            drives.push(disk_info);
-            continue;
-        }
-
-        // If the disk doesn't have read and write access, we skip it
-        if !has_read_write_access(disk.mount_point().to_path_buf()) {
-            debug!(
-                "Data dir path on {:?} is read-only. We skip this disk.",
-                disk_info
-            );
-            continue;
-        }
-
-        // To handle the case where the same disk is mounted multiple times
-        // We check names and free space to determine if it's the same disk
-        let mut skip_drive = false;
-        for drive in &drives {
-            if drive.0 == disk_info.0 && drive.2 == disk_info.2 {
-                debug!(
-                    "Disk already in our list of available disks: {:?}",
-                    disk_info
-                );
-                skip_drive = true;
-                break;
+        if disk.mount_point() == get_primary_mount_point()
+            || has_read_write_access(disk.mount_point().to_path_buf())
+        {
+            // We avoid adding the same disk multiple times if it's mounted in multiple places
+            // We check the name and free space to determine if it's the same disk
+            if !drives
+                .iter()
+                .any(|drive| drive.0 == disk_info.0 && drive.2 == disk_info.2)
+            {
+                debug!("[ADD] Disk added: {:?}", disk_info);
+                drives.push(disk_info);
+            } else {
+                debug!("[SKIP] Disk {:?} already added before.", disk_info);
             }
-        }
-        if !skip_drive {
-            debug!(
-                "Adding disk to our list of available disks: {:?}",
-                disk_info
-            );
-            drives.push(disk_info);
+        } else {
+            debug!("[SKIP] Disk {:?} without RW permission.", disk_info);
         }
     }
+
     debug!("Drives detected: {:?}", drives);
     Ok(drives)
 }
