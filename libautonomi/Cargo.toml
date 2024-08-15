@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-local-discovery = [ "sn_client/local-discovery" ]
+local-discovery = ["sn_client/local-discovery"]
 
 [dependencies]
 bip39 = "2.0.0"

@@ -8,6 +8,7 @@ pub use libp2p::{multiaddr, Multiaddr};
 mod client_wallet;
 mod secrets;
 mod self_encryption;
+mod wallet;
 
 const VERIFY_STORE: bool = true;
 
