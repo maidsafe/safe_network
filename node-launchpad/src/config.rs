@@ -45,8 +45,8 @@ pub fn get_launchpad_nodes_data_dir_path(
     mount_point.push(data_directory);
     mount_point.push("safe");
     mount_point.push("node");
-    debug!("Creating nodes data dir: {:?}", mount_point.as_path());
     if should_create {
+        debug!("Creating nodes data dir: {:?}", mount_point.as_path());
         match std::fs::create_dir_all(mount_point.as_path()) {
             Ok(_) => debug!("Nodes {:?} data dir created successfully", mount_point),
             Err(e) => {

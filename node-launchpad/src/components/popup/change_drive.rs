@@ -391,10 +391,6 @@ impl Component for ChangeDrivePopup {
                         if self.items.items.len() > 1 {
                             self.items.next();
                             let drive = self.return_selection();
-                            debug!(
-                                "User moved: {:?} != {:?}",
-                                drive.mountpoint, self.drive_selection.mountpoint
-                            );
                             self.user_moved = drive.mountpoint != self.drive_selection.mountpoint;
                         }
                         vec![]
