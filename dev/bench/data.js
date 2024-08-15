@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723472063122,
+  "lastUpdate": 1723740743442,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5c670793496e5e6f2fbe058cba0929c8984b2663",
-          "message": "fix(node): not send out replication when failed read from local",
-          "timestamp": "2024-04-11T00:36:40Z",
-          "tree_id": "746accd8b6938fc8c92dafdac6cfb385f4949f92",
-          "url": "https://github.com/maidsafe/safe_network/commit/5c670793496e5e6f2fbe058cba0929c8984b2663"
-        },
-        "date": 1712798478567,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2238376023450648,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6602655618124396,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.20979695732603,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.08515550453807,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "36bcbebab1e22559355de65d89cf35563aa6f173",
+          "message": "Merge pull request #2043 from maqi/record_store_clean_up\n\nfeat(node): prune unrelevant records if accumulated too many",
+          "timestamp": "2024-08-15T15:49:19Z",
+          "tree_id": "f6564c963315882be63174e82a34840a8bcb7366",
+          "url": "https://github.com/maidsafe/safe_network/commit/36bcbebab1e22559355de65d89cf35563aa6f173"
+        },
+        "date": 1723740737421,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2470377117193792,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7205619706266828,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.98202562707473,
             "unit": "MiB/s"
           }
         ]
