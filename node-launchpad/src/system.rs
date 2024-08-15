@@ -40,7 +40,7 @@ pub fn get_default_mount_point() -> Result<(String, PathBuf)> {
     Err(eyre!("Cannot find the default mount point"))
 }
 
-/// Checks if the given <path> is the default mount point of the current executable
+/// Checks if the given `path` is the default mount point of the current executable
 ///
 /// We return an error if we cannot find the default mount point or the current executable
 pub fn is_default_mount_point(path: &Path) -> Result<bool> {

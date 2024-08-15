@@ -21,7 +21,7 @@ const CONFIG: &str = include_str!("../.config/config.json5");
 
 /// Where to store the Nodes data.
 ///
-/// If <base_dir> is the primary mount point, we store in "<base_dir>/$HOME/user_data_dir/safe/node".
+/// If `base_dir` is the primary mount point, we store in "<base_dir>/$HOME/user_data_dir/safe/node".
 ///
 /// if not we store in "<base_dir>/safe/node".
 ///
