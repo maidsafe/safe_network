@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1723740743442,
+  "lastUpdate": 1723740858690,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "5c670793496e5e6f2fbe058cba0929c8984b2663",
-          "message": "fix(node): not send out replication when failed read from local",
-          "timestamp": "2024-04-11T00:36:40Z",
-          "tree_id": "746accd8b6938fc8c92dafdac6cfb385f4949f92",
-          "url": "https://github.com/maidsafe/safe_network/commit/5c670793496e5e6f2fbe058cba0929c8984b2663"
-        },
-        "date": 1712798590853,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 164,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "36bcbebab1e22559355de65d89cf35563aa6f173",
+          "message": "Merge pull request #2043 from maqi/record_store_clean_up\n\nfeat(node): prune unrelevant records if accumulated too many",
+          "timestamp": "2024-08-15T15:49:19Z",
+          "tree_id": "f6564c963315882be63174e82a34840a8bcb7366",
+          "url": "https://github.com/maidsafe/safe_network/commit/36bcbebab1e22559355de65d89cf35563aa6f173"
+        },
+        "date": 1723740858379,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 123,
             "unit": "MB"
           }
         ]
