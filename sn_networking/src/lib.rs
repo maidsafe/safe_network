@@ -801,6 +801,10 @@ impl Network {
         self.send_local_swarm_cmd(LocalSwarmCmd::QuoteVerification { quotes });
     }
 
+    pub fn trigger_unrelevant_record_cleanup(&self) {
+        self.send_local_swarm_cmd(LocalSwarmCmd::TriggerUnrelevantRecordCleanup)
+    }
+
     /// Helper to send NetworkSwarmCmd
     fn send_network_swarm_cmd(&self, cmd: NetworkSwarmCmd) {
         send_network_swarm_cmd(self.network_swarm_cmd_sender().clone(), cmd);

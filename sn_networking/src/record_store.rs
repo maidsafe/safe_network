@@ -448,6 +448,48 @@ impl NodeRecordStore {
 
         Ok(())
     }
+
+    // When the accumulated record copies exceeds the `expotional pricing point` (max_records * 0.6)
+    // those `out of range` records shall be cleaned up.
+    // This is to avoid `over-quoting` during restart, when RT is not fully populated,
+    // result in mis-calculation of relevant records.
+    pub fn cleanup_unrelevant_records(&mut self) {
+        let accumulated_records = self.records.len();
+        if accumulated_records < 6 * MAX_RECORDS_COUNT / 10 {
+            return;
+        }
+
+        let responsible_range = if let Some(range) = self.responsible_distance_range {
+            range
+        } else {
+            return;
+        };
+
+        let mut removed_keys = Vec::new();
+        self.records.retain(|key, _val| {
+            let kbucket_key = KBucketKey::new(key.to_vec());
+            let is_in_range =
+                responsible_range >= self.local_key.distance(&kbucket_key).ilog2().unwrap_or(0);
+            if !is_in_range {
+                removed_keys.push(key.clone());
+            }
+            is_in_range
+        });
+
+        // Each `remove` function call will try to re-calculate furthest
+        // when the key to be removed is the current furthest.
+        // To avoid duplicated calculation, hence reset `furthest` first here.
+        self.farthest_record = self.calculate_farthest();
+
+        for key in removed_keys.iter() {
+            // Deletion from disk will be undertaken as a spawned task,
+            // hence safe to call this function repeatedly here.
+            self.remove(key);
+        }
+
+        info!("Cleaned up {} unrelevant records, among the original {accumulated_records} accumulated_records",
+            removed_keys.len());
+    }
 }
 
 impl NodeRecordStore {
