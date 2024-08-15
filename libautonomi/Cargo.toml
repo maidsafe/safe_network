@@ -13,6 +13,7 @@ self_encryption = "0.29.2"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
 sn_client = { path = "../sn_client" }
 sn_protocol = { version = "0.17.5", path = "../sn_protocol" }
+sn_transfers = { path = "../sn_transfers", version = "0.18.9" }
 thiserror = "1.0.23"
 tracing = { version = "~0.1.26" }
 tokio = { version = "1.35.0", features = ["sync"] }

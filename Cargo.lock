@@ -3721,6 +3721,7 @@ dependencies = [
  "serde",
  "sn_client",
  "sn_protocol",
+ "sn_transfers",
  "thiserror",
  "tokio",
  "tracing",
