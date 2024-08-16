@@ -68,7 +68,6 @@ impl HotWallet {
         }
     }
 
-    #[cfg(feature = "test-utils")]
     pub fn key(&self) -> &MainSecretKey {
         &self.key
     }
@@ -79,6 +78,14 @@ impl HotWallet {
 
     pub fn root_dir(&self) -> &Path {
         self.watchonly_wallet.api().wallet_dir()
+    }
+
+    pub fn wo_wallet(&self) -> &WatchOnlyWallet {
+        &self.watchonly_wallet
+    }
+
+    pub fn wo_wallet_mut(&mut self) -> &mut WatchOnlyWallet {
+        &mut self.watchonly_wallet
     }
 
     /// Returns whether a wallet in the specified directory is encrypted or not.
@@ -286,6 +293,10 @@ impl HotWallet {
 
     pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> {
         &self.unconfirmed_spend_requests
+    }
+
+    pub fn unconfirmed_spend_requests_mut(&mut self) -> &mut BTreeSet<SignedSpend> {
+        &mut self.unconfirmed_spend_requests
     }
 
     /// Moves all files for the current wallet, including keys and cashnotes
