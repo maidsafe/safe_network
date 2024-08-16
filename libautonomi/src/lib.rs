@@ -24,6 +24,7 @@ mod client {
         kad::{Quorum, Record},
         Multiaddr, PeerId,
     };
+    use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
     use sn_client::{
         networking::{
             multiaddr_is_global, version::IDENTIFY_PROTOCOL_STR, GetRecordCfg, Network,
@@ -47,7 +48,10 @@ mod client {
     };
     use xor_name::XorName;
 
-    use crate::{client_wallet::SendSpendsError, self_encryption::encrypt};
+    use crate::{
+        client_wallet::SendSpendsError,
+        self_encryption::{encrypt, DataMapLevel},
+    };
 
     #[derive(Debug, thiserror::Error)]
     pub enum PutError {
@@ -142,7 +146,58 @@ mod client {
             Ok(Self { network })
         }
 
-        pub async fn get(&self, addr: XorName) -> Result<Chunk, GetError> {
+        async fn fetch_from_data_map(&self, data_map: &DataMap) -> Result<Bytes, GetError> {
+            let mut encrypted_chunks = vec![];
+            for info in data_map.infos() {
+                let chunk = self.fetch_chunk(info.dst_hash).await?;
+                let chunk = EncryptedChunk {
+                    index: info.index,
+                    content: chunk.value,
+                };
+                encrypted_chunks.push(chunk);
+            }
+
+            let data = decrypt_full_set(data_map, &encrypted_chunks).expect("TODO");
+
+            Ok(data)
+        }
+
+        async fn fetch_from_data_map_chunk(
+            &self,
+            data_map_bytes: &Bytes,
+        ) -> Result<Bytes, GetError> {
+            let mut data_map_level: DataMapLevel =
+                rmp_serde::from_slice(data_map_bytes).expect("TODO");
+
+            loop {
+                let data_map = match &data_map_level {
+                    DataMapLevel::First(map) => map,
+                    DataMapLevel::Additional(map) => map,
+                };
+
+                let data = self.fetch_from_data_map(data_map).await?;
+
+                match &data_map_level {
+                    DataMapLevel::First(_) => break Ok(data),
+                    DataMapLevel::Additional(_) => {
+                        data_map_level = rmp_serde::from_slice(&data).expect("TODO");
+                        continue;
+                    }
+                };
+            }
+        }
+
+        /// Fetch a file based on the DataMap XorName.
+        pub async fn get(&self, addr: XorName) -> Result<Bytes, GetError> {
+            let data_map_chunk = self.fetch_chunk(addr).await?;
+            let data = self
+                .fetch_from_data_map_chunk(data_map_chunk.value())
+                .await?;
+
+            Ok(data)
+        }
+
+        pub async fn fetch_chunk(&self, addr: XorName) -> Result<Chunk, GetError> {
             tracing::info!("Getting chunk: {addr:?}");
             let key = NetworkAddress::from_chunk_address(ChunkAddress::new(addr)).to_record_key();
 
@@ -197,6 +252,7 @@ mod client {
             for content_addr in content_addrs {
                 let network = self.network.clone();
                 tasks.spawn(async move {
+                    // TODO: retry, but where?
                     let cost = network
                         .get_store_costs_from_network(
                             NetworkAddress::from_chunk_address(ChunkAddress::new(content_addr)),
@@ -249,7 +305,7 @@ mod client {
             Ok(res)
         }
 
-        pub async fn pay_for_records(
+        async fn pay_for_records(
             &mut self,
             cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote, Vec<u8>)>,
             wallet: &mut HotWallet,
@@ -302,11 +358,7 @@ mod client {
         }
 
         /// Directly writes Chunks to the network in the form of immutable self encrypted chunks.
-        pub async fn upload_chunk(
-            &self,
-            chunk: Chunk,
-            wallet: &mut HotWallet,
-        ) -> Result<(), PutError> {
+        async fn upload_chunk(&self, chunk: Chunk, wallet: &mut HotWallet) -> Result<(), PutError> {
             let xor_name = *chunk.name();
             let (payment, payee) = self.get_recent_payment_for_addr(&xor_name, wallet)?;
 
@@ -318,7 +370,7 @@ mod client {
         }
 
         /// Store `Chunk` as a record. Protected method.
-        pub(super) async fn store_chunk(
+        async fn store_chunk(
             &self,
             chunk: Chunk,
             payee: PeerId,
@@ -396,10 +448,9 @@ mod client {
                 }
                 event = event_receiver.recv() => {
                     let event = event.expect("receiver should not close");
-                    tracing::trace!("Handling event: {event:?}");
                     match event {
                         NetworkEvent::PeerAdded(_peer_id, peers_len) => {
-                            tracing::debug!("Peer added: {peers_len} in routing table");
+                            tracing::trace!("Peer added: {peers_len} in routing table");
 
                             if peers_len >= CLOSE_GROUP_SIZE {
                                 if let Some(sender) = sender.take() {
@@ -425,6 +476,7 @@ mod client {
 
     #[cfg(test)]
     mod tests {
+        use rand::Rng;
         use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
         use sn_transfers::get_faucet_data_dir;
         use tokio::time::sleep;
@@ -439,21 +491,23 @@ mod client {
 
             let mut client = Client::connect(&[]).await.unwrap();
 
-            let data = rand::random::<[u8; 10]>();
+            let mut data = vec![0u8; 1024 * 1024 * 20];
+            rand::thread_rng().fill(&mut data[..]);
+            let data = Bytes::from(data);
 
             let root_dir = get_faucet_data_dir();
             let mut funded_faucet =
                 load_account_wallet_or_create_with_mnemonic(&root_dir, None).unwrap();
 
-            let xor = client
-                .put(data.to_vec().into(), &mut funded_faucet)
-                .await
-                .unwrap();
+            let xor = client.put(data.clone(), &mut funded_faucet).await.unwrap();
 
             sleep(Duration::from_secs(2)).await;
 
-            let chunk = client.get(xor).await.unwrap();
+            let chunk = client.fetch_chunk(xor).await.unwrap();
             assert_eq!(chunk.name(), &xor);
+
+            let data_fetched = client.get(xor).await.unwrap();
+            assert_eq!(data, data_fetched);
         }
     }
 }
