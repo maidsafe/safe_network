@@ -555,6 +555,7 @@ pub async fn upgrade(
                     service_manager.service.service_data.service_name.clone(),
                     upgrade_result,
                 ));
+                node_registry.save()?;
             }
             Err(err) => {
                 error!("Error upgrading service {service_name}: {err}");
@@ -562,11 +563,11 @@ pub async fn upgrade(
                     node.service_name.clone(),
                     UpgradeResult::Error(format!("Error: {err}")),
                 ));
+                node_registry.save()?;
             }
         }
     }
 
-    node_registry.save()?;
     print_upgrade_summary(upgrade_summary.clone());
 
     if upgrade_summary.iter().any(|(_, r)| {
