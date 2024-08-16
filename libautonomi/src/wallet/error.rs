@@ -6,10 +6,4 @@ pub enum WalletError {
     /// Error when attempting to transfer 0 tokens
     #[error("The transfer amount must be more than 0")]
     TransferAmountZero,
-    #[error("Could not get value of `CashNote` as no outputs are found.")]
-    CashNoteOutputNotFound,
-    #[error("This `CashNote` is not destined for this wallet.")]
-    CashNoteNotOwned,
-    #[error(transparent)]
-    TransferError(#[from] sn_transfers::TransferError),
 }

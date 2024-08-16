@@ -68,7 +68,6 @@ impl HotWallet {
         }
     }
 
-    #[cfg(feature = "test-utils")]
     pub fn key(&self) -> &MainSecretKey {
         &self.key
     }
