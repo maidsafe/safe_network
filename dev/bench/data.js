@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724071584488,
+  "lastUpdate": 1724073739599,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9ad4b38116981e9c9410f0fc23dcc163fd29ee58",
-          "message": "ci: dont require await for past release in bumper",
-          "timestamp": "2024-04-11T14:20:18+09:00",
-          "tree_id": "3d8511e7029d30d8146b8c07604c4090e2fdfd71",
-          "url": "https://github.com/maidsafe/safe_network/commit/9ad4b38116981e9c9410f0fc23dcc163fd29ee58"
-        },
-        "date": 1712813515045,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2256354265166531,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6506773226903408,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.315347969486396,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.54776334682089,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3e04c8531d08c8ebd5231bf52c1ee8f9d1a4a1e8",
+          "message": "Merge pull request #2046 from jacderida/chore-new_pr_script\n\nchore: script to list merged pull requests",
+          "timestamp": "2024-08-19T12:17:15Z",
+          "tree_id": "1bc5fb9a91857a89bf59abfd6da6546625f44d77",
+          "url": "https://github.com/maidsafe/safe_network/commit/3e04c8531d08c8ebd5231bf52c1ee8f9d1a4a1e8"
+        },
+        "date": 1724073733334,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.218770999167231,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6617295185728527,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.398111167792955,
             "unit": "MiB/s"
           }
         ]
