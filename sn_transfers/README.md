@@ -1,17 +1,18 @@
 # Autonomi Network Token
 
-The Autonomi Network Token (ANT) is a curency built on top of the storage layer of the Autonomi Network. It is used on the Network to store data and network nodes are rewarded with this Token for their work. ANT does not use a blockchain but a distributed Directed Acyclic Graph (DAG) of `Spend`s which are all linked together all the way to the first `Spend` which we call `Genesis`. Those `Spend`s contain transaction data and all the information necessary for verification and audit of the currency. 
+The Autonomi Network Token (ANT) is a currency built on top of the storage layer of the Autonomi Network. It is used to reward Network nodes for storing data.
+. ANT does not use a blockchain but a distributed Directed Acyclic Graph (DAG) of `Spend`s which are all linked together all the way to the first `Spend` which we call `Genesis`. Those `Spend`s contain transaction data and all the information necessary for verification and audit of the currency. 
 
 ## Keys
 
 Just like many digital currencies, we use [public/private key cryptography](https://en.wikipedia.org/wiki/Public-key_cryptography) (in our case we use [bls](https://en.wikipedia.org/wiki/BLS_digital_signature) keys, implemented in the [blsttc rust crate](https://docs.rs/blsttc/latest/blsttc/)). A wallet consists of two keys:
 
 - `MainPubkey`: equivalent to a Bitcoin address, this is used to receive ANT. It can be shared publicly. 
-- `MainSecretKey`: it's the secret from which a `MainPubkey` is generated, it is used for spending ANT. 
+- `MainSecretKey`: the secret from which a `MainPubkey` is generated; it is used for spending ANT.
 
-Unlike one could expect, the `MainPubkey` itself never owns any money: `UniquePubkey`s derived from it do. Value is owned by those `UniquePubkey`s which are spendable only once in the form of a `Spend` uploaded at that `UniquePubkey`'s address (known as a `SpendAddress`) on the Network. 
+Unlike one might expect, the `MainPubkey` itself never owns any money: `UniquePubkey`s derived from it do. Value is owned by those `UniquePubkey`s which are spendable only once in the form of a `Spend` uploaded at that `UniquePubkey`'s address (known as a `SpendAddress`) on the Network. 
 
-The way we obtain those `UniquePubkey`s is by using bls key derivation, an algorithm which can create a new key from another key by deriving it with a `DerivationIndex`. `UniquePubkey`s are obtained by deriving the `MainPubkey`. To spend the value owned by a `UniquePubkey`, one uses the associated `DerivedSecretKey` which is obtained by deriving the `MainSecretKey` with the same `DerivationIndex` as the `UniquePubkey`'s. 
+The way we obtain those `UniquePubkey`s is by using bls key derivation, an algorithm which creates a new key from another key by using a large number called a `DerivationIndex`. `UniquePubkey`s are derived from the `MainPubkey`. To spend the value owned by a `UniquePubkey`, one uses the associated `DerivedSecretKey` which was derived from the `MainSecretKey` using the same `DerivationIndex` as was used to create the `UniquePubkey`.
 
 This `DerivedSecretKey` is used to sign the `Spend` which is then sent to the Network for validation and storage. Once the Network has stored and properly replicated that `Spend`, that `UniquePubkey` is considered to be spent and cannot ever be spent again. If more than one `Spend` entry exist at a given `SpendAddress` on the Network, that key is considered to be burnt which makes any `Spend` refering to it unspendable. 
 
@@ -44,8 +45,8 @@ A `Spend` refers to
 - its `descendants` (which could refer to it as one of the `ancestors`)
 
 > Note that `ancestors` and `descendants` should not be confused with inputs and outputs of a transaction. If we were to put that in traditional input output terms:
-> - The `ancestors` are the inputs of the transaction were `unique_pubkey` is an output.
-> - The `unique_pubkey` is an input of the transaction were `descendants` are an output.
+> - The `ancestors` are the inputs of the transaction where `unique_pubkey` is an output.
+> - The `unique_pubkey` is an input of the transaction where `descendants` are an output.
 
 ```go
          GenesisSpend
@@ -86,7 +87,7 @@ SpendQ(6)        SpendZ(7)                        V
 > }
 > ```
 
-`Spend`s on the Network are always signed by their owner (`DerivedSecretKey`) an come with that signature: 
+`Spend`s on the Network are always signed by their owner (`DerivedSecretKey`) and come with that signature: 
 
 ```rust
 pub struct SignedSpend {
@@ -160,7 +161,7 @@ A Transfer consists of the following steps:
 
 #### Preparation
 
-First we need to decide on the transfer's recipient and amout:
+First we need to decide on the transfer's recipient and amount:
 
 - decide on a recipient: `MainPubkey` and an amount in `NanoTokens`
 
@@ -183,9 +184,9 @@ Then, to protect the identity of the recipient on the Network, we derive a compl
 
 - creation of `UniquePubkey`(s) for the recipient by deriving them from the recipient's `MainPubkey` with randomly generated `DerivationIndex`(es)
 
-With all the above data, we can finaly create the `Spend`s which represent the sender's commitment to do the transfer.
+With all the above data, we can finally create the `Spend`s which represent the sender's commitment to do the transfer.
 
-- creation of the `Spend`s for each spent `UniquePubkey`s
+- creation of the `Spend`s for each spent `UniquePubkey`
     - `unique_pubkey`: `UniquePubkey` we own that we wish to spend
     - `ancestors`: reference to the ancestors of that `UniquePubkey` to prove its   validity
     - `descendants`: reference to the `UniquePubkey`(s) of the recipient(s)
@@ -202,7 +203,7 @@ With all the above data, we can finaly create the `Spend`s which represent the s
 
 #### Commitment
 
-- sign the `Spend`s with the `DerivedSecretKey` that we obtain by deriving our `MainSecretKey` with the spend's `UniquePubkey`'s `DerivationIndex`
+- sign each `Spend` with the `DerivedSecretKey` that we derive from `MainSecretKey` with that `Spend`'s `UniquePubkey`'s `DerivationIndex`
 - upload of the `SignedSpend`s to the Network
 
 > After this step, it is not possible to cancel the transfer.
@@ -215,21 +216,21 @@ With all the above data, we can finaly create the `Spend`s which represent the s
           NewUniquePubkey(9)          <- refering to this yet unspent key
 ```
 
-#### Off the Band Transfer
+#### Out of Band Transfer
 
 At this point, the recipient doesn't yet know of: 
 - the `Spend`(s) we uploaded to the Network for them at `SpendAddress`
-- the `UniquePubkey`s we created for them which can be obtained from the `DerivationIndex`
+- the `UniquePubkey`(s) we created for them which can be obtained from the `DerivationIndex`
 
 > Note that `SpendAddress`: the network address of a `Spend` is derived from the hash of a `UniquePubkey`
 
-We send this information off the band in the form of an encrypted `Transfer` encrypted to the recipient's `MainPubkey` so only they can decypher it. 
+We send this information out of band in the form of an encrypted `Transfer` encrypted to the recipient's `MainPubkey` so only they can decypher it. 
 
 > Since the `Transfer` is encrypted, it can be sent safely by any chosen media to the recipient: by email, chat app or even shared publicly on a forum. 
 >
 > If the encryption is ever broken, this information is unusable without the recipient's `MainSecretKey`. However, coupled with the recipient's `MainPubkey`, this information can identify the corresponding `UniquePubkey`s that were received in this `Transfer`.
 
-An encypted `Transfer` is a list of `CashNoteRedemption`, each corresponding to one of the received `UniquePubkey`s:
+An encrypted `Transfer` is a list of `CashNoteRedemption`s, each corresponding to one of the received `UniquePubkey`s:
 
 ```rust
 pub struct CashNoteRedemption {
