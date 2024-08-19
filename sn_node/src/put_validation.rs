@@ -340,7 +340,7 @@ impl Node {
         // check register and merge if needed
         let updated_register = match self.register_validation(&register, present_locally).await? {
             Some(reg) => {
-                debug!("Register needed to be updated");
+                debug!("Register {pretty_key:?} needed to be updated");
                 reg
             }
             None => {
@@ -358,7 +358,7 @@ impl Node {
         };
         let content_hash = XorName::from_content(&record.value);
 
-        debug!("Storing register {reg_addr:?} as Record locally");
+        info!("Storing register {reg_addr:?} with content of {content_hash:?} as Record locally");
         self.network().put_local_record(record);
 
         self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));

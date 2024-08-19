@@ -33,7 +33,7 @@ pub struct ClientRegister {
     #[debug(skip)]
     client: Client,
     pub(crate) register: Register,
-    ops: LinkedList<RegisterCmd>, // Cached operations.
+    pub ops: LinkedList<RegisterCmd>, // Cached operations.
 }
 
 impl ClientRegister {
