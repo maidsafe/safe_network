@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724078738876,
+  "lastUpdate": 1724078740745,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "39feb2eec29b46233b63a86f81c1e1220c750b83",
-          "message": "ci: specify suffix for release bumps",
-          "timestamp": "2024-04-11T14:27:39+09:00",
-          "tree_id": "c8dfe8a15416d8a105f3cff541536f1036d667c7",
-          "url": "https://github.com/maidsafe/safe_network/commit/39feb2eec29b46233b63a86f81c1e1220c750b83"
-        },
-        "date": 1712814077478,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7573,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35105,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 26446,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "337dbfd0816945720bcace2602a4d16a450ee38d",
+          "message": "Merge pull request #2050 from maqi/register_update_problem\n\nchore(node): log record_store storing error",
+          "timestamp": "2024-08-19T13:52:50Z",
+          "tree_id": "3609e247a0cfffdd828d0a1d50c9701eee21b5da",
+          "url": "https://github.com/maidsafe/safe_network/commit/337dbfd0816945720bcace2602a4d16a450ee38d"
+        },
+        "date": 1724078740220,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4388,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 23646,
             "unit": "ms"
           },
           {
