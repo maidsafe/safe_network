@@ -1,4 +1,4 @@
-mod error;
+pub mod error;
 
 use crate::wallet::error::WalletError;
 use sn_client::transfers::{HotWallet, MainSecretKey};
@@ -68,10 +68,10 @@ impl MemWallet {
         &mut self,
         outputs: Vec<(NanoTokens, MainPubkey)>,
         reason: Option<SpendReason>,
-    ) -> eyre::Result<OfflineTransfer> {
+    ) -> Result<OfflineTransfer, WalletError> {
         for output in &outputs {
             if output.0.is_zero() {
-                return Err(WalletError::TransferAmountZero.into());
+                return Err(WalletError::TransferAmountZero);
             }
         }
 
@@ -108,11 +108,14 @@ impl MemWallet {
             .mark_notes_as_spent(unique_pubkeys);
     }
 
-    pub(super) fn deposit_cash_note(&mut self, cash_note: CashNote) -> eyre::Result<()> {
+    pub(super) fn deposit_cash_note(&mut self, cash_note: CashNote) -> Result<(), WalletError> {
         self.hot_wallet
             .wo_wallet_mut()
-            .deposit(&[cash_note.clone()])?;
+            .deposit(&[cash_note.clone()])
+            .map_err(|_| WalletError::CashNoteOutputNotFound)?;
 
+        // TODO: verify ownership of cash note
+        // TODO: verify that cash note outputs value is more than 0
         self.available_cash_notes
             .insert(cash_note.unique_pubkey, cash_note);
 
