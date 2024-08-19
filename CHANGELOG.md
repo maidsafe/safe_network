@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-08-27
+
+### Binaries
+
+* `faucet` v0.4.32
+* `nat-detection` v0.2.2
+* `node-launchpad` v0.3.12
+* `safe` v0.94.1
+* `safenode` v0.110.1
+* `safenode-manager` v0.10.2
+* `safenodemand` v0.10.2
+* `safenode_rpc_client` v0.6.27
+* `sn_auditor` v0.2.4
+
 ## 2024-07-25
 
 ### Binaries

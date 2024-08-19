@@ -6,5 +6,5 @@
 #
 # Both of these numbers are used in the packaged version number, which is a collective version
 # number for all the released binaries.
-release-cycle: 1
+release-cycle: 2
 release-cycle-counter: 1
