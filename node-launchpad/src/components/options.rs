@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Style, Stylize},
@@ -259,7 +259,9 @@ impl Component for Options {
                     if let Err(e) = system::open_folder(
                         get_service_log_dir_path(ReleaseType::NodeLaunchpad, None, None)?
                             .to_str()
-                            .unwrap(),
+                            .ok_or_else(|| {
+                                eyre!("We cannot get the log dir path for Node-Launchpad")
+                            })?,
                     ) {
                         error!("Failed to open folder: {}", e);
                     }
