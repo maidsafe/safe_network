@@ -8,6 +8,8 @@ pub enum WalletError {
     TransferAmountZero,
     #[error("Could not get value of `CashNote` as no outputs are found.")]
     CashNoteOutputNotFound,
+    #[error("This `CashNote` is not destined for this wallet.")]
+    CashNoteNotOwned,
     #[error(transparent)]
     TransferError(#[from] sn_transfers::TransferError),
 }
