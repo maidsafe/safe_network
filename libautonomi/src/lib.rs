@@ -256,6 +256,16 @@ mod client {
             }
         }
 
+        /// Receive a `CashNoteRedemption` through a transfer message.
+        pub async fn receive(
+            &self,
+            transfer_hex: &str,
+            wallet: &mut MemWallet,
+        ) -> eyre::Result<()> {
+            let transfer = Transfer::from_hex(&transfer_hex)?;
+            self.receive_transfer(transfer, wallet).await
+        }
+
         pub async fn put(
             &mut self,
             data: Bytes,
