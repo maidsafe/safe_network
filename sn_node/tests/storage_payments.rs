@@ -282,6 +282,8 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
         .create_and_pay_for_register(xor_name, &mut wallet_client, true, Permissions::default())
         .await?;
 
+    println!("Newly created register has {} ops", register.read().len());
+
     let retrieved_reg = client.get_register(address).await?;
 
     assert_eq!(register.read(), retrieved_reg.read());
@@ -289,11 +291,47 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
     let random_entry = rng.gen::<[u8; 32]>().to_vec();
 
     register.write(&random_entry)?;
+
+    println!(
+        "Register has {} ops after first write",
+        register.read().len()
+    );
+
     register.sync(&mut wallet_client, true, None).await?;
 
     let retrieved_reg = client.get_register(address).await?;
 
     assert_eq!(retrieved_reg.read().iter().next().unwrap().1, random_entry);
+
+    assert_eq!(retrieved_reg.read().len(), 1);
+
+    for index in 1..10 {
+        println!("current index is {index}");
+        let random_entry = rng.gen::<[u8; 32]>().to_vec();
+
+        register.write(&random_entry)?;
+        register.sync(&mut wallet_client, true, None).await?;
+
+        let retrieved_reg = client.get_register(address).await?;
+
+        println!(
+            "current retrieved register entry length is {}",
+            retrieved_reg.read().len()
+        );
+        println!("current expected entry length is {}", register.read().len());
+
+        println!(
+            "current retrieved register ops length is {}",
+            retrieved_reg.ops.len()
+        );
+        println!("current local cached ops length is {}", register.ops.len());
+
+        assert_eq!(retrieved_reg.read().len(), register.read().len());
+
+        assert_eq!(retrieved_reg.read().iter().next().unwrap().1, random_entry);
+
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+    }
 
     Ok(())
 }
