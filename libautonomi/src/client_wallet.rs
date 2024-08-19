@@ -14,7 +14,7 @@ use sn_protocol::{
     storage::{try_serialize_record, RecordKind, RetryStrategy, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{MainPubkey, NanoTokens, Payment, SpendReason, Transfer};
+use sn_transfers::{Payment, Transfer};
 use xor_name::XorName;
 
 use crate::wallet::MemWallet;
@@ -33,44 +33,6 @@ pub enum SendSpendsError {
 }
 
 impl Client {
-    /// Creates a `Transfer` that can be received by the receiver.
-    /// Once received, it will be turned into a `CashNote` that the receiver can spend.
-    pub async fn send(
-        &mut self,
-        to: MainPubkey,
-        amount_in_nano: NanoTokens,
-        reason: Option<SpendReason>,
-        wallet: &mut MemWallet,
-    ) -> eyre::Result<Transfer> {
-        let offline_transfer =
-            wallet.create_offline_transfer(vec![(amount_in_nano, to)], reason)?;
-
-        // return the first CashNote (assuming there is only one because we only sent to one recipient)
-        let cash_note_for_recipient = match &offline_transfer.cash_notes_for_recipient[..] {
-            [cash_note] => Ok(cash_note),
-            [_multiple, ..] => Err(SendSpendsError::CouldNotSendMoney(
-                "Multiple CashNotes were returned from the transaction when only one was expected."
-                    .into(),
-            )),
-            [] => Err(SendSpendsError::CouldNotSendMoney(
-                "No CashNotes were returned from the wallet.".into(),
-            )),
-        }?;
-
-        let transfer = Transfer::transfer_from_cash_note(cash_note_for_recipient)?;
-
-        self.send_spends(offline_transfer.all_spend_requests.iter())
-            .await?;
-
-        wallet.process_offline_transfer(offline_transfer.clone());
-
-        for spend in &offline_transfer.all_spend_requests {
-            wallet.add_pending_spend(spend.clone());
-        }
-
-        Ok(transfer)
-    }
-
     /// Send spend requests to the network.
     pub async fn send_spends(
         &self,
