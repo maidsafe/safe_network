@@ -109,15 +109,27 @@ impl MemWallet {
     }
 
     pub(super) fn deposit_cash_note(&mut self, cash_note: CashNote) -> Result<(), WalletError> {
+        if cash_note
+            .derived_pubkey(&self.hot_wallet.key().main_pubkey())
+            .is_err()
+        {
+            return Err(WalletError::CashNoteNotOwned);
+        }
+
+        if cash_note.value().is_err() {
+            return Err(WalletError::CashNoteOutputNotFound);
+        }
+
+        self.available_cash_notes
+            .insert(cash_note.unique_pubkey, cash_note.clone());
+
+        // DevNote: the deposit fn already does the checks above,
+        // but I have added them here just in case we get rid
+        // of the composited hotwallet and its deposit checks
         self.hot_wallet
             .wo_wallet_mut()
-            .deposit(&[cash_note.clone()])
+            .deposit(&[cash_note])
             .map_err(|_| WalletError::CashNoteOutputNotFound)?;
-
-        // TODO: verify ownership of cash note
-        // TODO: verify that cash note outputs value is more than 0
-        self.available_cash_notes
-            .insert(cash_note.unique_pubkey, cash_note);
 
         Ok(())
     }
