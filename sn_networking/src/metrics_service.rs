@@ -18,13 +18,19 @@ use std::{
 
 const METRICS_CONTENT_TYPE: &str = "application/openmetrics-text;charset=utf-8;version=1.0.0";
 
-pub(crate) fn run_metrics_server(registry: Registry, port: u16) {
+pub(crate) fn run_metrics_server(
+    metrics_registry: Registry,
+    metadata_registry: Registry,
+    port: u16,
+) {
     // todo: containers don't work with localhost.
     let addr = ([127, 0, 0, 1], port).into();
 
     tokio::spawn(async move {
-        let server = Server::bind(&addr).serve(MakeMetricService::new(registry));
+        let server =
+            Server::bind(&addr).serve(MakeMetricService::new(metrics_registry, metadata_registry));
         info!("Metrics server on http://{}/metrics", server.local_addr());
+        info!("Metadata server on http://{}/metadata", server.local_addr());
         println!("Metrics server on http://{}/metrics", server.local_addr());
         // run the server forever
         if let Err(e) = server.await {
@@ -33,16 +39,22 @@ pub(crate) fn run_metrics_server(registry: Registry, port: u16) {
     });
 }
 
-pub(crate) struct MetricService {
-    reg: Arc<Mutex<Registry>>,
-}
-
 type SharedRegistry = Arc<Mutex<Registry>>;
 
+pub(crate) struct MetricService {
+    metrics_registry: SharedRegistry,
+    metadata_registry: SharedRegistry,
+}
+
 impl MetricService {
-    fn get_reg(&mut self) -> SharedRegistry {
-        Arc::clone(&self.reg)
+    fn get_metrics_registry(&mut self) -> SharedRegistry {
+        Arc::clone(&self.metrics_registry)
     }
+
+    fn get_metadata_registry(&mut self) -> SharedRegistry {
+        Arc::clone(&self.metadata_registry)
+    }
+
     fn respond_with_metrics(&mut self) -> Result<Response<String>> {
         let mut response: Response<String> = Response::default();
 
@@ -53,7 +65,30 @@ impl MetricService {
                 .map_err(|_| NetworkError::NetworkMetricError)?,
         );
 
-        let reg = self.get_reg();
+        let reg = self.get_metrics_registry();
+        let reg = reg.lock().map_err(|_| NetworkError::NetworkMetricError)?;
+        encode(&mut response.body_mut(), &reg).map_err(|err| {
+            error!("Failed to encode the metrics Registry {err:?}");
+            NetworkError::NetworkMetricError
+        })?;
+
+        *response.status_mut() = StatusCode::OK;
+
+        Ok(response)
+    }
+
+    // send a json response of the metadata key, value
+    fn respond_with_metadata(&mut self) -> Result<Response<String>> {
+        let mut response: Response<String> = Response::default();
+
+        response.headers_mut().insert(
+            hyper::header::CONTENT_TYPE,
+            METRICS_CONTENT_TYPE
+                .try_into()
+                .map_err(|_| NetworkError::NetworkMetricError)?,
+        );
+
+        let reg = self.get_metadata_registry();
         let reg = reg.lock().map_err(|_| NetworkError::NetworkMetricError)?;
         encode(&mut response.body_mut(), &reg).map_err(|err| {
             error!("Failed to encode the metrics Registry {err:?}");
@@ -98,6 +133,11 @@ impl Service<Request<Body>> for MetricService {
                 Ok(resp) => resp,
                 Err(_) => self.respond_with_500_server_error(),
             }
+        } else if req_method == Method::GET && req_path == "/metadata" {
+            match self.respond_with_metadata() {
+                Ok(resp) => resp,
+                Err(_) => self.respond_with_500_server_error(),
+            }
         } else {
             self.respond_with_404_not_found()
         };
@@ -106,13 +146,18 @@ impl Service<Request<Body>> for MetricService {
 }
 
 pub(crate) struct MakeMetricService {
-    reg: SharedRegistry,
+    metrics_registry: SharedRegistry,
+    metadata_registry: SharedRegistry,
 }
 
 impl MakeMetricService {
-    pub(crate) fn new(registry: Registry) -> MakeMetricService {
+    pub(crate) fn new(
+        metrics_registry: Registry,
+        metadata_registry: Registry,
+    ) -> MakeMetricService {
         MakeMetricService {
-            reg: Arc::new(Mutex::new(registry)),
+            metrics_registry: Arc::new(Mutex::new(metrics_registry)),
+            metadata_registry: Arc::new(Mutex::new(metadata_registry)),
         }
     }
 }
@@ -127,8 +172,14 @@ impl<T> Service<T> for MakeMetricService {
     }
 
     fn call(&mut self, _: T) -> Self::Future {
-        let reg = Arc::clone(&self.reg);
-        let fut = async move { Ok(MetricService { reg }) };
+        let metrics_registry = Arc::clone(&self.metrics_registry);
+        let metadata_registry = Arc::clone(&self.metadata_registry);
+        let fut = async move {
+            Ok(MetricService {
+                metrics_registry,
+                metadata_registry,
+            })
+        };
         Box::pin(fut)
     }
 }

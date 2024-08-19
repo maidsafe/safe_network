@@ -24,7 +24,8 @@ mod upnp;
 const UPDATE_INTERVAL: Duration = Duration::from_secs(15);
 const TO_MB: u64 = 1_000_000;
 
-pub(crate) struct NetworkMetrics {
+/// The shared recorders that are used to record metrics.
+pub(crate) struct NetworkMetricsRecorder {
     // Records libp2p related metrics
     // Must directly call self.libp2p_metrics.record(libp2p_event) with Recorder trait in scope. But since we have
     // re-implemented the trait for the wrapper struct, we can instead call self.record(libp2p_event)
@@ -47,7 +48,7 @@ pub(crate) struct NetworkMetrics {
     process_cpu_usage_percentage: Gauge,
 }
 
-impl NetworkMetrics {
+impl NetworkMetricsRecorder {
     pub fn new(registry: &mut Registry) -> Self {
         let libp2p_metrics = Libp2pMetrics::new(registry);
         let sub_registry = registry.sub_registry_with_prefix("sn_networking");
@@ -195,25 +196,25 @@ impl NetworkMetrics {
 }
 
 /// Impl the Recorder traits again for our struct.
-impl Recorder<libp2p::kad::Event> for NetworkMetrics {
+impl Recorder<libp2p::kad::Event> for NetworkMetricsRecorder {
     fn record(&self, event: &libp2p::kad::Event) {
         self.libp2p_metrics.record(event)
     }
 }
 
-impl Recorder<libp2p::relay::Event> for NetworkMetrics {
+impl Recorder<libp2p::relay::Event> for NetworkMetricsRecorder {
     fn record(&self, event: &libp2p::relay::Event) {
         self.libp2p_metrics.record(event)
     }
 }
 
-impl Recorder<libp2p::identify::Event> for NetworkMetrics {
+impl Recorder<libp2p::identify::Event> for NetworkMetricsRecorder {
     fn record(&self, event: &libp2p::identify::Event) {
         self.libp2p_metrics.record(event)
     }
 }
 
-impl<T> Recorder<libp2p::swarm::SwarmEvent<T>> for NetworkMetrics {
+impl<T> Recorder<libp2p::swarm::SwarmEvent<T>> for NetworkMetricsRecorder {
     fn record(&self, event: &libp2p::swarm::SwarmEvent<T>) {
         self.libp2p_metrics.record(event);
     }
