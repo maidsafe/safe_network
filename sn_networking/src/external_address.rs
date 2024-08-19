@@ -26,11 +26,11 @@ pub struct ExternalAddressManager {
     current_ip_address: Option<IpAddr>,
 
     /// The maximum number of reports before an candidate address is confirmed
-    pub max_reports_before_confirmation: u8,
+    max_reports_before_confirmation: u8,
     /// The maximum number of candidates to store
-    pub max_candidates: usize,
-
-    pub peer_id: PeerId,
+    max_candidates: usize,
+    /// The peer id of the node
+    peer_id: PeerId,
 }
 
 impl ExternalAddressManager {

@@ -523,12 +523,13 @@ impl SwarmDriver {
             SwarmEvent::NewExternalAddrCandidate { address } => {
                 event_string = "NewExternalAddrCandidate";
 
-                if !self.swarm.external_addresses().any(|addr| addr == &address)
-                    && !self.is_client
+                if !self.is_client
                     // If we are behind a home network, then our IP is returned here. We should be only having
                     // relay server as our external address
                     // todo: can our relay address be reported here? If so, maybe we should add them.
                     && !self.is_behind_home_network
+                    // When running a local network, we just need the local listen address to work.
+                    && !self.local
                 {
                     self.external_address_manager
                         .add_external_address_candidate(address, &mut self.swarm);
