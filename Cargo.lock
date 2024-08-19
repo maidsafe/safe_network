@@ -3748,7 +3748,6 @@ version = "0.1.0"
 dependencies = [
  "bip39",
  "bytes",
- "eyre",
  "libp2p",
  "rand 0.8.5",
  "rmp-serde",
