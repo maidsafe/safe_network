@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724064265300,
+  "lastUpdate": 1724064385263,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "c96cc5b174c6ef88f6593bb480c33e4f6fddf007",
-          "message": "feat(resources): update bump script to strip suffix-version if no changes found",
-          "timestamp": "2024-04-11T12:44:36+09:00",
-          "tree_id": "8f9fde5c2cd9d1f424c50fb8c41241ee5749c642",
-          "url": "https://github.com/maidsafe/safe_network/commit/c96cc5b174c6ef88f6593bb480c33e4f6fddf007"
-        },
-        "date": 1712807890361,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "37ab87b2a410bab7b45e8a5562bc7c7605f7e5e6",
           "message": "ci: remove schedule version bumper from workflow",
           "timestamp": "2024-04-11T13:57:05+09:00",
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/36bcbebab1e22559355de65d89cf35563aa6f173"
         },
         "date": 1723740858379,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 123,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d95cc9bf80646da484a887e329e6860f3cf676df",
+          "message": "Merge pull request #2041 from mazzi/feat_new_layout\n\nfeat(launchpad): new layout sections and features",
+          "timestamp": "2024-08-19T09:47:41Z",
+          "tree_id": "f231275c58acc8f1063f62ababa41afc38680b14",
+          "url": "https://github.com/maidsafe/safe_network/commit/d95cc9bf80646da484a887e329e6860f3cf676df"
+        },
+        "date": 1724064384476,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
