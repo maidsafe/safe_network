@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724078939547,
+  "lastUpdate": 1724078941844,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "8422ebd945d75df3b379d230468ed8c6856806f3",
-          "message": "fix: orphan test",
-          "timestamp": "2024-04-11T09:59:38Z",
-          "tree_id": "6b7b499f1ae73e9088fa726eb7c0428b0ede09c7",
-          "url": "https://github.com/maidsafe/safe_network/commit/8422ebd945d75df3b379d230468ed8c6856806f3"
-        },
-        "date": 1712833073634,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7794,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34865,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 23646,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f809a8e5d3dd9369a00e3c99c822e07712af3f6b",
+          "message": "Merge pull request #2051 from RolandSherwin/metrics_store_cost\n\nfeat(metrics): expose values from QuotingMetrics",
+          "timestamp": "2024-08-19T13:57:40Z",
+          "tree_id": "1ffc5ade8ef498c29647cfcede798c717a1930a9",
+          "url": "https://github.com/maidsafe/safe_network/commit/f809a8e5d3dd9369a00e3c99c822e07712af3f6b"
+        },
+        "date": 1724078941067,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4543,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 23346,
             "unit": "ms"
           },
           {
