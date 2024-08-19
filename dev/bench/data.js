@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724065017352,
+  "lastUpdate": 1724071460967,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "450cc4afc6950e4ef2a71a03ea11a3c5a524e258",
-          "message": "ci: simplify version bump dispatch",
-          "timestamp": "2024-04-11T14:15:40+09:00",
-          "tree_id": "b3d66abbb13021013f6852c66b91f2c501177f1a",
-          "url": "https://github.com/maidsafe/safe_network/commit/450cc4afc6950e4ef2a71a03ea11a3c5a524e258"
-        },
-        "date": 1712813237992,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2255868532021843,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6649518297583041,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.42160680036507,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.201731364892396,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "03c7fbb66598806afd8abf6fe019986229457812",
+          "message": "Merge pull request #2047 from jacderida/rc-2024.08.1\n\nfix: save node registry on every upgrade",
+          "timestamp": "2024-08-19T13:31:09+01:00",
+          "tree_id": "4c78ddaecec8b2793fc7acbd7775f51edf6f52d1",
+          "url": "https://github.com/maidsafe/safe_network/commit/03c7fbb66598806afd8abf6fe019986229457812"
+        },
+        "date": 1724071454082,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2385525036938871,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6626658563328094,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.54776334682089,
             "unit": "MiB/s"
           }
         ]
