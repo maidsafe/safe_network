@@ -263,7 +263,9 @@ pub async fn remove(
 }
 
 pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
-    print_banner("Reset Safenode Services");
+    if verbosity != VerbosityLevel::Minimal {
+        print_banner("Reset Safenode Services");
+    }
     info!("Resetting all safenode services, with force={force}");
 
     if !force {

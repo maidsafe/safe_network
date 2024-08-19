@@ -6,20 +6,28 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{popup::manage_nodes::GB_PER_NODE, utils::centered_rect_fixed, Component, Frame};
+use super::footer::NodesToStart;
+use super::header::SelectedMenuItem;
+use super::{
+    footer::Footer, header::Header, popup::manage_nodes::GB_PER_NODE, utils::centered_rect_fixed,
+    Component, Frame,
+};
+use crate::action::OptionsActions;
+use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::{
-    action::{Action, HomeActions},
+    action::{Action, StatusActions},
     config::Config,
     mode::{InputMode, Scene},
     node_stats::NodeStats,
     style::{
-        clear_area, COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE,
-        VIVID_SKY_BLUE,
+        clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE,
     },
 };
 use color_eyre::eyre::{OptionExt, Result};
+use crossterm::event::KeyEvent;
+use ratatui::text::Span;
 use ratatui::{prelude::*, widgets::*};
-use sn_node_manager::{config::get_node_registry_path, VerbosityLevel};
+use sn_node_manager::config::get_node_registry_path;
 use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{
     control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
@@ -31,17 +39,19 @@ use std::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 
+use super::super::node_mgmt::{maintain_n_running_nodes, reset_nodes, stop_nodes};
+
 const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 /// If nat detection fails for more than 3 times, we don't want to waste time running during every node start.
 const MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION: usize = 3;
 
-pub struct Home {
+#[derive(Clone)]
+pub struct Status {
     /// Whether the component is active right now, capturing keystrokes + drawing things.
     active: bool,
     action_sender: Option<UnboundedSender<Action>>,
     config: Config,
     // state
-    launchpad_version_str: String,
     node_services: Vec<NodeServiceData>,
     is_nat_status_determined: bool,
     error_while_running_nat_detection: usize,
@@ -57,28 +67,30 @@ pub struct Home {
     peers_args: PeersArgs,
     // If path is provided, we don't fetch the binary from the network
     safenode_path: Option<PathBuf>,
+    // Path where the node data is stored
+    data_dir_path: PathBuf,
 }
 
+#[derive(Clone)]
 pub enum LockRegistryState {
     StartingNodes,
     StoppingNodes,
     ResettingNodes,
 }
 
-impl Home {
+impl Status {
     pub async fn new(
         allocated_disk_space: usize,
         discord_username: &str,
         peers_args: PeersArgs,
         safenode_path: Option<PathBuf>,
+        data_dir_path: PathBuf,
     ) -> Result<Self> {
-        let version_str = env!("CARGO_PKG_VERSION");
-        let mut home = Self {
+        let mut status = Self {
             peers_args,
             action_sender: Default::default(),
             config: Default::default(),
             active: true,
-            launchpad_version_str: version_str.to_string(),
             node_services: Default::default(),
             is_nat_status_determined: false,
             error_while_running_nat_detection: 0,
@@ -89,6 +101,7 @@ impl Home {
             lock_registry: None,
             discord_username: discord_username.to_string(),
             safenode_path,
+            data_dir_path,
         };
 
         let now = Instant::now();
@@ -103,13 +116,13 @@ impl Home {
         .await?;
         node_registry.save()?;
         debug!("Node registry states refreshed in {:?}", now.elapsed());
-        home.load_node_registry_and_update_states()?;
+        status.load_node_registry_and_update_states()?;
 
-        Ok(home)
+        Ok(status)
     }
 
     /// Tries to trigger the update of node stats if the last update was more than `NODE_STAT_UPDATE_INTERVAL` ago.
-    /// The result is sent via the HomeActions::NodesStatsObtained action.
+    /// The result is sent via the StatusActions::NodesStatsObtained action.
     fn try_update_node_stats(&mut self, force_update: bool) -> Result<()> {
         if self.node_stats_last_update.elapsed() > NODE_STAT_UPDATE_INTERVAL || force_update {
             self.node_stats_last_update = Instant::now();
@@ -208,7 +221,7 @@ impl Home {
     }
 }
 
-impl Component for Home {
+impl Component for Status {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.action_sender = Some(tx);
 
@@ -226,29 +239,30 @@ impl Component for Home {
     #[allow(clippy::comparison_chain)]
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
+            Action::Tick => {
+                self.try_update_node_stats(false)?;
+            }
             Action::SwitchScene(scene) => match scene {
-                Scene::Home => {
+                Scene::Status => {
                     self.active = true;
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
                 }
-                Scene::BetaProgramme
-                | Scene::ManageNodes
-                | Scene::HelpPopUp
-                | Scene::ResetPopUp => self.active = true,
+                Scene::ManageNodesPopUp => self.active = true,
                 _ => self.active = false,
             },
             Action::StoreNodesToStart(count) => {
                 self.nodes_to_start = count;
                 if self.nodes_to_start == 0 {
                     info!("Nodes to start set to 0. Sending command to stop all nodes.");
-                    return Ok(Some(Action::HomeActions(HomeActions::StopNodes)));
+                    return Ok(Some(Action::StatusActions(StatusActions::StopNodes)));
                 } else {
                     info!("Nodes to start set to: {count}. Sending command to start nodes");
-                    return Ok(Some(Action::HomeActions(HomeActions::StartNodes)));
+                    return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
                 }
             }
             Action::StoreDiscordUserName(username) => {
+                debug!("Storing discord username: {username:?}");
                 let has_changed = self.discord_username != username;
                 let we_have_nodes = !self.node_services.is_empty();
 
@@ -261,44 +275,97 @@ impl Component for Home {
                     reset_nodes(action_sender, true);
                 }
             }
-            Action::HomeActions(HomeActions::StartNodes) => {
-                if self.lock_registry.is_some() {
-                    error!("Registry is locked. Cannot start node now.");
-                    return Ok(None);
-                }
-
-                if self.nodes_to_start == 0 {
-                    info!("Nodes to start not set. Ask for input.");
-                    return Ok(Some(Action::HomeActions(HomeActions::TriggerManageNodes)));
-                }
-
-                self.lock_registry = Some(LockRegistryState::StartingNodes);
+            Action::StoreStorageDrive(ref drive_mountpoint, ref _drive_name) => {
                 let action_sender = self.get_actions_sender()?;
-                info!("Running maintain node count: {:?}", self.nodes_to_start);
-
-                maintain_n_running_nodes(
-                    self.nodes_to_start as u16,
-                    self.discord_username.clone(),
-                    self.peers_args.clone(),
-                    self.should_we_run_nat_detection(),
-                    self.safenode_path.clone(),
-                    action_sender,
-                );
+                reset_nodes(action_sender, false);
+                self.data_dir_path =
+                    get_launchpad_nodes_data_dir_path(&drive_mountpoint.to_path_buf(), false)?;
             }
-            Action::HomeActions(HomeActions::StopNodes) => {
-                if self.lock_registry.is_some() {
-                    error!("Registry is locked. Cannot stop node now.");
-                    return Ok(None);
+            Action::StatusActions(status_action) => {
+                match status_action {
+                    StatusActions::NodesStatsObtained(stats) => {
+                        self.node_stats = stats;
+                    }
+                    StatusActions::StartNodesCompleted | StatusActions::StopNodesCompleted => {
+                        self.lock_registry = None;
+                        self.load_node_registry_and_update_states()?;
+                    }
+                    StatusActions::ResetNodesCompleted { trigger_start_node } => {
+                        self.lock_registry = None;
+                        self.load_node_registry_and_update_states()?;
+
+                        if trigger_start_node {
+                            debug!("Reset nodes completed. Triggering start nodes.");
+                            return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
+                        }
+                        debug!("Reset nodes completed");
+                    }
+                    StatusActions::SuccessfullyDetectedNatStatus => {
+                        debug!("Successfully detected nat status, is_nat_status_determined set to true");
+                        self.is_nat_status_determined = true;
+                    }
+                    StatusActions::ErrorWhileRunningNatDetection => {
+                        self.error_while_running_nat_detection += 1;
+                        debug!(
+                            "Error while running nat detection. Error count: {}",
+                            self.error_while_running_nat_detection
+                        );
+                    }
+                    StatusActions::TriggerManageNodes => {
+                        return Ok(Some(Action::SwitchScene(Scene::ManageNodesPopUp)));
+                    }
+                    StatusActions::PreviousTableItem => {
+                        self.select_previous_table_item();
+                    }
+                    StatusActions::NextTableItem => {
+                        self.select_next_table_item();
+                    }
+                    StatusActions::StartNodes => {
+                        debug!("Got action to start nodes");
+                        if self.lock_registry.is_some() {
+                            error!("Registry is locked. Cannot start node now.");
+                            return Ok(None);
+                        }
+
+                        if self.nodes_to_start == 0 {
+                            info!("Nodes to start not set. Ask for input.");
+                            return Ok(Some(Action::StatusActions(
+                                StatusActions::TriggerManageNodes,
+                            )));
+                        }
+
+                        self.lock_registry = Some(LockRegistryState::StartingNodes);
+                        let action_sender = self.get_actions_sender()?;
+                        info!("Running maintain node count: {:?}", self.nodes_to_start);
+
+                        maintain_n_running_nodes(
+                            self.nodes_to_start as u16,
+                            self.discord_username.clone(),
+                            self.peers_args.clone(),
+                            self.should_we_run_nat_detection(),
+                            self.safenode_path.clone(),
+                            Some(self.data_dir_path.clone()),
+                            action_sender,
+                        );
+                    }
+                    StatusActions::StopNodes => {
+                        debug!("Got action to stop nodes");
+                        if self.lock_registry.is_some() {
+                            error!("Registry is locked. Cannot stop node now.");
+                            return Ok(None);
+                        }
+
+                        let running_nodes = self.get_running_nodes();
+                        self.lock_registry = Some(LockRegistryState::StoppingNodes);
+                        let action_sender = self.get_actions_sender()?;
+                        info!("Stopping node service: {running_nodes:?}");
+
+                        stop_nodes(running_nodes, action_sender);
+                    }
                 }
-
-                let running_nodes = self.get_running_nodes();
-                self.lock_registry = Some(LockRegistryState::StoppingNodes);
-                let action_sender = self.get_actions_sender()?;
-                info!("Stopping node service: {running_nodes:?}");
-
-                stop_nodes(running_nodes, action_sender);
             }
-            Action::HomeActions(HomeActions::ResetNodes) => {
+            Action::OptionsActions(OptionsActions::ResetNodes) => {
+                debug!("Got action to reset nodes");
                 if self.lock_registry.is_some() {
                     error!("Registry is locked. Cannot reset nodes now.");
                     return Ok(None);
@@ -308,58 +375,6 @@ impl Component for Home {
                 let action_sender = self.get_actions_sender()?;
                 info!("Got action to reset nodes");
                 reset_nodes(action_sender, false);
-            }
-
-            Action::Tick => {
-                self.try_update_node_stats(false)?;
-            }
-            Action::HomeActions(HomeActions::NodesStatsObtained(stats)) => {
-                self.node_stats = stats;
-            }
-            Action::HomeActions(HomeActions::StartNodesCompleted)
-            | Action::HomeActions(HomeActions::StopNodesCompleted) => {
-                self.lock_registry = None;
-                self.load_node_registry_and_update_states()?;
-            }
-            Action::HomeActions(HomeActions::ResetNodesCompleted { trigger_start_node }) => {
-                self.lock_registry = None;
-                self.load_node_registry_and_update_states()?;
-
-                if trigger_start_node {
-                    debug!("Reset nodes completed. Triggering start nodes.");
-                    return Ok(Some(Action::HomeActions(HomeActions::StartNodes)));
-                }
-                debug!("Reset nodes completed");
-            }
-            Action::HomeActions(HomeActions::SuccessfullyDetectedNatStatus) => {
-                debug!("Successfully detected nat status, is_nat_status_determined set to true");
-                self.is_nat_status_determined = true;
-            }
-            Action::HomeActions(HomeActions::ErrorWhileRunningNatDetection) => {
-                self.error_while_running_nat_detection += 1;
-                debug!(
-                    "Error while running nat detection. Error count: {}",
-                    self.error_while_running_nat_detection
-                );
-            }
-            // todo: should triggers go here? Make distinction between a component + a scene and how they interact.
-            Action::HomeActions(HomeActions::TriggerBetaProgramme) => {
-                return Ok(Some(Action::SwitchScene(Scene::BetaProgramme)));
-            }
-            Action::HomeActions(HomeActions::TriggerManageNodes) => {
-                return Ok(Some(Action::SwitchScene(Scene::ManageNodes)));
-            }
-            Action::HomeActions(HomeActions::TriggerHelp) => {
-                return Ok(Some(Action::SwitchScene(Scene::HelpPopUp)));
-            }
-            Action::HomeActions(HomeActions::TriggerResetNodesPopUp) => {
-                return Ok(Some(Action::SwitchScene(Scene::ResetPopUp)));
-            }
-            Action::HomeActions(HomeActions::PreviousTableItem) => {
-                self.select_previous_table_item();
-            }
-            Action::HomeActions(HomeActions::NextTableItem) => {
-                self.select_next_table_item();
             }
             _ => {}
         }
@@ -371,67 +386,55 @@ impl Component for Home {
             return Ok(());
         }
 
-        let layer_zero = Layout::new(
+        let layout = Layout::new(
             Direction::Vertical,
             [
-                // header
-                Constraint::Max(1),
-                // device status
+                // Header
+                Constraint::Length(1),
+                // Device status
                 Constraint::Max(6),
-                // node status
+                // Node status
                 Constraint::Min(3),
-                // footer
-                Constraint::Max(4),
+                // Footer
+                Constraint::Length(3),
             ],
         )
         .split(area);
 
-        // ==== Header ====
+        // ==== Header =====
 
-        let layer_one_header = Layout::new(
-            Direction::Horizontal,
-            [Constraint::Percentage(100), Constraint::Percentage(0)], // We leave space for future tabs
-        )
-        .split(layer_zero[0]);
-
-        f.render_widget(
-            Paragraph::new(format!(
-                " Autonomi Node Launchpad (v{})",
-                self.launchpad_version_str
-            ))
-            .alignment(Alignment::Left)
-            .fg(LIGHT_PERIWINKLE),
-            layer_one_header[0],
-        );
+        let header = Header::new();
+        f.render_stateful_widget(header, layout[0], &mut SelectedMenuItem::Status);
 
         // ==== Device Status =====
 
-        if self.node_services.is_empty() {
+        if self.discord_username.is_empty() {
             let line1 = Line::from(vec![Span::styled(
-                "No Nodes on this device",
-                Style::default().fg(GHOST_WHITE),
+                "Add this device to the Beta Rewards Program",
+                Style::default().fg(VERY_LIGHT_AZURE),
             )]);
             let line2 = Line::from(vec![
-                Span::styled("Press ", Style::default().fg(GHOST_WHITE)),
-                Span::styled("Ctrl+G", Style::default().fg(EUCALYPTUS)),
+                Span::styled("Press ", Style::default().fg(VERY_LIGHT_AZURE)),
+                Span::styled("[Ctrl+B]", Style::default().fg(GHOST_WHITE)),
+                Span::styled(" to add your ", Style::default().fg(VERY_LIGHT_AZURE)),
                 Span::styled(
-                    " to Add Nodes and get started.",
-                    Style::default().fg(GHOST_WHITE),
+                    "Discord Username",
+                    Style::default().fg(VERY_LIGHT_AZURE).bold(),
                 ),
             ]);
             f.render_widget(
-                Paragraph::new(vec![line1, line2]).block(
+                Paragraph::new(vec![Line::raw(""), Line::raw(""), line1, line2]).block(
                     Block::default()
                         .title(" Device Status ")
                         .title_style(Style::new().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
-                        .padding(Padding::uniform(1))
+                        .padding(Padding::horizontal(1))
                         .border_style(Style::new().fg(VERY_LIGHT_AZURE)),
                 ),
-                layer_zero[1],
+                layout[1],
             );
         } else {
-            // display stats as a table
+            // Device Status as a table
 
             let storage_allocated_row = Row::new(vec![
                 Cell::new("Storage Allocated".to_string()).fg(GHOST_WHITE),
@@ -451,23 +454,34 @@ impl Component for Home {
                 Cell::new(memory_use_val).fg(GHOST_WHITE),
             ]);
 
-            // Combine "Total Nanos Earned" and "Discord Username" into a single row
-            let mut username_color = GHOST_WHITE;
+            // Combine "Nanos Earned" and "Discord Username" into a single row
+            let discord_username_title = Span::styled(
+                "Discord Username: ".to_string(),
+                Style::default().fg(VIVID_SKY_BLUE),
+            );
+
+            let discord_username = if !self.discord_username.is_empty() {
+                Span::styled(
+                    self.discord_username.clone(),
+                    Style::default().fg(VIVID_SKY_BLUE),
+                )
+                .bold()
+            } else {
+                Span::styled(
+                    "[Ctrl+B] to set".to_string(),
+                    Style::default().fg(GHOST_WHITE),
+                )
+            };
+
             let total_nanos_earned_and_discord = Row::new(vec![
-                Cell::new("Total Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
+                Cell::new("Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
                 Cell::new(self.node_stats.forwarded_rewards.to_string())
                     .fg(VIVID_SKY_BLUE)
                     .bold(),
-                Cell::new("".to_string()),
-                Cell::new("Discord Username:".to_string()).fg(VIVID_SKY_BLUE),
-                Cell::new(if self.discord_username.is_empty() {
-                    "[Ctrl+B] to set".to_string()
-                } else {
-                    username_color = VIVID_SKY_BLUE;
-                    self.discord_username.clone()
-                })
-                .fg(username_color)
-                .bold(),
+                Cell::new(
+                    Line::from(vec![discord_username_title, discord_username])
+                        .alignment(Alignment::Right),
+                ),
             ]);
 
             let stats_rows = vec![
@@ -479,9 +493,7 @@ impl Component for Home {
             let column_constraints = [
                 Constraint::Percentage(25),
                 Constraint::Percentage(5),
-                Constraint::Percentage(35), // empty cell to avoid alignment left <> right
-                Constraint::Percentage(20),
-                Constraint::Percentage(15),
+                Constraint::Percentage(70),
             ];
             let stats_table = Table::new(stats_rows, stats_width)
                 .block(
@@ -493,7 +505,7 @@ impl Component for Home {
                         .style(Style::default().fg(VERY_LIGHT_AZURE)),
                 )
                 .widths(column_constraints);
-            f.render_widget(stats_table, layer_zero[1]);
+            f.render_widget(stats_table, layout[1]);
         };
 
         // ==== Node Status =====
@@ -521,18 +533,34 @@ impl Component for Home {
             .collect();
 
         if node_rows.is_empty() {
+            let line1 = Line::from(vec![
+                Span::styled("Press ", Style::default().fg(LIGHT_PERIWINKLE)),
+                Span::styled("[Ctrl+G] ", Style::default().fg(GHOST_WHITE)),
+                Span::styled("to Add and ", Style::default().fg(LIGHT_PERIWINKLE)),
+                Span::styled("Start Nodes ", Style::default().fg(GHOST_WHITE)),
+                Span::styled("on this device", Style::default().fg(LIGHT_PERIWINKLE)),
+            ]);
+
+            let line2 = Line::from(vec![Span::styled(
+                "Each node will use 5GB of storage and a small amount of memory, \
+                CPU, and Network bandwidth. Most computers can run many nodes at once, \
+                but we recommend you add them gradually",
+                Style::default().fg(LIGHT_PERIWINKLE),
+            )]);
+
             f.render_widget(
-                Paragraph::new("Nodes will appear here when added")
+                Paragraph::new(vec![Line::raw(""), line1, Line::raw(""), line2])
+                    .wrap(Wrap { trim: false })
                     .fg(LIGHT_PERIWINKLE)
                     .block(
                         Block::default()
-                            .title(format!(" Nodes ({}) ", self.nodes_to_start))
+                            .title(" Nodes (0) ".to_string())
                             .title_style(Style::default().fg(LIGHT_PERIWINKLE))
                             .borders(Borders::ALL)
-                            .border_style(style::Style::default().fg(COOL_GREY))
-                            .padding(Padding::uniform(1)),
+                            .border_style(style::Style::default().fg(EUCALYPTUS))
+                            .padding(Padding::horizontal(1)),
                     ),
-                layer_zero[2],
+                layout[2],
             );
         } else {
             let node_widths = [
@@ -541,7 +569,7 @@ impl Component for Home {
                 Constraint::Max(10),
                 Constraint::Max(10),
             ];
-            let table = Table::new(node_rows, node_widths)
+            let table = Table::new(node_rows.clone(), node_widths)
                 .column_spacing(2)
                 .highlight_style(Style::new().reversed())
                 .block(
@@ -553,8 +581,18 @@ impl Component for Home {
                         .border_style(Style::default().fg(EUCALYPTUS)),
                 )
                 .highlight_symbol("*");
-            f.render_stateful_widget(table, layer_zero[2], &mut self.node_table_state);
+            f.render_stateful_widget(table, layout[2], &mut self.node_table_state);
         }
+
+        // ==== Footer =====
+
+        let footer = Footer::default();
+        let footer_state = if !node_rows.is_empty() {
+            &mut NodesToStart::Configured
+        } else {
+            &mut NodesToStart::NotConfigured
+        };
+        f.render_stateful_widget(footer, layout[3], footer_state);
 
         // ===== Popup =====
 
@@ -562,22 +600,31 @@ impl Component for Home {
             let popup_area = centered_rect_fixed(50, 12, area);
             clear_area(f, popup_area);
 
-            let popup_border = Paragraph::new("Manage Nodes").block(
+            let popup_border = Paragraph::new("").block(
                 Block::default()
                     .borders(Borders::ALL)
+                    .title(" Manage Nodes ")
+                    .title_style(Style::new().fg(VIVID_SKY_BLUE))
+                    .padding(Padding::uniform(2))
                     .border_style(Style::new().fg(GHOST_WHITE)),
             );
 
             let popup_text = match registry_state {
                 LockRegistryState::StartingNodes => {
                     if self.should_we_run_nat_detection() {
-                        "Starting nodes...\nPlease wait, performing initial NAT detection\nThis may take a couple minutes."
+                        vec![
+                            Line::raw("Starting nodes..."),
+                            Line::raw(""),
+                            Line::raw(""),
+                            Line::raw("Please wait, performing initial NAT detection"),
+                            Line::raw("This may take a couple minutes."),
+                        ]
                     } else {
-                        "Starting nodes..."
+                        vec![Line::raw("Starting nodes...")]
                     }
                 }
-                LockRegistryState::StoppingNodes => "Stopping nodes...",
-                LockRegistryState::ResettingNodes => "Resetting nodes...",
+                LockRegistryState::StoppingNodes => vec![Line::raw("Stopping nodes...")],
+                LockRegistryState::ResettingNodes => vec![Line::raw("Resetting nodes...")],
             };
             let centred_area = Layout::new(
                 Direction::Vertical,
@@ -594,6 +641,8 @@ impl Component for Home {
             )
             .split(popup_area)[2];
             let text = Paragraph::new(popup_text)
+                .block(Block::default().padding(Padding::horizontal(2)))
+                .wrap(Wrap { trim: false })
                 .alignment(Alignment::Center)
                 .fg(EUCALYPTUS);
             f.render_widget(text, centred_area);
@@ -603,111 +652,9 @@ impl Component for Home {
 
         Ok(())
     }
-}
 
-fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
-    tokio::task::spawn_local(async move {
-        if let Err(err) =
-            sn_node_manager::cmd::node::stop(vec![], services, VerbosityLevel::Minimal).await
-        {
-            error!("Error while stopping services {err:?}");
-        } else {
-            info!("Successfully stopped services");
-        }
-        if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::StopNodesCompleted)) {
-            error!("Error while sending action: {err:?}");
-        }
-    });
-}
-
-async fn run_nat_detection_process() -> Result<()> {
-    sn_node_manager::cmd::nat_detection::run_nat_detection(
-        None,
-        true,
-        None,
-        None,
-        Some("0.1.0".to_string()),
-        VerbosityLevel::Minimal,
-    )
-    .await?;
-    Ok(())
-}
-
-fn maintain_n_running_nodes(
-    count: u16,
-    owner: String,
-    peers_args: PeersArgs,
-    run_nat_detection: bool,
-    safenode_path: Option<PathBuf>,
-    action_sender: UnboundedSender<Action>,
-) {
-    tokio::task::spawn_local(async move {
-        if run_nat_detection {
-            if let Err(err) = run_nat_detection_process().await {
-                error!("Error while running nat detection {err:?}. Registering the error.");
-                if let Err(err) = action_sender.send(Action::HomeActions(
-                    HomeActions::ErrorWhileRunningNatDetection,
-                )) {
-                    error!("Error while sending action: {err:?}");
-                }
-            } else {
-                info!("Successfully ran nat detection.");
-            }
-        }
-
-        let owner = if owner.is_empty() { None } else { Some(owner) };
-        if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
-            false,
-            true,
-            120,
-            count,
-            None,
-            true,
-            None,
-            false,
-            false,
-            None,
-            None,
-            None,
-            None,
-            owner,
-            peers_args,
-            None,
-            None,
-            safenode_path,
-            None,
-            false,
-            None,
-            None,
-            VerbosityLevel::Minimal,
-            None,
-        )
-        .await
-        {
-            error!("Error while maintaining {count:?} running nodes {err:?}");
-        } else {
-            info!("Maintained {count} running nodes successfully.");
-        }
-        if let Err(err) = action_sender.send(Action::HomeActions(HomeActions::StartNodesCompleted))
-        {
-            error!("Error while sending action: {err:?}");
-        }
-    });
-}
-
-fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_reset: bool) {
-    tokio::task::spawn_local(async move {
-        if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
-            error!("Error while resetting services {err:?}");
-        } else {
-            info!("Successfully reset services");
-        }
-        if let Err(err) =
-            action_sender.send(Action::HomeActions(HomeActions::ResetNodesCompleted {
-                trigger_start_node: start_nodes_after_reset,
-            }))
-        {
-            error!("Error while sending action: {err:?}");
-        }
-    });
+    fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
+        debug!("Key received in Status: {:?}", key);
+        Ok(vec![])
+    }
 }

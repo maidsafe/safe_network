@@ -6,11 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::{eyre::ContextCompat, Result};
+use std::path::PathBuf;
+
+use crate::action::OptionsActions;
+use crate::system::get_available_space_b;
+use color_eyre::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
-use std::path::PathBuf;
-use sysinfo::Disks;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
 use crate::{
@@ -30,19 +32,21 @@ pub struct ManageNodes {
     /// Whether the component is active right now, capturing keystrokes + drawing things.
     active: bool,
     available_disk_space_gb: usize,
+    storage_mountpoint: PathBuf,
     nodes_to_start_input: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
 }
 
 impl ManageNodes {
-    pub fn new(nodes_to_start: usize) -> Result<Self> {
+    pub fn new(nodes_to_start: usize, storage_mountpoint: PathBuf) -> Result<Self> {
         let nodes_to_start = std::cmp::min(nodes_to_start, MAX_NODE_COUNT);
         let new = Self {
             active: false,
-            available_disk_space_gb: Self::get_available_space_b()? / GB,
+            available_disk_space_gb: get_available_space_b(&storage_mountpoint)? / GB,
             nodes_to_start_input: Input::default().with_value(nodes_to_start.to_string()),
             old_value: Default::default(),
+            storage_mountpoint: storage_mountpoint.clone(),
         };
         Ok(new)
     }
@@ -51,41 +55,10 @@ impl ManageNodes {
         self.nodes_to_start_input.value().parse().unwrap_or(0)
     }
 
-    fn get_available_space_b() -> Result<usize> {
-        let disks = Disks::new_with_refreshed_list();
-        if tracing::level_enabled!(tracing::Level::DEBUG) {
-            for disk in disks.list() {
-                let res = disk.mount_point().ends_with(Self::get_mount_point());
-                debug!(
-                    "Disk: {disk:?} ends with '{:?}': {res:?}",
-                    Self::get_mount_point()
-                );
-            }
-        }
-
-        let available_space_b = disks
-            .list()
-            .iter()
-            .find(|disk| disk.mount_point().ends_with(Self::get_mount_point()))
-            .context("Cannot find the primary disk")?
-            .available_space() as usize;
-
-        Ok(available_space_b)
-    }
-
     // Returns the max number of nodes to start
     // It is the minimum of the available disk space and the max nodes limit
     fn max_nodes_to_start(&self) -> usize {
         std::cmp::min(self.available_disk_space_gb / GB_PER_NODE, MAX_NODE_COUNT)
-    }
-
-    #[cfg(unix)]
-    fn get_mount_point() -> PathBuf {
-        PathBuf::from("/")
-    }
-    #[cfg(windows)]
-    fn get_mount_point() -> PathBuf {
-        PathBuf::from("C:\\")
     }
 }
 
@@ -109,11 +82,11 @@ impl Component for ManageNodes {
                     .with_value(nodes_to_start.to_string());
 
                 debug!(
-                    "Got Enter, value found to be {nodes_to_start} derived from input: {nodes_to_start_str:?} and switching scene",
-                );
+                        "Got Enter, value found to be {nodes_to_start} derived from input: {nodes_to_start_str:?} and switching scene",
+                    );
                 vec![
                     Action::StoreNodesToStart(nodes_to_start),
-                    Action::SwitchScene(Scene::Home),
+                    Action::SwitchScene(Scene::Status),
                 ]
             }
             KeyCode::Esc => {
@@ -126,7 +99,7 @@ impl Component for ManageNodes {
                     .nodes_to_start_input
                     .clone()
                     .with_value(self.old_value.clone());
-                vec![Action::SwitchScene(Scene::Home)]
+                vec![Action::SwitchScene(Scene::Status)]
             }
             KeyCode::Char(c) if c.is_numeric() => {
                 // don't allow leading zeros
@@ -192,7 +165,7 @@ impl Component for ManageNodes {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::ManageNodes => {
+                Scene::ManageNodesPopUp => {
                     self.active = true;
                     self.old_value = self.nodes_to_start_input.value().to_string();
                     // set to entry input mode as we want to handle everything within our handle_key_events
@@ -204,6 +177,11 @@ impl Component for ManageNodes {
                     None
                 }
             },
+            Action::OptionsActions(OptionsActions::UpdateStorageDrive(mountpoint, _drive_name)) => {
+                self.storage_mountpoint.clone_from(&mountpoint);
+                self.available_disk_space_gb = get_available_space_b(&mountpoint)? / GB;
+                None
+            }
             _ => None,
         };
         Ok(send_back)
@@ -227,7 +205,7 @@ impl Component for ManageNodes {
                 // gap before help
                 Constraint::Length(1),
                 // for the help
-                Constraint::Length(3),
+                Constraint::Length(7),
                 // for the dash
                 Constraint::Min(1),
                 // for the buttons
@@ -299,10 +277,18 @@ impl Component for ManageNodes {
         f.render_widget(info, layer_one[2]);
 
         // ==== help ====
-        let help = Paragraph::new(
-            format!("  Note: Each node will use a small amount of CPU\n  Memory and Network Bandwidth. We recommend\n  starting no more than 5 at a time (max {MAX_NODE_COUNT} nodes).")
-        )
-            .fg(GHOST_WHITE);
+        let help = Paragraph::new(vec![
+            Line::raw(format!(
+                "Note: Each node will use a small amount of CPU Memory and Network Bandwidth. \
+                 We recommend starting no more than 5 at a time (max {MAX_NODE_COUNT} nodes)."
+            )),
+            Line::raw(""),
+            Line::raw("▲▼ to change the number of nodes to start."),
+        ])
+        .wrap(Wrap { trim: false })
+        .block(Block::default().padding(Padding::horizontal(4)))
+        .alignment(Alignment::Center)
+        .fg(GHOST_WHITE);
         f.render_widget(help, layer_one[4]);
 
         // ==== dash ====

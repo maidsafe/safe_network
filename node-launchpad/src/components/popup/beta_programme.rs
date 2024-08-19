@@ -9,7 +9,7 @@
 use super::super::utils::centered_rect_fixed;
 use super::super::Component;
 use crate::{
-    action::Action,
+    action::{Action, OptionsActions},
     mode::{InputMode, Scene},
     style::{clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
     widgets::hyperlink::Hyperlink,
@@ -65,12 +65,13 @@ impl BetaProgramme {
                 self.state = BetaProgrammeState::DiscordIdAlreadySet;
                 vec![
                     Action::StoreDiscordUserName(self.discord_input_filed.value().to_string()),
-                    Action::SwitchScene(Scene::Home),
+                    Action::OptionsActions(OptionsActions::UpdateBetaProgrammeUsername(username)),
+                    Action::SwitchScene(Scene::Options),
                 ]
             }
             KeyCode::Esc => {
                 debug!(
-                    "Got Esc, restoring the old value {} and switching to home",
+                    "Got Esc, restoring the old value {} and switching to actual screen",
                     self.old_value
                 );
                 // reset to old value
@@ -78,7 +79,7 @@ impl BetaProgramme {
                     .discord_input_filed
                     .clone()
                     .with_value(self.old_value.clone());
-                vec![Action::SwitchScene(Scene::Home)]
+                vec![Action::SwitchScene(Scene::Options)]
             }
             KeyCode::Char(' ') => vec![],
             KeyCode::Backspace => {
@@ -128,10 +129,10 @@ impl Component for BetaProgramme {
             }
             BetaProgrammeState::RejectTCs => {
                 if let KeyCode::Esc = key.code {
-                    debug!("RejectTCs msg closed. Switching to home scene.");
+                    debug!("RejectTCs msg closed. Switching to Status scene.");
                     self.state = BetaProgrammeState::ShowTCs;
                 }
-                vec![Action::SwitchScene(Scene::Home)]
+                vec![Action::SwitchScene(Scene::Status)]
             }
             BetaProgrammeState::AcceptTCsAndEnterDiscordId => self.capture_inputs(key),
         };
@@ -141,10 +142,10 @@ impl Component for BetaProgramme {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::BetaProgramme => {
+                Scene::BetaProgrammePopUp => {
                     self.active = true;
                     self.old_value = self.discord_input_filed.value().to_string();
-                    // set to entry input mode as we want to handle everything within our handle_key_events
+                    // Set to InputMode::Entry as we want to handle everything within our handle_key_events
                     // so by default if this scene is active, we capture inputs.
                     Some(Action::SwitchInputMode(InputMode::Entry))
                 }
@@ -198,22 +199,22 @@ impl Component for BetaProgramme {
                         // for the prompt text
                         Constraint::Length(3),
                         // for the input
-                        Constraint::Length(2),
+                        Constraint::Length(3),
                         // for the text
-                        Constraint::Length(3),
+                        Constraint::Length(4),
                         // gap
-                        Constraint::Length(3),
+                        Constraint::Length(1),
                         // for the buttons
                         Constraint::Length(1),
                     ],
                 )
                 .split(layer_one[1]);
 
-                let prompt = Paragraph::new("Discord Username associated with this device:")
+                let prompt_text = Paragraph::new("Discord Username associated with this device:")
                     .alignment(Alignment::Center)
                     .fg(GHOST_WHITE);
 
-                f.render_widget(prompt, layer_two[0]);
+                f.render_widget(prompt_text, layer_two[0]);
 
                 let input = Paragraph::new(self.discord_input_filed.value())
                     .alignment(Alignment::Center)
@@ -232,7 +233,13 @@ impl Component for BetaProgramme {
                 );
                 f.render_widget(input, layer_two[1]);
 
-                let text = Paragraph::new("  Changing your Username will reset all nodes,\n  and any Nanos left on this device will be\n  lost.");
+                let text = Paragraph::new(Text::from(vec![
+                    Line::raw("Changing your Username will reset all nodes,"),
+                    Line::raw("and any Nanos left on this device will be lost."),
+                ]))
+                .alignment(Alignment::Center)
+                .block(Block::default().padding(Padding::horizontal(2)));
+
                 f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
 
                 let dash = Block::new()

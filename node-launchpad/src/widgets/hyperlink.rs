@@ -8,6 +8,7 @@
 
 use itertools::Itertools;
 use ratatui::{prelude::*, widgets::WidgetRef};
+use std::fmt;
 
 /// A hyperlink widget that renders a hyperlink in the terminal using [OSC 8].
 ///
@@ -23,6 +24,20 @@ impl<'content> Hyperlink<'content> {
             text: text.into(),
             url: url.into(),
         }
+    }
+}
+
+// Displays the hyperlink in the terminal using OSC 8.
+// Underline solid \x1b[4m
+// Foreground color 45 \x1b[38;5;45m
+impl fmt::Display for Hyperlink<'_> {
+    //TODO: Parameterize the color, underline, bold, etc. Use ratatui::Style.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "\x1b[4m\x1b[38;5;45m\x1B]8;;{}\x07{}\x1B]8;;\x07\x1b[0m",
+            self.url, self.text
+        )
     }
 }
 

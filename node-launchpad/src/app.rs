@@ -10,17 +10,22 @@ use std::path::PathBuf;
 
 use crate::{
     action::Action,
-    components::popup::{
-        beta_programme::BetaProgramme, help::HelpPopUp, manage_nodes::ManageNodes,
-        reset::ResetNodesPopup,
+    components::{
+        help::Help,
+        options::Options,
+        popup::{
+            beta_programme::BetaProgramme, change_drive::ChangeDrivePopup,
+            manage_nodes::ManageNodes, reset_nodes::ResetNodesPopup,
+        },
+        status::Status,
+        Component,
     },
-    components::{footer::Footer, home::Home, Component},
-    config::{AppData, Config},
+    config::{get_launchpad_nodes_data_dir_path, AppData, Config},
     mode::{InputMode, Scene},
     style::SPACE_CADET,
     tui,
 };
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use crossterm::event::KeyEvent;
 use ratatui::{prelude::Rect, style::Style, widgets::Block};
 use sn_peers_acquisition::PeersArgs;
@@ -46,21 +51,53 @@ impl App {
         peers_args: PeersArgs,
         safenode_path: Option<PathBuf>,
     ) -> Result<Self> {
+        // Configurations
         let app_data = AppData::load()?;
+        let config = Config::new()?;
 
-        let home = Home::new(
+        let data_dir_path = match &app_data.storage_mountpoint {
+            Some(path) => get_launchpad_nodes_data_dir_path(&PathBuf::from(path), true)?,
+            None => return Err(eyre!("Storage mountpoint for node data is not set")),
+        };
+        debug!("Data dir path for nodes: {data_dir_path:?}");
+
+        // Main Screens
+        let status = Status::new(
             app_data.nodes_to_start,
             &app_data.discord_username,
             peers_args,
             safenode_path,
+            data_dir_path,
         )
         .await?;
-        let config = Config::new()?;
-        let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
-        let manage_nodes = ManageNodes::new(app_data.nodes_to_start)?;
-        let footer = Footer::new(app_data.nodes_to_start > 0);
-        let help = HelpPopUp::default();
+        let options = Options::new(
+            app_data
+                .storage_mountpoint
+                .clone()
+                .ok_or_else(|| eyre!("Creating Options screen, storage_mountpoint is None"))?,
+            app_data
+                .storage_drive
+                .clone()
+                .ok_or_else(|| eyre!("Creating Options screen, storage_drive is None"))?,
+            app_data.discord_username.clone(),
+        )
+        .await?;
+        let help = Help::new().await?;
+
+        // Popups
         let reset_nodes = ResetNodesPopup::default();
+        let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
+        let manage_nodes = ManageNodes::new(
+            app_data.nodes_to_start,
+            app_data
+                .storage_mountpoint
+                .clone()
+                .ok_or_else(|| eyre!("Creating Manage Nodes screen, storage_drive is None"))?,
+        )?;
+        let change_drive =
+            ChangeDrivePopup::new(app_data.storage_mountpoint.clone().ok_or_else(|| {
+                eyre!("Creating Change Drive screen, storage_mountpoint is None")
+            })?)?;
 
         Ok(Self {
             config,
@@ -68,17 +105,20 @@ impl App {
             tick_rate,
             frame_rate,
             components: vec![
-                Box::new(footer),
-                Box::new(home),
-                Box::new(discord_username_input),
-                Box::new(manage_nodes),
+                // Sections
+                Box::new(status),
+                Box::new(options),
                 Box::new(help),
+                // Popups
+                Box::new(change_drive),
                 Box::new(reset_nodes),
+                Box::new(manage_nodes),
+                Box::new(discord_username_input),
             ],
             should_quit: false,
             should_suspend: false,
             input_mode: InputMode::Navigation,
-            scene: Scene::Home,
+            scene: Scene::Status,
             last_tick_key_events: Vec::new(),
         })
     }
@@ -184,6 +224,7 @@ impl App {
                         info!("Input mode switched to: {mode:?}");
                         self.input_mode = mode;
                     }
+                    // Storing Application Data
                     Action::StoreDiscordUserName(ref username) => {
                         debug!("Storing discord username: {username:?}");
                         self.app_data.discord_username.clone_from(username);
@@ -192,6 +233,12 @@ impl App {
                     Action::StoreNodesToStart(count) => {
                         debug!("Storing nodes to start: {count:?}");
                         self.app_data.nodes_to_start = count;
+                        self.app_data.save()?;
+                    }
+                    Action::StoreStorageDrive(ref drive_mountpoint, ref drive_name) => {
+                        debug!("Storing storage drive: {drive_mountpoint:?}, {drive_name:?}");
+                        self.app_data.storage_mountpoint = Some(drive_mountpoint.clone());
+                        self.app_data.storage_drive = Some(drive_name.as_str().to_string());
                         self.app_data.save()?;
                     }
                     _ => {}

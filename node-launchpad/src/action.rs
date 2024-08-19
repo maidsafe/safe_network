@@ -11,17 +11,20 @@ use crate::{
     node_stats::NodeStats,
 };
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use strum::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
 pub enum Action {
-    HomeActions(HomeActions),
-    TabActions(TabActions),
+    StatusActions(StatusActions),
+    OptionsActions(OptionsActions),
+
     SwitchScene(Scene),
     SwitchInputMode(InputMode),
 
     StoreDiscordUserName(String),
     StoreNodesToStart(usize),
+    StoreStorageDrive(PathBuf, String),
 
     Tick,
     Render,
@@ -32,11 +35,11 @@ pub enum Action {
     Refresh,
     Error(String),
     Help,
+    Noop,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
-pub enum HomeActions {
-    ResetNodes,
+pub enum StatusActions {
     StartNodes,
     StopNodes,
     StartNodesCompleted,
@@ -47,17 +50,20 @@ pub enum HomeActions {
 
     NodesStatsObtained(NodeStats),
 
-    TriggerBetaProgramme,
     TriggerManageNodes,
-    TriggerHelp,
-    TriggerResetNodesPopUp,
 
     PreviousTableItem,
     NextTableItem,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
-pub enum TabActions {
-    NextTab,
-    PreviousTab,
+pub enum OptionsActions {
+    ResetNodes,
+
+    TriggerChangeDrive,
+    TriggerBetaProgramme,
+    TriggerResetNodes,
+    TriggerAccessLogs,
+    UpdateBetaProgrammeUsername(String),
+    UpdateStorageDrive(PathBuf, String),
 }
