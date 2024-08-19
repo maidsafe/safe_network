@@ -8,6 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Row, Table},
     Frame,
 };
+use sn_releases::ReleaseType;
 use tokio::sync::mpsc::UnboundedSender;
 
 use super::{header::SelectedMenuItem, Component};
@@ -18,7 +19,7 @@ use crate::{
     style::{EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE},
     system,
 };
-use sn_node_manager::config::get_user_safenode_data_dir;
+use sn_node_manager::config::get_service_log_dir_path;
 
 #[derive(Clone)]
 pub struct Options {
@@ -255,9 +256,11 @@ impl Component for Options {
                     self.discord_username = username;
                 }
                 OptionsActions::TriggerAccessLogs => {
-                    if let Err(e) =
-                        system::open_folder(get_user_safenode_data_dir()?.to_str().unwrap())
-                    {
+                    if let Err(e) = system::open_folder(
+                        get_service_log_dir_path(ReleaseType::NodeLaunchpad, None, None)?
+                            .to_str()
+                            .unwrap(),
+                    ) {
                         error!("Failed to open folder: {}", e);
                     }
                 }

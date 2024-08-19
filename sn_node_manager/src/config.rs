@@ -254,7 +254,6 @@ pub fn is_running_as_root() -> bool {
     std::fs::read_dir("C:\\Windows\\System32\\config").is_ok()
 }
 
-#[cfg(not(windows))]
 pub fn get_user_safenode_data_dir() -> Result<PathBuf> {
     Ok(dirs_next::data_dir()
         .ok_or_else(|| {
@@ -263,9 +262,4 @@ pub fn get_user_safenode_data_dir() -> Result<PathBuf> {
         })?
         .join("safe")
         .join("node"))
-}
-
-#[cfg(windows)]
-pub fn get_user_safenode_data_dir() -> Result<PathBuf> {
-    get_service_log_dir_path(ReleaseType::NodeLaunchpad, None, None);
 }
