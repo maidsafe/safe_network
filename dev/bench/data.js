@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724071580262,
+  "lastUpdate": 1724071582317,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "450cc4afc6950e4ef2a71a03ea11a3c5a524e258",
-          "message": "ci: simplify version bump dispatch",
-          "timestamp": "2024-04-11T14:15:40+09:00",
-          "tree_id": "b3d66abbb13021013f6852c66b91f2c501177f1a",
-          "url": "https://github.com/maidsafe/safe_network/commit/450cc4afc6950e4ef2a71a03ea11a3c5a524e258"
-        },
-        "date": 1712813351935,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 197,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "9ad4b38116981e9c9410f0fc23dcc163fd29ee58",
           "message": "ci: dont require await for past release in bumper",
           "timestamp": "2024-04-11T14:20:18+09:00",
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 181,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "03c7fbb66598806afd8abf6fe019986229457812",
+          "message": "Merge pull request #2047 from jacderida/rc-2024.08.1\n\nfix: save node registry on every upgrade",
+          "timestamp": "2024-08-19T13:31:09+01:00",
+          "tree_id": "4c78ddaecec8b2793fc7acbd7775f51edf6f52d1",
+          "url": "https://github.com/maidsafe/safe_network/commit/03c7fbb66598806afd8abf6fe019986229457812"
+        },
+        "date": 1724071581580,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 192,
             "unit": "MB"
           },
           {
