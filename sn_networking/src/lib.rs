@@ -999,16 +999,12 @@ pub(crate) fn multiaddr_strip_p2p(multiaddr: &Multiaddr) -> Multiaddr {
 }
 
 /// Get the `IpAddr` from the `Multiaddr`
-pub(crate) fn mulitaddr_get_ip(multiaddr: &Multiaddr) -> Option<IpAddr> {
-    for addr in multiaddr.iter() {
-        if let Protocol::Ip4(ip) = addr {
-            return Some(IpAddr::V4(ip));
-        }
-        if let Protocol::Ip6(ip) = addr {
-            return Some(IpAddr::V6(ip));
-        }
-    }
-    None
+pub(crate) fn multiaddr_get_ip(addr: &Multiaddr) -> Option<IpAddr> {
+    addr.iter().find_map(|p| match p {
+        Protocol::Ip4(addr) => Some(IpAddr::V4(addr)),
+        Protocol::Ip6(addr) => Some(IpAddr::V6(addr)),
+        _ => None,
+    })
 }
 
 pub(crate) fn send_local_swarm_cmd(swarm_cmd_sender: Sender<LocalSwarmCmd>, cmd: LocalSwarmCmd) {
