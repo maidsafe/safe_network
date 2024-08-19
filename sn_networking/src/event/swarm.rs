@@ -29,7 +29,6 @@ use libp2p::{
     },
     Multiaddr, PeerId, TransportError,
 };
-use sn_protocol::get_port_from_multiaddr;
 use std::collections::HashSet;
 use tokio::time::Duration;
 
@@ -308,17 +307,6 @@ impl SwarmDriver {
                 listener_id,
             } => {
                 event_string = "new listen addr";
-
-                // update our stored port if it is configured to be 0 or None
-                match self.listen_port {
-                    Some(0) | None => {
-                        if let Some(actual_port) = get_port_from_multiaddr(&address) {
-                            info!("Our listen port is configured as 0 or is not set. Setting it to our actual port: {actual_port}");
-                            self.listen_port = Some(actual_port);
-                        }
-                    }
-                    _ => {}
-                };
 
                 let local_peer_id = *self.swarm.local_peer_id();
                 // Make sure the address ends with `/p2p/<local peer ID>`. In case of relay, `/p2p` is already there.

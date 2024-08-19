@@ -638,7 +638,6 @@ impl NetworkBuilder {
             swarm,
             self_peer_id: peer_id,
             local: self.local,
-            listen_port: self.listen_addr.map(|addr| addr.port()),
             is_client,
             is_behind_home_network: self.is_behind_home_network,
             peers_in_rt: 0,
@@ -691,8 +690,6 @@ pub struct SwarmDriver {
     pub(crate) local: bool,
     pub(crate) is_client: bool,
     pub(crate) is_behind_home_network: bool,
-    /// The port that was set by the user
-    pub(crate) listen_port: Option<u16>,
     pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) external_address_manager: ExternalAddressManager,
