@@ -125,10 +125,9 @@ impl Client {
     /// Deposits all valid `CashNotes` from a transfer into a wallet.
     pub(super) async fn receive_transfer(
         &self,
-        transfer_hex: &str,
+        transfer: Transfer,
         wallet: &mut MemWallet,
     ) -> eyre::Result<()> {
-        let transfer = Transfer::from_hex(&transfer_hex)?;
         let cash_note_redemptions = wallet.unwrap_transfer(&transfer)?;
 
         let cash_notes = self
