@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724065015636,
+  "lastUpdate": 1724065017352,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "37ab87b2a410bab7b45e8a5562bc7c7605f7e5e6",
-          "message": "ci: remove schedule version bumper from workflow",
-          "timestamp": "2024-04-11T13:57:05+09:00",
-          "tree_id": "3919ff9c2ffa1c6a89f3d569c9db99f135a66681",
-          "url": "https://github.com/maidsafe/safe_network/commit/37ab87b2a410bab7b45e8a5562bc7c7605f7e5e6"
-        },
-        "date": 1712812238520,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7169,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 32827,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "450cc4afc6950e4ef2a71a03ea11a3c5a524e258",
           "message": "ci: simplify version bump dispatch",
           "timestamp": "2024-04-11T14:15:40+09:00",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 23939,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "826d5b5b8cd0b121241ccc39d25c16cf3887dea1",
+          "message": "Merge pull request #2040 from RolandSherwin/metrics_metadata\n\nfeat(metrics): export metadata via the metrics port",
+          "timestamp": "2024-08-19T10:00:47Z",
+          "tree_id": "9960d169e22d16514c2debf0f7e93f59134bad0d",
+          "url": "https://github.com/maidsafe/safe_network/commit/826d5b5b8cd0b121241ccc39d25c16cf3887dea1"
+        },
+        "date": 1724065016838,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4913,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 24695,
             "unit": "ms"
           },
           {
