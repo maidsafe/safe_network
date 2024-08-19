@@ -30,6 +30,8 @@ pub(crate) struct NetworkMetricsRecorder {
     // Must directly call self.libp2p_metrics.record(libp2p_event) with Recorder trait in scope. But since we have
     // re-implemented the trait for the wrapper struct, we can instead call self.record(libp2p_event)
     libp2p_metrics: Libp2pMetrics,
+    #[cfg(feature = "upnp")]
+    upnp_events: Family<upnp::UpnpEventLabels, Counter>,
 
     // metrics from sn_networking
     pub(crate) connected_peers: Gauge,
@@ -37,11 +39,17 @@ pub(crate) struct NetworkMetricsRecorder {
     pub(crate) open_connections: Gauge,
     pub(crate) peers_in_routing_table: Gauge,
     pub(crate) records_stored: Gauge,
+
+    // store cost
     store_cost: Gauge,
+    relevant_records: Gauge,
+    max_records: Gauge,
+    received_payment_count: Gauge,
+    live_time: Gauge,
+
+    // bad node metrics
     bad_peers_count: Counter,
     shunned_count: Counter,
-    #[cfg(feature = "upnp")]
-    upnp_events: Family<upnp::UpnpEventLabels, Counter>,
 
     // system info
     process_memory_used_mb: Gauge,
@@ -85,12 +93,6 @@ impl NetworkMetricsRecorder {
             "The total number of peers in our routing table",
             peers_in_routing_table.clone(),
         );
-        let store_cost = Gauge::default();
-        sub_registry.register(
-            "store_cost",
-            "The store cost of the node",
-            store_cost.clone(),
-        );
 
         let shunned_count = Counter::default();
         sub_registry.register(
@@ -129,18 +131,58 @@ impl NetworkMetricsRecorder {
             process_cpu_usage_percentage.clone(),
         );
 
+        // store cost
+        let store_cost_sub_registry = sub_registry.sub_registry_with_prefix("store_cost");
+        let store_cost = Gauge::default();
+        store_cost_sub_registry.register(
+            "store_cost",
+            "The store cost of the node",
+            store_cost.clone(),
+        );
+        let relevant_records = Gauge::default();
+        store_cost_sub_registry.register(
+            "relevant_records",
+            "The number of records that we're responsible for",
+            relevant_records.clone(),
+        );
+        let max_records = Gauge::default();
+        store_cost_sub_registry.register(
+            "max_records",
+            "The maximum number of records that we can store",
+            max_records.clone(),
+        );
+        let received_payment_count = Gauge::default();
+        store_cost_sub_registry.register(
+            "received_payment_count",
+            "The number of payments received by our node",
+            received_payment_count.clone(),
+        );
+        let live_time = Gauge::default();
+        store_cost_sub_registry.register(
+            "live_time",
+            "The time for which the node has been alive",
+            live_time.clone(),
+        );
+
         let network_metrics = Self {
             libp2p_metrics,
+            #[cfg(feature = "upnp")]
+            upnp_events,
+
             records_stored,
             estimated_network_size,
             connected_peers,
             open_connections,
             peers_in_routing_table,
             store_cost,
+            relevant_records,
+            max_records,
+            received_payment_count,
+            live_time,
+
             bad_peers_count,
             shunned_count,
-            #[cfg(feature = "upnp")]
-            upnp_events,
+
             process_memory_used_mb,
             process_cpu_usage_percentage,
         };
@@ -187,8 +229,19 @@ impl NetworkMetricsRecorder {
             Marker::FlaggedAsBadNode { .. } => {
                 let _ = self.shunned_count.inc();
             }
-            Marker::StoreCost { cost, .. } => {
+            Marker::StoreCost {
+                cost,
+                quoting_metrics,
+            } => {
                 let _ = self.store_cost.set(cost as i64);
+                let _ = self
+                    .relevant_records
+                    .set(quoting_metrics.close_records_stored as i64);
+                let _ = self.max_records.set(quoting_metrics.max_records as i64);
+                let _ = self
+                    .received_payment_count
+                    .set(quoting_metrics.received_payment_count as i64);
+                let _ = self.live_time.set(quoting_metrics.live_time as i64);
             }
             _ => {}
         }
