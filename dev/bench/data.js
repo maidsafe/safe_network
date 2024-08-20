@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724157877131,
+  "lastUpdate": 1724157878507,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "cef9855ce5a401ee57d352db64961125976ba19e",
-          "message": "feat(store): load existing records in parallel",
-          "timestamp": "2024-04-11T11:57:00Z",
-          "tree_id": "ae6caf0f0fd420f0baf431ce1fa22e838187472a",
-          "url": "https://github.com/maidsafe/safe_network/commit/cef9855ce5a401ee57d352db64961125976ba19e"
-        },
-        "date": 1712839844970,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 200,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3b2f9e55ca8c9c2a02dfd7e55c172c2581dc3470",
+          "message": "Merge pull request #2052 from mazzi/feat_not_available_disks\n\nfeat(launchpad): list disks with no access",
+          "timestamp": "2024-08-20T11:46:47Z",
+          "tree_id": "9a74564ae28957408d0226addb853f37173901ae",
+          "url": "https://github.com/maidsafe/safe_network/commit/3b2f9e55ca8c9c2a02dfd7e55c172c2581dc3470"
+        },
+        "date": 1724157878216,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 199,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
