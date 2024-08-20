@@ -119,6 +119,13 @@ const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Time before a Kad query times out if no response is received
 const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(10);
 
+// Init during compilation, instead of runtime error that should never happen
+// Option<T>::expect will be stabilised as const in the future (https://github.com/rust-lang/rust/issues/67441)
+const REPLICATION_FACTOR: NonZeroUsize = match NonZeroUsize::new(CLOSE_GROUP_SIZE) {
+    Some(v) => v,
+    None => panic!("CLOSE_GROUP_SIZE should not be zero"),
+};
+
 /// The various settings to apply to when fetching a record from network
 #[derive(Clone)]
 pub struct GetRecordCfg {
@@ -319,10 +326,7 @@ impl NetworkBuilder {
             // 1mb packet size
             .set_max_packet_size(MAX_PACKET_SIZE)
             // How many nodes _should_ store data.
-            .set_replication_factor(
-                NonZeroUsize::new(CLOSE_GROUP_SIZE)
-                    .ok_or_else(|| NetworkError::InvalidCloseGroupSize)?,
-            )
+            .set_replication_factor(REPLICATION_FACTOR)
             .set_query_timeout(KAD_QUERY_TIMEOUT_S)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
@@ -403,10 +407,7 @@ impl NetworkBuilder {
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
             // How many nodes _should_ store data.
-            .set_replication_factor(
-                NonZeroUsize::new(CLOSE_GROUP_SIZE)
-                    .ok_or_else(|| NetworkError::InvalidCloseGroupSize)?,
-            );
+            .set_replication_factor(REPLICATION_FACTOR);
 
         let (network, net_event_recv, driver) = self.build(
             kad_cfg,

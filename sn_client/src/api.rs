@@ -55,6 +55,13 @@ pub const CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
 /// The timeout duration for the client to receive any response from the network.
 const INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
+// Init during compilation, instead of runtime error that should never happen
+// Option<T>::expect will be stabilised as const in the future (https://github.com/rust-lang/rust/issues/67441)
+const QUORUM_N_IS_2: NonZeroUsize = match NonZeroUsize::new(2) {
+    Some(v) => v,
+    None => panic!("2 is not zero"),
+};
+
 impl Client {
     /// A quick client with a random secret key and some peers.
     pub async fn quick_start(peers: Option<Vec<Multiaddr>>) -> Result<Self> {
@@ -643,9 +650,7 @@ impl Client {
 
         let verification = if verify_store {
             let verification_cfg = GetRecordCfg {
-                get_quorum: Quorum::N(
-                    NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?,
-                ),
+                get_quorum: Quorum::N(QUORUM_N_IS_2),
                 retry_strategy,
                 target_record: None, // Not used since we use ChunkProof
                 expected_holders: Default::default(),
@@ -760,7 +765,7 @@ impl Client {
                 address.clone(),
                 random_nonce,
                 expected_proof,
-                Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?),
+                Quorum::N(QUORUM_N_IS_2),
                 None,
             )
             .await
