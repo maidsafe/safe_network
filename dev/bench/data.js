@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724157878507,
+  "lastUpdate": 1724157879934,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "cef9855ce5a401ee57d352db64961125976ba19e",
-          "message": "feat(store): load existing records in parallel",
-          "timestamp": "2024-04-11T11:57:00Z",
-          "tree_id": "ae6caf0f0fd420f0baf431ce1fa22e838187472a",
-          "url": "https://github.com/maidsafe/safe_network/commit/cef9855ce5a401ee57d352db64961125976ba19e"
-        },
-        "date": 1712839846708,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7469,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33881,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 23346,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3b2f9e55ca8c9c2a02dfd7e55c172c2581dc3470",
+          "message": "Merge pull request #2052 from mazzi/feat_not_available_disks\n\nfeat(launchpad): list disks with no access",
+          "timestamp": "2024-08-20T11:46:47Z",
+          "tree_id": "9a74564ae28957408d0226addb853f37173901ae",
+          "url": "https://github.com/maidsafe/safe_network/commit/3b2f9e55ca8c9c2a02dfd7e55c172c2581dc3470"
+        },
+        "date": 1724157879620,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4674,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 23988,
             "unit": "ms"
           },
           {
