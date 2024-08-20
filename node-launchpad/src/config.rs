@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::connection_mode::ConnectionMode;
+use crate::system;
 use crate::system::get_primary_mount_point;
 use crate::{action::Action, mode::Scene};
 use color_eyre::eyre::{eyre, Result};
@@ -103,6 +105,9 @@ pub struct AppData {
     pub nodes_to_start: usize,
     pub storage_mountpoint: Option<PathBuf>,
     pub storage_drive: Option<String>,
+    pub connection_mode: Option<ConnectionMode>,
+    pub port_from: Option<u16>,
+    pub port_to: Option<u16>,
 }
 
 impl Default for AppData {
@@ -112,6 +117,9 @@ impl Default for AppData {
             nodes_to_start: 1,
             storage_mountpoint: None,
             storage_drive: None,
+            connection_mode: None,
+            port_from: None,
+            port_to: None,
         }
     }
 }
@@ -133,9 +141,20 @@ impl AppData {
         let data = std::fs::read_to_string(&config_path)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to read app data file"))?;
 
-        let app_data: AppData = serde_json::from_str(&data)
+        let mut app_data: AppData = serde_json::from_str(&data)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to parse app data"))?;
 
+        if app_data.storage_mountpoint.is_none() || app_data.storage_drive.is_none() {
+            // If the storage drive is not set, set it to the default mount point
+            let drive_info = system::get_default_mount_point()?;
+            app_data.storage_drive = Some(drive_info.0);
+            app_data.storage_mountpoint = Some(drive_info.1);
+            debug!("Setting storage drive to {:?}", app_data.storage_mountpoint);
+        }
+
+        if app_data.connection_mode.is_none() {
+            app_data.connection_mode = Some(ConnectionMode::default());
+        }
         Ok(app_data)
     }
 

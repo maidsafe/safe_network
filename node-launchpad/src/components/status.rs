@@ -14,6 +14,7 @@ use super::{
 };
 use crate::action::OptionsActions;
 use crate::config::get_launchpad_nodes_data_dir_path;
+use crate::connection_mode::ConnectionMode;
 use crate::{
     action::{Action, StatusActions},
     config::Config,
@@ -69,6 +70,12 @@ pub struct Status {
     safenode_path: Option<PathBuf>,
     // Path where the node data is stored
     data_dir_path: PathBuf,
+    // Connection mode
+    connection_mode: ConnectionMode,
+    // Port from
+    port_from: Option<u16>,
+    // Port to
+    port_to: Option<u16>,
 }
 
 #[derive(Clone)]
@@ -85,6 +92,9 @@ impl Status {
         peers_args: PeersArgs,
         safenode_path: Option<PathBuf>,
         data_dir_path: PathBuf,
+        connection_mode: ConnectionMode,
+        port_from: Option<u16>,
+        port_to: Option<u16>,
     ) -> Result<Self> {
         let mut status = Self {
             peers_args,
@@ -102,6 +112,9 @@ impl Status {
             discord_username: discord_username.to_string(),
             safenode_path,
             data_dir_path,
+            connection_mode,
+            port_from,
+            port_to,
         };
 
         let now = Instant::now();
@@ -377,6 +390,9 @@ impl Component for Status {
                 info!("Got action to reset nodes");
                 reset_nodes(action_sender, false);
             }
+            Action::OptionsActions(OptionsActions::UpdateConnectionMode(connection_mode)) => {
+                self.connection_mode = connection_mode;
+            }
             _ => {}
         }
         Ok(None)
@@ -455,6 +471,22 @@ impl Component for Status {
                 Cell::new(memory_use_val).fg(GHOST_WHITE),
             ]);
 
+            let connection_mode_string = match self.connection_mode {
+                ConnectionMode::HomeNetwork => "Home Network",
+                ConnectionMode::UPnP => "UPnP",
+                ConnectionMode::CustomPorts => &format!(
+                    "Custom Ports  {}-{}",
+                    self.port_from.unwrap_or(0),
+                    self.port_to.unwrap_or(0)
+                ),
+                ConnectionMode::Automatic => "Automatic",
+            };
+
+            let connection_mode_row = Row::new(vec![
+                Cell::new("Connection".to_string()).fg(GHOST_WHITE),
+                Cell::new(connection_mode_string).fg(GHOST_WHITE),
+            ]);
+
             // Combine "Nanos Earned" and "Discord Username" into a single row
             let discord_username_title = Span::styled(
                 "Discord Username: ".to_string(),
@@ -474,7 +506,7 @@ impl Component for Status {
                 )
             };
 
-            let total_nanos_earned_and_discord = Row::new(vec![
+            let total_nanos_earned_and_discord_row = Row::new(vec![
                 Cell::new("Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
                 Cell::new(self.node_stats.forwarded_rewards.to_string())
                     .fg(VIVID_SKY_BLUE)
@@ -487,14 +519,15 @@ impl Component for Status {
 
             let stats_rows = vec![
                 storage_allocated_row,
-                memory_use_row.bottom_margin(1),
-                total_nanos_earned_and_discord,
+                memory_use_row,
+                connection_mode_row,
+                total_nanos_earned_and_discord_row,
             ];
             let stats_width = [Constraint::Length(5)];
             let column_constraints = [
+                Constraint::Length(23),
                 Constraint::Percentage(25),
-                Constraint::Percentage(5),
-                Constraint::Percentage(70),
+                Constraint::Fill(1),
             ];
             let stats_table = Table::new(stats_rows, stats_width)
                 .block(
