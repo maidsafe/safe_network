@@ -15,12 +15,13 @@ use crate::{
         options::Options,
         popup::{
             beta_programme::BetaProgramme, change_drive::ChangeDrivePopup,
-            manage_nodes::ManageNodes, reset_nodes::ResetNodesPopup,
+            connection_mode::ChangeConnectionModePopUp, manage_nodes::ManageNodes,
+            reset_nodes::ResetNodesPopup,
         },
-        status::Status,
         Component,
     },
     config::{get_launchpad_nodes_data_dir_path, AppData, Config},
+    connection_mode::ConnectionMode,
     mode::{InputMode, Scene},
     style::SPACE_CADET,
     system::{get_default_mount_point, get_primary_mount_point, get_primary_mount_point_name},
@@ -71,6 +72,11 @@ impl App {
         debug!("Data dir path for nodes: {data_dir_path:?}");
 
         // App data validations
+        let connection_mode = app_data
+            .connection_mode
+            .unwrap_or(ConnectionMode::Automatic);
+        let port_from = app_data.port_from.unwrap_or(PORT_MIN);
+        let port_to = app_data.port_to.unwrap_or(PORT_MAX);
         let storage_mountpoint = app_data
             .storage_mountpoint
             .clone()
@@ -87,12 +93,18 @@ impl App {
             peers_args,
             safenode_path,
             data_dir_path,
+            connection_mode,
+            Some(port_from),
+            Some(port_to),
         )
         .await?;
         let options = Options::new(
             storage_mountpoint.clone(),
             storage_drive.clone(),
             app_data.discord_username.clone(),
+            connection_mode,
+            Some(port_from),
+            Some(port_to),
         )
         .await?;
         let help = Help::new().await?;
@@ -102,6 +114,8 @@ impl App {
         let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
         let manage_nodes = ManageNodes::new(app_data.nodes_to_start, storage_mountpoint.clone())?;
         let change_drive = ChangeDrivePopup::new(storage_mountpoint.clone())?;
+        let change_connection_mode = ChangeConnectionModePopUp::new(connection_mode)?;
+        let beta_programme = BetaProgramme::new(app_data.discord_username.clone());
 
         Ok(Self {
             config,
@@ -115,9 +129,10 @@ impl App {
                 Box::new(help),
                 // Popups
                 Box::new(change_drive),
+                Box::new(change_connection_mode),
+                Box::new(beta_programme),
                 Box::new(reset_nodes),
                 Box::new(manage_nodes),
-                Box::new(discord_username_input),
             ],
             should_quit: false,
             should_suspend: false,
@@ -229,6 +244,23 @@ impl App {
                         self.input_mode = mode;
                     }
                     // Storing Application Data
+                    Action::StoreStorageDrive(ref drive_mountpoint, ref drive_name) => {
+                        debug!("Storing storage drive: {drive_mountpoint:?}, {drive_name:?}");
+                        self.app_data.storage_mountpoint = Some(drive_mountpoint.clone());
+                        self.app_data.storage_drive = Some(drive_name.as_str().to_string());
+                        self.app_data.save(None)?;
+                    }
+                    Action::StoreConnectionMode(ref mode) => {
+                        debug!("Storing connection mode: {mode:?}");
+                        self.app_data.connection_mode = Some(mode.clone());
+                        self.app_data.save(None)?;
+                    }
+                    Action::StorePortRange(from, to) => {
+                        debug!("Storing port range: {from:?}, {to:?}");
+                        self.app_data.port_from = Some(from);
+                        self.app_data.port_to = Some(to);
+                        self.app_data.save(None)?;
+                    }
                     Action::StoreDiscordUserName(ref username) => {
                         debug!("Storing discord username: {username:?}");
                         self.app_data.discord_username.clone_from(username);
