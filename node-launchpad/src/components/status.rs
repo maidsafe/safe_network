@@ -393,6 +393,10 @@ impl Component for Status {
             Action::OptionsActions(OptionsActions::UpdateConnectionMode(connection_mode)) => {
                 self.connection_mode = connection_mode;
             }
+            Action::OptionsActions(OptionsActions::UpdatePortRange(port_from, port_to)) => {
+                self.port_from = Some(port_from);
+                self.port_to = Some(port_to);
+            }
             _ => {}
         }
         Ok(None)
