@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter, Result};
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
-#[derive(Clone, Debug, Default, EnumIter)]
+#[derive(Clone, Debug, Default, EnumIter, Eq, PartialEq)]
 pub enum ConnectionMode {
     #[default]
     Automatic,
@@ -22,20 +22,6 @@ impl Display for ConnectionMode {
         }
     }
 }
-
-impl PartialEq for ConnectionMode {
-    fn eq(&self, other: &Self) -> bool {
-        matches!(
-            (self, other),
-            (ConnectionMode::HomeNetwork, ConnectionMode::HomeNetwork)
-                | (ConnectionMode::UPnP, ConnectionMode::UPnP)
-                | (ConnectionMode::CustomPorts, ConnectionMode::CustomPorts)
-                | (ConnectionMode::Automatic, ConnectionMode::Automatic)
-        )
-    }
-}
-
-impl Eq for ConnectionMode {}
 
 impl<'de> Deserialize<'de> for ConnectionMode {
     fn deserialize<D>(deserializer: D) -> std::result::Result<ConnectionMode, D::Error>

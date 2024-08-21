@@ -17,7 +17,9 @@ use crate::{
     components::header::Header,
     connection_mode::ConnectionMode,
     mode::{InputMode, Scene},
-    style::{EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE},
+    style::{
+        COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE,
+    },
     system,
 };
 use sn_node_manager::config::get_service_log_dir_path;
@@ -161,23 +163,40 @@ impl Component for Options {
                         .alignment(Alignment::Left),
                     ),
                     Cell::from(
-                        Line::from(vec![Span::styled(
-                            format!(
-                                " {}-{} ",
-                                self.port_from.unwrap_or(0),
-                                self.port_to.unwrap_or(0)
-                            ),
-                            Style::default().fg(VIVID_SKY_BLUE),
-                        )])
+                        Line::from(vec![
+                            if self.connection_mode == ConnectionMode::CustomPorts {
+                                Span::styled(
+                                    format!(
+                                        " {}-{} ",
+                                        self.port_from.unwrap_or(0),
+                                        self.port_to.unwrap_or(0)
+                                    ),
+                                    Style::default().fg(VIVID_SKY_BLUE),
+                                )
+                            } else {
+                                Span::styled(" Auto ", Style::default().fg(COOL_GREY))
+                            },
+                        ])
                         .alignment(Alignment::Left),
                     ),
                     Cell::from(
                         Line::from(vec![
                             Span::styled(
                                 " Edit Port Range ",
-                                Style::default().fg(VERY_LIGHT_AZURE),
+                                if self.connection_mode == ConnectionMode::CustomPorts {
+                                    Style::default().fg(VERY_LIGHT_AZURE)
+                                } else {
+                                    Style::default().fg(COOL_GREY)
+                                },
                             ),
-                            Span::styled(" [Ctrl+P] ", Style::default().fg(GHOST_WHITE)),
+                            Span::styled(
+                                " [Ctrl+P] ",
+                                if self.connection_mode == ConnectionMode::CustomPorts {
+                                    Style::default().fg(GHOST_WHITE)
+                                } else {
+                                    Style::default().fg(COOL_GREY)
+                                },
+                            ),
                         ])
                         .alignment(Alignment::Right),
                     ),

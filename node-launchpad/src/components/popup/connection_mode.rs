@@ -132,9 +132,13 @@ impl Component for ChangeConnectionModePopUp {
                             self.connection_mode_selection.connection_mode.clone(),
                         ),
                         Action::OptionsActions(OptionsActions::UpdateConnectionMode(
-                            connection_mode.connection_mode,
+                            connection_mode.clone().connection_mode,
                         )),
-                        Action::SwitchScene(Scene::Options),
+                        if connection_mode.connection_mode == ConnectionMode::CustomPorts {
+                            Action::SwitchScene(Scene::ChangePortsPopUp)
+                        } else {
+                            Action::SwitchScene(Scene::Options)
+                        },
                     ]
                 } else {
                     debug!("Got Enter, but no new selection. We should not do anything");
