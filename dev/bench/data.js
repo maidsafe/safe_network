@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724217043646,
+  "lastUpdate": 1724217045030,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "7c5d931b2be1f749143cdfed2ed77f426e7dfc1a",
-          "message": "refactor(networking): remove circular vec error",
-          "timestamp": "2024-04-11T15:00:56Z",
-          "tree_id": "1dac3935d6036b7e4471dd8eb4e00a8a2671c1c8",
-          "url": "https://github.com/maidsafe/safe_network/commit/7c5d931b2be1f749143cdfed2ed77f426e7dfc1a"
-        },
-        "date": 1712850860531,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7731,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36410,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 23988,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f7b8da9082bcb3c26c120f0842b609085d70d3bb",
+          "message": "Merge pull request #2044 from RolandSherwin/probabilistic_new_extern_addr\n\nfeat(network): External Address manager",
+          "timestamp": "2024-08-21T04:20:40Z",
+          "tree_id": "b1732f8b21605dcc07924deda72d44bd4945c8bb",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7b8da9082bcb3c26c120f0842b609085d70d3bb"
+        },
+        "date": 1724217044745,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4573,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 24395,
             "unit": "ms"
           },
           {
