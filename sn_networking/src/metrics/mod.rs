@@ -12,7 +12,7 @@ use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
 use prometheus_client::metrics::family::Family;
 use prometheus_client::{
     metrics::{counter::Counter, gauge::Gauge},
-    registry::Registry,
+    registry::{Registry, Unit},
 };
 use sysinfo::{Pid, ProcessRefreshKind, System};
 use tokio::time::Duration;
@@ -118,25 +118,28 @@ impl NetworkMetricsRecorder {
         );
 
         let process_memory_used_mb = Gauge::default();
-        sub_registry.register(
+        sub_registry.register_with_unit(
             "process_memory_used_mb",
             "Memory used by the process in MegaBytes",
+            Unit::Other("MegaByte".to_string()),
             process_memory_used_mb.clone(),
         );
 
         let process_cpu_usage_percentage = Gauge::default();
-        sub_registry.register(
+        sub_registry.register_with_unit(
             "process_cpu_usage_percentage",
             "The percentage of CPU used by the process. Value is from 0-100",
+            Unit::Other("Percentage".to_string()),
             process_cpu_usage_percentage.clone(),
         );
 
         // store cost
         let store_cost_sub_registry = sub_registry.sub_registry_with_prefix("store_cost");
         let store_cost = Gauge::default();
-        store_cost_sub_registry.register(
+        store_cost_sub_registry.register_with_unit(
             "store_cost",
             "The store cost of the node",
+            Unit::Other("Nano".to_string()),
             store_cost.clone(),
         );
         let relevant_records = Gauge::default();
@@ -158,9 +161,10 @@ impl NetworkMetricsRecorder {
             received_payment_count.clone(),
         );
         let live_time = Gauge::default();
-        store_cost_sub_registry.register(
+        store_cost_sub_registry.register_with_unit(
             "live_time",
             "The time for which the node has been alive",
+            Unit::Seconds,
             live_time.clone(),
         );
 
