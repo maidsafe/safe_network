@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724216927496,
+  "lastUpdate": 1724217042435,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "7c5d931b2be1f749143cdfed2ed77f426e7dfc1a",
-          "message": "refactor(networking): remove circular vec error",
-          "timestamp": "2024-04-11T15:00:56Z",
-          "tree_id": "1dac3935d6036b7e4471dd8eb4e00a8a2671c1c8",
-          "url": "https://github.com/maidsafe/safe_network/commit/7c5d931b2be1f749143cdfed2ed77f426e7dfc1a"
-        },
-        "date": 1712850856443,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 137,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f7b8da9082bcb3c26c120f0842b609085d70d3bb",
+          "message": "Merge pull request #2044 from RolandSherwin/probabilistic_new_extern_addr\n\nfeat(network): External Address manager",
+          "timestamp": "2024-08-21T04:20:40Z",
+          "tree_id": "b1732f8b21605dcc07924deda72d44bd4945c8bb",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7b8da9082bcb3c26c120f0842b609085d70d3bb"
+        },
+        "date": 1724217042140,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 152,
             "unit": "MB"
           }
         ]
