@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724217045030,
+  "lastUpdate": 1724223162839,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "592ac510efa3741ea778ec6b994318ac7ef79470",
-          "message": "feat: distinguish failure to start during upgrade\n\nIt's possible for a service to be upgraded but then not subsequently start. In this case, it has\nstill been upgraded to a new version. It's worth making a distinction to the user between an actual\nerror in the upgrade process, or a failure to start, because in the latter case, they do actually\nhave an upgrade. They can then take action to try and start their services again.\n\nAs part of this change, the start process attempts to find whether the service process did indeed\nstart, because you don't always seem to get errors back from the service infrastructure. We also\nmake sure that we return an error if there was a failure with the upgrade process for any services.\nThis is necessary for visibility on our own deploy process.",
-          "timestamp": "2024-04-11T20:12:54Z",
-          "tree_id": "932c361826415206cab6aa3083f4a84edbbf7f03",
-          "url": "https://github.com/maidsafe/safe_network/commit/592ac510efa3741ea778ec6b994318ac7ef79470"
-        },
-        "date": 1712869606907,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2054149332607813,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6058110794073848,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.86854190554197,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.55224168528638,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a0f85d1025beb133579c9e16b124ed6a98d959c8",
+          "message": "Merge pull request #2056 from RolandSherwin/metrics_unit\n\nchore(metrics): add unit to certain metrics",
+          "timestamp": "2024-08-21T05:55:19Z",
+          "tree_id": "2ad955b27e605bd3469a17072a179fac2b1895dd",
+          "url": "https://github.com/maidsafe/safe_network/commit/a0f85d1025beb133579c9e16b124ed6a98d959c8"
+        },
+        "date": 1724223156234,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1863194444331702,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6376747636313833,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.586305144665964,
             "unit": "MiB/s"
           }
         ]
