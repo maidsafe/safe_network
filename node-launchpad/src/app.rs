@@ -16,7 +16,7 @@ use crate::{
         popup::{
             beta_programme::BetaProgramme, change_drive::ChangeDrivePopup,
             connection_mode::ChangeConnectionModePopUp, manage_nodes::ManageNodes,
-            reset_nodes::ResetNodesPopup,
+            port_range::PortRangePopUp, reset_nodes::ResetNodesPopup,
         },
         Component,
     },
@@ -115,6 +115,7 @@ impl App {
         let manage_nodes = ManageNodes::new(app_data.nodes_to_start, storage_mountpoint.clone())?;
         let change_drive = ChangeDrivePopup::new(storage_mountpoint.clone())?;
         let change_connection_mode = ChangeConnectionModePopUp::new(connection_mode)?;
+        let port_range = PortRangePopUp::new(connection_mode, port_from, port_to);
         let beta_programme = BetaProgramme::new(app_data.discord_username.clone());
 
         Ok(Self {
@@ -130,6 +131,7 @@ impl App {
                 // Popups
                 Box::new(change_drive),
                 Box::new(change_connection_mode),
+                Box::new(port_range),
                 Box::new(beta_programme),
                 Box::new(reset_nodes),
                 Box::new(manage_nodes),
