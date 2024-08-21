@@ -10,12 +10,15 @@ use super::super::{utils::centered_rect_fixed, Component};
 use crate::{
     action::{Action, OptionsActions},
     mode::{InputMode, Scene},
-    style::{clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
+    style::{clear_area, EUCALYPTUS, GHOST_WHITE, INDIGO, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
 };
 use color_eyre::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tui_input::{backend::crossterm::EventHandler, Input};
+
+const INPUT_SIZE: u16 = 5;
+const INPUT_AREA: u16 = INPUT_SIZE + 2; // +2 for the left and right padding
 
 #[derive(Default)]
 pub struct ResetNodesPopup {
@@ -56,7 +59,7 @@ impl Component for ResetNodesPopup {
             }
             _ => {
                 // max char limit
-                if self.confirmation_input_field.value().chars().count() < 10 {
+                if self.confirmation_input_field.value().chars().count() < INPUT_SIZE as usize {
                     self.confirmation_input_field.handle_event(&Event::Key(key));
                 }
                 vec![]
@@ -145,21 +148,19 @@ impl Component for ResetNodesPopup {
 
         f.render_widget(prompt, layer_two[0]);
 
-        let input = Paragraph::new(self.confirmation_input_field.value())
-            .alignment(Alignment::Center)
-            .fg(VIVID_SKY_BLUE);
-        f.set_cursor(
-            // Put cursor past the end of the input text
-            layer_two[1].x
-                + (layer_two[1].width / 2) as u16
-                + (self.confirmation_input_field.value().len() / 2) as u16
-                + if self.confirmation_input_field.value().len() % 2 != 0 {
-                    1
-                } else {
-                    0
-                },
-            layer_two[1].y,
-        );
+        let spaces =
+            " ".repeat((INPUT_AREA - 1) as usize - self.confirmation_input_field.value().len());
+
+        let input = Paragraph::new(Span::styled(
+            format!("{}{} ", spaces, self.confirmation_input_field.value()),
+            Style::default()
+                .fg(VIVID_SKY_BLUE)
+                .bg(INDIGO)
+                .underlined()
+                .underline_color(VIVID_SKY_BLUE),
+        ))
+        .alignment(Alignment::Center);
+
         f.render_widget(input, layer_two[1]);
 
         let text = Paragraph::new("This will clear out all the nodes and all the stored data. You should still keep all your earned rewards.")
