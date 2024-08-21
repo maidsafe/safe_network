@@ -49,7 +49,7 @@ impl Component for Help {
             .constraints(vec![
                 Constraint::Length(1),
                 Constraint::Min(7),
-                Constraint::Max(9),
+                Constraint::Max(13),
             ])
             .split(area);
 
@@ -171,12 +171,12 @@ impl Component for Help {
                 ])),
                 Cell::from(Line::from(vec![
                     Span::styled("[Ctrl+S] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Start Nodes", Style::default().fg(EUCALYPTUS)),
+                    Span::styled("Start All Nodes", Style::default().fg(EUCALYPTUS)),
                 ])),
                 Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+B] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled("[Ctrl+K] ", Style::default().fg(GHOST_WHITE)),
                     Span::styled(
-                        "Edit Discord Username",
+                        "Switch Connection Mode",
                         Style::default().fg(VERY_LIGHT_AZURE),
                     ),
                 ])),
@@ -194,11 +194,14 @@ impl Component for Help {
                 ])),
                 Cell::from(Line::from(vec![
                     Span::styled("[Ctrl+X] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Stop Nodes", Style::default().fg(EUCALYPTUS)),
+                    Span::styled("Stop All Nodes", Style::default().fg(EUCALYPTUS)),
                 ])),
                 Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+L] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Open Logs Folder", Style::default().fg(VERY_LIGHT_AZURE)),
+                    Span::styled("[Ctrl+P] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled(
+                        "Edit Custom Port Range",
+                        Style::default().fg(VERY_LIGHT_AZURE),
+                    ),
                 ])),
             ]),
             Row::new(vec![
@@ -216,7 +219,43 @@ impl Component for Help {
                     Span::styled("[Ctrl+R] ", Style::default().fg(GHOST_WHITE)),
                     Span::styled("Reset All Nodes", Style::default().fg(EUCALYPTUS)),
                 ])),
-                Cell::from(""),
+                Cell::from(Line::from(vec![
+                    Span::styled("[Ctrl+B] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled(
+                        "Edit Discord Username",
+                        Style::default().fg(VERY_LIGHT_AZURE),
+                    ),
+                ])),
+            ]),
+            Row::new(vec![
+                // Empty row for padding
+                Cell::from(Span::raw(" ")),
+                Cell::from(Span::raw(" ")),
+                Cell::from(Span::raw(" ")),
+            ]),
+            Row::new(vec![
+                // Empty row for padding
+                Cell::from(Span::raw(" ")),
+                Cell::from(Span::raw(" ")),
+                Cell::from(Line::from(vec![
+                    Span::styled("[Ctrl+L] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled("Open Logs Folder", Style::default().fg(VERY_LIGHT_AZURE)),
+                ])),
+            ]),
+            Row::new(vec![
+                // Empty row for padding
+                Cell::from(Span::raw(" ")),
+                Cell::from(Span::raw(" ")),
+                Cell::from(Span::raw(" ")),
+            ]),
+            Row::new(vec![
+                // Empty row for padding
+                Cell::from(Span::raw(" ")),
+                Cell::from(Span::raw(" ")),
+                Cell::from(Line::from(vec![
+                    Span::styled("[Ctrl+L] ", Style::default().fg(GHOST_WHITE)),
+                    Span::styled("Open Logs Folder", Style::default().fg(VERY_LIGHT_AZURE)),
+                ])),
             ]),
         ];
 
