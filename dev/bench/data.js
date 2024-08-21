@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724157879934,
+  "lastUpdate": 1724216927496,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "7c5d931b2be1f749143cdfed2ed77f426e7dfc1a",
-          "message": "refactor(networking): remove circular vec error",
-          "timestamp": "2024-04-11T15:00:56Z",
-          "tree_id": "1dac3935d6036b7e4471dd8eb4e00a8a2671c1c8",
-          "url": "https://github.com/maidsafe/safe_network/commit/7c5d931b2be1f749143cdfed2ed77f426e7dfc1a"
-        },
-        "date": 1712850739592,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2098551282423677,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6163077550942264,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.07948222377453,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.05635442644639,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f7b8da9082bcb3c26c120f0842b609085d70d3bb",
+          "message": "Merge pull request #2044 from RolandSherwin/probabilistic_new_extern_addr\n\nfeat(network): External Address manager",
+          "timestamp": "2024-08-21T04:20:40Z",
+          "tree_id": "b1732f8b21605dcc07924deda72d44bd4945c8bb",
+          "url": "https://github.com/maidsafe/safe_network/commit/f7b8da9082bcb3c26c120f0842b609085d70d3bb"
+        },
+        "date": 1724216921082,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2447506670497461,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7081425833247619,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.55224168528638,
             "unit": "MiB/s"
           }
         ]
