@@ -15,7 +15,7 @@ use prometheus_client::{
         gauge::Gauge,
         histogram::{exponential_buckets, Histogram},
     },
-    registry::Registry,
+    registry::{Registry, Unit},
 };
 use sn_networking::Instant;
 
@@ -102,23 +102,26 @@ impl NodeMetricsRecorder {
         );
 
         let current_reward_wallet_balance = Gauge::default();
-        sub_registry.register(
+        sub_registry.register_with_unit(
             "current_reward_wallet_balance",
             "The number of Nanos in the node reward wallet",
+            Unit::Other("Nano".to_string()),
             current_reward_wallet_balance.clone(),
         );
 
         let total_forwarded_rewards = Gauge::default();
-        sub_registry.register(
+        sub_registry.register_with_unit(
             "total_forwarded_rewards",
             "The cumulative number of Nanos forwarded by the node",
+            Unit::Other("Nano".to_string()),
             total_forwarded_rewards.clone(),
         );
 
         let uptime = Gauge::default();
-        sub_registry.register(
+        sub_registry.register_with_unit(
             "uptime",
             "The uptime of the node in seconds",
+            Unit::Seconds,
             uptime.clone(),
         );
 
