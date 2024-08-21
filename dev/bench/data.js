@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724223284878,
+  "lastUpdate": 1724223286615,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "592ac510efa3741ea778ec6b994318ac7ef79470",
-          "message": "feat: distinguish failure to start during upgrade\n\nIt's possible for a service to be upgraded but then not subsequently start. In this case, it has\nstill been upgraded to a new version. It's worth making a distinction to the user between an actual\nerror in the upgrade process, or a failure to start, because in the latter case, they do actually\nhave an upgrade. They can then take action to try and start their services again.\n\nAs part of this change, the start process attempts to find whether the service process did indeed\nstart, because you don't always seem to get errors back from the service infrastructure. We also\nmake sure that we return an error if there was a failure with the upgrade process for any services.\nThis is necessary for visibility on our own deploy process.",
-          "timestamp": "2024-04-11T20:12:54Z",
-          "tree_id": "932c361826415206cab6aa3083f4a84edbbf7f03",
-          "url": "https://github.com/maidsafe/safe_network/commit/592ac510efa3741ea778ec6b994318ac7ef79470"
-        },
-        "date": 1712869725541,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 8093,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 40126,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 24395,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a0f85d1025beb133579c9e16b124ed6a98d959c8",
+          "message": "Merge pull request #2056 from RolandSherwin/metrics_unit\n\nchore(metrics): add unit to certain metrics",
+          "timestamp": "2024-08-21T05:55:19Z",
+          "tree_id": "2ad955b27e605bd3469a17072a179fac2b1895dd",
+          "url": "https://github.com/maidsafe/safe_network/commit/a0f85d1025beb133579c9e16b124ed6a98d959c8"
+        },
+        "date": 1724223286150,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4736,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 25427,
             "unit": "ms"
           },
           {
