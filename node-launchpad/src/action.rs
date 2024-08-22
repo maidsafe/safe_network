@@ -25,7 +25,7 @@ pub enum Action {
 
     StoreStorageDrive(PathBuf, String),
     StoreConnectionMode(ConnectionMode),
-    StorePortRange(u16, u16),
+    StorePortRange(u32, u32),
     StoreDiscordUserName(String),
     StoreNodesToStart(usize),
 
@@ -70,7 +70,7 @@ pub enum OptionsActions {
     TriggerResetNodes,
     TriggerAccessLogs,
     UpdateConnectionMode(ConnectionMode),
-    UpdatePortRange(u16, u16),
+    UpdatePortRange(u32, u32),
     UpdateBetaProgrammeUsername(String),
     UpdateStorageDrive(PathBuf, String),
 }

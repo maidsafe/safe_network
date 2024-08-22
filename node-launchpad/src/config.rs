@@ -106,8 +106,8 @@ pub struct AppData {
     pub storage_mountpoint: Option<PathBuf>,
     pub storage_drive: Option<String>,
     pub connection_mode: Option<ConnectionMode>,
-    pub port_from: Option<u16>,
-    pub port_to: Option<u16>,
+    pub port_from: Option<u32>,
+    pub port_to: Option<u32>,
 }
 
 impl Default for AppData {
