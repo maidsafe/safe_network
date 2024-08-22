@@ -15,6 +15,7 @@ use super::{
 use crate::action::OptionsActions;
 use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::connection_mode::ConnectionMode;
+use crate::node_mgmt::MaintainNodesArgs;
 use crate::{
     action::{Action, StatusActions},
     config::Config,
@@ -28,6 +29,7 @@ use color_eyre::eyre::{OptionExt, Result};
 use crossterm::event::KeyEvent;
 use ratatui::text::Span;
 use ratatui::{prelude::*, widgets::*};
+use sn_node_manager::add_services::config::PortRange;
 use sn_node_manager::config::get_node_registry_path;
 use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{
@@ -85,19 +87,21 @@ pub enum LockRegistryState {
     ResettingNodes,
 }
 
+pub struct StatusConfig {
+    pub allocated_disk_space: usize,
+    pub discord_username: String,
+    pub peers_args: PeersArgs,
+    pub safenode_path: Option<PathBuf>,
+    pub data_dir_path: PathBuf,
+    pub connection_mode: ConnectionMode,
+    pub port_from: Option<u16>,
+    pub port_to: Option<u16>,
+}
+
 impl Status {
-    pub async fn new(
-        allocated_disk_space: usize,
-        discord_username: &str,
-        peers_args: PeersArgs,
-        safenode_path: Option<PathBuf>,
-        data_dir_path: PathBuf,
-        connection_mode: ConnectionMode,
-        port_from: Option<u16>,
-        port_to: Option<u16>,
-    ) -> Result<Self> {
+    pub async fn new(config: StatusConfig) -> Result<Self> {
         let mut status = Self {
-            peers_args,
+            peers_args: config.peers_args,
             action_sender: Default::default(),
             config: Default::default(),
             active: true,
@@ -106,15 +110,15 @@ impl Status {
             error_while_running_nat_detection: 0,
             node_stats: NodeStats::default(),
             node_stats_last_update: Instant::now(),
-            nodes_to_start: allocated_disk_space,
+            nodes_to_start: config.allocated_disk_space,
             node_table_state: Default::default(),
             lock_registry: None,
-            discord_username: discord_username.to_string(),
-            safenode_path,
-            data_dir_path,
-            connection_mode,
-            port_from,
-            port_to,
+            discord_username: config.discord_username,
+            safenode_path: config.safenode_path,
+            data_dir_path: config.data_dir_path,
+            connection_mode: config.connection_mode,
+            port_from: config.port_from,
+            port_to: config.port_to,
         };
 
         let now = Instant::now();
@@ -284,100 +288,136 @@ impl Component for Status {
 
                 if we_have_nodes && has_changed {
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
-                    info!("Resetting safenode services because the discord username was reset.");
+                    info!("Resetting safenode services because the Discord Username was reset.");
                     let action_sender = self.get_actions_sender()?;
                     reset_nodes(action_sender, true);
                 }
             }
             Action::StoreStorageDrive(ref drive_mountpoint, ref _drive_name) => {
+                self.lock_registry = Some(LockRegistryState::ResettingNodes);
+                info!("Resetting safenode services because the Storage Drive was changed.");
                 let action_sender = self.get_actions_sender()?;
                 reset_nodes(action_sender, false);
                 self.data_dir_path =
                     get_launchpad_nodes_data_dir_path(&drive_mountpoint.to_path_buf(), false)?;
             }
-            Action::StatusActions(status_action) => {
-                match status_action {
-                    StatusActions::NodesStatsObtained(stats) => {
-                        self.node_stats = stats;
-                    }
-                    StatusActions::StartNodesCompleted | StatusActions::StopNodesCompleted => {
-                        self.lock_registry = None;
-                        self.load_node_registry_and_update_states()?;
-                    }
-                    StatusActions::ResetNodesCompleted { trigger_start_node } => {
-                        self.lock_registry = None;
-                        self.load_node_registry_and_update_states()?;
-
-                        if trigger_start_node {
-                            debug!("Reset nodes completed. Triggering start nodes.");
-                            return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
-                        }
-                        debug!("Reset nodes completed");
-                    }
-                    StatusActions::SuccessfullyDetectedNatStatus => {
-                        debug!("Successfully detected nat status, is_nat_status_determined set to true");
-                        self.is_nat_status_determined = true;
-                    }
-                    StatusActions::ErrorWhileRunningNatDetection => {
-                        self.error_while_running_nat_detection += 1;
-                        debug!(
-                            "Error while running nat detection. Error count: {}",
-                            self.error_while_running_nat_detection
-                        );
-                    }
-                    StatusActions::TriggerManageNodes => {
-                        return Ok(Some(Action::SwitchScene(Scene::ManageNodesPopUp)));
-                    }
-                    StatusActions::PreviousTableItem => {
-                        self.select_previous_table_item();
-                    }
-                    StatusActions::NextTableItem => {
-                        self.select_next_table_item();
-                    }
-                    StatusActions::StartNodes => {
-                        debug!("Got action to start nodes");
-                        if self.lock_registry.is_some() {
-                            error!("Registry is locked. Cannot start node now.");
-                            return Ok(None);
-                        }
-
-                        if self.nodes_to_start == 0 {
-                            info!("Nodes to start not set. Ask for input.");
-                            return Ok(Some(Action::StatusActions(
-                                StatusActions::TriggerManageNodes,
-                            )));
-                        }
-
-                        self.lock_registry = Some(LockRegistryState::StartingNodes);
-                        let action_sender = self.get_actions_sender()?;
-                        info!("Running maintain node count: {:?}", self.nodes_to_start);
-
-                        maintain_n_running_nodes(
-                            self.nodes_to_start as u16,
-                            self.discord_username.clone(),
-                            self.peers_args.clone(),
-                            self.should_we_run_nat_detection(),
-                            self.safenode_path.clone(),
-                            Some(self.data_dir_path.clone()),
-                            action_sender,
-                        );
-                    }
-                    StatusActions::StopNodes => {
-                        debug!("Got action to stop nodes");
-                        if self.lock_registry.is_some() {
-                            error!("Registry is locked. Cannot stop node now.");
-                            return Ok(None);
-                        }
-
-                        let running_nodes = self.get_running_nodes();
-                        self.lock_registry = Some(LockRegistryState::StoppingNodes);
-                        let action_sender = self.get_actions_sender()?;
-                        info!("Stopping node service: {running_nodes:?}");
-
-                        stop_nodes(running_nodes, action_sender);
-                    }
-                }
+            Action::StoreConnectionMode(connection_mode) => {
+                self.connection_mode = connection_mode;
+                self.lock_registry = Some(LockRegistryState::ResettingNodes);
+                info!("Resetting safenode services because the Connection Mode range was changed.");
+                let action_sender = self.get_actions_sender()?;
+                reset_nodes(action_sender, false);
             }
+            Action::StorePortRange(port_from, port_range) => {
+                self.port_from = Some(port_from);
+                self.port_to = Some(port_range);
+                self.lock_registry = Some(LockRegistryState::ResettingNodes);
+                info!("Resetting safenode services because the Port Range was changed.");
+                let action_sender = self.get_actions_sender()?;
+                reset_nodes(action_sender, false);
+            }
+            Action::StatusActions(status_action) => match status_action {
+                StatusActions::NodesStatsObtained(stats) => {
+                    self.node_stats = stats;
+                }
+                StatusActions::StartNodesCompleted | StatusActions::StopNodesCompleted => {
+                    self.lock_registry = None;
+                    self.load_node_registry_and_update_states()?;
+                }
+                StatusActions::ResetNodesCompleted { trigger_start_node } => {
+                    self.lock_registry = None;
+                    self.load_node_registry_and_update_states()?;
+
+                    if trigger_start_node {
+                        debug!("Reset nodes completed. Triggering start nodes.");
+                        return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
+                    }
+                    debug!("Reset nodes completed");
+                }
+                StatusActions::SuccessfullyDetectedNatStatus => {
+                    debug!(
+                        "Successfully detected nat status, is_nat_status_determined set to true"
+                    );
+                    self.is_nat_status_determined = true;
+                }
+                StatusActions::ErrorWhileRunningNatDetection => {
+                    self.error_while_running_nat_detection += 1;
+                    debug!(
+                        "Error while running nat detection. Error count: {}",
+                        self.error_while_running_nat_detection
+                    );
+                }
+                StatusActions::TriggerManageNodes => {
+                    return Ok(Some(Action::SwitchScene(Scene::ManageNodesPopUp)));
+                }
+                StatusActions::PreviousTableItem => {
+                    self.select_previous_table_item();
+                }
+                StatusActions::NextTableItem => {
+                    self.select_next_table_item();
+                }
+                StatusActions::StartNodes => {
+                    debug!("Got action to start nodes");
+                    if self.lock_registry.is_some() {
+                        error!("Registry is locked. Cannot start node now.");
+                        return Ok(None);
+                    }
+
+                    if self.nodes_to_start == 0 {
+                        info!("Nodes to start not set. Ask for input.");
+                        return Ok(Some(Action::StatusActions(
+                            StatusActions::TriggerManageNodes,
+                        )));
+                    }
+
+                    self.lock_registry = Some(LockRegistryState::StartingNodes);
+                    let action_sender = self.get_actions_sender()?;
+                    info!("Running maintain node count: {:?}", self.nodes_to_start);
+
+                    let port_range_str = format!(
+                        "{}-{}",
+                        self.port_from.unwrap_or(0),
+                        self.port_to.unwrap_or(0)
+                    );
+
+                    let port_range = match PortRange::parse(&port_range_str) {
+                        Ok(port_range) => port_range,
+                        Err(err) => {
+                            error!("When starting nodes, we got an error while parsing port range: {err:?}");
+                            return Ok(None);
+                        }
+                    };
+
+                    let maintain_nodes_args = MaintainNodesArgs {
+                        count: self.nodes_to_start as u16,
+                        owner: self.discord_username.clone(),
+                        peers_args: self.peers_args.clone(),
+                        run_nat_detection: self.should_we_run_nat_detection()
+                            && self.connection_mode == ConnectionMode::Automatic,
+                        safenode_path: self.safenode_path.clone(),
+                        data_dir_path: Some(self.data_dir_path.clone()),
+                        action_sender,
+                        connection_mode: self.connection_mode.clone(),
+                        port_range: Some(port_range),
+                    };
+
+                    maintain_n_running_nodes(maintain_nodes_args);
+                }
+                StatusActions::StopNodes => {
+                    debug!("Got action to stop nodes");
+                    if self.lock_registry.is_some() {
+                        error!("Registry is locked. Cannot stop node now.");
+                        return Ok(None);
+                    }
+
+                    let running_nodes = self.get_running_nodes();
+                    self.lock_registry = Some(LockRegistryState::StoppingNodes);
+                    let action_sender = self.get_actions_sender()?;
+                    info!("Stopping node service: {running_nodes:?}");
+
+                    stop_nodes(running_nodes, action_sender);
+                }
+            },
             Action::OptionsActions(OptionsActions::ResetNodes) => {
                 debug!("Got action to reset nodes");
                 if self.lock_registry.is_some() {
@@ -389,13 +429,6 @@ impl Component for Status {
                 let action_sender = self.get_actions_sender()?;
                 info!("Got action to reset nodes");
                 reset_nodes(action_sender, false);
-            }
-            Action::OptionsActions(OptionsActions::UpdateConnectionMode(connection_mode)) => {
-                self.connection_mode = connection_mode;
-            }
-            Action::OptionsActions(OptionsActions::UpdatePortRange(port_from, port_to)) => {
-                self.port_from = Some(port_from);
-                self.port_to = Some(port_to);
             }
             _ => {}
         }

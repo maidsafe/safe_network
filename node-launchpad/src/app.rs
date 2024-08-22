@@ -18,6 +18,7 @@ use crate::{
             connection_mode::ChangeConnectionModePopUp, manage_nodes::ManageNodes,
             port_range::PortRangePopUp, reset_nodes::ResetNodesPopup,
         },
+        status::{Status, StatusConfig},
         Component,
     },
     config::{get_launchpad_nodes_data_dir_path, AppData, Config},
@@ -87,17 +88,18 @@ impl App {
             .unwrap_or(get_primary_mount_point_name()?);
 
         // Main Screens
-        let status = Status::new(
-            app_data.nodes_to_start,
-            &app_data.discord_username,
+        let status_config = StatusConfig {
+            allocated_disk_space: app_data.nodes_to_start,
+            discord_username: app_data.discord_username.clone(),
             peers_args,
             safenode_path,
             data_dir_path,
             connection_mode,
-            Some(port_from),
-            Some(port_to),
-        )
-        .await?;
+            port_from: Some(port_from),
+            port_to: Some(port_to),
+        };
+
+        let status = Status::new(status_config).await?;
         let options = Options::new(
             storage_mountpoint.clone(),
             storage_drive.clone(),
