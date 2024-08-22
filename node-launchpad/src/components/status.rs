@@ -13,6 +13,7 @@ use super::{
     Component, Frame,
 };
 use crate::action::OptionsActions;
+use crate::components::popup::port_range::{PORT_ALLOCATION, PORT_MAX, PORT_MIN};
 use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::connection_mode::ConnectionMode;
 use crate::node_mgmt::MaintainNodesArgs;
@@ -75,9 +76,9 @@ pub struct Status {
     // Connection mode
     connection_mode: ConnectionMode,
     // Port from
-    port_from: Option<u16>,
+    port_from: Option<u32>,
     // Port to
-    port_to: Option<u16>,
+    port_to: Option<u32>,
 }
 
 #[derive(Clone)]
@@ -94,8 +95,8 @@ pub struct StatusConfig {
     pub safenode_path: Option<PathBuf>,
     pub data_dir_path: PathBuf,
     pub connection_mode: ConnectionMode,
-    pub port_from: Option<u16>,
-    pub port_to: Option<u16>,
+    pub port_from: Option<u32>,
+    pub port_to: Option<u32>,
 }
 
 impl Status {
@@ -369,15 +370,22 @@ impl Component for Status {
                         )));
                     }
 
-                    self.lock_registry = Some(LockRegistryState::StartingNodes);
-                    let action_sender = self.get_actions_sender()?;
-                    info!("Running maintain node count: {:?}", self.nodes_to_start);
+                    // Check if the port range is valid and we shorten the range based on the nodes to start
+                    if self.port_from.unwrap_or(PORT_MIN) + self.nodes_to_start as u32 > PORT_MAX {
+                        error!("Port range exceeds maximum port number. Cannot start nodes.");
+                        //TODO: Give feedback to the user
+                        return Ok(None);
+                    }
 
                     let port_range_str = format!(
                         "{}-{}",
-                        self.port_from.unwrap_or(0),
-                        self.port_to.unwrap_or(0)
+                        self.port_from.unwrap_or(PORT_MIN),
+                        self.port_from.unwrap_or(PORT_MIN) - 1 + self.nodes_to_start as u32
                     );
+
+                    self.lock_registry = Some(LockRegistryState::StartingNodes);
+                    let action_sender = self.get_actions_sender()?;
+                    info!("Running maintain node count: {:?}", self.nodes_to_start);
 
                     let port_range = match PortRange::parse(&port_range_str) {
                         Ok(port_range) => port_range,
@@ -400,6 +408,7 @@ impl Component for Status {
                         port_range: Some(port_range),
                     };
 
+                    //TODO: Handle errors and give feedback to the user
                     maintain_n_running_nodes(maintain_nodes_args);
                 }
                 StatusActions::StopNodes => {
@@ -512,8 +521,8 @@ impl Component for Status {
                 ConnectionMode::UPnP => "UPnP",
                 ConnectionMode::CustomPorts => &format!(
                     "Custom Ports  {}-{}",
-                    self.port_from.unwrap_or(0),
-                    self.port_to.unwrap_or(0)
+                    self.port_from.unwrap_or(PORT_MIN),
+                    self.port_to.unwrap_or(PORT_MIN + PORT_ALLOCATION)
                 ),
                 ConnectionMode::Automatic => "Automatic",
             };

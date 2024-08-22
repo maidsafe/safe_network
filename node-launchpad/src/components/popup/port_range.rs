@@ -19,30 +19,24 @@ use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tui_input::{backend::crossterm::EventHandler, Input};
 
-const PORT_MAX: u16 = 65535;
-const PORT_MIN: u16 = 1024;
-const INPUT_SIZE: u16 = 5;
-const INPUT_AREA: u16 = INPUT_SIZE + 2; // +2 for the left and right padding
-
-#[derive(PartialEq)]
-enum FocusInput {
-    PortFrom,
-    PortTo,
-}
+pub const PORT_MAX: u32 = 65535;
+pub const PORT_MIN: u32 = 1024;
+pub const PORT_ALLOCATION: u32 = 49; // We count the port_from as well
+const INPUT_SIZE: u32 = 5;
+const INPUT_AREA: u32 = INPUT_SIZE + 2; // +2 for the left and right padding
 
 pub struct PortRangePopUp {
     active: bool,
     connection_mode: ConnectionMode,
     port_from: Input,
     port_to: Input,
-    port_from_old_value: u16,
-    port_to_old_value: u16,
-    focus: FocusInput,
+    port_from_old_value: u32,
+    port_to_old_value: u32,
     can_save: bool,
 }
 
 impl PortRangePopUp {
-    pub fn new(connection_mode: ConnectionMode, port_from: u16, port_to: u16) -> Self {
+    pub fn new(connection_mode: ConnectionMode, port_from: u32, port_to: u32) -> Self {
         Self {
             active: false,
             connection_mode,
@@ -50,17 +44,16 @@ impl PortRangePopUp {
             port_to: Input::default().with_value(port_to.to_string()),
             port_from_old_value: Default::default(),
             port_to_old_value: Default::default(),
-            focus: FocusInput::PortFrom,
             can_save: false,
         }
     }
 
     pub fn validate(&mut self) {
-        if self.port_from.value().is_empty() || self.port_to.value().is_empty() {
+        if self.port_from.value().is_empty() {
             self.can_save = false;
         } else {
-            let port_from: u16 = self.port_from.value().parse().unwrap_or_default();
-            let port_to: u16 = self.port_to.value().parse().unwrap_or_default();
+            let port_from: u32 = self.port_from.value().parse().unwrap_or_default();
+            let port_to: u32 = self.port_to.value().parse().unwrap_or_default();
             self.can_save = (PORT_MIN..=PORT_MAX).contains(&port_from)
                 && (PORT_MIN..=PORT_MAX).contains(&port_to)
                 && port_from <= port_to;
@@ -110,70 +103,58 @@ impl Component for PortRangePopUp {
                 vec![Action::SwitchScene(Scene::Options)]
             }
             KeyCode::Char(c) if !c.is_numeric() => vec![],
-            KeyCode::Tab => {
-                self.focus = if self.focus == FocusInput::PortFrom {
-                    FocusInput::PortTo
-                } else {
-                    FocusInput::PortFrom
-                };
-                vec![]
-            }
             KeyCode::Up => {
-                if self.focus == FocusInput::PortFrom
-                    && self.port_from.value().parse::<u16>().unwrap_or_default() < PORT_MAX
-                {
+                if self.port_from.value().parse::<u32>().unwrap_or_default() < PORT_MAX {
                     self.port_from = self.port_from.clone().with_value(
-                        (self.port_from.value().parse::<u16>().unwrap_or_default() + 1).to_string(),
+                        (self.port_from.value().parse::<u32>().unwrap_or_default() + 1).to_string(),
                     );
-                } else if self.focus == FocusInput::PortTo
-                    && self.port_from.value().parse::<u16>().unwrap_or_default() > PORT_MIN
-                {
-                    self.port_to = self.port_to.clone().with_value(
-                        (self.port_to.value().parse::<u16>().unwrap_or_default() + 1).to_string(),
-                    );
-                }
+                    let port_from_value: u32 = self.port_from.value().parse().unwrap_or_default();
+                    if port_from_value + PORT_ALLOCATION <= PORT_MAX {
+                        self.port_to = Input::default()
+                            .with_value((port_from_value + PORT_ALLOCATION).to_string());
+                    } else {
+                        self.port_to = Input::default().with_value("-".to_string());
+                    }
+                };
                 self.validate();
                 vec![]
             }
             KeyCode::Down => {
-                if self.focus == FocusInput::PortFrom
-                    && self.port_from.value().parse::<u16>().unwrap_or_default() > PORT_MIN
-                {
+                if self.port_from.value().parse::<u32>().unwrap_or_default() > 0 {
                     self.port_from = self.port_from.clone().with_value(
-                        (self.port_from.value().parse::<u16>().unwrap_or_default() - 1).to_string(),
+                        (self.port_from.value().parse::<u32>().unwrap_or_default() - 1).to_string(),
                     );
-                } else if self.focus == FocusInput::PortTo
-                    && self.port_to.value().parse::<u16>().unwrap_or_default() < PORT_MAX
-                {
-                    self.port_to = self.port_to.clone().with_value(
-                        (self.port_to.value().parse::<u16>().unwrap_or_default() - 1).to_string(),
-                    );
-                }
+                    let port_from_value: u32 = self.port_from.value().parse().unwrap_or_default();
+                    if port_from_value + PORT_ALLOCATION <= PORT_MAX {
+                        self.port_to = Input::default()
+                            .with_value((port_from_value + PORT_ALLOCATION).to_string());
+                    } else {
+                        self.port_to = Input::default().with_value("-".to_string());
+                    }
+                };
                 self.validate();
                 vec![]
             }
             KeyCode::Backspace => {
-                // if max limit reached, we should allow Backspace to work.
-                if self.focus == FocusInput::PortFrom {
-                    self.port_from.handle_event(&Event::Key(key));
-                } else if self.focus == FocusInput::PortTo {
-                    self.port_to.handle_event(&Event::Key(key));
-                }
+                self.port_from.handle_event(&Event::Key(key));
+                let port_from_value: u32 = self.port_from.value().parse().unwrap_or_default();
+                self.port_to =
+                    Input::default().with_value((port_from_value + PORT_ALLOCATION).to_string());
                 self.validate();
                 vec![]
             }
             _ => {
                 // if max limit reached, we should not allow any more inputs.
-                if self.focus == FocusInput::PortFrom
-                    && self.port_from.value().len() < INPUT_SIZE as usize
-                {
+                if self.port_from.value().len() < INPUT_SIZE as usize {
                     self.port_from.handle_event(&Event::Key(key));
-                } else if self.focus == FocusInput::PortTo
-                    && self.port_to.value().len() < INPUT_SIZE as usize
-                {
-                    self.port_to.handle_event(&Event::Key(key));
-                }
-
+                    let port_from_value: u32 = self.port_from.value().parse().unwrap_or_default();
+                    if port_from_value + PORT_ALLOCATION <= PORT_MAX {
+                        self.port_to = Input::default()
+                            .with_value((port_from_value + PORT_ALLOCATION).to_string());
+                    } else {
+                        self.port_to = Input::default().with_value("-".to_string());
+                    }
+                };
                 self.validate();
                 vec![]
             }
@@ -275,28 +256,16 @@ impl Component for PortRangePopUp {
         let input_line = Line::from(vec![
             Span::styled(
                 format!("{}{} ", spaces_from, self.port_from.value()),
-                if self.focus == FocusInput::PortFrom {
-                    Style::default()
-                        .fg(VIVID_SKY_BLUE)
-                        .bg(INDIGO)
-                        .underlined()
-                        .underline_color(VIVID_SKY_BLUE)
-                } else {
-                    Style::default().fg(VIVID_SKY_BLUE)
-                },
+                Style::default()
+                    .fg(VIVID_SKY_BLUE)
+                    .bg(INDIGO)
+                    .underlined()
+                    .underline_color(VIVID_SKY_BLUE),
             ),
             Span::styled(" to ", Style::default().fg(GHOST_WHITE)),
             Span::styled(
                 format!("{}{} ", spaces_to, self.port_to.value()),
-                if self.focus == FocusInput::PortTo {
-                    Style::default()
-                        .fg(VIVID_SKY_BLUE)
-                        .bg(INDIGO)
-                        .underlined()
-                        .underline_color(VIVID_SKY_BLUE)
-                } else {
-                    Style::default().fg(VIVID_SKY_BLUE)
-                },
+                Style::default().fg(VIVID_SKY_BLUE),
             ),
         ])
         .alignment(Alignment::Center);

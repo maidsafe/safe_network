@@ -31,8 +31,8 @@ pub struct Options {
     pub discord_username: String,
     pub connection_mode: ConnectionMode,
     pub port_edit: bool,
-    pub port_from: Option<u16>,
-    pub port_to: Option<u16>,
+    pub port_from: Option<u32>,
+    pub port_to: Option<u32>,
     pub active: bool,
     pub action_tx: Option<UnboundedSender<Action>>,
 }
@@ -43,8 +43,8 @@ impl Options {
         storage_drive: String,
         discord_username: String,
         connection_mode: ConnectionMode,
-        port_from: Option<u16>,
-        port_to: Option<u16>,
+        port_from: Option<u32>,
+        port_to: Option<u32>,
     ) -> Result<Self> {
         Ok(Self {
             storage_mountpoint,
