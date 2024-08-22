@@ -1,11 +1,13 @@
 use std::path::PathBuf;
 
-use sn_node_manager::VerbosityLevel;
+use sn_node_manager::{add_services::config::PortRange, VerbosityLevel};
 use sn_peers_acquisition::PeersArgs;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::action::{Action, StatusActions};
 use color_eyre::eyre::Result;
+
+use crate::connection_mode::ConnectionMode;
 
 pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     tokio::task::spawn_local(async move {
@@ -24,20 +26,25 @@ pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>)
     });
 }
 
-pub fn maintain_n_running_nodes(
-    count: u16,
-    owner: String,
-    peers_args: PeersArgs,
-    run_nat_detection: bool,
-    safenode_path: Option<PathBuf>,
-    data_dir_path: Option<PathBuf>,
-    action_sender: UnboundedSender<Action>,
-) {
+pub struct MaintainNodesArgs {
+    pub count: u16,
+    pub owner: String,
+    pub peers_args: PeersArgs,
+    pub run_nat_detection: bool,
+    pub safenode_path: Option<PathBuf>,
+    pub data_dir_path: Option<PathBuf>,
+    pub action_sender: UnboundedSender<Action>,
+    pub connection_mode: ConnectionMode,
+    pub port_range: Option<PortRange>,
+}
+
+pub fn maintain_n_running_nodes(args: MaintainNodesArgs) {
     tokio::task::spawn_local(async move {
-        if run_nat_detection {
+        if args.run_nat_detection {
+            info!("Running nat detection....");
             if let Err(err) = run_nat_detection_process().await {
                 error!("Error while running nat detection {err:?}. Registering the error.");
-                if let Err(err) = action_sender.send(Action::StatusActions(
+                if let Err(err) = args.action_sender.send(Action::StatusActions(
                     StatusActions::ErrorWhileRunningNatDetection,
                 )) {
                     error!("Error while sending action: {err:?}");
@@ -47,28 +54,69 @@ pub fn maintain_n_running_nodes(
             }
         }
 
-        let owner = if owner.is_empty() { None } else { Some(owner) };
+        let auto_set_nat_flags: bool = args.connection_mode == ConnectionMode::Automatic;
+        let upnp: bool = args.connection_mode == ConnectionMode::UPnP;
+        let home_network: bool = args.connection_mode == ConnectionMode::HomeNetwork;
+        let custom_ports: Option<PortRange> = if args.connection_mode == ConnectionMode::CustomPorts
+        {
+            match args.port_range {
+                Some(port_range) => {
+                    debug!("Port range to run nodes: {port_range:?}");
+                    Some(port_range)
+                }
+                None => {
+                    debug!("Port range not provided. Using default port range.");
+                    None
+                }
+            }
+        } else {
+            None
+        };
+        let owner = if args.owner.is_empty() {
+            None
+        } else {
+            Some(args.owner)
+        };
+
+        debug!("************");
+        debug!(
+            "Maintaining {} running nodes with the following args:",
+            args.count
+        );
+        debug!(
+            " owner: {:?}, peers_args: {:?}, safenode_path: {:?}",
+            owner, args.peers_args, args.safenode_path
+        );
+        debug!(
+            " data_dir_path: {:?}, connection_mode: {:?}",
+            args.data_dir_path, args.connection_mode
+        );
+        debug!(
+            " auto_set_nat_flags: {:?}, custom_ports: {:?}, upnp: {}, home_network: {}",
+            auto_set_nat_flags, custom_ports, upnp, home_network
+        );
+
         if let Err(err) = sn_node_manager::cmd::node::maintain_n_running_nodes(
             false,
-            true,
+            auto_set_nat_flags,
             120,
-            count,
-            data_dir_path,
+            args.count,
+            args.data_dir_path,
             true,
             None,
+            home_network,
             false,
-            false,
             None,
             None,
             None,
-            None,
+            custom_ports,
             owner,
-            peers_args,
+            args.peers_args,
             None,
             None,
-            safenode_path,
+            args.safenode_path,
             None,
-            false,
+            upnp,
             None,
             None,
             VerbosityLevel::Minimal,
@@ -76,12 +124,16 @@ pub fn maintain_n_running_nodes(
         )
         .await
         {
-            error!("Error while maintaining {count:?} running nodes {err:?}");
+            error!(
+                "Error while maintaining {:?} running nodes {err:?}",
+                args.count
+            );
         } else {
-            info!("Maintained {count} running nodes successfully.");
+            info!("Maintained {} running nodes successfully.", args.count);
         }
-        if let Err(err) =
-            action_sender.send(Action::StatusActions(StatusActions::StartNodesCompleted))
+        if let Err(err) = args
+            .action_sender
+            .send(Action::StatusActions(StatusActions::StartNodesCompleted))
         {
             error!("Error while sending action: {err:?}");
         }
