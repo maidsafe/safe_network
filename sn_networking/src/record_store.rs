@@ -748,15 +748,15 @@ impl RecordStore for NodeRecordStore {
     }
 
     fn put(&mut self, record: Record) -> Result<()> {
+        let record_key = PrettyPrintRecordKey::from(&record.key);
+
         if record.value.len() >= self.config.max_value_bytes {
             warn!(
-                "Record not stored. Value too large: {} bytes",
+                "Record {record_key:?} not stored. Value too large: {} bytes",
                 record.value.len()
             );
             return Err(Error::ValueTooLarge);
         }
-
-        let record_key = PrettyPrintRecordKey::from(&record.key);
 
         // Record with payment shall always get passed further
         // to allow the payment to be taken and credit into own wallet.

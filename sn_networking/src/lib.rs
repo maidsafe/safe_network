@@ -33,6 +33,8 @@ mod transport;
 pub mod version;
 
 use cmd::LocalSwarmCmd;
+use xor_name::XorName;
+
 // re-export arch dependent deps for use in the crate, or above
 pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
@@ -426,6 +428,56 @@ impl Network {
             .collect();
 
         get_fees_from_store_cost_responses(all_costs)
+    }
+
+    /// Get register from network.
+    /// Due to the nature of the p2p network, it's not guaranteed there is only one version
+    /// exists in the network all the time.
+    /// The scattering of the register will be more like `ring layered`.
+    /// Meanwhile, `kad::get_record` will terminate with first majority copies returned,
+    /// which has the risk of returning with old versions.
+    /// So, to improve the accuracy, query closest_peers first, then fetch registers
+    /// And merge them if they are with different content.
+    pub async fn get_register_record_from_network(
+        &self,
+        key: RecordKey,
+    ) -> Result<HashMap<XorName, Record>> {
+        let record_address = NetworkAddress::from_record_key(&key);
+        // The requirement of having at least CLOSE_GROUP_SIZE
+        // close nodes will be checked internally automatically.
+        let close_nodes = self.get_closest_peers(&record_address, true).await?;
+
+        let self_address = NetworkAddress::from_peer(self.peer_id());
+        let request = Request::Query(Query::GetRegisterRecord {
+            requester: self_address,
+            key: record_address.clone(),
+        });
+        let responses = self
+            .send_and_get_responses(&close_nodes, &request, true)
+            .await;
+
+        // loop over responses, collecting all fetched register records
+        let mut all_register_copies = HashMap::new();
+        for response in responses.into_values().flatten() {
+            match response {
+                Response::Query(QueryResponse::GetRegisterRecord(Ok((holder, content)))) => {
+                    let register_record = Record::new(key.clone(), content.to_vec());
+                    let content_hash = XorName::from_content(&register_record.value);
+                    debug!(
+                        "RegisterRecordReq of {record_address:?} received register of version {content_hash:?} from {holder:?}"
+                    );
+                    let _ = all_register_copies.insert(content_hash, register_record);
+                }
+                _ => {
+                    error!(
+                        "RegisterRecordReq of {record_address:?} received error response, was {:?}",
+                        response
+                    );
+                }
+            }
+        }
+
+        Ok(all_register_copies)
     }
 
     /// Get a record from the network

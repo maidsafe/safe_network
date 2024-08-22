@@ -327,7 +327,7 @@ impl Node {
     pub(crate) async fn validate_and_store_register(
         &self,
         register: SignedRegister,
-        with_payment: bool,
+        is_client_put: bool,
     ) -> Result<()> {
         let reg_addr = register.address();
         debug!("Validating and storing register {reg_addr:?}");
@@ -363,7 +363,13 @@ impl Node {
 
         self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));
 
-        if with_payment {
+        // Updated register needs to be replicated out as well,
+        // to avoid `leaking` of old version due to the mismatch of
+        // `close_range` and `replication_range`, combined with nodes churning
+        //
+        // However, to avoid `looping of replication`, a `replicated in` register
+        // shall not trigger any further replication out.
+        if is_client_put {
             self.replicate_valid_fresh_record(key, RecordType::NonChunk(content_hash));
         }
 

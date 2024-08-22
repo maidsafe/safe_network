@@ -36,6 +36,13 @@ pub enum Error {
     RegisterNotFound(Box<RegisterAddress>),
     #[error("The Register was already created by another owner: {0:?}")]
     RegisterAlreadyClaimed(bls::PublicKey),
+    #[error("Peer {holder:?} cannot find Record {key:?}")]
+    RegisterRecordNotFound {
+        /// Holder that being contacted
+        holder: Box<NetworkAddress>,
+        /// Key of the missing record
+        key: Box<NetworkAddress>,
+    },
 
     // ---------- payment errors
     #[error("There was an error getting the storecost from kademlia store")]
