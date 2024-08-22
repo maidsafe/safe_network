@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724327746962,
+  "lastUpdate": 1724327749079,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "9d57535244cae65abd5ed30a8473da0b0fb3d412",
-          "message": "fix(node): notify replication_fetcher of early completion",
-          "timestamp": "2024-04-14T23:52:57Z",
-          "tree_id": "f1dedba2fc1dc07a02284a2cf478dcf78d511154",
-          "url": "https://github.com/maidsafe/safe_network/commit/9d57535244cae65abd5ed30a8473da0b0fb3d412"
-        },
-        "date": 1713141958830,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 185,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d57209336bfbc9fdea04f586e903beaf4b374f24",
+          "message": "Merge pull request #2057 from maqi/responsible_range\n\nchore(node): log setting responsible range",
+          "timestamp": "2024-08-22T11:06:09Z",
+          "tree_id": "b037a7a56f27e628c923a9ad107767ef15782d99",
+          "url": "https://github.com/maidsafe/safe_network/commit/d57209336bfbc9fdea04f586e903beaf4b374f24"
+        },
+        "date": 1724327748317,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 217,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
