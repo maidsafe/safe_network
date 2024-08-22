@@ -25,6 +25,7 @@ pub struct ResetNodesPopup {
     /// Whether the component is active right now, capturing keystrokes + draw things.
     active: bool,
     confirmation_input_field: Input,
+    can_reset: bool,
 }
 
 impl Component for ResetNodesPopup {
@@ -34,17 +35,14 @@ impl Component for ResetNodesPopup {
         }
         let send_back = match key.code {
             KeyCode::Enter => {
-                let input = self.confirmation_input_field.value().to_string();
-
-                if input.to_lowercase() == "reset" {
+                if self.can_reset {
                     debug!("Got reset, sending Reset action and switching to Options");
                     vec![
                         Action::OptionsActions(OptionsActions::ResetNodes),
                         Action::SwitchScene(Scene::Options),
                     ]
                 } else {
-                    debug!("Got Enter, but RESET is not typed. Switching to Options");
-                    vec![Action::SwitchScene(Scene::Options)]
+                    vec![]
                 }
             }
             KeyCode::Esc => {
@@ -55,6 +53,8 @@ impl Component for ResetNodesPopup {
             KeyCode::Backspace => {
                 // if max limit reached, we should allow Backspace to work.
                 self.confirmation_input_field.handle_event(&Event::Key(key));
+                let input = self.confirmation_input_field.value().to_string();
+                self.can_reset = input.to_lowercase() == "reset";
                 vec![]
             }
             _ => {
@@ -62,6 +62,8 @@ impl Component for ResetNodesPopup {
                 if self.confirmation_input_field.value().chars().count() < INPUT_SIZE as usize {
                     self.confirmation_input_field.handle_event(&Event::Key(key));
                 }
+                let input = self.confirmation_input_field.value().to_string();
+                self.can_reset = input.to_lowercase() == "reset";
                 vec![]
             }
         };
@@ -193,7 +195,11 @@ impl Component for ResetNodesPopup {
 
         let button_yes = Line::from(vec![Span::styled(
             "Reset Nodes [Enter]",
-            Style::default().fg(EUCALYPTUS),
+            if self.can_reset {
+                Style::default().fg(EUCALYPTUS)
+            } else {
+                Style::default().fg(LIGHT_PERIWINKLE)
+            },
         )])
         .alignment(Alignment::Right);
 
