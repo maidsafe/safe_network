@@ -371,22 +371,25 @@ impl Component for Status {
                         )));
                     }
 
+                    // Port calculation
                     // Check if the port range is valid and we shorten the range based on the nodes to start
-                    if self.port_from.unwrap_or(PORT_MIN) + self.nodes_to_start as u32 > PORT_MAX {
+                    if self.port_from.unwrap_or(PORT_MIN) - 1 + self.nodes_to_start as u32
+                        > PORT_MAX
+                    {
                         error!("Port range exceeds maximum port number. Cannot start nodes.");
                         //TODO: Give feedback to the user
                         return Ok(None);
                     }
 
-                    let port_range_str = format!(
-                        "{}-{}",
-                        self.port_from.unwrap_or(PORT_MIN),
-                        self.port_from.unwrap_or(PORT_MIN) - 1 + self.nodes_to_start as u32
-                    );
-
-                    self.lock_registry = Some(LockRegistryState::StartingNodes);
-                    let action_sender = self.get_actions_sender()?;
-                    info!("Running maintain node count: {:?}", self.nodes_to_start);
+                    let port_range_str = if self.nodes_to_start > 1 {
+                        format!(
+                            "{}-{}",
+                            self.port_from.unwrap_or(PORT_MIN),
+                            self.port_from.unwrap_or(PORT_MIN) - 1 + self.nodes_to_start as u32
+                        )
+                    } else {
+                        format!("{}", self.port_from.unwrap_or(PORT_MIN))
+                    };
 
                     let port_range = match PortRange::parse(&port_range_str) {
                         Ok(port_range) => port_range,
@@ -396,6 +399,10 @@ impl Component for Status {
                         }
                     };
 
+                    self.lock_registry = Some(LockRegistryState::StartingNodes);
+                    let action_sender = self.get_actions_sender()?;
+                    info!("Running maintain node count: {:?}", self.nodes_to_start);
+
                     let maintain_nodes_args = MaintainNodesArgs {
                         count: self.nodes_to_start as u16,
                         owner: self.discord_username.clone(),
@@ -404,12 +411,13 @@ impl Component for Status {
                             && self.connection_mode == ConnectionMode::Automatic,
                         safenode_path: self.safenode_path.clone(),
                         data_dir_path: Some(self.data_dir_path.clone()),
-                        action_sender,
+                        action_sender: action_sender.clone(),
                         connection_mode: self.connection_mode.clone(),
                         port_range: Some(port_range),
                     };
 
                     //TODO: Handle errors and give feedback to the user
+                    stop_nodes(self.get_running_nodes(), action_sender.clone());
                     maintain_n_running_nodes(maintain_nodes_args);
                 }
                 StatusActions::StopNodes => {
