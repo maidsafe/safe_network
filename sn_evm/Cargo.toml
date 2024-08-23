@@ -1,0 +1,17 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Safe Network EVM"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "sn_evm"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.0"
+
+[dependencies]
+alloy = { git = "https://github.com/alloy-rs/alloy", features = ["contract", "provider-http"] }
+thiserror = "1.0"
+tokio = "1.38.0"
+
+[lints]
+workspace = true

@@ -1,0 +1,115 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_foundationWallet",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "nodeAddress",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint32",
+        "name": "quoteIdentifier",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "quoteAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "ChunkPaymentMade",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "AUTONOMI_FOUNDATION_WALLET",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "AUTONOMI_TOKEN_ADDRESS",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "nodeAddresses",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint32[]",
+        "name": "quoteIdentifiers",
+        "type": "uint32[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "quoteAmounts",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "submitBulkChunkPayments",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "nodeAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "quoteIdentifier",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "quoteAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "submitChunkPayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
