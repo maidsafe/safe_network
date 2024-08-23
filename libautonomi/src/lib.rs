@@ -1,3 +1,4 @@
+// TODO: Remove this once we have a proper lib.rs
 #![allow(dead_code)]
 
 pub use bytes::Bytes;
@@ -6,6 +7,7 @@ pub use client::Client;
 pub use libp2p::{multiaddr, Multiaddr};
 
 mod client_wallet;
+mod files;
 mod secrets;
 mod self_encryption;
 mod wallet;
@@ -317,13 +319,19 @@ mod client {
                 xor_names.push(*chunk.name());
             }
 
-            self.pay(xor_names.into_iter(), wallet)
+            let StoragePaymentResult { skipped_chunks, .. } = self
+                .pay(xor_names.into_iter(), wallet)
                 .await
                 .expect("TODO: handle error");
 
             // TODO: Upload in parallel
-            self.upload_chunk(map, wallet).await?;
+            if !skipped_chunks.contains(map.name()) {
+                self.upload_chunk(map, wallet).await?;
+            }
             for chunk in chunks {
+                if skipped_chunks.contains(chunk.name()) {
+                    continue;
+                }
                 self.upload_chunk(chunk, wallet).await?;
             }
 
