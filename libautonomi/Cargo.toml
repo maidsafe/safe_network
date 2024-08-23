@@ -10,6 +10,7 @@ local-discovery = ["sn_client/local-discovery"]
 bip39 = "2.0.0"
 bytes = { version = "1.0.1", features = ["serde"] }
 libp2p = "0.53"
+rand = "0.8.5"
 rmp-serde = "1.1.1"
 self_encryption = "0.29.2"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
@@ -22,7 +23,6 @@ tokio = { version = "1.35.0", features = ["sync"] }
 xor_name = "5.0.0"
 
 [dev-dependencies]
-rand = "0.8.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [lints]

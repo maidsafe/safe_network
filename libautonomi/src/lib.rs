@@ -305,7 +305,10 @@ mod client {
             data: Bytes,
             wallet: &mut HotWallet,
         ) -> Result<XorName, PutError> {
+            let now = std::time::Instant::now();
             let (map, chunks) = encrypt(data)?;
+            tracing::debug!("Encryption took: {:.2?}", now.elapsed());
+
             let map_xor_name = *map.address().xorname();
 
             let mut xor_names = vec![];
@@ -318,6 +321,7 @@ mod client {
                 .await
                 .expect("TODO: handle error");
 
+            // TODO: Upload in parallel
             self.upload_chunk(map, wallet).await?;
             for chunk in chunks {
                 self.upload_chunk(chunk, wallet).await?;
