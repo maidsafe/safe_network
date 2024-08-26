@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724679185340,
+  "lastUpdate": 1724679187072,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "RolandSherwin"
           },
           "distinct": false,
-          "id": "8e4f66c61154863b1111185e48f4c93828016f88",
-          "message": "ci: restrict stable releases to stable branch",
-          "timestamp": "2024-04-15T07:37:33Z",
-          "tree_id": "f2759d1254b3671a56ba8e80e80a7eba080036eb",
-          "url": "https://github.com/maidsafe/safe_network/commit/8e4f66c61154863b1111185e48f4c93828016f88"
-        },
-        "date": 1713169742428,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7046,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33970,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
           "id": "59cec7b7e0167557298a5cde0a2bb1138ae408d2",
           "message": "fix: justfile conditional error",
           "timestamp": "2024-04-15T07:48:00Z",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 23314,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4f015dbb6e229792da5f611309a7717eac0d8d67",
+          "message": "Merge pull request #2062 from maqi/register_readme\n\ndoc(register): expand sn_registers README.md",
+          "timestamp": "2024-08-26T12:34:10Z",
+          "tree_id": "8f28466bda19772e23fa0b315338ad4f9d457815",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f015dbb6e229792da5f611309a7717eac0d8d67"
+        },
+        "date": 1724679186596,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4485,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 23315,
             "unit": "ms"
           },
           {
