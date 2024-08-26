@@ -22,17 +22,54 @@ Libp2p.<br>
   safe network. Nodes can be run on commodity hardware and provide storage space and validation of
   transactions to the network.
 
+#### Building the Node from Source
+
+If you wish to build a version of `safenode` from source, some special consideration must be given
+if you want it to connect to the current beta network.
+
+You should build from the `stable` branch, as follows:
+```
+git checkout stable
+export GENESIS_PK=8829ca178d6022de16fb8d3498411dd8a674a69c5f12e04d8b794a52ab056f1d419d12f690df1082dfa7efbbb10f62fa
+export FOUNDATION_PK=84418659a8581b510c40b12e57da239787fd0d3b323f102f09fae9daf2ac96907e0045b1653c301de45117d393d92678
+export NETWORK_ROYALTIES_PK=8c027130571cea2387a0ceb37c14fec12849015be1573ea6d0a8e4d48da2c1fbe2907ae7503bb7c385b21e2d7ac9d6ff
+export PAYMENT_FORWARD_PK=8c2f406a52d48d48505e1a3fdbb0c19ab42cc7c4807e9ea19c1fff3e5148f3bbe53431ec5a07544aaeef764e073e4b2f
+cargo build --release --features=network-contacts --bin safenode
+```
+
+For more information about the keys, please refer to the [Keys](#keys) section below.
+
 ### For Developers
 
-At build time the following env vars can be set to override default keys (** and must be set during the release process
-to override the default keys**. Github Secrets can be used to set these values for the release process):
+#### Connecting to the Beta Network
 
-- `GENESIS_PK` - The genesis spend public key to use for genesis verification.
-- `GENESIS_SK` - If building the faucet for the genesis spend, this is the secret key to use for genesis verification.
-  This should be kept secret.
-- `FOUNDATION_PK` - The foundation public key to use for the initial disbursement to the foundation.
-- `NETWORK_ROYALTIES_PK` - The foundation public key to use for receiving network royalties.
-- `PAYMENT_FORWARD_PK` - The public key to use for payment forwarding for the beta network collection.
+##### Keys
+
+Various keys in the network control where initial funds are distributed and how ongoing fees and
+royalties are collected. They are also used as part of the node version string, to determine whether
+a connecting node is compatible.
+
+For a client to connect to the current beta network, these keys must be set at build time:
+```
+GENESIS_PK=8829ca178d6022de16fb8d3498411dd8a674a69c5f12e04d8b794a52ab056f1d419d12f690df1082dfa7efbbb10f62fa
+FOUNDATION_PK=84418659a8581b510c40b12e57da239787fd0d3b323f102f09fae9daf2ac96907e0045b1653c301de45117d393d92678
+NETWORK_ROYALTIES_PK=8c027130571cea2387a0ceb37c14fec12849015be1573ea6d0a8e4d48da2c1fbe2907ae7503bb7c385b21e2d7ac9d6ff
+PAYMENT_FORWARD_PK=8c2f406a52d48d48505e1a3fdbb0c19ab42cc7c4807e9ea19c1fff3e5148f3bbe53431ec5a07544aaeef764e073e4b2f
+```
+
+##### Features
+
+You should also build `safe` with the `network-contacts` and `distribution` features enabled:
+```
+cargo build --release --features="network-contacts,distribution" --bin safe
+```
+
+For `safenode`, only the `network-contacts` feature should be required:
+```
+cargo build --release --features=network-contacts --bin safenode
+```
+
+#### Utility Scripts
 
 When you start a network there are a few scripts to aid with basic processes:
 
@@ -53,16 +90,6 @@ When you start a network there are a few scripts to aid with basic processes:
   server, used to claim genesis and request tokens from the network.
 - [Node RPC](https://github.com/maidsafe/safe_network/blob/main/sn_node_rpc_client/README.md) The
   RPC server used by the nodes to expose API calls to the outside world.
-
-#### Releases
-
-` ./resources/scripts/bump_version.sh` will bump the version of the crates in the `Cargo.toml`
-files. And generate a `chore(release):` commit, which if pushed
-to main will result in CI doing a full release run.
-
-` ./resources/scripts/bump_version.sh` can also be namespaced for other release
-channels. eg `./resources/scripts/bump_version.sh beta` will bump the version to
-a `beta` release on any changed crates.
 
 #### Transport Protocols and Architectures
 
