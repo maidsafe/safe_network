@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724327751287,
+  "lastUpdate": 1724679066553,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "8e4f66c61154863b1111185e48f4c93828016f88",
-          "message": "ci: restrict stable releases to stable branch",
-          "timestamp": "2024-04-15T07:37:33Z",
-          "tree_id": "f2759d1254b3671a56ba8e80e80a7eba080036eb",
-          "url": "https://github.com/maidsafe/safe_network/commit/8e4f66c61154863b1111185e48f4c93828016f88"
-        },
-        "date": 1713169627269,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2403130331180339,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6573713762464546,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.00775267497319,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.99353422789513,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4f015dbb6e229792da5f611309a7717eac0d8d67",
+          "message": "Merge pull request #2062 from maqi/register_readme\n\ndoc(register): expand sn_registers README.md",
+          "timestamp": "2024-08-26T12:34:10Z",
+          "tree_id": "8f28466bda19772e23fa0b315338ad4f9d457815",
+          "url": "https://github.com/maidsafe/safe_network/commit/4f015dbb6e229792da5f611309a7717eac0d8d67"
+        },
+        "date": 1724679059991,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2421657981140628,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6817528691796668,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.54150654552491,
             "unit": "MiB/s"
           }
         ]
