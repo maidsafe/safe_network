@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724756500266,
+  "lastUpdate": 1724756614704,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cccdfc80635b7f97734df4305c69ca88b3ab5669",
-          "message": "fix(ci): update the custom branch variable names",
-          "timestamp": "2024-04-15T21:11:53Z",
-          "tree_id": "551d2d8c9129e2874201068ee79648891d68cf59",
-          "url": "https://github.com/maidsafe/safe_network/commit/cccdfc80635b7f97734df4305c69ca88b3ab5669"
-        },
-        "date": 1713218462248,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 48,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 161,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "074a307aaf791639b457ba94ed01bd3ca6022ef2",
+          "message": "Merge branch 'rc-2024.08.2'",
+          "timestamp": "2024-08-27T11:42:33+01:00",
+          "tree_id": "f6a87c337b573d4b9c83bb200774fd074f3d0e9c",
+          "url": "https://github.com/maidsafe/safe_network/commit/074a307aaf791639b457ba94ed01bd3ca6022ef2"
+        },
+        "date": 1724756614459,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 126,
             "unit": "MB"
           }
         ]
