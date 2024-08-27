@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724758185853,
+  "lastUpdate": 1724758187116,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "e92b8e46bb332daa4aeddf1ec255704cd977b99e",
-          "message": "chore: improve naming and typo fix",
-          "timestamp": "2024-04-16T07:06:10Z",
-          "tree_id": "6b7e64c2e57b64f6a705447cff9d5a67577a60e3",
-          "url": "https://github.com/maidsafe/safe_network/commit/e92b8e46bb332daa4aeddf1ec255704cd977b99e"
-        },
-        "date": 1713254178914,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7525,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35500,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 24104,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "829da3bcedcbafcdb2d91dc3295e06633c245717",
+          "message": "Merge pull request #2059 from maqi/reduce_responsible_range\n\nReduce responsible range",
+          "timestamp": "2024-08-27T10:17:55Z",
+          "tree_id": "2e2bc1648b04dcd1a7d66e69dc9c0ae813de5eb6",
+          "url": "https://github.com/maidsafe/safe_network/commit/829da3bcedcbafcdb2d91dc3295e06633c245717"
+        },
+        "date": 1724758186875,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4621,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 23171,
             "unit": "ms"
           },
           {
