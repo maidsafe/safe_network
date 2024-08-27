@@ -442,9 +442,9 @@ impl Client {
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
         let get_quorum = if is_verifying {
-            Quorum::Majority
+            Quorum::All
         } else {
-            Quorum::One
+            Quorum::Majority
         };
         let retry_strategy = if is_verifying {
             Some(RetryStrategy::Balanced)
