@@ -134,37 +134,34 @@ impl NetworkMetricsRecorder {
         );
 
         // store cost
-        let store_cost_sub_registry = sub_registry.sub_registry_with_prefix("store_cost");
         let store_cost = Gauge::default();
-        store_cost_sub_registry.register_with_unit(
+        sub_registry.register(
             "store_cost",
             "The store cost of the node",
-            Unit::Other("Nano".to_string()),
             store_cost.clone(),
         );
         let relevant_records = Gauge::default();
-        store_cost_sub_registry.register(
+        sub_registry.register(
             "relevant_records",
-            "The number of records that we're responsible for",
+            "The number of records that we're responsible for. This is used to calculate the store cost",
             relevant_records.clone(),
         );
         let max_records = Gauge::default();
-        store_cost_sub_registry.register(
+        sub_registry.register(
             "max_records",
-            "The maximum number of records that we can store",
+            "The maximum number of records that we can store. This is used to calculate the store cost",
             max_records.clone(),
         );
         let received_payment_count = Gauge::default();
-        store_cost_sub_registry.register(
+        sub_registry.register(
             "received_payment_count",
-            "The number of payments received by our node",
+            "The number of payments received by our node. This is used to calculate the store cost",
             received_payment_count.clone(),
         );
         let live_time = Gauge::default();
-        store_cost_sub_registry.register_with_unit(
+        sub_registry.register(
             "live_time",
-            "The time for which the node has been alive",
-            Unit::Seconds,
+            "The time for which the node has been alive. This is used to calculate the store cost",
             live_time.clone(),
         );
 
