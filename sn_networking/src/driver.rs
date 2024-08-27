@@ -201,6 +201,7 @@ pub(super) struct NodeBehaviour {
     pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
     pub(super) relay_client: libp2p::relay::client::Behaviour,
     pub(super) relay_server: libp2p::relay::Behaviour,
+    pub(super) dcutr: libp2p::dcutr::Behaviour,
     pub(super) kademlia: kad::Behaviour<UnifiedRecordStore>,
     pub(super) request_response: request_response::cbor::Behaviour<Request, Response>,
 }
@@ -616,6 +617,7 @@ impl NetworkBuilder {
             identify,
             #[cfg(feature = "local-discovery")]
             mdns,
+            dcutr: libp2p::dcutr::Behaviour::new(peer_id),
         };
 
         #[cfg(not(target_arch = "wasm32"))]
