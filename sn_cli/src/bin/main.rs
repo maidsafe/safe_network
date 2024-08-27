@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
     let opt = Opt::parse();
     let logging_targets = vec![
         // TODO: Reset to nice and clean defaults once we have a better idea of what we want
-        ("sn_networking".to_string(), Level::DEBUG),
+        ("sn_networking".to_string(), Level::INFO),
         ("safe".to_string(), Level::TRACE),
         ("sn_build_info".to_string(), Level::TRACE),
         ("autonomi".to_string(), Level::TRACE),

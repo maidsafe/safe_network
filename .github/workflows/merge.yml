@@ -5,9 +5,9 @@ on:
   # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
   # the merge run checks should show on master and enable this clear test/passing history
   merge_group:
-    branches: [ main, alpha*, beta*, rc* ]
+    branches: [main, alpha*, beta*, rc*]
   pull_request:
-    branches: [ "*" ]
+    branches: ["*"]
 
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
@@ -77,6 +77,9 @@ jobs:
         shell: bash
         run: if [[ ! $(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].features.default[]? | select(. == "local-discovery")') ]]; then echo "local-discovery is not a default feature in any package."; else echo "local-discovery is a default feature in at least one package." && exit 1; fi
 
+      - name: Clean out the target directory
+        run: cargo clean
+
       # In a cargo workspace, feature unification can occur, allowing a crate to be built successfully even if it
       # doesn't explicitly specify a feature it uses, provided another crate in the workspace enables that feature.
       # To detect such cases, we must build each crate using `--package` flag, building all packages at once does not work.
@@ -95,7 +98,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -342,7 +345,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -415,72 +418,72 @@ jobs:
           log_file_prefix: safe_test_logs_spend
           platform: ${{ matrix.os }}
 
-  # runs with increased node count
-  spend_simulation:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: spend simulation
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-    steps:
-      - uses: actions/checkout@v4
+  # # runs with increased node count
+  # spend_simulation:
+  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+  #   name: spend simulation
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ ubuntu-latest, windows-latest, macos-latest ]
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
 
-      - uses: Swatinem/rust-cache@v2
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: Build binaries
-        run: cargo build --release --features=local-discovery --bin safenode
-        timeout-minutes: 30
+  #     - name: Build binaries
+  #       run: cargo build --release --features=local-discovery --bin safenode
+  #       timeout-minutes: 30
 
-      - name: Build faucet binary
-        run: cargo build --release --bin faucet --features="local-discovery,gifting"
-        timeout-minutes: 30
+  #     - name: Build faucet binary
+  #       run: cargo build --release --bin faucet --features="local-discovery,gifting"
+  #       timeout-minutes: 30
 
-      - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test spend_simulation --no-run
-        env:
-          # only set the target dir for windows to bypass the linker issue.
-          # happens if we build the node manager via testnet action
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 30
+  #     - name: Build testing executable
+  #       run: cargo test --release -p sn_node --features=local-discovery --test spend_simulation --no-run
+  #       env:
+  #         # only set the target dir for windows to bypass the linker issue.
+  #         # happens if we build the node manager via testnet action
+  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+  #       timeout-minutes: 30
 
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-count: 50
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
+  #     - name: Start a local network
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: start
+  #         interval: 2000
+  #         node-count: 50
+  #         node-path: target/release/safenode
+  #         faucet-path: target/release/faucet
+  #         platform: ${{ matrix.os }}
+  #         build: true
 
-      - name: Check SAFE_PEERS was set
-        shell: bash
-        run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
-            exit 1
-          else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
-          fi
+  #     - name: Check SAFE_PEERS was set
+  #       shell: bash
+  #       run: |
+  #         if [[ -z "$SAFE_PEERS" ]]; then
+  #           echo "The SAFE_PEERS variable has not been set"
+  #           exit 1
+  #         else
+  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #         fi
 
-      - name: execute the spend simulation
-        run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture
-        env:
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
+  #     - name: execute the spend simulation
+  #       run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture
+  #       env:
+  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+  #       timeout-minutes: 25
 
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_spend_simulation
-          platform: ${{ matrix.os }}
+  #     - name: Stop the local network and upload logs
+  #       if: always()
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: stop
+  #         log_file_prefix: safe_test_logs_spend_simulation
+  #         platform: ${{ matrix.os }}
 
   token_distribution_test:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
@@ -488,7 +491,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
 

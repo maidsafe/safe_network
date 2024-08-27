@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use libp2p::PeerId;
 use sn_transfers::QuotingMetrics;
 // this gets us to_string easily enough
 use strum::Display;
@@ -26,6 +27,10 @@ pub enum Marker<'a> {
         cost: u64,
         quoting_metrics: &'a QuotingMetrics,
     },
+    /// The peer has been considered as bad
+    PeerConsideredAsBad { bad_peer: &'a PeerId },
+    /// We have been flagged as a bad node by a peer.
+    FlaggedAsBadNode { flagged_by: &'a PeerId },
 }
 
 impl<'a> Marker<'a> {

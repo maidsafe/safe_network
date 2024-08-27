@@ -23,20 +23,46 @@ pub enum PortRange {
     Range(u16, u16),
 }
 
-pub fn parse_port_range(s: &str) -> Result<PortRange> {
-    if let Ok(port) = u16::from_str(s) {
-        Ok(PortRange::Single(port))
-    } else {
-        let parts: Vec<&str> = s.split('-').collect();
-        if parts.len() != 2 {
-            return Err(eyre!("Port range must be in the format 'start-end'"));
+impl PortRange {
+    pub fn parse(s: &str) -> Result<Self> {
+        if let Ok(port) = u16::from_str(s) {
+            Ok(Self::Single(port))
+        } else {
+            let parts: Vec<&str> = s.split('-').collect();
+            if parts.len() != 2 {
+                return Err(eyre!("Port range must be in the format 'start-end'"));
+            }
+            let start = parts[0].parse::<u16>()?;
+            let end = parts[1].parse::<u16>()?;
+            if start >= end {
+                return Err(eyre!("End port must be greater than start port"));
+            }
+            Ok(Self::Range(start, end))
         }
-        let start = parts[0].parse::<u16>()?;
-        let end = parts[1].parse::<u16>()?;
-        if start >= end {
-            return Err(eyre!("End port must be greater than start port"));
+    }
+
+    /// Validate the port range against a count to make sure the correct number of ports are provided.
+    pub fn validate(&self, count: u16) -> Result<()> {
+        match self {
+            Self::Single(_) => {
+                if count != 1 {
+                    error!("The count ({count}) does not match the number of ports (1)");
+                    return Err(eyre!(
+                        "The count ({count}) does not match the number of ports (1)"
+                    ));
+                }
+            }
+            Self::Range(start, end) => {
+                let port_count = end - start + 1;
+                if count != port_count {
+                    error!("The count ({count}) does not match the number of ports ({port_count})");
+                    return Err(eyre!(
+                        "The count ({count}) does not match the number of ports ({port_count})"
+                    ));
+                }
+            }
         }
-        Ok(PortRange::Range(start, end))
+        Ok(())
     }
 }
 

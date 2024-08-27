@@ -14,8 +14,10 @@ use clap::Args;
 use lazy_static::lazy_static;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use rand::{seq::SliceRandom, thread_rng};
+use reqwest::Client;
 #[cfg(feature = "network-contacts")]
 use sn_networking::version::get_network_version;
+use std::time::Duration;
 use tracing::*;
 use url::Url;
 
@@ -30,7 +32,7 @@ lazy_static! {
 }
 
 // The maximum number of retries to be performed while trying to get peers from a URL.
-const MAX_RETRIES_ON_GET_PEERS_FROM_URL: usize = 3;
+const MAX_RETRIES_ON_GET_PEERS_FROM_URL: usize = 7;
 
 /// The name of the environment variable that can be used to pass peers to the node.
 pub const SAFE_PEERS_ENV: &str = "SAFE_PEERS";
@@ -190,8 +192,14 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
 pub async fn get_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
     let mut retries = 0;
 
+    #[cfg(not(target_arch = "wasm32"))]
+    let request_client = Client::builder().timeout(Duration::from_secs(10)).build()?;
+    // Wasm does not have the timeout method yet.
+    #[cfg(target_arch = "wasm32")]
+    let request_client = Client::builder().build()?;
+
     loop {
-        let response = reqwest::get(url.clone()).await;
+        let response = request_client.get(url.clone()).send().await;
 
         match response {
             Ok(response) => {
@@ -227,7 +235,8 @@ pub async fn get_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
                     }
                 }
             }
-            Err(_) => {
+            Err(err) => {
+                error!("Failed to get peers from URL {url}: {err:?}");
                 retries += 1;
                 if retries >= MAX_RETRIES_ON_GET_PEERS_FROM_URL {
                     return Err(Error::FailedToObtainPeersFromUrl(

@@ -12,8 +12,9 @@ use tokio::time::Duration;
 
 use crate::target_arch::{interval, Instant, Interval};
 
-/// The interval in which kad.bootstrap is called
-pub(crate) const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(5);
+/// The default interval at which NetworkDiscovery is triggered. The interval is increased as more peers are added to the
+/// routing table.
+pub(crate) const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Every BOOTSTRAP_CONNECTED_PEERS_STEP connected peer, we step up the BOOTSTRAP_INTERVAL to slow down bootstrapping
 /// process
@@ -27,9 +28,12 @@ const LAST_PEER_ADDED_TIME_LIMIT: Duration = Duration::from_secs(180);
 const LAST_BOOTSTRAP_TRIGGERED_TIME_LIMIT: Duration = Duration::from_secs(30);
 
 /// The bootstrap interval to use if we haven't added any new peers in a while.
-const NO_PEER_ADDED_SLOWDOWN_INTERVAL: u64 = 300;
+const NO_PEER_ADDED_SLOWDOWN_INTERVAL_MAX_S: u64 = 600;
 
 impl SwarmDriver {
+    /// This functions triggers network discovery based on when the last peer was added to the RT and the number of
+    /// peers in RT. The function also returns a new bootstrap interval that is proportional to the number of
+    /// peers in RT, so more peers in RT, the longer the interval.
     pub(crate) async fn run_bootstrap_continuously(
         &mut self,
         current_bootstrap_interval: Duration,
@@ -40,12 +44,6 @@ impl SwarmDriver {
             .await;
         if should_bootstrap {
             self.trigger_network_discovery();
-        }
-        if let Some(new_interval) = &new_interval {
-            debug!(
-                "The new bootstrap_interval has been updated to {:?}",
-                new_interval.period()
-            );
         }
         new_interval
     }
@@ -114,7 +112,6 @@ impl ContinuousBootstrap {
         peers_in_rt: u32,
         current_interval: Duration,
     ) -> (bool, Option<Interval>) {
-        // kad bootstrap process needs at least one peer in the RT be carried out.
         let is_ongoing = if let Some(last_bootstrap_triggered) = self.last_bootstrap_triggered {
             last_bootstrap_triggered.elapsed() < LAST_BOOTSTRAP_TRIGGERED_TIME_LIMIT
         } else {
@@ -126,16 +123,16 @@ impl ContinuousBootstrap {
         // the bootstrapping process.
         // Don't slow down if we haven't even added one peer to our RT.
         if self.last_peer_added_instant.elapsed() > LAST_PEER_ADDED_TIME_LIMIT && peers_in_rt != 0 {
-            info!(
-                "It has been {LAST_PEER_ADDED_TIME_LIMIT:?} since we last added a peer to RT. Slowing down the continuous bootstrapping process"
+            // To avoid a heart beat like cpu usage due to the 1K candidates generation,
+            // randomize the interval within certain range
+            let no_peer_added_slowdown_interval: u64 = OsRng.gen_range(
+                NO_PEER_ADDED_SLOWDOWN_INTERVAL_MAX_S / 2..NO_PEER_ADDED_SLOWDOWN_INTERVAL_MAX_S,
             );
-
-            // TO avoid a heart beat like cpu usage due to the 1K candidates generation,
-            // randomlize the interval within certain range
-            let no_peer_added_slowdown_interval: u64 = OsRng
-                .gen_range(NO_PEER_ADDED_SLOWDOWN_INTERVAL..NO_PEER_ADDED_SLOWDOWN_INTERVAL * 2);
             let no_peer_added_slowdown_interval_duration =
                 Duration::from_secs(no_peer_added_slowdown_interval);
+            info!(
+                    "It has been {LAST_PEER_ADDED_TIME_LIMIT:?} since we last added a peer to RT. Slowing down the continuous bootstrapping process. Old interval: {current_interval:?}, New interval: {no_peer_added_slowdown_interval_duration:?}"
+                );
 
             let mut new_interval = interval(no_peer_added_slowdown_interval_duration);
             new_interval.tick().await; // the first tick completes immediately
@@ -147,7 +144,7 @@ impl ContinuousBootstrap {
         let step = std::cmp::max(1, step);
         let new_interval = BOOTSTRAP_INTERVAL * step;
         let new_interval = if new_interval > current_interval {
-            info!("More peers have been added to our RT!. Slowing down the continuous bootstrapping process");
+            info!("More peers have been added to our RT!. Slowing down the continuous bootstrapping process. Old interval: {current_interval:?}, New interval: {new_interval:?}");
             let mut interval = interval(new_interval);
             interval.tick().await; // the first tick completes immediately
             Some(interval)

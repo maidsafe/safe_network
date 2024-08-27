@@ -7,97 +7,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-08-27
+
+### Network
+
+#### Added
+
+- The node will now report its bandwidth usage through the metrics endpoint.
+- The metrics server has a new `/metadata` path which will provide static information about the node,
+  including peer ID and version.
+- The metrics server exposes more metrics on store cost derivation. These include relevant record
+  count and number of payments received.
+- The metrics server exposes metrics related to bad node detection.
+- Test to confirm main key can’t verify signature signed by child key.
+- Avoid excessively high quotes by pruning records that are not relevant.
+
+#### Changed
+
+- Bad node detection and bootstrap intervals have been increased. This should reduce the number
+  of messages being sent.
+- The spend parent verification strategy was refactored to be more aligned with the public
+  network.
+- Nodes now prioritize local work over new work from the network, which reduces memory footprint.
+- Multiple GET queries to the same address are now de-duplicated and will result in a single query
+  being processed.
+- Improve efficiency of command handling and the record store cache.
+- A parent spend is now trusted with a majority of close group nodes, rather than all of them. This
+  increases the chance of the spend being stored successfully when some percentage of nodes are slow
+  to respond.
+
+#### Fixed
+
+- The amount of bytes a home node could send and receive per relay connection is increased. This
+  solves a problem where transmission of data is interrupted, causing home nodes to malfunction.
+- Fetching the network contacts now times out and retries. Previously we would wait for an excessive
+  amount of time, which could cause the node to hang during start up.
+- If a node has been shunned, we inform that node before blocking all communication to it.
+- The current wallet balance metric is updated more frequently and will now reflect the correct
+  state.
+- Avoid burnt spend during forwarding by correctly handling repeated CashNotes and confirmed spends.
+- Fix logging for CashNote and confirmed spend disk ops
+- Check whether a CashNote has already been received to avoid duplicate CashNotes in the wallet.
+
+### Node Manager
+
+#### Added
+
+- The `local run` command supports `--metrics-port`, `--node-port` and `--rpc-port` arguments.
+- The `start` command waits for the node to connect to the network before attempting to start the
+  next node. If it takes more than 300 seconds to connect, we consider that a failure and move to the
+  next node. The `--connection-timeout` argument can be used to vary the timeout. If you prefer the
+  old behaviour, you can use the `--interval` argument, which will continue to apply a static,
+  time-based interval.
+
+#### Changed
+
+- On an upgrade, the node registry is saved after each node is processed, as opposed to waiting
+  until the end. This means if there is an unexpected failure, the registry will have the
+  information about which nodes have already been upgraded.
+
+### Launchpad
+
+#### Added
+
+- The user can choose a different drive for the node's data directory.
+- New sections in the UI: `Options` and `Help`.
+- A navigation bar has been added with `Status`, `Options` and `Help` sections.
+- The node's logs can be viewed from the `Options` section.
+
+#### Changed
+
+- Increased spacing for title and paragraphs.
+- Increased spacing on footer.
+- Increased spacing on box titles.
+- Moved `Discord Username` from the top title into the `Device Status` section.
+- Made the general layout of `Device Status` more compact.
+
+### Client
+
+#### Added
+
+- The `safe files download` command now displays duration per file.
+
+#### Changed
+
+- Adjust the put and get configuration scheme to align the client with a more realistic network
+  which would have some percentage of slow nodes.
+- Improved spend logging to help debug the upload process.
+
+#### Fixed
+
+- Avoid a corrupt wallet by terminating the payment process during an unrecoverable error.
+
 ## 2024-07-25
 
-### Binaries
+### Network
 
-* `faucet` v0.4.31
-* `nat-detection` v0.2.1
-* `node-launchpad` v0.3.11
-* `safe` v0.94.0
-* `safenode` v0.110.0
-* `safenode-manager` v0.10.1
-* `safenodemand` v0.10.1
-* `safenode_rpc_client` v0.6.26
-* `sn_auditor` v0.2.3
-
-### 🔦 Highlights
-
-* The introduction of a record-store cache has significantly reduced the node's disk IO. As a side
-  effect, the CPU does less work, and performance improves. RAM usage has increased by around 25MB per
-  node, but we view this as a reasonable trade off.
-* The node's relay server now supports more connections: when running with `--home-network`, up to
-  256 will be supported, and otherwise, it will be 1024. Along with minor tweaks to utilize the
-  relay server properly, this should hopefully result in less connections being dropped.
-* Reward forwarding is more robust.
-* Chunk verification is now probabilistic, which should reduce messaging. In combination with
-  replication messages also being reduced, this should result in a bandwidth usage reduction of
-  ~20%.
-* Replication messages are less frequent, reducing bandwidth by ~20% per node. 
-* Bad nodes and nodes with a mismatched protocol are now added to a block list. This reduces the
-  chance of a network interference and the impact of a bad node in the network.
-* For the time being, hole punching has been removed. It was causing handshake time outs, resulting
-  in home nodes being less stable. It will be re-enabled in the future.
-* Wallet password encryption enhances security, and in the case of secret key leakage, prevents
-  unauthorized access.
-* Native Apple Silicon (M-series) binaries have been added to our releases, meaning M-series Mac
-  users do not have to rely on running Intel binaries with Rosetta.
-
-### Merged Pull Requests
-
-2024-07-11 [#1945](https://github.com/maidsafe/safe_network/pull/1945) -- feat: double spend spam protection
-
-2024-07-11 [#1952](https://github.com/maidsafe/safe_network/pull/1952) -- fix(auditor): create auditor directory if it doesn't exist
-
-2024-07-11 [#1951](https://github.com/maidsafe/safe_network/pull/1951) -- test(spend_simulation): add more attacks
-
-2024-07-11 [#1953](https://github.com/maidsafe/safe_network/pull/1953) -- chore/fix(resources): use more portable shebang
-
-2024-07-12 [#1959](https://github.com/maidsafe/safe_network/pull/1959) -- refactor outdated conn removal
-
-2024-07-12 [#1964](https://github.com/maidsafe/safe_network/pull/1964) -- refactor(cli)!: `wallet address` and `wallet create` changes
-
-2024-07-15 [#1946](https://github.com/maidsafe/safe_network/pull/1946) -- docs(sn_client): Basic documentation
-
-2024-07-15 [#1966](https://github.com/maidsafe/safe_network/pull/1966) -- fix(network): do not add bootstrap peer as relay candidate
-
-2024-07-16 [#1969](https://github.com/maidsafe/safe_network/pull/1969) -- chore(network): force close connection if there is a protocol mistmatch
-
-2024-07-16 [#1972](https://github.com/maidsafe/safe_network/pull/1972) -- feat(safenode_rpc_client): added `--version` flag
-
-2024-07-17 [#1973](https://github.com/maidsafe/safe_network/pull/1973) -- Auditor supplement features
-
-2024-07-17 [#1975](https://github.com/maidsafe/safe_network/pull/1975) -- feat(networking): remove self.close_group and checks there as unused
-
-2024-07-18 [#1976](https://github.com/maidsafe/safe_network/pull/1976) -- chore(networking): make ChunkVerification probabalistic
-
-2024-07-18 [#1949](https://github.com/maidsafe/safe_network/pull/1949) -- feat(wallet): wallet secret key file encryption
-
-2024-07-18 [#1977](https://github.com/maidsafe/safe_network/pull/1977) -- Reduce replication msg processing
-
-2024-07-18 [#1983](https://github.com/maidsafe/safe_network/pull/1983) -- fix(node): remove cn from disk and flush to confirmed_spends during forwarding
-
-2024-07-18 [#1980](https://github.com/maidsafe/safe_network/pull/1980) -- feat(networking): add small record cache
-
-2024-07-18 [#1982](https://github.com/maidsafe/safe_network/pull/1982) -- feat(network): implement blocklist behaviour
-
-2024-07-18 [#1984](https://github.com/maidsafe/safe_network/pull/1984) -- chore(node): move sn_client to dev deps
-
-2024-07-18 [#1985](https://github.com/maidsafe/safe_network/pull/1985) -- Fix Nano count disappearing from Launchpad after restart
-
-2024-07-19 [#1971](https://github.com/maidsafe/safe_network/pull/1971) -- feat!: limit error surface
-
-2024-07-19 [#1986](https://github.com/maidsafe/safe_network/pull/1986) -- Add native Apple Silicon binaries to the release artifacts
-
-2024-07-19 [#1955](https://github.com/maidsafe/safe_network/pull/1955) -- feat(networking): relax relay limits
-
-2024-07-24 [#1990](https://github.com/maidsafe/safe_network/pull/1990) -- chore: implement new process in release workflow
-
-### Detailed Changes
-
-#### Network
-
-##### Added
+#### Added
 
 - Protection against an attack allowing bad nodes or clients to shadow a spend (make it disappear)
   through spamming.
@@ -114,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   effect, the CPU does less work, and performance improves. RAM usage has increased by around 25MB per
   node, but we view this as a reasonable trade off.
 
-##### Changed
+#### Changed
 
 - For the time being, hole punching has been removed. It was causing handshake time outs, resulting
   in home nodes being less stable. It will be re-enabled in the future.
@@ -125,16 +131,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   replication messages also being reduced, this should result in a bandwidth usage reduction of
   ~20%.
 
-##### Fixed
+#### Fixed
 
 - During payment forwarding, CashNotes are removed from disk and confirmed spends are stored to
   disk. This is necessary for resolving burnt spend attempts for forwarded payments.
 - Fix a bug where the auditor was not storing data to disk because of a missing directory.
 - Bootstrap peers are not added as relay candidates as we do not want to overwhelm them.
 
-#### Client
+### Client
 
-##### Added
+#### Added
 
 - Basic global documentation for the `sn_client` crate.
 - Option to encrypt the wallet private key with a password, in a file called
@@ -150,44 +156,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   be used with the mnemonic to create a new private key.
 - A new `wallet encrypt` command encrypts an existing wallet.
 
-##### Changed
+#### Changed
 
 - The `wallet address` command no longer creates a new wallet if no wallet exists.
 - The `wallet create` command creates a wallet using the account mnemonic instead of requiring a
   hex-encoded secret key.
 - The `wallet create` `--key` and `--derivation` arguments are mutually exclusive.
 
-#### Launchpad
+### Launchpad
 
-##### Fixed
+#### Fixed
 
 - The `Total Nanos Earned` stat no longer resets on restart.
 
-#### RPC Client
+### RPC Client
 
-##### Added
+#### Added
 
 - A `--version` argument shows the binary version
 
-#### Other
+### Other
 
-##### Added
+#### Added
 
 - Native Apple Silicon (M-series) binaries have been added to our releases, meaning M-series Mac
   users do not have to rely on running Intel binaries with Rosetta.
 
 ## 2024-07-10
-
-### Binaries
-
-* `faucet` v0.4.30
-* `nat-detection` v0.2.0
-* `node-launchpad` v0.3.10
-* `safe` v0.93.9
-* `safenode` v0.109.0
-* `safenode-manager` v0.10.0
-* `sn_auditor` v0.2.2
-* `sn_node_rpc_client` v0.6.25
 
 ### Network
 

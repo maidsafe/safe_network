@@ -30,11 +30,6 @@ impl Node {
     pub(crate) async fn validate_and_store_record(&self, record: Record) -> Result<()> {
         let record_header = RecordHeader::from_record(&record)?;
 
-        // Notify replication_fetcher to mark the attempt as completed.
-        // Send the notification earlier to avoid it got skipped due to:
-        // the record becomes stored during the fetch because of other interleaved process.
-        self.network().notify_fetch_completed(record.key.clone());
-
         match record_header.kind {
             RecordKind::ChunkWithPayment => {
                 let record_key = record.key.clone();
@@ -56,7 +51,14 @@ impl Node {
                     // we eagery retry replicaiton as it seems like other nodes are having trouble
                     // did not manage to get this chunk as yet
                     self.replicate_valid_fresh_record(record_key, RecordType::Chunk);
-                    trace!(
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network()
+                        .notify_fetch_completed(record.key.clone(), RecordType::Chunk);
+
+                    debug!(
                         "Chunk with addr {:?} already exists: {already_exists}, payment extracted.",
                         chunk.network_address()
                     );
@@ -75,6 +77,12 @@ impl Node {
                     Marker::ValidPaidChunkPutFromClient(&PrettyPrintRecordKey::from(&record.key))
                         .log();
                     self.replicate_valid_fresh_record(record_key, RecordType::Chunk);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network()
+                        .notify_fetch_completed(record.key.clone(), RecordType::Chunk);
                 }
 
                 store_chunk_result
@@ -99,6 +107,14 @@ impl Node {
                         record_key,
                         RecordType::NonChunk(content_hash),
                     );
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network().notify_fetch_completed(
+                        record.key.clone(),
+                        RecordType::NonChunk(content_hash),
+                    );
                 }
                 result
             }
@@ -109,22 +125,35 @@ impl Node {
                 let net_addr = NetworkAddress::from_register_address(*register.address());
                 let key = net_addr.to_record_key();
                 let pretty_key = PrettyPrintRecordKey::from(&key);
-                trace!("Got record to store without payment for register at {pretty_key:?}");
+                debug!("Got record to store without payment for register at {pretty_key:?}");
                 if !self.validate_key_and_existence(&net_addr, &key).await? {
-                    trace!("Ignore store without payment for register at {pretty_key:?}");
+                    debug!("Ignore store without payment for register at {pretty_key:?}");
                     return Err(Error::InvalidPutWithoutPayment(
                         PrettyPrintRecordKey::from(&record.key).into_owned(),
                     ));
                 }
 
                 // store the update
-                trace!("Store update without payment as we already had register at {pretty_key:?}");
+                debug!("Store update without payment as we already had register at {pretty_key:?}");
                 let result = self.validate_and_store_register(register, true).await;
 
                 if result.is_ok() {
+                    debug!("Successfully stored register update at {pretty_key:?}");
                     Marker::ValidPaidRegisterPutFromClient(&pretty_key).log();
                     // we dont try and force replicaiton here as there's state to be kept in sync
                     // which we leave up to the client to enforce
+
+                    let content_hash = XorName::from_content(&record.value);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network().notify_fetch_completed(
+                        record.key.clone(),
+                        RecordType::NonChunk(content_hash),
+                    );
+                } else {
+                    warn!("Failed to store register update at {pretty_key:?}");
                 }
                 result
             }
@@ -154,21 +183,33 @@ impl Node {
                     .await
                 {
                     if already_exists {
-                        trace!("Payment of the incoming exists register {pretty_key:?} having error {err:?}");
+                        debug!("Payment of the incoming exists register {pretty_key:?} having error {err:?}");
                     } else {
                         error!("Payment of the incoming non-exist register {pretty_key:?} having error {err:?}");
                         return Err(err);
                     }
                 }
 
-                self.validate_and_store_register(register, true).await
+                let res = self.validate_and_store_register(register, true).await;
+                if res.is_ok() {
+                    let content_hash = XorName::from_content(&record.value);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network().notify_fetch_completed(
+                        record.key.clone(),
+                        RecordType::NonChunk(content_hash),
+                    );
+                }
+                res
             }
         }
     }
 
     /// Store a pre-validated, and already paid record to the RecordStore
     pub(crate) async fn store_replicated_in_record(&self, record: Record) -> Result<()> {
-        trace!("Storing record which was replicated to us {:?}", record.key);
+        debug!("Storing record which was replicated to us {:?}", record.key);
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
             // A separate flow handles payment for chunks and registers
@@ -186,7 +227,7 @@ impl Node {
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
                 if already_exists {
-                    trace!(
+                    debug!(
                         "Chunk with addr {:?} already exists?: {already_exists}, do nothing",
                         chunk.network_address()
                     );
@@ -271,7 +312,7 @@ impl Node {
         };
 
         // finally store the Record directly into the local storage
-        trace!("Storing chunk {chunk_name:?} as Record locally");
+        debug!("Storing chunk {chunk_name:?} as Record locally");
         self.network().put_local_record(record);
 
         self.record_metrics(Marker::ValidChunkRecordPutFromNetwork(&pretty_key));
@@ -298,10 +339,12 @@ impl Node {
 
         // check register and merge if needed
         let updated_register = match self.register_validation(&register, present_locally).await? {
-            Some(reg) => reg,
+            Some(reg) => {
+                debug!("Register needed to be updated");
+                reg
+            }
             None => {
-                // Notify replication_fetcher to mark the attempt as completed.
-                self.network().notify_fetch_completed(key.clone());
+                debug!("No update needed for register");
                 return Ok(());
             }
         };
@@ -444,7 +487,7 @@ impl Node {
                     {
                         Ok(cash_notes) => {
                             let received_royalties = total_cash_notes_amount(&cash_notes)?;
-                            trace!(
+                            debug!(
                                 "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
                                 cash_notes.len()
                             );
@@ -487,14 +530,14 @@ impl Node {
     ) -> Result<()> {
         let key = address.to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
-        trace!("Validating record payment for {pretty_key}");
+        debug!("Validating record payment for {pretty_key}");
 
         // load wallet
         let mut wallet = HotWallet::load_from(self.network().root_dir_path())?;
         let old_balance = wallet.balance().as_nano();
 
         // unpack transfer
-        trace!("Unpacking incoming Transfers for record {pretty_key}");
+        debug!("Unpacking incoming Transfers for record {pretty_key}");
         let (received_fee, mut cash_notes, royalties_cash_notes_r) = self
             .cash_notes_from_transfers(payment.transfers, &wallet, pretty_key.clone())
             .await?;
@@ -502,23 +545,20 @@ impl Node {
         // check for cash notes that we have already spent
         // this can happen in cases where the client retries a failed PUT after we have already used the cash note
         cash_notes.retain(|cash_note| {
-            let spend_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
-            let already_spent = matches!(wallet.get_confirmed_spend(spend_addr), Ok(Some(_spend)));
-            if already_spent {
-                warn!(
-                    "Double spend {} detected for record payment {pretty_key}",
-                    cash_note.unique_pubkey()
-                );
+            let already_present = wallet.cash_note_presents(&cash_note.unique_pubkey());
+            if already_present {
+                return !already_present;
             }
-            // retain the `CashNote` if it's not already spent
-            !already_spent
+
+            let spend_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
+            !wallet.has_confirmed_spend(spend_addr)
         });
         if cash_notes.is_empty() {
-            info!("All incoming cash notes were already spent, no need to further process");
+            info!("All incoming cash notes were already received, no need to further process");
             return Err(Error::ReusedPayment);
         }
 
-        trace!("Received payment of {received_fee:?} for {pretty_key}");
+        debug!("Received payment of {received_fee:?} for {pretty_key}");
 
         // Notify `record_store` that the node received a payment.
         self.network().notify_payment_received();
@@ -546,7 +586,7 @@ impl Node {
         // check if the quote is valid
         let storecost = payment.quote.cost;
         verify_quote_for_storecost(self.network(), payment.quote, address)?;
-        trace!("Payment quote valid for record {pretty_key}");
+        debug!("Payment quote valid for record {pretty_key}");
 
         // Let's check payment is sufficient both for our store cost and for network royalties
         // Since the storage payment is made to a single node, we can calculate the royalties fee based on that single payment.
@@ -558,7 +598,7 @@ impl Node {
         // finally, (after we accept any payments to us as they are ours now anyway)
         // lets check they actually paid enough
         if received_fee < expected_fee {
-            trace!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {expected_fee:?}");
+            debug!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {expected_fee:?}");
             return Err(Error::PaymentProofInsufficientAmount {
                 paid: received_fee,
                 expected: expected_fee,
@@ -584,7 +624,7 @@ impl Node {
             debug!("Register with addr {reg_addr:?} is valid and doesn't exist locally");
             return Ok(Some(register.to_owned()));
         }
-        trace!("Register with addr {reg_addr:?} exists locally, comparing with local version");
+        debug!("Register with addr {reg_addr:?} exists locally, comparing with local version");
 
         let key = NetworkAddress::from_register_address(*reg_addr).to_record_key();
 
@@ -605,10 +645,10 @@ impl Node {
         let mut merged_register = local_register.clone();
         merged_register.verified_merge(register)?;
         if merged_register == local_register {
-            trace!("Register with addr {reg_addr:?} is the same as the local version");
+            debug!("Register with addr {reg_addr:?} is the same as the local version");
             Ok(None)
         } else {
-            trace!("Register with addr {reg_addr:?} is different from the local version");
+            debug!("Register with addr {reg_addr:?} is different from the local version");
             Ok(Some(merged_register))
         }
     }
@@ -803,11 +843,11 @@ impl Node {
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((spend, Ok(_descendant))) => {
-                    trace!("Spend {spend:?} has a live descendant");
+                    debug!("Spend {spend:?} has a live descendant");
                     let _inserted = live_spends.insert(spend);
                 }
                 Ok((spend, Err(NetworkError::GetRecordError(GetRecordError::RecordNotFound)))) => {
-                    trace!("Spend {spend:?} descendant was not found, continuing...");
+                    debug!("Spend {spend:?} descendant was not found, continuing...");
                 }
                 Ok((spend, Err(e))) => {
                     warn!(

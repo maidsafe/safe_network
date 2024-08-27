@@ -6,8 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::system;
+use crate::system::get_primary_mount_point;
 use crate::{action::Action, mode::Scene};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
 use ratatui::style::{Color, Modifier, Style};
@@ -17,8 +19,56 @@ use std::path::PathBuf;
 
 const CONFIG: &str = include_str!("../.config/config.json5");
 
+/// Where to store the Nodes data.
+///
+/// If `base_dir` is the primary mount point, we store in "<base_dir>/$HOME/user_data_dir/safe/node".
+///
+/// if not we store in "<base_dir>/safe/node".
+///
+/// If should_create is true, the directory will be created if it doesn't exists.
+pub fn get_launchpad_nodes_data_dir_path(
+    base_dir: &PathBuf,
+    should_create: bool,
+) -> Result<PathBuf> {
+    let mut mount_point = PathBuf::new();
+
+    let data_directory: PathBuf = if *base_dir == get_primary_mount_point() {
+        dirs_next::data_dir().ok_or_else(|| {
+            eyre!(
+                "Data directory is not obtainable for base_dir {:?}",
+                base_dir
+            )
+        })?
+    } else {
+        base_dir.clone()
+    };
+    mount_point.push(data_directory);
+    mount_point.push("safe");
+    mount_point.push("node");
+    if should_create {
+        debug!("Creating nodes data dir: {:?}", mount_point.as_path());
+        match std::fs::create_dir_all(mount_point.as_path()) {
+            Ok(_) => debug!("Nodes {:?} data dir created successfully", mount_point),
+            Err(e) => {
+                error!(
+                    "Failed to create nodes data dir in {:?}: {:?}",
+                    mount_point, e
+                );
+                return Err(eyre!(
+                    "Failed to create nodes data dir in {:?}",
+                    mount_point
+                ));
+            }
+        }
+    }
+    Ok(mount_point)
+}
+
+/// Where to store the Launchpad config & logs.
+///
 pub fn get_launchpad_data_dir_path() -> Result<PathBuf> {
-    let mut home_dirs = dirs_next::data_dir().expect("Data directory is obtainable");
+    let mut home_dirs =
+        dirs_next::data_dir().ok_or_else(|| eyre!("Data directory is not obtainable"))?;
     home_dirs.push("safe");
     home_dirs.push("launchpad");
     std::fs::create_dir_all(home_dirs.as_path())?;
@@ -52,6 +102,8 @@ pub async fn configure_winsw() -> Result<()> {
 pub struct AppData {
     pub discord_username: String,
     pub nodes_to_start: usize,
+    pub storage_mountpoint: Option<PathBuf>,
+    pub storage_drive: Option<String>,
 }
 
 impl AppData {
@@ -66,9 +118,17 @@ impl AppData {
 
         let data = std::fs::read_to_string(config_path)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to read app data file"))?;
-        let app_data: AppData = serde_json::from_str(&data)
+
+        let mut app_data: AppData = serde_json::from_str(&data)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to parse app data"))?;
 
+        if app_data.storage_mountpoint.is_none() || app_data.storage_drive.is_none() {
+            // If the storage drive is not set, set it to the default mount point
+            let drive_info = system::get_default_mount_point()?;
+            app_data.storage_drive = Some(drive_info.0);
+            app_data.storage_mountpoint = Some(drive_info.1);
+            debug!("Setting storage drive to {:?}", app_data.storage_mountpoint);
+        }
         Ok(app_data)
     }
 
@@ -531,7 +591,7 @@ mod tests {
         let c = Config::new()?;
         assert_eq!(
             c.keybindings
-                .get(&Scene::Home)
+                .get(&Scene::Status)
                 .unwrap()
                 .get(&parse_key_sequence("<q>").unwrap_or_default())
                 .unwrap(),

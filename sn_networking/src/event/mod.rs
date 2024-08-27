@@ -128,12 +128,6 @@ pub enum NetworkEvent {
         our_protocol: String,
         their_protocol: String,
     },
-    /// The peer is now considered as a bad node, due to the detected bad behaviour
-    PeerConsideredAsBad {
-        detected_by: PeerId,
-        bad_peer: PeerId,
-        bad_behaviour: String,
-    },
     /// The records bearing these keys are to be fetched from the holder or the network
     KeysToFetchForReplication(Vec<(PeerId, RecordKey)>),
     /// Started listening on a new address
@@ -144,8 +138,6 @@ pub enum NetworkEvent {
     TerminateNode { reason: TerminateNodeReason },
     /// List of peer nodes that failed to fetch replication copy from.
     FailedToFetchHolders(BTreeSet<PeerId>),
-    /// A peer in RT that supposed to be verified.
-    BadNodeVerification { peer_id: PeerId },
     /// Quotes to be verified
     QuoteVerification { quotes: Vec<(PeerId, PaymentQuote)> },
     /// Carry out chunk proof check against the specified record and peer
@@ -159,6 +151,7 @@ pub enum NetworkEvent {
 #[derive(Debug, Clone)]
 pub enum TerminateNodeReason {
     HardDiskWriteError,
+    UpnpGatewayNotFound,
 }
 
 // Manually implement Debug as `#[debug(with = "unverified_record_fmt")]` not working as expected.
@@ -186,16 +179,6 @@ impl Debug for NetworkEvent {
             } => {
                 write!(f, "NetworkEvent::PeerWithUnsupportedProtocol({our_protocol:?}, {their_protocol:?})")
             }
-            NetworkEvent::PeerConsideredAsBad {
-                bad_peer,
-                bad_behaviour,
-                ..
-            } => {
-                write!(
-                    f,
-                    "NetworkEvent::PeerConsideredAsBad({bad_peer:?}, {bad_behaviour:?})"
-                )
-            }
             NetworkEvent::KeysToFetchForReplication(list) => {
                 let keys_len = list.len();
                 write!(f, "NetworkEvent::KeysForReplication({keys_len:?})")
@@ -212,9 +195,6 @@ impl Debug for NetworkEvent {
             }
             NetworkEvent::FailedToFetchHolders(bad_nodes) => {
                 write!(f, "NetworkEvent::FailedToFetchHolders({bad_nodes:?})")
-            }
-            NetworkEvent::BadNodeVerification { peer_id } => {
-                write!(f, "NetworkEvent::BadNodeVerification({peer_id:?})")
             }
             NetworkEvent::QuoteVerification { quotes } => {
                 write!(

@@ -1568,7 +1568,7 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
         Ok(_) => panic!("This test should result in an error"),
         Err(e) => {
             assert_eq!(
-                format!("The number of services to add (2) does not match the number of ports (3)"),
+                format!("The count (2) does not match the number of ports (3)"),
                 e.to_string()
             )
         }
@@ -1639,7 +1639,7 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
         Ok(_) => panic!("This test should result in an error"),
         Err(e) => {
             assert_eq!(
-                format!("The number of services to add (2) does not match the number of ports (1)"),
+                format!("The count (2) does not match the number of ports (1)"),
                 e.to_string()
             )
         }
@@ -2514,7 +2514,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             auto_restart: false,
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
-            count: None,
+            count: Some(2),
             delete_safenode_src: true,
             enable_metrics_server: false,
             env_variables: None,

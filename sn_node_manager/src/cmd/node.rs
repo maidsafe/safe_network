@@ -31,7 +31,7 @@ use sn_service_management::{
     NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
 use sn_transfers::HotWallet;
-use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr};
+use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr, time::Duration};
 use tracing::debug;
 
 /// Returns the added service names
@@ -263,7 +263,9 @@ pub async fn remove(
 }
 
 pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
-    print_banner("Reset Safenode Services");
+    if verbosity != VerbosityLevel::Minimal {
+        print_banner("Reset Safenode Services");
+    }
     info!("Resetting all safenode services, with force={force}");
 
     if !force {
@@ -294,7 +296,8 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
 }
 
 pub async fn start(
-    interval: u64,
+    connection_timeout_s: u64,
+    fixed_interval: Option<u64>,
     peer_ids: Vec<String>,
     service_names: Vec<String>,
     verbosity: VerbosityLevel,
@@ -302,9 +305,7 @@ pub async fn start(
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Start Safenode Services");
     }
-    info!(
-        "Starting safenode services with interval={interval} for: {peer_ids:?}, {service_names:?}"
-    );
+    info!("Starting safenode services for: {peer_ids:?}, {service_names:?}");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(
@@ -329,7 +330,16 @@ pub async fn start(
     for &index in &service_indices {
         let node = &mut node_registry.nodes[index];
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
+
         let service = NodeService::new(node, Box::new(rpc_client));
+
+        // set dynamic startup delay if fixed_interval is not set
+        let service = if fixed_interval.is_none() {
+            service.with_connection_timeout(Duration::from_secs(connection_timeout_s))
+        } else {
+            service
+        };
+
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
         if service_manager.service.status() != ServiceStatus::Running {
@@ -337,12 +347,18 @@ pub async fn start(
             // continue without applying the delay. The reason for not doing so is because when
             // `start` is called below, the user will get a message to say the service was already
             // started, which I think is useful behaviour to retain.
-            debug!("Sleeping for {} milliseconds", interval);
-            std::thread::sleep(std::time::Duration::from_millis(interval));
+            if let Some(interval) = fixed_interval {
+                debug!("Sleeping for {} milliseconds", interval);
+                std::thread::sleep(std::time::Duration::from_millis(interval));
+            }
         }
         match service_manager.start().await {
-            Ok(()) => {
-                debug!("Started service {}", node.service_name);
+            Ok(start_duration) => {
+                debug!(
+                    "Started service {} in {start_duration:?}",
+                    node.service_name
+                );
+
                 node_registry.save()?;
             }
             Err(err) => {
@@ -426,10 +442,11 @@ pub async fn stop(
 }
 
 pub async fn upgrade(
+    connection_timeout_s: u64,
     do_not_start: bool,
     custom_bin_path: Option<PathBuf>,
     force: bool,
-    interval: u64,
+    fixed_interval: Option<u64>,
     peer_ids: Vec<String>,
     provided_env_variables: Option<Vec<(String, String)>>,
     service_names: Vec<String>,
@@ -513,6 +530,13 @@ pub async fn upgrade(
 
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client));
+        // set dynamic startup delay if fixed_interval is not set
+        let service = if fixed_interval.is_none() {
+            service.with_connection_timeout(Duration::from_secs(connection_timeout_s))
+        } else {
+            service
+        };
+
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
 
@@ -522,25 +546,28 @@ pub async fn upgrade(
                 if upgrade_result != UpgradeResult::NotRequired {
                     // It doesn't seem useful to apply the interval if there was no upgrade
                     // required for the previous service.
-                    debug!("Sleeping for {} milliseconds", interval);
-                    std::thread::sleep(std::time::Duration::from_millis(interval));
+                    if let Some(interval) = fixed_interval {
+                        debug!("Sleeping for {interval} milliseconds",);
+                        std::thread::sleep(std::time::Duration::from_millis(interval));
+                    }
                 }
                 upgrade_summary.push((
                     service_manager.service.service_data.service_name.clone(),
                     upgrade_result,
                 ));
+                node_registry.save()?;
             }
             Err(err) => {
                 error!("Error upgrading service {service_name}: {err}");
                 upgrade_summary.push((
                     node.service_name.clone(),
-                    UpgradeResult::Error(format!("Error: {}", err)),
+                    UpgradeResult::Error(format!("Error: {err}")),
                 ));
+                node_registry.save()?;
             }
         }
     }
 
-    node_registry.save()?;
     print_upgrade_summary(upgrade_summary.clone());
 
     if upgrade_summary.iter().any(|(_, r)| {
@@ -561,6 +588,7 @@ pub async fn upgrade(
 pub async fn maintain_n_running_nodes(
     auto_restart: bool,
     auto_set_nat_flags: bool,
+    connection_timeout_s: u64,
     max_nodes_to_run: u16,
     data_dir_path: Option<PathBuf>,
     enable_metrics_server: bool,
@@ -581,7 +609,7 @@ pub async fn maintain_n_running_nodes(
     user: Option<String>,
     version: Option<String>,
     verbosity: VerbosityLevel,
-    start_node_interval: u64,
+    start_node_interval: Option<u64>,
 ) -> Result<()> {
     let node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let running_nodes = node_registry
@@ -640,7 +668,14 @@ pub async fn maintain_n_running_nodes(
                     ?to_start_count,
                     "We are starting these pre-existing services: {nodes_to_start:?}"
                 );
-                start(start_node_interval, vec![], nodes_to_start, verbosity).await?;
+                start(
+                    connection_timeout_s,
+                    start_node_interval,
+                    vec![],
+                    nodes_to_start,
+                    verbosity,
+                )
+                .await?;
             } else {
                 // add + start nodes
                 let to_add_count = to_start_count - inactive_nodes.len();
@@ -678,7 +713,14 @@ pub async fn maintain_n_running_nodes(
                 .await?;
                 inactive_nodes.extend(added_service_list);
 
-                start(start_node_interval, vec![], inactive_nodes, verbosity).await?;
+                start(
+                    connection_timeout_s,
+                    start_node_interval,
+                    vec![],
+                    inactive_nodes,
+                    verbosity,
+                )
+                .await?;
             }
         }
         Ordering::Equal => {

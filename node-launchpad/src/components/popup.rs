@@ -6,23 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum Scene {
-    #[default]
-    Status,
-    Options,
-    Help,
-    ChangeDrivePopUp,
-    BetaProgrammePopUp,
-    ManageNodesPopUp,
-    ResetNodesPopUp,
-}
-
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum InputMode {
-    #[default]
-    Navigation,
-    Entry,
-}
+pub mod beta_programme;
+pub mod change_drive;
+pub mod manage_nodes;
+pub mod reset_nodes;

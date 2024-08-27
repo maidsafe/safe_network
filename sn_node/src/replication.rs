@@ -25,6 +25,11 @@ impl Node {
         network.trigger_interval_replication()
     }
 
+    /// Cleanup unrelevant records if accumulated too many.
+    pub(crate) fn trigger_unrelevant_record_cleanup(network: Network) {
+        network.trigger_unrelevant_record_cleanup()
+    }
+
     /// Get the Record from a peer or from the network without waiting.
     pub(crate) fn fetch_replication_keys_without_wait(
         &self,
@@ -35,7 +40,7 @@ impl Node {
             let requester = NetworkAddress::from_peer(self.network().peer_id());
             let _handle: JoinHandle<Result<()>> = spawn(async move {
                 let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
-                trace!("Fetching record {pretty_key:?} from node {holder:?}");
+                debug!("Fetching record {pretty_key:?} from node {holder:?}");
                 let req = Request::Query(Query::GetReplicatedRecord {
                     requester,
                     key: NetworkAddress::from_record_key(&key),
@@ -46,12 +51,12 @@ impl Node {
                         {
                             Ok((_holder, record_content)) => Some(record_content),
                             Err(err) => {
-                                trace!("Failed fetch record {pretty_key:?} from node {holder:?}, with error {err:?}");
+                                debug!("Failed fetch record {pretty_key:?} from node {holder:?}, with error {err:?}");
                                 None
                             }
                         },
                         other => {
-                            trace!("Cannot fetch record {pretty_key:?} from node {holder:?}, with response {other:?}");
+                            debug!("Cannot fetch record {pretty_key:?} from node {holder:?}, with response {other:?}");
                             None
                         }
                     }
@@ -62,7 +67,7 @@ impl Node {
                 let record = if let Some(record_content) = record_opt {
                     Record::new(key, record_content.to_vec())
                 } else {
-                    trace!(
+                    debug!(
                         "Can not fetch record {pretty_key:?} from node {holder:?}, fetching from the network"
                     );
                     let get_cfg = GetRecordCfg {
@@ -76,11 +81,11 @@ impl Node {
                         .await?
                 };
 
-                trace!(
+                debug!(
                     "Got Replication Record {pretty_key:?} from network, validating and storing it"
                 );
                 node.store_replicated_in_record(record).await?;
-                trace!("Completed storing Replication Record {pretty_key:?} from network.");
+                debug!("Completed storing Replication Record {pretty_key:?} from network.");
 
                 Ok(())
             });
@@ -104,7 +109,7 @@ impl Node {
             // first we wait until our own network store can return the record
             // otherwise it may not be fully written yet
             let mut retry_count = 0;
-            trace!("Checking we have successfully stored the fresh record {pretty_key:?} in the store before replicating");
+            debug!("Checking we have successfully stored the fresh record {pretty_key:?} in the store before replicating");
             loop {
                 let record = match network.get_local_record(&paid_key).await {
                     Ok(record) => record,
@@ -131,7 +136,7 @@ impl Node {
                 tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             }
 
-            trace!("Start replication of fresh record {pretty_key:?} from store");
+            debug!("Start replication of fresh record {pretty_key:?} from store");
 
             // Already contains self_peer_id
             let mut closest_k_peers = match network.get_closest_k_value_local_peers().await {
@@ -167,7 +172,7 @@ impl Node {
             let keys = vec![(data_addr.clone(), record_type.clone())];
 
             for peer_id in sorted_based_on_addr {
-                trace!("Replicating fresh record {pretty_key:?} to {peer_id:?}");
+                debug!("Replicating fresh record {pretty_key:?} to {peer_id:?}");
                 let request = Request::Cmd(Cmd::Replicate {
                     holder: our_address.clone(),
                     keys: keys.clone(),
@@ -175,7 +180,7 @@ impl Node {
 
                 network.send_req_ignore_reply(request, *peer_id);
             }
-            trace!(
+            debug!(
                 "Completed replicate fresh record {pretty_key:?} on store, in {:?}",
                 start.elapsed()
             );

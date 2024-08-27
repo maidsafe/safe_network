@@ -370,4 +370,23 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn verification_using_child_key() -> eyre::Result<()> {
+        let msg = "just a test string".as_bytes();
+        let main_sk = MainSecretKey::random();
+        let derived_sk = main_sk.random_derived_key(&mut rand::thread_rng());
+
+        // Signature signed by parent key can not be verified by the child key.
+        let signature = main_sk.sign(msg);
+        assert!(main_sk.main_pubkey().verify(&signature, msg));
+        assert!(!derived_sk.unique_pubkey().verify(&signature, msg));
+
+        // Signature signed by child key can not be verified by the parent key.
+        let signature = derived_sk.sign(msg);
+        assert!(derived_sk.unique_pubkey().verify(&signature, msg));
+        assert!(!main_sk.main_pubkey().verify(&signature, msg));
+
+        Ok(())
+    }
 }

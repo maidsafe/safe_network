@@ -864,6 +864,8 @@ impl InnerUploader {
                         .resend_pending_transaction_blocking_loop()
                         .await;
 
+                    let mut terminate_process = false;
+
                     let result = match wallet_client.pay_for_records(&cost_map, verify_store).await
                     {
                         Ok((storage_cost, royalty_fees)) => {
@@ -897,10 +899,13 @@ impl InnerUploader {
                                 WalletError::Transfer(TransferError::NotEnoughBalance(
                                     available,
                                     required,
-                                )) => TaskResult::MakePaymentsErr {
-                                    failed_xornames,
-                                    insufficient_balance: Some((available, required)),
-                                },
+                                )) => {
+                                    terminate_process = true;
+                                    TaskResult::MakePaymentsErr {
+                                        failed_xornames,
+                                        insufficient_balance: Some((available, required)),
+                                    }
+                                }
                                 _ => TaskResult::MakePaymentsErr {
                                     failed_xornames,
                                     insufficient_balance: None,
@@ -914,6 +919,16 @@ impl InnerUploader {
                     });
 
                     cost_map = BTreeMap::new();
+
+                    if terminate_process {
+                        // The error will trigger the entire upload process to be terminated.
+                        // Hence here we shall terminate the inner loop first,
+                        // to avoid the wallet going furhter to be potentially got corrupted.
+                        warn!(
+                            "Terminating make payment processing loop due to un-recoverable error."
+                        );
+                        break;
+                    }
                 }
             }
             debug!("Make payment processing loop terminated.");

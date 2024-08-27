@@ -68,8 +68,8 @@ pub(super) fn remove_unconfirmed_spend_requests(
     for spend in unconfirmed_spend_requests.iter() {
         let spend_hex_name = spend.address().to_hex();
         let spend_file_path = spends_dir.join(&spend_hex_name);
-        debug!("Writing spend to: {spend_file_path:?}");
-        fs::write(spend_file_path, &spend.to_bytes())?;
+        debug!("Writing confirmed_spend instance to: {spend_file_path:?}");
+        fs::write(spend_file_path, spend.to_bytes())?;
     }
 
     let unconfirmed_spend_requests_path = wallet_dir.join(UNCONFIRMED_TX_NAME);
@@ -87,7 +87,8 @@ pub(super) fn get_confirmed_spend(
     let spends_dir = wallet_dir.join(CONFIRMED_SPENDS_DIR_NAME);
     let spend_hex_name = spend_addr.to_hex();
     let spend_file_path = spends_dir.join(spend_hex_name);
-    if !spend_file_path.is_file() {
+    debug!("Try to getting a confirmed_spend instance from: {spend_file_path:?}");
+    if !spend_file_path.exists() {
         return Ok(None);
     }
 
@@ -95,6 +96,18 @@ pub(super) fn get_confirmed_spend(
     let confirmed_spend = rmp_serde::from_read(&file)?;
 
     Ok(Some(confirmed_spend))
+}
+
+/// Returns whether a spend is put as `confirmed`.
+///
+/// Note: due to the disk operations' async behaviour.
+///       reading a `exist` spend file, could end with a deserialization error.
+pub(super) fn has_confirmed_spend(wallet_dir: &Path, spend_addr: SpendAddress) -> bool {
+    let spends_dir = wallet_dir.join(CONFIRMED_SPENDS_DIR_NAME);
+    let spend_hex_name = spend_addr.to_hex();
+    let spend_file_path = spends_dir.join(spend_hex_name);
+    debug!("Try to getting a confirmed_spend instance from: {spend_file_path:?}");
+    spend_file_path.exists()
 }
 
 /// Returns `Some(Vec<SpendRequest>)` or None if file doesn't exist.
@@ -123,15 +136,16 @@ where
 {
     // The create cash_notes dir within the wallet dir.
     let created_cash_notes_path = wallet_dir.join(CASHNOTES_DIR_NAME);
-    for cash_note in created_cash_notes {
-        let unique_pubkey_name =
-            *SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey()).xorname();
-        let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
+    fs::create_dir_all(&created_cash_notes_path)?;
 
-        fs::create_dir_all(&created_cash_notes_path)?;
+    for cash_note in created_cash_notes {
+        let unique_pubkey_file_name = format!(
+            "{}.cash_note",
+            SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey()).to_hex()
+        );
 
         let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
-        debug!("Writing cash note to: {cash_note_file_path:?}");
+        debug!("Writing cash_note file to: {cash_note_file_path:?}");
 
         let hex = cash_note
             .to_hex()
@@ -152,9 +166,8 @@ where
         let unique_pubkey_name = *SpendAddress::from_unique_pubkey(cash_note_key).xorname();
         let unique_pubkey_file_name = format!("{}.cash_note", hex::encode(unique_pubkey_name));
 
-        debug!("Removing cash note from: {:?}", created_cash_notes_path);
-
         let cash_note_file_path = created_cash_notes_path.join(unique_pubkey_file_name);
+        debug!("Removing cash_note file from: {:?}", cash_note_file_path);
 
         fs::remove_file(cash_note_file_path)?;
     }

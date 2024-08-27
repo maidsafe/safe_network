@@ -17,14 +17,12 @@ use crate::{
     tui::{Event, Frame},
 };
 
-pub mod beta_programme;
 pub mod footer;
+pub mod header;
 pub mod help;
-pub mod home;
-pub mod manage_nodes;
 pub mod options;
-pub mod reset_popup;
-pub mod tab;
+pub mod popup;
+pub mod status;
 pub mod utils;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.

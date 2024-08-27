@@ -6,11 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use libp2p::{kad::RecordKey, PeerId};
-use sn_protocol::{messages::Cmd, PrettyPrintRecordKey};
-use std::time::Duration;
-// this gets us to_string easily enough
 use crate::Error;
+use libp2p::{kad::RecordKey, PeerId};
+use sn_protocol::PrettyPrintRecordKey;
 use strum::Display;
 
 /// Public Markers for generating log output,
@@ -21,26 +19,15 @@ pub enum Marker<'a> {
     /// The node has started
     NodeConnectedToNetwork,
 
-    /// No network activity in some time
-    NoNetworkActivity(Duration),
-
-    /// Forced Replication by simulating a churned out node within close range.
-    ForcedReplication,
-
-    /// Network Cmd message received
-    NodeCmdReceived(&'a Cmd),
-
     /// Peer was added to the routing table
-    PeerAddedToRoutingTable(PeerId),
+    PeerAddedToRoutingTable(&'a PeerId),
 
     /// Peer was removed from the routing table
-    PeerRemovedFromRoutingTable(PeerId),
+    PeerRemovedFromRoutingTable(&'a PeerId),
 
     /// The number of peers in the routing table
     PeersInRoutingTable(usize),
 
-    /// Replication trigger was fired
-    ReplicationTriggered,
     /// Interval based replication
     IntervalReplicationTriggered,
 

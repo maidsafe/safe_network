@@ -30,7 +30,7 @@ pub(crate) fn detect_and_setup_terminal() -> Result<TerminalType> {
     #[cfg(target_os = "windows")]
     if !is_running_as_root() {
         {
-            // todo: There is no terminal to show this error message when double clicking on the exe.
+            // TODO: There is no terminal to show this error message when double clicking on the exe.
             error!("Admin privileges required to run on Windows. Exiting.");
             color_eyre::eyre::bail!("Admin privileges required to run");
         }

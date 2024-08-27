@@ -13,23 +13,23 @@ use super::{
     Marker, NodeEvent,
 };
 #[cfg(feature = "open-metrics")]
-use crate::metrics::NodeMetrics;
+use crate::metrics::NodeMetricsRecorder;
 use crate::RunningNode;
 use bytes::Bytes;
 use libp2p::{identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "open-metrics")]
-use prometheus_client::metrics::gauge::Gauge;
+use prometheus_client::metrics::{gauge::Gauge, info::Info};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
 use sn_networking::{
     close_group_majority, Instant, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
-    SwarmDriver, CLOSE_GROUP_SIZE,
+    SwarmDriver,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, Cmd, CmdResponse, Query, QueryResponse, Request, Response},
-    NetworkAddress, PrettyPrintRecordKey,
+    messages::{ChunkProof, CmdResponse, Query, QueryResponse, Request, Response},
+    NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens, PAYMENT_FORWARD_PK};
 use std::{
@@ -42,7 +42,7 @@ use std::{
     time::Duration,
 };
 use tokio::{
-    sync::{broadcast, mpsc::Receiver},
+    sync::mpsc::Receiver,
     task::{spawn, JoinHandle},
 };
 
@@ -55,15 +55,15 @@ use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any node will be half this
-pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 450;
+pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
 
 /// Interval to trigger bad node detection.
 /// This is the max time it should take. Minimum interval at any node will be half this
-const PERIODIC_BAD_NODE_DETECTION_INTERVAL_MAX_S: u64 = 45;
+const PERIODIC_BAD_NODE_DETECTION_INTERVAL_MAX_S: u64 = 600;
 
 /// Interval to trigger reward forwarding.
 /// This is the max time it should take. Minimum interval at any node will be half this
-const PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S: u64 = 45;
+const PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S: u64 = 450;
 
 /// Max number of attempts that chunk proof verification will be carried out against certain target,
 /// before classifying peer as a bad peer.
@@ -78,6 +78,9 @@ const FORWARDED_BALANCE_FILE_NAME: &str = "forwarded_balance";
 
 /// Interval to update the nodes uptime metric
 const UPTIME_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
+
+/// Interval to clean up unrelevant records
+const UNRELEVANT_RECORDS_CLEANUP_INTERVAL: Duration = Duration::from_secs(3600);
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
@@ -155,20 +158,34 @@ impl NodeBuilder {
         // store in case it's a fresh wallet created if none was found
         wallet.deposit_and_store_to_disk(&vec![])?;
 
-        #[cfg(feature = "open-metrics")]
-        let (metrics_registry, node_metrics) = if self.metrics_server_port.is_some() {
-            let mut metrics_registry = Registry::default();
-            let node_metrics = NodeMetrics::new(&mut metrics_registry);
-            (Some(metrics_registry), Some(node_metrics))
-        } else {
-            (None, None)
-        };
-
         let mut network_builder = NetworkBuilder::new(self.keypair, self.local, self.root_dir);
 
-        network_builder.listen_addr(self.addr);
         #[cfg(feature = "open-metrics")]
-        network_builder.metrics_registry(metrics_registry);
+        let node_metrics = if self.metrics_server_port.is_some() {
+            // metadata registry
+            let mut metadata_registry = Registry::default();
+            let node_metadata_sub_registry = metadata_registry.sub_registry_with_prefix("sn_node");
+            node_metadata_sub_registry.register(
+                "safenode_version",
+                "The version of the safe node",
+                Info::new(vec![(
+                    "safenode_version".to_string(),
+                    env!("CARGO_PKG_VERSION").to_string(),
+                )]),
+            );
+            network_builder.metrics_metadata_registry(metadata_registry);
+
+            // metrics registry
+            let mut metrics_registry = Registry::default();
+            let node_metrics = NodeMetricsRecorder::new(&mut metrics_registry);
+            network_builder.metrics_registry(metrics_registry);
+
+            Some(node_metrics)
+        } else {
+            None
+        };
+
+        network_builder.listen_addr(self.addr);
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_server_port(self.metrics_server_port);
         network_builder.initial_peers(self.initial_peers.clone());
@@ -179,12 +196,10 @@ impl NodeBuilder {
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
-        let (node_cmds, _) = broadcast::channel(10);
 
         let node = NodeInner {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
-            node_cmds: node_cmds.clone(),
             initial_peers: self.initial_peers,
             reward_address,
             #[cfg(feature = "open-metrics")]
@@ -197,7 +212,6 @@ impl NodeBuilder {
         let running_node = RunningNode {
             network,
             node_events_channel,
-            node_cmds,
         };
 
         // Run the node
@@ -206,10 +220,6 @@ impl NodeBuilder {
         Ok(running_node)
     }
 }
-
-/// Commands that can be sent by the user to the Node instance, e.g. to mutate some settings.
-#[derive(Clone, Debug)]
-pub enum NodeCmd {}
 
 /// `Node` represents a single node in the distributed network. It handles
 /// network events, processes incoming requests, interacts with the data
@@ -226,9 +236,8 @@ struct NodeInner {
     // Peers that are dialed at startup of node.
     initial_peers: Vec<Multiaddr>,
     network: Network,
-    node_cmds: broadcast::Sender<NodeCmd>,
     #[cfg(feature = "open-metrics")]
-    node_metrics: Option<NodeMetrics>,
+    node_metrics: Option<NodeMetricsRecorder>,
     /// Node owner's discord username, in readable format
     /// If not set, there will be no payment forward to be undertaken
     owner: Option<String>,
@@ -251,14 +260,9 @@ impl Node {
         &self.inner.network
     }
 
-    /// Returns the NodeCmds channel
-    pub(crate) fn node_cmds(&self) -> &broadcast::Sender<NodeCmd> {
-        &self.inner.node_cmds
-    }
-
     #[cfg(feature = "open-metrics")]
     /// Returns a reference to the NodeMetrics if the `open-metrics` feature flag is enabled
-    pub(crate) fn node_metrics(&self) -> Option<&NodeMetrics> {
+    pub(crate) fn node_metrics(&self) -> Option<&NodeMetricsRecorder> {
         self.inner.node_metrics.as_ref()
     }
 
@@ -277,7 +281,6 @@ impl Node {
         let mut rng = StdRng::from_entropy();
 
         let peers_connected = Arc::new(AtomicUsize::new(0));
-        let mut cmds_receiver = self.node_cmds().subscribe();
 
         // read the forwarded balance from the file and set the metric.
         // This is done initially because reward forwarding takes a while to kick in
@@ -308,7 +311,7 @@ impl Node {
             let _ = replication_interval.tick().await; // first tick completes immediately
 
             // use a random timeout to ensure not sync when transmit messages.
-            let bad_nodes_check_interval: u64 = 5 * rng.gen_range(
+            let bad_nodes_check_interval: u64 = rng.gen_range(
                 PERIODIC_BAD_NODE_DETECTION_INTERVAL_MAX_S / 2
                     ..PERIODIC_BAD_NODE_DETECTION_INTERVAL_MAX_S,
             );
@@ -321,11 +324,9 @@ impl Node {
             let mut rolling_index = 0;
 
             // use a random timeout to ensure not sync when transmit messages.
-            let balance_forward_interval: u64 = 10
-                * rng.gen_range(
-                    PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S / 2
-                        ..PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S,
-                );
+            let balance_forward_interval: u64 = rng.gen_range(
+                PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S / 2..PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S,
+            );
             let balance_forward_time = Duration::from_secs(balance_forward_interval);
             debug!(
                 "BalanceForward interval set to {balance_forward_time:?} to: {:?}",
@@ -338,6 +339,10 @@ impl Node {
             let mut uptime_metrics_update_interval =
                 tokio::time::interval(UPTIME_METRICS_UPDATE_INTERVAL);
             let _ = uptime_metrics_update_interval.tick().await; // first tick completes immediately
+
+            let mut unrelevant_records_cleanup_interval =
+                tokio::time::interval(UNRELEVANT_RECORDS_CLEANUP_INTERVAL);
+            let _ = unrelevant_records_cleanup_interval.tick().await; // first tick completes immediately
 
             loop {
                 let peers_connected = &peers_connected;
@@ -363,7 +368,7 @@ impl Node {
                     // runs every replication_interval time
                     _ = replication_interval.tick() => {
                         let start = Instant::now();
-                        trace!("Periodic replication triggered");
+                        debug!("Periodic replication triggered");
                         let network = self.network().clone();
                         self.record_metrics(Marker::IntervalReplicationTriggered);
 
@@ -375,7 +380,7 @@ impl Node {
                     // runs every bad_nodes_check_time time
                     _ = bad_nodes_check_interval.tick() => {
                         let start = Instant::now();
-                        trace!("Periodic bad_nodes check triggered");
+                        debug!("Periodic bad_nodes check triggered");
                         let network = self.network().clone();
                         self.record_metrics(Marker::IntervalBadNodesCheckTriggered);
 
@@ -395,19 +400,25 @@ impl Node {
                         if cfg!(feature = "reward-forward") {
                             if let Some(owner) = self.owner() {
                                 let start = Instant::now();
-                                trace!("Periodic balance forward triggered");
+                                debug!("Periodic balance forward triggered");
                                 let network = self.network().clone();
                                 let forwarding_reason = owner.clone();
 
                                 #[cfg(feature = "open-metrics")]
                                 let total_forwarded_rewards = self.node_metrics().map(|metrics|metrics.total_forwarded_rewards.clone());
+                                #[cfg(feature = "open-metrics")]
+                                let current_reward_wallet_balance = self.node_metrics().map(|metrics|metrics.current_reward_wallet_balance.clone());
 
                                 let _handle = spawn(async move {
 
                                     #[cfg(feature = "open-metrics")]
-                                    let _ = Self::try_forward_balance(network, forwarding_reason, total_forwarded_rewards);
+                                    if let Err(err) =  Self::try_forward_balance(network, forwarding_reason, total_forwarded_rewards,current_reward_wallet_balance) {
+                                        error!("Error while trying to forward balance: {err:?}");
+                                    }
                                     #[cfg(not(feature = "open-metrics"))]
-                                    let _ = Self::try_forward_balance(network, forwarding_reason);
+                                    if let Err(err) = Self::try_forward_balance(network, forwarding_reason) {
+                                        error!("Error while trying to forward balance: {err:?}");
+                                    }
                                     info!("Periodic balance forward took {:?}", start.elapsed());
                                 });
                             }
@@ -420,13 +431,12 @@ impl Node {
                             let _ = node_metrics.uptime.set(node_metrics.started_instant.elapsed().as_secs() as i64);
                         }
                     }
-                    node_cmd = cmds_receiver.recv() => {
-                        match node_cmd {
-                            Ok(cmd) => {
-                                info!("{cmd:?} received... unhandled")
-                            }
-                            Err(err) => error!("When trying to read from the NodeCmds channel/receiver: {err:?}")
-                        }
+                    _ = unrelevant_records_cleanup_interval.tick() => {
+                        let network = self.network().clone();
+
+                        let _handle = spawn(async move {
+                            Self::trigger_unrelevant_record_cleanup(network);
+                        });
                     }
                 }
             }
@@ -451,7 +461,7 @@ impl Node {
         let start = Instant::now();
         let event_string = format!("{event:?}");
         let event_header;
-        trace!("Handling NetworkEvent {event_string:?}");
+        debug!("Handling NetworkEvent {event_string:?}");
 
         match event {
             NetworkEvent::PeerAdded(peer_id, connected_peers) => {
@@ -464,7 +474,7 @@ impl Node {
                 }
 
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
-                self.record_metrics(Marker::PeerAddedToRoutingTable(peer_id));
+                self.record_metrics(Marker::PeerAddedToRoutingTable(&peer_id));
 
                 // try replication here
                 let network = self.network().clone();
@@ -476,7 +486,7 @@ impl Node {
             NetworkEvent::PeerRemoved(peer_id, connected_peers) => {
                 event_header = "PeerRemoved";
                 self.record_metrics(Marker::PeersInRoutingTable(connected_peers));
-                self.record_metrics(Marker::PeerRemovedFromRoutingTable(peer_id));
+                self.record_metrics(Marker::PeerRemovedFromRoutingTable(&peer_id));
 
                 let network = self.network().clone();
                 self.record_metrics(Marker::IntervalReplicationTriggered);
@@ -486,23 +496,6 @@ impl Node {
             }
             NetworkEvent::PeerWithUnsupportedProtocol { .. } => {
                 event_header = "PeerWithUnsupportedProtocol";
-            }
-            NetworkEvent::PeerConsideredAsBad {
-                detected_by,
-                bad_peer,
-                bad_behaviour,
-            } => {
-                event_header = "PeerConsideredAsBad";
-                let request = Request::Cmd(Cmd::PeerConsideredAsBad {
-                    detected_by: NetworkAddress::from_peer(detected_by),
-                    bad_peer: NetworkAddress::from_peer(bad_peer),
-                    bad_behaviour,
-                });
-
-                let network = self.network().clone();
-                let _handle = spawn(async move {
-                    network.send_req_ignore_reply(request, bad_peer);
-                });
             }
             NetworkEvent::NewListenAddr(_) => {
                 event_header = "NewListenAddr";
@@ -520,14 +513,14 @@ impl Node {
             }
             NetworkEvent::ResponseReceived { res } => {
                 event_header = "ResponseReceived";
-                trace!("NetworkEvent::ResponseReceived {res:?}");
+                debug!("NetworkEvent::ResponseReceived {res:?}");
                 if let Err(err) = self.handle_response(res) {
                     error!("Error while handling NetworkEvent::ResponseReceived {err:?}");
                 }
             }
             NetworkEvent::KeysToFetchForReplication(keys) => {
                 event_header = "KeysToFetchForReplication";
-                trace!("Going to fetch {:?} keys for replication", keys.len());
+                debug!("Going to fetch {:?} keys for replication", keys.len());
                 self.record_metrics(Marker::fetching_keys_for_replication(&keys));
 
                 if let Err(err) = self.fetch_replication_keys_without_wait(keys) {
@@ -541,7 +534,7 @@ impl Node {
 
                 let _handle = spawn(async move {
                     let res = Self::handle_query(&network, query, payment_address).await;
-                    trace!("Sending response {res:?}");
+                    debug!("Sending response {res:?}");
 
                     network.send_response(res, channel);
                 });
@@ -553,7 +546,7 @@ impl Node {
                 let _handle = spawn(async move {
                     let key = PrettyPrintRecordKey::from(&record.key).into_owned();
                     match self_clone.validate_and_store_record(record).await {
-                        Ok(()) => trace!("UnverifiedRecord {key} has been stored"),
+                        Ok(()) => debug!("UnverifiedRecord {key} has been stored"),
                         Err(err) => {
                             self_clone.record_metrics(Marker::RecordRejected(&key, &err));
                         }
@@ -580,17 +573,6 @@ impl Node {
                     }
                 });
             }
-            NetworkEvent::BadNodeVerification { peer_id } => {
-                event_header = "BadNodeVerification";
-                let network = self.network().clone();
-
-                trace!("Need to verify whether peer {peer_id:?} is a bad node");
-                let _handle = spawn(async move {
-                    if Self::close_nodes_shunning_peer(&network, peer_id).await {
-                        network.record_node_issues(peer_id, NodeIssue::CloseNodesShunning);
-                    }
-                });
-            }
             NetworkEvent::QuoteVerification { quotes } => {
                 event_header = "QuoteVerification";
                 let network = self.network().clone();
@@ -606,7 +588,7 @@ impl Node {
                 event_header = "ChunkProofVerification";
                 let network = self.network().clone();
 
-                trace!("Going to verify chunk {keys_to_verify:?} against peer {peer_id:?}");
+                debug!("Going to verify chunk {keys_to_verify:?} against peer {peer_id:?}");
 
                 let _handle = spawn(async move {
                     // To avoid the peer is in the process of getting the copy via replication,
@@ -664,7 +646,7 @@ impl Node {
             let req_copy = req.clone();
             let network_copy = network.clone();
             let handle: JoinHandle<bool> = spawn(async move {
-                trace!("getting node_status of {peer_id:?} from {peer:?}");
+                debug!("getting node_status of {peer_id:?} from {peer:?}");
                 if let Ok(resp) = network_copy.send_request(req_copy, peer).await {
                     match resp {
                         Response::Query(QueryResponse::CheckNodeInProblem {
@@ -716,7 +698,7 @@ impl Node {
     ) -> Response {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(address) => {
-                trace!("Got GetStoreCost request for {address:?}");
+                debug!("Got GetStoreCost request for {address:?}");
                 let record_key = address.to_record_key();
                 let self_id = network.peer_id();
 
@@ -753,7 +735,7 @@ impl Node {
                 }
             }
             Query::GetReplicatedRecord { requester, key } => {
-                trace!("Got GetReplicatedRecord from {requester:?} regarding {key:?}");
+                debug!("Got GetReplicatedRecord from {requester:?} regarding {key:?}");
 
                 let our_address = NetworkAddress::from_peer(network.peer_id());
                 let mut result = Err(ProtocolError::ReplicatedRecordNotFound {
@@ -771,15 +753,15 @@ impl Node {
                 QueryResponse::GetReplicatedRecord(result)
             }
             Query::GetChunkExistenceProof { key, nonce } => {
-                trace!("Got GetChunkExistenceProof for chunk {key:?}");
+                debug!("Got GetChunkExistenceProof for chunk {key:?}");
 
                 let mut result = Err(ProtocolError::ChunkDoesNotExist(key.clone()));
                 if let Ok(Some(record)) = network.get_local_record(&key.to_record_key()).await {
                     let proof = ChunkProof::new(&record.value, nonce);
-                    trace!("Chunk proof for {key:?} is {proof:?}");
+                    debug!("Chunk proof for {key:?} is {proof:?}");
                     result = Ok(proof)
                 } else {
-                    trace!(
+                    debug!(
                         "Could not get ChunkProof for {key:?} as we don't have the record locally."
                     );
                 }
@@ -787,13 +769,13 @@ impl Node {
                 QueryResponse::GetChunkExistenceProof(result)
             }
             Query::CheckNodeInProblem(target_address) => {
-                trace!("Got CheckNodeInProblem for peer {target_address:?}");
+                debug!("Got CheckNodeInProblem for peer {target_address:?}");
 
                 let is_in_trouble =
                     if let Ok(result) = network.is_peer_shunned(target_address.clone()).await {
                         result
                     } else {
-                        trace!("Could not get status of {target_address:?}.");
+                        debug!("Could not get status of {target_address:?}.");
                         false
                     };
 
@@ -863,39 +845,13 @@ impl Node {
         }
     }
 
-    #[cfg(not(feature = "open-metrics"))]
-    fn try_forward_balance(network: Network, forward_reason: String) -> Result<()> {
-        if let Err(err) = Self::try_forward_balance_inner(network, forward_reason) {
-            error!("Error while trying to forward balance: {err:?}");
-            return Err(err);
-        }
-        Ok(())
-    }
-
-    #[cfg(feature = "open-metrics")]
+    /// Forward received rewards to another address
     fn try_forward_balance(
         network: Network,
         forward_reason: String,
-        forwarded_balance_metric: Option<Gauge>,
+        #[cfg(feature = "open-metrics")] forwarded_balance_metric: Option<Gauge>,
+        #[cfg(feature = "open-metrics")] current_reward_wallet_balance: Option<Gauge>,
     ) -> Result<()> {
-        match Self::try_forward_balance_inner(network, forward_reason) {
-            Ok(cumulative_forwarded_amount) => {
-                if let Some(forwarded_balance_metric) = forwarded_balance_metric {
-                    let _ = forwarded_balance_metric.set(cumulative_forwarded_amount as i64);
-                }
-            }
-            Err(err) => {
-                error!("Error while trying to forward balance: {err:?}");
-                return Err(err);
-            }
-        };
-
-        Ok(())
-    }
-
-    /// Forward received rewards to another address
-    /// Returns the cumulative amount forwarded
-    fn try_forward_balance_inner(network: Network, forward_reason: String) -> Result<u64> {
         let mut spend_requests = vec![];
         {
             // load wallet
@@ -971,22 +927,35 @@ impl Node {
         let balance_file_path = network.root_dir_path().join(FORWARDED_BALANCE_FILE_NAME);
         let old_balance = read_forwarded_balance_value(&balance_file_path);
         let updated_balance = old_balance + total_forwarded_amount;
-        trace!("Updating forwarded balance to {updated_balance}");
+        debug!("Updating forwarded balance to {updated_balance}");
         write_forwarded_balance_value(&balance_file_path, updated_balance)?;
 
-        Ok(updated_balance)
+        #[cfg(feature = "open-metrics")]
+        {
+            if let Some(forwarded_balance_metric) = forwarded_balance_metric {
+                let _ = forwarded_balance_metric.set(updated_balance as i64);
+            }
+
+            let wallet = HotWallet::load_from(network.root_dir_path())?;
+            let balance = wallet.balance();
+            if let Some(current_reward_wallet_balance) = current_reward_wallet_balance {
+                let _ = current_reward_wallet_balance.set(balance.as_nano() as i64);
+            }
+        }
+
+        Ok(())
     }
 }
 
 fn read_forwarded_balance_value(balance_file_path: &PathBuf) -> u64 {
-    trace!("Reading forwarded balance from file {balance_file_path:?}");
+    debug!("Reading forwarded balance from file {balance_file_path:?}");
     match std::fs::read_to_string(balance_file_path) {
         Ok(balance) => balance.parse::<u64>().unwrap_or_else(|_| {
-            trace!("The balance from file is not a valid number");
+            debug!("The balance from file is not a valid number");
             0
         }),
         Err(_) => {
-            trace!("Error while reading to string, setting the balance to 0. This can happen at node init.");
+            debug!("Error while reading to string, setting the balance to 0. This can happen at node init.");
             0
         }
     }
@@ -1012,7 +981,7 @@ async fn chunk_proof_verify_peer(
         {
             let nonce = thread_rng().gen::<u64>();
             let expected_proof = ChunkProof::new(&record.value, nonce);
-            trace!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
+            debug!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
 
             let request = Request::Query(Query::GetChunkExistenceProof {
                 key: key.clone(),
@@ -1052,7 +1021,7 @@ fn received_valid_chunk_proof(
 ) -> Option<()> {
     if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(Ok(proof)))) = resp {
         if expected_proof.verify(&proof) {
-            trace!(
+            debug!(
                 "Got a valid ChunkProof of {key:?} from {peer:?}, during peer chunk proof check."
             );
             Some(())

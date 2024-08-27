@@ -114,7 +114,7 @@ impl FilesApi {
     /// Directly writes Chunks to the network in the
     /// form of immutable self encrypted chunks.
     ///
-    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Balanced by default
+    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Quick by default
     pub async fn get_local_payment_and_upload_chunk(
         &self,
         chunk: Chunk,

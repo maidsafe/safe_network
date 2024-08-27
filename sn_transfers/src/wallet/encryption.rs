@@ -11,7 +11,6 @@ use crate::wallet::Result;
 use crate::MainSecretKey;
 use bls::SecretKey;
 use hex::encode;
-use lazy_static::lazy_static;
 use rand::Rng;
 use ring::aead::{BoundKey, Nonce, NonceSequence};
 use ring::error::Unspecified;
@@ -20,11 +19,11 @@ use std::io::Read;
 use std::num::NonZeroU32;
 use std::path::Path;
 
-lazy_static! {
-    /// Number of iterations for pbkdf2.
-    static ref ITERATIONS: NonZeroU32 =
-        NonZeroU32::new(100_000).expect("ITERATIONS should be > 0.");
-}
+/// Number of iterations for pbkdf2.
+const ITERATIONS: NonZeroU32 = match NonZeroU32::new(100_000) {
+    Some(v) => v,
+    None => panic!("`100_000` is not be zero"),
+};
 
 /// Filename for the encrypted secret key.
 pub const ENCRYPTED_MAIN_SECRET_KEY_FILENAME: &str = "main_secret_key.encrypted";
@@ -94,7 +93,7 @@ impl EncryptedSecretKey {
         // Reconstruct the key from salt and password
         ring::pbkdf2::derive(
             ring::pbkdf2::PBKDF2_HMAC_SHA512,
-            *ITERATIONS,
+            ITERATIONS,
             &salt,
             password.as_bytes(),
             &mut key,
@@ -168,7 +167,7 @@ pub(crate) fn encrypt_secret_key(
     // HMAC<Sha512> is used as the pseudorandom function for its security properties
     ring::pbkdf2::derive(
         ring::pbkdf2::PBKDF2_HMAC_SHA512,
-        *ITERATIONS,
+        ITERATIONS,
         &salt,
         password.as_bytes(),
         &mut key,

@@ -18,6 +18,8 @@ pub mod local;
 pub mod rpc;
 pub mod rpc_client;
 
+pub const DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S: u64 = 300;
+
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum VerbosityLevel {
     Minimal,
@@ -117,6 +119,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                     pid
                 );
                 self.service.on_start(Some(pid), true).await?;
+
                 info!(
                     "Service {} has been started successfully",
                     self.service.name()
@@ -130,7 +133,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
                 error!("Failed to start service, because PID could not be obtained: {err}");
                 return Err(err.into());
             }
-        }
+        };
 
         if self.verbosity != VerbosityLevel::Minimal {
             println!("{} Started {} service", "✓".green(), self.service.name());
@@ -337,7 +340,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
 
         if options.start_service {
             match self.start().await {
-                Ok(()) => {}
+                Ok(start_duration) => start_duration,
                 Err(err) => {
                     self.service
                         .set_version(&options.target_version.to_string());
@@ -353,15 +356,16 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         self.service
             .set_version(&options.target_version.to_string());
 
-        match options.force {
-            true => Ok(UpgradeResult::Forced(
+        if options.force {
+            Ok(UpgradeResult::Forced(
                 current_version.to_string(),
                 options.target_version.to_string(),
-            )),
-            false => Ok(UpgradeResult::Upgraded(
+            ))
+        } else {
+            Ok(UpgradeResult::Upgraded(
                 current_version.to_string(),
                 options.target_version.to_string(),
-            )),
+            ))
         }
     }
 }
@@ -642,6 +646,7 @@ mod tests {
         net::{IpAddr, Ipv4Addr, SocketAddr},
         path::{Path, PathBuf},
         str::FromStr,
+        time::Duration,
     };
 
     mock! {
@@ -654,6 +659,7 @@ mod tests {
             async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> ServiceControlResult<()>;
             async fn node_stop(&self, delay_millis: u64) -> ServiceControlResult<()>;
             async fn node_update(&self, delay_millis: u64) -> ServiceControlResult<()>;
+            async fn is_node_connected_to_network(&self, timeout: std::time::Duration) -> ServiceControlResult<()>;
             async fn update_log_level(&self, log_levels: String) -> ServiceControlResult<()>;
         }
     }
@@ -694,6 +700,7 @@ mod tests {
             )))
             .times(1)
             .returning(|_| Ok(1000));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -744,6 +751,7 @@ mod tests {
             version: "0.98.1".to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -795,6 +803,7 @@ mod tests {
             )))
             .times(1)
             .returning(|_| Ok(1000));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -845,6 +854,7 @@ mod tests {
             version: "0.98.1".to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -910,6 +920,7 @@ mod tests {
             version: "0.98.1".to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -967,6 +978,7 @@ mod tests {
             )))
             .times(1)
             .returning(|_| Ok(1000));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -1017,6 +1029,7 @@ mod tests {
             version: "0.98.1".to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1133,6 +1146,7 @@ mod tests {
             )))
             .times(1)
             .returning(|_| Ok(100));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 1000,
@@ -1181,6 +1195,97 @@ mod tests {
             version: "0.98.1".to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
+        let mut service_manager = ServiceManager::new(
+            service,
+            Box::new(mock_service_control),
+            VerbosityLevel::Normal,
+        );
+
+        service_manager.start().await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn start_should_use_dynamic_startup_delay_if_set() -> Result<()> {
+        let mut mock_service_control = MockServiceControl::new();
+        let mut mock_rpc_client = MockRpcClient::new();
+
+        mock_service_control
+            .expect_start()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_service_control
+            .expect_wait()
+            .with(eq(3000))
+            .times(1)
+            .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(PathBuf::from(
+                "/var/safenode-manager/services/safenode1/safenode",
+            )))
+            .times(1)
+            .returning(|_| Ok(1000));
+        mock_rpc_client
+            .expect_is_node_connected_to_network()
+            .times(1)
+            .returning(|_| Ok(()));
+        mock_rpc_client.expect_node_info().times(1).returning(|| {
+            Ok(NodeInfo {
+                pid: 1000,
+                peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
+                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                version: "0.98.1".to_string(),
+                uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
+            })
+        });
+        mock_rpc_client
+            .expect_network_info()
+            .times(1)
+            .returning(|| {
+                Ok(NetworkInfo {
+                    connected_peers: vec![PeerId::from_str(
+                        "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
+                    )?],
+                    listeners: Vec::new(),
+                })
+            });
+
+        let mut service_data = NodeServiceData {
+            auto_restart: false,
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_format: None,
+            metrics_port: None,
+            node_port: None,
+            number: 1,
+            owner: None,
+            peer_id: None,
+            pid: None,
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Added,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: "0.98.1".to_string(),
+        };
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client))
+            .with_connection_timeout(Duration::from_secs(
+                DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S,
+            ));
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1517,6 +1622,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(2000));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -1654,6 +1760,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1734,6 +1841,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(2000));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -1784,6 +1892,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -1927,6 +2036,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -2154,6 +2264,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(2000));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2204,6 +2315,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -2322,6 +2434,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2372,6 +2485,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -2473,6 +2587,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2523,6 +2638,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -2627,6 +2743,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2677,6 +2794,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -2778,6 +2896,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2828,6 +2947,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -2929,6 +3049,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -2979,6 +3100,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -3083,6 +3205,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -3133,6 +3256,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -3237,6 +3361,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -3287,6 +3412,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -3391,6 +3517,7 @@ mod tests {
             .with(eq(current_node_bin.to_path_buf().clone()))
             .times(1)
             .returning(|_| Ok(100));
+
         mock_rpc_client.expect_node_info().times(1).returning(|| {
             Ok(NodeInfo {
                 pid: 2000,
@@ -3441,6 +3568,7 @@ mod tests {
             version: current_version.to_string(),
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
         let mut service_manager = ServiceManager::new(
             service,
             Box::new(mock_service_control),
@@ -3460,6 +3588,162 @@ mod tests {
             .await?;
 
         assert!(service_manager.service.service_data.auto_restart,);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn upgrade_should_use_dynamic_startup_delay_if_set() -> Result<()> {
+        let current_version = "0.1.0";
+        let target_version = "0.2.0";
+
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let current_install_dir = tmp_data_dir.child("safenode_install");
+        current_install_dir.create_dir_all()?;
+
+        let current_node_bin = current_install_dir.child("safenode");
+        current_node_bin.write_binary(b"fake safenode binary")?;
+        let target_node_bin = tmp_data_dir.child("safenode");
+        target_node_bin.write_binary(b"fake safenode binary")?;
+
+        let mut mock_service_control = MockServiceControl::new();
+        let mut mock_rpc_client = MockRpcClient::new();
+
+        // before binary upgrade
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
+            .times(1)
+            .returning(|_| Ok(1000));
+        mock_service_control
+            .expect_stop()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        // after binary upgrade
+        mock_service_control
+            .expect_uninstall()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_service_control
+            .expect_install()
+            .with(
+                eq(ServiceInstallCtx {
+                    args: vec![
+                        OsString::from("--rpc"),
+                        OsString::from("127.0.0.1:8081"),
+                        OsString::from("--root-dir"),
+                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("--log-output-dest"),
+                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("--upnp"),
+                    ],
+                    autostart: false,
+                    contents: None,
+                    environment: None,
+                    label: "safenode1".parse()?,
+                    program: current_node_bin.to_path_buf(),
+                    username: Some("safe".to_string()),
+                    working_directory: None,
+                }),
+                eq(false),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        // after service restart
+        mock_service_control
+            .expect_start()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_service_control
+            .expect_wait()
+            .with(eq(3000))
+            .times(1)
+            .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
+            .times(1)
+            .returning(|_| Ok(100));
+        mock_rpc_client
+            .expect_is_node_connected_to_network()
+            .times(1)
+            .returning(|_| Ok(()));
+        mock_rpc_client.expect_node_info().times(1).returning(|| {
+            Ok(NodeInfo {
+                pid: 2000,
+                peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
+                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                version: target_version.to_string(),
+                uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
+            })
+        });
+        mock_rpc_client
+            .expect_network_info()
+            .times(1)
+            .returning(|| {
+                Ok(NetworkInfo {
+                    connected_peers: Vec::new(),
+                    listeners: Vec::new(),
+                })
+            });
+
+        let mut service_data = NodeServiceData {
+            auto_restart: false,
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_format: None,
+            metrics_port: None,
+            node_port: None,
+            number: 1,
+            owner: None,
+            peer_id: Some(PeerId::from_str(
+                "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
+            )?),
+            pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: current_node_bin.to_path_buf(),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Running,
+            upnp: true,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: current_version.to_string(),
+        };
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client))
+            .with_connection_timeout(Duration::from_secs(
+                DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S,
+            ));
+
+        let mut service_manager = ServiceManager::new(
+            service,
+            Box::new(mock_service_control),
+            VerbosityLevel::Normal,
+        );
+
+        service_manager
+            .upgrade(UpgradeOptions {
+                auto_restart: false,
+                bootstrap_peers: Vec::new(),
+                env_variables: None,
+                force: false,
+                start_service: true,
+                target_bin_path: target_node_bin.to_path_buf(),
+                target_version: Version::parse(target_version).unwrap(),
+            })
+            .await?;
 
         Ok(())
     }

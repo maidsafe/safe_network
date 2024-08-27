@@ -107,7 +107,7 @@ impl ReplicationFetcher {
 
             info!("Node is full, among {total_incoming_keys} incoming replications from {holder:?}, found {} beyond current farthest", out_of_range_keys.len());
             for addr in out_of_range_keys.iter() {
-                trace!("Node is full, the incoming record_key {addr:?} is beyond current farthest record");
+                debug!("Node is full, the incoming record_key {addr:?} is beyond current farthest record");
             }
         }
 
@@ -149,7 +149,7 @@ impl ReplicationFetcher {
             info!("Among {total_incoming_keys} incoming replications from {holder:?}, found {} out of range", out_of_range_keys.len());
             for addr in out_of_range_keys.iter() {
                 let ilog2_distance = self_address.distance(addr).ilog2();
-                trace!("The incoming record_key {addr:?} is out of range with ilog2_distance being {ilog2_distance:?}, do not fetch it from {holder:?}");
+                debug!("The incoming record_key {addr:?} is out of range with ilog2_distance being {ilog2_distance:?}, do not fetch it from {holder:?}");
             }
         }
 
@@ -223,10 +223,23 @@ impl ReplicationFetcher {
     pub(crate) fn notify_fetch_early_completed(
         &mut self,
         key_in: RecordKey,
+        record_type: RecordType,
     ) -> Vec<(PeerId, RecordKey)> {
-        self.to_be_fetched.retain(|(key, _t, _), _| key != &key_in);
+        self.to_be_fetched.retain(|(key, current_type, _), _| {
+            if current_type == &record_type {
+                key != &key_in
+            } else {
+                true
+            }
+        });
 
-        self.on_going_fetches.retain(|(key, _t), _| key != &key_in);
+        self.on_going_fetches.retain(|(key, current_type), _| {
+            if current_type == &record_type {
+                key != &key_in
+            } else {
+                true
+            }
+        });
 
         self.next_keys_to_fetch()
     }
@@ -237,7 +250,7 @@ impl ReplicationFetcher {
     pub(crate) fn next_keys_to_fetch(&mut self) -> Vec<(PeerId, RecordKey)> {
         self.prune_expired_keys_and_slow_nodes();
 
-        trace!("Next to fetch....");
+        debug!("Next to fetch....");
 
         if self.on_going_fetches.len() >= MAX_PARALLEL_FETCH {
             warn!("Replication Fetcher doesn't have free fetch capacity. Currently has {} entries in queue.",

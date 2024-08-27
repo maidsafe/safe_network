@@ -17,14 +17,12 @@ use libp2p::{
     kad::{Quorum, Record},
     Multiaddr, PeerId,
 };
-#[cfg(feature = "open-metrics")]
-use prometheus_client::registry::Registry;
 use rand::{thread_rng, Rng};
 use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
     GetRecordCfg, GetRecordError, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg,
-    VerificationKind, CLOSE_GROUP_SIZE,
+    VerificationKind,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -33,7 +31,7 @@ use sn_protocol::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
         RecordKind, RegisterAddress, RetryStrategy, SpendAddress,
     },
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_registers::{Permissions, SignedRegister};
 use sn_transfers::{
@@ -106,13 +104,7 @@ impl Client {
         let root_dir = std::env::temp_dir();
         trace!("Starting Kad swarm in client mode..{root_dir:?}.");
 
-        #[cfg(not(feature = "open-metrics"))]
         let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
-
-        #[cfg(feature = "open-metrics")]
-        let mut network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
-        #[cfg(feature = "open-metrics")]
-        network_builder.metrics_registry(Some(Registry::default()));
 
         let (network, mut network_event_receiver, swarm_driver) = network_builder.build_client()?;
         info!("Client constructed network and swarm_driver");
@@ -450,7 +442,7 @@ impl Client {
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
         let get_quorum = if is_verifying {
-            Quorum::N(NonZeroUsize::new(2).ok_or(Error::NonZeroUsizeWasInitialisedAsZero)?)
+            Quorum::Majority
         } else {
             Quorum::One
         };
@@ -627,7 +619,7 @@ impl Client {
     /// * 'payee' - [PeerId]
     /// * 'payment' - [Payment]
     /// * 'verify_store' - Boolean
-    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Balanced by default
+    /// * 'retry_strategy' - [Option]<[RetryStrategy]> : Uses Quick by default
     ///
     pub(super) async fn store_chunk(
         &self,
@@ -639,7 +631,7 @@ impl Client {
     ) -> Result<()> {
         info!("Store chunk: {:?}", chunk.address());
         let key = chunk.network_address().to_record_key();
-        let retry_strategy = Some(retry_strategy.unwrap_or(RetryStrategy::Balanced));
+        let retry_strategy = Some(retry_strategy.unwrap_or(RetryStrategy::Quick));
 
         let record_kind = RecordKind::ChunkWithPayment;
         let record = Record {
@@ -895,7 +887,7 @@ impl Client {
             expected_holders,
         };
         let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::All,
+            put_quorum: Quorum::Majority,
             retry_strategy: Some(RetryStrategy::Persistent),
             use_put_record_to: None,
             verification: Some((VerificationKind::Network, verification_cfg)),

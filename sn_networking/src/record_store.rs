@@ -7,10 +7,11 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
+use crate::cmd::LocalSwarmCmd;
 use crate::driver::MAX_PACKET_SIZE;
 use crate::target_arch::{spawn, Instant};
-use crate::CLOSE_GROUP_SIZE;
-use crate::{cmd::SwarmCmd, event::NetworkEvent, log_markers::Marker, send_swarm_cmd};
+use crate::{event::NetworkEvent, log_markers::Marker};
+use crate::{send_local_swarm_cmd, CLOSE_GROUP_SIZE};
 use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
     Aes256GcmSiv, Nonce,
@@ -73,10 +74,13 @@ pub struct NodeRecordStore {
     records: HashMap<Key, (NetworkAddress, RecordType)>,
     /// FIFO simple cache of records to reduce read times
     records_cache: VecDeque<Record>,
+    /// A map from record keys to their indices in the cache
+    /// allowing for more efficient cache management
+    records_cache_map: HashMap<Key, usize>,
     /// Send network events to the node layer.
     network_event_sender: mpsc::Sender<NetworkEvent>,
     /// Send cmds to the network layer. Used to interact with self in an async fashion.
-    swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+    local_swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     /// ilog2 distance range of responsible records
     /// AKA: how many buckets of data do we consider "close"
     /// None means accept all records.
@@ -149,7 +153,7 @@ impl NodeRecordStore {
         let process_entry = |entry: &DirEntry| -> _ {
             let path = entry.path();
             if path.is_file() {
-                trace!("Existing record found: {path:?}");
+                debug!("Existing record found: {path:?}");
                 // if we've got a file, lets try and read it
                 let filename = match path.file_name().and_then(|n| n.to_str()) {
                     Some(file_name) => file_name,
@@ -248,7 +252,7 @@ impl NodeRecordStore {
         local_id: PeerId,
         config: NodeRecordStoreConfig,
         network_event_sender: mpsc::Sender<NetworkEvent>,
-        swarm_cmd_sender: mpsc::Sender<SwarmCmd>,
+        swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     ) -> Self {
         let key = Aes256GcmSiv::generate_key(&mut OsRng);
         let cipher = Aes256GcmSiv::new(&key);
@@ -279,8 +283,9 @@ impl NodeRecordStore {
             config,
             records,
             records_cache: VecDeque::with_capacity(cache_size),
+            records_cache_map: HashMap::with_capacity(cache_size),
             network_event_sender,
-            swarm_cmd_sender,
+            local_swarm_cmd_sender: swarm_cmd_sender,
             responsible_distance_range: None,
             #[cfg(feature = "open-metrics")]
             record_count_metric: None,
@@ -443,6 +448,48 @@ impl NodeRecordStore {
 
         Ok(())
     }
+
+    // When the accumulated record copies exceeds the `expotional pricing point` (max_records * 0.6)
+    // those `out of range` records shall be cleaned up.
+    // This is to avoid `over-quoting` during restart, when RT is not fully populated,
+    // result in mis-calculation of relevant records.
+    pub fn cleanup_unrelevant_records(&mut self) {
+        let accumulated_records = self.records.len();
+        if accumulated_records < 6 * MAX_RECORDS_COUNT / 10 {
+            return;
+        }
+
+        let responsible_range = if let Some(range) = self.responsible_distance_range {
+            range
+        } else {
+            return;
+        };
+
+        let mut removed_keys = Vec::new();
+        self.records.retain(|key, _val| {
+            let kbucket_key = KBucketKey::new(key.to_vec());
+            let is_in_range =
+                responsible_range >= self.local_key.distance(&kbucket_key).ilog2().unwrap_or(0);
+            if !is_in_range {
+                removed_keys.push(key.clone());
+            }
+            is_in_range
+        });
+
+        // Each `remove` function call will try to re-calculate furthest
+        // when the key to be removed is the current furthest.
+        // To avoid duplicated calculation, hence reset `furthest` first here.
+        self.farthest_record = self.calculate_farthest();
+
+        for key in removed_keys.iter() {
+            // Deletion from disk will be undertaken as a spawned task,
+            // hence safe to call this function repeatedly here.
+            self.remove(key);
+        }
+
+        info!("Cleaned up {} unrelevant records, among the original {accumulated_records} accumulated_records",
+            removed_keys.len());
+    }
 }
 
 impl NodeRecordStore {
@@ -516,23 +563,43 @@ impl NodeRecordStore {
     /// The record is marked as written to disk once `mark_as_stored` is called,
     /// this avoids us returning half-written data or registering it as stored before it is.
     pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
+        let key = &r.key;
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
-        trace!("PUT a verified Record: {record_key:?}");
+        debug!("PUTting a verified Record: {record_key:?}");
 
         // if the cache already has this record in it (eg, a conflicting spend)
         // remove it from the cache
-        self.records_cache.retain(|record| record.key != r.key);
+        // self.records_cache.retain(|record| record.key != r.key);
+        // Remove from cache if it already exists
+        if let Some(&index) = self.records_cache_map.get(key) {
+            if let Some(existing_record) = self.records_cache.remove(index) {
+                if existing_record.value == r.value {
+                    // we actually just want to keep what we have, and can assume it's been stored properly.
 
-        // store in the FIFO records cache, removing the oldest if needed
-        if self.records_cache.len() > self.config.records_cache_size {
-            self.records_cache.pop_front();
+                    // so we put it back in the cache
+                    self.records_cache.insert(index, existing_record);
+                    // and exit early.
+                    return Ok(());
+                }
+            }
+            self.update_cache_indices(index);
         }
 
+        // Store in the FIFO records cache, removing the oldest if needed
+        if self.records_cache.len() >= self.config.records_cache_size {
+            if let Some(old_record) = self.records_cache.pop_front() {
+                self.records_cache_map.remove(&old_record.key);
+            }
+        }
+
+        // Push the new record to the back of the cache
         self.records_cache.push_back(r.clone());
+        self.records_cache_map
+            .insert(key.clone(), self.records_cache.len() - 1);
 
-        self.prune_records_if_needed(&r.key)?;
+        self.prune_records_if_needed(key)?;
 
-        let filename = Self::generate_filename(&r.key);
+        let filename = Self::generate_filename(key);
         let file_path = self.config.storage_dir.join(&filename);
 
         #[cfg(feature = "open-metrics")]
@@ -541,30 +608,41 @@ impl NodeRecordStore {
         }
 
         let encryption_details = self.encryption_details.clone();
-        let cloned_cmd_sender = self.swarm_cmd_sender.clone();
+        let cloned_cmd_sender = self.local_swarm_cmd_sender.clone();
+
+        let record_key2 = record_key.clone();
         spawn(async move {
             let key = r.key.clone();
             if let Some(bytes) = Self::prepare_record_bytes(r, encryption_details) {
                 let cmd = match fs::write(&file_path, bytes) {
                     Ok(_) => {
                         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-                        info!("Wrote record {record_key:?} to disk! filename: {filename}");
+                        info!("Wrote record {record_key2:?} to disk! filename: {filename}");
 
-                        SwarmCmd::AddLocalRecordAsStored { key, record_type }
+                        LocalSwarmCmd::AddLocalRecordAsStored { key, record_type }
                     }
                     Err(err) => {
                         error!(
-                        "Error writing record {record_key:?} filename: {filename}, error: {err:?}"
+                        "Error writing record {record_key2:?} filename: {filename}, error: {err:?}"
                     );
-                        SwarmCmd::RemoveFailedLocalRecord { key }
+                        LocalSwarmCmd::RemoveFailedLocalRecord { key }
                     }
                 };
 
-                send_swarm_cmd(cloned_cmd_sender, cmd);
+                send_local_swarm_cmd(cloned_cmd_sender, cmd);
             }
         });
 
         Ok(())
+    }
+
+    /// Update the cache indices after removing an element
+    fn update_cache_indices(&mut self, start_index: usize) {
+        for index in start_index..self.records_cache.len() {
+            if let Some(record) = self.records_cache.get(index) {
+                self.records_cache_map.insert(record.key.clone(), index);
+            }
+        }
     }
 
     /// Calculate the cost to store data for our current store state
@@ -602,12 +680,6 @@ impl NodeRecordStore {
         };
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
-
-        Marker::StoreCost {
-            cost,
-            quoting_metrics: &quoting_metrics,
-        }
-        .log();
 
         (NanoTokens::from(cost), quoting_metrics)
     }
@@ -666,7 +738,7 @@ impl RecordStore for NodeRecordStore {
         }
 
         if !self.records.contains_key(k) {
-            trace!("Record not found locally: {key:?}");
+            debug!("Record not found locally: {key:?}");
             return None;
         }
 
@@ -692,7 +764,7 @@ impl RecordStore for NodeRecordStore {
             Ok(record_header) => {
                 match record_header.kind {
                     RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
-                        trace!("Record {record_key:?} with payment shall always be processed.");
+                        debug!("Record {record_key:?} with payment shall always be processed.");
                     }
                     _ => {
                         // Chunk with existing key do not to be stored again.
@@ -701,13 +773,13 @@ impl RecordStore for NodeRecordStore {
                         // double spend to be detected or register op update.
                         match self.records.get(&record.key) {
                             Some((_addr, RecordType::Chunk)) => {
-                                trace!("Chunk {record_key:?} already exists.");
+                                debug!("Chunk {record_key:?} already exists.");
                                 return Ok(());
                             }
                             Some((_addr, RecordType::NonChunk(existing_content_hash))) => {
                                 let content_hash = XorName::from_content(&record.value);
                                 if content_hash == *existing_content_hash {
-                                    trace!("A non-chunk record {record_key:?} with same content_hash {content_hash:?} already exists.");
+                                    debug!("A non-chunk record {record_key:?} with same content_hash {content_hash:?} already exists.");
                                     return Ok(());
                                 }
                             }
@@ -722,7 +794,7 @@ impl RecordStore for NodeRecordStore {
             }
         }
 
-        trace!("Unverified Record {record_key:?} try to validate and store");
+        debug!("Unverified Record {record_key:?} try to validate and store");
         let event_sender = self.network_event_sender.clone();
         // push the event off thread so as to be non-blocking
         let _handle = spawn(async move {

@@ -22,7 +22,7 @@ use std::{
     time::Duration,
 };
 use tonic::Request;
-use tracing::{error, info};
+use tracing::{error, info, trace};
 
 /// Sleep for sometime for the nodes for discover each other before verification
 /// Also can be set through the env variable of the same name.
@@ -47,6 +47,7 @@ async fn verify_routing_table() -> Result<()> {
     let node_rpc_address = get_all_rpc_addresses(false)?;
 
     let all_peers = get_all_peer_ids(&node_rpc_address).await?;
+    trace!("All peers: {all_peers:?}");
     let mut all_failed_list = BTreeMap::new();
 
     for (node_index, rpc_address) in node_rpc_address.iter().enumerate() {
@@ -71,6 +72,7 @@ async fn verify_routing_table() -> Result<()> {
 
         let current_peer = all_peers[node_index];
         let current_peer_key = KBucketKey::from(current_peer);
+        trace!("KBuckets for node #{node_index}: {current_peer} are: {k_buckets:?}");
 
         let mut failed_list = Vec::new();
         for peer in all_peers.iter() {
@@ -82,6 +84,7 @@ async fn verify_routing_table() -> Result<()> {
             match k_buckets.get(&ilog2_distance) {
                 Some(bucket) => {
                     if bucket.contains(peer) {
+                        println!("{peer:?} found inside the kbucket with ilog2 {ilog2_distance:?} of {current_peer:?} RT");
                         continue;
                     } else if bucket.len() == K_VALUE.get() {
                         println!("{peer:?} should be inside the ilog2 bucket: {ilog2_distance:?} of {current_peer:?}. But skipped as the bucket is full");

@@ -1,48 +1,73 @@
 {
   "keybindings": {
-    "Home": {
-      "<Ctrl-s>": {"HomeActions":"StartNodes"},
-      "<Ctrl-S>": {"HomeActions":"StartNodes"},
-      "<Ctrl-Shift-s>": {"HomeActions":"StartNodes"},
-      "<Ctrl-x>": {"HomeActions":"StopNodes"}, 
-      "<Ctrl-X>": {"HomeActions":"StopNodes"},
-      "<Ctrl-Shift-x>": {"HomeActions":"StopNodes"},
+    "Status" : {
+      "<s>": {"SwitchScene":"Status"},
+      "<S>": {"SwitchScene":"Status"},
+      "<o>": {"SwitchScene":"Options"},
+      "<O>": {"SwitchScene":"Options"},
+      "<h>": {"SwitchScene":"Help"},
+      "<H>": {"SwitchScene":"Help"},
 
-      "up" : {"HomeActions":"PreviousTableItem"},
-      "down": {"HomeActions":"NextTableItem"},
+      "<Ctrl-s>": {"StatusActions":"StartNodes"},
+      "<Ctrl-S>": {"StatusActions":"StartNodes"},
+      "<Ctrl-Shift-s>": {"StatusActions":"StartNodes"},
+      "<Ctrl-x>": {"StatusActions":"StopNodes"},
+      "<Ctrl-X>": {"StatusActions":"StopNodes"},
+      "<Ctrl-Shift-x>": {"StatusActions":"StopNodes"},
 
-      "tab": {"TabActions":"NextTab"},
-      "<Shift-tab>": {"TabActions":"PreviousTab"},
+      "up" : {"StatusActions":"PreviousTableItem"},
+      "down": {"StatusActions":"NextTableItem"},
 
-      "<Ctrl-b>": {"HomeActions":"TriggerBetaProgramme"},
-      "<Ctrl-B>": {"HomeActions":"TriggerBetaProgramme"},
-      "<Ctrl-Shift-b>": {"HomeActions":"TriggerBetaProgramme"},
-      "<Ctrl-g>": {"HomeActions":"TriggerManageNodes"},
-      "<Ctrl-G>": {"HomeActions":"TriggerManageNodes"},
-      "<Ctrl-Shift-g>": {"HomeActions":"TriggerManageNodes"},
-      "<h>": {"HomeActions":"TriggerHelp"},
-      "<H>": {"HomeActions":"TriggerHelp"},
-      "<Shift-h>": {"HomeActions":"TriggerHelp"},
-      "<Ctrl-r>": {"HomeActions":"TriggerResetNodesPopUp"},
-      "<Ctrl-R>": {"HomeActions":"TriggerResetNodesPopUp"},
-      "<Ctrl-Shift-r>": {"HomeActions":"TriggerResetNodesPopUp"},
+      "<Ctrl-g>": {"StatusActions":"TriggerManageNodes"},
+      "<Ctrl-G>": {"StatusActions":"TriggerManageNodes"},
+      "<Ctrl-Shift-g>": {"StatusActions":"TriggerManageNodes"},
 
       "<q>": "Quit",
       "<Shift-q>": "Quit",
       "<Q>": "Quit",
-      "<Ctrl-d>": "Quit",
       "<Ctrl-c>": "Quit",
       "<Ctrl-z>": "Suspend" // Suspend the application
     },
     "Options": {
-      "tab": {"TabActions":"NextTab"},
-      "<Shift-tab>": {"TabActions":"PreviousTab"},
-      "enter": {"SwitchInputMode":"Entry"},
-      
+      "<s>": {"SwitchScene":"Status"},
+      "<S>": {"SwitchScene":"Status"},
+      "<o>": {"SwitchScene":"Options"},
+      "<O>": {"SwitchScene":"Options"},
+      "<h>": {"SwitchScene":"Help"},
+      "<H>": {"SwitchScene":"Help"},
+
+      "<Ctrl-d>": {"OptionsActions":"TriggerChangeDrive"},
+      "<Ctrl-D>": {"OptionsActions":"TriggerChangeDrive"},
+      "<Ctrl-Shift-d>": {"OptionsActions":"TriggerChangeDrive"},
+      "<Ctrl-b>": {"OptionsActions":"TriggerBetaProgramme"},
+      "<Ctrl-B>": {"OptionsActions":"TriggerBetaProgramme"},
+      "<Ctrl-Shift-b>": {"OptionsActions":"TriggerBetaProgramme"},
+      "<Ctrl-l>": {"OptionsActions":"TriggerAccessLogs"},
+      "<Ctrl-L>": {"OptionsActions":"TriggerAccessLogs"},
+      "<Ctrl-Shift-l>": {"OptionsActions":"TriggerAccessLogs"},
+      "<Ctrl-r>": {"OptionsActions":"TriggerResetNodes"},
+      "<Ctrl-R>": {"OptionsActions":"TriggerResetNodes"},
+      "<Ctrl-Shift-r>": {"OptionsActions":"TriggerResetNodes"},
+
+
       "<q>": "Quit",
       "<Shift-q>": "Quit",
       "<Q>": "Quit",
-      "<Ctrl-d>": "Quit",
+      "<Ctrl-c>": "Quit",
+      "<Ctrl-z>": "Suspend" // Suspend the application
+    },
+    "Help": {
+      "<s>": {"SwitchScene":"Status"},
+      "<S>": {"SwitchScene":"Status"},
+      "<o>": {"SwitchScene":"Options"},
+      "<O>": {"SwitchScene":"Options"},
+      "<h>": {"SwitchScene":"Help"},
+      "<H>": {"SwitchScene":"Help"},
+
+
+      "<q>": "Quit",
+      "<Shift-q>": "Quit",
+      "<Q>": "Quit",
       "<Ctrl-c>": "Quit",
       "<Ctrl-z>": "Suspend" // Suspend the application
     }

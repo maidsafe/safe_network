@@ -6,11 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::target_arch::sleep;
+use crate::{log_markers::Marker, target_arch::sleep};
 use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
 #[cfg(feature = "upnp")]
-use prometheus_client::metrics::{counter::Counter, family::Family};
-use prometheus_client::{metrics::gauge::Gauge, registry::Registry};
+use prometheus_client::metrics::family::Family;
+use prometheus_client::{
+    metrics::{counter::Counter, gauge::Gauge},
+    registry::Registry,
+};
 use sysinfo::{Pid, ProcessRefreshKind, System};
 use tokio::time::Duration;
 
@@ -21,11 +24,14 @@ mod upnp;
 const UPDATE_INTERVAL: Duration = Duration::from_secs(15);
 const TO_MB: u64 = 1_000_000;
 
-pub(crate) struct NetworkMetrics {
+/// The shared recorders that are used to record metrics.
+pub(crate) struct NetworkMetricsRecorder {
     // Records libp2p related metrics
     // Must directly call self.libp2p_metrics.record(libp2p_event) with Recorder trait in scope. But since we have
     // re-implemented the trait for the wrapper struct, we can instead call self.record(libp2p_event)
     libp2p_metrics: Libp2pMetrics,
+    #[cfg(feature = "upnp")]
+    upnp_events: Family<upnp::UpnpEventLabels, Counter>,
 
     // metrics from sn_networking
     pub(crate) connected_peers: Gauge,
@@ -33,16 +39,24 @@ pub(crate) struct NetworkMetrics {
     pub(crate) open_connections: Gauge,
     pub(crate) peers_in_routing_table: Gauge,
     pub(crate) records_stored: Gauge,
-    pub(crate) store_cost: Gauge,
-    #[cfg(feature = "upnp")]
-    pub(crate) upnp_events: Family<upnp::UpnpEventLabels, Counter>,
+
+    // store cost
+    store_cost: Gauge,
+    relevant_records: Gauge,
+    max_records: Gauge,
+    received_payment_count: Gauge,
+    live_time: Gauge,
+
+    // bad node metrics
+    bad_peers_count: Counter,
+    shunned_count: Counter,
 
     // system info
     process_memory_used_mb: Gauge,
     process_cpu_usage_percentage: Gauge,
 }
 
-impl NetworkMetrics {
+impl NetworkMetricsRecorder {
     pub fn new(registry: &mut Registry) -> Self {
         let libp2p_metrics = Libp2pMetrics::new(registry);
         let sub_registry = registry.sub_registry_with_prefix("sn_networking");
@@ -79,11 +93,19 @@ impl NetworkMetrics {
             "The total number of peers in our routing table",
             peers_in_routing_table.clone(),
         );
-        let store_cost = Gauge::default();
+
+        let shunned_count = Counter::default();
         sub_registry.register(
-            "store_cost",
-            "The store cost of the node",
-            store_cost.clone(),
+            "shunned_count",
+            "Number of peers that have shunned our node",
+            shunned_count.clone(),
+        );
+
+        let bad_peers_count = Counter::default();
+        sub_registry.register(
+            "bad_peers_count",
+            "Number of bad peers that have been detected by us and been added to the blocklist",
+            bad_peers_count.clone(),
         );
 
         #[cfg(feature = "upnp")]
@@ -109,16 +131,57 @@ impl NetworkMetrics {
             process_cpu_usage_percentage.clone(),
         );
 
+        // store cost
+        let store_cost = Gauge::default();
+        sub_registry.register(
+            "store_cost",
+            "The store cost of the node",
+            store_cost.clone(),
+        );
+        let relevant_records = Gauge::default();
+        sub_registry.register(
+            "relevant_records",
+            "The number of records that we're responsible for. This is used to calculate the store cost",
+            relevant_records.clone(),
+        );
+        let max_records = Gauge::default();
+        sub_registry.register(
+            "max_records",
+            "The maximum number of records that we can store. This is used to calculate the store cost",
+            max_records.clone(),
+        );
+        let received_payment_count = Gauge::default();
+        sub_registry.register(
+            "received_payment_count",
+            "The number of payments received by our node. This is used to calculate the store cost",
+            received_payment_count.clone(),
+        );
+        let live_time = Gauge::default();
+        sub_registry.register(
+            "live_time",
+            "The time for which the node has been alive. This is used to calculate the store cost",
+            live_time.clone(),
+        );
+
         let network_metrics = Self {
             libp2p_metrics,
+            #[cfg(feature = "upnp")]
+            upnp_events,
+
             records_stored,
             estimated_network_size,
             connected_peers,
             open_connections,
             peers_in_routing_table,
             store_cost,
-            #[cfg(feature = "upnp")]
-            upnp_events,
+            relevant_records,
+            max_records,
+            received_payment_count,
+            live_time,
+
+            bad_peers_count,
+            shunned_count,
+
             process_memory_used_mb,
             process_cpu_usage_percentage,
         };
@@ -155,29 +218,55 @@ impl NetworkMetrics {
             }
         });
     }
+
+    // Records the metric
+    pub(crate) fn record_from_marker(&self, log_marker: Marker) {
+        match log_marker {
+            Marker::PeerConsideredAsBad { .. } => {
+                let _ = self.bad_peers_count.inc();
+            }
+            Marker::FlaggedAsBadNode { .. } => {
+                let _ = self.shunned_count.inc();
+            }
+            Marker::StoreCost {
+                cost,
+                quoting_metrics,
+            } => {
+                let _ = self.store_cost.set(cost as i64);
+                let _ = self
+                    .relevant_records
+                    .set(quoting_metrics.close_records_stored as i64);
+                let _ = self.max_records.set(quoting_metrics.max_records as i64);
+                let _ = self
+                    .received_payment_count
+                    .set(quoting_metrics.received_payment_count as i64);
+                let _ = self.live_time.set(quoting_metrics.live_time as i64);
+            }
+            _ => {}
+        }
+    }
 }
 
 /// Impl the Recorder traits again for our struct.
-
-impl Recorder<libp2p::kad::Event> for NetworkMetrics {
+impl Recorder<libp2p::kad::Event> for NetworkMetricsRecorder {
     fn record(&self, event: &libp2p::kad::Event) {
         self.libp2p_metrics.record(event)
     }
 }
 
-impl Recorder<libp2p::relay::Event> for NetworkMetrics {
+impl Recorder<libp2p::relay::Event> for NetworkMetricsRecorder {
     fn record(&self, event: &libp2p::relay::Event) {
         self.libp2p_metrics.record(event)
     }
 }
 
-impl Recorder<libp2p::identify::Event> for NetworkMetrics {
+impl Recorder<libp2p::identify::Event> for NetworkMetricsRecorder {
     fn record(&self, event: &libp2p::identify::Event) {
         self.libp2p_metrics.record(event)
     }
 }
 
-impl<T> Recorder<libp2p::swarm::SwarmEvent<T>> for NetworkMetrics {
+impl<T> Recorder<libp2p::swarm::SwarmEvent<T>> for NetworkMetricsRecorder {
     fn record(&self, event: &libp2p::swarm::SwarmEvent<T>) {
         self.libp2p_metrics.record(event);
     }

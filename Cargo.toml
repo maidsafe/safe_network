@@ -45,6 +45,9 @@ clone_on_ref_ptr = "warn"
 debug = 0
 strip = "debuginfo"
 
+[profile.dev]
+debug = 0
+strip = "debuginfo"
 
 [workspace.metadata.release]
 pre-release-commit-message = "chore(release): release commit, tags, deps and changelog updates"

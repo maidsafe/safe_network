@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::get_progress_bar;
+use crate::utils::duration_to_minute_seconds_string;
 use crate::ChunkManager;
 use bytes::Bytes;
 use color_eyre::{eyre::eyre, Report, Result};
@@ -424,13 +425,7 @@ impl FilesUploadStatusNotifier for StdOutPrinter {
         elapsed_time: Duration,
         chunks_to_upload_len: usize,
     ) {
-        let elapsed_minutes = elapsed_time.as_secs() / 60;
-        let elapsed_seconds = elapsed_time.as_secs() % 60;
-        let elapsed = if elapsed_minutes > 0 {
-            format!("{elapsed_minutes} minutes {elapsed_seconds} seconds")
-        } else {
-            format!("{elapsed_seconds} seconds")
-        };
+        let elapsed = duration_to_minute_seconds_string(elapsed_time);
 
         println!(
             "Among {chunks_to_upload_len} chunks, found {} already existed in network, uploaded \
@@ -462,10 +457,10 @@ impl StdOutPrinter {
         for (_, file_name, addr) in completed_files {
             let hex_addr = addr.to_hex();
             if let Some(file_name) = file_name.to_str() {
-                println!("\"{file_name}\" {hex_addr}");
+                println!("Uploaded \"{file_name}\" to address {hex_addr}");
                 info!("Uploaded {file_name} to {hex_addr}");
             } else {
-                println!("\"{file_name:?}\" {hex_addr}");
+                println!("Uploaded \"{file_name:?}\" to address {hex_addr}");
                 info!("Uploaded {file_name:?} to {hex_addr}");
             }
         }

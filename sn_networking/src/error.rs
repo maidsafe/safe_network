@@ -29,6 +29,7 @@ pub(super) type Result<T, E = NetworkError> = std::result::Result<T, E>;
 /// GetRecord Query errors
 #[derive(Error)]
 #[allow(missing_docs)]
+#[derive(Clone)]
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
     NotEnoughCopies {
@@ -138,7 +139,7 @@ pub enum NetworkError {
     // ---------- Spend Errors
     #[error("Spend not found: {0:?}")]
     NoSpendFoundInsideRecord(SpendAddress),
-    #[error("Double spend(s) was detected. The signed spends are: {0:?}")]
+    #[error("Double spend(s) attempt was detected. The signed spends are: {0:?}")]
     DoubleSpendAttempt(Vec<SignedSpend>),
 
     // ---------- Store Error

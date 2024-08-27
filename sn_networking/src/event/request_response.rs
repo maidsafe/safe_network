@@ -7,7 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    sort_peers_by_address, MsgResponder, NetworkError, NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+    cmd::NetworkSwarmCmd, log_markers::Marker, sort_peers_by_address, MsgResponder, NetworkError,
+    NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::request_response::{self, Message};
@@ -32,7 +33,7 @@ impl SwarmDriver {
                     request_id,
                     ..
                 } => {
-                    trace!("Received request {request_id:?} from peer {peer:?}, req: {request:?}");
+                    debug!("Received request {request_id:?} from peer {peer:?}, req: {request:?}");
                     // If the request is replication or quote verification,
                     // we can handle it and send the OK response here.
                     // As the handle result is unimportant to the sender.
@@ -41,11 +42,11 @@ impl SwarmDriver {
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::Replicate(Ok(())),
                             );
-                            self.swarm
-                                .behaviour_mut()
-                                .request_response
-                                .send_response(channel, response)
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendResponse {
+                                resp: response,
+                                channel: MsgResponder::FromPeer(channel),
+                            });
 
                             self.add_keys_to_replication_fetcher(holder, keys);
                         }
@@ -56,11 +57,10 @@ impl SwarmDriver {
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::QuoteVerification(Ok(())),
                             );
-                            self.swarm
-                                .behaviour_mut()
-                                .request_response
-                                .send_response(channel, response)
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendResponse {
+                                resp: response,
+                                channel: MsgResponder::FromPeer(channel),
+                            });
 
                             // The keypair is required to verify the quotes,
                             // hence throw it up to Network layer for further actions.
@@ -82,14 +82,25 @@ impl SwarmDriver {
                             let response = Response::Cmd(
                                 sn_protocol::messages::CmdResponse::PeerConsideredAsBad(Ok(())),
                             );
-                            self.swarm
-                                .behaviour_mut()
-                                .request_response
-                                .send_response(channel, response)
-                                .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
 
-                            if bad_peer == NetworkAddress::from_peer(self.self_peer_id) {
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendResponse {
+                                resp: response,
+                                channel: MsgResponder::FromPeer(channel),
+                            });
+
+                            let (Some(detected_by), Some(bad_peer)) =
+                                (detected_by.as_peer_id(), bad_peer.as_peer_id())
+                            else {
+                                error!("Could not get PeerId from detected_by or bad_peer NetworkAddress {detected_by:?}, {bad_peer:?}");
+                                return Ok(());
+                            };
+
+                            if bad_peer == self.self_peer_id {
                                 warn!("Peer {detected_by:?} consider us as BAD, due to {bad_behaviour:?}.");
+                                self.record_metrics(Marker::FlaggedAsBadNode {
+                                    flagged_by: &detected_by,
+                                });
+
                                 // TODO: shall we terminate self after received such notifications
                                 //       from the majority close_group nodes around us?
                             } else {
@@ -108,7 +119,7 @@ impl SwarmDriver {
                     request_id,
                     response,
                 } => {
-                    trace!("Got response {request_id:?} from peer {peer:?}, res: {response}.");
+                    debug!("Got response {request_id:?} from peer {peer:?}, res: {response}.");
                     if let Some(sender) = self.pending_requests.remove(&request_id) {
                         // The sender will be provided if the caller (Requester) is awaiting for a response
                         // at the call site.
@@ -168,7 +179,7 @@ impl SwarmDriver {
                 warn!("RequestResponse: InboundFailure for request_id: {request_id:?} and peer: {peer:?}, with error: {error:?}");
             }
             request_response::Event::ResponseSent { peer, request_id } => {
-                trace!("ResponseSent for request_id: {request_id:?} and peer: {peer:?}");
+                debug!("ResponseSent for request_id: {request_id:?} and peer: {peer:?}");
             }
         }
         Ok(())
@@ -186,7 +197,7 @@ impl SwarmDriver {
             return;
         };
 
-        trace!(
+        debug!(
             "Received replication list from {holder:?} of {} keys",
             incoming_keys.len()
         );
@@ -195,7 +206,7 @@ impl SwarmDriver {
         // giving us some margin for replication
         let closest_k_peers = self.get_closest_k_value_local_peers();
         if !closest_k_peers.contains(&holder) || holder == self.self_peer_id {
-            trace!("Holder {holder:?} is self or not in replication range.");
+            debug!("Holder {holder:?} is self or not in replication range.");
             return;
         }
 
@@ -219,7 +230,7 @@ impl SwarmDriver {
             .replication_fetcher
             .add_keys(holder, incoming_keys, all_keys);
         if keys_to_fetch.is_empty() {
-            trace!("no waiting keys to fetch from the network");
+            debug!("no waiting keys to fetch from the network");
         } else {
             self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
         }

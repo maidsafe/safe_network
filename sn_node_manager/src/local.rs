@@ -6,7 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::helpers::{get_bin_version, get_username};
+use crate::add_services::config::PortRange;
+use crate::helpers::{
+    check_port_availability, get_bin_version, get_start_port_if_applicable, get_username,
+    increment_port_option,
+};
 use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -35,10 +39,12 @@ pub trait Launcher {
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
     fn launch_node(
         &self,
-        owner: Option<String>,
-        rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
         log_format: Option<LogFormat>,
+        metrics_port: Option<u16>,
+        node_port: Option<u16>,
+        owner: Option<String>,
+        rpc_socket_addr: SocketAddr,
     ) -> Result<()>;
     fn wait(&self, delay: u64);
 }
@@ -71,10 +77,12 @@ impl Launcher for LocalSafeLauncher {
 
     fn launch_node(
         &self,
-        owner: Option<String>,
-        rpc_socket_addr: SocketAddr,
         bootstrap_peers: Vec<Multiaddr>,
         log_format: Option<LogFormat>,
+        metrics_port: Option<u16>,
+        node_port: Option<u16>,
+        owner: Option<String>,
+        rpc_socket_addr: SocketAddr,
     ) -> Result<()> {
         let mut args = Vec::new();
 
@@ -95,6 +103,16 @@ impl Launcher for LocalSafeLauncher {
         if let Some(log_format) = log_format {
             args.push("--log-format".to_string());
             args.push(log_format.as_str().to_string());
+        }
+
+        if let Some(metrics_port) = metrics_port {
+            args.push("--metrics-server-port".to_string());
+            args.push(metrics_port.to_string());
+        }
+
+        if let Some(node_port) = node_port {
+            args.push("--port".to_string());
+            args.push(node_port.to_string());
         }
 
         args.push("--local".to_string());
@@ -186,13 +204,17 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
 }
 
 pub struct LocalNetworkOptions {
+    pub enable_metrics_server: bool,
     pub faucet_bin_path: PathBuf,
     pub join: bool,
     pub interval: u64,
+    pub metrics_port: Option<PortRange>,
+    pub node_port: Option<PortRange>,
     pub node_count: u16,
     pub owner: Option<String>,
     pub owner_prefix: Option<String>,
     pub peers: Option<Vec<Multiaddr>>,
+    pub rpc_port: Option<PortRange>,
     pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
     pub log_format: Option<LogFormat>,
@@ -205,11 +227,32 @@ pub async fn run_network(
 ) -> Result<()> {
     info!("Running local network");
 
+    // Check port availability when joining a local network.
+    if let Some(port_range) = &options.node_port {
+        port_range.validate(options.node_count)?;
+        check_port_availability(port_range, &node_registry.nodes)?;
+    }
+
+    if let Some(port_range) = &options.metrics_port {
+        port_range.validate(options.node_count)?;
+        check_port_availability(port_range, &node_registry.nodes)?;
+    }
+
+    if let Some(port_range) = &options.rpc_port {
+        port_range.validate(options.node_count)?;
+        check_port_availability(port_range, &node_registry.nodes)?;
+    }
+
     let launcher = LocalSafeLauncher {
         safenode_bin_path: options.safenode_bin_path.to_path_buf(),
         faucet_bin_path: options.faucet_bin_path.to_path_buf(),
     };
 
+    let mut node_port = get_start_port_if_applicable(options.node_port);
+    let mut metrics_port = get_start_port_if_applicable(options.metrics_port);
+    let mut rpc_port = get_start_port_if_applicable(options.rpc_port);
+
+    // Start the bootstrap node if it doesnt exist.
     let (bootstrap_peers, start) = if options.join {
         if let Some(peers) = options.peers {
             (peers, 1)
@@ -222,8 +265,20 @@ pub async fn run_network(
             (peer, 1)
         }
     } else {
-        let rpc_port = service_control.get_available_port()?;
-        let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_port);
+        let rpc_free_port = if let Some(port) = rpc_port {
+            port
+        } else {
+            service_control.get_available_port()?
+        };
+        let metrics_free_port = if let Some(port) = metrics_port {
+            Some(port)
+        } else if options.enable_metrics_server {
+            Some(service_control.get_available_port()?)
+        } else {
+            None
+        };
+        let rpc_socket_addr =
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_free_port);
         let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
 
         let number = (node_registry.nodes.len() as u16) + 1;
@@ -232,6 +287,8 @@ pub async fn run_network(
             RunNodeOptions {
                 bootstrap_peers: vec![],
                 genesis: true,
+                metrics_port: metrics_free_port,
+                node_port,
                 interval: options.interval,
                 log_format: options.log_format,
                 number,
@@ -247,13 +304,28 @@ pub async fn run_network(
         let bootstrap_peers = node
             .listen_addr
             .ok_or_eyre("The listen address was not set")?;
+        node_port = increment_port_option(node_port);
+        metrics_port = increment_port_option(metrics_port);
+        rpc_port = increment_port_option(rpc_port);
         (bootstrap_peers, 2)
     };
     node_registry.save()?;
 
     for _ in start..=options.node_count {
-        let rpc_port = service_control.get_available_port()?;
-        let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_port);
+        let rpc_free_port = if let Some(port) = rpc_port {
+            port
+        } else {
+            service_control.get_available_port()?
+        };
+        let metrics_free_port = if let Some(port) = metrics_port {
+            Some(port)
+        } else if options.enable_metrics_server {
+            Some(service_control.get_available_port()?)
+        } else {
+            None
+        };
+        let rpc_socket_addr =
+            SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_free_port);
         let rpc_client = RpcClient::from_socket_addr(rpc_socket_addr);
 
         let number = (node_registry.nodes.len() as u16) + 1;
@@ -262,6 +334,8 @@ pub async fn run_network(
             RunNodeOptions {
                 bootstrap_peers: bootstrap_peers.clone(),
                 genesis: false,
+                metrics_port: metrics_free_port,
+                node_port,
                 interval: options.interval,
                 log_format: options.log_format,
                 number,
@@ -280,6 +354,10 @@ pub async fn run_network(
         // `kill` command for the nodes that we did spin up. The `kill` command works on the basis
         // of what's in the node registry.
         node_registry.save()?;
+
+        node_port = increment_port_option(node_port);
+        metrics_port = increment_port_option(metrics_port);
+        rpc_port = increment_port_option(rpc_port);
     }
 
     if !options.skip_validation {
@@ -314,6 +392,8 @@ pub struct RunNodeOptions {
     pub genesis: bool,
     pub interval: u64,
     pub log_format: Option<LogFormat>,
+    pub metrics_port: Option<u16>,
+    pub node_port: Option<u16>,
     pub number: u16,
     pub owner: Option<String>,
     pub rpc_socket_addr: SocketAddr,
@@ -328,10 +408,12 @@ pub async fn run_node(
     info!("Launching node {}...", run_options.number);
     println!("Launching node {}...", run_options.number);
     launcher.launch_node(
-        run_options.owner.clone(),
-        run_options.rpc_socket_addr,
         run_options.bootstrap_peers.clone(),
         run_options.log_format,
+        run_options.metrics_port,
+        run_options.node_port,
+        run_options.owner.clone(),
+        run_options.rpc_socket_addr,
     )?;
     launcher.wait(run_options.interval);
 
@@ -355,8 +437,8 @@ pub async fn run_node(
         local: true,
         log_dir_path: node_info.log_path,
         log_format: run_options.log_format,
-        metrics_port: None,
-        node_port: None,
+        metrics_port: run_options.metrics_port,
+        node_port: run_options.node_port,
         number: run_options.number,
         owner: run_options.owner,
         peer_id: Some(peer_id),
@@ -458,6 +540,7 @@ mod tests {
             async fn node_restart(&self, delay_millis: u64, retain_peer_id: bool) -> RpcResult<()>;
             async fn node_stop(&self, delay_millis: u64) -> RpcResult<()>;
             async fn node_update(&self, delay_millis: u64) -> RpcResult<()>;
+            async fn is_node_connected_to_network(&self, timeout: std::time::Duration) -> RpcResult<()>;
             async fn update_log_level(&self, log_levels: String) -> RpcResult<()>;
         }
     }
@@ -471,9 +554,16 @@ mod tests {
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
         mock_launcher
             .expect_launch_node()
-            .with(eq(None), eq(rpc_socket_addr), eq(vec![]), eq(None))
+            .with(
+                eq(vec![]),
+                eq(None),
+                eq(None),
+                eq(None),
+                eq(None),
+                eq(rpc_socket_addr),
+            )
             .times(1)
-            .returning(|_, _, _, _| Ok(()));
+            .returning(|_, _, _, _, _, _| Ok(()));
         mock_launcher
             .expect_wait()
             .with(eq(100))
@@ -514,6 +604,8 @@ mod tests {
                 genesis: true,
                 interval: 100,
                 log_format: None,
+                metrics_port: None,
+                node_port: None,
                 number: 1,
                 owner: None,
                 rpc_socket_addr,
