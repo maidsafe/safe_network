@@ -12,7 +12,7 @@ use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
 use prometheus_client::metrics::family::Family;
 use prometheus_client::{
     metrics::{counter::Counter, gauge::Gauge},
-    registry::{Registry, Unit},
+    registry::Registry,
 };
 use sysinfo::{Pid, ProcessRefreshKind, System};
 use tokio::time::Duration;
@@ -118,18 +118,16 @@ impl NetworkMetricsRecorder {
         );
 
         let process_memory_used_mb = Gauge::default();
-        sub_registry.register_with_unit(
+        sub_registry.register(
             "process_memory_used_mb",
             "Memory used by the process in MegaBytes",
-            Unit::Other("MegaByte".to_string()),
             process_memory_used_mb.clone(),
         );
 
         let process_cpu_usage_percentage = Gauge::default();
-        sub_registry.register_with_unit(
+        sub_registry.register(
             "process_cpu_usage_percentage",
             "The percentage of CPU used by the process. Value is from 0-100",
-            Unit::Other("Percentage".to_string()),
             process_cpu_usage_percentage.clone(),
         );
 
