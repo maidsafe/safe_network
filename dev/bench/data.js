@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724730984977,
+  "lastUpdate": 1724730986305,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "cb4e0a36b0bd75133d89ab26d7062c18a55c617b",
-          "message": "test(CI): confirm there is no failed replication fetch",
-          "timestamp": "2024-04-15T16:01:21Z",
-          "tree_id": "0484f2c24f18d896e2f27518f041c517749d984f",
-          "url": "https://github.com/maidsafe/safe_network/commit/cb4e0a36b0bd75133d89ab26d7062c18a55c617b"
-        },
-        "date": 1713200035623,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7046,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33942,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 27040,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ce9118f73a56fbefef27443a6b86a68feed3b3dc",
+          "message": "Merge pull request #2064 from jacderida/docs-network_keys\n\ndocs: provide more information on build-time keys",
+          "timestamp": "2024-08-27T03:09:46Z",
+          "tree_id": "f19ad1681e5bb60829a73cdf6cd2d7131561aa50",
+          "url": "https://github.com/maidsafe/safe_network/commit/ce9118f73a56fbefef27443a6b86a68feed3b3dc"
+        },
+        "date": 1724730986024,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4503,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 24359,
             "unit": "ms"
           },
           {
