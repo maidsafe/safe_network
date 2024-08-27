@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724756615961,
+  "lastUpdate": 1724756617443,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cccdfc80635b7f97734df4305c69ca88b3ab5669",
-          "message": "fix(ci): update the custom branch variable names",
-          "timestamp": "2024-04-15T21:11:53Z",
-          "tree_id": "551d2d8c9129e2874201068ee79648891d68cf59",
-          "url": "https://github.com/maidsafe/safe_network/commit/cccdfc80635b7f97734df4305c69ca88b3ab5669"
-        },
-        "date": 1713218465483,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7515,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36047,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 24359,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "074a307aaf791639b457ba94ed01bd3ca6022ef2",
+          "message": "Merge branch 'rc-2024.08.2'",
+          "timestamp": "2024-08-27T11:42:33+01:00",
+          "tree_id": "f6a87c337b573d4b9c83bb200774fd074f3d0e9c",
+          "url": "https://github.com/maidsafe/safe_network/commit/074a307aaf791639b457ba94ed01bd3ca6022ef2"
+        },
+        "date": 1724756617204,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4580,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 24104,
             "unit": "ms"
           },
           {
