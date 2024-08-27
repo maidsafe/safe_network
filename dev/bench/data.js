@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724730868986,
+  "lastUpdate": 1724730983746,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "cb4e0a36b0bd75133d89ab26d7062c18a55c617b",
-          "message": "test(CI): confirm there is no failed replication fetch",
-          "timestamp": "2024-04-15T16:01:21Z",
-          "tree_id": "0484f2c24f18d896e2f27518f041c517749d984f",
-          "url": "https://github.com/maidsafe/safe_network/commit/cb4e0a36b0bd75133d89ab26d7062c18a55c617b"
-        },
-        "date": 1713200031675,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 153,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ce9118f73a56fbefef27443a6b86a68feed3b3dc",
+          "message": "Merge pull request #2064 from jacderida/docs-network_keys\n\ndocs: provide more information on build-time keys",
+          "timestamp": "2024-08-27T03:09:46Z",
+          "tree_id": "f19ad1681e5bb60829a73cdf6cd2d7131561aa50",
+          "url": "https://github.com/maidsafe/safe_network/commit/ce9118f73a56fbefef27443a6b86a68feed3b3dc"
+        },
+        "date": 1724730983453,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 161,
             "unit": "MB"
           }
         ]
