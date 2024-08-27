@@ -30,7 +30,6 @@ libp2p = { version = "0.53", features = [
     "request-response",
     "cbor",
     "identify",
-    "dcutr",
     "tcp",
     "relay",
     "noise",
