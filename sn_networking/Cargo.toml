@@ -11,7 +11,7 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.17.2"
 
 [features]
-default = ["libp2p/quic"]
+default = []
 local-discovery = ["libp2p/mdns"]
 upnp = ["libp2p/upnp"]
 # tcp is automatically enabled when compiling for wasm32
@@ -30,7 +30,7 @@ libp2p = { version = "0.53", features = [
     "request-response",
     "cbor",
     "identify",
-    "tcp",
+    "quic",
     "relay",
     "noise",
     "tcp",
