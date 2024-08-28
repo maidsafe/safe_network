@@ -7,25 +7,42 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::spend_reason::SpendReason;
-use super::{Hash, NanoTokens, Transaction, UniquePubkey};
-use crate::{DerivationIndex, Result, Signature, SpendAddress, TransferError};
+use super::{Hash, NanoTokens, UniquePubkey};
+use crate::{
+    DerivationIndex, DerivedSecretKey, Result, Signature, SpendAddress, TransferError,
+    NETWORK_ROYALTIES_PK,
+};
 
 use custom_debug::Debug;
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
-use std::collections::BTreeSet;
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet},
+};
 
-/// SignedSpend's are constructed when a CashNote is logged to the spentbook.
+/// `SignedSpend`s are the core of the Network's transaction system.
+/// They are the data type on the Network used to commit to a transfer of value. Analogous to a transaction in Bitcoin.
+/// They are signed piece of data proving the owner's commitment to transfer value.
+/// `Spend`s refer to their ancestors and descendants, forming a directed acyclic graph that starts from Genesis.
 #[derive(Debug, Clone, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct SignedSpend {
-    /// The Spend, which together with signature over it, constitutes the SignedSpend.
+    /// The Spend, together with the owner's signature over it, constitutes the SignedSpend.
     pub spend: Spend,
-    /// The DerivedSecretKey's signature over (the hash of) Spend, confirming that the CashNote was intended to be spent.
+    /// The DerivedSecretKey's signature over the Spend, proving the owner's commitment to the Spend.
     #[debug(skip)]
     pub derived_key_sig: Signature,
 }
 
 impl SignedSpend {
+    /// Create a new SignedSpend
+    pub fn sign(spend: Spend, sk: &DerivedSecretKey) -> Self {
+        let derived_key_sig = sk.sign(&spend.to_bytes_for_signing());
+        Self {
+            spend,
+            derived_key_sig,
+        }
+    }
+
     /// Get public key of input CashNote.
     pub fn unique_pubkey(&self) -> &UniquePubkey {
         &self.spend.unique_pubkey
@@ -36,24 +53,9 @@ impl SignedSpend {
         SpendAddress::from_unique_pubkey(&self.spend.unique_pubkey)
     }
 
-    /// Get the hash of the transaction this CashNote is spent in
-    pub fn spent_tx_hash(&self) -> Hash {
-        self.spend.spent_tx.hash()
-    }
-
-    /// Get the transaction this CashNote is spent in
-    pub fn spent_tx(&self) -> Transaction {
-        self.spend.spent_tx.clone()
-    }
-
-    /// Get the hash of the transaction this CashNote was created in
-    pub fn parent_tx_hash(&self) -> Hash {
-        self.spend.parent_tx.hash()
-    }
-
     /// Get Nano
-    pub fn token(&self) -> &NanoTokens {
-        &self.spend.amount
+    pub fn amount(&self) -> NanoTokens {
+        self.spend.amount()
     }
 
     /// Get reason.
@@ -71,71 +73,14 @@ impl SignedSpend {
 
     /// Verify a SignedSpend
     ///
-    /// Checks that
-    /// - the spend was indeed spent for the given Tx
+    /// Checks that:
     /// - it was signed by the DerivedSecretKey that owns the CashNote for this Spend
     /// - the signature is valid
-    /// - its value didn't change between the two transactions it is involved in (creation and spending)
     ///
     /// It does NOT check:
     /// - if the spend exists on the Network
     /// - the spend's parents and if they exist on the Network
-    pub fn verify(&self, spent_tx_hash: Hash) -> Result<()> {
-        // verify that input spent_tx_hash matches self.spent_tx_hash
-        if spent_tx_hash != self.spent_tx_hash() {
-            return Err(TransferError::TransactionHashMismatch(
-                spent_tx_hash,
-                self.spent_tx_hash(),
-            ));
-        }
-
-        // check that the spend is an output of its parent tx
-        let parent_tx = &self.spend.parent_tx;
-        let unique_key = self.unique_pubkey();
-        if !parent_tx
-            .outputs
-            .iter()
-            .any(|o| o.unique_pubkey() == unique_key)
-        {
-            return Err(TransferError::InvalidParentTx(format!(
-                "spend {unique_key} is not an output of the its parent tx: {parent_tx:?}"
-            )));
-        }
-
-        // check that the spend is an input of its spent tx
-        let spent_tx = &self.spend.spent_tx;
-        if !spent_tx
-            .inputs
-            .iter()
-            .any(|i| i.unique_pubkey() == unique_key)
-        {
-            return Err(TransferError::InvalidSpentTx(format!(
-                "spend {unique_key} is not an input of the its spent tx: {spent_tx:?}"
-            )));
-        }
-
-        // check that the value of the spend wasn't tampered with
-        let claimed_value = self.spend.amount;
-        let creation_value = self
-            .spend
-            .parent_tx
-            .outputs
-            .iter()
-            .find(|o| o.unique_pubkey == self.spend.unique_pubkey)
-            .map(|o| o.amount)
-            .unwrap_or(NanoTokens::zero());
-        let spent_value = self
-            .spend
-            .spent_tx
-            .inputs
-            .iter()
-            .find(|i| i.unique_pubkey == self.spend.unique_pubkey)
-            .map(|i| i.amount)
-            .unwrap_or(NanoTokens::zero());
-        if claimed_value != creation_value || creation_value != spent_value {
-            return Err(TransferError::InvalidSpendValue(*self.unique_pubkey()));
-        }
-
+    pub fn verify(&self) -> Result<()> {
         // check signature
         // the spend is signed by the DerivedSecretKey
         // corresponding to the UniquePubkey of the CashNote being spent.
@@ -152,69 +97,85 @@ impl SignedSpend {
 
     /// Verify the parents of this Spend, making sure the input parent_spends are ancestors of self.
     /// - Also handles the case of parent double spends.
-    /// - verifies that the parent_spends where spent in our spend's parent_tx.
-    /// - verifies the parent_tx against the parent_spends
-    pub fn verify_parent_spends<'a, T>(&self, parent_spends: T) -> Result<()>
-    where
-        T: IntoIterator<Item = &'a BTreeSet<SignedSpend>> + Clone,
-    {
+    /// - verifies that the parent_spends contains self as an output
+    /// - verifies the sum of total inputs equals to the sum of outputs
+    pub fn verify_parent_spends(&self, parent_spends: &BTreeSet<SignedSpend>) -> Result<()> {
         let unique_key = self.unique_pubkey();
-        trace!("Verifying parent_spends for {unique_key}");
+        trace!("Verifying parent_spends for {self:?}");
 
-        // Check that the parent where all spent to our parent_tx
-        let tx_our_cash_note_was_created_in = self.parent_tx_hash();
-        let mut actual_parent_spends = BTreeSet::new();
-        for parents in parent_spends.clone().into_iter() {
-            if parents.is_empty() {
-                error!("No parent spend provided for {unique_key}");
-                return Err(TransferError::InvalidParentSpend(
-                    "Parent is empty".to_string(),
-                ));
-            }
-            let parent_unique_key = parents
-                .iter()
-                .map(|p| *p.unique_pubkey())
-                .collect::<BTreeSet<_>>();
-            if parent_unique_key.len() > 1 {
-                error!("While verifying parents of {unique_key}, found a parent double spend, but it contained more than one unique_pubkey. This is invalid. Erroring out.");
-                return Err(TransferError::InvalidParentSpend("Invalid parent double spend. More than one unique_pubkey in the parent double spend.".to_string()));
+        // sort parents by key (identify double spent parents)
+        let mut parents_by_key = BTreeMap::new();
+        for s in parent_spends {
+            parents_by_key
+                .entry(s.unique_pubkey())
+                .or_insert_with(Vec::new)
+                .push(s);
+        }
+
+        let mut total_inputs: u64 = 0;
+        for (_, spends) in parents_by_key {
+            // check for double spend parents
+            if spends.len() > 1 {
+                error!("While verifying parents of {unique_key}, found a double spend parent: {spends:?}");
+                return Err(TransferError::DoubleSpentParent);
             }
 
-            // if parent is a double spend, get the actual parent among the parent double spends
-            let actual_parent = parents
-                .iter()
-                .find(|p| p.spent_tx_hash() == tx_our_cash_note_was_created_in)
-                .cloned();
-
-            match actual_parent {
-                Some(actual_parent) => {
-                    actual_parent_spends.insert(actual_parent);
-                }
-                None => {
-                    let tx_parent_was_spent_in = parents
-                        .iter()
-                        .map(|p| p.spent_tx_hash())
-                        .collect::<Vec<_>>();
-                    return Err(TransferError::InvalidParentSpend(format!(
-                        "Parent spend was spent in another transaction. Expected: {tx_our_cash_note_was_created_in:?} Got: {tx_parent_was_spent_in:?}"
-                    )));
+            // check that the parent refers to self
+            if let Some(parent) = spends.first() {
+                match parent.spend.get_output_amount(unique_key) {
+                    Some(amount) => {
+                        total_inputs += amount.as_nano();
+                    }
+                    None => {
+                        return Err(TransferError::InvalidParentSpend(format!(
+                            "Parent spend {:?} doesn't contain self spend {unique_key:?} as one of its output",
+                            parent.unique_pubkey()
+                        )));
+                    }
                 }
             }
         }
 
-        // Here we check that the CashNote we're trying to spend was created in a valid tx
-        if let Err(e) = self
-            .spend
-            .parent_tx
-            .verify_against_inputs_spent(actual_parent_spends.iter())
-        {
+        let total_outputs = self.amount().as_nano();
+        if total_outputs != total_inputs {
             return Err(TransferError::InvalidParentSpend(format!(
-                "Parent Tx verification failed: {e:?}"
+                "Parents total input value {total_inputs:?} doesn't match Spend's value {total_outputs:?}"
             )));
         }
 
         trace!("Validated parent_spends for {unique_key}");
         Ok(())
+    }
+
+    /// Create a random Spend for testing
+    #[cfg(test)]
+    pub(crate) fn random_spend_to(
+        rng: &mut rand::prelude::ThreadRng,
+        output: UniquePubkey,
+        value: u64,
+    ) -> Self {
+        use crate::MainSecretKey;
+
+        let sk = MainSecretKey::random();
+        let index = DerivationIndex::random(rng);
+        let derived_sk = sk.derive_key(&index);
+        let unique_pubkey = derived_sk.unique_pubkey();
+        let reason = SpendReason::default();
+        let ancestor = MainSecretKey::random()
+            .derive_key(&DerivationIndex::random(rng))
+            .unique_pubkey();
+        let spend = Spend {
+            unique_pubkey,
+            reason,
+            ancestors: BTreeSet::from_iter(vec![ancestor]),
+            descendants: BTreeMap::from_iter(vec![(output, (NanoTokens::from(value)))]),
+            royalties: vec![],
+        };
+        let derived_key_sig = derived_sk.sign(&spend.to_bytes_for_signing());
+        Self {
+            spend,
+            derived_key_sig,
+        }
     }
 }
 
@@ -234,21 +195,25 @@ impl std::hash::Hash for SignedSpend {
     }
 }
 
-/// Represents the data to be signed by the DerivedSecretKey of the CashNote being spent.
+/// Represents a spent UniquePubkey on the Network.
+/// When a CashNote is spent, a Spend is created with the UniquePubkey of the CashNote.
+/// It is then sent to the Network along with the signature of the owner using the DerivedSecretKey matching its UniquePubkey.
+/// A Spend can have multiple ancestors (other spends) which will refer to it as a descendant.
+/// A Spend's value is equal to the total value given by its ancestors, which one can fetch on the Network to check.
+/// A Spend can have multiple descendants (other spends) which will refer to it as an ancestor.
+/// A Spend's value is equal to the total value of given to its descendants.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Spend {
     /// UniquePubkey of input CashNote that this SignedSpend is proving to be spent.
     pub unique_pubkey: UniquePubkey,
-    /// The transaction that the input CashNote is being spent in (where it is an input)
-    pub spent_tx: Transaction,
     /// Reason why this CashNote was spent.
     pub reason: SpendReason,
-    /// The amount of the input CashNote.
-    pub amount: NanoTokens,
-    /// The transaction that the input CashNote was created in (where it is an output)
-    pub parent_tx: Transaction,
-    /// Data to claim the Network Royalties (if any) from the Spend's descendants (outputs in spent_tx)
-    pub network_royalties: Vec<DerivationIndex>,
+    /// parent spends of this spend
+    pub ancestors: BTreeSet<UniquePubkey>,
+    /// spends we are parents of along with the amount we commited to give them
+    pub descendants: BTreeMap<UniquePubkey, NanoTokens>,
+    /// royalties outputs' derivation indexes
+    pub royalties: Vec<DerivationIndex>,
 }
 
 impl core::fmt::Debug for Spend {
@@ -263,16 +228,55 @@ impl Spend {
     pub fn to_bytes_for_signing(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Default::default();
         bytes.extend(self.unique_pubkey.to_bytes());
-        bytes.extend(self.spent_tx.hash().as_ref());
         bytes.extend(self.reason.hash().as_ref());
-        bytes.extend(self.amount.to_bytes());
-        bytes.extend(self.parent_tx.hash().as_ref());
+        bytes.extend("ancestors".as_bytes());
+        for ancestor in self.ancestors.iter() {
+            bytes.extend(&ancestor.to_bytes());
+        }
+        bytes.extend("descendants".as_bytes());
+        for (descendant, amount) in self.descendants.iter() {
+            bytes.extend(&descendant.to_bytes());
+            bytes.extend(amount.to_bytes());
+        }
+        bytes.extend("royalties".as_bytes());
+        for royalty in self.royalties.iter() {
+            bytes.extend(royalty.as_bytes());
+        }
         bytes
     }
 
     /// represent this Spend as a Hash
     pub fn hash(&self) -> Hash {
         Hash::hash(&self.to_bytes_for_signing())
+    }
+
+    /// Returns the amount to be spent in this Spend
+    pub fn amount(&self) -> NanoTokens {
+        let amount: u64 = self
+            .descendants
+            .values()
+            .map(|amount| amount.as_nano())
+            .sum();
+        NanoTokens::from(amount)
+    }
+
+    /// Returns the royalties descendants of this Spend
+    pub fn network_royalties(&self) -> BTreeSet<(UniquePubkey, NanoTokens, DerivationIndex)> {
+        let roy_pks: BTreeMap<UniquePubkey, DerivationIndex> = self
+            .royalties
+            .iter()
+            .map(|di| (NETWORK_ROYALTIES_PK.new_unique_pubkey(di), *di))
+            .collect();
+        self.descendants
+            .iter()
+            .filter_map(|(pk, amount)| roy_pks.get(pk).map(|di| (*pk, *amount, *di)))
+            .collect()
+    }
+
+    /// Returns the amount of a particual output target.
+    /// None if the target is not one of the outputs
+    pub fn get_output_amount(&self, target: &UniquePubkey) -> Option<NanoTokens> {
+        self.descendants.get(target).copied()
     }
 }
 

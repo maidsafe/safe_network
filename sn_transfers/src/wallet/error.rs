@@ -34,6 +34,9 @@ pub enum Error {
     /// A general error when a transfer fails
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendMoney(String),
+    /// Failed to sign a transaction
+    #[error("Failed to sign a transaction: {0}")]
+    CouldNotSignTransaction(String),
     /// A general error when receiving a transfer fails
     #[error("Failed to receive transfer due to {0}")]
     CouldNotReceiveMoney(String),

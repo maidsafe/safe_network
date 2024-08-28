@@ -971,7 +971,7 @@ impl Client {
         }
 
         // check spend
-        match signed_spend.verify(signed_spend.spent_tx_hash()) {
+        match signed_spend.verify() {
             Ok(()) => {
                 trace!("Verified signed spend got from network for {address:?}");
                 Ok(signed_spend.clone())
@@ -1012,7 +1012,7 @@ impl Client {
     /// let main_pub_key = MainPubkey::new(pk);
     /// // Create a Cash Note Redemption Vector
     /// let cash_note = CashNote::from_hex("&hex").unwrap();
-    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note).unwrap();
+    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note);
     /// let vector = vec![cashNoteRedemption.clone(), cashNoteRedemption.clone()];
     /// // Verify the cash note redemptions
     /// let cash_notes = client.verify_cash_notes_redemptions(main_pub_key,&vector);

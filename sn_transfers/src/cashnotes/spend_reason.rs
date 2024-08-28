@@ -46,7 +46,7 @@ impl SpendReason {
         )?))
     }
 
-    pub fn get_sender_hash(&self, sk: &SecretKey) -> Option<Hash> {
+    pub fn decrypt_discord_cypher(&self, sk: &SecretKey) -> Option<Hash> {
         match self {
             Self::BetaRewardTracking(cypher) => {
                 if let Ok(hash) = cypher.decrypt_to_username_hash(sk) {

@@ -409,73 +409,74 @@ impl SpendDagDb {
     ) {
         let mut beta_tracking = self.beta_tracking.write().await;
         beta_tracking.processed_spends += 1;
-        beta_tracking.total_accumulated_utxo += spend.spend.spent_tx.outputs.len() as u64;
+        beta_tracking.total_accumulated_utxo += spend.spend.descendants.len() as u64;
         beta_tracking.total_on_track_utxo += utxos_for_further_track;
 
         // Collect royalties
         let royalty_pubkeys: BTreeSet<_> = spend
             .spend
-            .network_royalties
+            .network_royalties()
             .iter()
-            .map(|derivation_idx| NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+            .map(|(_, _, derivation_idx)| NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
             .collect();
         let default_royalty_pubkeys: BTreeSet<_> = spend
             .spend
-            .network_royalties
+            .network_royalties()
             .iter()
-            .map(|derivation_idx| DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx))
+            .map(|(_, _, derivation_idx)| {
+                DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(derivation_idx)
+            })
             .collect();
         let mut royalties = BTreeMap::new();
-        for output in spend.spend.spent_tx.outputs.iter() {
-            if default_royalty_pubkeys.contains(&output.unique_pubkey)
-                || royalty_pubkeys.contains(&output.unique_pubkey)
-            {
+        for (unique_pk, amount) in spend.spend.descendants.iter() {
+            if default_royalty_pubkeys.contains(unique_pk) || royalty_pubkeys.contains(unique_pk) {
                 let _ = royalties.insert(
-                    SpendAddress::from_unique_pubkey(&output.unique_pubkey),
-                    output.amount.as_nano(),
+                    SpendAddress::from_unique_pubkey(unique_pk),
+                    amount.as_nano(),
                 );
             }
         }
 
-        if royalties.len() > (spend.spend.spent_tx.outputs.len() - 1) / 2 {
+        if royalties.len() > (spend.spend.descendants.len() - 1) / 2 {
             eprintln!(
                 "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
                 spend.spend.unique_pubkey,
                 royalties.len(),
-                spend.spend.amount.as_nano(),
+                spend.spend.amount().as_nano(),
                 spend.spend.reason
             );
             eprintln!(
                 "Incorrect royalty spend has {} royalties, {:?} - {:?}",
-                spend.spend.network_royalties.len(),
-                spend.spend.spent_tx.inputs,
-                spend.spend.spent_tx.outputs
+                spend.spend.network_royalties().len(),
+                spend.spend.ancestors,
+                spend.spend.descendants
             );
             warn!(
                 "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
                 spend.spend.unique_pubkey,
                 royalties.len(),
-                spend.spend.amount.as_nano(),
+                spend.spend.amount().as_nano(),
                 spend.spend.reason
             );
             warn!(
                 "Incorrect royalty spend has {} royalties, {:?} - {:?}",
-                spend.spend.network_royalties.len(),
-                spend.spend.spent_tx.inputs,
-                spend.spend.spent_tx.outputs
+                spend.spend.network_royalties().len(),
+                spend.spend.ancestors,
+                spend.spend.descendants
             );
         }
         beta_tracking.total_royalties.extend(royalties);
 
         let addr = spend.address();
-        let amount = spend.spend.amount;
+        let amount = spend.spend.amount();
 
         // check for beta rewards reason
-        let user_name_hash = match spend.reason().get_sender_hash(sk) {
+        let user_name_hash = match spend.reason().decrypt_discord_cypher(sk) {
             Some(n) => n,
             None => {
-                if let Some(default_user_name_hash) =
-                    spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
+                if let Some(default_user_name_hash) = spend
+                    .reason()
+                    .decrypt_discord_cypher(&DEFAULT_PAYMENT_FORWARD_SK)
                 {
                     warn!("With default key, got forwarded reward of {amount} at {addr:?}");
                     println!("With default key, got forwarded reward of {amount} at {addr:?}");
@@ -493,6 +494,8 @@ impl SpendDagDb {
         };
 
         // add to local rewards
+        let addr = spend.address();
+        let amount = spend.spend.amount();
         let beta_participants_read = self.beta_participants.read().await;
 
         if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
@@ -504,8 +507,9 @@ impl SpendDagDb {
                 .insert((addr, amount));
         } else {
             // check with default key
-            if let Some(default_user_name_hash) =
-                spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
+            if let Some(default_user_name_hash) = spend
+                .reason()
+                .decrypt_discord_cypher(&DEFAULT_PAYMENT_FORWARD_SK)
             {
                 if let Some(user_name) = beta_participants_read.get(&default_user_name_hash) {
                     warn!("With default key, got forwarded reward from {user_name} of {amount} at {addr:?}");
@@ -534,7 +538,7 @@ impl SpendDagDb {
         sk: &SecretKey,
         _utxos_for_further_track: u64,
     ) {
-        let user_name_hash = match spend.reason().get_sender_hash(sk) {
+        let user_name_hash = match spend.reason().decrypt_discord_cypher(sk) {
             Some(n) => n,
             None => {
                 return;
@@ -548,8 +552,9 @@ impl SpendDagDb {
         if let Some(user_name) = beta_participants_read.get(&user_name_hash) {
             println!("Found double spend from {user_name} at {addr:?}");
         } else {
-            if let Some(default_user_name_hash) =
-                spend.reason().get_sender_hash(&DEFAULT_PAYMENT_FORWARD_SK)
+            if let Some(default_user_name_hash) = spend
+                .reason()
+                .decrypt_discord_cypher(&DEFAULT_PAYMENT_FORWARD_SK)
             {
                 if let Some(user_name) = beta_participants_read.get(&default_user_name_hash) {
                     println!("Found double spend from {user_name} at {addr:?} using default key");
