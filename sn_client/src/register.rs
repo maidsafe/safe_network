@@ -32,7 +32,7 @@ use xor_name::XorName;
 pub struct ClientRegister {
     #[debug(skip)]
     client: Client,
-    pub(crate) register: Register,
+    pub register: Register,
     pub ops: LinkedList<RegisterCmd>, // Cached operations.
 }
 

@@ -12,9 +12,9 @@ use crate::{
 };
 
 use bls::{PublicKey, SecretKey, Signature};
-use crdts::merkle_reg::MerkleReg;
+use crdts::merkle_reg::{Hash, MerkleReg};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 use xor_name::XorName;
 
 /// Arbitrary maximum size of a register entry.
@@ -260,6 +260,82 @@ impl Register {
     /// NOTE: This API is unstable and may be removed in the future
     pub fn merkle_reg(&self) -> &MerkleReg<Entry> {
         self.crdt.merkle_reg()
+    }
+
+    /// Log the structure of the MerkleReg within this Register's CRDT as a tree view.
+    /// This is actually being the `update history` of the register.
+    pub fn log_update_history(&self) -> String {
+        let mut output = "MerkleReg Structure:\n".to_string();
+        let merkle_reg = self.crdt.merkle_reg();
+        output = format!(
+            "{output}Total entries: {}\n",
+            merkle_reg.num_nodes() + merkle_reg.num_orphans()
+        );
+
+        // Find root nodes (entries with no parents)
+        let roots: Vec<_> = merkle_reg.read().hashes().into_iter().collect();
+
+        // Print the tree starting from each root
+        for (i, root) in roots.iter().enumerate() {
+            let mut visited = HashSet::new();
+            Self::print_tree(
+                root,
+                merkle_reg,
+                &mut output,
+                "",
+                i == roots.len() - 1,
+                &mut visited,
+            );
+        }
+
+        output
+    }
+
+    // Helper function to recursively print the MerkleReg tree
+    fn print_tree(
+        hash: &Hash,
+        merkle_reg: &MerkleReg<Entry>,
+        output: &mut String,
+        prefix: &str,
+        is_last: bool,
+        visited: &mut HashSet<Hash>,
+    ) {
+        let pretty_hash = format!("{}", XorName::from_content(hash));
+        if !visited.insert(*hash) {
+            *output = format!(
+                "{}{prefix}{}* {pretty_hash} (cycle detected)\n",
+                output,
+                if is_last { "└── " } else { "├── " },
+            );
+            return;
+        }
+
+        let entry = if let Some(node) = merkle_reg.node(*hash) {
+            format!("value: {}", XorName::from_content(&node.value))
+        } else {
+            "value: None".to_string()
+        };
+        *output = format!(
+            "{}{prefix}{}{pretty_hash}: {entry}\n",
+            output,
+            if is_last { "└── " } else { "├── " },
+        );
+
+        let children: Vec<_> = merkle_reg.children(*hash).hashes().into_iter().collect();
+        let new_prefix = format!("{prefix}{}   ", if is_last { " " } else { "│" });
+
+        for (i, child) in children.iter().enumerate() {
+            Self::print_tree(
+                child,
+                merkle_reg,
+                output,
+                &new_prefix,
+                i == children.len() - 1,
+                visited,
+            );
+        }
+
+        visited.remove(hash);
     }
 
     // Private helper to check the given Entry's size is within define limit,
