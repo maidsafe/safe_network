@@ -126,25 +126,11 @@ jobs:
             ~/.local/share/safe/*/*/*.log*
             ~/.local/share/safe/client/logs/*/*.log*
 
-      - name: Stop the WAN network
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
+      - name: destroy network
+        uses: maidsafe/sn-testnet-control-action/destroy-network@main
         with:
-          action: destroy
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyE2E
-          safe-network-user: maidsafe
-          safe-network-branch: main
+          provider: ${{ env.PROVIDER }}
+          network-name: ${{ env.NETWORK_NAME }}
 
       # - name: post notification to slack on failure
       #   if: ${{ failure() }}
