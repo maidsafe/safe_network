@@ -13,10 +13,11 @@ use super::{
     Component, Frame,
 };
 use crate::action::OptionsActions;
-use crate::components::popup::port_range::{PORT_ALLOCATION, PORT_MAX, PORT_MIN};
+use crate::components::popup::port_range::PORT_ALLOCATION;
 use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::connection_mode::ConnectionMode;
 use crate::node_mgmt::MaintainNodesArgs;
+use crate::node_mgmt::{PORT_MAX, PORT_MIN};
 use crate::{
     action::{Action, StatusActions},
     config::Config,
@@ -164,7 +165,7 @@ impl Status {
             .filter(|node| node.status != ServiceStatus::Removed)
             .collect();
         info!(
-            "Loaded node registry. Running nodes: {:?}",
+            "Loaded node registry. Maintaining {:?} nodes.",
             self.node_services.len()
         );
 
@@ -236,6 +237,16 @@ impl Status {
         self.node_services
             .get(service_idx)
             .map(|data| data.service_name.clone())
+    }
+
+    fn show_starting_nodes_popup(&mut self) {
+        debug!("Showing starting nodes popup");
+        self.lock_registry = Some(LockRegistryState::StartingNodes);
+    }
+
+    fn hide_starting_nodes_popup(&mut self) {
+        debug!("Hiding starting nodes popup");
+        self.lock_registry = None;
     }
 }
 
@@ -322,6 +333,7 @@ impl Component for Status {
                 }
                 StatusActions::StartNodesCompleted | StatusActions::StopNodesCompleted => {
                     self.lock_registry = None;
+                    self.hide_starting_nodes_popup();
                     self.load_node_registry_and_update_states()?;
                 }
                 StatusActions::ResetNodesCompleted { trigger_start_node } => {
@@ -330,6 +342,7 @@ impl Component for Status {
 
                     if trigger_start_node {
                         debug!("Reset nodes completed. Triggering start nodes.");
+                        self.lock_registry = Some(LockRegistryState::StartingNodes);
                         return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
                     }
                     debug!("Reset nodes completed");
@@ -358,10 +371,6 @@ impl Component for Status {
                 }
                 StatusActions::StartNodes => {
                     debug!("Got action to start nodes");
-                    if self.lock_registry.is_some() {
-                        error!("Registry is locked. Cannot start node now.");
-                        return Ok(None);
-                    }
 
                     if self.nodes_to_start == 0 {
                         info!("Nodes to start not set. Ask for input.");
@@ -370,37 +379,26 @@ impl Component for Status {
                         )));
                     }
 
-                    // Port calculation
-                    // Check if the port range is valid and we shorten the range based on the nodes to start
-                    if self.port_from.unwrap_or(PORT_MIN) - 1 + self.nodes_to_start as u32
-                        > PORT_MAX
-                    {
-                        error!("Port range exceeds maximum port number. Cannot start nodes.");
-                        //TODO: Give feedback to the user
-                        return Ok(None);
-                    }
-
-                    let port_range_str = if self.nodes_to_start > 1 {
-                        format!(
-                            "{}-{}",
-                            self.port_from.unwrap_or(PORT_MIN),
-                            self.port_from.unwrap_or(PORT_MIN) - 1 + self.nodes_to_start as u32
-                        )
-                    } else {
-                        format!("{}", self.port_from.unwrap_or(PORT_MIN))
-                    };
-
-                    let port_range = match PortRange::parse(&port_range_str) {
-                        Ok(port_range) => port_range,
-                        Err(err) => {
-                            error!("When starting nodes, we got an error while parsing port range: {err:?}");
+                    if self.lock_registry.is_some() {
+                        error!("Registry is locked. Attempting to unlock...");
+                        // Attempt to unlock the registry
+                        self.lock_registry = None;
+                        // Reload the node registry to ensure consistency
+                        if let Err(e) = self.load_node_registry_and_update_states() {
+                            //TODO: Show error & Popup
+                            error!("Failed to reload node registry after unlocking: {:?}", e);
                             return Ok(None);
                         }
-                    };
+                    }
+                    self.show_starting_nodes_popup();
+
+                    let port_range = PortRange::Range(
+                        self.port_from.unwrap_or(PORT_MIN) as u16,
+                        self.port_to.unwrap_or(PORT_MAX) as u16,
+                    );
 
                     self.lock_registry = Some(LockRegistryState::StartingNodes);
                     let action_sender = self.get_actions_sender()?;
-                    info!("Running maintain node count: {:?}", self.nodes_to_start);
 
                     let maintain_nodes_args = MaintainNodesArgs {
                         count: self.nodes_to_start as u16,
@@ -415,9 +413,12 @@ impl Component for Status {
                         port_range: Some(port_range),
                     };
 
-                    //TODO: Handle errors and give feedback to the user
-                    stop_nodes(self.get_running_nodes(), action_sender.clone());
+                    debug!("Calling maintain_n_running_nodes");
+
                     maintain_n_running_nodes(maintain_nodes_args);
+
+                    self.lock_registry = None;
+                    self.load_node_registry_and_update_states()?;
                 }
                 StatusActions::StopNodes => {
                     debug!("Got action to stop nodes");
@@ -541,8 +542,9 @@ impl Component for Status {
             ]);
 
             // Combine "Nanos Earned" and "Discord Username" into a single row
+            let discord_username_placeholder = "Discord Username: "; // Used to calculate the width of the username column
             let discord_username_title = Span::styled(
-                "Discord Username: ".to_string(),
+                discord_username_placeholder,
                 Style::default().fg(VIVID_SKY_BLUE),
             );
 
@@ -579,8 +581,10 @@ impl Component for Status {
             let stats_width = [Constraint::Length(5)];
             let column_constraints = [
                 Constraint::Length(23),
-                Constraint::Percentage(25),
                 Constraint::Fill(1),
+                Constraint::Length(
+                    (discord_username_placeholder.len() + self.discord_username.len()) as u16,
+                ),
             ];
             let stats_table = Table::new(stats_rows, stats_width)
                 .block(
