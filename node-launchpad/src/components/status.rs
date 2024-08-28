@@ -239,16 +239,6 @@ impl Status {
             .get(service_idx)
             .map(|data| data.service_name.clone())
     }
-
-    fn show_starting_nodes_popup(&mut self) {
-        debug!("Showing starting nodes popup");
-        self.lock_registry = Some(LockRegistryState::StartingNodes);
-    }
-
-    fn hide_starting_nodes_popup(&mut self) {
-        debug!("Hiding starting nodes popup");
-        self.lock_registry = None;
-    }
 }
 
 impl Component for Status {
@@ -299,6 +289,7 @@ impl Component for Status {
                 self.discord_username = username;
 
                 if we_have_nodes && has_changed {
+                    debug!("Setting lock_registry to ResettingNodes");
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
                     info!("Resetting safenode services because the Discord Username was reset.");
                     let action_sender = self.get_actions_sender()?;
@@ -306,6 +297,7 @@ impl Component for Status {
                 }
             }
             Action::StoreStorageDrive(ref drive_mountpoint, ref _drive_name) => {
+                debug!("Setting lock_registry to ResettingNodes");
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 info!("Resetting safenode services because the Storage Drive was changed.");
                 let action_sender = self.get_actions_sender()?;
@@ -314,16 +306,18 @@ impl Component for Status {
                     get_launchpad_nodes_data_dir_path(&drive_mountpoint.to_path_buf(), false)?;
             }
             Action::StoreConnectionMode(connection_mode) => {
-                self.connection_mode = connection_mode;
+                debug!("Setting lock_registry to ResettingNodes");
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
+                self.connection_mode = connection_mode;
                 info!("Resetting safenode services because the Connection Mode range was changed.");
                 let action_sender = self.get_actions_sender()?;
                 reset_nodes(action_sender, false);
             }
             Action::StorePortRange(port_from, port_range) => {
+                debug!("Setting lock_registry to ResettingNodes");
+                self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 self.port_from = Some(port_from);
                 self.port_to = Some(port_range);
-                self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 info!("Resetting safenode services because the Port Range was changed.");
                 let action_sender = self.get_actions_sender()?;
                 reset_nodes(action_sender, false);
@@ -333,16 +327,18 @@ impl Component for Status {
                     self.node_stats = stats;
                 }
                 StatusActions::StartNodesCompleted | StatusActions::StopNodesCompleted => {
+                    debug!("Setting lock_registry to None");
                     self.lock_registry = None;
-                    self.hide_starting_nodes_popup();
                     self.load_node_registry_and_update_states()?;
                 }
                 StatusActions::ResetNodesCompleted { trigger_start_node } => {
+                    debug!("Setting lock_registry to None");
                     self.lock_registry = None;
                     self.load_node_registry_and_update_states()?;
 
                     if trigger_start_node {
                         debug!("Reset nodes completed. Triggering start nodes.");
+                        debug!("Setting lock_registry to StartingNodes");
                         self.lock_registry = Some(LockRegistryState::StartingNodes);
                         return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
                     }
@@ -383,6 +379,7 @@ impl Component for Status {
                     if self.lock_registry.is_some() {
                         error!("Registry is locked. Attempting to unlock...");
                         // Attempt to unlock the registry
+                        debug!("Setting lock_registry to None");
                         self.lock_registry = None;
                         // Reload the node registry to ensure consistency
                         if let Err(e) = self.load_node_registry_and_update_states() {
@@ -391,22 +388,21 @@ impl Component for Status {
                             return Ok(None);
                         }
                     }
-                    self.show_starting_nodes_popup();
+                    debug!("Setting lock_registry to StartingNodes");
+                    self.lock_registry = Some(LockRegistryState::StartingNodes);
 
                     let port_range = PortRange::Range(
                         self.port_from.unwrap_or(PORT_MIN) as u16,
                         self.port_to.unwrap_or(PORT_MAX) as u16,
                     );
 
-                    self.lock_registry = Some(LockRegistryState::StartingNodes);
                     let action_sender = self.get_actions_sender()?;
 
                     let maintain_nodes_args = MaintainNodesArgs {
                         count: self.nodes_to_start as u16,
                         owner: self.discord_username.clone(),
                         peers_args: self.peers_args.clone(),
-                        run_nat_detection: self.should_we_run_nat_detection()
-                            && self.connection_mode == ConnectionMode::Automatic,
+                        run_nat_detection: self.should_we_run_nat_detection(),
                         safenode_path: self.safenode_path.clone(),
                         data_dir_path: Some(self.data_dir_path.clone()),
                         action_sender: action_sender.clone(),
@@ -417,9 +413,6 @@ impl Component for Status {
                     debug!("Calling maintain_n_running_nodes");
 
                     maintain_n_running_nodes(maintain_nodes_args);
-
-                    self.lock_registry = None;
-                    self.load_node_registry_and_update_states()?;
                 }
                 StatusActions::StopNodes => {
                     debug!("Got action to stop nodes");
@@ -429,6 +422,7 @@ impl Component for Status {
                     }
 
                     let running_nodes = self.get_running_nodes();
+                    debug!("Setting lock_registry to StoppingNodes");
                     self.lock_registry = Some(LockRegistryState::StoppingNodes);
                     let action_sender = self.get_actions_sender()?;
                     info!("Stopping node service: {running_nodes:?}");
@@ -443,6 +437,7 @@ impl Component for Status {
                     return Ok(None);
                 }
 
+                debug!("Setting lock_registry to ResettingNodes");
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 let action_sender = self.get_actions_sender()?;
                 info!("Got action to reset nodes");
@@ -712,7 +707,12 @@ impl Component for Status {
                             Line::raw("This may take a couple minutes."),
                         ]
                     } else {
-                        vec![Line::raw("Starting nodes...")]
+                        vec![
+                            Line::raw(""),
+                            Line::raw(""),
+                            Line::raw(""),
+                            Line::raw("Starting nodes..."),
+                        ]
                     }
                 }
                 LockRegistryState::StoppingNodes => vec![Line::raw("Stopping nodes...")],
@@ -722,22 +722,20 @@ impl Component for Status {
                 Direction::Vertical,
                 vec![
                     // border
-                    Constraint::Length(1),
-                    Constraint::Min(1),
+                    Constraint::Length(2),
                     // our text goes here
-                    Constraint::Length(3),
-                    Constraint::Min(1),
+                    Constraint::Min(5),
                     // border
                     Constraint::Length(1),
                 ],
             )
-            .split(popup_area)[2];
+            .split(popup_area);
             let text = Paragraph::new(popup_text)
                 .block(Block::default().padding(Padding::horizontal(2)))
                 .wrap(Wrap { trim: false })
                 .alignment(Alignment::Center)
                 .fg(EUCALYPTUS);
-            f.render_widget(text, centred_area);
+            f.render_widget(text, centred_area[1]);
 
             f.render_widget(popup_border, popup_area);
         }
