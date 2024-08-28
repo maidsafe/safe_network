@@ -621,58 +621,51 @@ pub async fn maintain_n_running_nodes(
     let running_nodes = node_registry
         .nodes
         .iter()
-        .filter_map(|node| {
-            if node.status == ServiceStatus::Running {
-                Some(node.service_name.clone())
-            } else {
-                None
-            }
-        })
+        .filter(|node| node.status == ServiceStatus::Running)
+        .map(|node| node.service_name.clone())
         .collect::<Vec<_>>();
 
-    match running_nodes.len().cmp(&(max_nodes_to_run as usize)) {
+    let running_count = running_nodes.len();
+    let target_count = max_nodes_to_run as usize;
+
+    info!(
+        "Current running nodes: {}, Target: {}",
+        running_count, target_count
+    );
+
+    match running_count.cmp(&target_count) {
         Ordering::Greater => {
-            // stop some nodes if we are running more nodes than needed.
-            let to_stop_count = running_nodes.len() - max_nodes_to_run as usize;
+            let to_stop_count = running_count - target_count;
             let services_to_stop = running_nodes
                 .into_iter()
+                .rev() // Stop the oldest nodes first
                 .take(to_stop_count)
                 .collect::<Vec<_>>();
 
             info!(
-                ?max_nodes_to_run,
-                ?to_stop_count,
-                "We are stopping these services: {services_to_stop:?}"
+                "Stopping {} excess nodes: {:?}",
+                to_stop_count, services_to_stop
             );
-
             stop(vec![], services_to_stop, verbosity).await?;
         }
         Ordering::Less => {
-            // Run some nodes
-            let to_start_count = max_nodes_to_run as usize - running_nodes.len();
-
-            let mut inactive_nodes = node_registry
+            let to_start_count = target_count - running_count;
+            let inactive_nodes = node_registry
                 .nodes
                 .iter()
-                .filter_map(|node| {
-                    if node.status == ServiceStatus::Stopped || node.status == ServiceStatus::Added
-                    {
-                        Some(node.service_name.clone())
-                    } else {
-                        None
-                    }
+                .filter(|node| {
+                    node.status == ServiceStatus::Stopped || node.status == ServiceStatus::Added
                 })
+                .map(|node| node.service_name.clone())
                 .collect::<Vec<_>>();
 
-            // If we have enough inactive nodes, then we can just start them. Else we might have to add new ones and
-            // then start them.
+            info!("Inactive nodes available: {}", inactive_nodes.len());
+
             if to_start_count <= inactive_nodes.len() {
-                // start these nodes
                 let nodes_to_start = inactive_nodes.into_iter().take(to_start_count).collect();
                 info!(
-                    ?max_nodes_to_run,
-                    ?to_start_count,
-                    "We are starting these pre-existing services: {nodes_to_start:?}"
+                    "Starting {} existing inactive nodes: {:?}",
+                    to_start_count, nodes_to_start
                 );
                 start(
                     connection_timeout_s,
@@ -683,58 +676,94 @@ pub async fn maintain_n_running_nodes(
                 )
                 .await?;
             } else {
-                // add + start nodes
                 let to_add_count = to_start_count - inactive_nodes.len();
-
                 info!(
-                 ?max_nodes_to_run,
-                 ?to_add_count,
-                 "We are adding+starting {to_add_count:?} nodes + starting these services: {inactive_nodes:?}"
-             );
+                    "Adding {} new nodes and starting all {} inactive nodes",
+                    to_add_count,
+                    inactive_nodes.len()
+                );
 
-                let added_service_list = add(
-                    auto_restart,
-                    auto_set_nat_flags,
-                    Some(to_add_count as u16),
-                    data_dir_path,
-                    enable_metrics_server,
-                    env_variables,
-                    home_network,
-                    local,
-                    log_dir_path,
-                    log_format,
-                    metrics_port,
-                    node_port,
-                    owner,
-                    peers,
-                    rpc_address,
-                    rpc_port,
-                    src_path,
-                    upnp,
-                    url,
-                    user,
-                    version,
-                    verbosity,
-                )
-                .await?;
-                inactive_nodes.extend(added_service_list);
+                let ports_to_use = match node_port {
+                    Some(PortRange::Single(port)) => vec![port],
+                    Some(PortRange::Range(start, end)) => {
+                        (start..=end).take(to_add_count).collect()
+                    }
+                    None => vec![],
+                };
 
-                start(
-                    connection_timeout_s,
-                    start_node_interval,
-                    vec![],
-                    inactive_nodes,
-                    verbosity,
-                )
-                .await?;
+                for (i, port) in ports_to_use.into_iter().enumerate() {
+                    let added_service = add(
+                        auto_restart,
+                        auto_set_nat_flags,
+                        Some(1),
+                        data_dir_path.clone(),
+                        enable_metrics_server,
+                        env_variables.clone(),
+                        home_network,
+                        local,
+                        log_dir_path.clone(),
+                        log_format,
+                        metrics_port.clone(),
+                        Some(PortRange::Single(port)),
+                        owner.clone(),
+                        peers.clone(),
+                        rpc_address,
+                        rpc_port.clone(),
+                        src_path.clone(),
+                        upnp,
+                        url.clone(),
+                        user.clone(),
+                        version.clone(),
+                        verbosity,
+                    )
+                    .await?;
+
+                    if i == 0 {
+                        start(
+                            connection_timeout_s,
+                            start_node_interval,
+                            vec![],
+                            added_service,
+                            verbosity,
+                        )
+                        .await?;
+                    }
+                }
+
+                if !inactive_nodes.is_empty() {
+                    start(
+                        connection_timeout_s,
+                        start_node_interval,
+                        vec![],
+                        inactive_nodes,
+                        verbosity,
+                    )
+                    .await?;
+                }
             }
         }
         Ordering::Equal => {
             info!(
-                ?max_nodes_to_run,
-                "We already have the correct number of nodes. Do nothing."
+                "Current node count ({}) matches target ({}). No action needed.",
+                running_count, target_count
             );
         }
+    }
+
+    // Verify final state
+    let final_node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    let final_running_count = final_node_registry
+        .nodes
+        .iter()
+        .filter(|node| node.status == ServiceStatus::Running)
+        .count();
+
+    info!("Final running node count: {}", final_running_count);
+    if final_running_count != target_count {
+        warn!(
+            "Failed to reach target node count. Expected {}, but got {}",
+            target_count, final_running_count
+        );
     }
 
     Ok(())
