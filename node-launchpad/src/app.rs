@@ -24,6 +24,7 @@ use crate::{
     config::{get_launchpad_nodes_data_dir_path, AppData, Config},
     connection_mode::ConnectionMode,
     mode::{InputMode, Scene},
+    node_mgmt::{PORT_MAX, PORT_MIN},
     style::SPACE_CADET,
     system::{get_default_mount_point, get_primary_mount_point, get_primary_mount_point_name},
     tui,
@@ -94,7 +95,7 @@ impl App {
             peers_args,
             safenode_path,
             data_dir_path,
-            connection_mode,
+            connection_mode: connection_mode.clone(),
             port_from: Some(port_from),
             port_to: Some(port_to),
         };
@@ -259,10 +260,10 @@ impl App {
                         self.app_data.connection_mode = Some(mode.clone());
                         self.app_data.save(None)?;
                     }
-                    Action::StorePortRange(from, to) => {
+                    Action::StorePortRange(ref from, ref to) => {
                         debug!("Storing port range: {from:?}, {to:?}");
-                        self.app_data.port_from = Some(from);
-                        self.app_data.port_to = Some(to);
+                        self.app_data.port_from = Some(*from);
+                        self.app_data.port_to = Some(*to);
                         self.app_data.save(None)?;
                     }
                     Action::StoreDiscordUserName(ref username) => {
@@ -270,15 +271,9 @@ impl App {
                         self.app_data.discord_username.clone_from(username);
                         self.app_data.save(None)?;
                     }
-                    Action::StoreNodesToStart(count) => {
+                    Action::StoreNodesToStart(ref count) => {
                         debug!("Storing nodes to start: {count:?}");
-                        self.app_data.nodes_to_start = count;
-                        self.app_data.save(None)?;
-                    }
-                    Action::StoreStorageDrive(ref drive_mountpoint, ref drive_name) => {
-                        debug!("Storing storage drive: {drive_mountpoint:?}, {drive_name:?}");
-                        self.app_data.storage_mountpoint = Some(drive_mountpoint.clone());
-                        self.app_data.storage_drive = Some(drive_name.as_str().to_string());
+                        self.app_data.nodes_to_start = *count;
                         self.app_data.save(None)?;
                     }
                     _ => {}
