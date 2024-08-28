@@ -11,6 +11,8 @@ use crate::action::{Action, StatusActions};
 
 use crate::connection_mode::ConnectionMode;
 
+use sn_releases::{self, ReleaseType, SafeReleaseRepoActions};
+
 pub const PORT_MAX: u32 = 65535;
 pub const PORT_MIN: u32 = 1024;
 
@@ -62,8 +64,10 @@ pub fn maintain_n_running_nodes(args: MaintainNodesArgs) {
         let nodes_to_add = args.count as i32 - node_registry.nodes.len() as i32;
 
         if nodes_to_add <= 0 {
+            debug!("Scaling down nodes to {}", nodes_to_add);
             scale_down_nodes(&config, args.count).await;
         } else {
+            debug!("Scaling up nodes to {}", nodes_to_add);
             add_nodes(
                 &config,
                 nodes_to_add,
@@ -114,12 +118,29 @@ struct NodeConfig {
 /// Run the NAT detection process
 async fn run_nat_detection(action_sender: &UnboundedSender<Action>) {
     info!("Running nat detection....");
+
+    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+    let version = match release_repo
+        .get_latest_version(&ReleaseType::NatDetection)
+        .await
+    {
+        Ok(v) => {
+            info!("Using NAT detection version {}", v.to_string());
+            v.to_string()
+        }
+        Err(err) => {
+            info!("No NAT detection release found, using fallback version 0.1.0");
+            info!("Error: {err}");
+            "0.1.0".to_string()
+        }
+    };
+
     if let Err(err) = sn_node_manager::cmd::nat_detection::run_nat_detection(
         None,
         true,
         None,
         None,
-        Some("0.1.0".to_string()), //FIXME: hardcoded version!!
+        Some(version),
         VerbosityLevel::Minimal,
     )
     .await
