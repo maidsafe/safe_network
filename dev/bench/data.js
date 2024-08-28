@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724838006259,
+  "lastUpdate": 1724838008664,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bdca59e69aa05c653562412e1df2d493447ccf82",
-          "message": "chore(networking): notify network event on failed put due to prune",
-          "timestamp": "2024-04-16T10:31:39Z",
-          "tree_id": "90be851c1521f299081846e596c740ae38585f17",
-          "url": "https://github.com/maidsafe/safe_network/commit/bdca59e69aa05c653562412e1df2d493447ccf82"
-        },
-        "date": 1713266740744,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7302,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33350,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e15aae346d8de6135bd406e2fb8bb5eda9ab1af5",
+          "message": "Merge pull request #1989 from grumbach/without_middle_spend\n\nMassive Spend Refactor",
+          "timestamp": "2024-08-28T08:48:17Z",
+          "tree_id": "c91dbe2c2c4798044f83e62957cbc77972dfb5c2",
+          "url": "https://github.com/maidsafe/safe_network/commit/e15aae346d8de6135bd406e2fb8bb5eda9ab1af5"
+        },
+        "date": 1724838007853,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4310,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 20706,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 4,
             "unit": "ms"
           }
         ]
