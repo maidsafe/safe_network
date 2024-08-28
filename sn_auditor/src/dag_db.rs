@@ -346,17 +346,16 @@ impl SpendDagDb {
                     )
                 }));
             } else if let Some(sender) = spend_processing.clone() {
-                if let Ok(reattempt_addrs) = client
+                let reattempt_addrs = client
                     .crawl_to_next_utxos(
                         &mut addrs_to_get,
                         sender.clone(),
                         *UTXO_REATTEMPT_INTERVAL,
                     )
-                    .await
-                {
-                    let mut utxo_addresses = self.utxo_addresses.write().await;
-                    utxo_addresses.extend(reattempt_addrs);
-                }
+                    .await;
+
+                let mut utxo_addresses = self.utxo_addresses.write().await;
+                utxo_addresses.extend(reattempt_addrs);
             } else {
                 panic!("There is no point in running the auditor if we are not collecting the DAG or collecting data through crawling. Please enable the `dag-collection` feature or provide beta program related arguments.");
             };
@@ -482,12 +481,8 @@ impl SpendDagDb {
                     println!("With default key, got forwarded reward of {amount} at {addr:?}");
                     default_user_name_hash
                 } else {
-                    warn!(
-                        "Can't descrypt discord_id from {addr:?} with compile key nor default key"
-                    );
-                    println!(
-                        "Can't descrypt discord_id from {addr:?} with compile key nor default key"
-                    );
+                    info!("Spend {addr:?} is not for reward forward.");
+                    println!("Spend {addr:?} is not for reward forward.");
                     return;
                 }
             }

@@ -141,7 +141,7 @@ impl Client {
         addrs_to_get: &mut BTreeSet<(SpendAddress, NanoTokens)>,
         sender: Sender<(SignedSpend, u64, bool)>,
         reattempt_interval: Duration,
-    ) -> WalletResult<BTreeMap<SpendAddress, (Instant, NanoTokens)>> {
+    ) -> BTreeMap<SpendAddress, (Instant, NanoTokens)> {
         let mut failed_utxos = BTreeMap::new();
         let mut tasks = JoinSet::new();
 
@@ -203,7 +203,7 @@ impl Client {
             }
         }
 
-        Ok(failed_utxos)
+        failed_utxos
     }
 
     /// Crawls the Spend Dag from a given SpendAddress recursively
