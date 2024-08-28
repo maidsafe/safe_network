@@ -123,7 +123,7 @@ impl Client {
     ) -> Result<(), TransferError> {
         let cash_note_redemptions = wallet
             .unwrap_transfer(&transfer)
-            .map_err(|err| TransferError::WalletError(err))?;
+            .map_err(TransferError::WalletError)?;
 
         let cash_notes = self
             .network
@@ -156,7 +156,7 @@ impl Client {
             // if we get a spend, it means the CashNote is already spent
             Ok(_) => Err(CashNoteError::AlreadySpent),
             // report all other errors
-            Err(e) => return Err(CashNoteError::FailedToGetSpend(format!("{e}")).into()),
+            Err(e) => Err(CashNoteError::FailedToGetSpend(format!("{e}"))),
         }
     }
 

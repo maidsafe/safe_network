@@ -59,8 +59,8 @@ impl MemWallet {
         &mut self,
     ) -> Vec<(CashNote, Option<DerivedSecretKey>)> {
         self.available_cash_notes
-            .iter()
-            .map(|(_, cn)| (cn.clone(), cn.derived_key(&self.hot_wallet.key()).ok()))
+            .values()
+            .map(|cn| (cn.clone(), cn.derived_key(self.hot_wallet.key()).ok()))
             .collect()
     }
 

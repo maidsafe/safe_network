@@ -33,7 +33,7 @@ mod client {
     use sn_client::{
         networking::{
             multiaddr_is_global, version::IDENTIFY_PROTOCOL_STR, GetRecordCfg, Network,
-            NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg, CLOSE_GROUP_SIZE,
+            NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg,
         },
         transfers::{HotWallet, MainPubkey, NanoTokens, PaymentQuote},
         StoragePaymentResult,
@@ -43,7 +43,7 @@ mod client {
             try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
             RecordKind,
         },
-        NetworkAddress,
+        NetworkAddress, CLOSE_GROUP_SIZE,
     };
     use sn_transfers::{Payment, SpendReason, Transfer};
     use tokio::{
@@ -204,7 +204,7 @@ mod client {
             }?;
 
             let transfer = Transfer::transfer_from_cash_note(cash_note_for_recipient)
-                .map_err(|err| SendError::TransferError(err))?;
+                .map_err(SendError::TransferError)?;
 
             self.send_spends(offline_transfer.all_spend_requests.iter())
                 .await?;
@@ -295,7 +295,7 @@ mod client {
             transfer_hex: &str,
             wallet: &mut MemWallet,
         ) -> Result<(), ReceiveError> {
-            let transfer = Transfer::from_hex(&transfer_hex)
+            let transfer = Transfer::from_hex(transfer_hex)
                 .map_err(|_| ReceiveError::TransferDeserializationFailed)?;
             self.receive_transfer(transfer, wallet)
                 .await
