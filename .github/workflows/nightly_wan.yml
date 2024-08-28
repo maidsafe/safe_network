@@ -29,31 +29,42 @@ jobs:
         run: cargo build --release --bin safe
         timeout-minutes: 30
 
-      - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
+      - name: setup testnet-deploy
+        uses: maidsafe/sn-testnet-control-action/init-testnet-deploy@main
         with:
-          action: create
-          re-attempts: 3
-          rust-log: debug
           ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
           aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
           aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
+          branch: ${{ env.TESTNET_DEPLOY_BRANCH }}
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+          org: ${{ env.TESTNET_DEPLOY_USER }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          security-group-id: sg-0d47df5b3f0d01e2a
-          subnet-id: subnet-018f2ab26755df7f9
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyE2E
-          # if we were to run on a PR, use the below
-          # safe-network-user: ${{ github.actor }}"
-          # safe-network-branch: ${{ github.event.pull_request.head.ref }}
-          # Specify custom branch to prevent the deployer from fetching the latest release.
-          # The latest release contains the `network-contacts` feature turned on.
-          safe-network-user: maidsafe
-          safe-network-branch: main
+          version: ${{ env.TESTNET_DEPLOY_VERSION }}
+
+      - name: launch ${{ inputs.network-name }}
+        uses: maidsafe/sn-testnet-control-action/launch-network@main
+        with:
+          ansible-forks: ${{ env.ANSIBLE_FORKS }}
+          beta-encryption-key: ${{ secrets.BETA_ENCRYPTION_KEY }}
+          bootstrap-node-count: ${{ env.BOOTSTRAP_NODE_COUNT }}
+          bootstrap-node-vm-count: ${{ env.BOOTSTRAP_NODE_VM_COUNT }}
+          environment-type: ${{ env.ENVIRONMENT_TYPE }}
+          faucet-version: ${{ env.FAUCET_VERSION }}
+          log-format: json
+          network-name: ${{ env.NETWORK_NAME }}
+          network-contacts-file-name: ${{ env.NETWORK_CONTACTS_FILE_NAME }}
+          node-count: ${{ env.NODE_COUNT }}
+          node-vm-count: ${{ env.NODE_VM_COUNT }}
+          protocol-version: ${{ inputs.protocol-version }}
+          provider: ${{ env.PROVIDER }}
+          rust-log: ${{ inputs.rust-log }}
+          safe-network-branch: ${{ env.SAFE_NETWORK_BRANCH }}
+          safe-network-user: ${{ env.SAFE_NETWORK_USER }}
+          safe-version: ${{ env.SAFE_VERSION }}
+          safenode-version: ${{ env.SAFENODE_VERSION }}
+          safenode-manager-version: ${{ env.SAFENODE_MANAGER_VERSION }}
+          sn-auditor-version: ${{ env.SN_AUDITOR_VERSION }}
 
       - name: Check env variables
         shell: bash
@@ -126,25 +137,11 @@ jobs:
             ~/.local/share/safe/*/*/*.log*
             ~/.local/share/safe/client/logs/*/*.log*
 
-      - name: Stop the WAN network
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
+      - name: destroy network
+        uses: maidsafe/sn-testnet-control-action/destroy-network@main
         with:
-          action: destroy
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyE2E
-          safe-network-user: maidsafe
-          safe-network-branch: main
+          provider: ${{ env.PROVIDER }}
+          network-name: ${{ env.NETWORK_NAME }}
 
       # - name: post notification to slack on failure
       #   if: ${{ failure() }}
