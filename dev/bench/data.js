@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724758187116,
+  "lastUpdate": 1724837883124,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bdca59e69aa05c653562412e1df2d493447ccf82",
-          "message": "chore(networking): notify network event on failed put due to prune",
-          "timestamp": "2024-04-16T10:31:39Z",
-          "tree_id": "90be851c1521f299081846e596c740ae38585f17",
-          "url": "https://github.com/maidsafe/safe_network/commit/bdca59e69aa05c653562412e1df2d493447ccf82"
-        },
-        "date": 1713266623102,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2515796672750037,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6697896780167436,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.74113144749762,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.89743157047917,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e15aae346d8de6135bd406e2fb8bb5eda9ab1af5",
+          "message": "Merge pull request #1989 from grumbach/without_middle_spend\n\nMassive Spend Refactor",
+          "timestamp": "2024-08-28T08:48:17Z",
+          "tree_id": "c91dbe2c2c4798044f83e62957cbc77972dfb5c2",
+          "url": "https://github.com/maidsafe/safe_network/commit/e15aae346d8de6135bd406e2fb8bb5eda9ab1af5"
+        },
+        "date": 1724837875959,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2352778950476495,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6804983282220087,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.4069660958648,
             "unit": "MiB/s"
           }
         ]
