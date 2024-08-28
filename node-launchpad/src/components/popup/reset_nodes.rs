@@ -155,11 +155,7 @@ impl Component for ResetNodesPopup {
 
         let input = Paragraph::new(Span::styled(
             format!("{}{} ", spaces, self.confirmation_input_field.value()),
-            Style::default()
-                .fg(VIVID_SKY_BLUE)
-                .bg(INDIGO)
-                .underlined()
-                .underline_color(VIVID_SKY_BLUE),
+            Style::default().fg(VIVID_SKY_BLUE).bg(INDIGO).underlined(),
         ))
         .alignment(Alignment::Center);
 
