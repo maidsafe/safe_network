@@ -58,13 +58,14 @@ fn has_read_write_access(path: PathBuf) -> bool {
     read && write
 }
 
-/// Gets a list of available drives and their available space.
+/// Gets a list of available drives, their available space and if it's accessible.
 ///
-/// An available drive is a drive that is not read-only on the data directory.
+/// An accessible drive is a drive that is readable and writable.
 ///
-pub fn get_list_of_available_drives_and_available_space() -> Result<Vec<(String, PathBuf, u64)>> {
+pub fn get_list_of_available_drives_and_available_space(
+) -> Result<Vec<(String, PathBuf, u64, bool)>> {
     let disks = Disks::new_with_refreshed_list();
-    let mut drives: Vec<(String, PathBuf, u64)> = Vec::new();
+    let mut drives: Vec<(String, PathBuf, u64, bool)> = Vec::new();
 
     for disk in disks.list() {
         let disk_info = (
@@ -75,24 +76,19 @@ pub fn get_list_of_available_drives_and_available_space() -> Result<Vec<(String,
                 .to_string(),
             disk.mount_point().to_path_buf(),
             disk.available_space(),
+            has_read_write_access(disk.mount_point().to_path_buf()),
         );
 
-        if disk.mount_point() == get_primary_mount_point()
-            || has_read_write_access(disk.mount_point().to_path_buf())
+        // We avoid adding the same disk multiple times if it's mounted in multiple places
+        // We check the name and free space to determine if it's the same disk
+        if !drives
+            .iter()
+            .any(|drive| drive.0 == disk_info.0 && drive.2 == disk_info.2)
         {
-            // We avoid adding the same disk multiple times if it's mounted in multiple places
-            // We check the name and free space to determine if it's the same disk
-            if !drives
-                .iter()
-                .any(|drive| drive.0 == disk_info.0 && drive.2 == disk_info.2)
-            {
-                debug!("[ADD] Disk added: {:?}", disk_info);
-                drives.push(disk_info);
-            } else {
-                debug!("[SKIP] Disk {:?} already added before.", disk_info);
-            }
+            debug!("[ADD] Disk added: {:?}", disk_info);
+            drives.push(disk_info);
         } else {
-            debug!("[SKIP] Disk {:?} without RW permission.", disk_info);
+            debug!("[SKIP] Disk {:?} already added before.", disk_info);
         }
     }
 
