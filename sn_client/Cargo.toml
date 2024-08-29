@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.109.1"
+version = "0.110.0-rc.1"
 
 [features]
 default = []
@@ -49,16 +49,16 @@ rayon = "1.8.0"
 rmp-serde = "1.1.1"
 self_encryption = "~0.29.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
-sn_networking = { path = "../sn_networking", version = "0.17.2" }
-sn_protocol = { path = "../sn_protocol", version = "0.17.7" }
-sn_registers = { path = "../sn_registers", version = "0.3.17" }
-sn_transfers = { path = "../sn_transfers", version = "0.18.10" }
+sn_networking = { path = "../sn_networking", version = "0.18.0-rc.1" }
+sn_protocol = { path = "../sn_protocol", version = "0.17.8-rc.1" }
+sn_registers = { path = "../sn_registers", version = "0.3.18-rc.1" }
+sn_transfers = { path = "../sn_transfers", version = "0.19.0-rc.1" }
 tempfile = "3.6.0"
 thiserror = "1.0.23"
 tiny-keccak = "~2.0.2"
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.4.2", optional = true }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.0-rc.1", optional = true }
 eyre = { version = "0.6.8", optional = true }
 
 [dev-dependencies]
@@ -67,8 +67,8 @@ dirs-next = "~2.0.0"
 # add rand to libp2p
 libp2p-identity = { version = "0.2.7", features = ["rand"] }
 sn_client = { path = "../sn_client", features = ["test-utils"] }
-sn_logging = { path = "../sn_logging", version = "0.2.32" }
-sn_registers = { path = "../sn_registers", version = "0.3.17", features = [
+sn_logging = { path = "../sn_logging", version = "0.2.33-rc.1" }
+sn_registers = { path = "../sn_registers", version = "0.3.18-rc.1", features = [
     "test-utils",
 ] }
 
@@ -83,7 +83,7 @@ crate-type = ["cdylib", "rlib"]
 getrandom = { version = "0.2.12", features = ["js"] }
 wasm-bindgen = "0.2.90"
 wasm-bindgen-futures = "0.4.40"
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.4.2" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.0-rc.1" }
 console_error_panic_hook = "0.1.6"
 tracing-wasm = "0.2.1"
 wasmtimer = "0.2.0"
