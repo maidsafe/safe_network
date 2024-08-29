@@ -1,7 +1,39 @@
-pub mod error;
+use crate::wallet::MemWallet;
+use crate::Client;
+use sn_client::transfers::{MainPubkey, NanoTokens};
+use sn_transfers::{SpendReason, Transfer};
 
-use crate::client_wallet::error::TransferError;
-use crate::client_wallet::error::{CashNoteError, SendSpendsError};
+use sn_transfers::UniquePubkey;
+use std::collections::BTreeSet;
+
+#[derive(Debug, thiserror::Error)]
+pub enum SendSpendsError {
+    /// The cashnotes that were attempted to be spent have already been spent to another address
+    #[error("Double spend attempted with cashnotes: {0:?}")]
+    DoubleSpendAttemptedForCashNotes(BTreeSet<UniquePubkey>),
+    /// A general error when a transfer fails
+    #[error("Failed to send tokens due to {0}")]
+    CouldNotSendMoney(String),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TransferError {
+    #[error("Failed to send tokens due to {0}")]
+    CouldNotSendMoney(String),
+    #[error("Wallet error: {0:?}")]
+    WalletError(#[from] crate::wallet::error::WalletError),
+    #[error("Network error: {0:?}")]
+    NetworkError(#[from] sn_client::networking::NetworkError),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum CashNoteError {
+    #[error("CashNote was already spent.")]
+    AlreadySpent,
+    #[error("Failed to get spend: {0:?}")]
+    FailedToGetSpend(String),
+}
+
 use libp2p::{
     futures::future::join_all,
     kad::{Quorum, Record},
@@ -17,13 +49,34 @@ use sn_protocol::{
     storage::{try_serialize_record, RecordKind, RetryStrategy, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{Payment, Transfer};
+use sn_transfers::Payment;
 use xor_name::XorName;
 
-use crate::wallet::MemWallet;
-use crate::{Client, VERIFY_STORE};
+use crate::VERIFY_STORE;
 use sn_transfers::CashNote;
-use std::collections::{BTreeSet, HashSet};
+use std::collections::HashSet;
+
+#[derive(Debug, thiserror::Error)]
+pub enum SendError {
+    #[error("CashNote amount unexpected: {0}")]
+    CashNoteAmountUnexpected(String),
+    #[error("CashNote has no parent spends.")]
+    CashNoteHasNoParentSpends,
+    #[error("Wallet error occurred during sending of transfer.")]
+    WalletError(#[from] crate::wallet::error::WalletError),
+    #[error("Encountered transfer error during sending.")]
+    TransferError(#[from] sn_transfers::TransferError),
+    #[error("Spends error: {0:?}")]
+    SpendsError(#[from] SendSpendsError),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ReceiveError {
+    #[error("Could not deserialize `Transfer`.")]
+    TransferDeserializationFailed,
+    #[error("Transfer error occurred during receiving.")]
+    TransferError(#[from] TransferError),
+}
 
 impl Client {
     /// Send spend requests to the network.
@@ -177,9 +230,59 @@ impl Client {
 
         Ok((payment, peer_id))
     }
+
+    /// Creates a `Transfer` that can be received by the receiver.
+    /// Once received, it will be turned into a `CashNote` that the receiver can spend.
+    pub async fn send(
+        &mut self,
+        to: MainPubkey,
+        amount_in_nano: NanoTokens,
+        reason: Option<SpendReason>,
+        wallet: &mut MemWallet,
+    ) -> Result<Transfer, SendError> {
+        let offline_transfer =
+            wallet.create_offline_transfer(vec![(amount_in_nano, to)], reason)?;
+
+        // return the first CashNote (assuming there is only one because we only sent to one recipient)
+        let cash_note_for_recipient = match &offline_transfer.cash_notes_for_recipient[..] {
+            [cash_note] => Ok(cash_note),
+            [_multiple, ..] => Err(SendError::CashNoteAmountUnexpected(
+                "Got multiple, expected 1.".into(),
+            )),
+            [] => Err(SendError::CashNoteAmountUnexpected(
+                "Got 0, expected 1.".into(),
+            )),
+        }?;
+
+        let transfer = Transfer::transfer_from_cash_note(cash_note_for_recipient)
+            .map_err(SendError::TransferError)?;
+
+        self.send_spends(offline_transfer.all_spend_requests.iter())
+            .await?;
+
+        wallet.process_offline_transfer(offline_transfer.clone());
+
+        for spend in &offline_transfer.all_spend_requests {
+            wallet.add_pending_spend(spend.clone());
+        }
+
+        Ok(transfer)
+    }
+
+    /// Receive a `CashNoteRedemption` through a transfer message.
+    pub async fn receive(
+        &self,
+        transfer_hex: &str,
+        wallet: &mut MemWallet,
+    ) -> Result<(), ReceiveError> {
+        let transfer = Transfer::from_hex(transfer_hex)
+            .map_err(|_| ReceiveError::TransferDeserializationFailed)?;
+        self.receive_transfer(transfer, wallet).await?;
+        Ok(())
+    }
 }
 
-/// Send a `SpendCashNote` request to the network. Protected method.
+/// Send a `SpendCashNote` request to the network.
 async fn store_spend(network: Network, spend: SignedSpend) -> Result<(), NetworkError> {
     let unique_pubkey = *spend.unique_pubkey();
     let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);

@@ -8,6 +8,8 @@ use xor_name::XorName;
 
 use crate::Client;
 
+use super::data::{GetError, PutError};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Root {
     pub map: HashMap<PathBuf, File>,
@@ -27,9 +29,9 @@ pub enum UploadError {
     #[error("TODO")]
     IoError(#[from] std::io::Error),
     #[error("TODO")]
-    PutError(#[from] crate::client::PutError),
+    PutError(#[from] PutError),
     #[error("TODO")]
-    GetError(#[from] crate::client::GetError),
+    GetError(#[from] GetError),
 }
 
 impl Client {

@@ -8,8 +8,6 @@ pub use client::Client;
 pub use libp2p::Multiaddr;
 
 mod client;
-mod client_wallet;
-mod files;
 mod secrets;
 mod self_encryption;
 mod wallet;
