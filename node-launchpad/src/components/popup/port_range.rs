@@ -11,6 +11,7 @@ use std::rc::Rc;
 use super::super::super::node_mgmt::{PORT_MAX, PORT_MIN};
 use super::super::utils::centered_rect_fixed;
 use super::super::Component;
+use super::manage_nodes::MAX_NODE_COUNT;
 use crate::{
     action::{Action, OptionsActions},
     connection_mode::ConnectionMode,
@@ -22,7 +23,7 @@ use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tui_input::{backend::crossterm::EventHandler, Input};
 
-pub const PORT_ALLOCATION: u32 = 49; // We count the port_from as well
+pub const PORT_ALLOCATION: u32 = MAX_NODE_COUNT as u32 - 1; // We count the port_from as well
 const INPUT_SIZE: u32 = 5;
 const INPUT_AREA: u32 = INPUT_SIZE + 2; // +2 for the left and right padding
 
