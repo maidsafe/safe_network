@@ -3747,6 +3747,7 @@ name = "libautonomi"
 version = "0.1.0"
 dependencies = [
  "bip39",
+ "blsttc",
  "bytes",
  "libp2p",
  "rand 0.8.5",

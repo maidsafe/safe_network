@@ -159,7 +159,7 @@ impl Client {
         }
     }
 
-    async fn pay(
+    pub(crate) async fn pay(
         &mut self,
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &mut HotWallet,

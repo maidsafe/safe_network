@@ -9,6 +9,7 @@ use tokio::{sync::mpsc::Receiver, time::interval};
 
 mod data;
 mod files;
+mod registers;
 mod transfers;
 
 // Time before considering the connection timed out.
