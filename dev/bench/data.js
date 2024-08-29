@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724932787031,
+  "lastUpdate": 1724932788285,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "jacderida"
           },
           "committer": {
-            "email": "david.irvine@maidsafe.net",
-            "name": "David Irvine",
-            "username": "dirvine"
-          },
-          "distinct": true,
-          "id": "93c024e69b97e6b164de85cba0e7bea35bd856d9",
-          "message": "feat: provide `reset` command\n\nThis command was requested in community feedback. It will remove all services, clearing out all logs\nand data, and also delete the node registry file, which will reset the service counter back to zero.",
-          "timestamp": "2024-04-16T22:16:44+01:00",
-          "tree_id": "057709d2f6104b5282e3082ed0fb2a45117b5177",
-          "url": "https://github.com/maidsafe/safe_network/commit/93c024e69b97e6b164de85cba0e7bea35bd856d9"
-        },
-        "date": 1713303031173,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 200,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 206,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "66de2b54e36db9f43585961c1746f284d28da473",
+          "message": "Merge pull request #2074 from RolandSherwin/move_protocol_version\n\nfeat!: update the pk version string",
+          "timestamp": "2024-08-29T12:45:42+01:00",
+          "tree_id": "951d79d74a8ca45b839c6942353755f73e27690c",
+          "url": "https://github.com/maidsafe/safe_network/commit/66de2b54e36db9f43585961c1746f284d28da473"
+        },
+        "date": 1724932787981,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 209,
             "unit": "MB"
           },
           {
