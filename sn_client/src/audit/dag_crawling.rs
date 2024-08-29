@@ -39,7 +39,11 @@ impl Client {
             }
             Err(Error::Network(NetworkError::DoubleSpendAttempt(spends))) => {
                 println!("Double spend detected at Genesis: {genesis_addr:?}");
-                for spend in spends.into_iter() {
+                warn!("Double spend detected at Genesis: {genesis_addr:?}");
+                for (i, spend) in spends.into_iter().enumerate() {
+                    warn!("double spend entry {i} reason {:?}, amount {}, inputs: {}, outputs: {}, royties: {}, {:?} - {:?}",
+                        spend.spend.reason, spend.spend.amount, spend.spend.spent_tx.inputs.len(), spend.spend.spent_tx.outputs.len(),
+                        spend.spend.network_royalties.len(), spend.spend.spent_tx.inputs, spend.spend.spent_tx.outputs);
                     dag.insert(genesis_addr, spend);
                 }
             }
@@ -551,6 +555,7 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, Nano
         .map(|(_, _, der)| DEFAULT_NETWORK_ROYALTIES_PK.new_unique_pubkey(der))
         .collect();
 
+    let spend_addr = spend.address();
     let new_utxos: BTreeSet<_> = spend
         .spend
         .descendants
@@ -561,7 +566,13 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, Nano
             {
                 None
             } else {
-                Some((SpendAddress::from_unique_pubkey(unique_pubkey), *amount))
+                let addr = SpendAddress::from_unique_pubkey(unique_pubkey);
+
+                if *amount > 100000 {
+                    info!("Spend {spend_addr:?} has a big-UTXO {addr:?} with {amount}");
+                }
+
+                Some((addr, *amount))
             }
         })
         .collect();
@@ -571,7 +582,7 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, Nano
         Default::default()
     } else {
         trace!(
-            "Spend original has {} outputs, tracking {} of them.",
+            "Spend {spend_addr:?} original has {} outputs, tracking {} of them.",
             spend.spend.descendants.len(),
             new_utxos.len()
         );

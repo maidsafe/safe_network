@@ -230,6 +230,7 @@ impl SpendDagDb {
         {
             let mut utxo_addresses = self.utxo_addresses.write().await;
             for addr in start_dag.get_utxos().iter() {
+                info!("Tracking genesis UTXO {addr:?}");
                 let _ = utxo_addresses.insert(*addr, (Instant::now(), NanoTokens::zero()));
             }
         }
