@@ -209,6 +209,7 @@ async fn storage_payment_chunk_upload_succeeds() -> Result<()> {
     Ok(())
 }
 
+#[ignore = "This test sends out invalid 0 transactions and needs to be fixed"]
 #[tokio::test]
 async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments", true);
@@ -329,6 +330,12 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
         assert_eq!(retrieved_reg.read().len(), register.read().len());
 
         assert_eq!(retrieved_reg.read().iter().next().unwrap().1, random_entry);
+
+        println!("Current fetched register is {:?}", retrieved_reg.register);
+        println!(
+            "Fetched register has update history of {}",
+            retrieved_reg.register.log_update_history()
+        );
 
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }

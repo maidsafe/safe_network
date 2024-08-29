@@ -883,7 +883,7 @@ impl Node {
         }
         let total_forwarded_amount = spend_requests
             .iter()
-            .map(|s| s.token().as_nano())
+            .map(|s| s.amount().as_nano())
             .sum::<u64>();
 
         let record_kind = RecordKind::Spend;

@@ -11,10 +11,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use bls::SecretKey;
 use eyre::{eyre, Result};
 use sn_transfers::{
-    get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens,
-    OfflineTransfer, SignedSpend, SpendAddress, SpendReason, GENESIS_CASHNOTE, GENESIS_PK,
+    get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    SignedTransaction, SpendAddress, SpendReason, GENESIS_CASHNOTE,
 };
-use xor_name::XorName;
 
 pub struct MockWallet {
     pub sk: MainSecretKey,
@@ -29,17 +28,15 @@ pub struct MockNetwork {
 
 impl MockNetwork {
     pub fn genesis() -> Result<Self> {
-        let mut rng = rand::thread_rng();
-        let placeholder = SpendAddress::new(XorName::random(&mut rng));
         let mut net = MockNetwork {
-            genesis_spend: placeholder,
+            genesis_spend: SpendAddress::from_unique_pubkey(&GENESIS_CASHNOTE.unique_pubkey()),
             spends: BTreeSet::new(),
             wallets: BTreeMap::new(),
         };
 
         // create genesis wallet
         let genesis_cn = GENESIS_CASHNOTE.clone();
-        let genesis_pk = *GENESIS_PK;
+        let genesis_pk = *GENESIS_CASHNOTE.main_pubkey();
         net.wallets.insert(
             genesis_pk,
             MockWallet {
@@ -49,10 +46,7 @@ impl MockNetwork {
         );
 
         // spend genesis
-        let everything = GENESIS_CASHNOTE
-            .value()
-            .map_err(|e| eyre!("invalid genesis cashnote: {e}"))?
-            .as_nano();
+        let everything = GENESIS_CASHNOTE.value().as_nano();
         let spent_addrs = net
             .send(&genesis_pk, &genesis_pk, everything)
             .map_err(|e| eyre!("failed to send genesis: {e}"))?;
@@ -81,6 +75,7 @@ impl MockNetwork {
 
         if balance > 0 {
             let genesis_pk = GENESIS_CASHNOTE.main_pubkey();
+            println!("Sending {balance} from genesis {genesis_pk:?} to {owner_pk:?}");
             self.send(genesis_pk, &owner_pk, balance)
                 .map_err(|e| eyre!("failed to get money from genesis: {e}"))?;
         }
@@ -104,26 +99,22 @@ impl MockNetwork {
             .ok_or_else(|| eyre!("to wallet not found: {to:?}"))?;
 
         // perform offline transfer
-        let cash_notes_with_keys = from_wallet
-            .cn
-            .clone()
-            .into_iter()
-            .map(|cn| Ok((cn.clone(), Some(cn.derived_key(&from_wallet.sk)?))))
-            .collect::<Result<_>>()
-            .map_err(|e| eyre!("could not get cashnotes for transfer: {e}"))?;
+        let derivation_index = DerivationIndex::random(&mut rng);
         let recipient = vec![(
             NanoTokens::from(amount),
             to_wallet.sk.main_pubkey(),
-            DerivationIndex::random(&mut rng),
+            derivation_index,
+            false,
         )];
-        let transfer = OfflineTransfer::new(
-            cash_notes_with_keys,
+        let tx = SignedTransaction::new(
+            from_wallet.cn.clone(),
             recipient,
             from_wallet.sk.main_pubkey(),
             SpendReason::default(),
+            &from_wallet.sk,
         )
         .map_err(|e| eyre!("failed to create transfer: {}", e))?;
-        let spends = transfer.all_spend_requests;
+        let spends = tx.spends;
 
         // update wallets
         let mut updated_from_wallet_cns = from_wallet.cn.clone();
@@ -132,13 +123,21 @@ impl MockNetwork {
                 .iter()
                 .any(|s| s.unique_pubkey() == &cn.unique_pubkey())
         });
-        updated_from_wallet_cns.extend(transfer.change_cash_note);
+        if let Some(ref change_cn) = tx.change_cashnote {
+            if !updated_from_wallet_cns
+                .iter()
+                .any(|cn| cn.unique_pubkey() == change_cn.unique_pubkey())
+            {
+                updated_from_wallet_cns.extend(tx.change_cashnote);
+            }
+        }
+
         self.wallets
             .entry(*from)
             .and_modify(|w| w.cn = updated_from_wallet_cns);
         self.wallets
             .entry(*to)
-            .and_modify(|w| w.cn.extend(transfer.cash_notes_for_recipient));
+            .and_modify(|w| w.cn.extend(tx.output_cashnotes));
 
         // update network spends
         let spent_addrs = spends.iter().map(|s| s.address()).collect();

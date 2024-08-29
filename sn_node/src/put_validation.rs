@@ -828,10 +828,8 @@ impl Node {
         for spend in many_spends {
             let descendants: BTreeSet<_> = spend
                 .spend
-                .spent_tx
-                .outputs
-                .iter()
-                .map(|o| o.unique_pubkey())
+                .descendants
+                .keys()
                 .map(SpendAddress::from_unique_pubkey)
                 .collect();
             for d in descendants {
@@ -899,7 +897,7 @@ where
 {
     let mut received_fee = NanoTokens::zero();
     for cash_note in cash_notes {
-        let amount = cash_note.value()?;
+        let amount = cash_note.value();
         received_fee = received_fee
             .checked_add(amount)
             .ok_or(Error::NumericOverflow)?;

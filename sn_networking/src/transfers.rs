@@ -14,10 +14,7 @@ use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, RetryStrategy, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{
-    CashNote, CashNoteRedemption, DerivationIndex, HotWallet, MainPubkey, SignedSpend, Transaction,
-    Transfer, UniquePubkey,
-};
+use sn_transfers::{CashNote, CashNoteRedemption, HotWallet, MainPubkey, SignedSpend, Transfer};
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 
@@ -122,14 +119,14 @@ impl Network {
         main_pubkey: MainPubkey,
         cashnote_redemptions: &[CashNoteRedemption],
     ) -> Result<Vec<CashNote>> {
-        // get the parent transactions
+        // get all the parent spends
         debug!(
-            "Getting parent Tx for validation from {:?}",
+            "Getting parent spends for validation from {:?}",
             cashnote_redemptions.len()
         );
         let parent_addrs: BTreeSet<SpendAddress> = cashnote_redemptions
             .iter()
-            .map(|u| u.parent_spend)
+            .flat_map(|u| u.parent_spends.clone())
             .collect();
         let mut tasks = JoinSet::new();
         for addr in parent_addrs.clone() {
@@ -143,75 +140,38 @@ impl Network {
                 .map_err(|e| NetworkError::InvalidTransfer(format!("{e}")))?;
             let _ = parent_spends.insert(signed_spend.clone());
         }
-        let parent_txs: BTreeSet<Transaction> =
-            parent_spends.iter().map(|s| s.spent_tx()).collect();
 
-        // get our outputs from Tx
-        let our_output_unique_pubkeys: Vec<(UniquePubkey, DerivationIndex)> = cashnote_redemptions
+        // get our outputs CashNotes
+        let our_output_cash_notes: Vec<CashNote> = cashnote_redemptions
             .iter()
-            .map(|u| {
-                let unique_pubkey = main_pubkey.new_unique_pubkey(&u.derivation_index);
-                (unique_pubkey, u.derivation_index)
+            .map(|cnr| {
+                let derivation_index = cnr.derivation_index;
+                // assuming parent spends all exist as they were collected just above
+                let parent_spends: BTreeSet<SignedSpend> = cnr
+                    .parent_spends
+                    .iter()
+                    .flat_map(|a| {
+                        parent_spends
+                            .iter()
+                            .find(|s| &s.address() == a)
+                            .map(|s| vec![s])
+                            .unwrap_or_default()
+                    })
+                    .cloned()
+                    .collect();
+
+                CashNote {
+                    parent_spends: parent_spends.clone(),
+                    main_pubkey,
+                    derivation_index,
+                }
             })
             .collect();
-        let mut our_output_cash_notes = Vec::new();
 
-        for (id, derivation_index) in our_output_unique_pubkeys.into_iter() {
-            let src_tx = parent_txs
-                .iter()
-                .find(|tx| tx.outputs.iter().any(|o| o.unique_pubkey() == &id))
-                .ok_or(NetworkError::InvalidTransfer(
-                    "None of the CashNoteRedemptions are destined to our key".to_string(),
-                ))?
-                .clone();
-            let signed_spends: BTreeSet<SignedSpend> = parent_spends
-                .iter()
-                .filter(|s| s.spent_tx_hash() == src_tx.hash())
-                .cloned()
-                .collect();
-            let cash_note = CashNote {
-                unique_pubkey: id,
-                parent_tx: src_tx,
-                parent_spends: signed_spends,
-                main_pubkey,
-                derivation_index,
-            };
-            our_output_cash_notes.push(cash_note);
-        }
-
-        // check Txs and parent spends are valid
-        debug!("Validating parent spends");
-        for tx in parent_txs {
-            let tx_inputs_keys: Vec<_> = tx.inputs.iter().map(|i| i.unique_pubkey()).collect();
-
-            // get the missing inputs spends from the network
-            let mut tasks = JoinSet::new();
-            for input_key in tx_inputs_keys {
-                if parent_spends.iter().any(|s| s.unique_pubkey() == input_key) {
-                    continue;
-                }
-                let self_clone = self.clone();
-                let addr = SpendAddress::from_unique_pubkey(input_key);
-                let _ = tasks.spawn(async move { self_clone.get_spend(addr).await });
-            }
-            while let Some(result) = tasks.join_next().await {
-                let signed_spend = result
-                    .map_err(|e| NetworkError::FailedToGetSpend(format!("{e}")))?
-                    .map_err(|e| NetworkError::InvalidTransfer(format!("{e}")))?;
-                let _ = parent_spends.insert(signed_spend.clone());
-            }
-
-            // verify the Tx against the inputs spends
-            let input_spends: BTreeSet<_> = parent_spends
-                .iter()
-                .filter(|s| s.spent_tx_hash() == tx.hash())
-                .cloned()
-                .collect();
-            tx.verify_against_inputs_spent(&input_spends).map_err(|e| {
-                NetworkError::InvalidTransfer(format!(
-                    "Payment parent Tx {:?} invalid: {e}",
-                    tx.hash()
-                ))
+        // verify our output cash notes
+        for cash_note in our_output_cash_notes.iter() {
+            cash_note.verify().map_err(|e| {
+                NetworkError::InvalidTransfer(format!("Invalid CashNoteRedemption: {e}"))
             })?;
         }
 

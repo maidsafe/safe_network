@@ -39,7 +39,7 @@ fn test_spend_dag_verify_valid_simple() -> Result<()> {
     for spend in net.spends {
         dag.insert(spend.address(), spend.clone());
     }
-    assert!(dag.record_faults(&genesis).is_ok());
+    assert_eq!(dag.record_faults(&genesis), Ok(()));
     // dag.dump_to_file("/tmp/test_spend_dag_verify_valid_simple")?;
 
     assert_eq!(dag.verify(&genesis), Ok(BTreeSet::new()));
@@ -84,7 +84,7 @@ fn test_spend_dag_double_spend_poisonning() -> Result<()> {
     for spend in net.spends {
         dag.insert(spend.address(), spend.clone());
     }
-    assert!(dag.record_faults(&genesis).is_ok());
+    assert_eq!(dag.record_faults(&genesis), Ok(()));
     // dag.dump_to_file("/tmp/test_spend_dag_double_spend_poisonning")?;
 
     // make sure double spend is detected
@@ -118,12 +118,13 @@ fn test_spend_dag_double_spend_poisonning() -> Result<()> {
     }]);
     assert_eq!(got, expected, "spend_ko3 should be unspendable");
 
-    // make sure this didn't affect the rest of the DAG
+    // make sure this didn't poison the rest of the DAG
     let s4 = spend_ok4.first().expect("spend_ok4 to be unique");
     let s5 = spend_ok5.first().expect("spend_ok5 to be unique");
+    let unaffected = BTreeSet::new();
 
-    assert_eq!(dag.get_spend_faults(s4), BTreeSet::new());
-    assert_eq!(dag.get_spend_faults(s5), BTreeSet::new());
+    assert_eq!(dag.get_spend_faults(s4), unaffected);
+    assert_eq!(dag.get_spend_faults(s5), unaffected);
     Ok(())
 }
 
@@ -167,9 +168,11 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     // create dag
     let mut dag = SpendDag::new(genesis);
     for spend in net.spends {
+        println!("Adding into dag with spend {spend:?}");
         dag.insert(spend.address(), spend.clone());
     }
-    assert!(dag.record_faults(&genesis).is_ok());
+
+    assert_eq!(dag.record_faults(&genesis), Ok(()));
     // dag.dump_to_file("/tmp/test_spend_dag_double_spend_branches")?;
 
     // make sure double spend is detected
@@ -179,7 +182,7 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     let expected = BTreeSet::from_iter([SpendFault::DoubleSpend(*double_spent)]);
     assert_eq!(got, expected, "DAG should have detected double spend");
 
-    // make sure the double spend's direct descendants are marked as bad
+    // make sure the double spend's direct descendants are marked as double spent
     let s3 = spend3.first().expect("spend3 to have an element");
     let got = dag.get_spend_faults(s3);
     let expected = BTreeSet::from_iter([SpendFault::DoubleSpentAncestor {
@@ -195,7 +198,7 @@ fn test_spend_dag_double_spend_branches() -> Result<()> {
     }]);
     assert_eq!(got, expected, "spend3a should be unspendable");
 
-    // make sure all the descendants further down the branch are marked as bad as well
+    // make sure all the descendants further down the branch are poisoned due to a double spent ancestor
     let utxo_of_5a = SpendAddress::from_unique_pubkey(
         &net.wallets
             .get(&owner5a)
