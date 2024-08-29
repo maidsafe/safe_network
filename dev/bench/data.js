@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724932730727,
+  "lastUpdate": 1724932732890,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "1953acacd0880a2c5a28ff7ad72c435466019bab",
-          "message": "chore(ci): enable public rpc for wan test",
-          "timestamp": "2024-04-16T16:27:02Z",
-          "tree_id": "c0c5bb8f5cb15c3e4241a04786557d80b36d478f",
-          "url": "https://github.com/maidsafe/safe_network/commit/1953acacd0880a2c5a28ff7ad72c435466019bab"
-        },
-        "date": 1713288116453,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7452,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35101,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 24201,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cb9756511a670b048adb0da463030a51f1a17396",
+          "message": "Merge pull request #2042 from grumbach/currency_docs\n\nDocs for currency",
+          "timestamp": "2024-08-29T11:11:46Z",
+          "tree_id": "2ef6d6dfdc720ab10ef70361979e1a8c7afc5df5",
+          "url": "https://github.com/maidsafe/safe_network/commit/cb9756511a670b048adb0da463030a51f1a17396"
+        },
+        "date": 1724932732142,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4565,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 23808,
             "unit": "ms"
           },
           {
