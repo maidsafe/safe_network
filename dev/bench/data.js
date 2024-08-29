@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724934818993,
+  "lastUpdate": 1724934821440,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2b796e5fec5d3ec2efc2fbe163c5c2f49012afe2",
-          "message": "ci: suppress release-plz instrumentation output\n\nThis output makes it difficult to find things in the logs for the release workflow runs.",
-          "timestamp": "2024-04-17T00:13:44Z",
-          "tree_id": "495d926a9239a6688dd4e09c9e40af8b2711d387",
-          "url": "https://github.com/maidsafe/safe_network/commit/2b796e5fec5d3ec2efc2fbe163c5c2f49012afe2"
-        },
-        "date": 1713315763410,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 206,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7c58573351c70643d6be27fe1da94f7aca5af1d5",
+          "message": "Merge pull request #2072 from maqi/logging_register_update_history\n\nLogging register update history",
+          "timestamp": "2024-08-29T11:37:52Z",
+          "tree_id": "e1cc23e5cd97538cf4b3fbd8d55e4ea734a3b568",
+          "url": "https://github.com/maidsafe/safe_network/commit/7c58573351c70643d6be27fe1da94f7aca5af1d5"
+        },
+        "date": 1724934820406,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 85,
             "unit": "MB"
           }
         ]
