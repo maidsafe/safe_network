@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724899495289,
+  "lastUpdate": 1724899497053,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30621,45 +30621,6 @@ window.BENCHMARK_DATA = {
             "name": "RolandSherwin",
             "username": "RolandSherwin"
           },
-          "distinct": false,
-          "id": "ccce41be38c14752789765678b40fabddb1caf78",
-          "message": "chore: fix typo for issue 1494",
-          "timestamp": "2024-04-16T11:21:14Z",
-          "tree_id": "ff9ebc907ff23c9dc35f3546aeff7da4bb80bacd",
-          "url": "https://github.com/maidsafe/safe_network/commit/ccce41be38c14752789765678b40fabddb1caf78"
-        },
-        "date": 1713269340913,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7583,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34430,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
           "distinct": true,
           "id": "445da434b5854ee99f946de5fe6307b0eac3de56",
           "message": "chore: remove deprecated wallet deposit cmd",
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 4,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "af087484efe208f23e1667882d21a7bcb0e6ca9c",
+          "message": "Merge pull request #2069 from b-zee/fix-build-without-upnp\n\nfix(networking): build with --no-default-features",
+          "timestamp": "2024-08-29T01:56:29Z",
+          "tree_id": "175c28d8cce48a5f8ddf52d0bba70631318be952",
+          "url": "https://github.com/maidsafe/safe_network/commit/af087484efe208f23e1667882d21a7bcb0e6ca9c"
+        },
+        "date": 1724899496547,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4940,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 25997,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
