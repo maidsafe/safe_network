@@ -377,17 +377,10 @@ impl Component for Status {
                     }
 
                     if self.lock_registry.is_some() {
-                        error!("Registry is locked. Attempting to unlock...");
-                        // Attempt to unlock the registry
-                        debug!("Setting lock_registry to None");
-                        self.lock_registry = None;
-                        // Reload the node registry to ensure consistency
-                        if let Err(e) = self.load_node_registry_and_update_states() {
-                            //TODO: Show error & Popup
-                            error!("Failed to reload node registry after unlocking: {:?}", e);
-                            return Ok(None);
-                        }
+                        error!("Registry is locked. Cannot start node now.");
+                        return Ok(None);
                     }
+
                     debug!("Setting lock_registry to StartingNodes");
                     self.lock_registry = Some(LockRegistryState::StartingNodes);
 
