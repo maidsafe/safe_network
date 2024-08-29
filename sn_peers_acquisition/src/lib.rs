@@ -16,7 +16,7 @@ use libp2p::{multiaddr::Protocol, Multiaddr};
 use rand::{seq::SliceRandom, thread_rng};
 use reqwest::Client;
 #[cfg(feature = "network-contacts")]
-use sn_networking::version::get_network_version;
+use sn_protocol::version::get_network_version;
 use std::time::Duration;
 use tracing::*;
 use url::Url;

@@ -30,7 +30,6 @@ mod spends;
 pub mod target_arch;
 mod transfers;
 mod transport;
-pub mod version;
 
 use cmd::LocalSwarmCmd;
 use xor_name::XorName;
