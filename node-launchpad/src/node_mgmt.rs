@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use color_eyre::eyre::{eyre, Error};
 use sn_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
@@ -16,6 +17,8 @@ use sn_releases::{self, ReleaseType, SafeReleaseRepoActions};
 pub const PORT_MAX: u32 = 65535;
 pub const PORT_MIN: u32 = 1024;
 
+const PORT_ASSIGNMENT_MAX_RETRIES: u32 = 5;
+
 /// Stop the specified services
 pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     tokio::task::spawn_local(async move {
@@ -23,6 +26,13 @@ pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>)
             sn_node_manager::cmd::node::stop(vec![], services, VerbosityLevel::Minimal).await
         {
             error!("Error while stopping services {err:?}");
+            if let Err(err) =
+                action_sender.send(Action::StatusActions(StatusActions::ErrorStoppingNodes {
+                    raw_error: err.to_string(),
+                }))
+            {
+                error!("Error while sending action: {err:?}");
+            }
         } else {
             info!("Successfully stopped services");
         }
@@ -57,7 +67,13 @@ pub fn maintain_n_running_nodes(args: MaintainNodesArgs) {
         let config = prepare_node_config(&args);
         debug_log_config(&config, &args);
 
-        let node_registry = NodeRegistry::load(&get_node_registry_path().unwrap()).unwrap(); //FIXME: unwrap
+        let node_registry = match load_node_registry(&args.action_sender).await {
+            Ok(registry) => registry,
+            Err(err) => {
+                error!("Failed to load node registry: {:?}", err);
+                return;
+            }
+        };
         let mut used_ports = get_used_ports(&node_registry);
         let (mut current_port, max_port) = get_port_range(&config.custom_ports);
 
@@ -69,6 +85,7 @@ pub fn maintain_n_running_nodes(args: MaintainNodesArgs) {
         } else {
             debug!("Scaling up nodes to {}", nodes_to_add);
             add_nodes(
+                &args.action_sender,
                 &config,
                 nodes_to_add,
                 &mut used_ports,
@@ -79,7 +96,12 @@ pub fn maintain_n_running_nodes(args: MaintainNodesArgs) {
         }
 
         debug!("Finished maintaining {} nodes", args.count);
-        send_completion_action(&args.action_sender);
+        if let Err(err) = args
+            .action_sender
+            .send(Action::StatusActions(StatusActions::StartNodesCompleted))
+        {
+            error!("Error while sending action: {err:?}");
+        }
     });
 }
 
@@ -88,6 +110,13 @@ pub fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_res
     tokio::task::spawn_local(async move {
         if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
             error!("Error while resetting services {err:?}");
+            if let Err(err) =
+                action_sender.send(Action::StatusActions(StatusActions::ErrorResettingNodes {
+                    raw_error: err.to_string(),
+                }))
+            {
+                error!("Error while sending action: {err:?}");
+            }
         } else {
             info!("Successfully reset services");
         }
@@ -102,6 +131,39 @@ pub fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_res
 }
 
 // --- Helper functions ---
+
+/// Load the node registry and handle errors
+async fn load_node_registry(
+    action_sender: &UnboundedSender<Action>,
+) -> Result<NodeRegistry, Error> {
+    match get_node_registry_path() {
+        Ok(path) => match NodeRegistry::load(&path) {
+            Ok(registry) => Ok(registry),
+            Err(err) => {
+                error!("Failed to load NodeRegistry: {}", err);
+                if let Err(send_err) = action_sender.send(Action::StatusActions(
+                    StatusActions::ErrorLoadingNodeRegistry {
+                        raw_error: err.to_string(),
+                    },
+                )) {
+                    error!("Error while sending action: {}", send_err);
+                }
+                Err(eyre!("Failed to load NodeRegistry"))
+            }
+        },
+        Err(err) => {
+            error!("Failed to get node registry path: {}", err);
+            if let Err(send_err) = action_sender.send(Action::StatusActions(
+                StatusActions::ErrorGettingNodeRegistryPath {
+                    raw_error: err.to_string(),
+                },
+            )) {
+                error!("Error while sending action: {}", send_err);
+            }
+            Err(eyre!("Failed to get node registry path"))
+        }
+    }
+}
 
 struct NodeConfig {
     auto_set_nat_flags: bool,
@@ -221,7 +283,6 @@ fn get_port_range(custom_ports: &Option<PortRange>) -> (u16, u16) {
 
 /// Scale down the nodes
 async fn scale_down_nodes(config: &NodeConfig, count: u16) {
-    info!("No nodes to add");
     match sn_node_manager::cmd::node::maintain_n_running_nodes(
         false,
         config.auto_set_nat_flags,
@@ -261,6 +322,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
 
 /// Add the specified number of nodes
 async fn add_nodes(
+    action_sender: &UnboundedSender<Action>,
     config: &NodeConfig,
     mut nodes_to_add: i32,
     used_ports: &mut Vec<u16>,
@@ -268,9 +330,8 @@ async fn add_nodes(
     max_port: u16,
 ) {
     let mut retry_count = 0;
-    let max_retries = 5;
 
-    while nodes_to_add > 0 && retry_count < max_retries {
+    while nodes_to_add > 0 && retry_count < PORT_ASSIGNMENT_MAX_RETRIES {
         // Find the next available port
         while used_ports.contains(current_port) && *current_port <= max_port {
             *current_port += 1;
@@ -278,6 +339,16 @@ async fn add_nodes(
 
         if *current_port > max_port {
             error!("Reached maximum port number. Unable to find an available port.");
+            if let Err(err) =
+                action_sender.send(Action::StatusActions(StatusActions::ErrorScalingUpNodes {
+                    raw_error: format!(
+                        "Reached maximum port number ({}).\nUnable to find an available port.",
+                        max_port
+                    ),
+                }))
+            {
+                error!("Error while sending action: {err:?}");
+            }
             break;
         }
 
@@ -324,23 +395,16 @@ async fn add_nodes(
                         "Port {} is being used, retrying with a different port. Attempt {}/{}",
                         current_port,
                         retry_count + 1,
-                        max_retries
+                        PORT_ASSIGNMENT_MAX_RETRIES
                     );
                     *current_port += 1;
                     retry_count += 1;
                 } else {
+                    error!("Range of ports to be used {:?}", *current_port..max_port);
                     error!("Error while adding node on port {}: {err:?}", current_port);
                     retry_count += 1;
                 }
             }
         }
-    }
-}
-
-/// Send the completion action
-fn send_completion_action(action_sender: &UnboundedSender<Action>) {
-    if let Err(err) = action_sender.send(Action::StatusActions(StatusActions::StartNodesCompleted))
-    {
-        error!("Error while sending action: {err:?}");
     }
 }

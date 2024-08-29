@@ -50,7 +50,11 @@ pub enum StatusActions {
     ResetNodesCompleted { trigger_start_node: bool },
     SuccessfullyDetectedNatStatus,
     ErrorWhileRunningNatDetection,
-
+    ErrorLoadingNodeRegistry { raw_error: String },
+    ErrorGettingNodeRegistryPath { raw_error: String },
+    ErrorScalingUpNodes { raw_error: String },
+    ErrorStoppingNodes { raw_error: String },
+    ErrorResettingNodes { raw_error: String },
     NodesStatsObtained(NodeStats),
 
     TriggerManageNodes,

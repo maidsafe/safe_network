@@ -16,8 +16,10 @@ use crate::action::OptionsActions;
 use crate::components::popup::port_range::PORT_ALLOCATION;
 use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::connection_mode::ConnectionMode;
+use crate::error::ErrorPopup;
 use crate::node_mgmt::MaintainNodesArgs;
 use crate::node_mgmt::{PORT_MAX, PORT_MIN};
+use crate::tui::Event;
 use crate::{
     action::{Action, StatusActions},
     config::Config,
@@ -80,6 +82,7 @@ pub struct Status {
     port_from: Option<u32>,
     // Port to
     port_to: Option<u32>,
+    error_popup: Option<ErrorPopup>,
 }
 
 #[derive(Clone)]
@@ -121,6 +124,7 @@ impl Status {
             connection_mode: config.connection_mode,
             port_from: config.port_from,
             port_to: config.port_to,
+            error_popup: None,
         };
 
         let now = Instant::now();
@@ -256,6 +260,14 @@ impl Component for Status {
         Ok(())
     }
 
+    fn handle_events(&mut self, event: Option<Event>) -> Result<Vec<Action>> {
+        let r = match event {
+            Some(Event::Key(key_event)) => self.handle_key_events(key_event)?,
+            _ => vec![],
+        };
+        Ok(r)
+    }
+
     #[allow(clippy::comparison_chain)]
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
@@ -327,19 +339,15 @@ impl Component for Status {
                     self.node_stats = stats;
                 }
                 StatusActions::StartNodesCompleted | StatusActions::StopNodesCompleted => {
-                    debug!("Setting lock_registry to None");
                     self.lock_registry = None;
                     self.load_node_registry_and_update_states()?;
                 }
                 StatusActions::ResetNodesCompleted { trigger_start_node } => {
-                    debug!("Setting lock_registry to None");
                     self.lock_registry = None;
                     self.load_node_registry_and_update_states()?;
 
                     if trigger_start_node {
                         debug!("Reset nodes completed. Triggering start nodes.");
-                        debug!("Setting lock_registry to StartingNodes");
-                        self.lock_registry = Some(LockRegistryState::StartingNodes);
                         return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
                     }
                     debug!("Reset nodes completed");
@@ -356,6 +364,55 @@ impl Component for Status {
                         "Error while running nat detection. Error count: {}",
                         self.error_while_running_nat_detection
                     );
+                }
+                StatusActions::ErrorLoadingNodeRegistry { raw_error }
+                | StatusActions::ErrorGettingNodeRegistryPath { raw_error } => {
+                    self.error_popup = Some(ErrorPopup::new(
+                        " Error ".to_string(),
+                        "Error getting node registry path".to_string(),
+                        raw_error,
+                    ));
+                    if let Some(error_popup) = &mut self.error_popup {
+                        error_popup.show();
+                    }
+                    // Switch back to entry mode so we can handle key events
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Entry)));
+                }
+                StatusActions::ErrorScalingUpNodes { raw_error } => {
+                    self.error_popup = Some(ErrorPopup::new(
+                        " Error ".to_string(),
+                        "Error adding new nodes".to_string(),
+                        raw_error,
+                    ));
+                    if let Some(error_popup) = &mut self.error_popup {
+                        error_popup.show();
+                    }
+                    // Switch back to entry mode so we can handle key events
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Entry)));
+                }
+                StatusActions::ErrorStoppingNodes { raw_error } => {
+                    self.error_popup = Some(ErrorPopup::new(
+                        " Error ".to_string(),
+                        "Error stopping nodes".to_string(),
+                        raw_error,
+                    ));
+                    if let Some(error_popup) = &mut self.error_popup {
+                        error_popup.show();
+                    }
+                    // Switch back to entry mode so we can handle key events
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Entry)));
+                }
+                StatusActions::ErrorResettingNodes { raw_error } => {
+                    self.error_popup = Some(ErrorPopup::new(
+                        " Error ".to_string(),
+                        "Error resetting nodes".to_string(),
+                        raw_error,
+                    ));
+                    if let Some(error_popup) = &mut self.error_popup {
+                        error_popup.show();
+                    }
+                    // Switch back to entry mode so we can handle key events
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Entry)));
                 }
                 StatusActions::TriggerManageNodes => {
                     return Ok(Some(Action::SwitchScene(Scene::ManageNodesPopUp)));
@@ -676,6 +733,16 @@ impl Component for Status {
 
         // ===== Popup =====
 
+        // Error Popup
+        if let Some(error_popup) = &self.error_popup {
+            if error_popup.is_visible() {
+                error_popup.draw_error(f, area);
+
+                return Ok(());
+            }
+        }
+
+        // Status Popup
         if let Some(registry_state) = &self.lock_registry {
             let popup_area = centered_rect_fixed(50, 12, area);
             clear_area(f, popup_area);
@@ -708,8 +775,22 @@ impl Component for Status {
                         ]
                     }
                 }
-                LockRegistryState::StoppingNodes => vec![Line::raw("Stopping nodes...")],
-                LockRegistryState::ResettingNodes => vec![Line::raw("Resetting nodes...")],
+                LockRegistryState::StoppingNodes => {
+                    vec![
+                        Line::raw(""),
+                        Line::raw(""),
+                        Line::raw(""),
+                        Line::raw("Stopping nodes..."),
+                    ]
+                }
+                LockRegistryState::ResettingNodes => {
+                    vec![
+                        Line::raw(""),
+                        Line::raw(""),
+                        Line::raw(""),
+                        Line::raw("Resetting nodes..."),
+                    ]
+                }
             };
             let centred_area = Layout::new(
                 Direction::Vertical,
@@ -738,6 +819,12 @@ impl Component for Status {
 
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         debug!("Key received in Status: {:?}", key);
+        if let Some(error_popup) = &mut self.error_popup {
+            if error_popup.is_visible() {
+                error_popup.handle_input(key);
+                return Ok(vec![Action::SwitchInputMode(InputMode::Navigation)]);
+            }
+        }
         Ok(vec![])
     }
 }

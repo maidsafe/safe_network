@@ -45,18 +45,21 @@ use ratatui::{
 ///             if let Some(error_popup) = &mut self.error_popup {
 ///                 if error_popup.is_visible() {
 ///                     error_popup.handle_input(key);
-///                    return Ok(vec![]);
+///                    return Ok(vec![Action::SwitchInputMode(InputMode::Navigation)]);
 ///                }
 ///            }
 ///            // ... Your keys being handled here ...
 ///         }
 ///         fn draw(&mut self, f: &mut crate::tui::Frame<'_>, area: Rect) -> Result<()> {
+///             // ... Your drawing code here ...
+///             // Be sure to include the background elements here
 ///             if let Some(error_popup) = &self.error_popup {
 ///                 if error_popup.is_visible() {
 ///                     error_popup.draw_error(f, area);
 ///                     return Ok(());
 ///                 }
 ///             }
+///             // Be sure to include your popups here
 ///             // ... Your drawing code here ...
 ///         }
 ///     }
@@ -75,6 +78,7 @@ use ratatui::{
 /// }
 /// ```
 
+#[derive(Clone)]
 pub struct ErrorPopup {
     visible: bool,
     title: String,
@@ -126,9 +130,9 @@ impl ErrorPopup {
             Direction::Vertical,
             [
                 // for the message
-                Constraint::Length(5),
+                Constraint::Length(4),
                 // for the error_message
-                Constraint::Length(5),
+                Constraint::Length(7),
                 // gap
                 Constraint::Length(1),
                 // for the buttons
@@ -138,7 +142,11 @@ impl ErrorPopup {
         .split(layer_one[1]);
 
         let prompt = Paragraph::new(self.message.clone())
-            .block(Block::default().padding(Padding::horizontal(2)))
+            .block(
+                Block::default()
+                    .padding(Padding::horizontal(2))
+                    .padding(Padding::vertical(1)),
+            )
             .alignment(Alignment::Center)
             .wrap(Wrap { trim: true });
 
