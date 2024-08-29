@@ -19,6 +19,8 @@ pub mod node;
 pub mod node_rpc;
 /// Storage types for spends, chunks and registers.
 pub mod storage;
+/// Network versioning
+pub mod version;
 
 // this includes code generated from .proto files
 #[allow(clippy::unwrap_used, clippy::clone_on_ref_ptr)]
