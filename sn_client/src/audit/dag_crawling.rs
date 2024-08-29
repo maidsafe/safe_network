@@ -134,8 +134,9 @@ impl Client {
     }
 
     /// Get spends from a set of given SpendAddresses
-    /// Recursivly fetching till reached frontline of the DAG tree.
-    /// Return with UTXOs for re-attempt (with insertion time stamp)
+    /// Drain the addresses at the same layer first, then:
+    ///     1, return with UTXOs for re-attempt (with insertion time stamp)
+    ///     2, addrs_to_get to hold the addresses for further track
     pub async fn crawl_to_next_utxos(
         &self,
         addrs_to_get: &mut BTreeSet<(SpendAddress, NanoTokens)>,
@@ -144,6 +145,7 @@ impl Client {
     ) -> WalletResult<BTreeMap<SpendAddress, (Instant, NanoTokens)>> {
         let mut failed_utxos = BTreeMap::new();
         let mut tasks = JoinSet::new();
+        let mut addrs_for_further_track = BTreeSet::new();
 
         while !addrs_to_get.is_empty() || !tasks.is_empty() {
             while tasks.len() < 32 && !addrs_to_get.is_empty() {
@@ -162,7 +164,7 @@ impl Client {
                             .send((*spend, for_further_track.len() as u64, false))
                             .await
                             .map_err(|e| WalletError::SpendProcessing(e.to_string()));
-                        addrs_to_get.extend(for_further_track);
+                        addrs_for_further_track.extend(for_further_track);
                     }
                     InternalGetNetworkSpend::DoubleSpend(spends) => {
                         warn!(
@@ -175,7 +177,7 @@ impl Client {
                                 spend.spend.network_royalties.len(), spend.spend.spent_tx.inputs, spend.spend.spent_tx.outputs);
 
                             let for_further_track = beta_track_analyze_spend(spend);
-                            addrs_to_get.extend(for_further_track);
+                            addrs_for_further_track.extend(for_further_track);
 
                             let _ = sender
                                 .send((spend.clone(), 0, true))
@@ -184,11 +186,14 @@ impl Client {
                         }
                     }
                     InternalGetNetworkSpend::NotFound => {
+                        if amount.as_nano() > 100000 {
+                            info!("Not find spend of big-UTXO {address:?} with {amount}");
+                        }
                         let _ = failed_utxos
                             .insert(address, (Instant::now() + reattempt_interval, amount));
                     }
                     InternalGetNetworkSpend::Error(e) => {
-                        warn!("Fetching spend {address:?} result in error {e:?}");
+                        warn!("Fetching spend {address:?} with {amount:?} result in error {e:?}");
                         // Error of `NotEnoughCopies` could be re-attempted and succeed eventually.
                         let _ = failed_utxos
                             .insert(address, (Instant::now() + reattempt_interval, amount));
@@ -196,6 +201,8 @@ impl Client {
                 }
             }
         }
+
+        addrs_to_get.extend(addrs_for_further_track);
 
         Ok(failed_utxos)
     }

@@ -37,9 +37,9 @@ lazy_static! {
     /// time in seconds UTXOs are refetched in DAG crawl
     static ref UTXO_REATTEMPT_INTERVAL: Duration = Duration::from_secs(
         std::env::var("UTXO_REATTEMPT_INTERVAL")
-            .unwrap_or("1800".to_string())
+            .unwrap_or("7200".to_string())
             .parse::<u64>()
-            .unwrap_or(300)
+            .unwrap_or(7200)
     );
 
     /// time in seconds to rest between DAG crawls
@@ -300,8 +300,7 @@ impl SpendDagDb {
         let mut addrs_to_get = BTreeSet::new();
 
         loop {
-            // `addrs_to_get` is always empty when reaching this point
-            // get expired utxos for the further fetch
+            // get expired utxos for re-attempt fetch
             {
                 let now = Instant::now();
                 let mut utxo_addresses = self.utxo_addresses.write().await;
@@ -309,6 +308,9 @@ impl SpendDagDb {
                 utxo_addresses.retain(|address, (time_stamp, amount)| {
                     let not_expired = *time_stamp > now;
                     if !not_expired {
+                        if amount.as_nano() > 100000 {
+                            info!("re-attempt fetching big-UTXO {address:?} with {amount}");
+                        }
                         let _ = utxos_to_fetch.insert((*address, *amount));
                     }
                     not_expired
