@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724923177206,
+  "lastUpdate": 1724923179790,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "445da434b5854ee99f946de5fe6307b0eac3de56",
-          "message": "chore: remove deprecated wallet deposit cmd",
-          "timestamp": "2024-04-16T11:21:36Z",
-          "tree_id": "db89cd67d27e5164e294cea38a48221b95555adc",
-          "url": "https://github.com/maidsafe/safe_network/commit/445da434b5854ee99f946de5fe6307b0eac3de56"
-        },
-        "date": 1713269720815,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7477,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35244,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 25997,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3347c6988b588cf686ffcaaab41960ef96bb8334",
+          "message": "Merge pull request #2071 from maqi/auditor_lost_tracking_investigate\n\nchore(auditor): trival auditor code cleanup",
+          "timestamp": "2024-08-29T08:23:49Z",
+          "tree_id": "221e1d68fbbb6a15516f50d0d6902524ba5cacbf",
+          "url": "https://github.com/maidsafe/safe_network/commit/3347c6988b588cf686ffcaaab41960ef96bb8334"
+        },
+        "date": 1724923178763,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4611,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 24201,
             "unit": "ms"
           },
           {
