@@ -248,6 +248,14 @@ impl Component for PortRangePopUp {
             PortRangeState::Selection => {
                 match key.code {
                     KeyCode::Enter => {
+                        if self.port_from_old_value
+                            == self.port_from.value().parse::<u32>().unwrap_or_default()
+                            && self.port_to_old_value
+                                == self.port_to.value().parse::<u32>().unwrap_or_default()
+                        {
+                            debug!("Got Enter, but nothing changed, ignoring.");
+                            return Ok(vec![Action::SwitchScene(Scene::Options)]);
+                        }
                         let port_from = self.port_from.value();
                         let port_to = self.port_to.value();
 
