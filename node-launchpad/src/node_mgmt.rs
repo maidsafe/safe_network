@@ -318,6 +318,7 @@ async fn add_nodes(
                 retry_count = 0; // Reset retry count on success
             }
             Err(err) => {
+                //TODO: We should use concrete error types here instead of string matching (sn_node_manager)
                 if err.to_string().contains("is being used by another service") {
                     warn!(
                         "Port {} is being used, retrying with a different port. Attempt {}/{}",
