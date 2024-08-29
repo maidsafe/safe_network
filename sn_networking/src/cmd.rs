@@ -96,7 +96,7 @@ pub enum LocalSwarmCmd {
     /// Notify the node received a payment.
     PaymentReceived,
     /// Put record to the local RecordStore
-    PutLocalRecord {
+    PutVerifiedLocalRecord {
         record: Record,
     },
     /// Remove a local record from the RecordStore
@@ -194,7 +194,7 @@ pub enum NetworkSwarmCmd {
 impl Debug for LocalSwarmCmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LocalSwarmCmd::PutLocalRecord { record } => {
+            LocalSwarmCmd::PutVerifiedLocalRecord { record } => {
                 write!(
                     f,
                     "LocalSwarmCmd::PutLocalRecord {{ key: {:?} }}",
@@ -587,8 +587,8 @@ impl SwarmDriver {
                 let _ = sender.send(record);
             }
 
-            LocalSwarmCmd::PutLocalRecord { record } => {
-                cmd_string = "PutLocalRecord";
+            LocalSwarmCmd::PutVerifiedLocalRecord { record } => {
+                cmd_string = "PutVerifiedLocalRecord";
                 let key = record.key.clone();
                 let record_key = PrettyPrintRecordKey::from(&key);
 
@@ -596,11 +596,14 @@ impl SwarmDriver {
                     Ok(record_header) => {
                         match record_header.kind {
                             RecordKind::Chunk => RecordType::Chunk,
+                            RecordKind::Scratchpad => RecordType::Scratchpad,
                             RecordKind::Spend | RecordKind::Register => {
                                 let content_hash = XorName::from_content(&record.value);
                                 RecordType::NonChunk(content_hash)
                             }
-                            RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
+                            RecordKind::ChunkWithPayment
+                            | RecordKind::RegisterWithPayment
+                            | RecordKind::ScratchpadWithPayment => {
                                 error!("Record {record_key:?} with payment shall not be stored locally.");
                                 return Err(NetworkError::InCorrectRecordHeader);
                             }

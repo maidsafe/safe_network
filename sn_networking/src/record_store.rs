@@ -955,16 +955,18 @@ mod tests {
 
     use super::*;
     use bls::SecretKey;
+    use sn_protocol::storage::{Scratchpad, ScratchpadAddress};
+    use xor_name::XorName;
+
     use bytes::Bytes;
     use eyre::{bail, ContextCompat};
     use libp2p::kad::K_VALUE;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
+    use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress};
     use sn_transfers::{MainPubkey, PaymentQuote};
     use std::collections::BTreeMap;
     use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-
-    use sn_protocol::storage::{try_serialize_record, ChunkAddress};
     use tokio::runtime::Runtime;
     use tokio::time::{sleep, Duration};
 
@@ -1153,6 +1155,147 @@ mod tests {
         assert!(store.get(&r.key).is_none());
     }
 
+    #[tokio::test]
+    async fn can_store_and_retrieve_chunk() {
+        let temp_dir = std::env::temp_dir();
+        let store_config = NodeRecordStoreConfig {
+            storage_dir: temp_dir,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
+
+        // Create a chunk
+        let chunk_data = Bytes::from_static(b"Test chunk data");
+        let chunk = Chunk::new(chunk_data.clone());
+        let chunk_address = *chunk.address();
+
+        // Create a record from the chunk
+        let record = Record {
+            key: NetworkAddress::ChunkAddress(chunk_address).to_record_key(),
+            value: chunk_data.to_vec(),
+            expires: None,
+            publisher: None,
+        };
+
+        // Store the chunk using put_verified
+        assert!(store
+            .put_verified(record.clone(), RecordType::Chunk)
+            .is_ok());
+
+        // Mark as stored (simulating the CompletedWrite event)
+        store.mark_as_stored(record.key.clone(), RecordType::Chunk);
+
+        // Verify the chunk is stored
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Chunk should be stored");
+
+        if let Some(stored) = stored_record {
+            assert_eq!(
+                stored.value, chunk_data,
+                "Stored chunk data should match original"
+            );
+
+            let stored_address = ChunkAddress::new(XorName::from_content(&stored.value));
+            assert_eq!(
+                stored_address, chunk_address,
+                "Stored chunk address should match original"
+            );
+        }
+
+        // Clean up
+        store.remove(&record.key);
+        assert!(
+            store.get(&record.key).is_none(),
+            "Chunk should be removed after cleanup"
+        );
+    }
+
+    #[tokio::test]
+    async fn can_store_and_retrieve_scratchpad() {
+        let temp_dir = std::env::temp_dir();
+        let store_config = NodeRecordStoreConfig {
+            storage_dir: temp_dir,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
+
+        // Create a scratchpad
+        let scratchpad_data = Bytes::from_static(b"Test scratchpad data");
+
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+
+        let mut signing_bytes = 0_u64.to_be_bytes().to_vec();
+        signing_bytes.extend(XorName::from_content(&scratchpad_data).to_vec()); // add the count
+
+        let sig = owner_sk.sign(&signing_bytes);
+        let scratchpad = Scratchpad::new(owner_pk, scratchpad_data.clone(), 0, sig);
+        let scratchpad_address = *scratchpad.address();
+
+        // Create a record from the scratchpad
+        let record = Record {
+            key: NetworkAddress::ScratchpadAddress(scratchpad_address).to_record_key(),
+            value: scratchpad_data.to_vec(),
+            expires: None,
+            publisher: None,
+        };
+
+        // Store the scratchpad using put_verified
+        assert!(store
+            .put_verified(
+                record.clone(),
+                RecordType::NonChunk(XorName::from_content(&record.value))
+            )
+            .is_ok());
+
+        // Mark as stored (simulating the CompletedWrite event)
+        store.mark_as_stored(
+            record.key.clone(),
+            RecordType::NonChunk(XorName::from_content(&record.value)),
+        );
+
+        // Verify the scratchpad is stored
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Scratchpad should be stored");
+
+        if let Some(stored) = stored_record {
+            assert_eq!(
+                stored.value, scratchpad_data,
+                "Stored scratchpad data should match original"
+            );
+
+            let stored_address = ScratchpadAddress::new(owner_pk);
+            assert_eq!(
+                stored_address, scratchpad_address,
+                "Stored scratchpad address should match original"
+            );
+        }
+
+        // Clean up
+        store.remove(&record.key);
+        assert!(
+            store.get(&record.key).is_none(),
+            "Scratchpad should be removed after cleanup"
+        );
+    }
     #[tokio::test]
     async fn pruning_on_full() -> Result<()> {
         let max_iterations = 10;

@@ -44,6 +44,11 @@ pub enum Error {
         key: Box<NetworkAddress>,
     },
 
+    // ---------- Scratchpad errors
+    /// The provided String can't be deserialized as a RegisterAddress
+    #[error("Failed to deserialize hex ScratchpadAddress")]
+    ScratchpadHexDeserializeFailed,
+
     // ---------- payment errors
     #[error("There was an error getting the storecost from kademlia store")]
     GetStoreCostFailed,

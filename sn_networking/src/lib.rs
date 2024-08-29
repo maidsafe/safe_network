@@ -742,7 +742,7 @@ impl Network {
             PrettyPrintRecordKey::from(&record.key),
             record.value.len()
         );
-        self.send_local_swarm_cmd(LocalSwarmCmd::PutLocalRecord { record })
+        self.send_local_swarm_cmd(LocalSwarmCmd::PutVerifiedLocalRecord { record })
     }
 
     /// Returns true if a RecordKey is present locally in the RecordStore
