@@ -4,7 +4,7 @@ use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, Walle
 use alloy::providers::{ProviderBuilder, ReqwestProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::{Client, Http};
-use sn_evm::contract::network_token::NetworkToken;
+use evmlib::contract::network_token::NetworkToken;
 
 pub async fn deploy_network_token_contract(
     anvil: &AnvilInstance,

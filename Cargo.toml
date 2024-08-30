@@ -21,7 +21,7 @@ members = [
     "sn_transfers",
     "test_utils",
     "token_supplies",
-    "sn_evm",
+    "evmlib",
 ]
 
 [workspace.lints.rust]

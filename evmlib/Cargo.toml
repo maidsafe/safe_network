@@ -4,7 +4,7 @@ description = "Safe Network EVM"
 edition = "2021"
 homepage = "https://maidsafe.net"
 license = "GPL-3.0"
-name = "sn_evm"
+name = "evmlib"
 repository = "https://github.com/maidsafe/safe_network"
 version = "0.1.0"
 

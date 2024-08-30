@@ -11,8 +11,8 @@ use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, Walle
 use alloy::providers::{ProviderBuilder, ReqwestProvider, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{Client, Http};
-use sn_evm::contract::chunk_payments::ChunkPayments;
-use sn_evm::contract::network_token::NetworkToken;
+use evmlib::contract::chunk_payments::ChunkPayments;
+use evmlib::contract::network_token::NetworkToken;
 
 const ROYALTIES_WALLET: Address = address!("385e7887E5b41750E3679Da787B943EC42f37d75");
 
