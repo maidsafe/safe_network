@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1724934824034,
+  "lastUpdate": 1725000545906,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7df004431facafb7d40e7498f3ccccf14b66da26",
-          "message": "feat(networking): clear  record on valid put\n\nIf we're able to store data agin, we clear the farthest distance in the replication fetcher.\n(The assumed sitation is that the network has grown, and we're not responsible for less data).",
-          "timestamp": "2024-04-17T01:56:42Z",
-          "tree_id": "541df6feb8579095cd15ceeb6e03eaf2b3f67b42",
-          "url": "https://github.com/maidsafe/safe_network/commit/7df004431facafb7d40e7498f3ccccf14b66da26"
-        },
-        "date": 1713321353860,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.276928970543557,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.7122687292349854,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 60.65139576545924,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.239028158106386,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "341562e02385b1a631d24e779cb9c2e5159eb453",
+          "message": "Merge pull request #2055 from b-zee/feat-init-non-zero-at-compile-time\n\nrefactor: init NonZero values during compile time",
+          "timestamp": "2024-08-30T06:13:25Z",
+          "tree_id": "b6d951ab002bbd2c6bb3f2c3d362d9ddab1ab262",
+          "url": "https://github.com/maidsafe/safe_network/commit/341562e02385b1a631d24e779cb9c2e5159eb453"
+        },
+        "date": 1725000539474,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2077405162887167,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7119669950640397,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.095953380959585,
             "unit": "MiB/s"
           }
         ]
