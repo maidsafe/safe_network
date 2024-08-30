@@ -8,7 +8,7 @@
 
 use crate::{Network, NetworkError, Result};
 use futures::future::join_all;
-use sn_transfers::{is_genesis_spend, SignedSpend, SpendAddress, TransferError};
+use sn_evm::{is_genesis_spend, SignedSpend, SpendAddress, TransferError};
 use std::collections::BTreeSet;
 
 impl Network {

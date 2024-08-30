@@ -13,12 +13,12 @@ use assert_matches::assert_matches;
 use common::client::{get_client_and_funded_wallet, get_wallet};
 use eyre::{bail, Result};
 use itertools::Itertools;
-use sn_logging::LogBuilder;
-use sn_networking::NetworkError;
-use sn_transfers::{
+use sn_evm::{
     get_genesis_sk, rng, DerivationIndex, HotWallet, NanoTokens, SignedTransaction, SpendReason,
     WalletError, GENESIS_CASHNOTE,
 };
+use sn_logging::LogBuilder;
+use sn_networking::NetworkError;
 use std::time::Duration;
 use tracing::*;
 

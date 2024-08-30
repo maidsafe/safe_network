@@ -379,7 +379,7 @@ mod tests {
     use bls::rand::thread_rng;
     use bytes::Bytes;
     use libp2p::kad::{KBucketKey, RecordKey};
-    use sn_transfers::SpendAddress;
+    use sn_evm::SpendAddress;
 
     // A struct that implements hex representation of RecordKey using `bytes::Bytes`
     struct OldRecordKeyPrint(RecordKey);

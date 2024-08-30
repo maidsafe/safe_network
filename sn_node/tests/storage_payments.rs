@@ -14,6 +14,7 @@ use eyre::{eyre, Result};
 use libp2p::PeerId;
 use rand::Rng;
 use sn_client::{Error as ClientError, FilesDownload, Uploader, WalletClient};
+use sn_evm::{MainPubkey, NanoTokens, PaymentQuote};
 use sn_logging::LogBuilder;
 use sn_networking::{GetRecordError, NetworkError};
 use sn_protocol::{
@@ -22,7 +23,6 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::Permissions;
-use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 use std::collections::BTreeMap;
 use tokio::time::{sleep, Duration};
 use tracing::info;

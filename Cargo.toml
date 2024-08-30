@@ -18,7 +18,7 @@ members = [
     "sn_protocol",
     "sn_registers",
     "sn_service_management",
-    "sn_transfers",
+    "sn_evm",
     "test_utils",
     "token_supplies",
 ]

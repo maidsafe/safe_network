@@ -17,9 +17,7 @@ use sn_client::{
     acc_packet::load_account_wallet_or_create_with_mnemonic, fund_faucet_from_genesis_wallet,
     Client,
 };
-use sn_transfers::{
-    get_faucet_data_dir, wallet_lockfile_name, NanoTokens, Transfer, WALLET_DIR_NAME,
-};
+use sn_evm::{get_faucet_data_dir, wallet_lockfile_name, NanoTokens, Transfer, WALLET_DIR_NAME};
 use std::path::Path;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Semaphore;

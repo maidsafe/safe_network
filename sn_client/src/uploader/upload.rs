@@ -18,6 +18,7 @@ use crate::{
 use bytes::Bytes;
 use itertools::Either;
 use libp2p::PeerId;
+use sn_evm::{NanoTokens, WalletApi};
 use sn_networking::PayeeQuote;
 use sn_protocol::{
     messages::RegisterCmd,
@@ -25,7 +26,6 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Register, RegisterAddress};
-use sn_transfers::{NanoTokens, WalletApi};
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},

@@ -11,7 +11,7 @@ use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
-use sn_transfers::{
+use sn_evm::{
     is_genesis_spend, CashNoteRedemption, DerivationIndex, Hash, NanoTokens, SignedSpend,
     SpendAddress, UniquePubkey,
 };

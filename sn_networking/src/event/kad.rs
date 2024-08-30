@@ -15,11 +15,11 @@ use libp2p::kad::{
     self, GetClosestPeersError, InboundRequest, PeerRecord, ProgressStep, QueryId, QueryResult,
     QueryStats, Record, K_VALUE,
 };
+use sn_evm::SignedSpend;
 use sn_protocol::{
     storage::{try_serialize_record, RecordKind},
     PrettyPrintRecordKey,
 };
-use sn_transfers::SignedSpend;
 use std::{
     collections::{hash_map::Entry, BTreeSet, HashSet},
     time::Instant,

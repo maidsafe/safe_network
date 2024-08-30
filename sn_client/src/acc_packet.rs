@@ -8,7 +8,7 @@
 
 use super::error::Result;
 use bip39::Mnemonic;
-use sn_transfers::{get_faucet_data_dir, HotWallet, MainSecretKey};
+use sn_evm::{get_faucet_data_dir, HotWallet, MainSecretKey};
 use std::path::Path;
 
 pub mod user_secret;

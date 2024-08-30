@@ -12,8 +12,8 @@ use assert_fs::TempDir;
 use common::client::{get_client_and_funded_wallet, get_wallet};
 use eyre::Result;
 use sn_client::send;
+use sn_evm::NanoTokens;
 use sn_logging::LogBuilder;
-use sn_transfers::NanoTokens;
 use tracing::info;
 
 #[tokio::test]

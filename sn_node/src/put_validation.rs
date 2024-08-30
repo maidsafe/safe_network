@@ -8,6 +8,10 @@
 
 use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
+use sn_evm::{
+    calculate_royalties_fee, CashNote, CashNoteRedemption, HotWallet, NanoTokens, Payment,
+    SignedSpend, Transfer, TransferError, UniquePubkey, WalletError, NETWORK_ROYALTIES_PK,
+};
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     storage::{
@@ -17,10 +21,6 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{
-    calculate_royalties_fee, CashNote, CashNoteRedemption, HotWallet, NanoTokens, Payment,
-    SignedSpend, Transfer, TransferError, UniquePubkey, WalletError, NETWORK_ROYALTIES_PK,
-};
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 use xor_name::XorName;

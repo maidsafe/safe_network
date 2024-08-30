@@ -21,12 +21,12 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
+use sn_evm::{NanoTokens, PaymentQuote, QuotingMetrics};
 use sn_protocol::{
     messages::{Cmd, Request, Response},
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Debug,

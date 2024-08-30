@@ -8,9 +8,9 @@
 
 use crate::{node::Node, Error, Result};
 use libp2p::PeerId;
+use sn_evm::{NanoTokens, PaymentQuote, QuotingMetrics};
 use sn_networking::{calculate_cost_for_records, Network, NodeIssue};
 use sn_protocol::{error::Error as ProtocolError, storage::ChunkAddress, NetworkAddress};
-use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
 use std::time::Duration;
 
 impl Node {

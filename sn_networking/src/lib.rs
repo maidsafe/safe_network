@@ -59,13 +59,13 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use rand::Rng;
+use sn_evm::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
     storage::{RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
-use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     net::IpAddr,
@@ -1106,7 +1106,7 @@ mod tests {
     use eyre::bail;
 
     use super::*;
-    use sn_transfers::PaymentQuote;
+    use sn_evm::PaymentQuote;
 
     #[test]
     fn test_get_fee_from_store_cost_responses() -> Result<()> {

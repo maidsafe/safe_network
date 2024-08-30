@@ -9,11 +9,11 @@
 use crate::{Client, Error, SpendDag};
 
 use futures::{future::join_all, StreamExt};
-use sn_networking::{GetRecordError, NetworkError};
-use sn_transfers::{
+use sn_evm::{
     NanoTokens, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError, WalletResult,
     DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
 };
+use sn_networking::{GetRecordError, NetworkError};
 use std::{
     collections::{BTreeMap, BTreeSet},
     time::{Duration, Instant},

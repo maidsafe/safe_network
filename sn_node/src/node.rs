@@ -22,6 +22,7 @@ use prometheus_client::metrics::{gauge::Gauge, info::Info};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
+use sn_evm::{HotWallet, MainPubkey, MainSecretKey, NanoTokens, PAYMENT_FORWARD_PK};
 use sn_networking::{
     close_group_majority, Instant, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
     SwarmDriver,
@@ -31,7 +32,6 @@ use sn_protocol::{
     messages::{ChunkProof, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
-use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens, PAYMENT_FORWARD_PK};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -149,7 +149,7 @@ impl NodeBuilder {
             Ok(sig) => sig,
             Err(_err) => return Err(Error::FailedToGenerateRewardKey),
         };
-        let mut rng = sn_transfers::rng::from_vec(&sig_vec);
+        let mut rng = sn_evm::rng::from_vec(&sig_vec);
 
         let reward_key = MainSecretKey::random_from_rng(&mut rng);
         let reward_address = reward_key.main_pubkey();

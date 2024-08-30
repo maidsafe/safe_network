@@ -41,12 +41,12 @@ impl From<u8> for VerbosityLevel {
 use crate::error::{Error, Result};
 use colored::Colorize;
 use semver::Version;
+use sn_evm::HotWallet;
 use sn_service_management::{
     control::ServiceControl, error::Error as ServiceError, rpc::RpcClient, NodeRegistry,
     NodeService, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
     UpgradeResult,
 };
-use sn_transfers::HotWallet;
 use tracing::debug;
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
@@ -633,6 +633,7 @@ mod tests {
     use mockall::{mock, predicate::*};
     use predicates::prelude::*;
     use service_manager::ServiceInstallCtx;
+    use sn_evm::NanoTokens;
     use sn_logging::LogFormat;
     use sn_service_management::{
         error::{Error as ServiceControlError, Result as ServiceControlResult},
@@ -640,7 +641,6 @@ mod tests {
         rpc::{NetworkInfo, NodeInfo, RecordAddress, RpcActions},
         UpgradeOptions, UpgradeResult,
     };
-    use sn_transfers::NanoTokens;
     use std::{
         ffi::OsString,
         net::{IpAddr, Ipv4Addr, SocketAddr},

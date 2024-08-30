@@ -20,9 +20,9 @@ use sn_client::{
     acc_packet::load_account_wallet_or_create_with_mnemonic, fund_faucet_from_genesis_wallet, send,
     Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver,
 };
+use sn_evm::{get_faucet_data_dir, HotWallet, MainPubkey, NanoTokens, Transfer};
 use sn_logging::{Level, LogBuilder, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
-use sn_transfers::{get_faucet_data_dir, HotWallet, MainPubkey, NanoTokens, Transfer};
 use std::{path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 use tracing::{debug, error, info};
@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
         ("sn_peers_acquisition".to_string(), Level::TRACE),
         ("sn_protocol".to_string(), Level::TRACE),
         ("sn_registers".to_string(), Level::TRACE),
-        ("sn_transfers".to_string(), Level::TRACE),
+        ("sn_evm".to_string(), Level::TRACE),
     ];
 
     let mut log_builder = LogBuilder::new(logging_targets);

@@ -47,6 +47,7 @@ use libp2p::{
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::{metrics::info::Info, registry::Registry};
+use sn_evm::PaymentQuote;
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
     storage::RetryStrategy,
@@ -56,7 +57,6 @@ use sn_protocol::{
     },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
-use sn_transfers::PaymentQuote;
 use std::{
     collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
     fmt::Debug,

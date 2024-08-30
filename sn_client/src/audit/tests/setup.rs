@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bls::SecretKey;
 use eyre::{eyre, Result};
-use sn_transfers::{
+use sn_evm::{
     get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
     SignedTransaction, SpendAddress, SpendReason, GENESIS_CASHNOTE,
 };

@@ -46,9 +46,9 @@ pub use self::{
 use crate::error::{Error, Result};
 
 use libp2p::PeerId;
+use sn_evm::{HotWallet, NanoTokens};
 use sn_networking::{Network, SwarmLocalState};
 use sn_protocol::{get_port_from_multiaddr, NetworkAddress};
-use sn_transfers::{HotWallet, NanoTokens};
 use std::{
     collections::{BTreeMap, HashSet},
     path::PathBuf,

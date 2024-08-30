@@ -18,13 +18,13 @@ use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
 
+use sn_evm::get_faucet_data_dir;
 use sn_logging::LogFormat;
 use sn_service_management::{
     control::ServiceControl,
     rpc::{RpcActions, RpcClient},
     FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
 };
-use sn_transfers::get_faucet_data_dir;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,

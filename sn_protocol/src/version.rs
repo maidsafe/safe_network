@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use lazy_static::lazy_static;
-use sn_transfers::{FOUNDATION_PK, GENESIS_PK, NETWORK_ROYALTIES_PK, PAYMENT_FORWARD_PK};
+use sn_evm::{FOUNDATION_PK, GENESIS_PK, NETWORK_ROYALTIES_PK, PAYMENT_FORWARD_PK};
 
 lazy_static! {
     /// The node version used during Identify Behaviour.

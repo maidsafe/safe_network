@@ -20,10 +20,10 @@ use eyre::Result;
 use libp2p::PeerId;
 use libp2p_identity::Keypair;
 use rand::thread_rng;
+use sn_evm::{MainSecretKey, NanoTokens, PaymentQuote, WalletApi};
 use sn_networking::{NetworkBuilder, PayeeQuote};
 use sn_protocol::{storage::RetryStrategy, NetworkAddress};
 use sn_registers::{Register, RegisterAddress};
-use sn_transfers::{MainSecretKey, NanoTokens, PaymentQuote, WalletApi};
 use std::{
     collections::{BTreeMap, VecDeque},
     path::PathBuf,

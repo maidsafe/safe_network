@@ -416,7 +416,7 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, ReloadHandle, Opt
         ("sn_peers_acquisition".to_string(), Level::DEBUG),
         ("sn_protocol".to_string(), Level::DEBUG),
         ("sn_registers".to_string(), Level::DEBUG),
-        ("sn_transfers".to_string(), Level::DEBUG),
+        ("sn_evm".to_string(), Level::DEBUG),
     ];
 
     let output_dest = match &opt.log_output_dest {

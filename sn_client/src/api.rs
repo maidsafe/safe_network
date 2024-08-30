@@ -18,6 +18,10 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use rand::{thread_rng, Rng};
+use sn_evm::{
+    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend, TransferError,
+    GENESIS_SPEND_UNIQUE_KEY,
+};
 use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
@@ -33,10 +37,6 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_registers::{Permissions, SignedRegister};
-use sn_transfers::{
-    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend, TransferError,
-    GENESIS_SPEND_UNIQUE_KEY,
-};
 #[cfg(target_arch = "wasm32")]
 use std::path::PathBuf;
 use std::{
@@ -495,14 +495,14 @@ impl Client {
     /// use sn_client::{Client, WalletClient, Error};
     /// use tempfile::TempDir;
     /// use bls::SecretKey;
-    /// use sn_transfers::{MainSecretKey};
+    /// use sn_evm::{MainSecretKey};
     /// use xor_name::XorName;
     /// use sn_registers::RegisterAddress;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// // Set up Client, Wallet, etc
     /// use sn_registers::Permissions;
-    /// use sn_transfers::HotWallet;
+    /// use sn_evm::HotWallet;
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
@@ -565,8 +565,8 @@ impl Client {
                     .ok_or(Error::TotalPriceTooHigh)?;
                 total_royalties = total_cost
                     .checked_add(royalties_top_up)
-                    .ok_or(Error::Wallet(sn_transfers::WalletError::from(
-                        sn_transfers::TransferError::ExcessiveNanoValue,
+                    .ok_or(Error::Wallet(sn_evm::WalletError::from(
+                        sn_evm::TransferError::ExcessiveNanoValue,
                     )))?;
                 stored = self.verify_register_stored(*reg_address).await.is_ok();
             }
@@ -872,7 +872,7 @@ impl Client {
     /// use sn_client::{Client, Error};
     /// use bls::SecretKey;
     /// use xor_name::XorName;
-    /// use sn_transfers::SpendAddress;
+    /// use sn_evm::SpendAddress;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
@@ -1005,7 +1005,7 @@ impl Client {
     /// use bls::SecretKey;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey};
+    /// use sn_evm::{CashNote, CashNoteRedemption, MainPubkey};
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Create a main public key
     /// let pk = SecretKey::random().public_key();

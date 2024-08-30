@@ -6,8 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use sn_evm::{NanoTokens, WalletError};
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
-use sn_transfers::{NanoTokens, WalletError};
 use thiserror::Error;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
@@ -29,7 +29,7 @@ pub enum Error {
     Wallet(#[from] WalletError),
 
     #[error("Transfers Error {0}")]
-    Transfers(#[from] sn_transfers::TransferError),
+    Transfers(#[from] sn_evm::TransferError),
 
     #[error("Failed to parse NodeEvent")]
     NodeEventParsingFailed,

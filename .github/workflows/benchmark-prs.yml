@@ -417,10 +417,10 @@ jobs:
       ########################
       ### Benchmark        ###
       ########################
-      - name: Bench `sn_transfers`
+      - name: Bench `sn_evm`
         shell: bash
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
         # passes to tee which displays it in the terminal and writes to output.txt
         run: |
-          cargo criterion --message-format=json 2>&1 -p sn_transfers | tee -a output.txt
+          cargo criterion --message-format=json 2>&1 -p sn_evm | tee -a output.txt
           cat output.txt

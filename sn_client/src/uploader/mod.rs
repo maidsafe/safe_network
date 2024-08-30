@@ -13,13 +13,13 @@ mod upload;
 use self::upload::{start_upload, InnerUploader, MAX_REPAYMENTS_PER_FAILED_ITEM};
 use crate::{Client, ClientRegister, Error, Result, BATCH_SIZE};
 use itertools::Either;
+use sn_evm::{NanoTokens, WalletApi};
 use sn_networking::PayeeQuote;
 use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
     NetworkAddress,
 };
 use sn_registers::{Register, RegisterAddress};
-use sn_transfers::{NanoTokens, WalletApi};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Debug,

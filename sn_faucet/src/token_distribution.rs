@@ -13,7 +13,7 @@ use color_eyre::eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
 use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
 use sn_client::Client;
-use sn_transfers::{get_faucet_data_dir, MainPubkey, NanoTokens};
+use sn_evm::{get_faucet_data_dir, MainPubkey, NanoTokens};
 use std::str::FromStr;
 use std::{collections::HashMap, path::PathBuf};
 use tracing::info;
@@ -495,8 +495,8 @@ mod tests {
         secp256k1::{rand, Secp256k1},
         Address, Network, PublicKey,
     };
+    use sn_evm::{HotWallet, MainSecretKey, Transfer};
     use sn_logging::LogBuilder;
-    use sn_transfers::{HotWallet, MainSecretKey, Transfer};
 
     // This test is to confirm fetching 'MAID snapshop` and `Maid claims` list from website
     // is working properly and giving consistent and expected result.

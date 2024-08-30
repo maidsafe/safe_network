@@ -15,7 +15,7 @@
 // use sn_client::Client;
 // use sn_logging::LogBuilder;
 // use sn_networking::{GetRecordError, NetworkError};
-// use sn_transfers::{
+// use sn_evm::{
 //     rng, CashNote, DerivationIndex, HotWallet, MainPubkey, NanoTokens, OfflineTransfer,
 //     SpendAddress, SpendReason, Transaction, UniquePubkey,
 // };

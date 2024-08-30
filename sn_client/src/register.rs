@@ -13,6 +13,7 @@ use libp2p::{
     kad::{Quorum, Record},
     PeerId,
 };
+use sn_evm::{NanoTokens, Payment};
 use sn_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -21,7 +22,6 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
-use sn_transfers::{NanoTokens, Payment};
 use std::collections::{BTreeSet, HashSet, LinkedList};
 use xor_name::XorName;
 
@@ -121,7 +121,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_transfers::{HotWallet, MainSecretKey};
+    /// # use sn_evm::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -177,7 +177,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_transfers::{HotWallet, MainSecretKey};
+    /// # use sn_evm::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -212,7 +212,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_transfers::{HotWallet, MainSecretKey};
+    /// # use sn_evm::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -247,7 +247,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_transfers::{HotWallet, MainSecretKey};
+    /// # use sn_evm::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -283,7 +283,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_transfers::{HotWallet, MainSecretKey};
+    /// # use sn_evm::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -473,7 +473,7 @@ impl ClientRegister {
     /// # use std::collections::BTreeSet;
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
-    /// # use sn_transfers::{HotWallet, MainSecretKey};
+    /// # use sn_evm::{HotWallet, MainSecretKey};
     /// # let mut rng = rand::thread_rng();
     /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);

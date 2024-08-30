@@ -17,14 +17,14 @@ use common::{
 use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, FilesApi, FilesDownload, Uploader, WalletClient};
+use sn_evm::HotWallet;
+use sn_evm::{CashNote, MainSecretKey, NanoTokens};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
     NetworkAddress,
 };
 use sn_registers::Permissions;
-use sn_transfers::HotWallet;
-use sn_transfers::{CashNote, MainSecretKey, NanoTokens};
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,

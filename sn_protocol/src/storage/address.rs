@@ -9,5 +9,5 @@
 mod chunk;
 
 pub use self::chunk::ChunkAddress;
+pub use sn_evm::SpendAddress;
 pub use sn_registers::RegisterAddress;
-pub use sn_transfers::SpendAddress;

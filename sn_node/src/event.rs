@@ -9,8 +9,8 @@
 use crate::error::{Error, Result};
 
 use serde::{Deserialize, Serialize};
+use sn_evm::UniquePubkey;
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
-use sn_transfers::UniquePubkey;
 use tokio::sync::broadcast;
 
 const NODE_EVENT_CHANNEL_SIZE: usize = 500;

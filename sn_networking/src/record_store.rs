@@ -30,11 +30,11 @@ use prometheus_client::metrics::gauge::Gauge;
 use rand::RngCore;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
+use sn_evm::{NanoTokens, QuotingMetrics, TOTAL_SUPPLY};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{NanoTokens, QuotingMetrics, TOTAL_SUPPLY};
 use std::collections::VecDeque;
 use std::{
     borrow::Cow,

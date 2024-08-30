@@ -16,13 +16,13 @@ use crate::{
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use semver::Version;
+use sn_evm::get_faucet_data_dir;
 use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
     control::{ServiceControl, ServiceController},
     FaucetService, NodeRegistry, UpgradeOptions,
 };
-use sn_transfers::get_faucet_data_dir;
 use std::path::PathBuf;
 
 pub async fn add(

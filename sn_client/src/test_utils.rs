@@ -10,9 +10,9 @@ use crate::{
     acc_packet::{create_faucet_account_and_wallet, load_account_wallet_or_create_with_mnemonic},
     send, Client, WalletClient,
 };
+use sn_evm::{HotWallet, NanoTokens};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{storage::Chunk, NetworkAddress};
-use sn_transfers::{HotWallet, NanoTokens};
 
 use bls::SecretKey;
 use bytes::Bytes;

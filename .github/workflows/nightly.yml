@@ -162,7 +162,7 @@ jobs:
 
       - name: Run transfers tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_transfers
+        run: cargo test --release --package sn_evm
 
       - name: Run logging tests
         timeout-minutes: 25

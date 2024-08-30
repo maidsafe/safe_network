@@ -12,7 +12,7 @@ use super::ChunkProof;
 use bytes::Bytes;
 use core::fmt;
 use serde::{Deserialize, Serialize};
-use sn_transfers::{MainPubkey, PaymentQuote};
+use sn_evm::{MainPubkey, PaymentQuote};
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.

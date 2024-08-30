@@ -130,7 +130,7 @@ fn logging_init(
     let logging_targets = vec![
         ("sn_auditor".to_string(), Level::TRACE),
         ("sn_client".to_string(), Level::DEBUG),
-        ("sn_transfers".to_string(), Level::TRACE),
+        ("sn_evm".to_string(), Level::TRACE),
         ("sn_logging".to_string(), Level::INFO),
         ("sn_peers_acquisition".to_string(), Level::INFO),
         ("sn_protocol".to_string(), Level::INFO),

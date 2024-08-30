@@ -11,9 +11,9 @@ use async_trait::async_trait;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use service_manager::{ServiceInstallCtx, ServiceLabel};
+use sn_evm::NanoTokens;
 use sn_logging::LogFormat;
 use sn_protocol::get_port_from_multiaddr;
-use sn_transfers::NanoTokens;
 use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
 
 pub struct NodeService<'a> {

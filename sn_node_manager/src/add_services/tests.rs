@@ -23,12 +23,12 @@ use libp2p::Multiaddr;
 use mockall::{mock, predicate::*, Sequence};
 use predicates::prelude::*;
 use service_manager::ServiceInstallCtx;
+use sn_evm::NanoTokens;
 use sn_service_management::{auditor::AuditorServiceData, control::ServiceControl};
 use sn_service_management::{error::Result as ServiceControlResult, NatDetectionStatus};
 use sn_service_management::{
     DaemonServiceData, FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
 };
-use sn_transfers::NanoTokens;
 use std::{
     ffi::OsString,
     net::{IpAddr, Ipv4Addr, SocketAddr},

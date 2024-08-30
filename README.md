@@ -126,7 +126,7 @@ YMMV until stabilised.
   networking layer, built atop libp2p which allows nodes and clients to communicate.
 - [Protocol](https://github.com/maidsafe/safe_network/blob/main/sn_protocol/README.md) The protocol
   used by the safe network.
-- [Transfers](https://github.com/maidsafe/safe_network/blob/main/sn_transfers/README.md) The
+- [Transfers](https://github.com/maidsafe/safe_network/blob/main/sn_evm/README.md) The
   transfers crate, used to send and receive tokens on the network.
 - [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acquisition/README.md)
   The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.

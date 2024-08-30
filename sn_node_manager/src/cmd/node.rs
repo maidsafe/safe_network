@@ -22,6 +22,7 @@ use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
+use sn_evm::HotWallet;
 use sn_logging::LogFormat;
 use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
@@ -30,7 +31,6 @@ use sn_service_management::{
     rpc::RpcClient,
     NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
-use sn_transfers::HotWallet;
 use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr, time::Duration};
 use tracing::debug;
 

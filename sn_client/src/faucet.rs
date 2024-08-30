@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{wallet::send, Client, Error, Result};
-use sn_transfers::{load_genesis_wallet, HotWallet, NanoTokens, Transfer, FOUNDATION_PK};
+use sn_evm::{load_genesis_wallet, HotWallet, NanoTokens, Transfer, FOUNDATION_PK};
 
 const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(900000000000000000);
 

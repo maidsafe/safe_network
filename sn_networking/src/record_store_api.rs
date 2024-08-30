@@ -12,8 +12,8 @@ use libp2p::kad::{
     store::{RecordStore, Result},
     ProviderRecord, Record, RecordKey,
 };
+use sn_evm::{NanoTokens, QuotingMetrics};
 use sn_protocol::{storage::RecordType, NetworkAddress};
-use sn_transfers::{NanoTokens, QuotingMetrics};
 use std::{borrow::Cow, collections::HashMap};
 
 pub enum UnifiedRecordStore {
