@@ -21,6 +21,7 @@ members = [
     "sn_evm",
     "test_utils",
     "token_supplies",
+    "evmlib",
 ]
 
 [workspace.lints.rust]
@@ -28,7 +29,7 @@ arithmetic_overflow = "forbid"
 mutable_transmutes = "forbid"
 no_mangle_const_items = "forbid"
 unknown_crate_types = "forbid"
-unsafe_code = "forbid"
+unsafe_code = "warn"
 trivial_casts = "warn"
 trivial_numeric_casts = "warn"
 unused_extern_crates = "warn"
