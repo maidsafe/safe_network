@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725000545906,
+  "lastUpdate": 1725000660183,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7df004431facafb7d40e7498f3ccccf14b66da26",
-          "message": "feat(networking): clear  record on valid put\n\nIf we're able to store data agin, we clear the farthest distance in the replication fetcher.\n(The assumed sitation is that the network has grown, and we're not responsible for less data).",
-          "timestamp": "2024-04-17T01:56:42Z",
-          "tree_id": "541df6feb8579095cd15ceeb6e03eaf2b3f67b42",
-          "url": "https://github.com/maidsafe/safe_network/commit/7df004431facafb7d40e7498f3ccccf14b66da26"
-        },
-        "date": 1713321462914,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 50,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 157,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "341562e02385b1a631d24e779cb9c2e5159eb453",
+          "message": "Merge pull request #2055 from b-zee/feat-init-non-zero-at-compile-time\n\nrefactor: init NonZero values during compile time",
+          "timestamp": "2024-08-30T06:13:25Z",
+          "tree_id": "b6d951ab002bbd2c6bb3f2c3d362d9ddab1ab262",
+          "url": "https://github.com/maidsafe/safe_network/commit/341562e02385b1a631d24e779cb9c2e5159eb453"
+        },
+        "date": 1725000659841,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 137,
             "unit": "MB"
           }
         ]
