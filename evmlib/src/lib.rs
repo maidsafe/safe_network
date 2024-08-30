@@ -1,6 +1,7 @@
 use alloy::primitives::{address, Address};
 
 pub mod contract;
+pub mod wallet;
 
 pub(crate) const PUBLIC_ARBITRUM_SEPOLIA_RPC_URL: &str = "https://sepolia-rollup.arbitrum.io/rpc";
 pub(crate) const ARBITRUM_SEPOLIA_NETWORK_TOKEN_ADDRESS: Address =
