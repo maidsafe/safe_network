@@ -112,6 +112,7 @@ impl Status {
             &ServiceController {},
             false,
             true,
+            false,
         )
         .await?;
         node_registry.save()?;
