@@ -55,6 +55,7 @@ pub trait RpcActions: Sync {
     async fn update_log_level(&self, log_levels: String) -> Result<()>;
 }
 
+#[derive(Debug, Clone)]
 pub struct RpcClient {
     endpoint: String,
     max_attempts: u8,

@@ -183,6 +183,7 @@ pub async fn balance(
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
         false,
+        false,
     )
     .await?;
 
@@ -226,6 +227,7 @@ pub async fn remove(
         &mut node_registry,
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
+        false,
         false,
     )
     .await?;
@@ -313,6 +315,7 @@ pub async fn start(
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
         false,
+        false,
     )
     .await?;
 
@@ -383,6 +386,7 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
             details,
             json,
             fail,
+            false,
         )
         .await?;
         node_registry.save()?;
@@ -405,6 +409,7 @@ pub async fn stop(
         &mut node_registry,
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
+        false,
         false,
     )
     .await?;
@@ -480,6 +485,7 @@ pub async fn upgrade(
         &mut node_registry,
         &ServiceController {},
         verbosity != VerbosityLevel::Minimal,
+        false,
         false,
     )
     .await?;
