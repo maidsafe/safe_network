@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725237424739,
+  "lastUpdate": 1725237544404,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": false,
-          "id": "6da215f79d48500e9d2064078f5a62ecb78908a5",
-          "message": "feat: rpc restart command",
-          "timestamp": "2024-04-17T10:14:18Z",
-          "tree_id": "bf3855d7c9453c205ce97cbc85689f28346bdde3",
-          "url": "https://github.com/maidsafe/safe_network/commit/6da215f79d48500e9d2064078f5a62ecb78908a5"
-        },
-        "date": 1713352250159,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 137,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4340ddda3fe3df8ded96737ef3795793d1f9d176",
+          "message": "Merge pull request #2075 from maqi/audior_width_first_tracking\n\nchore(auditor): switch to width first tracking, instead of depth first",
+          "timestamp": "2024-09-01T23:46:45Z",
+          "tree_id": "3a07ba9960d759250ea48d7033874d8b59363030",
+          "url": "https://github.com/maidsafe/safe_network/commit/4340ddda3fe3df8ded96737ef3795793d1f9d176"
+        },
+        "date": 1725237543849,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 162,
             "unit": "MB"
           }
         ]
