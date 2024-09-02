@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725237545973,
+  "lastUpdate": 1725237547582,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": false,
-          "id": "6da215f79d48500e9d2064078f5a62ecb78908a5",
-          "message": "feat: rpc restart command",
-          "timestamp": "2024-04-17T10:14:18Z",
-          "tree_id": "bf3855d7c9453c205ce97cbc85689f28346bdde3",
-          "url": "https://github.com/maidsafe/safe_network/commit/6da215f79d48500e9d2064078f5a62ecb78908a5"
-        },
-        "date": 1713352254020,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7171,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34452,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 23718,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4340ddda3fe3df8ded96737ef3795793d1f9d176",
+          "message": "Merge pull request #2075 from maqi/audior_width_first_tracking\n\nchore(auditor): switch to width first tracking, instead of depth first",
+          "timestamp": "2024-09-01T23:46:45Z",
+          "tree_id": "3a07ba9960d759250ea48d7033874d8b59363030",
+          "url": "https://github.com/maidsafe/safe_network/commit/4340ddda3fe3df8ded96737ef3795793d1f9d176"
+        },
+        "date": 1725237547129,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4443,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 24609,
             "unit": "ms"
           },
           {
