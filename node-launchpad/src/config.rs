@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::connection_mode::ConnectionMode;
-use crate::system;
 use crate::system::get_primary_mount_point;
 use crate::{action::Action, mode::Scene};
 use color_eyre::eyre::{eyre, Result};
@@ -141,20 +140,9 @@ impl AppData {
         let data = std::fs::read_to_string(&config_path)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to read app data file"))?;
 
-        let mut app_data: AppData = serde_json::from_str(&data)
+        let app_data: AppData = serde_json::from_str(&data)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to parse app data"))?;
 
-        if app_data.storage_mountpoint.is_none() || app_data.storage_drive.is_none() {
-            // If the storage drive is not set, set it to the default mount point
-            let drive_info = system::get_default_mount_point()?;
-            app_data.storage_drive = Some(drive_info.0);
-            app_data.storage_mountpoint = Some(drive_info.1);
-            debug!("Setting storage drive to {:?}", app_data.storage_mountpoint);
-        }
-
-        if app_data.connection_mode.is_none() {
-            app_data.connection_mode = Some(ConnectionMode::default());
-        }
         Ok(app_data)
     }
 
@@ -724,6 +712,9 @@ mod tests {
         assert_eq!(app_data.nodes_to_start, 1);
         assert_eq!(app_data.storage_mountpoint, None);
         assert_eq!(app_data.storage_drive, None);
+        assert_eq!(app_data.connection_mode, None);
+        assert_eq!(app_data.port_from, None);
+        assert_eq!(app_data.port_to, None);
 
         Ok(())
     }
@@ -748,6 +739,9 @@ mod tests {
         assert_eq!(app_data.nodes_to_start, 3);
         assert_eq!(app_data.storage_mountpoint, None);
         assert_eq!(app_data.storage_drive, None);
+        assert_eq!(app_data.connection_mode, None);
+        assert_eq!(app_data.port_from, None);
+        assert_eq!(app_data.port_to, None);
 
         Ok(())
     }
@@ -773,35 +767,9 @@ mod tests {
         assert_eq!(app_data.nodes_to_start, 3);
         assert_eq!(app_data.storage_mountpoint, None);
         assert_eq!(app_data.storage_drive, Some("C:".to_string()));
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_app_data_complete_info() -> Result<()> {
-        let temp_dir = tempdir()?;
-        let complete_data_path = temp_dir.path().join("complete_app_data.json");
-
-        let complete_data = r#"
-        {
-            "discord_username": "complete_user",
-            "nodes_to_start": 5,
-            "storage_mountpoint": "/mnt/data",
-            "storage_drive": "D:"
-        }
-        "#;
-
-        std::fs::write(&complete_data_path, complete_data)?;
-
-        let app_data = AppData::load(Some(complete_data_path))?;
-
-        assert_eq!(app_data.discord_username, "complete_user");
-        assert_eq!(app_data.nodes_to_start, 5);
-        assert_eq!(
-            app_data.storage_mountpoint,
-            Some(PathBuf::from("/mnt/data"))
-        );
-        assert_eq!(app_data.storage_drive, Some("D:".to_string()));
+        assert_eq!(app_data.connection_mode, None);
+        assert_eq!(app_data.port_from, None);
+        assert_eq!(app_data.port_to, None);
 
         Ok(())
     }
@@ -817,6 +785,9 @@ mod tests {
         app_data.nodes_to_start = 4;
         app_data.storage_mountpoint = Some(PathBuf::from("/mnt/test"));
         app_data.storage_drive = Some("E:".to_string());
+        app_data.connection_mode = Some(ConnectionMode::CustomPorts);
+        app_data.port_from = Some(12000);
+        app_data.port_to = Some(13000);
 
         // Save to custom path
         app_data.save(Some(test_path.clone()))?;
@@ -831,6 +802,12 @@ mod tests {
             Some(PathBuf::from("/mnt/test"))
         );
         assert_eq!(loaded_data.storage_drive, Some("E:".to_string()));
+        assert_eq!(
+            loaded_data.connection_mode,
+            Some(ConnectionMode::CustomPorts)
+        );
+        assert_eq!(loaded_data.port_from, Some(12000));
+        assert_eq!(loaded_data.port_to, Some(13000));
 
         Ok(())
     }
