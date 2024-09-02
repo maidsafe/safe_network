@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725237906925,
+  "lastUpdate": 1725288991801,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "840af8d6612ddc4ac4bbe506306c362912266e1c",
-          "message": "docs: bash included",
-          "timestamp": "2024-04-17T16:31:54+01:00",
-          "tree_id": "fd5ea6f79ec2906f4cbcdf07bca2ce90d9c00cd9",
-          "url": "https://github.com/maidsafe/safe_network/commit/840af8d6612ddc4ac4bbe506306c362912266e1c"
-        },
-        "date": 1713368623802,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2252001625969262,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6722821221381523,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.5594492742928,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.47289609030335,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "distinct": true,
+          "id": "2880eae5d8ec97950b4e1135bec41628269dd138",
+          "message": "Merge branch 'stable'\n\n* stable:\n  chore(release): stable release 2024.08.2.4\n  fix(launchpad): storage mountpoint not set plus tests",
+          "timestamp": "2024-09-02T15:32:40+02:00",
+          "tree_id": "b506f0f686cdf220354e9c8c2d9cd06ca4d93c30",
+          "url": "https://github.com/maidsafe/safe_network/commit/2880eae5d8ec97950b4e1135bec41628269dd138"
+        },
+        "date": 1725288985412,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.261540551359959,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6913313315593708,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.809257534627655,
             "unit": "MiB/s"
           }
         ]
