@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725288991801,
+  "lastUpdate": 1725289107956,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "gapspace@engineer.com",
-            "name": "Jason Paul",
-            "username": "JasonPaulGithub"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "840af8d6612ddc4ac4bbe506306c362912266e1c",
-          "message": "docs: bash included",
-          "timestamp": "2024-04-17T16:31:54+01:00",
-          "tree_id": "fd5ea6f79ec2906f4cbcdf07bca2ce90d9c00cd9",
-          "url": "https://github.com/maidsafe/safe_network/commit/840af8d6612ddc4ac4bbe506306c362912266e1c"
-        },
-        "date": 1713368736401,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 49,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/e5e554a70c87661240a263aa4b1e446a3acb985a"
         },
         "date": 1725237903976,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 137,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "distinct": true,
+          "id": "2880eae5d8ec97950b4e1135bec41628269dd138",
+          "message": "Merge branch 'stable'\n\n* stable:\n  chore(release): stable release 2024.08.2.4\n  fix(launchpad): storage mountpoint not set plus tests",
+          "timestamp": "2024-09-02T15:32:40+02:00",
+          "tree_id": "b506f0f686cdf220354e9c8c2d9cd06ca4d93c30",
+          "url": "https://github.com/maidsafe/safe_network/commit/2880eae5d8ec97950b4e1135bec41628269dd138"
+        },
+        "date": 1725289107649,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
