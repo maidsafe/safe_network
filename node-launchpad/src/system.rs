@@ -124,6 +124,18 @@ pub fn get_primary_mount_point() -> PathBuf {
     PathBuf::from("C:\\")
 }
 
+/// Gets the name of the primary mount point.
+pub fn get_primary_mount_point_name() -> Result<String> {
+    let primary_mount_point = get_primary_mount_point();
+    let available_drives = get_list_of_available_drives_and_available_space()?;
+
+    available_drives
+        .iter()
+        .find(|(_, mount_point, _)| mount_point == &primary_mount_point)
+        .map(|(name, _, _)| name.clone())
+        .ok_or_else(|| eyre!("Unable to find the name of the primary mount point"))
+}
+
 // Gets available disk space in bytes for the given mountpoint
 pub fn get_available_space_b(storage_mountpoint: &PathBuf) -> Result<usize> {
     let disks = Disks::new_with_refreshed_list();
@@ -141,7 +153,7 @@ pub fn get_available_space_b(storage_mountpoint: &PathBuf) -> Result<usize> {
         .list()
         .iter()
         .find(|disk| disk.mount_point() == storage_mountpoint)
-        .context("Cannot find the primary disk")?
+        .context("Cannot find the primary disk. Configuration file might be wrong.")?
         .available_space() as usize;
 
     Ok(available_space_b)

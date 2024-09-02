@@ -67,3 +67,6 @@ faccess = "0.2.4"
 
 [build-dependencies]
 vergen = { version = "8.2.6", features = ["build", "git", "gitoxide", "cargo"] }
+
+[dev-dependencies]
+tempfile = "3.12.0"
