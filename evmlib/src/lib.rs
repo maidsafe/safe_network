@@ -16,7 +16,7 @@ pub(crate) const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
     address!("4bc1aCE0E66170375462cB4E6Af42Ad4D5EC689C");
 
 pub(crate) const ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS: Address =
-    address!("1513c4Ab34941D6e7fAbdb4e6F190d9712d6A350");
+    address!("cfC0421628C2068a09Aa4Da43a348920bA67B870");
 
 pub struct CustomNetwork {
     rpc_url_http: reqwest::Url,

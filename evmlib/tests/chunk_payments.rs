@@ -130,7 +130,7 @@ fn generate_random_quote(secret_key: &SigningKey) -> SignedQuote {
 
     let chunk_address_hash = FixedBytes::new(rng.gen());
     let cost = U256::from(20);
-    let expiration_timestamp = U256::from(1914604971);
+    let expiration_timestamp = U256::from(1214604971);
     let payment_address = Address::new(rng.gen());
 
     let mut message: Vec<u8> = vec![];
