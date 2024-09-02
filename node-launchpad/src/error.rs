@@ -25,7 +25,7 @@ use ratatui::{
 /// 6. Handle the input for the error popup by calling the `handle_input` method.
 ///
 /// Example:
-/// ```rust
+/// ```ignore
 ///     use crate::error::ErrorPopup;
 ///
 ///     pub struct MyComponent {
@@ -67,7 +67,7 @@ use ratatui::{
 ///
 /// How to trigger the error
 ///
-/// ```rust
+/// ```ignore
 /// self.error_popup = Some(ErrorPopup::new(
 ///     "Error".to_string(),
 ///     "This is a test error message".to_string(),
