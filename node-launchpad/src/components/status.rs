@@ -456,7 +456,7 @@ impl Component for Status {
                         safenode_path: self.safenode_path.clone(),
                         data_dir_path: Some(self.data_dir_path.clone()),
                         action_sender: action_sender.clone(),
-                        connection_mode: self.connection_mode.clone(),
+                        connection_mode: self.connection_mode,
                         port_range: Some(port_range),
                     };
 

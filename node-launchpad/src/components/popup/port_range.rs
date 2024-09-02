@@ -38,6 +38,7 @@ pub struct PortRangePopUp {
     active: bool,
     state: PortRangeState,
     connection_mode: ConnectionMode,
+    connection_mode_old_value: Option<ConnectionMode>,
     port_from: Input,
     port_to: Input,
     port_from_old_value: u32,
@@ -51,6 +52,7 @@ impl PortRangePopUp {
             active: false,
             state: PortRangeState::Selection,
             connection_mode,
+            connection_mode_old_value: None,
             port_from: Input::default().with_value(port_from.to_string()),
             port_to: Input::default().with_value(port_to.to_string()),
             port_from_old_value: Default::default(),
@@ -252,6 +254,7 @@ impl Component for PortRangePopUp {
                             == self.port_from.value().parse::<u32>().unwrap_or_default()
                             && self.port_to_old_value
                                 == self.port_to.value().parse::<u32>().unwrap_or_default()
+                            && self.can_save
                         {
                             debug!("Got Enter, but nothing changed, ignoring.");
                             return Ok(vec![Action::SwitchScene(Scene::Options)]);
@@ -278,7 +281,22 @@ impl Component for PortRangePopUp {
                     }
                     KeyCode::Esc => {
                         debug!("Got Esc, restoring the old values and switching to actual screen");
-                        // reset to old value
+                        // if the old values are 0 means that is the first time the user opens the app,
+                        // so we should set the connection mode to automatic.
+                        if self.port_from_old_value.to_string() == "0"
+                            && self.port_to_old_value.to_string() == "0"
+                        {
+                            self.connection_mode = self
+                                .connection_mode_old_value
+                                .unwrap_or(ConnectionMode::Automatic);
+                            return Ok(vec![
+                                Action::StoreConnectionMode(self.connection_mode),
+                                Action::OptionsActions(OptionsActions::UpdateConnectionMode(
+                                    self.connection_mode,
+                                )),
+                                Action::SwitchScene(Scene::Options),
+                            ]);
+                        }
                         self.port_from = self
                             .port_from
                             .clone()
@@ -368,9 +386,12 @@ impl Component for PortRangePopUp {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::ChangePortsPopUp => {
+                Scene::ChangePortsPopUp {
+                    connection_mode_old_value,
+                } => {
                     if self.connection_mode == ConnectionMode::CustomPorts {
                         self.active = true;
+                        self.connection_mode_old_value = connection_mode_old_value;
                         self.validate();
                         self.port_from_old_value =
                             self.port_from.value().parse().unwrap_or_default();
