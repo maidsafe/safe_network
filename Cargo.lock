@@ -4691,7 +4691,7 @@ dependencies = [
 
 [[package]]
 name = "node-launchpad"
-version = "0.3.13-rc.1"
+version = "0.3.14-rc.1"
 dependencies = [
  "ansi-to-tui",
  "atty",

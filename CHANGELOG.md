@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-09-02
+
+### Launchpad
+
+#### Fixed
+
+- Some users encountered an error when the launchpad started, related to the storage mountpoint not
+  being set. We fix the error by providing default values for the mountpoint settings when the
+  `app_data.json` file doesn't exist (fresh install). In the case where it does exist, we validate
+  the contents.
+
 ## 2024-08-27
 
 ### Network
