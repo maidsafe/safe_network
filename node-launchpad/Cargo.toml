@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Node Launchpad"
 name = "node-launchpad"
-version = "0.3.12"
+version = "0.3.13"
 edition = "2021"
 license = "GPL-3.0"
 homepage = "https://maidsafe.net"
@@ -67,3 +67,6 @@ faccess = "0.2.4"
 
 [build-dependencies]
 vergen = { version = "8.2.6", features = ["build", "git", "gitoxide", "cargo"] }
+
+[dev-dependencies]
+tempfile = "3.12.0"
