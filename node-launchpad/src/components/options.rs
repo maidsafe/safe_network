@@ -348,7 +348,7 @@ impl Component for Options {
                 Scene::Options
                 | Scene::ChangeDrivePopUp
                 | Scene::ChangeConnectionModePopUp
-                | Scene::ChangePortsPopUp
+                | Scene::ChangePortsPopUp { .. }
                 | Scene::BetaProgrammePopUp
                 | Scene::ResetNodesPopUp => {
                     self.active = true;
@@ -372,7 +372,9 @@ impl Component for Options {
                     self.connection_mode = mode;
                 }
                 OptionsActions::TriggerChangePortRange => {
-                    return Ok(Some(Action::SwitchScene(Scene::ChangePortsPopUp)));
+                    return Ok(Some(Action::SwitchScene(Scene::ChangePortsPopUp {
+                        connection_mode_old_value: None,
+                    })));
                 }
                 OptionsActions::UpdatePortRange(from, to) => {
                     self.port_from = Some(from);

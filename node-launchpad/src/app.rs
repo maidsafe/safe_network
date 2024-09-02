@@ -73,7 +73,7 @@ impl App {
         };
         debug!("Data dir path for nodes: {data_dir_path:?}");
 
-        // App data validations
+        // App data default values
         let connection_mode = app_data
             .connection_mode
             .unwrap_or(ConnectionMode::Automatic);
@@ -95,7 +95,7 @@ impl App {
             peers_args,
             safenode_path,
             data_dir_path,
-            connection_mode: connection_mode.clone(),
+            connection_mode,
             port_from: Some(port_from),
             port_to: Some(port_to),
         };
@@ -114,7 +114,10 @@ impl App {
 
         // Popups
         let reset_nodes = ResetNodesPopup::default();
-        let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
+        let change_drive = ChangeDrivePopup::new(storage_mountpoint.clone())?;
+        let change_connection_mode = ChangeConnectionModePopUp::new(connection_mode)?;
+        let port_range = PortRangePopUp::new(connection_mode, port_from, port_to);
+        let beta_programme = BetaProgramme::new(app_data.discord_username.clone());
         let manage_nodes = ManageNodes::new(app_data.nodes_to_start, storage_mountpoint.clone())?;
         let change_drive = ChangeDrivePopup::new(storage_mountpoint.clone())?;
         let change_connection_mode = ChangeConnectionModePopUp::new(connection_mode)?;
@@ -257,7 +260,7 @@ impl App {
                     }
                     Action::StoreConnectionMode(ref mode) => {
                         debug!("Storing connection mode: {mode:?}");
-                        self.app_data.connection_mode = Some(mode.clone());
+                        self.app_data.connection_mode = Some(*mode);
                         self.app_data.save(None)?;
                     }
                     Action::StorePortRange(ref from, ref to) => {
