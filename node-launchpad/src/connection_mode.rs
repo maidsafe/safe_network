@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter, Result};
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
-#[derive(Clone, Debug, Default, EnumIter, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, EnumIter, Eq, Hash, PartialEq)]
 pub enum ConnectionMode {
     #[default]
     Automatic,

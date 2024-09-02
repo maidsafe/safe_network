@@ -45,7 +45,7 @@ impl ChangeConnectionModePopUp {
         let mut selected_connection_mode: ConnectionModeItem = ConnectionModeItem::default();
         let connection_modes_items: Vec<ConnectionModeItem> = ConnectionMode::iter()
             .map(|connection_mode_item| ConnectionModeItem {
-                connection_mode: connection_mode_item.clone(),
+                connection_mode: connection_mode_item,
                 status: if connection_mode == connection_mode_item {
                     selected_connection_mode = ConnectionModeItem {
                         connection_mode: connection_mode_item,
@@ -128,14 +128,16 @@ impl Component for ChangeConnectionModePopUp {
                     self.connection_mode_initial_state = self.connection_mode_selection.clone();
                     self.assign_connection_mode_selection();
                     vec![
-                        Action::StoreConnectionMode(
-                            self.connection_mode_selection.connection_mode.clone(),
-                        ),
+                        Action::StoreConnectionMode(self.connection_mode_selection.connection_mode),
                         Action::OptionsActions(OptionsActions::UpdateConnectionMode(
                             connection_mode.clone().connection_mode,
                         )),
                         if connection_mode.connection_mode == ConnectionMode::CustomPorts {
-                            Action::SwitchScene(Scene::ChangePortsPopUp)
+                            Action::SwitchScene(Scene::ChangePortsPopUp {
+                                connection_mode_old_value: Some(
+                                    self.connection_mode_initial_state.connection_mode,
+                                ),
+                            })
                         } else {
                             Action::SwitchScene(Scene::Options)
                         },
