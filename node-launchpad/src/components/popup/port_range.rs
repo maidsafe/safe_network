@@ -12,6 +12,7 @@ use super::super::super::node_mgmt::{PORT_MAX, PORT_MIN};
 use super::super::utils::centered_rect_fixed;
 use super::super::Component;
 use super::manage_nodes::MAX_NODE_COUNT;
+use crate::style::RED;
 use crate::{
     action::{Action, OptionsActions},
     connection_mode::ConnectionMode,
@@ -123,7 +124,10 @@ impl PortRangePopUp {
         let input_line = Line::from(vec![
             Span::styled(
                 format!("{}{} ", spaces_from, self.port_from.value()),
-                Style::default().fg(VIVID_SKY_BLUE).bg(INDIGO).underlined(),
+                Style::default()
+                    .fg(if self.can_save { VIVID_SKY_BLUE } else { RED })
+                    .bg(INDIGO)
+                    .underlined(),
             ),
             Span::styled(" to ", Style::default().fg(GHOST_WHITE)),
             Span::styled(
@@ -135,10 +139,22 @@ impl PortRangePopUp {
 
         f.render_widget(input_line, layer_two[1]);
 
-        let text = Paragraph::new("Choose the start of the port range. The range will then match the number of nodes on this device.")
-            .block(block::Block::default().padding(Padding::horizontal(2)))
-            .alignment(Alignment::Center)
-            .wrap(Wrap { trim: true });
+        let text = Paragraph::new(vec![
+            Line::from(Span::styled(
+                format!(
+                    "Choose the start of the range of {} ports.",
+                    PORT_ALLOCATION + 1
+                ),
+                Style::default().fg(GHOST_WHITE),
+            )),
+            Line::from(Span::styled(
+                format!("This must be between {} and {}.", PORT_MIN, PORT_MAX),
+                Style::default().fg(if self.can_save { GHOST_WHITE } else { RED }),
+            )),
+        ])
+        .block(block::Block::default().padding(Padding::horizontal(2)))
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true });
         f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
 
         let dash = Block::new()
