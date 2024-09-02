@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725237904293,
+  "lastUpdate": 1725237905512,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "c2ca49e2e09e8548f4626000b1992ed2c87f9212",
-          "message": "chore(node): remove duplicated record_store fullness check",
-          "timestamp": "2024-04-17T13:43:25Z",
-          "tree_id": "05cc3d01a8735e00d2d5bc18180771d9403f26e6",
-          "url": "https://github.com/maidsafe/safe_network/commit/c2ca49e2e09e8548f4626000b1992ed2c87f9212"
-        },
-        "date": 1713364891745,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 187,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "gapspace@engineer.com",
             "name": "Jason Paul",
             "username": "JasonPaulGithub"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e5e554a70c87661240a263aa4b1e446a3acb985a",
+          "message": "Merge pull request #2079 from jacderida/fix-node_man-local_status\n\nfix: [#2032] `local status` cmd reports status correctly",
+          "timestamp": "2024-09-01T23:53:09Z",
+          "tree_id": "1c2d3da05a9d838092eadcc16a925b0a30537c02",
+          "url": "https://github.com/maidsafe/safe_network/commit/e5e554a70c87661240a263aa4b1e446a3acb985a"
+        },
+        "date": 1725237905221,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 206,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
