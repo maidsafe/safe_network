@@ -58,9 +58,9 @@ pub enum GetError {
 }
 
 impl Client {
-    /// Fetch a file based on the DataMap XorName.
-    pub async fn get(&self, addr: XorName) -> Result<Bytes, GetError> {
-        let data_map_chunk = self.fetch_chunk(addr).await?;
+    /// Fetch a file based on the data map XOR name.
+    pub async fn get(&self, data_map_addr: XorName) -> Result<Bytes, GetError> {
+        let data_map_chunk = self.fetch_chunk(data_map_addr).await?;
         let data = self
             .fetch_from_data_map_chunk(data_map_chunk.value())
             .await?;

@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
+default = ["fs"]
+fs = []
 local-discovery = ["sn_client/local-discovery"]
 
 [dependencies]

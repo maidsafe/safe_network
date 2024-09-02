@@ -10,13 +10,18 @@ use crate::Client;
 
 use super::data::{GetError, PutError};
 
+/// Directory-like structure that containing file paths and their metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Root {
-    pub map: HashMap<PathBuf, File>,
+    pub map: HashMap<PathBuf, FilePointer>,
 }
 
+/// Structure that describes a file on the network. The actual data is stored in
+/// chunks, to be constructed with the address pointing to the data map.
+///
+/// This is similar to ['inodes'](https://en.wikipedia.org/wiki/Inode) in Unix-like filesystems.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct File {
+pub struct FilePointer {
     data_map: XorName,
     created_at: u64,
     modified_at: u64,
@@ -35,6 +40,8 @@ pub enum UploadError {
 }
 
 impl Client {
+    /// Upload a directory to the network. The directory is recursively walked.
+    #[cfg(feature = "fs")]
     pub async fn upload_from_dir(
         &mut self,
         path: PathBuf,
@@ -66,20 +73,26 @@ impl Client {
 
         Ok(root)
     }
+
+    /// Fetch the file pointed to by the given pointer.
+    pub async fn fetch_file(&mut self, file: &FilePointer) -> Result<Bytes, UploadError> {
+        let data = self.get(file.data_map).await?;
+        Ok(data)
+    }
 }
 
 async fn upload_from_file(
     client: &mut Client,
     path: PathBuf,
     wallet: &mut HotWallet,
-) -> Result<File, UploadError> {
+) -> Result<FilePointer, UploadError> {
     let data = tokio::fs::read(path).await?;
     let data = Bytes::from(data);
 
     let addr = client.put(data, wallet).await?;
 
     // TODO: Set created_at and modified_at
-    Ok(File {
+    Ok(FilePointer {
         data_map: addr,
         created_at: 0,
         modified_at: 0,
