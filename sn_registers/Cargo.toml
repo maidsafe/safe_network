@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_registers"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.3.18-rc.1"
+version = "0.3.18-rc.2"
 
 [features]
 test-utils = []
