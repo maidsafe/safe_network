@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725291371366,
+  "lastUpdate": 1725291488718,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "bc4848ea19562a506a66c0d02d3088c93aa70de4",
-          "message": "feat: provide `--interval` arg for `upgrade` cmd\n\nThis was another community feedback request.\n\nAs with the `start` command, a time-based interval is applied between each node being upgraded.\n\nWe will probably need something more sophisticated, but this simple mechanism should hopefully be\nuseful for now.",
-          "timestamp": "2024-04-17T23:17:08Z",
-          "tree_id": "4fddd8898b3c2d7140c9fcf591f7ccfd0420e03a",
-          "url": "https://github.com/maidsafe/safe_network/commit/bc4848ea19562a506a66c0d02d3088c93aa70de4"
-        },
-        "date": 1713399434925,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 48,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 137,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "811617b38f5d887153d6115faf1ce33631e98930",
+          "message": "Merge branch 'stable'",
+          "timestamp": "2024-09-02T16:22:55+01:00",
+          "tree_id": "1362cb5a9a334e9dcbdf4e7d0492aa60da7664c1",
+          "url": "https://github.com/maidsafe/safe_network/commit/811617b38f5d887153d6115faf1ce33631e98930"
+        },
+        "date": 1725291488451,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 146,
             "unit": "MB"
           }
         ]
