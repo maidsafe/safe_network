@@ -3,7 +3,6 @@ use alloy::primitives::{Address, TxHash, U256};
 use alloy::providers::{Network, Provider};
 use alloy::sol;
 use alloy::transports::{RpcError, Transport, TransportErrorKind};
-use thiserror::Error;
 
 sol!(
     #[allow(clippy::too_many_arguments)]
@@ -13,8 +12,8 @@ sol!(
     "artifacts/AutonomiNetworkToken.json"
 );
 
-#[derive(Error, Debug)]
-pub enum NetworkTokenError {
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
     #[error(transparent)]
     ContractError(#[from] alloy::contract::Error),
     #[error(transparent)]
@@ -31,8 +30,9 @@ where
     P: Provider<T, N>,
     N: Network,
 {
-    pub fn new(network: crate::Network, provider: P) -> Self {
-        let contract = NetworkTokenContract::new(*network.network_token_address(), provider);
+    /// Create a new NetworkToken contract instance.
+    pub fn new(contract_address: Address, provider: P) -> Self {
+        let contract = NetworkTokenContract::new(contract_address, provider);
         NetworkToken { contract }
     }
 
@@ -44,28 +44,35 @@ where
         NetworkToken { contract }
     }
 
-    pub fn set_network(&mut self, network: crate::Network) {
-        self.contract.set_address(*network.network_token_address());
-    }
-
     pub fn set_provider(&mut self, provider: P) {
         let address = *self.contract.address();
         self.contract = NetworkTokenContract::new(address, provider);
     }
 
-    pub async fn balance_of(&self, account: Address) -> Result<U256, NetworkTokenError> {
+    /// Get the raw token balance of an address.
+    pub async fn balance_of(&self, account: Address) -> Result<U256, Error> {
         let balance = self.contract.balanceOf(account).call().await?._0;
         Ok(balance)
     }
 
-    pub async fn approve(
-        &self,
-        spender: Address,
-        value: U256,
-    ) -> Result<TxHash, NetworkTokenError> {
+    /// Approve spender to spend a raw amount of tokens.
+    pub async fn approve(&self, spender: Address, value: U256) -> Result<TxHash, Error> {
         let tx_hash = self
             .contract
             .approve(spender, value)
+            .send()
+            .await?
+            .watch()
+            .await?;
+
+        Ok(tx_hash)
+    }
+
+    /// Transfer a raw amount of tokens.
+    pub async fn transfer(&self, receiver: Address, amount: U256) -> Result<TxHash, Error> {
+        let tx_hash = self
+            .contract
+            .transfer(receiver, amount)
             .send()
             .await?
             .watch()
