@@ -48,6 +48,9 @@ pub enum Error {
     /// The provided String can't be deserialized as a RegisterAddress
     #[error("Failed to deserialize hex ScratchpadAddress")]
     ScratchpadHexDeserializeFailed,
+    /// The provided SecretyKey failed to decrypt the data
+    #[error("Failed to derive CipherText from encrypted_data")]
+    ScratchpadCipherTextFailed,
 
     // ---------- payment errors
     #[error("There was an error getting the storecost from kademlia store")]

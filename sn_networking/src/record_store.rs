@@ -955,7 +955,7 @@ mod tests {
 
     use super::*;
     use bls::SecretKey;
-    use sn_protocol::storage::{Scratchpad, ScratchpadAddress};
+    use sn_protocol::storage::{try_deserialize_record, Scratchpad};
     use xor_name::XorName;
 
     use bytes::Bytes;
@@ -1220,7 +1220,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn can_store_and_retrieve_scratchpad() {
+    async fn can_store_and_retrieve_scratchpad() -> eyre::Result<()> {
         let temp_dir = std::env::temp_dir();
         let store_config = NodeRecordStoreConfig {
             storage_dir: temp_dir,
@@ -1238,22 +1238,21 @@ mod tests {
         );
 
         // Create a scratchpad
-        let scratchpad_data = Bytes::from_static(b"Test scratchpad data");
-
+        let unencrypted_scratchpad_data = Bytes::from_static(b"Test scratchpad data");
         let owner_sk = SecretKey::random();
         let owner_pk = owner_sk.public_key();
 
-        let mut signing_bytes = 0_u64.to_be_bytes().to_vec();
-        signing_bytes.extend(XorName::from_content(&scratchpad_data).to_vec()); // add the count
+        let mut scratchpad = Scratchpad::new(owner_pk);
 
-        let sig = owner_sk.sign(&signing_bytes);
-        let scratchpad = Scratchpad::new(owner_pk, scratchpad_data.clone(), 0, sig);
+        let _next_version =
+            scratchpad.update_and_sign(unencrypted_scratchpad_data.clone(), &owner_sk);
+
         let scratchpad_address = *scratchpad.address();
 
         // Create a record from the scratchpad
         let record = Record {
             key: NetworkAddress::ScratchpadAddress(scratchpad_address).to_record_key(),
-            value: scratchpad_data.to_vec(),
+            value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)?.to_vec(),
             expires: None,
             publisher: None,
         };
@@ -1277,24 +1276,30 @@ mod tests {
         assert!(stored_record.is_some(), "Scratchpad should be stored");
 
         if let Some(stored) = stored_record {
+            let scratchpad = try_deserialize_record::<Scratchpad>(&stored)?;
+
+            let stored_address = scratchpad.address();
             assert_eq!(
-                stored.value, scratchpad_data,
-                "Stored scratchpad data should match original"
+                stored_address, &scratchpad_address,
+                "Stored scratchpad address should match original"
             );
 
-            let stored_address = ScratchpadAddress::new(owner_pk);
+            let decrypted_data = scratchpad.decrypt_data(&owner_sk)?;
+
             assert_eq!(
-                stored_address, scratchpad_address,
-                "Stored scratchpad address should match original"
+                decrypted_data,
+                Some(unencrypted_scratchpad_data),
+                "Stored scratchpad data should match original"
             );
         }
 
-        // Clean up
         store.remove(&record.key);
         assert!(
             store.get(&record.key).is_none(),
             "Scratchpad should be removed after cleanup"
         );
+
+        Ok(())
     }
     #[tokio::test]
     async fn pruning_on_full() -> Result<()> {

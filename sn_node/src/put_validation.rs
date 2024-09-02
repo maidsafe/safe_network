@@ -410,7 +410,7 @@ impl Node {
         // check if the Scratchpad is present locally that we don't have a newer version
         if let Some(local_pad) = self.network().get_local_record(&scratchpad_key).await? {
             let local_pad = try_deserialize_record::<Scratchpad>(&local_pad)?;
-            if local_pad.counter >= scratchpad.counter {
+            if local_pad.count() >= scratchpad.count() {
                 warn!("Rejecting Scratchpad PUT with counter less than or equal to the current counter");
                 return Err(Error::IgnoringOutdatedScratchpadPut);
             }

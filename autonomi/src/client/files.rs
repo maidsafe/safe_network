@@ -64,9 +64,13 @@ impl Client {
         }
 
         let root = Root { map };
-        let root_serialized = rmp_serde::to_vec(&root)?;
+        let root_serialized = Bytes::from(rmp_serde::to_vec(&root)?);
 
-        let xor_name = self.put(Bytes::from(root_serialized), wallet).await?;
+        #[cfg(feature = "vault")]
+        self.write_bytes_to_vault_if_defined(root_serialized.clone(), wallet)
+            .await?;
+
+        let xor_name = self.put(root_serialized, wallet).await?;
 
         Ok((root, xor_name))
     }
@@ -74,7 +78,12 @@ impl Client {
     /// Fetch a directory from the network.
     pub async fn fetch_root(&mut self, address: XorName) -> Result<Root, UploadError> {
         let data = self.get(address).await?;
-        let root: Root = rmp_serde::from_slice(&data[..])?;
+
+        Self::deserialise_root(data)
+    }
+
+    pub fn deserialise_root(data: Bytes) -> Result<Root, UploadError> {
+        let root: Root = rmp_serde::from_slice(&data[..]).expect("TODO");
 
         Ok(root)
     }

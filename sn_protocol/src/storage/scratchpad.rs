@@ -7,8 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::ScratchpadAddress;
+use crate::error::{Error, Result};
 use crate::NetworkAddress;
-use bls::{PublicKey, Signature};
+use bls::{Ciphertext, PublicKey, SecretKey, Signature};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
@@ -21,44 +22,85 @@ use xor_name::XorName;
 pub struct Scratchpad {
     /// Network address. Omitted when serialising and
     /// calculated from the `encrypted_data` when deserialising.
-    pub address: ScratchpadAddress,
+    address: ScratchpadAddress,
     /// Contained data. This should be encrypted
     #[debug(skip)]
-    pub encrypted_data: Bytes,
+    encrypted_data: Bytes,
     /// Monotonically increasing counter to track the number of times this has been updated.
-    pub counter: u64,
+    counter: u64,
     /// Signature over `Vec<counter>`.extend(Xorname::from_content(encrypted_data).to_vec()) from the owning key.
-    pub signature: Signature,
+    /// Required for scratchpad to be valid.
+    signature: Option<Signature>,
 }
 
 impl Scratchpad {
     /// Creates a new instance of `Scratchpad`.
-    pub fn new(
-        owner: PublicKey,
-        encrypted_data: Bytes,
-        counter: u64,
-        signature: Signature,
-    ) -> Self {
+    pub fn new(owner: PublicKey) -> Self {
         Self {
             address: ScratchpadAddress::new(owner),
-            encrypted_data,
-            counter,
-            signature,
+            encrypted_data: Bytes::new(),
+            counter: 0,
+            signature: None,
         }
+    }
+
+    /// Return the current count
+    pub fn count(&self) -> u64 {
+        self.counter
+    }
+
+    /// Increments the counter value.
+    pub fn increment(&mut self) -> u64 {
+        self.counter += 1;
+
+        self.counter
+    }
+
+    /// Returns the next counter value,
+    ///
+    /// Encrypts data and updates the signature with provided sk
+    pub fn update_and_sign(&mut self, unencrypted_data: Bytes, sk: &SecretKey) -> u64 {
+        let next_count = self.increment();
+
+        let pk = self.owner();
+
+        self.encrypted_data = Bytes::from(pk.encrypt(unencrypted_data).to_bytes());
+
+        let encrypted_data_xorname = self.encrypted_data_hash().to_vec();
+
+        let mut bytes_to_sign = self.counter.to_be_bytes().to_vec();
+        bytes_to_sign.extend(encrypted_data_xorname);
+
+        self.signature = Some(sk.sign(&bytes_to_sign));
+        next_count
     }
 
     /// Verifies the signature and content of the scratchpad are valid for the
     /// owner's public key.
     pub fn is_valid(&self) -> bool {
-        let mut signing_bytes = self.counter.to_be_bytes().to_vec();
-        signing_bytes.extend(self.encrypted_data_hash().to_vec()); // add the count
+        if let Some(signature) = &self.signature {
+            let mut signing_bytes = self.counter.to_be_bytes().to_vec();
+            signing_bytes.extend(self.encrypted_data_hash().to_vec()); // add the count
 
-        self.owner().verify(&self.signature, &signing_bytes)
+            self.owner().verify(signature, &signing_bytes)
+        } else {
+            false
+        }
     }
 
     /// Returns the encrypted_data.
     pub fn encrypted_data(&self) -> &Bytes {
         &self.encrypted_data
+    }
+
+    /// Returns the encrypted_data, decrypted via the passed SecretKey
+    pub fn decrypt_data(&self, sk: &SecretKey) -> Result<Option<Bytes>> {
+        Ok(sk
+            .decrypt(
+                &Ciphertext::from_bytes(&self.encrypted_data)
+                    .map_err(|_| Error::ScratchpadCipherTextFailed)?,
+            )
+            .map(Bytes::from))
     }
 
     /// Returns the encrypted_data hash
