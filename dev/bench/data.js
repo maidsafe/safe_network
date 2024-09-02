@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725292151733,
+  "lastUpdate": 1725292153030,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "76ef35eecacade00e52fb012cfb690a916b530ec",
-          "message": "fix(node): avoid false alert on FailedLocalRecord",
-          "timestamp": "2024-04-18T14:29:04+09:00",
-          "tree_id": "2f662edbb723b3d0cc8707e6ae76df4c22260351",
-          "url": "https://github.com/maidsafe/safe_network/commit/76ef35eecacade00e52fb012cfb690a916b530ec"
-        },
-        "date": 1713419006367,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7300,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33436,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "0fe22e81c038a24123a42e869052894bad48a826",
           "message": "chore(node): do not reset farthest_acceptance_distance",
           "timestamp": "2024-04-18T09:00:02Z",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 22348,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "338a19496219f40909e3cc99aec9658a9e41363b",
+          "message": "Merge pull request #2068 from RolandSherwin/revert_metrics_unit\n\nRevert \"chore(metrics): add unit to certain metrics\"",
+          "timestamp": "2024-09-02T16:35:02+01:00",
+          "tree_id": "311c64697128cc68963353b940681e1f9d5c5c32",
+          "url": "https://github.com/maidsafe/safe_network/commit/338a19496219f40909e3cc99aec9658a9e41363b"
+        },
+        "date": 1725292152777,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4467,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 23659,
             "unit": "ms"
           },
           {
