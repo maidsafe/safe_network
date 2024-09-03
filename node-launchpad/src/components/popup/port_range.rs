@@ -119,7 +119,6 @@ impl PortRangePopUp {
         f.render_widget(prompt.fg(GHOST_WHITE), layer_two[0]);
 
         let spaces_from = " ".repeat((INPUT_AREA - 1) as usize - self.port_from.value().len());
-        let spaces_to = " ".repeat((INPUT_AREA - 1) as usize - self.port_to.value().len());
 
         let input_line = Line::from(vec![
             Span::styled(
@@ -130,10 +129,7 @@ impl PortRangePopUp {
                     .underlined(),
             ),
             Span::styled(" to ", Style::default().fg(GHOST_WHITE)),
-            Span::styled(
-                format!("{}{} ", spaces_to, self.port_to.value()),
-                Style::default().fg(VIVID_SKY_BLUE),
-            ),
+            Span::styled(self.port_to.value(), Style::default().fg(LIGHT_PERIWINKLE)),
         ])
         .alignment(Alignment::Center);
 
@@ -145,11 +141,11 @@ impl PortRangePopUp {
                     "Choose the start of the range of {} ports.",
                     PORT_ALLOCATION + 1
                 ),
-                Style::default().fg(GHOST_WHITE),
+                Style::default().fg(LIGHT_PERIWINKLE),
             )),
             Line::from(Span::styled(
                 format!("This must be between {} and {}.", PORT_MIN, PORT_MAX),
-                Style::default().fg(if self.can_save { GHOST_WHITE } else { RED }),
+                Style::default().fg(if self.can_save { LIGHT_PERIWINKLE } else { RED }),
             )),
         ])
         .block(block::Block::default().padding(Padding::horizontal(2)))
