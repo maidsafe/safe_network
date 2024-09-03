@@ -21,7 +21,8 @@ use rand::{thread_rng, Rng};
 use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
-    GetRecordCfg, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg, VerificationKind,
+    GetRecordCfg, GetRecordError, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg,
+    VerificationKind,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -441,18 +442,59 @@ impl Client {
     /// let xorname = XorName::random(&mut rng);
     /// let address = RegisterAddress::new(xorname, owner);
     /// // Get a signed register
-    /// let signed_register = client.get_signed_register_from_network(address);
+    /// let signed_register = client.get_signed_register_from_network(address, true);
     /// # Ok(())
     /// # }
     /// ```
     pub async fn get_signed_register_from_network(
         &self,
         address: RegisterAddress,
+        is_verifying: bool,
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
+        let get_quorum = if is_verifying {
+            Quorum::All
+        } else {
+            Quorum::Majority
+        };
+        let retry_strategy = if is_verifying {
+            Some(RetryStrategy::Balanced)
+        } else {
+            Some(RetryStrategy::Quick)
+        };
+        let get_cfg = GetRecordCfg {
+            get_quorum,
+            retry_strategy,
+            target_record: None,
+            expected_holders: Default::default(),
+        };
 
-        let maybe_records = self.network.get_register_record_from_network(key).await?;
-        merge_register_records(address, &maybe_records)
+        let maybe_record = self.network.get_record_from_network(key, &get_cfg).await;
+        let record = match &maybe_record {
+            Ok(r) => r,
+            Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
+                let mut results_to_merge = HashMap::default();
+
+                for (address, (r, _peers)) in result_map {
+                    results_to_merge.insert(*address, r.clone());
+                }
+
+                return merge_register_records(address, &results_to_merge);
+            }
+            Err(e) => {
+                warn!("Failed to get record at {address:?} from the network: {e:?}");
+                return Err(ProtocolError::RegisterNotFound(Box::new(address)).into());
+            }
+        };
+
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(&record.key)
+        );
+
+        let register = get_register_from_record(record)
+            .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
+        Ok(register)
     }
 
     /// Retrieve a Register from the network.
@@ -778,7 +820,7 @@ impl Client {
     /// ```
     pub async fn verify_register_stored(&self, address: RegisterAddress) -> Result<SignedRegister> {
         info!("Verifying register: {address:?}");
-        self.get_signed_register_from_network(address).await
+        self.get_signed_register_from_network(address, true).await
     }
 
     /// Quickly checks if a `Register` is stored by expected nodes on the network.
@@ -812,7 +854,7 @@ impl Client {
         address: RegisterAddress,
     ) -> Result<SignedRegister> {
         info!("Quickly checking for existing register : {address:?}");
-        self.get_signed_register_from_network(address).await
+        self.get_signed_register_from_network(address, false).await
     }
 
     /// Send a `SpendCashNote` request to the network. Protected method.
