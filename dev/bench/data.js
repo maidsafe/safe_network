@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725363514717,
+  "lastUpdate": 1725363516284,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "6dedb62ef1093050e9595bcd4a62e8c55a6106a4",
-          "message": "feat: faucet donate endpoint to feed the faucet",
-          "timestamp": "2024-04-18T10:33:00Z",
-          "tree_id": "3b9f55363b67425798f942e13a2694104ba96174",
-          "url": "https://github.com/maidsafe/safe_network/commit/6dedb62ef1093050e9595bcd4a62e8c55a6106a4"
-        },
-        "date": 1713440069077,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 191,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 81,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "37b8bb61f1d86c48a13e24bed21a83c3c5b17a31",
+          "message": "Merge pull request #2081 from maqi/avoid_UTXOs_slow_down_width_first_tracking\n\nAvoid utxos slow down width first tracking",
+          "timestamp": "2024-09-03T10:46:41Z",
+          "tree_id": "3c8e184030ce5e505b5533443873a0c4db1af496",
+          "url": "https://github.com/maidsafe/safe_network/commit/37b8bb61f1d86c48a13e24bed21a83c3c5b17a31"
+        },
+        "date": 1725363515829,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 201,
             "unit": "MB"
           },
           {
