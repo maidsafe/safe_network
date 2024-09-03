@@ -45,6 +45,7 @@ pub struct PortRangePopUp {
     port_from_old_value: u32,
     port_to_old_value: u32,
     can_save: bool,
+    first_stroke: bool,
 }
 
 impl PortRangePopUp {
@@ -59,6 +60,7 @@ impl PortRangePopUp {
             port_from_old_value: Default::default(),
             port_to_old_value: Default::default(),
             can_save: false,
+            first_stroke: true,
         }
     }
 
@@ -366,6 +368,10 @@ impl Component for PortRangePopUp {
                         vec![]
                     }
                     _ => {
+                        if self.first_stroke {
+                            self.first_stroke = false;
+                            self.port_from = Input::default().with_value("".to_string());
+                        }
                         // if max limit reached, we should not allow any more inputs.
                         if self.port_from.value().len() < INPUT_SIZE as usize {
                             self.port_from.handle_event(&Event::Key(key));
@@ -403,6 +409,7 @@ impl Component for PortRangePopUp {
                 } => {
                     if self.connection_mode == ConnectionMode::CustomPorts {
                         self.active = true;
+                        self.first_stroke = true;
                         self.connection_mode_old_value = connection_mode_old_value;
                         self.validate();
                         self.port_from_old_value =
