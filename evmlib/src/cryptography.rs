@@ -1,4 +1,4 @@
-use alloy::primitives::keccak256;
+use alloy::primitives::{keccak256, Address};
 use alloy::signers::k256::ecdsa::{signature, RecoveryId, Signature, SigningKey, VerifyingKey};
 use alloy::signers::k256::elliptic_curve::rand_core::OsRng;
 
@@ -7,6 +7,11 @@ pub fn generate_ecdsa_keypair() -> (SigningKey, VerifyingKey) {
     let secret_key = SigningKey::random(&mut OsRng);
     let public_key = *secret_key.verifying_key();
     (secret_key, public_key)
+}
+
+/// Get an Ethereum address for a public key.
+pub fn public_key_to_address(public_key: &VerifyingKey) -> Address {
+    alloy::signers::utils::public_key_to_address(public_key)
 }
 
 /// Hash a message using Keccak256, then add the Ethereum prefix and hash it again.
@@ -42,7 +47,7 @@ pub fn recover_public_key_from_signed_hash(
 
 #[cfg(test)]
 mod tests {
-    use crate::signing::{
+    use crate::cryptography::{
         generate_ecdsa_keypair, recover_public_key_from_signed_hash, sign_message_recoverable,
         to_eth_signed_message_hash,
     };

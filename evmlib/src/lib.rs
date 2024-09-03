@@ -3,7 +3,8 @@ use alloy::transports::http::reqwest;
 use std::sync::LazyLock;
 
 pub mod contract;
-pub mod signing;
+pub mod cryptography;
+mod transaction;
 pub mod wallet;
 
 static PUBLIC_ARBITRUM_ONE_HTTP_RPC_URL: LazyLock<reqwest::Url> = LazyLock::new(|| {

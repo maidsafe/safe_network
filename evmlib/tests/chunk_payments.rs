@@ -15,7 +15,7 @@ use alloy::transports::http::{Client, Http};
 use evmlib::contract::chunk_payments::quote::{Quote, Signature, SignedQuote};
 use evmlib::contract::chunk_payments::ChunkPayments;
 use evmlib::contract::network_token::NetworkToken;
-use evmlib::signing::{generate_ecdsa_keypair, sign_message_recoverable};
+use evmlib::cryptography::{generate_ecdsa_keypair, sign_message_recoverable};
 use rand::Rng;
 
 const ROYALTIES_WALLET: Address = address!("385e7887E5b41750E3679Da787B943EC42f37d75");
@@ -133,15 +133,6 @@ fn generate_random_quote(secret_key: &SigningKey) -> SignedQuote {
     let expiration_timestamp = U256::from(1214604971);
     let payment_address = Address::new(rng.gen());
 
-    let mut message: Vec<u8> = vec![];
-    message.extend_from_slice(chunk_address_hash.as_slice());
-    message.extend_from_slice(cost.as_le_slice());
-    message.extend_from_slice(expiration_timestamp.as_le_slice());
-    message.extend_from_slice(payment_address.as_slice());
-
-    let (signature, recovery_id) =
-        sign_message_recoverable(secret_key, message.as_slice()).expect("Could not sign message");
-
     let quote = Quote {
         chunk_address_hash,
         cost,
@@ -149,14 +140,7 @@ fn generate_random_quote(secret_key: &SigningKey) -> SignedQuote {
         payment_address,
     };
 
-    SignedQuote {
-        quote,
-        signature: Signature {
-            r: FixedBytes::from_slice(signature.r().to_bytes().as_slice()),
-            s: FixedBytes::from_slice(signature.s().to_bytes().as_slice()),
-            v: u8::from(recovery_id),
-        },
-    }
+    quote.sign_quote(secret_key).unwrap()
 }
 
 #[tokio::test]
