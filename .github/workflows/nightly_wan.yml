@@ -4,676 +4,909 @@ on:
 # todo: this is totally broken atm. Fix and re-enable.
 #   schedule:
 #     - cron: "0 0 * * *"
+  pull_request:
+    branches: ["*"]
   workflow_dispatch:
-
-env:
-  CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
-  WORKFLOW_URL: https://github.com/maidsafe/stableset_net/actions/runs
+    inputs:
+      ansible-forks:
+        description: Override the number of parallel connections used by Ansible. Default is 50.
+        type: number
+        required: false
+      bin-versions:
+        description: Comma-separated list of binary versions (faucet,safe,safenode,safenode-manager,sn-auditor eg "0.1.0,0.93.9,0.106.4,0.93.2-alpha.2,0.1.26")
+        type: string
+        required: false
+      environment-type:
+        description: >
+          Possible values are 'development', 'staging' and 'production'. This value determines the sizes
+          and counts of VMs. The counts can be overridden with the other count inputs.
+        type: string
+        required: true
+      network-name:
+        description: Network name
+        type: string
+        required: true
+      network-contacts-file-name:
+        description: Customise the name of the network contacts file that will be uploaded to S3.
+        type: string
+      node-counts:
+        description: >
+          Comma-separated pair representing the number of bootstrap nodes and generic nodes, per VM,
+          respectively. If not used, the defaults will be determined by the environment-type input.
+        type: string
+        required: false
+      protocol-version:
+        description: The network protocol version can be set to 'restricted' or any custom version string.
+        type: string
+      safe-network-repo-branch:
+        description: Build binaries from this user/branch
+        type: string
+      testnet-deploy-repo-branch:
+        description: Use sn-testnet-deploy from this user/branch
+        type: string
+      vm-counts:
+        description: >
+          Comma-separated triple of node VM counts (bootstrap nodes, nodes, uploaders). If not used,
+          the defaults will be determined by the environment-type input.
+        type: string
+        required: false
+                       
 jobs:
-  e2e:
-    name: E2E tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
+  create-network:
+    runs-on: ubuntu-latest
+    name: Launch Network ${{ inputs.network-name }}
+    env:
+      ANSIBLE_FORKS: ${{ inputs.ansible-forks }}
+      ENVIRONMENT_TYPE: ${{ inputs.environment-type }}
+      NETWORK_CONTACTS_FILE_NAME: ${{ inputs.network-contacts-file-name }}
+      NETWORK_NAME: ${{ inputs.network-name }}
+      NODE_COUNTS: ${{ inputs.node-counts }}
+      PROVIDER: digital-ocean
+      VM_COUNTS: ${{ inputs.vm-counts }}
+
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        continue-on-error: true
-
-      - name: Build safe
-        run: cargo build --release --bin safe
-        timeout-minutes: 30
-
-      - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: create
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          security-group-id: sg-0d47df5b3f0d01e2a
-          subnet-id: subnet-018f2ab26755df7f9
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyE2E
-          # if we were to run on a PR, use the below
-          # safe-network-user: ${{ github.actor }}"
-          # safe-network-branch: ${{ github.event.pull_request.head.ref }}
-          # Specify custom branch to prevent the deployer from fetching the latest release.
-          # The latest release contains the `network-contacts` feature turned on.
-          safe-network-user: maidsafe
-          safe-network-branch: main
-
-      - name: Check env variables
-        shell: bash
+      - name: Parse combined variable values
         run: |
-          echo "Peer is $SAFE_PEERS"
-          echo "Deployment inventory is $SN_INVENTORY"
+          if [[ -z "${{ inputs.bin-versions }}" ]]; then
+            echo "FAUCET_VERSION=" >> $GITHUB_ENV
+            echo "SAFE_VERSION=" >> $GITHUB_ENV
+            echo "SAFENODE_VERSION=" >> $GITHUB_ENV
+            echo "SAFENODE_MANAGER_VERSION=" >> $GITHUB_ENV
+            echo "SN_AUDITOR_VERSION=" >> $GITHUB_ENV
+          else
+            IFS=',' read -r faucet_version safe_version safenode_version safenode_manager_version sn_auditor_version <<< "${{ inputs.bin-versions }}"
+            echo "FAUCET_VERSION=${faucet_version}" >> $GITHUB_ENV
+            echo "SAFE_VERSION=${safe_version}" >> $GITHUB_ENV
+            echo "SAFENODE_VERSION=${safenode_version}" >> $GITHUB_ENV
+            echo "SAFENODE_MANAGER_VERSION=${safenode_manager_version}" >> $GITHUB_ENV
+            echo "SN_AUDITOR_VERSION=${sn_auditor_version}" >> $GITHUB_ENV
+          fi
 
-      - name: Obtain the funds from the faucet
-        run: |
-          # read the inventory file
-          inventory_path=/home/runner/.local/share/safe/testnet-deploy/NightlyE2E-inventory.json
-          echo "Inventory Path: $inventory_path"
-          faucet_address=$(jq -r '.faucet_address' $inventory_path)
-          cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+          if [[ -z "${{ inputs.vm-counts }}" ]]; then
+            echo "BOOTSTRAP_NODE_VM_COUNT=" >> $GITHUB_ENV
+            echo "NODE_VM_COUNT=" >> $GITHUB_ENV
+            echo "UPLOADER_VM_COUNT=" >> $GITHUB_ENV
+          else
+            IFS=',' read -r bootstrap_node_vm_count node_vm_count uploader_vm_count <<< "${{ inputs.vm-counts }}"
+            echo "BOOTSTRAP_NODE_VM_COUNT=${bootstrap_node_vm_count}" >> $GITHUB_ENV
+            echo "NODE_VM_COUNT=${node_vm_count}" >> $GITHUB_ENV
+            echo "UPLOADER_VM_COUNT=${uploader_vm_count}" >> $GITHUB_ENV
+          fi
 
-      - name: Start a client to carry out chunk actions
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+          if [[ -z "${{ inputs.node-counts }}" ]]; then
+            echo "NODE_COUNT=" >> $GITHUB_ENV
+            echo "BOOTSTRAP_NODE_COUNT=" >> $GITHUB_ENV
+          else
+            IFS=',' read -r bootstrap_node_count node_count <<< "${{ inputs.node-counts }}"
+            echo "NODE_COUNT=${node_count}" >> $GITHUB_ENV
+            echo "BOOTSTRAP_NODE_COUNT=${bootstrap_node_count}" >> $GITHUB_ENV
+          fi
 
-      - name: Start a client to create a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+          IFS='/' read -r safe_network_user safe_network_branch <<< "${{ inputs.safe-network-repo-branch }}"
+          echo "SAFE_NETWORK_BRANCH=$safe_network_branch" >> $GITHUB_ENV
+          echo "SAFE_NETWORK_USER=$safe_network_user" >> $GITHUB_ENV
 
-      - name: Start a client to get a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+          IFS='/' read -r testnet_deploy_user testnet_deploy_branch <<< "${{ inputs.testnet-deploy-repo-branch }}"
+          echo "TESTNET_DEPLOY_BRANCH=$testnet_deploy_branch" >> $GITHUB_ENV
+          echo "TESTNET_DEPLOY_USER=$testnet_deploy_user" >> $GITHUB_ENV
 
-      - name: Start a client to edit a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
-
-      - name: Fetch network logs
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
+      - name: setup testnet-deploy
+        uses: maidsafe/sn-testnet-control-action/init-testnet-deploy@main
         with:
-          action: logs
-          re-attempts: 3
-          rust-log: debug
           ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
           aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
           aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
+          branch: ${{ env.TESTNET_DEPLOY_BRANCH }}
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+          org: ${{ env.TESTNET_DEPLOY_USER }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyE2E
-          safe-network-user: maidsafe
-          safe-network-branch: main
+          version: ${{ env.TESTNET_DEPLOY_VERSION }}
 
-      - name: Upload local logs
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: launch ${{ inputs.network-name }}
+        uses: maidsafe/sn-testnet-control-action/launch-network@main
         with:
-          name: local_logs_NightlyE2E
-          path: |
-            ~/.local/share/safe/node/*/logs/*.log*
-            ~/.local/share/safe/*/*/*.log*
-            ~/.local/share/safe/client/logs/*/*.log*
-
-      - name: Stop the WAN network
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: destroy
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyE2E
-          safe-network-user: maidsafe
-          safe-network-branch: main
-
-      # - name: post notification to slack on failure
-      #   if: ${{ failure() }}
-      #   uses: bryannice/gitactions-slack-notification@2.0.0
-      #   env:
-      #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-      #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-      #     SLACK_TITLE: "Nightly E2E Test Run Failed"
-
-  spend_test:
-    name: Spend tests against network
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
+          ansible-forks: ${{ env.ANSIBLE_FORKS }}
+          beta-encryption-key: ${{ secrets.BETA_ENCRYPTION_KEY }}
+          bootstrap-node-count: ${{ env.BOOTSTRAP_NODE_COUNT }}
+          bootstrap-node-vm-count: ${{ env.BOOTSTRAP_NODE_VM_COUNT }}
+          environment-type: ${{ env.ENVIRONMENT_TYPE }}
+          faucet-version: ${{ env.FAUCET_VERSION }}
+          log-format: json
+          network-name: ${{ env.NETWORK_NAME }}
+          network-contacts-file-name: ${{ env.NETWORK_CONTACTS_FILE_NAME }}
+          node-count: ${{ env.NODE_COUNT }}
+          node-vm-count: ${{ env.NODE_VM_COUNT }}
+          protocol-version: ${{ inputs.protocol-version }}
+          provider: ${{ env.PROVIDER }}
+          rust-log: ${{ inputs.rust-log }}
+          safe-network-branch: ${{ env.SAFE_NETWORK_BRANCH }}
+          safe-network-user: ${{ env.SAFE_NETWORK_USER }}
+          safe-version: ${{ env.SAFE_VERSION }}
+          safenode-version: ${{ env.SAFENODE_VERSION }}
+          safenode-manager-version: ${{ env.SAFENODE_MANAGER_VERSION }}
+          sn-auditor-version: ${{ env.SN_AUDITOR_VERSION }}
+  
+  destroy-network:
+    name: Destroy Network ${{ inputs.network-name }}
+    runs-on: ubuntu-latest
+    env:
+      ACTION: ${{ inputs.action}}
+      AWS_DEFAULT_REGION: ${{ inputs.aws-default-region }}
+      NETWORK_NAME: ${{ inputs.network-name }}
+      NODE_COUNT: ${{ inputs.node-count }}
+      NODE_INSTANCE_COUNT: ${{ inputs.node-instance-count }}
+      PROVIDER: ${{ inputs.provider }}
+      SN_TESTNET_DEV_SECURITY_GROUP_ID: sg-0d47df5b3f0d01e2a
+      SN_TESTNET_DEV_SUBNET_ID: subnet-018f2ab26755df7f9
+      TESTNET_DEPLOY_BRANCH: ${{ inputs.testnet-deploy-branch }}
+      TESTNET_DEPLOY_USER: ${{ inputs.testnet-deploy-user }}
+      TESTNET_DEPLOY_VERSION: ${{ inputs.testnet-deploy-version }}
+    
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        continue-on-error: true
-
-      - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
-        timeout-minutes: 40
-
-      - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
+      - name: setup testnet-deploy
+        uses: maidsafe/sn-testnet-control-action/init-testnet-deploy@main
         with:
-          action: create
-          re-attempts: 3
-          rust-log: debug
           ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
           aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
           aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
+          branch: ${{ env.TESTNET_DEPLOY_BRANCH }}
           do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+          org: ${{ env.TESTNET_DEPLOY_USER }}
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          security-group-id: sg-0d47df5b3f0d01e2a
-          subnet-id: subnet-018f2ab26755df7f9
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlySpendTest
-          safe-network-user: maidsafe
-          safe-network-branch: main
-
-      - name: Check env variables
-        shell: bash
-        run: |
-          echo "Peer is $SAFE_PEERS"
-          echo "Deployment inventory is $SN_INVENTORY"
-
-      - name: execute the sequential transfers test
-        run: cargo test --release -p sn_node --test sequential_transfers -- --nocapture --test-threads=1
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 45
-
-      - name: execute the storage payment tests
-        run: cargo test --release -p sn_node --test storage_payments -- --nocapture --test-threads=1
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 45
-
-      - name: execute the double spend tests
-        run: cargo test --release -p sn_node --test double_spend -- --nocapture --test-threads=1
-        timeout-minutes: 45
-
-
-      - name: execute the spend simulation tests
-        run: cargo test --release -p sn_node --test spend_simulation -- --nocapture --test-threads=1
-        timeout-minutes: 45
-
-      - name: Small wait to allow reward receipt
-        run: sleep 30
-        timeout-minutes: 1
-
-      - name: Fetch network logs
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
+          version: ${{ env.TESTNET_DEPLOY_VERSION }}
+      - name: destroy network
+        uses: maidsafe/sn-testnet-control-action/destroy-network@main
         with:
-          action: logs
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlySpendTest
-          safe-network-user: maidsafe
-          safe-network-branch: main
+          provider: ${{ env.PROVIDER }}
+          network-name: ${{ env.NETWORK_NAME }}
 
-      - name: Upload local logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: local_logs_NightlySpendTest
-          path: |
-            ~/.local/share/safe/node/*/logs/*.log*
-            ~/.local/share/safe/*/*/*.log*
-            ~/.local/share/safe/client/logs/*/*.log*
+  # e2e:
+  #   name: E2E tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest]
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Stop the WAN network
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: destroy
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlySpendTest
-          safe-network-user: maidsafe
-          safe-network-branch: main
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
 
-      # - name: post notification to slack on failure
-      #   if: ${{ failure() }}
-      #   uses: bryannice/gitactions-slack-notification@2.0.0
-      #   env:
-      #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-      #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-      #     SLACK_TITLE: "Nightly Spend Test Run Failed"
+  #     - uses: Swatinem/rust-cache@v2
+  #       continue-on-error: true
 
-  churn:
-    name: Network churning tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            wan_logs_path: /home/runner/sn-testnet-deploy/logs
-            local_safe_path: /home/runner/.local/share/safe
-          # - os: windows-latest
-          #   node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-          #   safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
-          # - os: macos-latest
-          #   node_data_path: /Users/runner/Library/Application Support/safe/node
-          #   safe_path: /Users/runner/Library/Application Support/safe
-    steps:
-      - uses: actions/checkout@v4
+  #     - name: Build safe
+  #       run: cargo build --release --bin safe
+  #       timeout-minutes: 30
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+  #     - name: setup testnet-deploy
+  #       uses: maidsafe/sn-testnet-control-action/init-testnet-deploy@main
+  #       with:
+  #         action: create
+  #         re-attempts: 3
+  #         rust-log: debug
+  #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: eu-west-2
+  #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  #         security-group-id: sg-0d47df5b3f0d01e2a
+  #         subnet-id: subnet-018f2ab26755df7f9
+  #         bootstrap-node-count: 20
+  #         bootstrap-node-vm-count: 1
+  #         node-vm-count: 1
+  #         node-count: 25
+  #         uploader-vm-count: 0
+  #         provider: digital-ocean
+  #         testnet-name: NightlyE2E
+  #         # if we were to run on a PR, use the below
+  #         # safe-network-user: ${{ github.actor }}
+  #         # safe-network-branch: ${{ github.event.pull_request.head.ref }}
+  #         # Specify custom branch to prevent the deployer from fetching the latest release.
+  #         # The latest release contains the `network-contacts` feature turned on.
+  #         safe-network-user: maidsafe
+  #         safe-network-branch: main
 
-      - name: install ripgrep
-        run: sudo apt-get -y install ripgrep
+  #     - name: Start a WAN network
+  #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  #       with:
+  #         action: create
+  #         re-attempts: 3
+  #         rust-log: debug
+  #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: eu-west-2
+  #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  #         security-group-id: sg-0d47df5b3f0d01e2a
+  #         subnet-id: subnet-018f2ab26755df7f9
+  #         bootstrap-node-count: 20
+  #         bootstrap-node-vm-count: 1
+  #         node-vm-count: 1
+  #         node-count: 25
+  #         uploader-vm-count: 0
+  #         provider: digital-ocean
+  #         testnet-name: NightlyE2E
+  #         # if we were to run on a PR, use the below
+  #         # safe-network-user: ${{ github.actor }}
+  #         # safe-network-branch: ${{ github.event.pull_request.head.ref }}
+  #         # Specify custom branch to prevent the deployer from fetching the latest release.
+  #         # The latest release contains the `network-contacts` feature turned on.
+  #         safe-network-user: maidsafe
+  #         safe-network-branch: main
 
-      - uses: Swatinem/rust-cache@v2
-        continue-on-error: true
+  #     - name: Check env variables
+  #       shell: bash
+  #       run: |
+  #         echo "Peer is $SAFE_PEERS"
+  #         echo "Deployment inventory is $SN_INVENTORY"
 
-      - name: Build churn tests
-        run: cargo test --release -p sn_node --test data_with_churn --no-run
-        timeout-minutes: 30
+  #     - name: Obtain the funds from the faucet
+  #       run: |
+  #         # read the inventory file
+  #         inventory_path=/home/runner/.local/share/safe/testnet-deploy/NightlyE2E-inventory.json
+  #         echo "Inventory Path: $inventory_path"
+  #         faucet_address=$(jq -r '.faucet_address' $inventory_path)
+  #         cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: create
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          security-group-id: sg-0d47df5b3f0d01e2a
-          subnet-id: subnet-018f2ab26755df7f9
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyChurnTest
-          safe-network-user: maidsafe
-          safe-network-branch: main
+  #     - name: Start a client to carry out chunk actions
+  #       run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      - name: Check env variables
-        shell: bash
-        run: |
-          echo "Peer is $SAFE_PEERS"
-          echo "Deployment inventory is $SN_INVENTORY"
+  #     - name: Start a client to create a register
+  #       run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      - name: Chunks data integrity during nodes churn
-        run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
-        env:
-          # TEST_DURATION_MINS: 60
-          # TEST_CHURN_CYCLES: 6
-          # SN_LOG: "all"
-          # todo: lower time for testing
-          TEST_DURATION_MINS: 10
-          TEST_CHURN_CYCLES: 2
-          SN_LOG: "all"
-        timeout-minutes: 90
+  #     - name: Start a client to get a register
+  #       run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      - name: Fetch network logs
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: logs
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyChurnTest
-          safe-network-user: maidsafe
-          safe-network-branch: main
+  #     - name: Start a client to edit a register
+  #       run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      - name: Upload local logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: local_logs_NightlyChurnTest
-          path: |
-            ~/.local/share/safe/node/*/logs/*.log*
-            ~/.local/share/safe/*/*/*.log*
-            ~/.local/share/safe/client/logs/*/*.log*
+  #     # - name: Fetch network logs
+  #     #   if: always()
+  #     #   uses: maidsafe/sn-testnet-control-action/launch-network@main
+  #     #   with:
+  #     #     action: logs
+  #     #     re-attempts: 3
+  #     #     rust-log: debug
+  #     #     ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  #     #     aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  #     #     aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  #     #     aws-region: eu-west-2
+  #     #     do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  #     #     ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  #     #     bootstrap-node-count: 20
+  #     #     bootstrap-node-vm-count: 1
+  #     #     node-vm-count: 1
+  #     #     node-count: 25
+  #     #     uploader-vm-count: 0
+  #     #     provider: digital-ocean
+  #     #     testnet-name: NightlyE2E
+  #     #     safe-network-user: maidsafe
+  #     #     safe-network-branch: main
 
-      - name: Stop the WAN network
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: destroy
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyChurnTest
-          safe-network-user: maidsafe
-          safe-network-branch: main
+  #     - name: Upload local logs
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: local_logs_NightlyE2E
+  #         path: |
+  #           ~/.local/share/safe/node/*/logs/*.log*
+  #           ~/.local/share/safe/*/*/*.log*
+  #           ~/.local/share/safe/client/logs/*/*.log*
 
-      # TODO: re-enable the below scripts once we have proper way to restart nodes.
-      # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same
-      # log location and the logs are over written. Hence the scripts might give false outputs.
+  #     - name: setup testnet-deploy
+  #       uses: maidsafe/sn-testnet-control-action/init-testnet-deploy@main
+  #       with:
+  #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: eu-west-2
+  #         branch: ${{ env.TESTNET_DEPLOY_BRANCH }}
+  #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  #         org: ${{ env.TESTNET_DEPLOY_USER }}
+  #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  #         version: ${{ env.TESTNET_DEPLOY_VERSION }}
 
-      # - name: Verify restart of nodes using rg
-      #   shell: bash
-      #   timeout-minutes: 1
-      #   # get the counts, then the specific line, and then the digit count only
-      #   # then check we have an expected level of restarts
-      #   # TODO: make this use an env var, or relate to testnet size
-      #   run : |
-      #     restart_count=$(rg "Node is restarting in" "${{ matrix.wan_logs_path }}" -c --stats | \
-      #       rg "(\d+) matches" | rg "\d+" -o)
-      #     echo "Restart $restart_count nodes"
-      #     peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.wan_logs_path }}" -c --stats | \
-      #       rg "(\d+) matches" | rg "\d+" -o)
-      #     echo "PeerRemovedFromRoutingTable $peer_removed times"
-      #     if [ $peer_removed -lt $restart_count ]; then
-      #       echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
-      #       exit 1
-      #     fi
-      #     node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
-      #     echo "Node dir count is $node_count"
-      #   # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
+  #     - name: destroy network
+  #       uses: maidsafe/sn-testnet-control-action/destroy-network@main
+  #       with:
+  #         provider: ${{ env.PROVIDER }}
+  #         network-name: ${{ env.NETWORK_NAME }}
 
-      #   # if [ $restart_count -lt $node_count ]; then
-      #   #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
-      #   #   exit 1
-      #   # fi
+  #     # - name: post notification to slack on failure
+  #     #   if: ${{ failure() }}
+  #     #   uses: bryannice/gitactions-slack-notification@2.0.0
+  #     #   env:
+  #     #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+  #     #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+  #     #     SLACK_TITLE: "Nightly E2E Test Run Failed"
 
-      # - name: Verify data replication using rg
-      #   shell: bash
-      #   timeout-minutes: 1
-      #   # get the counts, then the specific line, and then the digit count only
-      #   # then check we have an expected level of replication
-      #   # TODO: make this use an env var, or relate to testnet size
-      #   run : |
-      #     fetching_attempt_count=$(rg "FetchingKeysForReplication" "${{ matrix.wan_logs_path }}" -c --stats | \
-      #       rg "(\d+) matches" | rg "\d+" -o)
-      #     echo "Carried out $fetching_attempt_count fetching attempts"
-      #     node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
-      #     if [ $fetching_attempt_count -lt $node_count ]; then
-      #       echo "Replication fetching attempts of: $fetching_attempt_count is less than the node count of: $node_count"
-      #       exit 1
-      #     fi
+  # # spend_test:
+  # #   name: Spend tests against network
+  # #   runs-on: ${{ matrix.os }}
+  # #   strategy:
+  # #     matrix:
+  # #       os: [ubuntu-latest]
+  # #   steps:
+  # #     - uses: actions/checkout@v4
 
-      # Only error out after uploading the logs
-      - name: Don't log raw data
-        if: always() && matrix.os != 'windows-latest' # causes error
-        shell: bash
-        timeout-minutes: 10
-        run: |
-          if ! rg '^' "${{ matrix.local_safe_path }}"/client/logs | awk 'length($0) > 15000 { print; exit 1 }'
-          then
-            echo "We are logging an extremely large data"
-            exit 1
-          fi
-          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
-          #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
-          then
-            echo "We are logging an extremely large data"
-            exit 1
-          fi
+  # #     - name: Install Rust
+  # #       uses: dtolnay/rust-toolchain@stable
 
-          # sanity check
-          if ! rg '^' "${{ matrix.local_safe_path }}"/client/logs | awk 'length($0) > 1000 { print; exit 1 }'
-          then
-            echo "Sanity check pass for local safe path"
-          fi
-          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
-          #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
-          then
-            echo "Sanity check pass for wan logs path"
-          fi
+  # #     - uses: Swatinem/rust-cache@v2
+  # #       continue-on-error: true
 
-      # - name: post notification to slack on failure
-      #   if: ${{ failure() }}
-      #   uses: bryannice/gitactions-slack-notification@2.0.0
-      #   env:
-      #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-      #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-      #     SLACK_TITLE: "Nightly Churn Test Run Failed"
+  # #     - name: Build testing executable
+  # #       run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
+  # #       timeout-minutes: 40
 
-  verify_data_location_routing_table:
-    name: Verify data location and Routing Table
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            wan_logs_path: /home/runner/sn-testnet-deploy/logs
-            local_safe_path: /home/runner/.local/share/safe
-          # - os: windows-latest
-          #   node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-          #   safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
-          # - os: macos-latest
-          #   node_data_path: /Users/runner/Library/Application Support/safe/node
-          #   safe_path: /Users/runner/Library/Application Support/safe
-    steps:
-      - uses: actions/checkout@v4
+  # #     - name: Start a WAN network
+  # #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  # #       with:
+  # #         action: create
+  # #         re-attempts: 3
+  # #         rust-log: debug
+  # #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  # #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  # #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  # #         aws-region: eu-west-2
+  # #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  # #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  # #         security-group-id: sg-0d47df5b3f0d01e2a
+  # #         subnet-id: subnet-018f2ab26755df7f9
+  # #         bootstrap-node-count: 20
+  # #         bootstrap-node-vm-count: 1
+  # #         node-vm-count: 1
+  # #         node-count: 25
+  # #         uploader-vm-count: 0
+  # #         provider: digital-ocean
+  # #         testnet-name: NightlySpendTest
+  # #         safe-network-user: maidsafe
+  # #         safe-network-branch: main
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+  # #     - name: Check env variables
+  # #       shell: bash
+  # #       run: |
+  # #         echo "Peer is $SAFE_PEERS"
+  # #         echo "Deployment inventory is $SN_INVENTORY"
 
-      - name: install ripgrep
-        run: sudo apt-get -y install ripgrep
+  # #     - name: execute the sequential transfers test
+  # #       run: cargo test --release -p sn_node --test sequential_transfers -- --nocapture --test-threads=1
+  # #       env:
+  # #         SN_LOG: "all"
+  # #       timeout-minutes: 45
 
-      - uses: Swatinem/rust-cache@v2
-        continue-on-error: true
+  # #     - name: execute the storage payment tests
+  # #       run: cargo test --release -p sn_node --test storage_payments -- --nocapture --test-threads=1
+  # #       env:
+  # #         SN_LOG: "all"
+  # #       timeout-minutes: 45
 
-      - name: Build data location and routing table tests
-        run: cargo test --release -p sn_node --test verify_data_location --test verify_routing_table --no-run
-        timeout-minutes: 30
+  # #     - name: execute the double spend tests
+  # #       run: cargo test --release -p sn_node --test double_spend -- --nocapture --test-threads=1
+  # #       timeout-minutes: 45
 
-      - name: Start a WAN network
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: create
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          security-group-id: sg-0d47df5b3f0d01e2a
-          subnet-id: subnet-018f2ab26755df7f9
-          node-count: 20
-          vm-count: 1
-          testnet-name: NightlyDataLocationTest
-          safe-network-user: maidsafe
-          safe-network-branch: main
 
-      - name: Check env variables
-        shell: bash
-        run: |
-          echo "Peer is $SAFE_PEERS"
-          echo "Deployment inventory is $SN_INVENTORY"
+  # #     - name: execute the spend simulation tests
+  # #       run: cargo test --release -p sn_node --test spend_simulation -- --nocapture --test-threads=1
+  # #       timeout-minutes: 45
 
-      - name: Verify the Routing table of the nodes
-        run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
-        timeout-minutes: 5
+  # #     - name: Small wait to allow reward receipt
+  # #       run: sleep 30
+  # #       timeout-minutes: 1
 
-      - name: Verify the location of the data on the network
-        run: cargo test --release -p sn_node --test verify_data_location -- --nocapture
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 90
+  # #     - name: Fetch network logs
+  # #       if: always()
+  # #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  # #       with:
+  # #         action: logs
+  # #         re-attempts: 3
+  # #         rust-log: debug
+  # #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  # #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  # #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  # #         aws-region: eu-west-2
+  # #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  # #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  # #         bootstrap-node-count: 20
+  # #         bootstrap-node-vm-count: 1
+  # #         node-vm-count: 1
+  # #         node-count: 25
+  # #         uploader-vm-count: 0
+  # #         provider: digital-ocean
+  # #         testnet-name: NightlySpendTest
+  # #         safe-network-user: maidsafe
+  # #         safe-network-branch: main
 
-      - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
-        timeout-minutes: 5
+  # #     - name: Upload local logs
+  # #       if: always()
+  # #       uses: actions/upload-artifact@v4
+  # #       with:
+  # #         name: local_logs_NightlySpendTest
+  # #         path: |
+  # #           ~/.local/share/safe/node/*/logs/*.log*
+  # #           ~/.local/share/safe/*/*/*.log*
+  # #           ~/.local/share/safe/client/logs/*/*.log*
 
-      - name: Fetch network logs
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: logs
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyDataLocationTest
-          safe-network-user: maidsafe
-          safe-network-branch: main
+  # #     - name: Stop the WAN network
+  # #       if: always()
+  # #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  # #       with:
+  # #         action: destroy
+  # #         re-attempts: 3
+  # #         rust-log: debug
+  # #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  # #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  # #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  # #         aws-region: eu-west-2
+  # #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  # #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  # #         bootstrap-node-count: 20
+  # #         bootstrap-node-vm-count: 1
+  # #         node-vm-count: 1
+  # #         node-count: 25
+  # #         uploader-vm-count: 0
+  # #         provider: digital-ocean
+  # #         testnet-name: NightlySpendTest
+  # #         safe-network-user: maidsafe
+  # #         safe-network-branch: main
 
-      - name: Upload local logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: local_logs_NightlyDataLocationTest
-          path: |
-            ~/.local/share/safe/node/*/logs/*.log*
-            ~/.local/share/safe/*/*/*.log*
-            ~/.local/share/safe/client/logs/*/*.log*
+  # #     # - name: post notification to slack on failure
+  # #     #   if: ${{ failure() }}
+  # #     #   uses: bryannice/gitactions-slack-notification@2.0.0
+  # #     #   env:
+  # #     #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+  # #     #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+  # #     #     SLACK_TITLE: "Nightly Spend Test Run Failed"
 
-      - name: Stop the WAN network
-        if: always()
-        uses: maidsafe/sn-testnet-action@main
-        with:
-          action: destroy
-          re-attempts: 3
-          rust-log: debug
-          ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
-          aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
-          aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-          do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
-          ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
-          node-count: 20
-          vm-count: 1
-          provider: digital-ocean
-          testnet-name: NightlyDataLocationTest
-          safe-network-user: maidsafe
-          safe-network-branch: main
+  # # churn:
+  # #   name: Network churning tests
+  # #   runs-on: ${{ matrix.os }}
+  # #   strategy:
+  # #     matrix:
+  # #       include:
+  # #         - os: ubuntu-latest
+  # #           wan_logs_path: /home/runner/sn-testnet-deploy/logs
+  # #           local_safe_path: /home/runner/.local/share/safe
+  # #         # - os: windows-latest
+  # #         #   node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+  # #         #   safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+  # #         # - os: macos-latest
+  # #         #   node_data_path: /Users/runner/Library/Application Support/safe/node
+  # #         #   safe_path: /Users/runner/Library/Application Support/safe
+  # #   steps:
+  # #     - uses: actions/checkout@v4
 
-      # TODO: re-enable the below scripts once we have proper way to restart nodes.
-      # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same
-      # log location and the logs are over written. Hence the scripts might give false outputs.
+  # #     - name: Install Rust
+  # #       uses: dtolnay/rust-toolchain@stable
 
-      # - name: Verify restart of nodes using rg
-      #   shell: bash
-      #   timeout-minutes: 1
-      #   # get the counts, then the specific line, and then the digit count only
-      #   # then check we have an expected level of restarts
-      #   # TODO: make this use an env var, or relate to testnet size
-      #   run : |
-      #     restart_count=$(rg "Node is restarting in" "${{ matrix.wan_logs_path }}" -c --stats | \
-      #       rg "(\d+) matches" | rg "\d+" -o)
-      #     echo "Restart $restart_count nodes"
-      #     peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.wan_logs_path }}" -c --stats | \
-      #       rg "(\d+) matches" | rg "\d+" -o)
-      #     echo "PeerRemovedFromRoutingTable $peer_removed times"
-      #     if [ $peer_removed -lt $restart_count ]; then
-      #       echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
-      #       exit 1
-      #     fi
-      #     node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
-      #     echo "Node dir count is $node_count"
-      #   # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
+  # #     - name: install ripgrep
+  # #       run: sudo apt-get -y install ripgrep
 
-      #   # if [ $restart_count -lt $node_count ]; then
-      #   #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
-      #   #   exit 1
-      #   # fi
+  # #     - uses: Swatinem/rust-cache@v2
+  # #       continue-on-error: true
 
-      # Only error out after uploading the logs
-      - name: Don't log raw data
-        if: always() && matrix.os != 'windows-latest' # causes error
-        shell: bash
-        timeout-minutes: 10
-        run: |
-          if ! rg '^' "${{ matrix.local_safe_path }}"/client/logs | awk 'length($0) > 15000 { print; exit 1 }'
-          then
-            echo "We are logging an extremely large data"
-            exit 1
-          fi
-          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
-          #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
-          then
-            echo "We are logging an extremely large data"
-            exit 1
-          fi
+  # #     - name: Build churn tests
+  # #       run: cargo test --release -p sn_node --test data_with_churn --no-run
+  # #       timeout-minutes: 30
 
-          # sanity check
-          if ! rg '^' "${{ matrix.local_safe_path }}"/client/logs | awk 'length($0) > 1000 { print; exit 1 }'
-          then
-            echo "Sanity check pass for local safe path"
-          fi
-          #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
-          #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
-          if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
-          then
-            echo echo "Sanity check pass for wan logs path"
-          fi
+  # #     - name: Start a WAN network
+  # #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  # #       with:
+  # #         action: create
+  # #         re-attempts: 3
+  # #         rust-log: debug
+  # #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  # #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  # #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  # #         aws-region: eu-west-2
+  # #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  # #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  # #         security-group-id: sg-0d47df5b3f0d01e2a
+  # #         subnet-id: subnet-018f2ab26755df7f9
+  # #         bootstrap-node-count: 20
+  # #         bootstrap-node-vm-count: 1
+  # #         node-vm-count: 1
+  # #         node-count: 25
+  # #         uploader-vm-count: 0
+  # #         provider: digital-ocean
+  # #         testnet-name: NightlyChurnTest
+  # #         safe-network-user: maidsafe
+  # #         safe-network-branch: main
 
-      # - name: post notification to slack on failure
-      #   if: ${{ failure() }}
-      #   uses: bryannice/gitactions-slack-notification@2.0.0
-      #   env:
-      #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-      #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-      #     SLACK_TITLE: "Nightly Data Location Test Run Failed"
+  # #     - name: Check env variables
+  # #       shell: bash
+  # #       run: |
+  # #         echo "Peer is $SAFE_PEERS"
+  # #         echo "Deployment inventory is $SN_INVENTORY"
+
+  # #     - name: Chunks data integrity during nodes churn
+  # #       run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
+  # #       env:
+  # #         # TEST_DURATION_MINS: 60
+  # #         # TEST_CHURN_CYCLES: 6
+  # #         # SN_LOG: "all"
+  # #         # todo: lower time for testing
+  # #         TEST_DURATION_MINS: 10
+  # #         TEST_CHURN_CYCLES: 2
+  # #         SN_LOG: "all"
+  # #       timeout-minutes: 90
+
+  # #     - name: Fetch network logs
+  # #       if: always()
+  # #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  # #       with:
+  # #         action: logs
+  # #         re-attempts: 3
+  # #         rust-log: debug
+  # #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  # #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  # #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  # #         aws-region: eu-west-2
+  # #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  # #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  # #         bootstrap-node-count: 20
+  # #         bootstrap-node-vm-count: 1
+  # #         node-vm-count: 1
+  # #         node-count: 25
+  # #         uploader-vm-count: 0
+  # #         provider: digital-ocean
+  # #         testnet-name: NightlyChurnTest
+  # #         safe-network-user: maidsafe
+  # #         safe-network-branch: main
+
+  # #     - name: Upload local logs
+  # #       if: always()
+  # #       uses: actions/upload-artifact@v4
+  # #       with:
+  # #         name: local_logs_NightlyChurnTest
+  # #         path: |
+  # #           ~/.local/share/safe/node/*/logs/*.log*
+  # #           ~/.local/share/safe/*/*/*.log*
+  # #           ~/.local/share/safe/client/logs/*/*.log*
+
+  # #     - name: Stop the WAN network
+  # #       if: always()
+  # #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  # #       with:
+  # #         action: destroy
+  # #         re-attempts: 3
+  # #         rust-log: debug
+  # #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  # #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  # #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  # #         aws-region: eu-west-2
+  # #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  # #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  # #         bootstrap-node-count: 20
+  # #         bootstrap-node-vm-count: 1
+  # #         node-vm-count: 1
+  # #         node-count: 25
+  # #         uploader-vm-count: 0
+  # #         provider: digital-ocean
+  # #         testnet-name: NightlyChurnTest
+  # #         safe-network-user: maidsafe
+  # #         safe-network-branch: main
+
+  # #     # TODO: re-enable the below scripts once we have proper way to restart nodes.
+  # #     # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same
+  # #     # log location and the logs are over written. Hence the scripts might give false outputs.
+
+  # #     # - name: Verify restart of nodes using rg
+  # #     #   shell: bash
+  # #     #   timeout-minutes: 1
+  # #     #   # get the counts, then the specific line, and then the digit count only
+  # #     #   # then check we have an expected level of restarts
+  # #     #   # TODO: make this use an env var, or relate to testnet size
+  # #     #   run : |
+  # #     #     restart_count=$(rg "Node is restarting in" "${{ matrix.wan_logs_path }}" -c --stats | \
+  # #     #       rg "(\d+) matches" | rg "\d+" -o)
+  # #     #     echo "Restart $restart_count nodes"
+  # #     #     peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.wan_logs_path }}" -c --stats | \
+  # #     #       rg "(\d+) matches" | rg "\d+" -o)
+  # #     #     echo "PeerRemovedFromRoutingTable $peer_removed times"
+  # #     #     if [ $peer_removed -lt $restart_count ]; then
+  # #     #       echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
+  # #     #       exit 1
+  # #     #     fi
+  # #     #     node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
+  # #     #     echo "Node dir count is $node_count"
+  # #     #   # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
+
+  # #     #   # if [ $restart_count -lt $node_count ]; then
+  # #     #   #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
+  # #     #   #   exit 1
+  # #     #   # fi
+
+  # #     # - name: Verify data replication using rg
+  # #     #   shell: bash
+  # #     #   timeout-minutes: 1
+  # #     #   # get the counts, then the specific line, and then the digit count only
+  # #     #   # then check we have an expected level of replication
+  # #     #   # TODO: make this use an env var, or relate to testnet size
+  # #     #   run : |
+  # #     #     fetching_attempt_count=$(rg "FetchingKeysForReplication" "${{ matrix.wan_logs_path }}" -c --stats | \
+  # #     #       rg "(\d+) matches" | rg "\d+" -o)
+  # #     #     echo "Carried out $fetching_attempt_count fetching attempts"
+  # #     #     node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
+  # #     #     if [ $fetching_attempt_count -lt $node_count ]; then
+  # #     #       echo "Replication fetching attempts of: $fetching_attempt_count is less than the node count of: $node_count"
+  # #     #       exit 1
+  # #     #     fi
+
+  # #     # Only error out after uploading the logs
+  # #     - name: Don't log raw data
+  # #       if: always() && matrix.os != 'windows-latest' # causes error
+  # #       shell: bash
+  # #       timeout-minutes: 10
+  # #       run: |
+  # #         if ! rg '^' "${{ matrix.local_safe_path }}"/client/logs | awk 'length($0) > 15000 { print; exit 1 }'
+  # #         then
+  # #           echo "We are logging an extremely large data"
+  # #           exit 1
+  # #         fi
+  # #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  # #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
+  # #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
+  # #         then
+  # #           echo "We are logging an extremely large data"
+  # #           exit 1
+  # #         fi
+
+  # #         # sanity check
+  # #         if ! rg '^' "${{ matrix.local_safe_path }}"/client/logs | awk 'length($0) > 1000 { print; exit 1 }'
+  # #         then
+  # #           echo "Sanity check pass for local safe path"
+  # #         fi
+  # #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  # #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
+  # #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
+  # #         then
+  # #           echo "Sanity check pass for wan logs path"
+  # #         fi
+
+  # #     # - name: post notification to slack on failure
+  # #     #   if: ${{ failure() }}
+  # #     #   uses: bryannice/gitactions-slack-notification@2.0.0
+  # #     #   env:
+  # #     #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+  # #     #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+  # #     #     SLACK_TITLE: "Nightly Churn Test Run Failed"
+
+  # # verify_data_location_routing_table:
+  # #   name: Verify data location and Routing Table
+  # #   runs-on: ${{ matrix.os }}
+  # #   strategy:
+  # #     matrix:
+  # #       include:
+  # #         - os: ubuntu-latest
+  # #           wan_logs_path: /home/runner/sn-testnet-deploy/logs
+  # #           local_safe_path: /home/runner/.local/share/safe
+  # #         # - os: windows-latest
+  # #         #   node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
+  # #         #   safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+  # #         # - os: macos-latest
+  # #         #   node_data_path: /Users/runner/Library/Application Support/safe/node
+  # #         #   safe_path: /Users/runner/Library/Application Support/safe
+  # #   steps:
+  # #     - uses: actions/checkout@v4
+
+  # #     - name: Install Rust
+  # #       uses: dtolnay/rust-toolchain@stable
+
+  # #     - name: install ripgrep
+  # #       run: sudo apt-get -y install ripgrep
+
+  # #     - uses: Swatinem/rust-cache@v2
+  # #       continue-on-error: true
+
+  # #     - name: Build data location and routing table tests
+  # #       run: cargo test --release -p sn_node --test verify_data_location --test verify_routing_table --no-run
+  # #       timeout-minutes: 30
+
+  # #     - name: Start a WAN network
+  # #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  # #       with:
+  # #         action: create
+  # #         re-attempts: 3
+  # #         rust-log: debug
+  # #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  # #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  # #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  # #         aws-region: eu-west-2
+  # #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  # #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  # #         security-group-id: sg-0d47df5b3f0d01e2a
+  # #         subnet-id: subnet-018f2ab26755df7f9
+  # #         bootstrap-node-count: 20
+  # #         bootstrap-node-vm-count: 1
+  # #         node-vm-count: 1
+  # #         node-count: 25
+  # #         uploader-vm-count: 0
+  # #         testnet-name: NightlyDataLocationTest
+  # #         safe-network-user: maidsafe
+  # #         safe-network-branch: main
+
+  # #     - name: Check env variables
+  # #       shell: bash
+  # #       run: |
+  # #         echo "Peer is $SAFE_PEERS"
+  # #         echo "Deployment inventory is $SN_INVENTORY"
+
+  # #     - name: Verify the Routing table of the nodes
+  # #       run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
+  # #       timeout-minutes: 5
+
+  # #     - name: Verify the location of the data on the network
+  # #       run: cargo test --release -p sn_node --test verify_data_location -- --nocapture
+  # #       env:
+  # #         SN_LOG: "all"
+  # #       timeout-minutes: 90
+
+  # #     - name: Verify the routing tables of the nodes
+  # #       run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
+  # #       timeout-minutes: 5
+
+  # #     - name: Fetch network logs
+  # #       if: always()
+  # #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  # #       with:
+  # #         action: logs
+  # #         re-attempts: 3
+  # #         rust-log: debug
+  # #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  # #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  # #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  # #         aws-region: eu-west-2
+  # #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  # #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  # #         bootstrap-node-count: 20
+  # #         bootstrap-node-vm-count: 1
+  # #         node-vm-count: 1
+  # #         node-count: 25
+  # #         uploader-vm-count: 0
+  # #         provider: digital-ocean
+  # #         testnet-name: NightlyDataLocationTest
+  # #         safe-network-user: maidsafe
+  # #         safe-network-branch: main
+
+  # #     - name: Upload local logs
+  # #       if: always()
+  # #       uses: actions/upload-artifact@v4
+  # #       with:
+  # #         name: local_logs_NightlyDataLocationTest
+  # #         path: |
+  # #           ~/.local/share/safe/node/*/logs/*.log*
+  # #           ~/.local/share/safe/*/*/*.log*
+  # #           ~/.local/share/safe/client/logs/*/*.log*
+
+  # #     - name: Stop the WAN network
+  # #       if: always()
+  # #       uses: maidsafe/sn-testnet-control-action/launch-network@main
+  # #       with:
+  # #         action: destroy
+  # #         re-attempts: 3
+  # #         rust-log: debug
+  # #         ansible-vault-password: ${{ secrets.SN_TESTNET_ANSIBLE_VAULT_PASSWORD }}
+  # #         aws-access-key-id: ${{ secrets.SN_TESTNET_AWS_ACCESS_KEY_ID }}
+  # #         aws-access-key-secret: ${{ secrets.SN_TESTNET_AWS_SECRET_ACCESS_KEY }}
+  # #         aws-region: eu-west-2
+  # #         do-token: ${{ secrets.SN_TESTNET_DO_PAT }}
+  # #         ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
+  # #         bootstrap-node-count: 20
+  # #         bootstrap-node-vm-count: 1
+  # #         node-vm-count: 1
+  # #         node-count: 25
+  # #         uploader-vm-count: 0
+  # #         provider: digital-ocean
+  # #         testnet-name: NightlyDataLocationTest
+  # #         safe-network-user: maidsafe
+  # #         safe-network-branch: main
+
+  # #     # TODO: re-enable the below scripts once we have proper way to restart nodes.
+  # #     # Currently on remote network (not local), the nodes do not handle restart RPC cmd well. They reuse the same
+  # #     # log location and the logs are over written. Hence the scripts might give false outputs.
+
+  # #     # - name: Verify restart of nodes using rg
+  # #     #   shell: bash
+  # #     #   timeout-minutes: 1
+  # #     #   # get the counts, then the specific line, and then the digit count only
+  # #     #   # then check we have an expected level of restarts
+  # #     #   # TODO: make this use an env var, or relate to testnet size
+  # #     #   run : |
+  # #     #     restart_count=$(rg "Node is restarting in" "${{ matrix.wan_logs_path }}" -c --stats | \
+  # #     #       rg "(\d+) matches" | rg "\d+" -o)
+  # #     #     echo "Restart $restart_count nodes"
+  # #     #     peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.wan_logs_path }}" -c --stats | \
+  # #     #       rg "(\d+) matches" | rg "\d+" -o)
+  # #     #     echo "PeerRemovedFromRoutingTable $peer_removed times"
+  # #     #     if [ $peer_removed -lt $restart_count ]; then
+  # #     #       echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
+  # #     #       exit 1
+  # #     #     fi
+  # #     #     node_count=$(find "${{ matrix.wan_logs_path }}" -type d | awk -F/ 'NF==9' | grep -E "/12D3KooW" | wc -l)
+  # #     #     echo "Node dir count is $node_count"
+  # #     #   # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
+
+  # #     #   # if [ $restart_count -lt $node_count ]; then
+  # #     #   #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
+  # #     #   #   exit 1
+  # #     #   # fi
+
+  # #     # Only error out after uploading the logs
+  # #     - name: Don't log raw data
+  # #       if: always() && matrix.os != 'windows-latest' # causes error
+  # #       shell: bash
+  # #       timeout-minutes: 10
+  # #       run: |
+  # #         if ! rg '^' "${{ matrix.local_safe_path }}"/client/logs | awk 'length($0) > 15000 { print; exit 1 }'
+  # #         then
+  # #           echo "We are logging an extremely large data"
+  # #           exit 1
+  # #         fi
+  # #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  # #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
+  # #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
+  # #         then
+  # #           echo "We are logging an extremely large data"
+  # #           exit 1
+  # #         fi
+
+  # #         # sanity check
+  # #         if ! rg '^' "${{ matrix.local_safe_path }}"/client/logs | awk 'length($0) > 1000 { print; exit 1 }'
+  # #         then
+  # #           echo "Sanity check pass for local safe path"
+  # #         fi
+  # #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  # #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
+  # #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
+  # #         then
+  # #           echo echo "Sanity check pass for wan logs path"
+  # #         fi
+
+  #     # - name: post notification to slack on failure
+  #     #   if: ${{ failure() }}
+  #     #   uses: bryannice/gitactions-slack-notification@2.0.0
+  #     #   env:
+  #     #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+  #     #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+  #     #     SLACK_TITLE: "Nightly Data Location Test Run Failed"
