@@ -14,7 +14,7 @@ use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style, Stylize},
+    style::{Style, Stylize},
     text::{Line, Span},
     widgets::{
         Block, Borders, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph, Wrap,
@@ -28,7 +28,7 @@ use crate::{
     mode::{InputMode, Scene},
     style::{
         clear_area, COOL_GREY, DARK_GUNMETAL, EUCALYPTUS, GHOST_WHITE, INDIGO, LIGHT_PERIWINKLE,
-        SPACE_CADET, VIVID_SKY_BLUE,
+        VIVID_SKY_BLUE,
     },
     system,
 };
@@ -151,8 +151,7 @@ impl ChangeDrivePopup {
                 .title(" Select a Drive ")
                 .title_style(Style::new().fg(VIVID_SKY_BLUE))
                 .padding(Padding::uniform(2))
-                .border_style(Style::new().fg(VIVID_SKY_BLUE))
-                .bg(DARK_GUNMETAL),
+                .border_style(Style::new().fg(VIVID_SKY_BLUE)),
         );
         clear_area(f, layer_zero);
 
@@ -180,12 +179,7 @@ impl ChangeDrivePopup {
 
         let items = List::new(items)
             .block(Block::default().padding(Padding::uniform(1)))
-            .highlight_style(
-                Style::default()
-                    .add_modifier(Modifier::BOLD)
-                    .add_modifier(Modifier::REVERSED)
-                    .fg(INDIGO),
-            )
+            .highlight_style(Style::default().bg(INDIGO))
             .highlight_spacing(HighlightSpacing::Always);
 
         f.render_stateful_widget(items, layer_two[0], &mut self.items.state);
@@ -602,6 +596,6 @@ impl DriveItem {
             }
         };
 
-        ListItem::new(line).style(Style::default().bg(SPACE_CADET))
+        ListItem::new(line)
     }
 }
