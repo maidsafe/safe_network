@@ -66,14 +66,6 @@ impl Transfer {
         Ok(t)
     }
 
-    /// This function is used to create a Network Royalties Transfer from a CashNote
-    /// can be done offline, and sent to the recipient.
-    /// Note that this type of transfer is not encrypted
-    pub(crate) fn royalties_transfer_from_cash_note(cash_note: &CashNote) -> Result<Self> {
-        let cnr = CashNoteRedemption::from_cash_note(cash_note);
-        Ok(Self::NetworkRoyalties(vec![cnr]))
-    }
-
     /// Create a new transfer
     /// cashnote_redemptions: List of CashNoteRedemptions to be used for payment
     /// recipient: main Public key (donation key) of the recipient,

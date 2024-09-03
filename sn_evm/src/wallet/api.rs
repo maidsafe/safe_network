@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::{data_payments::PaymentDetails, Result};
-use crate::WalletError;
-use serde::Serialize;
+use super::Result;
+use crate::{evm::ProofOfPayment, WalletError};
+use serde::{Deserialize, Serialize};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -20,7 +20,7 @@ const PAYMENTS_DIR_NAME: &str = "payments";
 pub const WALLET_DIR_NAME: &str = "wallet";
 
 /// Contains some common API's used by wallet implementations.
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct WalletApi {
     /// The dir of the wallet file, main key, public address, and new cash_notes.
     wallet_dir: Arc<PathBuf>,
@@ -46,9 +46,9 @@ impl WalletApi {
         }
     }
 
-    /// Returns the most recent PaymentDetails for the given xorname if cached.
+    /// Returns the most recent ProofOfPayment for the given xorname if cached.
     /// If multiple payments have been made to the same xorname, then we pick the last one as it is the most recent.
-    pub fn get_recent_payment(&self, xorname: &XorName) -> Result<PaymentDetails> {
+    pub fn get_recent_payment(&self, xorname: &XorName) -> Result<ProofOfPayment> {
         let mut payments = self.read_payment_transactions(xorname)?;
         let payment = payments
             .pop()
@@ -58,9 +58,9 @@ impl WalletApi {
         Ok(payment)
     }
 
-    /// Return all the PaymentDetails for the given xorname if cached.
+    /// Return all the ProofOfPayment for the given xorname if cached.
     /// Multiple payments to the same XorName can result in many payment details
-    pub fn get_all_payments(&self, xorname: &XorName) -> Result<Vec<PaymentDetails>> {
+    pub fn get_all_payments(&self, xorname: &XorName) -> Result<Vec<ProofOfPayment>> {
         let payments = self.read_payment_transactions(xorname)?;
         if payments.is_empty() {
             return Err(WalletError::NoPaymentForAddress(*xorname));
@@ -75,7 +75,7 @@ impl WalletApi {
 
     /// Insert a payment and write it to the `payments` dir.
     /// If a prior payment has been made to the same xorname, then the new payment is pushed to the end of the list.
-    pub fn insert_payment_transaction(&self, name: XorName, payment: PaymentDetails) -> Result<()> {
+    pub fn insert_payment_transaction(&self, name: XorName, payment: ProofOfPayment) -> Result<()> {
         // try to read the previous payments and push the new payment at the end
         let payments = match self.read_payment_transactions(&name) {
             Ok(mut stored_payments) => {
@@ -109,7 +109,7 @@ impl WalletApi {
     }
 
     /// Read all the payments made to the provided xorname
-    fn read_payment_transactions(&self, name: &XorName) -> Result<Vec<PaymentDetails>> {
+    fn read_payment_transactions(&self, name: &XorName) -> Result<Vec<ProofOfPayment>> {
         let unique_file_name = format!("{}.payment", hex::encode(*name));
         let payment_file_path = self.payment_dir.join(unique_file_name);
 
@@ -118,51 +118,5 @@ impl WalletApi {
         let payments = rmp_serde::from_read(&file)?;
 
         Ok(payments)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use crate::{MainSecretKey, NanoTokens, PaymentQuote, Transfer};
-
-    #[test]
-    fn payment_selective() -> Result<()> {
-        let root_dir = std::env::temp_dir();
-        let wallet_api = WalletApi::new_from_wallet_dir(&root_dir);
-
-        let mut rng = bls::rand::thread_rng();
-        let chunk_name = XorName::random(&mut rng);
-
-        let transfer = Transfer::NetworkRoyalties(vec![]);
-
-        let recipient_1 = MainSecretKey::random().main_pubkey();
-        let payment_details_1 = PaymentDetails {
-            recipient: recipient_1,
-            peer_id_bytes: vec![],
-            transfer: (transfer.clone(), NanoTokens::zero()),
-            royalties: (transfer.clone(), NanoTokens::zero()),
-            quote: PaymentQuote::zero(),
-        };
-        let _ = wallet_api.insert_payment_transaction(chunk_name, payment_details_1);
-
-        let recipient_2 = MainSecretKey::random().main_pubkey();
-        let payment_details_2 = PaymentDetails {
-            recipient: recipient_2,
-            peer_id_bytes: vec![],
-            transfer: (transfer.clone(), NanoTokens::zero()),
-            royalties: (transfer, NanoTokens::zero()),
-            quote: PaymentQuote::zero(),
-        };
-        let _ = wallet_api.insert_payment_transaction(chunk_name, payment_details_2.clone());
-
-        let recent_payment = wallet_api.get_recent_payment(&chunk_name)?;
-        assert_eq!(payment_details_2.recipient, recent_payment.recipient);
-
-        let recent_payment = wallet_api.get_recent_payment(&chunk_name)?;
-        assert_eq!(payment_details_2.recipient, recent_payment.recipient);
-
-        Ok(())
     }
 }

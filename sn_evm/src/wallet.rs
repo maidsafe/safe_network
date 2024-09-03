@@ -64,7 +64,7 @@ mod watch_only;
 
 pub use self::{
     api::{WalletApi, WALLET_DIR_NAME},
-    data_payments::{Payment, PaymentQuote, QuotingMetrics, QUOTE_EXPIRATION_SECS},
+    data_payments::{PaymentQuote, QuotingMetrics, QUOTE_EXPIRATION_SECS},
     error::{Error, Result},
     hot_wallet::HotWallet,
     keys::bls_secret_from_hex,

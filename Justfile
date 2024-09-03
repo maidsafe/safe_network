@@ -113,9 +113,8 @@ build-release-artifacts arch:
   echo "FOUNDATION_PK: $FOUNDATION_PK"
   echo "GENESIS_PK: $GENESIS_PK"
   echo "NETWORK_ROYALTIES_PK: $NETWORK_ROYALTIES_PK"
-  echo "PAYMENT_FORWARD_PK: $PAYMENT_FORWARD_PK"
 
-  cross_container_opts="--env \"GENESIS_PK=$GENESIS_PK\" --env \"GENESIS_SK=$GENESIS_SK\" --env \"FOUNDATION_PK=$FOUNDATION_PK\" --env \"NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK\" --env \"PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK\""
+  cross_container_opts="--env \"GENESIS_PK=$GENESIS_PK\" --env \"GENESIS_SK=$GENESIS_SK\" --env \"FOUNDATION_PK=$FOUNDATION_PK\" --env \"NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK\" --env \"REWARD_PK=$REWARD_PK\""
   export CROSS_CONTAINER_OPTS=$cross_container_opts
 
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then

@@ -13,8 +13,8 @@ use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
 use libp2p::PeerId;
 use sn_evm::{
-    CashNote, HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote, SignedSpend, SpendAddress,
-    Transfer, WalletError, WalletResult,
+    CashNote, HotWallet, MainPubkey, NanoTokens, PaymentQuote, ProofOfPayment, RewardsAddress,
+    SignedSpend, SpendAddress, Transfer, WalletError, WalletResult,
 };
 use sn_networking::target_arch::Instant;
 use sn_networking::{GetRecordError, PayeeQuote};
@@ -165,74 +165,15 @@ impl WalletClient {
     pub fn get_recent_payment_for_addr(
         &self,
         address: &NetworkAddress,
-    ) -> WalletResult<(Payment, PeerId)> {
+    ) -> WalletResult<(ProofOfPayment, PeerId)> {
         let xorname = address
             .as_xorname()
             .ok_or(WalletError::InvalidAddressType)?;
-        let payment_detail = self.wallet.api().get_recent_payment(&xorname)?;
-
-        let payment = payment_detail.to_payment();
+        let payment = self.wallet.api().get_recent_payment(&xorname)?;
         trace!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
-        let peer_id = PeerId::from_bytes(&payment_detail.peer_id_bytes)
-            .map_err(|_| WalletError::NoPaymentForAddress(xorname))?;
+        let peer_id = payment.quote.peer_id()?;
 
         Ok((payment, peer_id))
-    }
-
-    ///  Returns the all cached Payment for a provided NetworkAddress.
-    ///
-    /// # Arguments
-    /// * `address` - The [`NetworkAddress`].
-    ///
-    /// # Example
-    /// ```no_run
-    /// // Getting the payment for an address using a random PeerId
-    /// # use sn_client::{Client, WalletClient, Error};
-    /// # use tempfile::TempDir;
-    /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// # use std::io::Bytes;
-    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
-    /// # let tmp_path = TempDir::new()?.path().to_owned();
-    /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-    /// use libp2p_identity::PeerId;
-    /// use sn_protocol::NetworkAddress;
-    ///
-    /// let mut wallet_client = WalletClient::new(client, wallet);
-    /// let network_address = NetworkAddress::from_peer(PeerId::random());
-    /// let payments = wallet_client.get_all_payments_for_addr(&network_address)?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn get_all_payments_for_addr(
-        &self,
-        address: &NetworkAddress,
-    ) -> WalletResult<Vec<(Payment, PeerId)>> {
-        let xorname = address
-            .as_xorname()
-            .ok_or(WalletError::InvalidAddressType)?;
-        let payment_details = self.wallet.api().get_all_payments(&xorname)?;
-
-        let payments = payment_details
-            .into_iter()
-            .map(|details| {
-                let payment = details.to_payment();
-
-                match PeerId::from_bytes(&details.peer_id_bytes) {
-                    Ok(peer_id) => Ok((payment, peer_id)),
-                    Err(_) => Err(WalletError::NoPaymentForAddress(xorname)),
-                }
-            })
-            .collect::<WalletResult<Vec<_>>>()?;
-
-        trace!(
-            "{} Payment retrieved for {xorname:?} from wallet: {payments:?}",
-            payments.len()
-        );
-
-        Ok(payments)
     }
 
     /// Remove the payment for a given network address from disk.
@@ -532,18 +473,18 @@ impl WalletClient {
     /// # async fn main() -> Result<(),Error>{
     /// # use std::collections::BTreeMap;
     /// use xor_name::XorName;
-    /// use sn_evm::{MainPubkey, Payment, PaymentQuote};
+    /// use sn_evm::{RewardsAddress, Payment, PaymentQuote};
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
     /// let mut wallet_client = WalletClient::new(client, wallet);
-    /// let mut cost_map:BTreeMap<XorName,(MainPubkey,PaymentQuote,Vec<u8>)> = BTreeMap::new();
+    /// let mut cost_map:BTreeMap<XorName,(RewardsAddress,PaymentQuote,Vec<u8>)> = BTreeMap::new();
     /// wallet_client.pay_for_records(&cost_map,true).await?;
     /// # Ok(())
     /// # }
     pub async fn pay_for_records(
         &mut self,
-        cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote, Vec<u8>)>,
+        cost_map: &BTreeMap<XorName, (RewardsAddress, PaymentQuote, Vec<u8>)>,
         verify_store: bool,
     ) -> WalletResult<(NanoTokens, NanoTokens)> {
         // Before wallet progress, there shall be no `unconfirmed_spend_requests`

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{MainPubkey, NanoTokens, Transfer};
+use crate::{NanoTokens, RewardsAddress, WalletError};
 use libp2p::{identity::PublicKey, PeerId};
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
@@ -17,45 +17,6 @@ pub const QUOTE_EXPIRATION_SECS: u64 = 3600;
 
 /// The margin allowed for live_time
 const LIVE_TIME_MARGIN: u64 = 10;
-
-#[derive(Clone, Serialize, Deserialize, Eq, PartialEq, custom_debug::Debug)]
-pub struct Payment {
-    /// The transfers we make
-    #[debug(skip)]
-    pub transfers: Vec<Transfer>,
-    /// The Quote we're paying for
-    pub quote: PaymentQuote,
-}
-
-/// Information relating to a data payment for one address
-#[derive(Clone, Serialize, Deserialize)]
-pub struct PaymentDetails {
-    /// The node we pay
-    pub recipient: MainPubkey,
-    /// The PeerId (as bytes) of the node we pay.
-    /// The PeerId is not stored here to avoid direct dependency with libp2p,
-    /// plus it doesn't implement Serialize/Deserialize traits.
-    pub peer_id_bytes: Vec<u8>,
-    /// The transfer we send to it and its amount as reference
-    pub transfer: (Transfer, NanoTokens),
-    /// The network Royalties
-    pub royalties: (Transfer, NanoTokens),
-    /// The original quote
-    pub quote: PaymentQuote,
-}
-
-impl PaymentDetails {
-    /// create a Payment for a PaymentDetails
-    pub fn to_payment(&self) -> Payment {
-        Payment {
-            transfers: vec![self.transfer.0.clone(), self.royalties.0.clone()],
-            quote: self.quote.clone(),
-        }
-    }
-}
-
-/// A generic type for signatures
-pub type QuoteSignature = Vec<u8>;
 
 /// Quoting metrics that got used to generate a quote, or to track peer's status.
 #[derive(
@@ -106,11 +67,16 @@ pub struct PaymentQuote {
     pub timestamp: SystemTime,
     /// quoting metrics being used to generate this quote
     pub quoting_metrics: QuotingMetrics,
-    /// node's public key that can verify the signature
+    /// the unique identifier for the payment
+    pub payment_id: u64,
+    /// the node's wallet address
+    pub rewards_address: RewardsAddress,
+    /// the node's libp2p identity public key in bytes (PeerId)
     #[debug(skip)]
     pub pub_key: Vec<u8>,
+    /// the node's signature for the quote
     #[debug(skip)]
-    pub signature: QuoteSignature,
+    pub signature: Vec<u8>,
 }
 
 impl PaymentQuote {
@@ -121,17 +87,21 @@ impl PaymentQuote {
             cost: NanoTokens::zero(),
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
+            payment_id: rand::random(),
+            rewards_address: RewardsAddress::dummy(),
             pub_key: vec![],
             signature: vec![],
         }
     }
 
-    /// returns the bytes to be signed
+    /// returns the bytes to be signed from the given parameters
     pub fn bytes_for_signing(
         xorname: XorName,
         cost: NanoTokens,
         timestamp: SystemTime,
         quoting_metrics: &QuotingMetrics,
+        payment_id: u64,
+        rewards_address: &RewardsAddress,
     ) -> Vec<u8> {
         let mut bytes = xorname.to_vec();
         bytes.extend_from_slice(&cost.to_bytes());
@@ -144,7 +114,31 @@ impl PaymentQuote {
         );
         let serialised_quoting_metrics = rmp_serde::to_vec(quoting_metrics).unwrap_or_default();
         bytes.extend_from_slice(&serialised_quoting_metrics);
+        bytes.extend_from_slice(&payment_id.to_le_bytes());
+        bytes.extend_from_slice(rewards_address.as_bytes());
         bytes
+    }
+
+    /// Returns the bytes to be signed from self
+    pub fn bytes_for_sig(&self) -> Vec<u8> {
+        Self::bytes_for_signing(
+            self.content,
+            self.cost,
+            self.timestamp,
+            &self.quoting_metrics,
+            self.payment_id,
+            &self.rewards_address,
+        )
+    }
+
+    /// Returns the peer id of the node that created the quote
+    pub fn peer_id(&self) -> Result<PeerId, WalletError> {
+        if let Ok(pub_key) = libp2p::identity::PublicKey::try_decode_protobuf(&self.pub_key) {
+            Ok(PeerId::from(pub_key.clone()))
+        } else {
+            error!("Cann't parse PublicKey from protobuf");
+            Err(WalletError::InvalidQuotePublicKey)
+        }
     }
 
     /// Check self is signed by the claimed peer
@@ -163,12 +157,7 @@ impl PaymentQuote {
             return false;
         }
 
-        let bytes = Self::bytes_for_signing(
-            self.content,
-            self.cost,
-            self.timestamp,
-            &self.quoting_metrics,
-        );
+        let bytes = self.bytes_for_sig();
 
         if !pub_key.verify(&bytes, &self.signature) {
             error!("Signature is not signed by claimed pub_key");
@@ -198,6 +187,8 @@ impl PaymentQuote {
             quoting_metrics: Default::default(),
             pub_key: vec![],
             signature: vec![],
+            payment_id: rand::random(),
+            rewards_address: RewardsAddress::dummy(),
         }
     }
 
@@ -289,12 +280,7 @@ mod tests {
         let false_peer = PeerId::random();
 
         let mut quote = PaymentQuote::zero();
-        let bytes = PaymentQuote::bytes_for_signing(
-            quote.content,
-            quote.cost,
-            quote.timestamp,
-            &quote.quoting_metrics,
-        );
+        let bytes = quote.bytes_for_sig();
         let signature = if let Ok(sig) = keypair.sign(&bytes) {
             sig
         } else {

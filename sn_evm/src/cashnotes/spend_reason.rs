@@ -40,7 +40,7 @@ impl SpendReason {
     }
 
     pub fn create_reward_tracking_reason(input_str: &str) -> Result<Self> {
-        let input_pk = crate::PAYMENT_FORWARD_PK.public_key();
+        let input_pk = crate::REWARD_PK.public_key();
         Ok(Self::BetaRewardTracking(DiscordNameCipher::create(
             input_str, input_pk,
         )?))

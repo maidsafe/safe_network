@@ -475,7 +475,7 @@ impl Component for Status {
 
             let total_nanos_earned_and_discord = Row::new(vec![
                 Cell::new("Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
-                Cell::new(self.node_stats.forwarded_rewards.to_string())
+                Cell::new(self.node_stats.received_rewards.to_string())
                     .fg(VIVID_SKY_BLUE)
                     .bold(),
                 Cell::new(

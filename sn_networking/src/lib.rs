@@ -59,7 +59,7 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use rand::Rng;
-use sn_evm::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
+use sn_evm::{NanoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
@@ -79,7 +79,7 @@ use tokio::sync::{
 use tokio::time::Duration;
 
 /// The type of quote for a selected payee.
-pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
+pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
 
 /// The count of peers that will be considered as close to a record target,
 /// that a replication of the record shall be sent/accepted to/by the peer.
@@ -955,7 +955,7 @@ impl Network {
 /// Given `all_costs` it will return the closest / lowest cost
 /// Closest requiring it to be within CLOSE_GROUP nodes
 fn get_fees_from_store_cost_responses(
-    mut all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
+    mut all_costs: Vec<(NetworkAddress, RewardsAddress, PaymentQuote)>,
 ) -> Result<PayeeQuote> {
     // sort all costs by fee, lowest to highest
     // if there's a tie in cost, sort by pubkey
@@ -1114,7 +1114,7 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 1..CLOSE_GROUP_SIZE {
-            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
+            let addr = RewardsAddress::dummy();
             costs.push((
                 NetworkAddress::from_peer(PeerId::random()),
                 addr,
@@ -1140,8 +1140,8 @@ mod tests {
         let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
         for i in 1..responses_count {
-            // push random MainPubkey and Nano
-            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
+            // push random addr and Nano
+            let addr = RewardsAddress::dummy();
             costs.push((
                 NetworkAddress::from_peer(PeerId::random()),
                 addr,

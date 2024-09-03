@@ -14,7 +14,7 @@ use eyre::{eyre, Result};
 use libp2p::PeerId;
 use rand::Rng;
 use sn_client::{Error as ClientError, FilesDownload, Uploader, WalletClient};
-use sn_evm::{MainPubkey, NanoTokens, PaymentQuote};
+use sn_evm::{NanoTokens, PaymentQuote, RewardsAddress};
 use sn_logging::LogBuilder;
 use sn_networking::{GetRecordError, NetworkError};
 use sn_protocol::{
@@ -228,7 +228,7 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
         no_data_payments.insert(
             *chunk_name,
             (
-                MainPubkey::new(bls::SecretKey::random().public_key()),
+                RewardsAddress::dummy(),
                 PaymentQuote::test_dummy(*chunk_name, NanoTokens::from(0)),
                 PeerId::random().to_bytes(),
             ),
@@ -365,7 +365,7 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
             .as_xorname()
             .expect("RegisterAddress should convert to XorName"),
         (
-            MainPubkey::new(bls::SecretKey::random().public_key()),
+            RewardsAddress::dummy(),
             PaymentQuote::test_dummy(xor_name, NanoTokens::from(0)),
             vec![],
         ),

@@ -18,8 +18,8 @@ use super::{
     KeyLessWallet,
 };
 use crate::{
-    wallet::data_payments::PaymentDetails, CashNote, DerivationIndex, MainPubkey, NanoTokens,
-    SpendReason, UniquePubkey, UnsignedTransaction,
+    evm::ProofOfPayment, CashNote, DerivationIndex, MainPubkey, NanoTokens, SpendReason,
+    UniquePubkey, UnsignedTransaction,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use fs2::FileExt;
@@ -61,7 +61,7 @@ impl WatchOnlyWallet {
 
     /// Insert a payment and write it to the `payments` dir.
     /// If a prior payment has been made to the same xorname, then the new payment is pushed to the end of the list.
-    pub fn insert_payment_transaction(&self, name: XorName, payment: PaymentDetails) -> Result<()> {
+    pub fn insert_payment_transaction(&self, name: XorName, payment: ProofOfPayment) -> Result<()> {
         self.api.insert_payment_transaction(name, payment)
     }
 

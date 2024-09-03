@@ -13,7 +13,7 @@ use libp2p::{
     kad::{Quorum, Record},
     PeerId,
 };
-use sn_evm::{NanoTokens, Payment};
+use sn_evm::{NanoTokens, ProofOfPayment};
 use sn_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -492,7 +492,7 @@ impl ClientRegister {
         &mut self,
         wallet_client: &mut WalletClient,
         verify_store: bool,
-        mut payment_info: Option<(Payment, PeerId)>,
+        mut payment_info: Option<(ProofOfPayment, PeerId)>,
     ) -> Result<(NanoTokens, NanoTokens)> {
         let addr = *self.address();
         debug!("Syncing Register at {addr:?}!");
@@ -764,7 +764,7 @@ impl ClientRegister {
     pub(crate) async fn publish_register(
         client: Client,
         cmd: RegisterCmd,
-        payment: Option<(Payment, PeerId)>,
+        payment: Option<(ProofOfPayment, PeerId)>,
         verify_store: bool,
     ) -> Result<()> {
         let cmd_dst = cmd.dst();
