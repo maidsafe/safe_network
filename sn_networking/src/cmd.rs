@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    close_group_majority,
     driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     event::TerminateNodeReason,
@@ -1031,18 +1032,22 @@ impl SwarmDriver {
 
     /// From all local peers, returns any within current get_range for a given key
     /// Excludes self
-    pub(crate) fn get_filtered_peers_exceeding_range_or_close_group(
+    pub(crate) fn get_filtered_peers_exceeding_range_or_closest_nodes(
         &mut self,
         target_address: &NetworkAddress,
     ) -> Vec<PeerId> {
         let filtered_peers = self.get_filtered_peers_exceeding_range(target_address);
-
-        if filtered_peers.len() >= CLOSE_GROUP_SIZE {
+        let cloest_node_buffer_zone = CLOSE_GROUP_SIZE + close_group_majority();
+        if filtered_peers.len() >= cloest_node_buffer_zone {
             filtered_peers
         } else {
-            warn!("Insufficient peers within replication range. Falling back to use CLOSE_GROUP closest nodes");
+            warn!("Insufficient peers within replication range of {target_address:?}. Falling back to use {cloest_node_buffer_zone:?} closest nodes");
             let all_peers = self.get_all_local_peers_excluding_self();
-            match sort_peers_by_address_and_limit(&all_peers, target_address, CLOSE_GROUP_SIZE) {
+            match sort_peers_by_address_and_limit(
+                &all_peers,
+                target_address,
+                cloest_node_buffer_zone,
+            ) {
                 Ok(peers) => peers.iter().map(|p| **p).collect(),
                 Err(err) => {
                     error!("sorting peers close to {target_address:?} failed, sort error: {err:?}");
@@ -1059,7 +1064,7 @@ impl SwarmDriver {
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
         let mut replicate_targets =
-            self.get_filtered_peers_exceeding_range_or_close_group(&our_address);
+            self.get_filtered_peers_exceeding_range_or_closest_nodes(&our_address);
 
         let now = Instant::now();
         self.replication_targets

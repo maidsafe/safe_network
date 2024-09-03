@@ -457,7 +457,7 @@ impl SwarmDriver {
             < expected_get_range.ilog2()
         {
             let dist = max_distance_to_data_from_responded_nodes.ilog2();
-            let expected_dist = expected_get_range.ilog2(); // 253 // 122
+            let expected_dist = expected_get_range.ilog2();
 
             warn!("RANGE: {data_key_address:?} Insufficient GetRange searched. {dist:?} {expected_dist:?} {max_distance_to_data_from_responded_nodes:?} is less than expcted GetRange of {expected_get_range:?}");
 
@@ -504,7 +504,6 @@ impl SwarmDriver {
                 info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_thoroughly:?}");
 
                 let result = if num_of_versions > 1 {
-                    // TODO: Do we want to repopulate a split record.and under what conditions?
                     warn!("RANGE: more than one version found!");
                     Err(GetRecordError::SplitRecord {
                         result_map: result_map.clone(),
@@ -537,7 +536,7 @@ impl SwarmDriver {
                         let record_type = Self::get_type_from_record(record)?;
 
                         let replicate_targets: HashSet<_> = self
-                            .get_filtered_peers_exceeding_range_or_close_group(&data_key_address)
+                            .get_filtered_peers_exceeding_range_or_closest_nodes(&data_key_address)
                             .iter()
                             .cloned()
                             .collect();
