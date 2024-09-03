@@ -2,6 +2,11 @@ use alloy::primitives::{keccak256, Address};
 use alloy::signers::k256::ecdsa::{signature, RecoveryId, Signature, SigningKey, VerifyingKey};
 use alloy::signers::k256::elliptic_curve::rand_core::OsRng;
 
+/// Hash data using Keccak256.
+pub fn hash<T: AsRef<[u8]>>(data: T) -> [u8; 32] {
+    keccak256(data.as_ref()).0
+}
+
 /// Generate a new ECDSA keypair.
 pub fn generate_ecdsa_keypair() -> (SigningKey, VerifyingKey) {
     let secret_key = SigningKey::random(&mut OsRng);
@@ -18,13 +23,13 @@ pub fn public_key_to_address(public_key: &VerifyingKey) -> Address {
 pub fn to_eth_signed_message_hash<T: AsRef<[u8]>>(message: T) -> [u8; 32] {
     const PREFIX: &str = "\x19Ethereum Signed Message:\n32";
 
-    let hashed_message = keccak256(message).0;
+    let hashed_message = hash(message);
 
     let mut eth_message = Vec::with_capacity(PREFIX.len() + 32);
     eth_message.extend_from_slice(PREFIX.as_bytes());
     eth_message.extend_from_slice(&hashed_message);
 
-    keccak256(&eth_message).0
+    hash(&eth_message)
 }
 
 /// Sign a message with a recoverable public key.
