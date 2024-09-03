@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::style::{EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE};
+use crate::style::{COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE};
 use ratatui::{prelude::*, widgets::*};
 
 pub enum NodesToStart {
@@ -28,7 +28,7 @@ impl StatefulWidget for Footer {
             )
         } else {
             (
-                Style::default().fg(LIGHT_PERIWINKLE),
+                Style::default().fg(COOL_GREY),
                 Style::default().fg(LIGHT_PERIWINKLE),
             )
         };

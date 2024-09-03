@@ -90,7 +90,7 @@ impl Component for Options {
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(VIVID_SKY_BLUE));
+            .border_style(Style::default().fg(VERY_LIGHT_AZURE));
         let storage_drivename = Table::new(
             vec![
                 Row::new(vec![
@@ -217,7 +217,7 @@ impl Component for Options {
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(VIVID_SKY_BLUE));
+            .border_style(Style::default().fg(VERY_LIGHT_AZURE));
         let beta_rewards = Table::new(
             vec![
                 Row::new(vec![
@@ -268,7 +268,7 @@ impl Component for Options {
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(VIVID_SKY_BLUE));
+            .border_style(Style::default().fg(VERY_LIGHT_AZURE));
         let logs_folder = Table::new(
             vec![
                 Row::new(vec![
