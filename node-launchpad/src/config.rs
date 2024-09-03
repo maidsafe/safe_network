@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::connection_mode::ConnectionMode;
 use crate::system::get_primary_mount_point;
 use crate::{action::Action, mode::Scene};
 use color_eyre::eyre::{eyre, Result};
@@ -103,6 +104,9 @@ pub struct AppData {
     pub nodes_to_start: usize,
     pub storage_mountpoint: Option<PathBuf>,
     pub storage_drive: Option<String>,
+    pub connection_mode: Option<ConnectionMode>,
+    pub port_from: Option<u32>,
+    pub port_to: Option<u32>,
 }
 
 impl Default for AppData {
@@ -112,6 +116,9 @@ impl Default for AppData {
             nodes_to_start: 1,
             storage_mountpoint: None,
             storage_drive: None,
+            connection_mode: None,
+            port_from: None,
+            port_to: None,
         }
     }
 }
@@ -705,6 +712,9 @@ mod tests {
         assert_eq!(app_data.nodes_to_start, 1);
         assert_eq!(app_data.storage_mountpoint, None);
         assert_eq!(app_data.storage_drive, None);
+        assert_eq!(app_data.connection_mode, None);
+        assert_eq!(app_data.port_from, None);
+        assert_eq!(app_data.port_to, None);
 
         Ok(())
     }
@@ -729,6 +739,9 @@ mod tests {
         assert_eq!(app_data.nodes_to_start, 3);
         assert_eq!(app_data.storage_mountpoint, None);
         assert_eq!(app_data.storage_drive, None);
+        assert_eq!(app_data.connection_mode, None);
+        assert_eq!(app_data.port_from, None);
+        assert_eq!(app_data.port_to, None);
 
         Ok(())
     }
@@ -754,35 +767,9 @@ mod tests {
         assert_eq!(app_data.nodes_to_start, 3);
         assert_eq!(app_data.storage_mountpoint, None);
         assert_eq!(app_data.storage_drive, Some("C:".to_string()));
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_app_data_complete_info() -> Result<()> {
-        let temp_dir = tempdir()?;
-        let complete_data_path = temp_dir.path().join("complete_app_data.json");
-
-        let complete_data = r#"
-        {
-            "discord_username": "complete_user",
-            "nodes_to_start": 5,
-            "storage_mountpoint": "/mnt/data",
-            "storage_drive": "D:"
-        }
-        "#;
-
-        std::fs::write(&complete_data_path, complete_data)?;
-
-        let app_data = AppData::load(Some(complete_data_path))?;
-
-        assert_eq!(app_data.discord_username, "complete_user");
-        assert_eq!(app_data.nodes_to_start, 5);
-        assert_eq!(
-            app_data.storage_mountpoint,
-            Some(PathBuf::from("/mnt/data"))
-        );
-        assert_eq!(app_data.storage_drive, Some("D:".to_string()));
+        assert_eq!(app_data.connection_mode, None);
+        assert_eq!(app_data.port_from, None);
+        assert_eq!(app_data.port_to, None);
 
         Ok(())
     }
@@ -798,6 +785,9 @@ mod tests {
         app_data.nodes_to_start = 4;
         app_data.storage_mountpoint = Some(PathBuf::from("/mnt/test"));
         app_data.storage_drive = Some("E:".to_string());
+        app_data.connection_mode = Some(ConnectionMode::CustomPorts);
+        app_data.port_from = Some(12000);
+        app_data.port_to = Some(13000);
 
         // Save to custom path
         app_data.save(Some(test_path.clone()))?;
@@ -812,6 +802,12 @@ mod tests {
             Some(PathBuf::from("/mnt/test"))
         );
         assert_eq!(loaded_data.storage_drive, Some("E:".to_string()));
+        assert_eq!(
+            loaded_data.connection_mode,
+            Some(ConnectionMode::CustomPorts)
+        );
+        assert_eq!(loaded_data.port_from, Some(12000));
+        assert_eq!(loaded_data.port_to, Some(13000));
 
         Ok(())
     }

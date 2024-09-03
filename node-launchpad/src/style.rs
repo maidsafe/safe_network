@@ -23,6 +23,7 @@ pub const SPACE_CADET: Color = Color::Indexed(17);
 pub const DARK_GUNMETAL: Color = Color::Indexed(235); // 266 is incorrect
 pub const INDIGO: Color = Color::Indexed(60);
 pub const VIVID_SKY_BLUE: Color = Color::Indexed(45);
+pub const RED: Color = Color::Indexed(196);
 
 // Clears the area and sets the background color
 pub fn clear_area(f: &mut Frame<'_>, area: Rect) {
