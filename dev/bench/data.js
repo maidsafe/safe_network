@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725325767773,
+  "lastUpdate": 1725325770160,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "0fe22e81c038a24123a42e869052894bad48a826",
-          "message": "chore(node): do not reset farthest_acceptance_distance",
-          "timestamp": "2024-04-18T09:00:02Z",
-          "tree_id": "43e39963e5d0634edeee17f4dad19256d089d420",
-          "url": "https://github.com/maidsafe/safe_network/commit/0fe22e81c038a24123a42e869052894bad48a826"
-        },
-        "date": 1713434803101,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7327,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35915,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 23659,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8e111568db1555cc91d47781ef9827e018f135b8",
+          "message": "Merge pull request #2076 from mazzi/feat_connection_mode\n\nfeat(launchpad): connection mode and fixes",
+          "timestamp": "2024-09-03T00:21:03Z",
+          "tree_id": "aa895917611a7aee0a84f6977907438ef4fe0e4b",
+          "url": "https://github.com/maidsafe/safe_network/commit/8e111568db1555cc91d47781ef9827e018f135b8"
+        },
+        "date": 1725325769350,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4471,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 24253,
             "unit": "ms"
           },
           {
