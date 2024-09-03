@@ -88,14 +88,12 @@ impl Node {
                         .await
                     {
                         Ok(record) => record,
-                        // TODO: do we need to handle SplitRecord anywhere else?
                         Err(error) => match error {
                             sn_networking::NetworkError::DoubleSpendAttempt(spends) => {
                                 debug!("Failed to fetch record {pretty_key:?} from the network, double spend attempt {spends:?}");
 
                                 let bytes = try_serialize_record(&spends, RecordKind::Spend)?;
 
-                                // TODO: does this need merged with any local copy?
                                 Record {
                                     key,
                                     value: bytes.to_vec(),
