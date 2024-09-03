@@ -769,7 +769,9 @@ impl ClientRegister {
     ) -> Result<()> {
         let cmd_dst = cmd.dst();
         debug!("Querying existing Register for cmd: {cmd_dst:?}");
-        let network_reg = client.get_signed_register_from_network(cmd.dst()).await;
+        let network_reg = client
+            .get_signed_register_from_network(cmd.dst(), false)
+            .await;
 
         debug!("Publishing Register cmd: {cmd_dst:?}");
         let register = match cmd {
@@ -863,7 +865,9 @@ impl ClientRegister {
         address: RegisterAddress,
     ) -> Result<Register> {
         debug!("Retrieving Register from: {address}");
-        let reg = client.get_signed_register_from_network(address).await?;
+        let reg = client
+            .get_signed_register_from_network(address, false)
+            .await?;
         reg.verify_with_address(address)?;
         Ok(reg.register()?)
     }
