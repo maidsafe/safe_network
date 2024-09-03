@@ -120,6 +120,7 @@ impl ErrorPopup {
             Block::default()
                 .borders(Borders::ALL)
                 .title(format!(" {} ", self.title))
+                .bold()
                 .title_style(Style::new().fg(RED))
                 .padding(Padding::uniform(2))
                 .border_style(Style::new().fg(RED)),
