@@ -14,7 +14,7 @@ name = "safenode"
 path = "src/bin/safenode/main.rs"
 
 [features]
-default = ["metrics", "upnp", "open-metrics"]
+default = ["metrics", "upnp", "open-metrics", "encrypt-records"]
 local-discovery = ["sn_networking/local-discovery"]
 otlp = ["sn_logging/otlp"]
 metrics = ["sn_logging/process-metrics"]
@@ -82,9 +82,7 @@ color-eyre = "0.6.2"
 
 [dev-dependencies]
 evmlib = { path = "../evmlib", version = "0.1" }
-autonomi = { path = "../autonomi", version = "0.1.0", features = [
-    "registers",
-] }
+autonomi = { path = "../autonomi", version = "0.1.0", features = ["registers"] }
 reqwest = { version = "0.12.2", default-features = false, features = [
     "rustls-tls-manual-roots",
 ] }
