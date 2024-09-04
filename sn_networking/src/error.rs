@@ -125,9 +125,6 @@ pub enum NetworkError {
     #[error("The RecordKind obtained from the Record did not match with the expected kind: {0}")]
     RecordKindMismatch(RecordKind),
 
-    #[error("Record header is incorrect")]
-    InCorrectRecordHeader,
-
     // ---------- Transfer Errors
     #[error("Failed to get spend: {0}")]
     FailedToGetSpend(String),
