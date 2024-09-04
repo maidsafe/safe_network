@@ -933,7 +933,6 @@ impl SwarmDriver {
                 }
             }
         }
-        all_peers.push(self.self_peer_id);
         all_peers
     }
 
