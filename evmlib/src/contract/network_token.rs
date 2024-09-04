@@ -1,5 +1,5 @@
+use crate::contract::common::{Address, TxHash, U256};
 use crate::contract::network_token::NetworkTokenContract::NetworkTokenContractInstance;
-use alloy::primitives::{Address, TxHash, U256};
 use alloy::providers::{Network, Provider};
 use alloy::sol;
 use alloy::transports::{RpcError, Transport, TransportErrorKind};
@@ -37,6 +37,7 @@ where
     }
 
     /// Deploys the AutonomiNetworkToken smart contract to the network of the provider.
+    /// ONLY DO THIS IF YOU KNOW WHAT YOU ARE DOING!
     pub async fn deploy(provider: P) -> Self {
         let contract = NetworkTokenContract::deploy(provider)
             .await

@@ -1,10 +1,10 @@
 pub mod error;
-pub mod quote;
 
 use crate::contract::chunk_payments::error::Error;
-use crate::contract::chunk_payments::quote::SignedQuote;
 use crate::contract::chunk_payments::ChunkPaymentsContract::ChunkPaymentsContractInstance;
-use alloy::primitives::{Address, TxHash};
+use crate::contract::common;
+use crate::contract::common::{Address, TxHash};
+use alloy::primitives::FixedBytes;
 use alloy::providers::{Network, Provider};
 use alloy::sol;
 use alloy::transports::Transport;
@@ -19,23 +19,6 @@ sol!(
     ChunkPaymentsContract,
     "artifacts/ChunkPayments.json"
 );
-
-impl From<SignedQuote> for ChunkPaymentsContract::Quote {
-    fn from(quote: SignedQuote) -> ChunkPaymentsContract::Quote {
-        #[allow(clippy::all)]
-        ChunkPaymentsContract::Quote {
-            chunk_address_hash: quote.quote.chunk_address_hash,
-            cost: quote.quote.cost,
-            expiration_timestamp: quote.quote.expiration_timestamp,
-            payment_address: quote.quote.payment_address,
-            signature: ChunkPaymentsContract::Signature {
-                r: quote.signature.r,
-                s: quote.signature.s,
-                v: quote.signature.v,
-            },
-        }
-    }
-}
 
 pub struct ChunkPayments<T: Transport + Clone, P: Provider<T, N>, N: Network> {
     pub contract: ChunkPaymentsContractInstance<T, P, N>,
@@ -54,6 +37,7 @@ where
     }
 
     /// Deploys the ChunkPayments smart contract to the network of the provider.
+    /// ONLY DO THIS IF YOU KNOW WHAT YOU ARE DOING!
     pub async fn deploy(
         provider: P,
         payment_token_address: Address,
@@ -72,20 +56,28 @@ where
         self.contract = ChunkPaymentsContract::new(address, provider);
     }
 
-    /// Pay for signed quotes.
-    pub async fn pay_for_quotes(&self, quotes: Vec<SignedQuote>) -> Result<TxHash, Error> {
-        if quotes.len() > TRANSFER_LIMIT as usize {
+    /// Pay for chunks.
+    /// Input: (quote_id, reward_address, amount).
+    pub async fn pay_for_chunks<I: IntoIterator<Item = common::ChunkPayment>>(
+        &self,
+        chunk_payments: I,
+    ) -> Result<TxHash, Error> {
+        let chunk_payments: Vec<ChunkPaymentsContract::ChunkPayment> = chunk_payments
+            .into_iter()
+            .map(|(hash, addr, amount)| ChunkPaymentsContract::ChunkPayment {
+                rewardAddress: addr,
+                amount,
+                quoteHash: FixedBytes::new(hash),
+            })
+            .collect();
+
+        if chunk_payments.len() > TRANSFER_LIMIT as usize {
             return Err(Error::TransferLimitExceeded);
         }
 
-        let quotes: Vec<ChunkPaymentsContract::Quote> = quotes
-            .into_iter()
-            .map(ChunkPaymentsContract::Quote::from)
-            .collect();
-
         let tx_hash = self
             .contract
-            .payForQuotes(quotes)
+            .submitChunkPayments(chunk_payments)
             .send()
             .await?
             .watch()

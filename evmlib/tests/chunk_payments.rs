@@ -152,7 +152,6 @@ async fn test_deploy() {
 async fn test_pay_for_quotes() {
     let (_anvil, network_token, mut chunk_payments) = setup().await;
 
-    let node = generate_ecdsa_keypair();
     let quote = generate_random_quote(&node.0);
 
     let _ = network_token
