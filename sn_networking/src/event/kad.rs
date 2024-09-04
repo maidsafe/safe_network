@@ -417,7 +417,7 @@ impl SwarmDriver {
     /// Checks passed peers from a request and checks they are sufficiently spaced to
     /// ensure we have searched enough of the network range as determined by our `get_range`
     ///
-    /// We expect any conflicting records to have been reported prior ti this check,
+    /// We expect any conflicting records to have been reported prior to this check,
     /// so we assume we're returning unique records only.
     fn have_we_have_searched_thoroughly_for_quorum(
         expected_get_range: KBucketDistance,
@@ -425,7 +425,7 @@ impl SwarmDriver {
         data_key_address: &NetworkAddress,
         quorum: &Quorum,
     ) -> bool {
-        warn!("Assessing search: range: {:?}, address: {data_key_address:?}, quorum required: {quorum:?}, peers_returned_count: {:?}", expected_get_range.ilog2(), searched_peers_list.len());
+        info!("Assessing search: range: {:?}, address: {data_key_address:?}, quorum required: {quorum:?}, peers_returned_count: {:?}", expected_get_range.ilog2(), searched_peers_list.len());
         let is_sensitive_data = matches!(quorum, Quorum::All);
 
         let required_quorum = get_quorum_value(quorum);
@@ -441,7 +441,6 @@ impl SwarmDriver {
         let mut max_distance_to_data_from_responded_nodes = KBucketDistance::default();
 
         // iterate over peers and see if the distance to the data is greater than the get_range
-        // Fathest peer from the data that has returned it
         for peer_id in searched_peers_list.iter() {
             let peer_address = NetworkAddress::from_peer(*peer_id);
             let distance_to_data = peer_address.distance(data_key_address);
