@@ -14,7 +14,13 @@ name = "safenode"
 path = "src/bin/safenode/main.rs"
 
 [features]
-default = ["metrics", "upnp", "reward-forward", "open-metrics"]
+default = [
+    "metrics",
+    "upnp",
+    "reward-forward",
+    "open-metrics",
+    "encrypt-records",
+]
 local-discovery = ["sn_networking/local-discovery"]
 otlp = ["sn_logging/otlp"]
 metrics = ["sn_logging/process-metrics"]
