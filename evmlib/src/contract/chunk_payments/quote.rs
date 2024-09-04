@@ -1,8 +1,10 @@
 use crate::cryptography::{
     recover_public_key_from_signed_hash, sign_message_recoverable, to_eth_signed_message_hash,
 };
+use alloy::hex;
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::signers::k256::ecdsa::{signature, RecoveryId, SigningKey, VerifyingKey};
+use alloy::sol_types::SolValue;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -43,12 +45,13 @@ pub struct SignedQuote {
 
 impl Quote {
     pub fn to_packed(&self) -> Vec<u8> {
-        let mut message: Vec<u8> = vec![];
-        message.extend_from_slice(self.chunk_address_hash.as_slice());
-        message.extend_from_slice(self.cost.as_le_slice());
-        message.extend_from_slice(self.expiration_timestamp.as_le_slice());
-        message.extend_from_slice(self.payment_address.as_slice());
-        message
+        (
+            self.chunk_address_hash,
+            self.cost,
+            self.expiration_timestamp,
+            self.payment_address,
+        )
+            .abi_encode_packed()
     }
 
     /// Sign a quote using a secret key.
