@@ -14,6 +14,7 @@ mod rpc_service;
 use clap::Parser;
 use eyre::{eyre, Result};
 use libp2p::{identity::Keypair, PeerId};
+use sn_evm::RewardsAddress;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
@@ -118,6 +119,12 @@ struct Opt {
     #[clap(long = "max_archived_log_files", verbatim_doc_comment)]
     max_compressed_log_files: Option<usize>,
 
+    /// Specify the rewards address.
+    /// The rewards address is the address that will receive the rewards for the node.
+    /// It should be a valid EVM address.
+    #[clap(long)]
+    rewards_address: String,
+
     /// Specify the node's data directory.
     ///
     /// If not provided, the default location is platform specific:
@@ -183,6 +190,7 @@ fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
 
+    let rewards_address = RewardsAddress::new(opt.rewards_address.clone());
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
 
@@ -213,11 +221,11 @@ fn main() -> Result<()> {
     let restart_options = rt.block_on(async move {
         let mut node_builder = NodeBuilder::new(
             keypair,
+            rewards_address,
             node_socket_addr,
             bootstrap_peers,
             opt.local,
             root_dir,
-            opt.owner.clone(),
             #[cfg(feature = "upnp")]
             opt.upnp,
         );

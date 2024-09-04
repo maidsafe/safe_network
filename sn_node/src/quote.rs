@@ -8,7 +8,7 @@
 
 use crate::{node::Node, Error, Result};
 use libp2p::PeerId;
-use sn_evm::{NanoTokens, PaymentQuote, QuotingMetrics};
+use sn_evm::{NanoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_networking::{calculate_cost_for_records, Network, NodeIssue};
 use sn_protocol::{error::Error as ProtocolError, storage::ChunkAddress, NetworkAddress};
 use std::time::Duration;
@@ -19,10 +19,19 @@ impl Node {
         cost: NanoTokens,
         address: &NetworkAddress,
         quoting_metrics: &QuotingMetrics,
+        payment_address: &RewardsAddress,
     ) -> Result<PaymentQuote, ProtocolError> {
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
-        let bytes = PaymentQuote::bytes_for_signing(content, cost, timestamp, quoting_metrics);
+        let payment_id = rand::random();
+        let bytes = PaymentQuote::bytes_for_signing(
+            content,
+            cost,
+            timestamp,
+            quoting_metrics,
+            payment_id,
+            payment_address,
+        );
 
         let Ok(signature) = network.sign(&bytes) else {
             return Err(ProtocolError::QuoteGenerationFailed);
@@ -34,6 +43,8 @@ impl Node {
             timestamp,
             quoting_metrics: quoting_metrics.clone(),
             pub_key: network.get_pub_key(),
+            payment_id,
+            rewards_address: payment_address.clone(),
             signature,
         };
 
@@ -60,12 +71,7 @@ pub(crate) fn verify_quote_for_storecost(
     }
 
     // check sig
-    let bytes = PaymentQuote::bytes_for_signing(
-        quote.content,
-        quote.cost,
-        quote.timestamp,
-        &quote.quoting_metrics,
-    );
+    let bytes = quote.bytes_for_sig();
     let signature = quote.signature;
     if !network.verify(&bytes, &signature) {
         return Err(Error::InvalidQuoteSignature);

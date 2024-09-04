@@ -20,7 +20,7 @@ use eyre::Result;
 use libp2p::PeerId;
 use libp2p_identity::Keypair;
 use rand::thread_rng;
-use sn_evm::{MainSecretKey, NanoTokens, PaymentQuote, WalletApi};
+use sn_evm::{NanoTokens, PaymentQuote, RewardsAddress, WalletApi};
 use sn_networking::{NetworkBuilder, PayeeQuote};
 use sn_protocol::{storage::RetryStrategy, NetworkAddress};
 use sn_registers::{Register, RegisterAddress};
@@ -197,11 +197,7 @@ impl UploaderInterface for TestUploader {
                     task_result_sender
                         .send(TaskResult::GetStoreCostOk {
                             xorname,
-                            quote: Box::new((
-                                PeerId::random(),
-                                MainSecretKey::random().main_pubkey(),
-                                quote,
-                            )),
+                            quote: Box::new((PeerId::random(), RewardsAddress::dummy(), quote)),
                         })
                         .await
                         .expect("Failed to send task result");

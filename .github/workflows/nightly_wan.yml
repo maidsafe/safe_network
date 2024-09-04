@@ -221,10 +221,6 @@ jobs:
         run: cargo test --release -p sn_node --test spend_simulation -- --nocapture --test-threads=1
         timeout-minutes: 45
 
-      - name: Small wait to allow reward receipt
-        run: sleep 30
-        timeout-minutes: 1
-
       - name: Fetch network logs
         if: always()
         uses: maidsafe/sn-testnet-action@main

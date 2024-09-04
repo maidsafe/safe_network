@@ -11,9 +11,12 @@ extern crate tracing;
 
 mod cashnotes;
 mod error;
+mod evm;
 mod genesis;
 mod transfers;
 mod wallet;
+
+pub use evm::{ProofOfPayment, RewardsAddress};
 
 /// Types used in the public API
 pub use cashnotes::{
@@ -30,9 +33,9 @@ pub use genesis::{
 };
 pub use transfers::{CashNoteRedemption, SignedTransaction, Transfer, UnsignedTransaction};
 pub use wallet::{
-    bls_secret_from_hex, wallet_lockfile_name, Error as WalletError, HotWallet, Payment,
-    PaymentQuote, QuotingMetrics, Result as WalletResult, WalletApi, WatchOnlyWallet,
-    QUOTE_EXPIRATION_SECS, WALLET_DIR_NAME,
+    bls_secret_from_hex, wallet_lockfile_name, Error as WalletError, HotWallet, PaymentQuote,
+    QuotingMetrics, Result as WalletResult, WalletApi, WatchOnlyWallet, QUOTE_EXPIRATION_SECS,
+    WALLET_DIR_NAME,
 };
 
 use bls::SecretKey;
@@ -109,24 +112,17 @@ lazy_static! {
 }
 
 lazy_static! {
-    pub static ref PAYMENT_FORWARD_PK: MainPubkey = {
-        let compile_time_key =
-            option_env!("PAYMENT_FORWARD_PK").unwrap_or(DEFAULT_PAYMENT_FORWARD_STR);
+    pub static ref REWARD_PK: MainPubkey = {
+        let compile_time_key = option_env!("REWARD_PK").unwrap_or(DEFAULT_PAYMENT_FORWARD_STR);
         let runtime_key =
-            std::env::var("PAYMENT_FORWARD_PK").unwrap_or_else(|_| compile_time_key.to_string());
+            std::env::var("REWARD_PK").unwrap_or_else(|_| compile_time_key.to_string());
 
         if runtime_key == DEFAULT_PAYMENT_FORWARD_STR {
-            warn!(
-                "Using default PAYMENT_FORWARD_PK: {}",
-                DEFAULT_PAYMENT_FORWARD_STR
-            );
+            warn!("Using default REWARD_PK: {}", DEFAULT_PAYMENT_FORWARD_STR);
         } else if runtime_key == compile_time_key {
-            warn!(
-                "Using compile-time PAYMENT_FORWARD_PK: {}",
-                compile_time_key
-            );
+            warn!("Using compile-time REWARD_PK: {}", compile_time_key);
         } else {
-            warn!("Overridden by runtime PAYMENT_FORWARD_PK: {}", runtime_key);
+            warn!("Overridden by runtime REWARD_PK: {}", runtime_key);
         }
 
         match MainPubkey::from_hex(&runtime_key) {

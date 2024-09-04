@@ -8,10 +8,7 @@
 
 use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
-use sn_evm::{
-    calculate_royalties_fee, CashNote, CashNoteRedemption, HotWallet, NanoTokens, Payment,
-    SignedSpend, Transfer, TransferError, UniquePubkey, WalletError, NETWORK_ROYALTIES_PK,
-};
+use sn_evm::{calculate_royalties_fee, ProofOfPayment, SignedSpend, TransferError, UniquePubkey};
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     storage::{
@@ -33,7 +30,7 @@ impl Node {
         match record_header.kind {
             RecordKind::ChunkWithPayment => {
                 let record_key = record.key.clone();
-                let (payment, chunk) = try_deserialize_record::<(Payment, Chunk)>(&record)?;
+                let (payment, chunk) = try_deserialize_record::<(ProofOfPayment, Chunk)>(&record)?;
                 let already_exists = self
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
@@ -159,7 +156,7 @@ impl Node {
             }
             RecordKind::RegisterWithPayment => {
                 let (payment, register) =
-                    try_deserialize_record::<(Payment, SignedRegister)>(&record)?;
+                    try_deserialize_record::<(ProofOfPayment, SignedRegister)>(&record)?;
 
                 // check if the deserialized value's RegisterAddress matches the record's key
                 let net_addr = NetworkAddress::from_register_address(*register.address());
@@ -458,135 +455,28 @@ impl Node {
         Ok(())
     }
 
-    /// Gets CashNotes out of Transfers, this includes network verifications of the Transfers
-    /// Rewraps the royalties transfers into encrypted Transfers ready to be sent directly to the beneficiary
-    async fn cash_notes_from_transfers(
-        &self,
-        transfers: Vec<Transfer>,
-        wallet: &HotWallet,
-        pretty_key: PrettyPrintRecordKey<'static>,
-    ) -> Result<(NanoTokens, Vec<CashNote>, Vec<CashNoteRedemption>)> {
-        let royalties_pk = *NETWORK_ROYALTIES_PK;
-        let mut cash_notes = vec![];
-        let mut royalties_cash_notes_r = vec![];
-        let mut received_fee = NanoTokens::zero();
-
-        for transfer in transfers {
-            match transfer {
-                Transfer::Encrypted(_) => match self
-                    .network()
-                    .verify_and_unpack_transfer(&transfer, wallet)
-                    .await
-                {
-                    // transfer not for us
-                    Err(NetworkError::Wallet(WalletError::FailedToDecypherTransfer)) => continue,
-                    // transfer invalid
-                    Err(e) => return Err(e.into()),
-                    // transfer ok, add to cash_notes and continue as more transfers might be ours
-                    Ok(cns) => cash_notes.extend(cns),
-                },
-                Transfer::NetworkRoyalties(cashnote_redemptions) => {
-                    match self
-                        .network()
-                        .verify_cash_notes_redemptions(royalties_pk, &cashnote_redemptions)
-                        .await
-                    {
-                        Ok(cash_notes) => {
-                            let received_royalties = total_cash_notes_amount(&cash_notes)?;
-                            debug!(
-                                "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
-                                cash_notes.len()
-                            );
-                            royalties_cash_notes_r.extend(cashnote_redemptions);
-                            received_fee = received_fee
-                                .checked_add(received_royalties)
-                                .ok_or_else(|| Error::NumericOverflow)?;
-                        }
-                        Err(e) => {
-                            warn!(
-                                "Invalid network royalties payment for record {pretty_key}: {e:?}"
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        if cash_notes.is_empty() {
-            Err(Error::NoPaymentToOurNode(pretty_key))
-        } else {
-            let received_fee_to_our_node = total_cash_notes_amount(&cash_notes)?;
-            info!(
-                "{} cash note/s (for a total of {received_fee_to_our_node:?}) are for us for {pretty_key}",
-                cash_notes.len()
-            );
-            received_fee = received_fee
-                .checked_add(received_fee_to_our_node)
-                .ok_or_else(|| Error::NumericOverflow)?;
-
-            Ok((received_fee, cash_notes, royalties_cash_notes_r))
-        }
-    }
-
     /// Perform validations on the provided `Record`.
     async fn payment_for_us_exists_and_is_still_valid(
         &self,
         address: &NetworkAddress,
-        payment: Payment,
+        payment: ProofOfPayment,
     ) -> Result<()> {
         let key = address.to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
         debug!("Validating record payment for {pretty_key}");
 
-        // load wallet
-        let mut wallet = HotWallet::load_from(self.network().root_dir_path())?;
-        let old_balance = wallet.balance().as_nano();
-
-        // unpack transfer
-        debug!("Unpacking incoming Transfers for record {pretty_key}");
-        let (received_fee, mut cash_notes, royalties_cash_notes_r) = self
-            .cash_notes_from_transfers(payment.transfers, &wallet, pretty_key.clone())
-            .await?;
-
-        // check for cash notes that we have already spent
-        // this can happen in cases where the client retries a failed PUT after we have already used the cash note
-        cash_notes.retain(|cash_note| {
-            let already_present = wallet.cash_note_presents(&cash_note.unique_pubkey());
-            if already_present {
-                return !already_present;
-            }
-
-            let spend_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
-            !wallet.has_confirmed_spend(spend_addr)
-        });
-        if cash_notes.is_empty() {
-            info!("All incoming cash notes were already received, no need to further process");
-            return Err(Error::ReusedPayment);
-        }
-
-        debug!("Received payment of {received_fee:?} for {pretty_key}");
+        // NB TODO verify payment on blockchain + royalties
+        println!("TODO VERIFY PAYMENT HERE: {payment:?}");
+        let received_fee = payment.quote.cost; // NB TODO set this to the actual fee received
 
         // Notify `record_store` that the node received a payment.
         self.network().notify_payment_received();
 
-        // deposit the CashNotes in our wallet
-        wallet.deposit_and_store_to_disk(&cash_notes)?;
-        let new_balance = wallet.balance().as_nano();
-        info!(
-            "The new wallet balance is {new_balance}, after earning {}",
-            new_balance - old_balance
-        );
-
         #[cfg(feature = "open-metrics")]
         if let Some(node_metrics) = self.node_metrics() {
-            let _ = node_metrics
-                .current_reward_wallet_balance
-                .set(new_balance as i64);
-        }
-
-        if royalties_cash_notes_r.is_empty() {
-            warn!("No network royalties payment found for record {pretty_key}");
-            return Err(Error::NoNetworkRoyaltiesPayment(pretty_key.into_owned()));
+            let _prev = node_metrics
+                .current_rewards_collected
+                .inc_by(received_fee.as_nano() as i64);
         }
 
         // check if the quote is valid
@@ -888,20 +778,4 @@ impl Node {
             ))),
         }
     }
-}
-
-// Helper to calculate total amout of tokens received in a given set of CashNotes
-fn total_cash_notes_amount<'a, I>(cash_notes: I) -> Result<NanoTokens>
-where
-    I: IntoIterator<Item = &'a CashNote>,
-{
-    let mut received_fee = NanoTokens::zero();
-    for cash_note in cash_notes {
-        let amount = cash_note.value();
-        received_fee = received_fee
-            .checked_add(amount)
-            .ok_or(Error::NumericOverflow)?;
-    }
-
-    Ok(received_fee)
 }

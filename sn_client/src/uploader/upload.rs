@@ -969,8 +969,15 @@ impl InnerUploader {
                 let filter_list = wallet_api
                     .get_all_payments(&xorname)?
                     .into_iter()
-                    .map(|details| {
-                        PeerId::from_bytes(&details.peer_id_bytes).map_err(|_| {
+                    .map(|proof_of_payment| {
+                        let peer_id_bytes = proof_of_payment
+                            .quote
+                            .peer_id()
+                            .map_err(|_| {
+                                ClientError::Wallet(WalletError::NoPaymentForAddress(xorname))
+                            })?
+                            .to_bytes();
+                        PeerId::from_bytes(&peer_id_bytes).map_err(|_| {
                             ClientError::Wallet(WalletError::NoPaymentForAddress(xorname))
                         })
                     })
@@ -1005,9 +1012,10 @@ impl InnerUploader {
     ) -> Result<()> {
         let xorname = upload_item.xorname();
 
-        let payment_details = wallet_api.get_recent_payment(&xorname)?;
-        let payment = payment_details.to_payment();
-        let payee = PeerId::from_bytes(&payment_details.peer_id_bytes)
+        let payment = wallet_api.get_recent_payment(&xorname)?;
+        let payee = payment
+            .quote
+            .peer_id()
             .map_err(|_| ClientError::Wallet(WalletError::NoPaymentForAddress(xorname)))?;
 
         debug!("Payments for upload item: {xorname:?} to {payee:?}:  {payment:?}");

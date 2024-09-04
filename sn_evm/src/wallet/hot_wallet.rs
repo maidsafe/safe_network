@@ -8,7 +8,7 @@
 
 use super::{
     api::{WalletApi, WALLET_DIR_NAME},
-    data_payments::{PaymentDetails, PaymentQuote},
+    data_payments::PaymentQuote,
     keys::{get_main_key_from_disk, store_new_keypair},
     wallet_file::{
         get_confirmed_spend, get_unconfirmed_spend_requests, has_confirmed_spend,
@@ -18,7 +18,6 @@ use super::{
     watch_only::WatchOnlyWallet,
     Error, Result,
 };
-use crate::wallet::authentication::AuthenticationManager;
 use crate::wallet::encryption::EncryptedSecretKey;
 use crate::wallet::keys::{
     delete_encrypted_main_secret_key, delete_unencrypted_main_secret_key, get_main_pubkey,
@@ -30,8 +29,9 @@ use crate::{
     SpendAddress, SpendReason, Transfer, UniquePubkey, UnsignedTransaction, WalletError,
     NETWORK_ROYALTIES_PK,
 };
+use crate::{wallet::authentication::AuthenticationManager, RewardsAddress};
 use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet},
     fs::File,
     path::{Path, PathBuf},
     time::Instant,
@@ -448,87 +448,23 @@ impl HotWallet {
         Ok(created_cash_notes)
     }
 
-    // Create SignedSpends directly to forward all accumulated balance to the receipient.
-    #[cfg(feature = "reward-forward")]
-    pub fn prepare_forward_signed_spend(
-        &mut self,
-        to: Vec<(NanoTokens, MainPubkey)>,
-        reward_tracking_reason: String,
-    ) -> Result<Vec<SignedSpend>> {
-        let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
-        debug!(
-            "Available CashNotes for local send: {:#?}",
-            available_cash_notes
-        );
-
-        let spend_reason = match SpendReason::create_reward_tracking_reason(&reward_tracking_reason)
-        {
-            Ok(spend_reason) => spend_reason,
-            Err(err) => {
-                error!("Failed to generate spend_reason {err:?}");
-                return Err(Error::CouldNotSendMoney(format!(
-                    "Failed to generate spend_reason {err:?}"
-                )));
-            }
-        };
-
-        // create a unique key for each output
-        let mut rng = &mut rand::rngs::OsRng;
-        let to_unique_keys: Vec<_> = to
-            .into_iter()
-            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng), false))
-            .collect();
-
-        let signed_tx = SignedTransaction::new(
-            available_cash_notes,
-            to_unique_keys,
-            self.address(),
-            spend_reason,
-            &self.key,
-        )?;
-        let signed_spends: Vec<_> = signed_tx.spends.iter().cloned().collect();
-
-        self.update_local_wallet(signed_tx, exclusive_access, false)?;
-
-        // cash_notes better to be removed from disk
-        let _ =
-            self.remove_cash_notes_from_disk(signed_spends.iter().map(|s| &s.spend.unique_pubkey));
-
-        // signed_spends need to be flushed to the disk as confirmed_spends as well.
-        let ss_btree: BTreeSet<_> = signed_spends.iter().cloned().collect();
-        let _ = remove_unconfirmed_spend_requests(self.watchonly_wallet.wallet_dir(), &ss_btree);
-
-        Ok(signed_spends)
-    }
-
     /// Performs a payment for each content address.
     /// Includes payment of network royalties.
     /// Returns the amount paid for storage, including the network royalties fee paid.
     pub fn local_send_storage_payment(
         &mut self,
-        price_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote, Vec<u8>)>,
+        price_map: &BTreeMap<XorName, (RewardsAddress, PaymentQuote, Vec<u8>)>,
     ) -> Result<(NanoTokens, NanoTokens)> {
-        let mut rng = &mut rand::thread_rng();
         let mut storage_cost = NanoTokens::zero();
         let mut royalties_fees = NanoTokens::zero();
 
         let start = Instant::now();
 
-        // create random derivation indexes for recipients
-        let mut recipients_by_xor = BTreeMap::new();
-        for (xorname, (main_pubkey, quote, peer_id_bytes)) in price_map.iter() {
-            let storage_payee = (
-                quote.cost,
-                *main_pubkey,
-                DerivationIndex::random(&mut rng),
-                peer_id_bytes.clone(),
-            );
+        // calculate total storage cost incl royalties fees
+        let mut recipients_and_cost_by_xor = BTreeMap::new();
+        for (xorname, (rewards_address, quote, _peer_id_bytes)) in price_map.iter() {
             let royalties_fee = calculate_royalties_fee(quote.cost);
-            let royalties_payee = (
-                royalties_fee,
-                *NETWORK_ROYALTIES_PK,
-                DerivationIndex::random(&mut rng),
-            );
+            let royalties_payee = (royalties_fee, *NETWORK_ROYALTIES_PK);
 
             storage_cost = storage_cost
                 .checked_add(quote.cost)
@@ -537,113 +473,15 @@ impl HotWallet {
                 .checked_add(royalties_fee)
                 .ok_or(WalletError::TotalPriceTooHigh)?;
 
-            recipients_by_xor.insert(xorname, (storage_payee, royalties_payee));
+            recipients_and_cost_by_xor
+                .insert(xorname, ((rewards_address, quote.cost), royalties_payee));
         }
 
-        // create offline transfers
-        let recipients = recipients_by_xor
-            .values()
-            .flat_map(|(node, roy)| {
-                vec![(node.0, node.1, node.2, false), (roy.0, roy.1, roy.2, true)]
-            })
-            .collect();
+        // NB TODO: perform evm payments here
+        println!("TODO: placholder for payment for: {recipients_and_cost_by_xor:#?}");
 
-        trace!(
-            "local_send_storage_payment prepared in {:?}",
-            start.elapsed()
-        );
-
-        let start = Instant::now();
-        let (available_cash_notes, exclusive_access) = self.available_cash_notes()?;
-        trace!(
-            "local_send_storage_payment fetched {} cashnotes in {:?}",
-            available_cash_notes.len(),
-            start.elapsed()
-        );
-        debug!("Available CashNotes: {:#?}", available_cash_notes);
-
-        let spend_reason = Default::default();
-        let start = Instant::now();
-        let signed_tx = SignedTransaction::new(
-            available_cash_notes,
-            recipients,
-            self.address(),
-            spend_reason,
-            &self.key,
-        )?;
-        trace!(
-            "local_send_storage_payment created offline_transfer with {} cashnotes in {:?}",
-            signed_tx.output_cashnotes.len(),
-            start.elapsed()
-        );
-
-        let start = Instant::now();
-        // cache transfer payments in the wallet
-        let mut cashnotes_to_use: HashSet<CashNote> =
-            signed_tx.output_cashnotes.iter().cloned().collect();
-        for (xorname, recipients_info) in recipients_by_xor {
-            let (storage_payee, royalties_payee) = recipients_info;
-            let (pay_amount, node_key, _, peer_id_bytes) = storage_payee;
-            let cash_note_for_node = cashnotes_to_use
-                .iter()
-                .find(|cash_note| {
-                    cash_note.value() == pay_amount && cash_note.main_pubkey() == &node_key
-                })
-                .ok_or(Error::CouldNotSendMoney(format!(
-                    "No cashnote found to pay node for {xorname:?}"
-                )))?
-                .clone();
-            cashnotes_to_use.remove(&cash_note_for_node);
-            let transfer_amount = cash_note_for_node.value();
-            let transfer_for_node = Transfer::transfer_from_cash_note(&cash_note_for_node)?;
-            trace!("Created transaction regarding {xorname:?} paying {transfer_amount:?} to {node_key:?}.");
-
-            let royalties_key = royalties_payee.1;
-            let royalties_amount = royalties_payee.0;
-            let cash_note_for_royalties = cashnotes_to_use
-                .iter()
-                .find(|cash_note| {
-                    cash_note.value() == royalties_amount
-                        && cash_note.main_pubkey() == &royalties_key
-                })
-                .ok_or(Error::CouldNotSendMoney(format!(
-                    "No cashnote found to pay royalties for {xorname:?}"
-                )))?
-                .clone();
-            cashnotes_to_use.remove(&cash_note_for_royalties);
-            let royalties = Transfer::royalties_transfer_from_cash_note(&cash_note_for_royalties)?;
-            let royalties_amount = cash_note_for_royalties.value();
-            trace!("Created network royalties cnr regarding {xorname:?} paying {royalties_amount:?} to {royalties_key:?}.");
-
-            let quote = price_map
-                .get(xorname)
-                .ok_or(Error::CouldNotSendMoney(format!(
-                    "No quote found for {xorname:?}"
-                )))?
-                .1
-                .clone();
-            let payment = PaymentDetails {
-                recipient: node_key,
-                peer_id_bytes,
-                transfer: (transfer_for_node, transfer_amount),
-                royalties: (royalties, royalties_amount),
-                quote,
-            };
-
-            let _ = self
-                .watchonly_wallet
-                .insert_payment_transaction(*xorname, payment);
-        }
         trace!(
             "local_send_storage_payment completed payments insertion in {:?}",
-            start.elapsed()
-        );
-
-        // write all changes to local wallet
-        let start = Instant::now();
-        self.update_local_wallet(signed_tx, exclusive_access, true)?;
-        trace!(
-            "local_send_storage_payment completed local wallet update in {:?}",
             start.elapsed()
         );
 
@@ -782,6 +620,7 @@ mod tests {
 
     use super::HotWallet;
     use crate::wallet::authentication::AuthenticationManager;
+    use crate::RewardsAddress;
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
         wallet::{
@@ -1154,10 +993,10 @@ mod tests {
         let xor3 = XorName::random(&mut rng);
         let xor4 = XorName::random(&mut rng);
 
-        let key1a = MainSecretKey::random().main_pubkey();
-        let key2a = MainSecretKey::random().main_pubkey();
-        let key3a = MainSecretKey::random().main_pubkey();
-        let key4a = MainSecretKey::random().main_pubkey();
+        let key1a = RewardsAddress::dummy();
+        let key2a = RewardsAddress::dummy();
+        let key3a = RewardsAddress::dummy();
+        let key4a = RewardsAddress::dummy();
 
         let map = BTreeMap::from([
             (

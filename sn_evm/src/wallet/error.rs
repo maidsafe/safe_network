@@ -21,6 +21,9 @@ pub enum Error {
     #[error("Attempted to reload a wallet from disk, but the disk wallet is not the same as the current wallet. Wallet path: {0}")]
     CurrentAndLoadedKeyMismatch(PathBuf),
 
+    #[error("Invalid public key in quote")]
+    InvalidQuotePublicKey,
+
     /// The cashnotes that were attempted to be spent have already been spent to another address
     #[error("Double spend attempted with cashnotes: {0:?}")]
     DoubleSpendAttemptedForCashNotes(BTreeSet<UniquePubkey>),

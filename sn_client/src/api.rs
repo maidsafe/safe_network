@@ -19,8 +19,8 @@ use libp2p::{
 };
 use rand::{thread_rng, Rng};
 use sn_evm::{
-    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, Payment, SignedSpend, TransferError,
-    GENESIS_SPEND_UNIQUE_KEY,
+    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, ProofOfPayment, SignedSpend,
+    TransferError, GENESIS_SPEND_UNIQUE_KEY,
 };
 use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
@@ -588,7 +588,7 @@ impl Client {
         &self,
         chunk: Chunk,
         payee: PeerId,
-        payment: Payment,
+        payment: ProofOfPayment,
         verify_store: bool,
         retry_strategy: Option<RetryStrategy>,
     ) -> Result<()> {

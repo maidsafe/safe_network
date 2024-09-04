@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use lazy_static::lazy_static;
-use sn_evm::{FOUNDATION_PK, GENESIS_PK, NETWORK_ROYALTIES_PK, PAYMENT_FORWARD_PK};
+use sn_evm::{FOUNDATION_PK, GENESIS_PK, NETWORK_ROYALTIES_PK, REWARD_PK};
 
 lazy_static! {
     /// The node version used during Identify Behaviour.
@@ -98,7 +98,7 @@ fn get_key_version_str() -> String {
     let _ = g_k_str.split_off(6);
     let mut n_k_str = NETWORK_ROYALTIES_PK.to_hex();
     let _ = n_k_str.split_off(6);
-    let mut p_k_str = PAYMENT_FORWARD_PK.to_hex();
+    let mut p_k_str = REWARD_PK.to_hex();
     let _ = p_k_str.split_off(6);
     format!("{f_k_str}_{g_k_str}_{n_k_str}_{p_k_str}")
 }

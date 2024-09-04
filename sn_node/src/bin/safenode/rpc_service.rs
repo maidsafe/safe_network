@@ -68,7 +68,7 @@ impl SafeNode for SafeNodeRpcService {
             uptime_secs: self.started_instant.elapsed().as_secs(),
             wallet_balance: self
                 .running_node
-                .get_node_wallet_balance()
+                .get_node_earnings()
                 .expect("Failed to get node wallet balance")
                 .as_nano(),
         });

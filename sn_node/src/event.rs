@@ -9,7 +9,6 @@
 use crate::error::{Error, Result};
 
 use serde::{Deserialize, Serialize};
-use sn_evm::UniquePubkey;
 use sn_protocol::storage::{ChunkAddress, RegisterAddress};
 use tokio::sync::broadcast;
 
@@ -62,8 +61,6 @@ pub enum NodeEvent {
     RegisterCreated(RegisterAddress),
     /// A Register edit operation has been applied in local storage
     RegisterEdited(RegisterAddress),
-    /// A CashNote Spend has been stored in local storage
-    SpendStored(UniquePubkey),
     /// One of the sub event channel closed and unrecoverable.
     ChannelClosed,
     /// Terminates the node

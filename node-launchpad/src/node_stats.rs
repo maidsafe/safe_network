@@ -17,13 +17,13 @@ use crate::action::{Action, StatusActions};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NodeStats {
-    pub forwarded_rewards: u64,
+    pub received_rewards: u64,
     pub memory_usage_mb: usize,
 }
 
 impl NodeStats {
     fn merge(&mut self, other: &NodeStats) {
-        self.forwarded_rewards += other.forwarded_rewards;
+        self.received_rewards += other.received_rewards;
         self.memory_usage_mb += other.memory_usage_mb;
     }
 
@@ -105,7 +105,7 @@ impl NodeStats {
 
         let mut stats = NodeStats {
             memory_usage_mb: 0,
-            forwarded_rewards: 0,
+            received_rewards: 0,
         };
         for sample in all_metrics.samples.iter() {
             if sample.metric == "sn_networking_process_memory_used_mb" {
@@ -122,7 +122,7 @@ impl NodeStats {
                     prometheus_parse::Value::Counter(val)
                     | prometheus_parse::Value::Gauge(val)
                     | prometheus_parse::Value::Untyped(val) => {
-                        stats.forwarded_rewards = val as u64;
+                        stats.received_rewards = val as u64;
                     }
                     _ => {}
                 }

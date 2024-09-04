@@ -12,7 +12,7 @@ use super::ChunkProof;
 use bytes::Bytes;
 use core::fmt;
 use serde::{Deserialize, Serialize};
-use sn_evm::{MainPubkey, PaymentQuote};
+use sn_evm::{PaymentQuote, RewardsAddress};
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
@@ -27,8 +27,8 @@ pub enum QueryResponse {
     GetStoreCost {
         /// The store cost quote for storing the next record.
         quote: Result<PaymentQuote>,
-        /// The cash_note MainPubkey to pay this node's store cost to.
-        payment_address: MainPubkey,
+        /// The rewards address to pay this node's store cost to.
+        payment_address: RewardsAddress,
         /// Node's Peer Address
         peer_address: NetworkAddress,
     },
