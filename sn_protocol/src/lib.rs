@@ -31,6 +31,8 @@ pub mod safenode_proto {
 pub use error::Error;
 use storage::ScratchpadAddress;
 
+// pub use self::storage::get_type_from_record;
+
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
 use bytes::Bytes;
 use libp2p::{

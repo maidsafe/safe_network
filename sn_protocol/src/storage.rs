@@ -18,7 +18,10 @@ use std::{str::FromStr, time::Duration};
 pub use self::{
     address::{ChunkAddress, RegisterAddress, ScratchpadAddress, SpendAddress},
     chunks::Chunk,
-    header::{try_deserialize_record, try_serialize_record, RecordHeader, RecordKind, RecordType},
+    header::{
+        get_type_from_record, try_deserialize_record, try_serialize_record, RecordHeader,
+        RecordKind, RecordType,
+    },
     scratchpad::Scratchpad,
 };
 
