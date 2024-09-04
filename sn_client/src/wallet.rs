@@ -1061,7 +1061,7 @@ impl Client {
 
         for spend in &cash_note.parent_spends {
             let address = SpendAddress::from_unique_pubkey(spend.unique_pubkey());
-            warn!(
+            info!(
                 "Getting parent spend for cn {address:?} pubkey {:?} from network at {address:?}",
                 spend.unique_pubkey()
             );
@@ -1074,7 +1074,7 @@ impl Client {
                 Ok(spend) => Ok(spend),
                 Err(error) => match error {
                     Error::Network(sn_networking::NetworkError::DoubleSpendAttempt(spends)) => {
-                        warn!("DoubleSpentAttempt found with {spends:?}");
+                        warn!("BurntSpend found with {spends:?}");
                         Err(WalletError::BurntSpend)
                     }
                     err => Err(WalletError::CouldNotVerifyTransfer(format!("{err:?}"))),

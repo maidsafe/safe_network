@@ -20,6 +20,7 @@ use libp2p::{
 };
 use sn_protocol::{
     messages::{Cmd, Request},
+    storage::get_type_from_record,
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -533,7 +534,7 @@ impl SwarmDriver {
 
                         warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need PUT the data back into nodes in that range.");
 
-                        let record_type = Self::get_type_from_record(record)?;
+                        let record_type = get_type_from_record(record)?;
 
                         let replicate_targets: HashSet<_> = self
                             .get_filtered_peers_exceeding_range_or_closest_nodes(&data_key_address)
