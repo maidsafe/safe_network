@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725455515635,
+  "lastUpdate": 1725455517415,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30621,45 +30621,6 @@ window.BENCHMARK_DATA = {
             "name": "maqi",
             "username": "maqi"
           },
-          "distinct": true,
-          "id": "5c6ab50cf07f6cd8de9d45e94df59a52f0abb072",
-          "message": "fix(test): quoting metrics might have live_time field changed along time",
-          "timestamp": "2024-04-18T13:11:08Z",
-          "tree_id": "23eac83b35fde938d00d72f185e99a038eb2c83a",
-          "url": "https://github.com/maidsafe/safe_network/commit/5c6ab50cf07f6cd8de9d45e94df59a52f0abb072"
-        },
-        "date": 1713448509208,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7303,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34257,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
           "distinct": false,
           "id": "c3b91c565fa8f9a879cfb2b5a84fdf1cd109e07e",
           "message": "chore(node): lower some log levels to reduce log size",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 24265,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9fa379df935f90f2e4f7be885e4a94c084a032f6",
+          "message": "Merge pull request #2087 from maqi/cap_store_cost\n\nchore: refactor store_cost calculation",
+          "timestamp": "2024-09-04T12:15:29Z",
+          "tree_id": "29c46f81b6c3d67c2c386163f8574d5ff2a1d344",
+          "url": "https://github.com/maidsafe/safe_network/commit/9fa379df935f90f2e4f7be885e4a94c084a032f6"
+        },
+        "date": 1725455516955,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4947,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 25146,
             "unit": "ms"
           },
           {
