@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725363518040,
+  "lastUpdate": 1725455391230,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "5c6ab50cf07f6cd8de9d45e94df59a52f0abb072",
-          "message": "fix(test): quoting metrics might have live_time field changed along time",
-          "timestamp": "2024-04-18T13:11:08Z",
-          "tree_id": "23eac83b35fde938d00d72f185e99a038eb2c83a",
-          "url": "https://github.com/maidsafe/safe_network/commit/5c6ab50cf07f6cd8de9d45e94df59a52f0abb072"
-        },
-        "date": 1713448393511,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1961515303432957,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6374392380517147,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.07681381362089,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.43796156777444,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9fa379df935f90f2e4f7be885e4a94c084a032f6",
+          "message": "Merge pull request #2087 from maqi/cap_store_cost\n\nchore: refactor store_cost calculation",
+          "timestamp": "2024-09-04T12:15:29Z",
+          "tree_id": "29c46f81b6c3d67c2c386163f8574d5ff2a1d344",
+          "url": "https://github.com/maidsafe/safe_network/commit/9fa379df935f90f2e4f7be885e4a94c084a032f6"
+        },
+        "date": 1725455384499,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2015740556204888,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6649626090982936,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.333434252329404,
             "unit": "MiB/s"
           }
         ]
