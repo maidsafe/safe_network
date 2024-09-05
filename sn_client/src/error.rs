@@ -24,6 +24,8 @@ use xor_name::XorName;
 pub enum Error {
     #[error("Genesis disbursement failed")]
     GenesisDisbursement,
+    #[error("Faucet disbursement failed")]
+    FaucetDisbursement,
 
     #[error("Genesis error {0}")]
     GenesisError(#[from] sn_transfers::GenesisError),

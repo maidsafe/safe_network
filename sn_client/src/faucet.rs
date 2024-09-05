@@ -38,7 +38,13 @@ pub async fn fund_faucet_from_genesis_wallet(
     if client.is_genesis_spend_present().await {
         warn!("Faucet can't get funded from genesis, genesis is already spent!");
         println!("Faucet can't get funded from genesis, genesis is already spent!");
-        panic!("Faucet can't get funded from genesis, genesis is already spent!");
+
+        // try loading again
+        faucet_wallet.try_load_cash_notes()?;
+
+        if faucet_wallet.balance().is_zero() {
+            return Err(Error::FaucetDisbursement);
+        }
     }
 
     println!("Initiating genesis...");
