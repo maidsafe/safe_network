@@ -28,11 +28,13 @@ impl From<sn_client::Error> for SecretsError {
     }
 }
 
-pub fn generate_mnemonic() -> Result<bip39::Mnemonic, SecretsError> {
+#[allow(dead_code)]
+fn generate_mnemonic() -> Result<bip39::Mnemonic, SecretsError> {
     sn_client::acc_packet::user_secret::random_eip2333_mnemonic().map_err(SecretsError::from)
 }
 
-pub fn main_sk_from_mnemonic(
+#[allow(dead_code)]
+fn main_sk_from_mnemonic(
     mnemonic: bip39::Mnemonic,
     derivation_passphrase: &str,
 ) -> Result<MainSecretKey, SecretsError> {

@@ -12,8 +12,6 @@
 //!
 //! - `local`: Enables local discovery of peers using mDNS.
 
-#![deny(missing_docs)]
-
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.

@@ -16,6 +16,7 @@ pub struct MemWallet {
 
 impl MemWallet {
     /// Create an empty wallet from a main secret key.
+    #[allow(dead_code)]
     fn from_main_secret_key(main_secret_key: MainSecretKey) -> Self {
         Self {
             hot_wallet: HotWallet::new(main_secret_key, PathBuf::default()),
@@ -25,12 +26,14 @@ impl MemWallet {
 
     // TODO: as WASM can not save a wallet state to disk or load from disk -- we need to provide a wallet state manually.
     /// Initialise a wallet from wallet state bytes containing all payments, (un)confirmed spends, cash notes and the secret key.
+    #[allow(dead_code)]
     fn from_state_bytes<T: AsRef<[u8]>>(_data: T) -> Self {
         todo!()
     }
 
     /// Returns the entire wallet state as bytes. That includes all payments (un)confirmed spends, cash notes and the secret key.
     /// A wallet can be fully initialised again from these state bytes.
+    #[allow(dead_code)]
     fn to_state_bytes(&self) -> Vec<u8> {
         todo!()
     }
