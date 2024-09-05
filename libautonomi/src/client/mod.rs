@@ -12,24 +12,30 @@ mod files;
 mod registers;
 mod transfers;
 
-// Time before considering the connection timed out.
-const CONNECT_TIMEOUT_SECS: u64 = 20;
+/// Time before considering the connection timed out.
+pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 
 /// Represents a connection to the Autonomi network.
 ///
-/// # Examples
+/// # Example
+///
+/// To connect to the network, use [`Client::connect`].
 ///
 /// ```no_run
 /// # use libautonomi::Client;
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse().expect("str to be valid multiaddr")];
 /// let client = Client::connect(&peers).await?;
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Clone)]
 pub struct Client {
     pub(crate) network: Network,
 }
 
-/// Possible errors returned by [`Client::connect`].
+/// Error returned by [`Client::connect`].
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectError {
     /// Did not manage to connect to enough peers in time.
@@ -41,10 +47,18 @@ pub enum ConnectError {
 }
 
 impl Client {
+    /// Connect to the network.
+    ///
+    /// This will timeout after 20 seconds. (See [`CONNECT_TIMEOUT_SECS`].)
+    ///
     /// ```no_run
     /// # use libautonomi::Client;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse().expect("str to be valid multiaddr")];
-    /// let client = Client::connect(&peers);
+    /// let client = Client::connect(&peers).await?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub async fn connect(peers: &[Multiaddr]) -> Result<Self, ConnectError> {
         // Any global address makes the client non-local

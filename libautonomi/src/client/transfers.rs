@@ -78,6 +78,8 @@ pub enum ReceiveError {
     TransferError(#[from] TransferError),
 }
 
+// Hide these from the docs.
+#[doc(hidden)]
 impl Client {
     /// Send spend requests to the network.
     pub async fn send_spends(

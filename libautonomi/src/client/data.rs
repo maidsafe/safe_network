@@ -25,6 +25,7 @@ use xor_name::XorName;
 
 use super::transfers::SendSpendsError;
 
+/// Errors that can occur during the put operation.
 #[derive(Debug, thiserror::Error)]
 pub enum PutError {
     #[error("Failed to self-encrypt data.")]
@@ -35,8 +36,11 @@ pub enum PutError {
     Network(#[from] NetworkError),
     #[error("A wallet error occurred.")]
     Wallet(#[from] sn_transfers::WalletError),
+    #[error("Error occurred during payment.")]
+    PayError(#[from] PayError),
 }
 
+/// Errors that can occur during the pay operation.
 #[derive(Debug, thiserror::Error)]
 pub enum PayError {
     #[error("Could not get store costs: {0:?}")]
@@ -49,8 +53,13 @@ pub enum PayError {
     SendSpendsError(#[from] SendSpendsError),
 }
 
+/// Errors that can occur during the get operation.
 #[derive(Debug, thiserror::Error)]
 pub enum GetError {
+    #[error("Could not deserialize data map.")]
+    InvalidDataMap(rmp_serde::decode::Error),
+    #[error("Failed to decrypt data.")]
+    Decryption(crate::self_encryption::Error),
     #[error("General networking error: {0:?}")]
     Network(#[from] sn_client::networking::NetworkError),
     #[error("General protocol error: {0:?}")]
@@ -105,10 +114,8 @@ impl Client {
             xor_names.push(*chunk.name());
         }
 
-        let StoragePaymentResult { skipped_chunks, .. } = self
-            .pay(xor_names.into_iter(), wallet)
-            .await
-            .expect("TODO: handle error");
+        let StoragePaymentResult { skipped_chunks, .. } =
+            self.pay(xor_names.into_iter(), wallet).await?;
 
         // TODO: Upload in parallel
         if !skipped_chunks.contains(map.name()) {
@@ -136,14 +143,16 @@ impl Client {
             encrypted_chunks.push(chunk);
         }
 
-        let data = decrypt_full_set(data_map, &encrypted_chunks).expect("TODO");
+        let data = decrypt_full_set(data_map, &encrypted_chunks)
+            .map_err(|e| GetError::Decryption(crate::self_encryption::Error::SelfEncryption(e)))?;
 
         Ok(data)
     }
 
     // Unpack a wrapped data map and fetch all bytes using self-encryption.
     async fn fetch_from_data_map_chunk(&self, data_map_bytes: &Bytes) -> Result<Bytes, GetError> {
-        let mut data_map_level: DataMapLevel = rmp_serde::from_slice(data_map_bytes).expect("TODO");
+        let mut data_map_level: DataMapLevel =
+            rmp_serde::from_slice(data_map_bytes).map_err(GetError::InvalidDataMap)?;
 
         loop {
             let data_map = match &data_map_level {
@@ -156,7 +165,8 @@ impl Client {
             match &data_map_level {
                 DataMapLevel::First(_) => break Ok(data),
                 DataMapLevel::Additional(_) => {
-                    data_map_level = rmp_serde::from_slice(&data).expect("TODO");
+                    data_map_level =
+                        rmp_serde::from_slice(&data).map_err(GetError::InvalidDataMap)?;
                     continue;
                 }
             };
