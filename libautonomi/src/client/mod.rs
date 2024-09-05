@@ -25,7 +25,7 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 /// # use libautonomi::Client;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse().expect("str to be valid multiaddr")];
+/// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
 /// let client = Client::connect(&peers).await?;
 /// # Ok(())
 /// # }
@@ -55,7 +55,7 @@ impl Client {
     /// # use libautonomi::Client;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse().expect("str to be valid multiaddr")];
+    /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
     /// let client = Client::connect(&peers).await?;
     /// # Ok(())
     /// # }

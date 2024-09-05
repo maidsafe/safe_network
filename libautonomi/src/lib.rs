@@ -20,7 +20,7 @@
 //! # use libautonomi::{Client, Bytes};
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse().expect("str to be valid multiaddr")];
+//! let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
 //! let client = Client::connect(&peers).await?;
 //!
 //! # let mut wallet = todo!();
