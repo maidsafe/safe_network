@@ -38,13 +38,21 @@ pub async fn fund_faucet_from_genesis_wallet(
     if client.is_genesis_spend_present().await {
         warn!("Faucet can't get funded from genesis, genesis is already spent!");
         println!("Faucet can't get funded from genesis, genesis is already spent!");
-
-        // try loading again
-        faucet_wallet.try_load_cash_notes()?;
-
-        if faucet_wallet.balance().is_zero() {
-            return Err(Error::FaucetDisbursement);
+        // Try loading cash notes up to 100 times, waiting 1 second between attempts
+        for attempt in 1..=100 {
+            println!("Attempt {attempt} to load cash notes");
+            debug!("Attempt {attempt} to load cash notes");
+            faucet_wallet.try_load_cash_notes()?;
+            if !faucet_wallet.balance().is_zero() {
+                println!("Successfully loaded cash notes on attempt {attempt}");
+                debug!("Successfully loaded cash notes on attempt {attempt}");
+                return Ok(());
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
+
+        // If we've tried 100 times and still have zero balance, return an error
+        return Err(Error::FaucetDisbursement);
     }
 
     println!("Initiating genesis...");
