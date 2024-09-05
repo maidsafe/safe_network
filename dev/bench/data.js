@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725551620140,
+  "lastUpdate": 1725551742997,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "c3b91c565fa8f9a879cfb2b5a84fdf1cd109e07e",
-          "message": "chore(node): lower some log levels to reduce log size",
-          "timestamp": "2024-04-22T17:16:18Z",
-          "tree_id": "716782d7dee0e3a559e53274df7caf4130a9235b",
-          "url": "https://github.com/maidsafe/safe_network/commit/c3b91c565fa8f9a879cfb2b5a84fdf1cd109e07e"
-        },
-        "date": 1713810284940,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 56,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 129,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "82bd5eeb56e3213b726f9d8388e881e10154c34f",
+          "message": "Merge pull request #2091 from maqi/log_spend_size\n\nchore(client): log spend size",
+          "timestamp": "2024-09-05T15:00:22Z",
+          "tree_id": "6f0452fbd90b4ab275321149233d3fb2a1871138",
+          "url": "https://github.com/maidsafe/safe_network/commit/82bd5eeb56e3213b726f9d8388e881e10154c34f"
+        },
+        "date": 1725551742692,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 158,
             "unit": "MB"
           }
         ]
