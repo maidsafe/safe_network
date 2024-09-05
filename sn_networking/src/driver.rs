@@ -855,9 +855,6 @@ impl SwarmDriver {
         let mapped: Vec<_> = sorted_distances.iter().map(|d| d.ilog2()).collect();
         info!("Sorted distances: {:?}", mapped);
 
-        // We get around 5-7 peers returned here... We want to take further in larger networks
-        //
-        // This value
         let farthest_peer_to_check = self
             .get_all_local_peers_excluding_self()
             .len()
