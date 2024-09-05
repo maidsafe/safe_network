@@ -1,4 +1,4 @@
-use crate::common::{Address, ChunkPayment, QuoteHash, TxHash, U256};
+use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
 use crate::contract::chunk_payments::ChunkPayments;
 use crate::contract::network_token::NetworkToken;
 use crate::contract::{chunk_payments, network_token};
@@ -70,7 +70,7 @@ impl Wallet {
 
     /// Function for batch payments of chunks. It accepts an iterator of ChunkPayment and returns
     /// transaction hashes of the payments.
-    pub async fn pay_for_quotes<I: IntoIterator<Item = ChunkPayment>>(
+    pub async fn pay_for_quotes<I: IntoIterator<Item = QuotePayment>>(
         &self,
         chunk_payments: I,
     ) -> Result<Vec<TxHash>, chunk_payments::error::Error> {
@@ -149,7 +149,7 @@ pub async fn transfer_tokens(
 
 /// Use this wallet to pay for chunks in batched transfer transactions.
 /// If the amount of transfers is more than one transaction can contain, the transfers will be split up over multiple transactions.
-pub async fn pay_for_quotes<T: IntoIterator<Item = ChunkPayment>>(
+pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     wallet: EthereumWallet,
     network: &Network,
     payments: T,
@@ -174,7 +174,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = ChunkPayment>>(
     let chunks = payments.chunks(256);
 
     for batch in chunks {
-        let batch: Vec<ChunkPayment> = batch.to_vec();
+        let batch: Vec<QuotePayment> = batch.to_vec();
         let tx_hash = chunk_payments.pay_for_chunks(batch).await?;
         tx_hashes.push(tx_hash);
     }

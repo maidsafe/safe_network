@@ -57,7 +57,7 @@ where
 
     /// Pay for chunks.
     /// Input: (quote_id, reward_address, amount).
-    pub async fn pay_for_chunks<I: IntoIterator<Item = common::ChunkPayment>>(
+    pub async fn pay_for_chunks<I: IntoIterator<Item = common::QuotePayment>>(
         &self,
         chunk_payments: I,
     ) -> Result<TxHash, Error> {
