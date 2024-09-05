@@ -1,4 +1,5 @@
-use crate::contract::common::{Address, QuoteHash, TxHash, U256};
+use crate::common::{Address, QuoteHash, TxHash, U256};
+use crate::event::CHUNK_PAYMENT_EVENT_SIGNATURE;
 use crate::Network;
 use alloy::primitives::FixedBytes;
 use alloy::providers::{Provider, ProviderBuilder};
@@ -47,16 +48,13 @@ async fn get_chunk_payment_event(
     reward_addr: Address,
     amount: U256,
 ) -> Result<Vec<Log>, Error> {
-    let event = "ChunkPaymentMade(address,uint256,uint64)";
-
     let topic1: FixedBytes<32> = FixedBytes::left_padding_from(reward_addr.as_slice());
-    let topic3: FixedBytes<32> = FixedBytes::left_padding_from(&quote_hash);
 
     let filter = Filter::new()
-        .event(event)
+        .event_signature(CHUNK_PAYMENT_EVENT_SIGNATURE)
         .topic1(topic1)
         .topic2(amount)
-        .topic3(topic3)
+        .topic3(quote_hash)
         .from_block(block_number)
         .to_block(block_number);
 
@@ -81,9 +79,8 @@ pub async fn verify_chunk_payment(
         get_chunk_payment_event(network, block_number, quote_hash, reward_addr, amount).await
     {
         for _log in logs {
-            // TODO: convert log to ChunkPaymentEvent Struct.
-            // TODO: verify if event.amount, event.rewardAddress & event.quoteHash match amount, reward_addr and quote_hash.
-            // Return OK if ANY log matches.
+            // TODO: convert logs to events
+            // if let Ok(event) = ChunkPaymentEvent::try_from(log) {}
         }
     }
 
@@ -92,9 +89,10 @@ pub async fn verify_chunk_payment(
 
 #[cfg(test)]
 mod tests {
-    use crate::contract::common::TxHash;
-    use crate::transaction::get_transaction_by_hash;
+    use crate::common::{Address, QuoteHash, TxHash, U256};
+    use crate::transaction::{get_chunk_payment_event, get_transaction_by_hash};
     use crate::Network;
+    use alloy::hex;
     use alloy::hex::FromHex;
 
     #[tokio::test]
@@ -102,12 +100,34 @@ mod tests {
         let network = Network::ArbitrumOne;
 
         let tx_hash =
-            TxHash::from_hex("0358cb4d135926b28b4f831653cf92f29c7d3f12d6227cad894f2257d600f1c8")
+            TxHash::from_hex("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066")
                 .unwrap();
 
         assert!(get_transaction_by_hash(&network, tx_hash)
             .await
             .unwrap()
             .is_some());
+    }
+
+    #[tokio::test]
+    async fn test_get_chunk_payment_event() {
+        let network = Network::ArbitrumOne;
+
+        let block_number: u64 = 250043261;
+
+        let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap();
+
+        let amount = U256::from(200);
+
+        let quote_hash = QuoteHash::new(hex!(
+            "477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c"
+        ));
+
+        let logs =
+            get_chunk_payment_event(&network, block_number, quote_hash, reward_address, amount)
+                .await
+                .unwrap();
+
+        println!("{logs:?}");
     }
 }

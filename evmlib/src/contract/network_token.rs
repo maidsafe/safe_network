@@ -1,4 +1,4 @@
-use crate::contract::common::{Address, TxHash, U256};
+use crate::common::{Address, TxHash, U256};
 use crate::contract::network_token::NetworkTokenContract::NetworkTokenContractInstance;
 use alloy::providers::{Network, Provider};
 use alloy::sol;
