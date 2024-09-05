@@ -6,7 +6,7 @@ use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
 use alloy::node_bindings::AnvilInstance;
 use alloy::primitives::U256;
 use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
-use alloy::providers::ReqwestProvider;
+use alloy::providers::{ReqwestProvider, WalletProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::{Client, Http};
 use evmlib::contract::network_token::NetworkToken;

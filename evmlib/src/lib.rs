@@ -1,43 +1,66 @@
+use crate::contract::common::{QuoteHash, TxHash, U256};
+use crate::transaction::verify_chunk_payment;
 use alloy::primitives::{address, Address};
+use alloy::transports::http::reqwest;
+use std::sync::LazyLock;
 
 pub mod contract;
+pub mod cryptography;
+pub mod transaction;
+pub mod wallet;
 
-pub(crate) const PUBLIC_ARBITRUM_SEPOLIA_RPC_URL: &str = "https://sepolia-rollup.arbitrum.io/rpc";
-pub(crate) const ARBITRUM_SEPOLIA_NETWORK_TOKEN_ADDRESS: Address =
+static PUBLIC_ARBITRUM_ONE_HTTP_RPC_URL: LazyLock<reqwest::Url> = LazyLock::new(|| {
+    "https://arb1.arbitrum.io/rpc"
+        .parse()
+        .expect("Invalid RPC URL")
+});
+
+const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
     address!("4bc1aCE0E66170375462cB4E6Af42Ad4D5EC689C");
-pub(crate) const ARBITRUM_SEPOLIA_CHUNK_PAYMENTS_ADDRESS: Address =
-    address!("330ad5eA0D8eff21098336D067524893A6801C67");
+
+const ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS: Address =
+    address!("F15BfEA73b6a551C5c2e66026e4eB3b69c1F602c");
 
 pub struct CustomNetwork {
-    rpc_url: String,
-    network_token_address: Address,
+    rpc_url_http: reqwest::Url,
+    payment_token_address: Address,
     chunk_payments_address: Address,
 }
 
 pub enum Network {
-    ArbitrumSepolia,
+    ArbitrumOne,
     Custom(CustomNetwork),
 }
 
 impl Network {
-    pub fn rpc_url(&self) -> &str {
+    pub(crate) fn rpc_url(&self) -> &reqwest::Url {
         match self {
-            Network::ArbitrumSepolia => PUBLIC_ARBITRUM_SEPOLIA_RPC_URL,
-            Network::Custom(custom) => &custom.rpc_url,
+            Network::ArbitrumOne => &PUBLIC_ARBITRUM_ONE_HTTP_RPC_URL,
+            Network::Custom(custom) => &custom.rpc_url_http,
         }
     }
 
-    pub fn network_token_address(&self) -> &Address {
+    pub(crate) fn payment_token_address(&self) -> &Address {
         match self {
-            Network::ArbitrumSepolia => &ARBITRUM_SEPOLIA_NETWORK_TOKEN_ADDRESS,
-            Network::Custom(custom) => &custom.network_token_address,
+            Network::ArbitrumOne => &ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS,
+            Network::Custom(custom) => &custom.payment_token_address,
         }
     }
 
-    pub fn chunk_payments_address(&self) -> &Address {
+    pub(crate) fn chunk_payments_address(&self) -> &Address {
         match self {
-            Network::ArbitrumSepolia => &ARBITRUM_SEPOLIA_CHUNK_PAYMENTS_ADDRESS,
+            Network::ArbitrumOne => &ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS,
             Network::Custom(custom) => &custom.chunk_payments_address,
         }
+    }
+
+    pub async fn verify_chunk_payment(
+        &self,
+        tx_hash: TxHash,
+        quote_hash: QuoteHash,
+        reward_addr: Address,
+        amount: U256,
+    ) -> Result<(), transaction::Error> {
+        verify_chunk_payment(self, tx_hash, quote_hash, reward_addr, amount).await
     }
 }

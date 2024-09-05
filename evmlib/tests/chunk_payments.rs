@@ -5,14 +5,18 @@ use crate::common::network_token::deploy_network_token_contract;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
 use alloy::node_bindings::AnvilInstance;
 use alloy::primitives::utils::parse_ether;
-use alloy::primitives::{address, Address, U256};
+use alloy::primitives::{address, Address, FixedBytes, U256};
 use alloy::providers::ext::AnvilApi;
 use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
 use alloy::providers::{ProviderBuilder, ReqwestProvider, WalletProvider};
+use alloy::signers::k256::ecdsa::SigningKey;
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{Client, Http};
+use evmlib::contract::chunk_payments::quote::{Quote, Signature, SignedQuote};
 use evmlib::contract::chunk_payments::ChunkPayments;
 use evmlib::contract::network_token::NetworkToken;
+use evmlib::cryptography::{generate_ecdsa_keypair, sign_message_recoverable};
+use rand::Rng;
 
 const ROYALTIES_WALLET: Address = address!("385e7887E5b41750E3679Da787B943EC42f37d75");
 
@@ -120,20 +124,38 @@ async fn provider_with_funded_wallet(
     Ok(provider)
 }
 
+// Function to generate a random quote with a valid signature
+fn generate_random_quote(secret_key: &SigningKey) -> SignedQuote {
+    let mut rng = rand::rngs::OsRng;
+
+    let chunk_address_hash = FixedBytes::new(rng.gen());
+    let cost = U256::from(20);
+    let expiration_timestamp = U256::from(1214604971);
+    let payment_address = Address::new(rng.gen());
+
+    let quote = Quote {
+        chunk_address_hash,
+        cost,
+        expiration_timestamp,
+        payment_address,
+    };
+
+    quote.sign_quote(secret_key).unwrap()
+}
+
 #[tokio::test]
 async fn test_deploy() {
     setup().await;
 }
 
 #[tokio::test]
-async fn test_submit_chunk_payment() {
+async fn test_pay_for_quotes() {
     let (_anvil, network_token, mut chunk_payments) = setup().await;
 
-    let node = LocalSigner::random().address();
-    let quote_amount = U256::from(1);
+    let quote = generate_random_quote(&node.0);
 
-    network_token
-        .approve(*chunk_payments.contract.address(), quote_amount)
+    let _ = network_token
+        .approve(*chunk_payments.contract.address(), U256::MAX)
         .await
         .unwrap();
 
@@ -141,56 +163,7 @@ async fn test_submit_chunk_payment() {
     // so we set it to the same as the network token contract
     chunk_payments.set_provider(network_token.contract.provider().clone());
 
-    let submit_chunk_payment_result = chunk_payments
-        .submit_chunk_payment(node, 1, U256::from(1))
-        .await;
-
-    assert!(
-        submit_chunk_payment_result.is_ok(),
-        "Submit chunk failed with error: {:?}",
-        submit_chunk_payment_result.err()
-    );
-}
-
-#[tokio::test]
-async fn test_submit_chunk_payment_should_fail() {
-    let (_anvil, _network_token, chunk_payments) = setup().await;
-
-    let node = LocalSigner::random().address();
-
-    let submit_chunk_payment_result = chunk_payments
-        .submit_chunk_payment(node, 1, U256::from(1))
-        .await;
-
-    assert!(submit_chunk_payment_result.is_err());
-}
-
-#[tokio::test]
-async fn test_submit_bulk_chunk_payments() {
-    let (_anvil, network_token, mut chunk_payments) = setup().await;
-
-    let nodes = vec![
-        LocalSigner::random().address(),
-        LocalSigner::random().address(),
-    ];
-    let quote_identifiers = vec![1, 2];
-    let quote_amounts = vec![U256::from(1), U256::from(2)];
-
-    network_token
-        .approve(
-            *chunk_payments.contract.address(),
-            quote_amounts.iter().sum(),
-        )
-        .await
-        .unwrap();
-
-    // Contract provider has a different account coupled to it,
-    // so we set it to the same as the network token contract
-    chunk_payments.set_provider(network_token.contract.provider().clone());
-
-    let submit_bulk_chunk_payment_result = chunk_payments
-        .submit_bulk_chunk_payments(nodes, quote_identifiers, quote_amounts)
-        .await;
+    let submit_bulk_chunk_payment_result = chunk_payments.pay_for_quotes(vec![quote]).await;
 
     assert!(
         submit_bulk_chunk_payment_result.is_ok(),

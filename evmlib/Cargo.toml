@@ -12,6 +12,7 @@ version = "0.1.0"
 alloy = { version = "0.2", features = ["full"] }
 thiserror = "1.0"
 tokio = "1.38.0"
+rand = "0.8.5"
 
 [dev-dependencies]
 alloy = { version = "0.2", features = ["full", "provider-anvil-node"] }
