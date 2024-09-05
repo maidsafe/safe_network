@@ -2,6 +2,7 @@ use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
 use crate::contract::chunk_payments::ChunkPayments;
 use crate::contract::network_token::NetworkToken;
 use crate::contract::{chunk_payments, network_token};
+use crate::utils::calculate_royalties_from_amount;
 use crate::Network;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
 use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
@@ -156,12 +157,16 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 ) -> Result<Vec<TxHash>, chunk_payments::error::Error> {
     let payments: Vec<_> = payments.into_iter().collect();
     let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
+    let royalties = calculate_royalties_from_amount(total_amount);
+
+    // 2 * royalties to have a small buffer for different rounding in the smart contract.
+    let total_amount_with_royalties = total_amount + (U256::from(2) * royalties);
 
     approve_to_spend_tokens(
         wallet.clone(),
         network,
         *network.chunk_payments_address(),
-        total_amount,
+        total_amount_with_royalties,
     )
     .await?;
 
