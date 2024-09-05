@@ -1,7 +1,7 @@
 use std::time::Duration;
 
+use autonomi::Client;
 use bytes::Bytes;
-use libautonomi::Client;
 use tokio::time::sleep;
 use xor_name::XorName;
 

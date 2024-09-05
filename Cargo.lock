@@ -444,6 +444,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
 
 [[package]]
+name = "autonomi"
+version = "0.1.0"
+dependencies = [
+ "bip39",
+ "blsttc",
+ "bytes",
+ "libp2p",
+ "rand 0.8.5",
+ "rmp-serde",
+ "self_encryption",
+ "serde",
+ "sn_client",
+ "sn_protocol",
+ "sn_transfers",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "walkdir",
+ "xor_name",
+]
+
+[[package]]
 name = "axum"
 version = "0.6.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3741,29 +3764,6 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
-
-[[package]]
-name = "libautonomi"
-version = "0.1.0"
-dependencies = [
- "bip39",
- "blsttc",
- "bytes",
- "libp2p",
- "rand 0.8.5",
- "rmp-serde",
- "self_encryption",
- "serde",
- "sn_client",
- "sn_protocol",
- "sn_transfers",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "walkdir",
- "xor_name",
-]
 
 [[package]]
 name = "libc"

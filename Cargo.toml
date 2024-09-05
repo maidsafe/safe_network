@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "libautonomi",
+    "autonomi",
     "sn_auditor",
     "sn_build_info",
     "sn_cli",

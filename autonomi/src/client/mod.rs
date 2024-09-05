@@ -22,7 +22,7 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 /// To connect to the network, use [`Client::connect`].
 ///
 /// ```no_run
-/// # use libautonomi::Client;
+/// # use autonomi::Client;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
@@ -52,7 +52,7 @@ impl Client {
     /// This will timeout after 20 seconds. (See [`CONNECT_TIMEOUT_SECS`].)
     ///
     /// ```no_run
-    /// # use libautonomi::Client;
+    /// # use autonomi::Client;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];

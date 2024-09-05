@@ -18,7 +18,7 @@ pub fn gen_random_data(len: usize) -> Bytes {
     Bytes::from(data)
 }
 
-/// Enable logging for tests. E.g. use `RUST_LOG=libautonomi` to see logs.
+/// Enable logging for tests. E.g. use `RUST_LOG=autonomi` to see logs.
 pub fn enable_logging() {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())

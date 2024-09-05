@@ -17,7 +17,7 @@
 //! # Example
 //!
 //! ```no_run
-//! # use libautonomi::{Client, Bytes};
+//! # use autonomi::{Client, Bytes};
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];

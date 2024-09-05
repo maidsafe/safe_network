@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use libautonomi::Client;
+use autonomi::Client;
 use tokio::time::sleep;
 
 mod common;
