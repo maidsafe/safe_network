@@ -58,7 +58,8 @@ pub enum GetError {
 }
 
 impl Client {
-    /// Fetch a file based on the data map XOR name.
+    /// Fetch a piece of self-encrypted data from the network, by its data map
+    /// XOR address.
     pub async fn get(&self, data_map_addr: XorName) -> Result<Bytes, GetError> {
         let data_map_chunk = self.fetch_chunk(data_map_addr).await?;
         let data = self
@@ -68,6 +69,7 @@ impl Client {
         Ok(data)
     }
 
+    /// Get a raw chunk from the network.
     pub async fn fetch_chunk(&self, addr: XorName) -> Result<Chunk, GetError> {
         tracing::info!("Getting chunk: {addr:?}");
         let key = NetworkAddress::from_chunk_address(ChunkAddress::new(addr)).to_record_key();
@@ -88,6 +90,8 @@ impl Client {
         }
     }
 
+    /// Upload a piece of data to the network. This data will be self-encrypted,
+    /// and the data map XOR address will be returned.
     pub async fn put(&mut self, data: Bytes, wallet: &mut HotWallet) -> Result<XorName, PutError> {
         let now = std::time::Instant::now();
         let (map, chunks) = encrypt(data)?;

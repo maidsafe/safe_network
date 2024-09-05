@@ -67,6 +67,7 @@ impl Client {
         Ok((root, xor_name))
     }
 
+    /// Fetch a directory from the network.
     pub async fn fetch_root(&mut self, address: XorName) -> Result<Root, UploadError> {
         let data = self.get(address).await?;
         let root: Root = rmp_serde::from_slice(&data[..]).expect("TODO");

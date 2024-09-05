@@ -6,7 +6,7 @@ edition = "2021"
 [features]
 default = ["fs"]
 fs = []
-local-discovery = ["sn_client/local-discovery"]
+local = ["sn_client/local-discovery"]
 
 [dependencies]
 bip39 = "2.0.0"

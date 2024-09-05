@@ -15,17 +15,29 @@ mod transfers;
 // Time before considering the connection timed out.
 const CONNECT_TIMEOUT_SECS: u64 = 20;
 
+/// Represents a connection to the Autonomi network.
+///
+/// # Examples
+///
+/// ```no_run
+/// # use libautonomi::Client;
+/// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse().expect("str to be valid multiaddr")];
+/// let client = Client::connect(&peers).await?;
+/// ```
 #[derive(Clone)]
 pub struct Client {
     pub(crate) network: Network,
 }
 
+/// Possible errors returned by [`Client::connect`].
 #[derive(Debug, thiserror::Error)]
 pub enum ConnectError {
-    #[error("Could not connect to peers due to incompatible protocol: {0:?}")]
-    TimedOutWithIncompatibleProtocol(HashSet<String>, String),
+    /// Did not manage to connect to enough peers in time.
     #[error("Could not connect to enough peers in time.")]
     TimedOut,
+    /// Same as [`TimedOut`] but with a list of incompatible protocols.
+    #[error("Could not connect to peers due to incompatible protocol: {0:?}")]
+    TimedOutWithIncompatibleProtocol(HashSet<String>, String),
 }
 
 impl Client {
