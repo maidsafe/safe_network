@@ -863,6 +863,7 @@ impl Client {
                 .iter()
                 .cloned()
                 .collect();
+            info!("Expecting holders: {expected_holders:?}");
             (Some(record.clone()), expected_holders)
         } else {
             (None, Default::default())
