@@ -824,15 +824,18 @@ impl Client {
         let network_address = NetworkAddress::from_spend_address(cash_note_addr);
 
         let key = network_address.to_record_key();
-        let pretty_key = PrettyPrintRecordKey::from(&key);
-        trace!("Sending spend {unique_pubkey:?} to the network via put_record, with addr of {cash_note_addr:?} - {pretty_key:?}");
+
         let record_kind = RecordKind::Spend;
         let record = Record {
-            key,
+            key: key.clone(),
             value: try_serialize_record(&[spend], record_kind)?.to_vec(),
             publisher: None,
             expires: None,
         };
+
+        let pretty_key = PrettyPrintRecordKey::from(&key);
+        info!("Sending spend {unique_pubkey:?} to the network via put_record, with addr of {cash_note_addr:?} - {pretty_key:?}, size of {}",
+            record.value.len());
 
         let (record_to_verify, expected_holders) = if verify_store {
             let expected_holders: HashSet<_> = self
