@@ -1,5 +1,5 @@
+use crate::common::{Address, ChunkPayment, QuoteHash, TxHash, U256};
 use crate::contract::chunk_payments::ChunkPayments;
-use crate::contract::common::{Address, ChunkPayment, QuoteHash, TxHash, U256};
 use crate::contract::network_token::NetworkToken;
 use crate::contract::{chunk_payments, network_token};
 use crate::Network;

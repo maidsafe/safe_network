@@ -1,10 +1,9 @@
 pub mod error;
 
+use crate::common;
+use crate::common::{Address, TxHash};
 use crate::contract::chunk_payments::error::Error;
 use crate::contract::chunk_payments::ChunkPaymentsContract::ChunkPaymentsContractInstance;
-use crate::contract::common;
-use crate::contract::common::{Address, TxHash};
-use alloy::primitives::FixedBytes;
 use alloy::providers::{Network, Provider};
 use alloy::sol;
 use alloy::transports::Transport;
@@ -67,7 +66,7 @@ where
             .map(|(hash, addr, amount)| ChunkPaymentsContract::ChunkPayment {
                 rewardAddress: addr,
                 amount,
-                quoteHash: FixedBytes::new(hash),
+                quoteHash: hash,
             })
             .collect();
 

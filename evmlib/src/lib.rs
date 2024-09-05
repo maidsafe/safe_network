@@ -1,12 +1,15 @@
-use crate::contract::common::{QuoteHash, TxHash, U256};
+use crate::common::{Address, QuoteHash, TxHash, U256};
 use crate::transaction::verify_chunk_payment;
-use alloy::primitives::{address, Address};
+use alloy::primitives::address;
 use alloy::transports::http::reqwest;
 use std::sync::LazyLock;
 
+pub mod common;
 pub mod contract;
 pub mod cryptography;
+pub(crate) mod event;
 pub mod transaction;
+pub mod utils;
 pub mod wallet;
 
 static PUBLIC_ARBITRUM_ONE_HTTP_RPC_URL: LazyLock<reqwest::Url> = LazyLock::new(|| {
@@ -18,6 +21,7 @@ static PUBLIC_ARBITRUM_ONE_HTTP_RPC_URL: LazyLock<reqwest::Url> = LazyLock::new(
 const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
     address!("4bc1aCE0E66170375462cB4E6Af42Ad4D5EC689C");
 
+// Should be updated when the smart contract changes!
 const ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS: Address =
     address!("F15BfEA73b6a551C5c2e66026e4eB3b69c1F602c");
 
