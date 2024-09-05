@@ -5,7 +5,7 @@ use crate::contract::{chunk_payments, network_token};
 use crate::Network;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
 use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
-use alloy::providers::{ProviderBuilder, ReqwestProvider, WalletProvider};
+use alloy::providers::{ProviderBuilder, ReqwestProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{reqwest, Client, Http};
 
@@ -37,25 +37,44 @@ impl Wallet {
         Ok(Self::new(network, wallet))
     }
 
+    /// Returns the address of this wallet.
+    pub fn address(&self) -> Address {
+        wallet_address(&self.wallet)
+    }
+
+    /// Returns the raw balance of tokens for this wallet.
+    pub async fn balance_of_tokens(&self) -> Result<U256, network_token::Error> {
+        balance_of_tokens(self.wallet.clone(), &self.network).await
+    }
+
+    /// Transfer a raw amount of tokens to another address.
+    pub async fn transfer_tokens(
+        &self,
+        to: Address,
+        amount: U256,
+    ) -> Result<TxHash, network_token::Error> {
+        transfer_tokens(self.wallet.clone(), &self.network, to, amount).await
+    }
+
     /// Pays for a single chunk. Returns transaction hash of the payment.
-    pub async fn pay_for_chunk(
+    pub async fn pay_for_quote(
         &self,
         quote_hash: QuoteHash,
         rewards_addr: Address,
         amount: U256,
     ) -> Result<TxHash, chunk_payments::error::Error> {
-        self.pay_for_chunks([(quote_hash, rewards_addr, amount)])
+        self.pay_for_quotes([(quote_hash, rewards_addr, amount)])
             .await
             .map(|v| v.first().cloned().expect("Infallible"))
     }
 
     /// Function for batch payments of chunks. It accepts an iterator of ChunkPayment and returns
     /// transaction hashes of the payments.
-    pub async fn pay_for_chunks<I: IntoIterator<Item = ChunkPayment>>(
+    pub async fn pay_for_quotes<I: IntoIterator<Item = ChunkPayment>>(
         &self,
         chunk_payments: I,
     ) -> Result<Vec<TxHash>, chunk_payments::error::Error> {
-        pay_for_chunks(self.wallet.clone(), &self.network, chunk_payments).await
+        pay_for_quotes(self.wallet.clone(), &self.network, chunk_payments).await
     }
 }
 
@@ -88,18 +107,19 @@ fn http_provider_with_wallet(
         .on_http(rpc_url)
 }
 
+/// Returns the address of this wallet.
+pub fn wallet_address(wallet: &EthereumWallet) -> Address {
+    <EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
+}
+
 /// Returns the raw balance of tokens for this wallet.
 pub async fn balance_of_tokens(
     wallet: EthereumWallet,
     network: &Network,
 ) -> Result<U256, network_token::Error> {
+    let account = wallet_address(&wallet);
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
     let network_token = NetworkToken::new(*network.payment_token_address(), provider);
-
-    let account = <EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(
-        network_token.contract.provider().wallet(),
-    );
-
     network_token.balance_of(account).await
 }
 
@@ -129,7 +149,7 @@ pub async fn transfer_tokens(
 
 /// Use this wallet to pay for chunks in batched transfer transactions.
 /// If the amount of transfers is more than one transaction can contain, the transfers will be split up over multiple transactions.
-pub async fn pay_for_chunks<T: IntoIterator<Item = ChunkPayment>>(
+pub async fn pay_for_quotes<T: IntoIterator<Item = ChunkPayment>>(
     wallet: EthereumWallet,
     network: &Network,
     payments: T,
