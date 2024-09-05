@@ -864,15 +864,15 @@ jobs:
   #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
   #         fi
 
-  #     - name: Create and fund a wallet first time
-  #       run: |
-  #         ~/safe --log-output-dest=data-dir wallet create --no-password
-  #         ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
-  #         echo "----------"
-  #         cat first.txt
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 5
+  # - name: Create and fund a wallet first time
+  #   run: |
+  #     ~/safe --log-output-dest=data-dir wallet create --no-password
+  #     ~/faucet --log-output-dest=data-dir send 1000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
+  #     echo "----------"
+  #     cat first.txt
+  #   env:
+  #     SN_LOG: "all"
+  #   timeout-minutes: 5
 
   #     - name: Move faucet log to the working folder
   #       run: |
@@ -898,44 +898,44 @@ jobs:
   #       continue-on-error: true
   #       if: always()
 
-  #     - name: Create and fund a wallet second time
-  #       run: |
-  #         ls -l /home/runner/.local/share
-  #         ls -l /home/runner/.local/share/safe
-  #         rm -rf /home/runner/.local/share/safe/test_faucet
-  #         rm -rf /home/runner/.local/share/safe/test_genesis
-  #         rm -rf /home/runner/.local/share/safe/client
-  #         ~/safe --log-output-dest=data-dir wallet create --no-password
-  #         ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
-  #         echo "----------"
-  #         cat second.txt
-  #         if grep "genesis is already spent" second.txt; then
-  #           echo "Duplicated faucet rejected"
-  #         else
-  #           echo "Duplicated faucet not rejected!"
-  #           exit 1
-  #         fi
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 5
+  # - name: Create and fund a wallet second time
+  #   run: |
+  #     ls -l /home/runner/.local/share
+  #     ls -l /home/runner/.local/share/safe
+  #     rm -rf /home/runner/.local/share/safe/test_faucet
+  #     rm -rf /home/runner/.local/share/safe/test_genesis
+  #     rm -rf /home/runner/.local/share/safe/client
+  #     ~/safe --log-output-dest=data-dir wallet create --no-password
+  #     ~/faucet --log-output-dest=data-dir send 1000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
+  #     echo "----------"
+  #     cat second.txt
+  #     if grep "genesis is already spent" second.txt; then
+  #       echo "Duplicated faucet rejected"
+  #     else
+  #       echo "Duplicated faucet not rejected!"
+  #       exit 1
+  #     fi
+  #   env:
+  #     SN_LOG: "all"
+  #   timeout-minutes: 5
 
-  #     - name: Create and fund a wallet with different keypair
-  #       run: |
-  #         ls -l /home/runner/.local/share
-  #         ls -l /home/runner/.local/share/safe
-  #         rm -rf /home/runner/.local/share/safe/test_faucet
-  #         rm -rf /home/runner/.local/share/safe/test_genesis
-  #         rm -rf /home/runner/.local/share/safe/client
-  #         ~/safe --log-output-dest=data-dir wallet create --no-password
-  #         if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
-  #           echo "Faucet with different genesis key not rejected!"
-  #           exit 1
-  #         else
-  #           echo "Faucet with different genesis key rejected"
-  #         fi
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 5
+  # - name: Create and fund a wallet with different keypair
+  #   run: |
+  #     ls -l /home/runner/.local/share
+  #     ls -l /home/runner/.local/share/safe
+  #     rm -rf /home/runner/.local/share/safe/test_faucet
+  #     rm -rf /home/runner/.local/share/safe/test_genesis
+  #     rm -rf /home/runner/.local/share/safe/client
+  #     ~/safe --log-output-dest=data-dir wallet create --no-password
+  #     if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 1000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
+  #       echo "Faucet with different genesis key not rejected!"
+  #       exit 1
+  #     else
+  #       echo "Faucet with different genesis key rejected"
+  #     fi
+  #   env:
+  #     SN_LOG: "all"
+  #   timeout-minutes: 5
 
   #     - name: Build faucet binary again without the gifting feature
   #       run: cargo build --release --bin faucet
@@ -1063,14 +1063,14 @@ jobs:
   #         echo "PWD subdirs:"
   #         du -sh */
 
-  #     - name: Create and fund a wallet to pay for files storage
-  #       run: |
-  #         ~/safe --log-output-dest=data-dir wallet create --no-password
-  #         ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-  #         ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 5
+  # - name: Create and fund a wallet to pay for files storage
+  #   run: |
+  #     ~/safe --log-output-dest=data-dir wallet create --no-password
+  #     ~/faucet --log-output-dest=data-dir send 1000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #     ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #   env:
+  #     SN_LOG: "all"
+  #   timeout-minutes: 5
 
   #     - name: Start a client to upload
   #       run: ~/safe --log-output-dest=data-dir files upload "ubuntu-14.04.6-desktop-i386.iso" --retry-strategy quick
@@ -1196,14 +1196,14 @@ jobs:
   #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
   #         fi
 
-  #     - name: Create and fund a wallet to pay for files storage
-  #       run: |
-  #         ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-  #         ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-  #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 5
+  # - name: Create and fund a wallet to pay for files storage
+  #   run: |
+  #     ./target/release/safe --log-output-dest=data-dir wallet create --no-password
+  #     ./target/release/faucet --log-output-dest=data-dir send 1000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #     ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #   env:
+  #     SN_LOG: "all"
+  #   timeout-minutes: 5
 
   #     - name: Start a client to upload first file
   #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_1.tar.gz" --retry-strategy quick
@@ -1272,25 +1272,25 @@ jobs:
   #       run: sleep 300
   #       timeout-minutes: 6
 
-  #     # Start a different client to avoid local wallet slow down with more payments handled.
-  #     - name: Start a different client
-  #       run: |
-  #         pwd
-  #         mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
-  #         ls -l $SAFE_DATA_PATH
-  #         ls -l $SAFE_DATA_PATH/client_first
-  #         mkdir $SAFE_DATA_PATH/client
-  #         ls -l $SAFE_DATA_PATH
-  #         mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
-  #         ls -l $CLIENT_DATA_PATH
-  #         ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-  #         ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-  #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-  #       env:
-  #         SN_LOG: "all"
-  #         SAFE_DATA_PATH: /home/runner/.local/share/safe
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
-  #       timeout-minutes: 25
+  # # Start a different client to avoid local wallet slow down with more payments handled.
+  # - name: Start a different client
+  #   run: |
+  #     pwd
+  #     mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
+  #     ls -l $SAFE_DATA_PATH
+  #     ls -l $SAFE_DATA_PATH/client_first
+  #     mkdir $SAFE_DATA_PATH/client
+  #     ls -l $SAFE_DATA_PATH
+  #     mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
+  #     ls -l $CLIENT_DATA_PATH
+  #     ./target/release/safe --log-output-dest=data-dir wallet create --no-password
+  #     ./target/release/faucet --log-output-dest=data-dir send 1000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #     ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #   env:
+  #     SN_LOG: "all"
+  #     SAFE_DATA_PATH: /home/runner/.local/share/safe
+  #     CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #   timeout-minutes: 25
 
   #     - name: Use second client to upload third file
   #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_3.tar.gz" --retry-strategy quick
