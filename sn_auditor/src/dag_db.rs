@@ -352,9 +352,14 @@ impl SpendDagDb {
                 }));
             } else if let Some(sender) = spend_processing.clone() {
                 let (reattempt_addrs, fetched_addrs, addrs_for_further_track) = client
-                    .crawl_to_next_utxos(&mut addrs_to_get, sender.clone(), *UTXO_REATTEMPT_SECONDS)
+                    .crawl_to_next_utxos(
+                        addrs_to_get.clone(),
+                        sender.clone(),
+                        *UTXO_REATTEMPT_SECONDS,
+                    )
                     .await;
 
+                addrs_to_get.clear();
                 let mut utxo_addresses = self.utxo_addresses.write().await;
                 for addr in fetched_addrs {
                     let _ = utxo_addresses.remove(&addr);
