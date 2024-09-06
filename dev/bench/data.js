@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725551745779,
+  "lastUpdate": 1725634163935,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2d350877ddd5244b3b23b2b0d2878025e4756795",
-          "message": "ci: increase token distribution build times by 5 mins",
-          "timestamp": "2024-04-24T02:11:07Z",
-          "tree_id": "a1f09bb1d45b6eb30eaff31f575220818479ce27",
-          "url": "https://github.com/maidsafe/safe_network/commit/2d350877ddd5244b3b23b2b0d2878025e4756795"
-        },
-        "date": 1713927284458,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.212744216244514,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6455333141549064,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.90991189103945,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.13466423837003,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ecf4c223b285a0934229f60fb0e0dc86c8b9bb84",
+          "message": "Merge pull request #2095 from b-zee/refactor-clippy\n\nrefactor(cli/faucet): clippy suggestions",
+          "timestamp": "2024-09-06T14:01:00Z",
+          "tree_id": "05cb86e7d94bb3c5c69fbe87b48a61da1a088494",
+          "url": "https://github.com/maidsafe/safe_network/commit/ecf4c223b285a0934229f60fb0e0dc86c8b9bb84"
+        },
+        "date": 1725634157427,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2681184247613457,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6931100745811152,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.06906925311563,
             "unit": "MiB/s"
           }
         ]
