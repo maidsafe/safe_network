@@ -1,5 +1,5 @@
 use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
-use crate::contract::chunk_payments::ChunkPayments;
+use crate::contract::chunk_payments::{ChunkPayments, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
 use crate::contract::{chunk_payments, network_token};
 use crate::utils::calculate_royalties_from_amount;
@@ -162,6 +162,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     // 2 * royalties to have a small buffer for different rounding in the smart contract.
     let total_amount_with_royalties = total_amount + (U256::from(2) * royalties);
 
+    // Approve the contract to spend enough of the client's tokens.
     approve_to_spend_tokens(
         wallet.clone(),
         network,
@@ -175,12 +176,12 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 
     let mut tx_hashes = Vec::new();
 
-    // Max 256 at a time
-    let chunks = payments.chunks(256);
+    // Divide transfers over multiple transactions if they exceed the max per transaction.
+    let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);
 
     for batch in chunks {
         let batch: Vec<QuotePayment> = batch.to_vec();
-        let tx_hash = chunk_payments.pay_for_chunks(batch).await?;
+        let tx_hash = chunk_payments.pay_for_quotes(batch).await?;
         tx_hashes.push(tx_hash);
     }
 

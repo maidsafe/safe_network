@@ -10,6 +10,7 @@ use alloy::providers::{ReqwestProvider, WalletProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::{Client, Http};
 use evmlib::contract::network_token::NetworkToken;
+use evmlib::wallet::wallet_address;
 use std::str::FromStr;
 
 async fn setup() -> (
@@ -25,13 +26,9 @@ async fn setup() -> (
         Ethereum,
     >,
 ) {
-    let anvil = start_anvil_node()
-        .await
-        .expect("Could not start anvil node");
+    let anvil = start_anvil_node().await;
 
-    let network_token = deploy_network_token_contract(&anvil)
-        .await
-        .expect("Could not deploy AutonomiNetworkToken contract");
+    let network_token = deploy_network_token_contract(&anvil).await;
 
     (anvil, network_token)
 }
@@ -61,9 +58,7 @@ async fn test_balance_of() {
 async fn test_approve() {
     let (_anvil, network_token) = setup().await;
 
-    let account = <EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(
-        network_token.contract.provider().wallet(),
-    );
+    let account = wallet_address(network_token.contract.provider().wallet());
 
     let spend_value = U256::from(1);
     let spender = PrivateKeySigner::random();

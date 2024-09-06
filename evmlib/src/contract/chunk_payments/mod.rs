@@ -9,7 +9,7 @@ use alloy::sol;
 use alloy::transports::Transport;
 
 /// The max amount of transfers within one chunk payments transaction.
-const TRANSFER_LIMIT: u16 = 256;
+pub const MAX_TRANSFERS_PER_TRANSACTION: usize = 512;
 
 sol!(
     #[allow(clippy::too_many_arguments)]
@@ -57,7 +57,7 @@ where
 
     /// Pay for chunks.
     /// Input: (quote_id, reward_address, amount).
-    pub async fn pay_for_chunks<I: IntoIterator<Item = common::QuotePayment>>(
+    pub async fn pay_for_quotes<I: IntoIterator<Item = common::QuotePayment>>(
         &self,
         chunk_payments: I,
     ) -> Result<TxHash, Error> {
@@ -70,7 +70,7 @@ where
             })
             .collect();
 
-        if chunk_payments.len() > TRANSFER_LIMIT as usize {
+        if chunk_payments.len() > MAX_TRANSFERS_PER_TRANSACTION {
             return Err(Error::TransferLimitExceeded);
         }
 
