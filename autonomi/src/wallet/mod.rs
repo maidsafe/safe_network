@@ -3,10 +3,10 @@ pub mod error;
 use crate::wallet::error::WalletError;
 use sn_client::transfers::{HotWallet, MainSecretKey};
 use sn_transfers::{
-    CashNote, CashNoteRedemption, DerivationIndex, DerivedSecretKey, MainPubkey, NanoTokens,
-    OfflineTransfer, SignedSpend, SpendReason, Transfer, UniquePubkey,
+    CashNote, CashNoteRedemption, DerivationIndex, MainPubkey, NanoTokens, SignedSpend,
+    SignedTransaction, SpendReason, Transfer, UniquePubkey, UnsignedTransaction,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
 
 pub struct MemWallet {
@@ -58,20 +58,15 @@ impl MemWallet {
     }
 
     /// Returns all available `CashNotes` together with their secret key to spend them.
-    pub(super) fn cash_notes_with_secret_keys(
-        &mut self,
-    ) -> Vec<(CashNote, Option<DerivedSecretKey>)> {
-        self.available_cash_notes
-            .values()
-            .map(|cn| (cn.clone(), cn.derived_key(self.hot_wallet.key()).ok()))
-            .collect()
+    pub(super) fn cash_notes_with_secret_keys(&mut self) -> Vec<CashNote> {
+        self.available_cash_notes.values().cloned().collect()
     }
 
-    pub(super) fn create_offline_transfer(
+    pub(super) fn create_signed_transaction(
         &mut self,
         outputs: Vec<(NanoTokens, MainPubkey)>,
         reason: Option<SpendReason>,
-    ) -> Result<OfflineTransfer, WalletError> {
+    ) -> Result<SignedTransaction, WalletError> {
         for output in &outputs {
             if output.0.is_zero() {
                 return Err(WalletError::TransferAmountZero);
@@ -83,17 +78,17 @@ impl MemWallet {
         // create a unique key for each output
         let to_unique_keys: Vec<_> = outputs
             .into_iter()
-            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng)))
+            .map(|(amount, address)| (amount, address, DerivationIndex::random(&mut rng), false))
             .collect();
 
         let cash_notes_with_keys = self.cash_notes_with_secret_keys();
-
         let reason = reason.unwrap_or_default();
 
-        let transfer =
-            OfflineTransfer::new(cash_notes_with_keys, to_unique_keys, self.address(), reason)?;
+        let unsigned_transaction =
+            UnsignedTransaction::new(cash_notes_with_keys, to_unique_keys, self.address(), reason)?;
+        let signed_transaction = unsigned_transaction.sign(self.hot_wallet.key())?;
 
-        Ok(transfer)
+        Ok(signed_transaction)
     }
 
     fn mark_cash_notes_as_spent<'a, T: IntoIterator<Item = &'a UniquePubkey>>(
@@ -119,12 +114,8 @@ impl MemWallet {
             return Err(WalletError::CashNoteNotOwned);
         }
 
-        if cash_note.value().is_err() {
-            return Err(WalletError::CashNoteOutputNotFound);
-        }
-
         self.available_cash_notes
-            .insert(cash_note.unique_pubkey, cash_note.clone());
+            .insert(cash_note.unique_pubkey(), cash_note.clone());
 
         // DevNote: the deposit fn already does the checks above,
         // but I have added them here just in case we get rid
@@ -144,17 +135,16 @@ impl MemWallet {
     }
 
     // TODO: should we verify if the transfer is valid and destined for this wallet?
-    pub(super) fn process_offline_transfer(&mut self, transfer: OfflineTransfer) {
-        let spent_unique_pubkeys: BTreeSet<_> = transfer
-            .tx
-            .inputs
+    pub(super) fn process_signed_transaction(&mut self, transfer: SignedTransaction) {
+        let spent_unique_pubkeys: HashSet<_> = transfer
+            .spends
             .iter()
-            .map(|input| input.unique_pubkey())
+            .map(|spend| spend.unique_pubkey())
             .collect();
 
         self.mark_cash_notes_as_spent(spent_unique_pubkeys);
 
-        if let Some(cash_note) = transfer.change_cash_note {
+        if let Some(cash_note) = transfer.change_cashnote {
             let _ = self.deposit_cash_note(cash_note);
         }
     }

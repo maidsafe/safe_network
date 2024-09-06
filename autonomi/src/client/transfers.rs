@@ -242,11 +242,11 @@ impl Client {
         reason: Option<SpendReason>,
         wallet: &mut MemWallet,
     ) -> Result<Transfer, SendError> {
-        let offline_transfer =
-            wallet.create_offline_transfer(vec![(amount_in_nano, to)], reason)?;
+        let signed_transaction =
+            wallet.create_signed_transaction(vec![(amount_in_nano, to)], reason)?;
 
         // return the first CashNote (assuming there is only one because we only sent to one recipient)
-        let cash_note_for_recipient = match &offline_transfer.cash_notes_for_recipient[..] {
+        let cash_note_for_recipient = match &signed_transaction.output_cashnotes[..] {
             [cash_note] => Ok(cash_note),
             [_multiple, ..] => Err(SendError::CashNoteAmountUnexpected(
                 "Got multiple, expected 1.".into(),
@@ -259,12 +259,11 @@ impl Client {
         let transfer = Transfer::transfer_from_cash_note(cash_note_for_recipient)
             .map_err(SendError::TransferError)?;
 
-        self.send_spends(offline_transfer.all_spend_requests.iter())
-            .await?;
+        self.send_spends(signed_transaction.spends.iter()).await?;
 
-        wallet.process_offline_transfer(offline_transfer.clone());
+        wallet.process_signed_transaction(signed_transaction.clone());
 
-        for spend in &offline_transfer.all_spend_requests {
+        for spend in &signed_transaction.spends {
             wallet.add_pending_spend(spend.clone());
         }
 

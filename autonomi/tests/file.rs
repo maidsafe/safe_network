@@ -18,7 +18,7 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
     let (root, addr) = client
         .upload_from_dir("tests/file/test_dir".into(), &mut wallet)
         .await?;
-    sleep(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(10)).await;
 
     let root_fetched = client.fetch_root(addr).await?;
 

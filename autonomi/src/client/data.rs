@@ -221,7 +221,11 @@ impl Client {
             }
         }
 
-        let (storage_cost, royalty_fees) = self.pay_for_records(&cost_map, wallet).await?;
+        let (storage_cost, royalty_fees) = if cost_map.is_empty() {
+            (NanoTokens::zero(), NanoTokens::zero())
+        } else {
+            self.pay_for_records(&cost_map, wallet).await?
+        };
         let res = StoragePaymentResult {
             storage_cost,
             royalty_fees,
@@ -239,11 +243,6 @@ impl Client {
         self.resend_pending_transactions(wallet).await;
 
         let total_cost = wallet.local_send_storage_payment(cost_map)?;
-
-        tracing::trace!(
-            "local_send_storage_payment of {} chunks completed",
-            cost_map.len(),
-        );
 
         // send to network
         tracing::trace!("Sending storage payment transfer to the network");
