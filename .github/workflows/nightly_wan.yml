@@ -44,7 +44,7 @@ jobs:
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
 
       - name: launch ${{ env.NETWORK_NAME }}
-        uses: maidsafe/sn-testnet-control-action/launch-network@main
+        uses: ermineJose/sn-testnet-control-action/launch-network@wan_nightly
         with:
           ansible-forks: ${{ env.ANSIBLE_FORKS }}
           beta-encryption-key: ${{ env.DEFAULT_PAYMENT_FORWARD_SK }}
@@ -57,12 +57,12 @@ jobs:
           safe-network-branch: main
           safe-network-user: maidsafe
 
-      # - name: Check env variables
-      #   shell: bash
-      #   run: |
-      #     echo "Peer is $SAFE_PEERS"
-      #     echo "Deployment inventory is $SN_INVENTORY"
-      #
+      - name: Check env variables
+        shell: bash
+        run: |
+           echo "Peer is $SAFE_PEERS"
+           echo "Deployment inventory is $SN_INVENTORY"
+      
       # - name: Obtain the funds from the faucet
       #   run: |
       #     # read the inventory file
