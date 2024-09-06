@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725634283409,
+  "lastUpdate": 1725634284830,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "2d350877ddd5244b3b23b2b0d2878025e4756795",
-          "message": "ci: increase token distribution build times by 5 mins",
-          "timestamp": "2024-04-24T02:11:07Z",
-          "tree_id": "a1f09bb1d45b6eb30eaff31f575220818479ce27",
-          "url": "https://github.com/maidsafe/safe_network/commit/2d350877ddd5244b3b23b2b0d2878025e4756795"
-        },
-        "date": 1713927406638,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7623,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36227,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 24960,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "ecf4c223b285a0934229f60fb0e0dc86c8b9bb84",
+          "message": "Merge pull request #2095 from b-zee/refactor-clippy\n\nrefactor(cli/faucet): clippy suggestions",
+          "timestamp": "2024-09-06T14:01:00Z",
+          "tree_id": "05cb86e7d94bb3c5c69fbe87b48a61da1a088494",
+          "url": "https://github.com/maidsafe/safe_network/commit/ecf4c223b285a0934229f60fb0e0dc86c8b9bb84"
+        },
+        "date": 1725634284529,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4614,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 24128,
             "unit": "ms"
           },
           {
