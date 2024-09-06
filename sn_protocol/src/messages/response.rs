@@ -135,4 +135,9 @@ pub enum CmdResponse {
     //
     /// Response to the considered as bad notification
     PeerConsideredAsBad(Result<()>),
+    //
+    // ===== PutRecordTo =====
+    //
+    /// Response to put record to cmd
+    PutRecordTo(Result<()>),
 }

@@ -31,6 +31,7 @@ pub mod target_arch;
 mod transfers;
 mod transport;
 
+use bytes::Bytes;
 use cmd::LocalSwarmCmd;
 use xor_name::XorName;
 
@@ -663,24 +664,28 @@ impl Network {
             record.value.len()
         );
 
-        // Waiting for a response to avoid flushing to network too quick that causing choke
-        let (sender, receiver) = oneshot::channel();
-        if let Some(put_record_to_peers) = &cfg.use_put_record_to {
-            self.send_network_swarm_cmd(NetworkSwarmCmd::PutRecordTo {
-                peers: put_record_to_peers.clone(),
-                record: record.clone(),
-                sender,
-                quorum: cfg.put_quorum,
-            });
+        let response = if let Some(put_record_to_peers) = &cfg.use_put_record_to {
+            let record_address = NetworkAddress::from_record_key(&record.key);
+            for peer in put_record_to_peers {
+                let request = Request::Cmd(Cmd::PutRecordTo {
+                    target: NetworkAddress::from_peer(*peer),
+                    record_addr: record_address.clone(),
+                    record: Bytes::from(record.value.clone()),
+                });
+
+                self.send_req_ignore_reply(request, *peer);
+            }
+            Ok(())
         } else {
+            // Waiting for a response to avoid flushing to network too quick that causing choke
+            let (sender, receiver) = oneshot::channel();
             self.send_network_swarm_cmd(NetworkSwarmCmd::PutRecord {
                 record: record.clone(),
                 sender,
                 quorum: cfg.put_quorum,
             });
-        }
-
-        let response = receiver.await?;
+            receiver.await?
+        };
 
         if let Some((verification_kind, get_cfg)) = &cfg.verification {
             // Generate a random duration between MAX_WAIT_BEFORE_READING_A_PUT and MIN_WAIT_BEFORE_READING_A_PUT

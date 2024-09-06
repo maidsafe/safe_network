@@ -180,13 +180,6 @@ pub enum NetworkSwarmCmd {
         sender: oneshot::Sender<Result<()>>,
         quorum: Quorum,
     },
-    /// Put record to specific node
-    PutRecordTo {
-        peers: Vec<PeerId>,
-        record: Record,
-        sender: oneshot::Sender<Result<()>>,
-        quorum: Quorum,
-    },
 }
 
 /// Debug impl for LocalSwarmCmd to avoid printing full Record, instead only RecodKey
@@ -312,13 +305,6 @@ impl Debug for NetworkSwarmCmd {
                     PrettyPrintRecordKey::from(&record.key)
                 )
             }
-            NetworkSwarmCmd::PutRecordTo { peers, record, .. } => {
-                write!(
-                    f,
-                    "NetworkSwarmCmd::PutRecordTo {{ peers: {peers:?}, key: {:?} }}",
-                    PrettyPrintRecordKey::from(&record.key)
-                )
-            }
             NetworkSwarmCmd::GetClosestPeersToAddressFromNetwork { key, .. } => {
                 write!(f, "NetworkSwarmCmd::GetClosestPeers {{ key: {key:?} }}")
             }
@@ -423,31 +409,6 @@ impl SwarmDriver {
                     error!("Could not send response to PutRecord cmd: {:?}", err);
                 }
             }
-            NetworkSwarmCmd::PutRecordTo {
-                peers,
-                record,
-                sender,
-                quorum,
-            } => {
-                cmd_string = "PutRecordTo";
-                let record_key = PrettyPrintRecordKey::from(&record.key).into_owned();
-                debug!(
-                    "Putting record {record_key:?} sized: {:?} to {peers:?}",
-                    record.value.len(),
-                );
-                let peers_count = peers.len();
-                let request_id = self.swarm.behaviour_mut().kademlia.put_record_to(
-                    record,
-                    peers.into_iter(),
-                    quorum,
-                );
-                debug!("Sent record {record_key:?} to {peers_count:?} peers. Request id: {request_id:?}");
-
-                if let Err(err) = sender.send(Ok(())) {
-                    error!("Could not send response to PutRecordTo cmd: {:?}", err);
-                }
-            }
-
             NetworkSwarmCmd::Dial { addr, sender } => {
                 cmd_string = "Dial";
 

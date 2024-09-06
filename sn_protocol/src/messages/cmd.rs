@@ -8,6 +8,7 @@
 #![allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
 
 use crate::{storage::RecordType, NetworkAddress};
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 // TODO: remove this dependency and define these types herein.
 pub use sn_transfers::{Hash, PaymentQuote};
@@ -41,6 +42,12 @@ pub enum Cmd {
         bad_peer: NetworkAddress,
         bad_behaviour: String,
     },
+    /// Put a record to the specific peer, normally with the payment that shall be verified
+    PutRecordTo {
+        target: NetworkAddress,
+        record_addr: NetworkAddress,
+        record: Bytes,
+    },
 }
 
 impl std::fmt::Debug for Cmd {
@@ -69,6 +76,16 @@ impl std::fmt::Debug for Cmd {
                 .field("bad_peer", bad_peer)
                 .field("bad_behaviour", bad_behaviour)
                 .finish(),
+            Cmd::PutRecordTo {
+                target,
+                record_addr,
+                record,
+            } => f
+                .debug_struct("Cmd::PutRecordTo")
+                .field("target", target)
+                .field("record_addr", record_addr)
+                .field("record size", &record.len())
+                .finish(),
         }
     }
 }
@@ -78,7 +95,9 @@ impl Cmd {
     pub fn dst(&self) -> NetworkAddress {
         match self {
             Cmd::Replicate { holder, .. } => holder.clone(),
-            Cmd::QuoteVerification { target, .. } => target.clone(),
+            Cmd::QuoteVerification { target, .. } | Cmd::PutRecordTo { target, .. } => {
+                target.clone()
+            }
             Cmd::PeerConsideredAsBad { bad_peer, .. } => bad_peer.clone(),
         }
     }
@@ -110,6 +129,17 @@ impl std::fmt::Display for Cmd {
                 write!(
                     f,
                     "Cmd::PeerConsideredAsBad({detected_by:?} consider peer {bad_peer:?} as bad, due to {bad_behaviour:?})")
+            }
+            Cmd::PutRecordTo {
+                target,
+                record_addr,
+                record,
+            } => {
+                write!(
+                    f,
+                    "Cmd::PutRecordTo(putting record {record_addr:?} of size {} to {target:?})",
+                    record.len()
+                )
             }
         }
     }

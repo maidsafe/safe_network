@@ -11,7 +11,10 @@ use crate::{
     NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
-use libp2p::request_response::{self, Message};
+use libp2p::{
+    kad::Record,
+    request_response::{self, Message},
+};
 use rand::{rngs::OsRng, thread_rng, Rng};
 use sn_protocol::{
     messages::{CmdResponse, Request, Response},
@@ -73,6 +76,32 @@ impl SwarmDriver {
                                 })
                                 .collect();
                             self.send_event(NetworkEvent::QuoteVerification { quotes })
+                        }
+                        Request::Cmd(sn_protocol::messages::Cmd::PutRecordTo {
+                            target,
+                            record_addr,
+                            record,
+                        }) => {
+                            let response = Response::Cmd(
+                                sn_protocol::messages::CmdResponse::PutRecordTo(Ok(())),
+                            );
+                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendResponse {
+                                resp: response,
+                                channel: MsgResponder::FromPeer(channel),
+                            });
+
+                            if Some(self.self_peer_id) != target.as_peer_id() {
+                                warn!("Received a PutRecordTo request of {record_addr:?}, targeting {target:?} not us");
+                                return Ok(());
+                            }
+
+                            if let Some(record_key) = record_addr.as_record_key() {
+                                let record = Record::new(record_key, record.to_vec());
+
+                                self.send_event(NetworkEvent::UnverifiedRecord(record))
+                            } else {
+                                error!("Received PutRecordTo request, can not get expected record_key from {record_addr:?}")
+                            }
                         }
                         Request::Cmd(sn_protocol::messages::Cmd::PeerConsideredAsBad {
                             detected_by,
