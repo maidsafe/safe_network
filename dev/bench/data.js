@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725821303437,
+  "lastUpdate": 1725821304642,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "0415cf7263aa271043a885d3812867c16c30a964",
-          "message": "fix(network): remove all external addresses related to a relay server",
-          "timestamp": "2024-04-24T13:52:29+01:00",
-          "tree_id": "5e84e76149189cd6b1bd0ce909c0d3e4b1dddea5",
-          "url": "https://github.com/maidsafe/safe_network/commit/0415cf7263aa271043a885d3812867c16c30a964"
-        },
-        "date": 1713964323532,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 190,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 85,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "67834b629400d23328fe67fa4327f7896aa49889",
+          "message": "Merge branch 'rc-2024.09.1'",
+          "timestamp": "2024-09-08T19:26:57+01:00",
+          "tree_id": "0933ccbda55a25c79b399ff6254b85a5e9d5ee6c",
+          "url": "https://github.com/maidsafe/safe_network/commit/67834b629400d23328fe67fa4327f7896aa49889"
+        },
+        "date": 1725821304350,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
             "unit": "MB"
           }
         ]
