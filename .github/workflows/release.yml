@@ -190,10 +190,11 @@ jobs:
       - name: set package version
         shell: bash
         run: |
-          current_date=$(date +%Y.%m)
+          release_year=$(grep 'release-year:' release-cycle-info | awk '{print $2}')
+          release_month=$(grep 'release-month:' release-cycle-info | awk '{print $2}')
           release_cycle=$(grep 'release-cycle:' release-cycle-info | awk '{print $2}')
           release_cycle_counter=$(grep 'release-cycle-counter:' release-cycle-info | awk '{print $2}')
-          version="$current_date.$release_cycle.$release_cycle_counter"
+          version="$release_year.$release_month.$release_cycle.$release_cycle_counter"
           echo "PACKAGE_VERSION=$version" >> $GITHUB_ENV
 
       - name: package release artifacts
