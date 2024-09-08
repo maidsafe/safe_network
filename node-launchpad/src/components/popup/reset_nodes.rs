@@ -10,18 +10,22 @@ use super::super::{utils::centered_rect_fixed, Component};
 use crate::{
     action::{Action, OptionsActions},
     mode::{InputMode, Scene},
-    style::{clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
+    style::{clear_area, EUCALYPTUS, GHOST_WHITE, INDIGO, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
 };
 use color_eyre::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tui_input::{backend::crossterm::EventHandler, Input};
 
+const INPUT_SIZE: u16 = 5;
+const INPUT_AREA: u16 = INPUT_SIZE + 2; // +2 for the left and right padding
+
 #[derive(Default)]
 pub struct ResetNodesPopup {
     /// Whether the component is active right now, capturing keystrokes + draw things.
     active: bool,
     confirmation_input_field: Input,
+    can_reset: bool,
 }
 
 impl Component for ResetNodesPopup {
@@ -31,17 +35,14 @@ impl Component for ResetNodesPopup {
         }
         let send_back = match key.code {
             KeyCode::Enter => {
-                let input = self.confirmation_input_field.value().to_string();
-
-                if input.to_lowercase() == "reset" {
+                if self.can_reset {
                     debug!("Got reset, sending Reset action and switching to Options");
                     vec![
                         Action::OptionsActions(OptionsActions::ResetNodes),
                         Action::SwitchScene(Scene::Options),
                     ]
                 } else {
-                    debug!("Got Enter, but RESET is not typed. Switching to Options");
-                    vec![Action::SwitchScene(Scene::Options)]
+                    vec![]
                 }
             }
             KeyCode::Esc => {
@@ -52,13 +53,17 @@ impl Component for ResetNodesPopup {
             KeyCode::Backspace => {
                 // if max limit reached, we should allow Backspace to work.
                 self.confirmation_input_field.handle_event(&Event::Key(key));
+                let input = self.confirmation_input_field.value().to_string();
+                self.can_reset = input.to_lowercase() == "reset";
                 vec![]
             }
             _ => {
                 // max char limit
-                if self.confirmation_input_field.value().chars().count() < 10 {
+                if self.confirmation_input_field.value().chars().count() < INPUT_SIZE as usize {
                     self.confirmation_input_field.handle_event(&Event::Key(key));
                 }
+                let input = self.confirmation_input_field.value().to_string();
+                self.can_reset = input.to_lowercase() == "reset";
                 vec![]
             }
         };
@@ -145,21 +150,15 @@ impl Component for ResetNodesPopup {
 
         f.render_widget(prompt, layer_two[0]);
 
-        let input = Paragraph::new(self.confirmation_input_field.value())
-            .alignment(Alignment::Center)
-            .fg(VIVID_SKY_BLUE);
-        f.set_cursor(
-            // Put cursor past the end of the input text
-            layer_two[1].x
-                + (layer_two[1].width / 2) as u16
-                + (self.confirmation_input_field.value().len() / 2) as u16
-                + if self.confirmation_input_field.value().len() % 2 != 0 {
-                    1
-                } else {
-                    0
-                },
-            layer_two[1].y,
-        );
+        let spaces =
+            " ".repeat((INPUT_AREA - 1) as usize - self.confirmation_input_field.value().len());
+
+        let input = Paragraph::new(Span::styled(
+            format!("{}{} ", spaces, self.confirmation_input_field.value()),
+            Style::default().fg(VIVID_SKY_BLUE).bg(INDIGO).underlined(),
+        ))
+        .alignment(Alignment::Center);
+
         f.render_widget(input, layer_two[1]);
 
         let text = Paragraph::new("This will clear out all the nodes and all the stored data. You should still keep all your earned rewards.")
@@ -192,7 +191,11 @@ impl Component for ResetNodesPopup {
 
         let button_yes = Line::from(vec![Span::styled(
             "Reset Nodes [Enter]",
-            Style::default().fg(EUCALYPTUS),
+            if self.can_reset {
+                Style::default().fg(EUCALYPTUS)
+            } else {
+                Style::default().fg(LIGHT_PERIWINKLE)
+            },
         )])
         .alignment(Alignment::Right);
 

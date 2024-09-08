@@ -8,5 +8,7 @@
 
 pub mod beta_programme;
 pub mod change_drive;
+pub mod connection_mode;
 pub mod manage_nodes;
+pub mod port_range;
 pub mod reset_nodes;

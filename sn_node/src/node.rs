@@ -734,6 +734,24 @@ impl Node {
                     },
                 }
             }
+            Query::GetRegisterRecord { requester, key } => {
+                debug!("Got GetRegisterRecord from {requester:?} regarding {key:?} ");
+
+                let our_address = NetworkAddress::from_peer(network.peer_id());
+                let mut result = Err(ProtocolError::RegisterRecordNotFound {
+                    holder: Box::new(our_address.clone()),
+                    key: Box::new(key.clone()),
+                });
+                let record_key = key.as_record_key();
+
+                if let Some(record_key) = record_key {
+                    if let Ok(Some(record)) = network.get_local_record(&record_key).await {
+                        result = Ok((our_address, Bytes::from(record.value)));
+                    }
+                }
+
+                QueryResponse::GetRegisterRecord(result)
+            }
             Query::GetReplicatedRecord { requester, key } => {
                 debug!("Got GetReplicatedRecord from {requester:?} regarding {key:?}");
 
@@ -865,7 +883,7 @@ impl Node {
         }
         let total_forwarded_amount = spend_requests
             .iter()
-            .map(|s| s.token().as_nano())
+            .map(|s| s.amount().as_nano())
             .sum::<u64>();
 
         let record_kind = RecordKind::Spend;

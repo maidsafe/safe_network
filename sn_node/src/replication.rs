@@ -17,7 +17,7 @@ use sn_protocol::{
     storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey,
 };
-use tokio::task::{spawn, JoinHandle};
+use tokio::task::spawn;
 
 impl Node {
     /// Sends _all_ record keys every interval to all peers within the REPLICATE_RANGE.
@@ -38,7 +38,7 @@ impl Node {
         for (holder, key) in keys_to_fetch {
             let node = self.clone();
             let requester = NetworkAddress::from_peer(self.network().peer_id());
-            let _handle: JoinHandle<Result<()>> = spawn(async move {
+            let _handle = spawn(async move {
                 let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
                 debug!("Fetching record {pretty_key:?} from node {holder:?}");
                 let req = Request::Query(Query::GetReplicatedRecord {
@@ -76,18 +76,23 @@ impl Node {
                         target_record: None,
                         expected_holders: Default::default(),
                     };
-                    node.network()
-                        .get_record_from_network(key, &get_cfg)
-                        .await?
+                    match node.network().get_record_from_network(key, &get_cfg).await {
+                        Ok(record) => record,
+                        Err(err) => {
+                            error!("During replication fetch of {pretty_key:?}, failed in re-attempt of get from network {err:?}");
+                            return;
+                        }
+                    }
                 };
 
                 debug!(
                     "Got Replication Record {pretty_key:?} from network, validating and storing it"
                 );
-                node.store_replicated_in_record(record).await?;
-                debug!("Completed storing Replication Record {pretty_key:?} from network.");
-
-                Ok(())
+                if let Err(err) = node.store_replicated_in_record(record).await {
+                    error!("During store replication fetched {pretty_key:?}, got error {err:?}");
+                } else {
+                    debug!("Completed storing Replication Record {pretty_key:?} from network.");
+                }
             });
         }
         Ok(())

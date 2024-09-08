@@ -327,7 +327,7 @@ impl Node {
     pub(crate) async fn validate_and_store_register(
         &self,
         register: SignedRegister,
-        with_payment: bool,
+        is_client_put: bool,
     ) -> Result<()> {
         let reg_addr = register.address();
         debug!("Validating and storing register {reg_addr:?}");
@@ -340,7 +340,7 @@ impl Node {
         // check register and merge if needed
         let updated_register = match self.register_validation(&register, present_locally).await? {
             Some(reg) => {
-                debug!("Register needed to be updated");
+                debug!("Register {pretty_key:?} needed to be updated");
                 reg
             }
             None => {
@@ -358,12 +358,18 @@ impl Node {
         };
         let content_hash = XorName::from_content(&record.value);
 
-        debug!("Storing register {reg_addr:?} as Record locally");
+        info!("Storing register {reg_addr:?} with content of {content_hash:?} as Record locally");
         self.network().put_local_record(record);
 
         self.record_metrics(Marker::ValidRegisterRecordPutFromNetwork(&pretty_key));
 
-        if with_payment {
+        // Updated register needs to be replicated out as well,
+        // to avoid `leaking` of old version due to the mismatch of
+        // `close_range` and `replication_range`, combined with nodes churning
+        //
+        // However, to avoid `looping of replication`, a `replicated in` register
+        // shall not trigger any further replication out.
+        if is_client_put {
             self.replicate_valid_fresh_record(key, RecordType::NonChunk(content_hash));
         }
 
@@ -822,10 +828,8 @@ impl Node {
         for spend in many_spends {
             let descendants: BTreeSet<_> = spend
                 .spend
-                .spent_tx
-                .outputs
-                .iter()
-                .map(|o| o.unique_pubkey())
+                .descendants
+                .keys()
                 .map(SpendAddress::from_unique_pubkey)
                 .collect();
             for d in descendants {
@@ -893,7 +897,7 @@ where
 {
     let mut received_fee = NanoTokens::zero();
     for cash_note in cash_notes {
-        let amount = cash_note.value()?;
+        let amount = cash_note.value();
         received_fee = received_fee
             .checked_add(amount)
             .ok_or(Error::NumericOverflow)?;

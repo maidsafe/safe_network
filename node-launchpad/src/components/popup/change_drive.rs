@@ -47,18 +47,18 @@ pub struct ChangeDrivePopup {
     items: StatefulList<DriveItem>,
     drive_selection: DriveItem,
     drive_selection_initial_state: DriveItem,
-    user_moved: bool, // Used to check if the user has moved the selection and style it accordingly
+    can_select: bool, // Used to enable the "Change Drive" button based on conditions
 }
 
 impl ChangeDrivePopup {
     pub fn new(storage_mountpoint: PathBuf) -> Result<Self> {
         let drives_and_space = system::get_list_of_available_drives_and_available_space()?;
 
-        let mut selected_drive: DriveItem = DriveItem::default();
+        let mut selected_connection_mode: DriveItem = DriveItem::default();
         // Create a vector of DriveItem from drives_and_space
         let drives_items: Vec<DriveItem> = drives_and_space
             .iter()
-            .map(|(drive_name, mountpoint, space)| {
+            .map(|(drive_name, mountpoint, space, available)| {
                 let size_str = format!("{:.2} GB", *space as f64 / 1e9);
                 let size_str_cloned = size_str.clone();
                 DriveItem {
@@ -66,13 +66,15 @@ impl ChangeDrivePopup {
                     mountpoint: mountpoint.clone(),
                     size: size_str,
                     status: if mountpoint == &storage_mountpoint {
-                        selected_drive = DriveItem {
+                        selected_connection_mode = DriveItem {
                             name: drive_name.to_string(),
                             mountpoint: mountpoint.clone(),
                             size: size_str_cloned,
                             status: DriveStatus::Selected,
                         };
                         DriveStatus::Selected
+                    } else if !available {
+                        DriveStatus::NotAvailable
                     } else {
                         DriveStatus::NotSelected
                     },
@@ -81,14 +83,15 @@ impl ChangeDrivePopup {
             .collect::<Vec<DriveItem>>();
         debug!("Drive Mountpoint in Config: {:?}", storage_mountpoint);
         debug!("Drives and space: {:?}", drives_and_space);
+        debug!("Drives items: {:?}", drives_items);
         let items = StatefulList::with_items(drives_items);
         Ok(Self {
             active: false,
             state: ChangeDriveState::Selection,
             items,
-            drive_selection: selected_drive.clone(),
-            drive_selection_initial_state: selected_drive.clone(),
-            user_moved: false,
+            drive_selection: selected_connection_mode.clone(),
+            drive_selection_initial_state: selected_connection_mode.clone(),
+            can_select: false,
         })
     }
 
@@ -98,7 +101,9 @@ impl ChangeDrivePopup {
     ///
     fn deselect_all(&mut self) {
         for item in &mut self.items.items {
-            item.status = DriveStatus::NotSelected;
+            if item.status != DriveStatus::NotAvailable {
+                item.status = DriveStatus::NotSelected;
+            }
         }
     }
     /// Assigns to self.drive_selection the selected drive in the list
@@ -209,17 +214,17 @@ impl ChangeDrivePopup {
             buttons_layer[0],
         );
 
-        let button_yes = Line::from(if self.user_moved {
-            vec![
-                Span::styled("Change Drive ", Style::default().fg(EUCALYPTUS)),
-                Span::styled("[Enter]", Style::default().fg(LIGHT_PERIWINKLE).bold()),
-            ]
-        } else {
-            vec![
-                Span::styled("Change Drive ", Style::default().fg(COOL_GREY)),
-                Span::styled("[Enter]", Style::default().fg(LIGHT_PERIWINKLE)),
-            ]
-        })
+        let button_yes = Line::from(vec![
+            Span::styled(
+                "Change Drive ",
+                if self.can_select {
+                    Style::default().fg(EUCALYPTUS)
+                } else {
+                    Style::default().fg(COOL_GREY)
+                },
+            ),
+            Span::styled("[Enter]", Style::default().fg(LIGHT_PERIWINKLE).bold()),
+        ])
         .alignment(Alignment::Right);
 
         f.render_widget(
@@ -359,9 +364,7 @@ impl Component for ChangeDrivePopup {
                         // We allow action if we have more than one drive and the action is not
                         // over the drive already selected
                         let drive = self.return_selection();
-                        if self.items.items.len() > 1
-                            && (drive.mountpoint != self.drive_selection.mountpoint)
-                        {
+                        if self.can_select {
                             debug!(
                                 "Got Enter and there's a new selection, storing value and switching to Options"
                             );
@@ -372,7 +375,7 @@ impl Component for ChangeDrivePopup {
                             vec![]
                         } else {
                             debug!("Got Enter, but no new selection. We should not do anything");
-                            vec![Action::SwitchScene(Scene::ChangeDrivePopUp)]
+                            vec![]
                         }
                     }
                     KeyCode::Esc => {
@@ -383,7 +386,8 @@ impl Component for ChangeDrivePopup {
                         if self.items.items.len() > 1 {
                             self.items.previous();
                             let drive = self.return_selection();
-                            self.user_moved = drive.mountpoint != self.drive_selection.mountpoint;
+                            self.can_select = drive.mountpoint != self.drive_selection.mountpoint
+                                && drive.status != DriveStatus::NotAvailable;
                         }
                         vec![]
                     }
@@ -391,7 +395,8 @@ impl Component for ChangeDrivePopup {
                         if self.items.items.len() > 1 {
                             self.items.next();
                             let drive = self.return_selection();
-                            self.user_moved = drive.mountpoint != self.drive_selection.mountpoint;
+                            self.can_select = drive.mountpoint != self.drive_selection.mountpoint
+                                && drive.status != DriveStatus::NotAvailable;
                         }
                         vec![]
                     }
@@ -453,7 +458,7 @@ impl Component for ChangeDrivePopup {
             Action::SwitchScene(scene) => match scene {
                 Scene::ChangeDrivePopUp => {
                     self.active = true;
-                    self.user_moved = false;
+                    self.can_select = false;
                     self.state = ChangeDriveState::Selection;
                     self.select_drive();
                     Some(Action::SwitchInputMode(InputMode::Entry))
@@ -553,11 +558,12 @@ impl<T> StatefulList<T> {
     }
 }
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
 enum DriveStatus {
     Selected,
     #[default]
     NotSelected,
+    NotAvailable,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -571,7 +577,6 @@ pub struct DriveItem {
 impl DriveItem {
     fn to_list_item(&self, _index: usize, width: usize) -> ListItem {
         let spaces = width - self.name.len() - self.size.len() - "   ".len() - 4;
-
         let line = match self.status {
             DriveStatus::NotSelected => Line::from(vec![
                 Span::raw("   "),
@@ -586,6 +591,16 @@ impl DriveItem {
                 Span::raw(" ".repeat(spaces)),
                 Span::styled(self.size.clone(), Style::default().fg(GHOST_WHITE)),
             ]),
+            DriveStatus::NotAvailable => {
+                let legend = "No Access";
+                let spaces = width - self.name.len() - legend.len() - "   ".len() - 4;
+                Line::from(vec![
+                    Span::raw("   "),
+                    Span::styled(self.name.clone(), Style::default().fg(COOL_GREY)),
+                    Span::raw(" ".repeat(spaces)),
+                    Span::styled(legend, Style::default().fg(COOL_GREY)),
+                ])
+            }
         };
 
         ListItem::new(line).style(Style::default().bg(SPACE_CADET))

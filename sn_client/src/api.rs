@@ -21,8 +21,7 @@ use rand::{thread_rng, Rng};
 use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
-    GetRecordCfg, GetRecordError, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg,
-    VerificationKind,
+    GetRecordCfg, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg, VerificationKind,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -409,7 +408,6 @@ impl Client {
     ///
     /// # Arguments
     /// * 'address' - [RegisterAddress]
-    /// * 'is_verifying' - Boolean: If true, we fetch at-least 2 copies from the network with more retry attempts.
     ///
     /// Return Type:
     ///
@@ -431,53 +429,18 @@ impl Client {
     /// let xorname = XorName::random(&mut rng);
     /// let address = RegisterAddress::new(xorname, owner);
     /// // Get a signed register
-    /// let signed_register = client.get_signed_register_from_network(address,true);
+    /// let signed_register = client.get_signed_register_from_network(address);
     /// # Ok(())
     /// # }
     /// ```
     pub async fn get_signed_register_from_network(
         &self,
         address: RegisterAddress,
-        is_verifying: bool,
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
-        let get_quorum = if is_verifying {
-            Quorum::Majority
-        } else {
-            Quorum::One
-        };
-        let retry_strategy = if is_verifying {
-            Some(RetryStrategy::Balanced)
-        } else {
-            Some(RetryStrategy::Quick)
-        };
-        let get_cfg = GetRecordCfg {
-            get_quorum,
-            retry_strategy,
-            target_record: None,
-            expected_holders: Default::default(),
-        };
 
-        let maybe_record = self.network.get_record_from_network(key, &get_cfg).await;
-        let record = match &maybe_record {
-            Ok(r) => r,
-            Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
-                return merge_split_register_records(address, result_map)
-            }
-            Err(e) => {
-                warn!("Failed to get record at {address:?} from the network: {e:?}");
-                return Err(ProtocolError::RegisterNotFound(Box::new(address)).into());
-            }
-        };
-
-        debug!(
-            "Got record from the network, {:?}",
-            PrettyPrintRecordKey::from(&record.key)
-        );
-
-        let register = get_register_from_record(record)
-            .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
-        Ok(register)
+        let maybe_records = self.network.get_register_record_from_network(key).await?;
+        merge_register_records(address, &maybe_records)
     }
 
     /// Retrieve a Register from the network.
@@ -803,7 +766,7 @@ impl Client {
     /// ```
     pub async fn verify_register_stored(&self, address: RegisterAddress) -> Result<SignedRegister> {
         info!("Verifying register: {address:?}");
-        self.get_signed_register_from_network(address, true).await
+        self.get_signed_register_from_network(address).await
     }
 
     /// Quickly checks if a `Register` is stored by expected nodes on the network.
@@ -837,7 +800,7 @@ impl Client {
         address: RegisterAddress,
     ) -> Result<SignedRegister> {
         info!("Quickly checking for existing register : {address:?}");
-        self.get_signed_register_from_network(address, false).await
+        self.get_signed_register_from_network(address).await
     }
 
     /// Send a `SpendCashNote` request to the network. Protected method.
@@ -1008,7 +971,7 @@ impl Client {
         }
 
         // check spend
-        match signed_spend.verify(signed_spend.spent_tx_hash()) {
+        match signed_spend.verify() {
             Ok(()) => {
                 trace!("Verified signed spend got from network for {address:?}");
                 Ok(signed_spend.clone())
@@ -1049,7 +1012,7 @@ impl Client {
     /// let main_pub_key = MainPubkey::new(pk);
     /// // Create a Cash Note Redemption Vector
     /// let cash_note = CashNote::from_hex("&hex").unwrap();
-    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note).unwrap();
+    /// let cashNoteRedemption = CashNoteRedemption::from_cash_note(&cash_note);
     /// let vector = vec![cashNoteRedemption.clone(), cashNoteRedemption.clone()];
     /// // Verify the cash note redemptions
     /// let cash_notes = client.verify_cash_notes_redemptions(main_pub_key,&vector);
@@ -1082,19 +1045,22 @@ fn get_register_from_record(record: &Record) -> Result<SignedRegister> {
 }
 
 /// if multiple register records where found for a given key, merge them into a single register
-fn merge_split_register_records(
+fn merge_register_records(
     address: RegisterAddress,
-    map: &HashMap<XorName, (Record, HashSet<PeerId>)>,
+    map: &HashMap<XorName, Record>,
 ) -> Result<SignedRegister> {
     let key = NetworkAddress::from_register_address(address).to_record_key();
     let pretty_key = PrettyPrintRecordKey::from(&key);
-    debug!("Got multiple records from the network for key: {pretty_key:?}");
+    info!(
+        "Got {} register records from the network for key: {pretty_key:?}",
+        map.len()
+    );
     let mut all_registers = vec![];
-    for (record, peers) in map.values() {
+    for record in map.values() {
         match get_register_from_record(record) {
             Ok(r) => all_registers.push(r),
             Err(e) => {
-                warn!("Ignoring invalid register record found for {pretty_key:?} received from {peers:?}: {:?}", e);
+                warn!("Ignoring invalid register record {pretty_key:?} with error {e:?}");
                 continue;
             }
         }
@@ -1130,14 +1096,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_merge_split_register_records() -> eyre::Result<()> {
+    fn test_merge_register_records() -> eyre::Result<()> {
         let mut rng = rand::thread_rng();
         let meta = XorName::random(&mut rng);
         let owner_sk = SecretKey::random();
         let owner_pk = owner_sk.public_key();
         let address = RegisterAddress::new(meta, owner_pk);
-        let peers1 = HashSet::from_iter(vec![PeerId::random(), PeerId::random()]);
-        let peers2 = HashSet::from_iter(vec![PeerId::random(), PeerId::random()]);
 
         // prepare registers
         let mut register_root = Register::new(owner_pk, meta, Default::default());
@@ -1188,27 +1152,21 @@ mod tests {
         // test with 2 valid records: should return the two merged
         let mut expected_merge = signed_register1.clone();
         expected_merge.merge(&signed_register2)?;
-        let map = HashMap::from_iter(vec![
-            (xorname1, (record1.clone(), peers1.clone())),
-            (xorname2, (record2, peers2.clone())),
-        ]);
-        let reg = merge_split_register_records(address, &map)?; // Ok
+        let map = HashMap::from_iter(vec![(xorname1, record1.clone()), (xorname2, record2)]);
+        let reg = merge_register_records(address, &map)?; // Ok
         assert_eq!(reg, expected_merge);
 
         // test with 1 valid record and 1 invalid record: should return the valid one
-        let map = HashMap::from_iter(vec![
-            (xorname1, (record1, peers1.clone())),
-            (xorname2, (record_bad.clone(), peers2.clone())),
-        ]);
-        let reg = merge_split_register_records(address, &map)?; // Ok
+        let map = HashMap::from_iter(vec![(xorname1, record1), (xorname2, record_bad.clone())]);
+        let reg = merge_register_records(address, &map)?; // Ok
         assert_eq!(reg, signed_register1);
 
         // test with 2 invalid records: should error out
         let map = HashMap::from_iter(vec![
-            (xorname_bad, (record_bad.clone(), peers1)),
-            (xorname_bad, (record_bad, peers2)),
+            (xorname_bad, record_bad.clone()),
+            (xorname_bad, record_bad),
         ]);
-        let res = merge_split_register_records(address, &map); // Err
+        let res = merge_register_records(address, &map); // Err
         assert!(res.is_err());
 
         Ok(())

@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    connection_mode::ConnectionMode,
     mode::{InputMode, Scene},
     node_stats::NodeStats,
 };
@@ -22,9 +23,11 @@ pub enum Action {
     SwitchScene(Scene),
     SwitchInputMode(InputMode),
 
+    StoreStorageDrive(PathBuf, String),
+    StoreConnectionMode(ConnectionMode),
+    StorePortRange(u32, u32),
     StoreDiscordUserName(String),
     StoreNodesToStart(usize),
-    StoreStorageDrive(PathBuf, String),
 
     Tick,
     Render,
@@ -47,7 +50,11 @@ pub enum StatusActions {
     ResetNodesCompleted { trigger_start_node: bool },
     SuccessfullyDetectedNatStatus,
     ErrorWhileRunningNatDetection,
-
+    ErrorLoadingNodeRegistry { raw_error: String },
+    ErrorGettingNodeRegistryPath { raw_error: String },
+    ErrorScalingUpNodes { raw_error: String },
+    ErrorStoppingNodes { raw_error: String },
+    ErrorResettingNodes { raw_error: String },
     NodesStatsObtained(NodeStats),
 
     TriggerManageNodes,
@@ -61,9 +68,13 @@ pub enum OptionsActions {
     ResetNodes,
 
     TriggerChangeDrive,
+    TriggerChangeConnectionMode,
+    TriggerChangePortRange,
     TriggerBetaProgramme,
     TriggerResetNodes,
     TriggerAccessLogs,
+    UpdateConnectionMode(ConnectionMode),
+    UpdatePortRange(u32, u32),
     UpdateBetaProgrammeUsername(String),
     UpdateStorageDrive(PathBuf, String),
 }

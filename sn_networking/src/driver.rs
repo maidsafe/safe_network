@@ -16,6 +16,7 @@ use crate::{
     cmd::{LocalSwarmCmd, NetworkSwarmCmd},
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
+    external_address::ExternalAddressManager,
     log_markers::Marker,
     multiaddr_pop_p2p,
     network_discovery::NetworkDiscovery,
@@ -24,10 +25,6 @@ use crate::{
     relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
     target_arch::{interval, spawn, Instant},
-    version::{
-        IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
-        REQ_RESPONSE_VERSION_STR,
-    },
     GetRecordError, Network, CLOSE_GROUP_SIZE,
 };
 use crate::{transport, NodeIssue};
@@ -53,6 +50,10 @@ use prometheus_client::{metrics::info::Info, registry::Registry};
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
     storage::RetryStrategy,
+    version::{
+        IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
+        REQ_RESPONSE_VERSION_STR,
+    },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_transfers::PaymentQuote;
@@ -631,17 +632,18 @@ impl NetworkBuilder {
         if !is_client {
             relay_manager.enable_hole_punching(self.is_behind_home_network);
         }
+        let external_address_manager = ExternalAddressManager::new(peer_id);
 
         let swarm_driver = SwarmDriver {
             swarm,
             self_peer_id: peer_id,
             local: self.local,
-            listen_port: self.listen_addr.map(|addr| addr.port()),
             is_client,
             is_behind_home_network: self.is_behind_home_network,
             peers_in_rt: 0,
             bootstrap,
             relay_manager,
+            external_address_manager,
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
             network_metrics,
@@ -688,10 +690,9 @@ pub struct SwarmDriver {
     pub(crate) local: bool,
     pub(crate) is_client: bool,
     pub(crate) is_behind_home_network: bool,
-    /// The port that was set by the user
-    pub(crate) listen_port: Option<u16>,
     pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
+    pub(crate) external_address_manager: ExternalAddressManager,
     pub(crate) relay_manager: RelayManager,
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) replication_fetcher: ReplicationFetcher,
@@ -790,13 +791,12 @@ impl SwarmDriver {
                     if !self.is_client {
                         let closest_k_peers = self.get_closest_k_value_local_peers();
 
-                        if let Some(distance) = self.get_farthest_data_address_estimate(&closest_k_peers) {
+                        if let Some(distance) = self.get_responsbile_range_estimate(&closest_k_peers) {
+                            info!("Set responsible range to {distance}");
                             // set any new distance to farthest record in the store
                             self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
-
-                            let replication_distance = self.swarm.behaviour_mut().kademlia.store_mut().get_farthest_replication_distance_bucket().unwrap_or(1);
                             // the distance range within the replication_fetcher shall be in sync as well
-                            self.replication_fetcher.set_replication_distance_range(replication_distance);
+                            self.replication_fetcher.set_replication_distance_range(distance);
                         }
                     }
                 }
@@ -809,10 +809,9 @@ impl SwarmDriver {
     // ---------- Crate helpers -------------------
     // --------------------------------------------
 
-    /// Returns the farthest bucket, close to but probably farther than our responsibilty range.
-    /// This simply uses the closest k peers to estimate the farthest address as
-    /// `K_VALUE`th peer's bucket.
-    fn get_farthest_data_address_estimate(
+    /// Uses the closest k peers to estimate the farthest address as
+    /// `K_VALUE / 2`th peer's bucket.
+    fn get_responsbile_range_estimate(
         &mut self,
         // Sorted list of closest k peers to our peer id.
         closest_k_peers: &[PeerId],
@@ -820,16 +819,20 @@ impl SwarmDriver {
         // if we don't have enough peers we don't set the distance range yet.
         let mut farthest_distance = None;
 
+        if closest_k_peers.is_empty() {
+            return farthest_distance;
+        }
+
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
-        // get K_VALUEth peer's address distance
+        // get `K_VALUE / 2`th peer's address distance
         // This is a rough estimate of the farthest address we might be responsible for.
         // We want this to be higher than actually necessary, so we retain more data
         // and can be sure to pass bad node checks
-        if let Some(peer) = closest_k_peers.last() {
-            let address = NetworkAddress::from_peer(*peer);
-            farthest_distance = our_address.distance(&address).ilog2();
-        }
+        let target_index = std::cmp::min(K_VALUE.get() / 2, closest_k_peers.len()) - 1;
+
+        let address = NetworkAddress::from_peer(closest_k_peers[target_index]);
+        farthest_distance = our_address.distance(&address).ilog2();
 
         farthest_distance
     }

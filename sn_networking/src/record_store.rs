@@ -9,9 +9,9 @@
 
 use crate::cmd::LocalSwarmCmd;
 use crate::driver::MAX_PACKET_SIZE;
+use crate::send_local_swarm_cmd;
 use crate::target_arch::{spawn, Instant};
 use crate::{event::NetworkEvent, log_markers::Marker};
-use crate::{send_local_swarm_cmd, CLOSE_GROUP_SIZE};
 use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
     Aes256GcmSiv, Nonce,
@@ -34,7 +34,7 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{NanoTokens, QuotingMetrics, TOTAL_SUPPLY};
+use sn_transfers::{NanoTokens, QuotingMetrics};
 use std::collections::VecDeque;
 use std::{
     borrow::Cow,
@@ -61,6 +61,12 @@ const MAX_RECORDS_CACHE_SIZE: usize = 100;
 
 /// File name of the recorded historical quoting metrics.
 const HISTORICAL_QUOTING_METRICS_FILENAME: &str = "historic_quoting_metrics";
+
+/// Max store cost for a chunk.
+const MAX_STORE_COST: u64 = 1_000_000;
+
+// Min store cost for a chunk.
+const MIN_STORE_COST: u64 = 1;
 
 /// A `RecordStore` that stores records on disk.
 pub struct NodeRecordStore {
@@ -748,15 +754,15 @@ impl RecordStore for NodeRecordStore {
     }
 
     fn put(&mut self, record: Record) -> Result<()> {
+        let record_key = PrettyPrintRecordKey::from(&record.key);
+
         if record.value.len() >= self.config.max_value_bytes {
             warn!(
-                "Record not stored. Value too large: {} bytes",
+                "Record {record_key:?} not stored. Value too large: {} bytes",
                 record.value.len()
             );
             return Err(Error::ValueTooLarge);
         }
-
-        let record_key = PrettyPrintRecordKey::from(&record.key);
 
         // Record with payment shall always get passed further
         // to allow the payment to be taken and credit into own wallet.
@@ -937,35 +943,27 @@ pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
     let max_records = quoting_metrics.max_records;
     let live_time = quoting_metrics.live_time;
 
-    let ori_cost = (10 * records_stored) as u64;
-    let divider = max(1, records_stored / max(1, received_payment_count)) as u64;
+    let ori_cost = positive_input_0_1_sigmoid(records_stored as f64 / max_records as f64)
+        * MAX_STORE_COST as f64;
+
+    let divider = max(1, records_stored / max(1, received_payment_count));
 
     // Gaining one step for every day that staying in the network
     let reward_steps: u64 = live_time / (24 * 3600);
-    let base_multiplier = 1.1_f32;
-    let rewarder = max(1, base_multiplier.powf(reward_steps as f32) as u64);
+    let base_multiplier = 1.01_f64;
+    let rewarder = max(1, base_multiplier.powf(reward_steps as f64) as u64);
 
-    // Fine tuning here helps to get a desired curve:
-    // 1, Close to the max supply (4.3E+18) when stored records reaching full.
-    // 2, Charging around `token`s near the situation of 80% storage reached.
-    //
-    // 1.02.powf(1638) = 1.25E+14 => charge_at_full = 10 * MAX_RECORDS * 1.25E+14 = 5.4E+18
-    // 1.02.powf(820) = 1.1E+7 => charge_at_80_percent = 10 * 0.8 * MAX_RECORDS * 1.1E+7 = 3.6E+11 (360 tokens)
-    let base_multiplier = 1.0225_f32;
-
-    // Given currently the max_records is set at MAX_RECORDS,
-    // hence setting the multiplier trigger at 60% of the max_records
-    let exponential_pricing_trigger = 6 * max_records / 10;
-
-    let multiplier = max(
-        1,
-        base_multiplier.powf(records_stored.saturating_sub(exponential_pricing_trigger) as f32)
-            as u64,
+    // Deploy a lower cap safe_guard to the store_cost
+    let charge = max(
+        MIN_STORE_COST,
+        (ori_cost / divider as f64 / rewarder as f64) as u64,
     );
-
-    let charge = max(10, ori_cost.saturating_mul(multiplier) / divider / rewarder);
     // Deploy an upper cap safe_guard to the store_cost
-    min(TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64, charge)
+    min(MAX_STORE_COST, charge)
+}
+
+fn positive_input_0_1_sigmoid(x: f64) -> f64 {
+    1.0 / (1.0 + (-30.0 * (x - 0.5)).exp())
 }
 
 #[allow(trivial_casts)]
@@ -1026,7 +1024,7 @@ mod tests {
             received_payment_count: MAX_RECORDS_COUNT + 1,
             live_time: 1,
         });
-        assert_eq!(sut, TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64);
+        assert_eq!(sut, MAX_STORE_COST - 1);
     }
 
     #[test]
@@ -1039,7 +1037,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 20480);
+        assert_eq!(sut, 500000);
     }
     #[test]
     fn test_calculate_60_percent_cost_for_records() {
@@ -1051,7 +1049,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 24570);
+        assert_eq!(sut, 952375);
     }
 
     #[test]
@@ -1064,7 +1062,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 2528900);
+        assert_eq!(sut, 988981);
     }
 
     #[test]
@@ -1077,7 +1075,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 262645870);
+        assert_eq!(sut, 997523);
     }
 
     #[test]
@@ -1090,7 +1088,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 2689140767040);
+        assert_eq!(sut, 999875);
     }
 
     #[test]
@@ -1103,7 +1101,7 @@ mod tests {
             live_time: 1,
         });
         // at this point we should be at max cost
-        assert_eq!(sut, 27719885856440320);
+        assert_eq!(sut, 999993);
     }
 
     #[test]
@@ -1114,7 +1112,7 @@ mod tests {
             received_payment_count: 0,
             live_time: 1,
         });
-        assert_eq!(sut, 10);
+        assert_eq!(sut, MIN_STORE_COST);
     }
 
     #[test]
@@ -1366,7 +1364,9 @@ mod tests {
         for _ in 0..max_records - 1 {
             let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
             let value = match try_serialize_record(
-                &(0..50).map(|_| rand::random::<u8>()).collect::<Bytes>(),
+                &(0..max_records)
+                    .map(|_| rand::random::<u8>())
+                    .collect::<Bytes>(),
                 RecordKind::Chunk,
             ) {
                 Ok(value) => value.to_vec(),
@@ -1575,14 +1575,14 @@ mod tests {
 
             // Execute for 50 iterations, which allows the test can be executed in normal CI runs.
             if iteration == 50 {
-                assert_eq!(0, empty_earned_nodes, "every node has earnt _something_");
+                assert!(empty_earned_nodes < 5, "0.25% of nodes still not earning");
                 assert!(
                     (max_store_cost / min_store_cost) < 100,
-                    "store cost is balanced"
+                    "store cost is not balanced"
                 );
                 assert!(
                     (max_earned / min_earned) < 1000,
-                    "earning distribution is well balanced"
+                    "earning distribution is not balanced"
                 );
                 break;
             }

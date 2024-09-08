@@ -16,14 +16,11 @@ use crate::{get_stdin_password_response, get_stdin_response};
 use autonomi::utils::is_valid_key_hex;
 use bls::SecretKey;
 use clap::Parser;
-use color_eyre::{
-    eyre::{bail, eyre},
-    Result,
-};
+use color_eyre::{eyre::eyre, Result};
 use dialoguer::Confirm;
 use sn_client::acc_packet::{load_or_create_mnemonic, secret_key_from_mnemonic};
 use sn_client::transfers::{
-    HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransfer,
+    HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransaction,
     WalletError,
 };
 use sn_client::{
@@ -372,31 +369,18 @@ async fn send(
 fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     let wallet = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
 
-    let unsigned_transfer: UnsignedTransfer = rmp_serde::from_slice(&hex::decode(tx)?)?;
+    let unsigned_tx = UnsignedTransaction::from_hex(tx)?;
 
     println!("The unsigned transaction has been successfully decoded:");
-    let mut spent_tx = None;
-    for (i, (spend, _)) in unsigned_transfer.spends.iter().enumerate() {
+    for (i, (unique_pk, amount)) in unsigned_tx.spent_unique_keys().iter().enumerate() {
         println!("\nSpending input #{i}:");
-        println!("\tKey: {}", spend.unique_pubkey.to_hex());
-        println!("\tAmount: {}", spend.amount);
-        if let Some(ref tx) = spent_tx {
-            if tx != &spend.spent_tx {
-                bail!("Transaction seems corrupted, not all Spends (inputs) refer to the same transaction");
-            }
-        } else {
-            spent_tx = Some(spend.spent_tx.clone());
-        }
-    }
+        println!("\tKey: {}", unique_pk.to_hex());
+        println!("\tAmount: {amount}");
 
-    if let Some(ref tx) = spent_tx {
-        for (i, output) in tx.outputs.iter().enumerate() {
-            println!("\nOutput #{i}:");
-            println!("\tKey: {}", output.unique_pubkey.to_hex());
-            println!("\tAmount: {}", output.amount);
+        for (descendant, amount) in unsigned_tx.output_unique_keys().iter() {
+            println!("\tOutput Key: {}", descendant.to_hex());
+            println!("\tAmount: {amount}");
         }
-    } else {
-        bail!("Transaction is corrupted, no transaction information found.");
     }
 
     if !force {
@@ -412,21 +396,11 @@ fn sign_transaction(tx: &str, root_dir: &Path, force: bool) -> Result<()> {
     }
 
     println!("Signing the transaction with local hot-wallet...");
-    let signed_spends = wallet.sign(unsigned_transfer.spends);
-
-    for signed_spend in signed_spends.iter() {
-        if let Err(err) = signed_spend.verify(signed_spend.spent_tx_hash()) {
-            bail!("Signature or transaction generated is invalid: {err:?}");
-        }
-    }
+    let signed_tx = wallet.sign(unsigned_tx)?;
 
     println!(
         "The transaction has been successfully signed:\n\n{}\n",
-        hex::encode(rmp_serde::to_vec(&(
-            &signed_spends,
-            unsigned_transfer.output_details,
-            unsigned_transfer.change_id
-        ))?)
+        signed_tx.to_hex()?
     );
     println!(
         "Please copy the above text, and broadcast it to the network with 'wallet broadcast' cmd."

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Hash, NanoTokens, UniquePubkey};
+use crate::{NanoTokens, UniquePubkey};
 use thiserror::Error;
 
 /// Specialisation of `std::Result`.
@@ -25,32 +25,12 @@ pub enum TransferError {
     FailedToParseNanoToken(String),
     #[error("Invalid Spend: value was tampered with {0:?}")]
     InvalidSpendValue(UniquePubkey),
-    #[error("Invalid parent Tx: {0}")]
-    InvalidParentTx(String),
-    #[error("Invalid spent Tx: {0}")]
-    InvalidSpentTx(String),
     #[error("Invalid parent spend: {0}")]
     InvalidParentSpend(String),
     #[error("Parent spend was double spent")]
     DoubleSpentParent,
     #[error("Invalid Spend Signature for {0:?}")]
     InvalidSpendSignature(UniquePubkey),
-    #[error("Transaction hash is different from the hash in the the Spend: {0:?} != {1:?}")]
-    TransactionHashMismatch(Hash, Hash),
-    #[error("CashNote ciphers are not present in transaction outputs.")]
-    CashNoteCiphersNotPresentInTransactionOutput,
-    #[error("Output not found in transaction outputs.")]
-    OutputNotFound,
-    #[error("UniquePubkey is not unique across all transaction inputs and outputs.")]
-    UniquePubkeyNotUniqueInTx,
-    #[error("The number of SignedSpend ({got}) does not match the number of inputs ({expected}).")]
-    SignedSpendInputLenMismatch { got: usize, expected: usize },
-    #[error("A SignedSpend UniquePubkey does not match an MlsagSignature UniquePubkey.")]
-    SignedSpendInputIdMismatch,
-    #[error("Decryption failed.")]
-    DecryptionBySecretKeyFailed,
-    #[error("UniquePubkey not found.")]
-    UniquePubkeyNotFound,
     #[error("Main key does not match public address.")]
     MainSecretKeyDoesNotMatchMainPubkey,
     #[error("Main pub key does not match.")]
@@ -59,28 +39,29 @@ pub enum TransferError {
     HexDeserializationFailed(String),
     #[error("Could not serialize CashNote to hex: {0}")]
     HexSerializationFailed(String),
-    #[error("The input and output amounts of the tx do not match.")]
-    UnbalancedTransaction,
-    #[error("The CashNote tx must have at least one input.")]
-    MissingTxInputs,
+    #[error("CashNote must have at least one ancestor.")]
+    CashNoteMissingAncestors,
     #[error("The spends don't match the inputs of the Transaction.")]
     SpendsDoNotMatchInputs,
     #[error("Overflow occurred while adding values")]
     NumericOverflow,
     #[error("Not enough balance, {0} available, {1} required")]
     NotEnoughBalance(NanoTokens, NanoTokens),
-    #[error("CashNoteHasNoParentSpends: {0}")]
-    CashNoteReissueFailed(String),
-    #[error("CashNote has no parent spends")]
-    CashNoteHasNoParentSpends,
+
     #[error("CashNoteRedemption serialisation failed")]
     CashNoteRedemptionSerialisationFailed,
     #[error("CashNoteRedemption decryption failed")]
     CashNoteRedemptionDecryptionFailed,
     #[error("CashNoteRedemption encryption failed")]
     CashNoteRedemptionEncryptionFailed,
-    #[error("We are not a recipient of this Transfer")]
-    NotRecipient,
+
+    #[error("Transaction serialization error: {0}")]
+    TransactionSerialization(String),
+    #[error("Unsigned transaction is invalid: {0}")]
+    InvalidUnsignedTransaction(String),
+    #[error("Cannot create a Transaction with outputs equal to zero")]
+    ZeroOutputs,
+
     #[error("Transfer serialisation failed")]
     TransferSerializationFailed,
     #[error("Transfer deserialisation failed")]

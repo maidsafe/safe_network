@@ -15,13 +15,16 @@ use crate::{
         options::Options,
         popup::{
             beta_programme::BetaProgramme, change_drive::ChangeDrivePopup,
-            manage_nodes::ManageNodes, reset_nodes::ResetNodesPopup,
+            connection_mode::ChangeConnectionModePopUp, manage_nodes::ManageNodes,
+            port_range::PortRangePopUp, reset_nodes::ResetNodesPopup,
         },
-        status::Status,
+        status::{Status, StatusConfig},
         Component,
     },
     config::{get_launchpad_nodes_data_dir_path, AppData, Config},
+    connection_mode::ConnectionMode,
     mode::{InputMode, Scene},
+    node_mgmt::{PORT_MAX, PORT_MIN},
     style::SPACE_CADET,
     system::{get_default_mount_point, get_primary_mount_point, get_primary_mount_point_name},
     tui,
@@ -70,7 +73,12 @@ impl App {
         };
         debug!("Data dir path for nodes: {data_dir_path:?}");
 
-        // App data validations
+        // App data default values
+        let connection_mode = app_data
+            .connection_mode
+            .unwrap_or(ConnectionMode::Automatic);
+        let port_from = app_data.port_from.unwrap_or(PORT_MIN);
+        let port_to = app_data.port_to.unwrap_or(PORT_MAX);
         let storage_mountpoint = app_data
             .storage_mountpoint
             .clone()
@@ -81,31 +89,48 @@ impl App {
             .unwrap_or(get_primary_mount_point_name()?);
 
         // Main Screens
-        let status = Status::new(
-            app_data.nodes_to_start,
-            &app_data.discord_username,
+        let status_config = StatusConfig {
+            allocated_disk_space: app_data.nodes_to_start,
+            discord_username: app_data.discord_username.clone(),
             peers_args,
             safenode_path,
             data_dir_path,
-        )
-        .await?;
+            connection_mode,
+            port_from: Some(port_from),
+            port_to: Some(port_to),
+        };
+
+        let status = Status::new(status_config).await?;
         let options = Options::new(
             storage_mountpoint.clone(),
             storage_drive.clone(),
             app_data.discord_username.clone(),
+            connection_mode,
+            Some(port_from),
+            Some(port_to),
         )
         .await?;
         let help = Help::new().await?;
 
         // Popups
         let reset_nodes = ResetNodesPopup::default();
-        let discord_username_input = BetaProgramme::new(app_data.discord_username.clone());
         let manage_nodes = ManageNodes::new(app_data.nodes_to_start, storage_mountpoint.clone())?;
         let change_drive = ChangeDrivePopup::new(storage_mountpoint.clone())?;
+        let change_connection_mode = ChangeConnectionModePopUp::new(connection_mode)?;
+        let port_range = PortRangePopUp::new(connection_mode, port_from, port_to);
+        let beta_programme = BetaProgramme::new(app_data.discord_username.clone());
 
         Ok(Self {
             config,
-            app_data,
+            app_data: AppData {
+                discord_username: app_data.discord_username.clone(),
+                nodes_to_start: app_data.nodes_to_start,
+                storage_mountpoint: Some(storage_mountpoint),
+                storage_drive: Some(storage_drive),
+                connection_mode: Some(connection_mode),
+                port_from: Some(port_from),
+                port_to: Some(port_to),
+            },
             tick_rate,
             frame_rate,
             components: vec![
@@ -115,9 +140,11 @@ impl App {
                 Box::new(help),
                 // Popups
                 Box::new(change_drive),
+                Box::new(change_connection_mode),
+                Box::new(port_range),
+                Box::new(beta_programme),
                 Box::new(reset_nodes),
                 Box::new(manage_nodes),
-                Box::new(discord_username_input),
             ],
             should_quit: false,
             should_suspend: false,
@@ -229,20 +256,31 @@ impl App {
                         self.input_mode = mode;
                     }
                     // Storing Application Data
+                    Action::StoreStorageDrive(ref drive_mountpoint, ref drive_name) => {
+                        debug!("Storing storage drive: {drive_mountpoint:?}, {drive_name:?}");
+                        self.app_data.storage_mountpoint = Some(drive_mountpoint.clone());
+                        self.app_data.storage_drive = Some(drive_name.as_str().to_string());
+                        self.app_data.save(None)?;
+                    }
+                    Action::StoreConnectionMode(ref mode) => {
+                        debug!("Storing connection mode: {mode:?}");
+                        self.app_data.connection_mode = Some(*mode);
+                        self.app_data.save(None)?;
+                    }
+                    Action::StorePortRange(ref from, ref to) => {
+                        debug!("Storing port range: {from:?}, {to:?}");
+                        self.app_data.port_from = Some(*from);
+                        self.app_data.port_to = Some(*to);
+                        self.app_data.save(None)?;
+                    }
                     Action::StoreDiscordUserName(ref username) => {
                         debug!("Storing discord username: {username:?}");
                         self.app_data.discord_username.clone_from(username);
                         self.app_data.save(None)?;
                     }
-                    Action::StoreNodesToStart(count) => {
+                    Action::StoreNodesToStart(ref count) => {
                         debug!("Storing nodes to start: {count:?}");
-                        self.app_data.nodes_to_start = count;
-                        self.app_data.save(None)?;
-                    }
-                    Action::StoreStorageDrive(ref drive_mountpoint, ref drive_name) => {
-                        debug!("Storing storage drive: {drive_mountpoint:?}, {drive_name:?}");
-                        self.app_data.storage_mountpoint = Some(drive_mountpoint.clone());
-                        self.app_data.storage_drive = Some(drive_name.as_str().to_string());
+                        self.app_data.nodes_to_start = *count;
                         self.app_data.save(None)?;
                     }
                     _ => {}
@@ -288,14 +326,17 @@ mod tests {
 
         let mountpoint = get_primary_mount_point();
 
-        // Create a valid configuration file
+        // Create a valid configuration file with all fields
         let valid_config = format!(
             r#"
         {{
             "discord_username": "happy_user",
             "nodes_to_start": 5,
             "storage_mountpoint": "{}",
-            "storage_drive": "C:"
+            "storage_drive": "C:",
+            "connection_mode": "Automatic",
+            "port_from": 12000,
+            "port_to": 13000
         }}
         "#,
             mountpoint.display()
@@ -314,13 +355,17 @@ mod tests {
 
         match app_result {
             Ok(app) => {
-                // Check if the discord_username and nodes_to_start were correctly loaded
+                // Check if all fields were correctly loaded
                 assert_eq!(app.app_data.discord_username, "happy_user");
                 assert_eq!(app.app_data.nodes_to_start, 5);
-                // Check if the storage_mountpoint is set correctly
                 assert_eq!(app.app_data.storage_mountpoint, Some(mountpoint));
-                // Check if the storage_drive is set correctly
                 assert_eq!(app.app_data.storage_drive, Some("C:".to_string()));
+                assert_eq!(
+                    app.app_data.connection_mode,
+                    Some(ConnectionMode::Automatic)
+                );
+                assert_eq!(app.app_data.port_from, Some(12000));
+                assert_eq!(app.app_data.port_to, Some(13000));
 
                 write!(output, "App created successfully with valid configuration")?;
             }
@@ -348,11 +393,14 @@ mod tests {
         let temp_dir = tempdir()?;
         let test_app_data_path = temp_dir.path().join("test_app_data.json");
 
-        // Create a custom configuration file with only the first two settings
+        // Create a custom configuration file with only some settings
         let custom_config = r#"
         {
             "discord_username": "test_user",
-            "nodes_to_start": 3
+            "nodes_to_start": 3,
+            "connection_mode": "Custom Ports",
+            "port_from": 12000,
+            "port_to": 13000
         }
         "#;
         std::fs::write(&test_app_data_path, custom_config)?;
@@ -368,13 +416,20 @@ mod tests {
 
         match app_result {
             Ok(app) => {
-                // Check if the discord_username and nodes_to_start were correctly loaded
+                // Check if the fields were correctly loaded
                 assert_eq!(app.app_data.discord_username, "test_user");
                 assert_eq!(app.app_data.nodes_to_start, 3);
-                // Check if the storage_mountpoint is None (not set)
-                assert_eq!(app.app_data.storage_mountpoint, None);
-                // Check if the storage_drive is None (not set)
-                assert_eq!(app.app_data.storage_drive, None);
+                // Check if the storage_mountpoint is Some (automatically set)
+                assert!(app.app_data.storage_mountpoint.is_some());
+                // Check if the storage_drive is Some (automatically set)
+                assert!(app.app_data.storage_drive.is_some());
+                // Check the new fields
+                assert_eq!(
+                    app.app_data.connection_mode,
+                    Some(ConnectionMode::CustomPorts)
+                );
+                assert_eq!(app.app_data.port_from, Some(12000));
+                assert_eq!(app.app_data.port_to, Some(13000));
 
                 write!(
                     output,
@@ -419,8 +474,14 @@ mod tests {
             Ok(app) => {
                 assert_eq!(app.app_data.discord_username, "");
                 assert_eq!(app.app_data.nodes_to_start, 1);
-                assert_eq!(app.app_data.storage_mountpoint, None);
-                assert_eq!(app.app_data.storage_drive, None);
+                assert!(app.app_data.storage_mountpoint.is_some());
+                assert!(app.app_data.storage_drive.is_some());
+                assert_eq!(
+                    app.app_data.connection_mode,
+                    Some(ConnectionMode::Automatic)
+                );
+                assert_eq!(app.app_data.port_from, Some(PORT_MIN));
+                assert_eq!(app.app_data.port_to, Some(PORT_MAX));
 
                 write!(
                     output,
@@ -457,7 +518,10 @@ mod tests {
             "discord_username": "test_user",
             "nodes_to_start": 5,
             "storage_mountpoint": "/non/existent/path",
-            "storage_drive": "Z:"
+            "storage_drive": "Z:",
+            "connection_mode": "Custom Ports",
+            "port_from": 12000,
+            "port_to": 13000
         }
         "#;
         std::fs::write(&config_path, invalid_config)?;
@@ -482,6 +546,53 @@ mod tests {
                     "Unexpected error message: {}",
                     e
                 );
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_app_default_connection_mode_and_ports() -> Result<()> {
+        // Create a temporary directory for our test
+        let temp_dir = tempdir()?;
+        let test_app_data_path = temp_dir.path().join("test_app_data.json");
+
+        // Create a custom configuration file without connection mode and ports
+        let custom_config = r#"
+        {
+            "discord_username": "test_user",
+            "nodes_to_start": 3
+        }
+        "#;
+        std::fs::write(&test_app_data_path, custom_config)?;
+
+        // Create default PeersArgs
+        let peers_args = PeersArgs::default();
+
+        // Create and run the App
+        let app_result = App::new(60.0, 60.0, peers_args, None, Some(test_app_data_path)).await;
+
+        match app_result {
+            Ok(app) => {
+                // Check if the discord_username and nodes_to_start were correctly loaded
+                assert_eq!(app.app_data.discord_username, "test_user");
+                assert_eq!(app.app_data.nodes_to_start, 3);
+
+                // Check if the connection_mode is set to the default (Automatic)
+                assert_eq!(
+                    app.app_data.connection_mode,
+                    Some(ConnectionMode::Automatic)
+                );
+
+                // Check if the port range is set to the default values
+                assert_eq!(app.app_data.port_from, Some(PORT_MIN));
+                assert_eq!(app.app_data.port_to, Some(PORT_MAX));
+
+                println!("App created successfully with default connection mode and ports");
+            }
+            Err(e) => {
+                panic!("App creation failed: {}", e);
             }
         }
 
