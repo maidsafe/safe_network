@@ -25,33 +25,35 @@ const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
 const ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS: Address =
     address!("F15BfEA73b6a551C5c2e66026e4eB3b69c1F602c");
 
+#[derive(Clone, Debug)]
 pub struct CustomNetwork {
-    rpc_url_http: reqwest::Url,
-    payment_token_address: Address,
-    chunk_payments_address: Address,
+    pub rpc_url_http: reqwest::Url,
+    pub payment_token_address: Address,
+    pub chunk_payments_address: Address,
 }
 
+#[derive(Clone, Debug)]
 pub enum Network {
     ArbitrumOne,
     Custom(CustomNetwork),
 }
 
 impl Network {
-    pub(crate) fn rpc_url(&self) -> &reqwest::Url {
+    pub fn rpc_url(&self) -> &reqwest::Url {
         match self {
             Network::ArbitrumOne => &PUBLIC_ARBITRUM_ONE_HTTP_RPC_URL,
             Network::Custom(custom) => &custom.rpc_url_http,
         }
     }
 
-    pub(crate) fn payment_token_address(&self) -> &Address {
+    pub fn payment_token_address(&self) -> &Address {
         match self {
             Network::ArbitrumOne => &ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS,
             Network::Custom(custom) => &custom.payment_token_address,
         }
     }
 
-    pub(crate) fn chunk_payments_address(&self) -> &Address {
+    pub fn chunk_payments_address(&self) -> &Address {
         match self {
             Network::ArbitrumOne => &ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS,
             Network::Custom(custom) => &custom.chunk_payments_address,

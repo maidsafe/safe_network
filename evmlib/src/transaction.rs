@@ -1,15 +1,17 @@
 use crate::common::{Address, QuoteHash, TxHash, U256};
-use crate::event::CHUNK_PAYMENT_EVENT_SIGNATURE;
+use crate::event::{ChunkPaymentEvent, CHUNK_PAYMENT_EVENT_SIGNATURE};
 use crate::Network;
 use alloy::primitives::FixedBytes;
 use alloy::providers::{Provider, ProviderBuilder};
-use alloy::rpc::types::{Filter, Log, Transaction};
+use alloy::rpc::types::{Filter, Log, TransactionReceipt};
 use alloy::transports::{RpcError, TransportErrorKind};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]
     RpcError(#[from] RpcError<TransportErrorKind>),
+    #[error("Transaction is not confirmed")]
+    TransactionUnconfirmed,
     #[error("Transaction was not found")]
     TransactionNotFound,
     #[error("Transaction has not been included in a block yet")]
@@ -18,16 +20,16 @@ pub enum Error {
     EventProofNotFound,
 }
 
-/// Get a transaction by its hash.
-async fn get_transaction_by_hash(
+/// Get a transaction receipt by its hash.
+pub async fn get_transaction_receipt_by_hash(
     network: &Network,
     transaction_hash: TxHash,
-) -> Result<Option<Transaction>, Error> {
+) -> Result<Option<TransactionReceipt>, Error> {
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .on_http(network.rpc_url().clone());
-    let maybe_transaction = provider.get_transaction_by_hash(transaction_hash).await?;
-    Ok(maybe_transaction)
+    let maybe_receipt = provider.get_transaction_receipt(transaction_hash).await?;
+    Ok(maybe_receipt)
 }
 
 /// Get transaction logs using a filter.
@@ -61,7 +63,7 @@ async fn get_chunk_payment_event(
     get_transaction_logs(network, filter).await
 }
 
-/// verify if a chunk payment is confirmed
+/// Verify if a chunk payment is confirmed.
 pub async fn verify_chunk_payment(
     network: &Network,
     tx_hash: TxHash,
@@ -69,18 +71,37 @@ pub async fn verify_chunk_payment(
     reward_addr: Address,
     amount: U256,
 ) -> Result<(), Error> {
-    let block_number = get_transaction_by_hash(network, tx_hash)
+    let transaction = get_transaction_receipt_by_hash(network, tx_hash)
         .await?
-        .ok_or(Error::TransactionNotFound)?
+        .ok_or(Error::TransactionNotFound)?;
+
+    // If the status is True, it means the tx is confirmed.
+    if !transaction.status() {
+        return Err(Error::TransactionUnconfirmed);
+    }
+
+    let block_number = transaction
         .block_number
         .ok_or(Error::TransactionNotInBlock)?;
 
-    if let Ok(logs) =
-        get_chunk_payment_event(network, block_number, quote_hash, reward_addr, amount).await
-    {
-        for _log in logs {
-            // TODO: convert logs to events
-            // if let Ok(event) = ChunkPaymentEvent::try_from(log) {}
+    let logs =
+        get_chunk_payment_event(network, block_number, quote_hash, reward_addr, amount).await?;
+
+    for log in logs {
+        if log.transaction_hash != Some(tx_hash) {
+            // Wrong transaction.
+            continue;
+        }
+
+        if let Ok(event) = ChunkPaymentEvent::try_from(log) {
+            // Check if the event matches what we expect.
+            // The smart contract handles royalties, so we don't have to check that.
+            if event.quote_hash == quote_hash
+                && event.reward_address == reward_addr
+                && event.amount >= amount
+            {
+                return Ok(());
+            }
         }
     }
 
@@ -89,21 +110,21 @@ pub async fn verify_chunk_payment(
 
 #[cfg(test)]
 mod tests {
-    use crate::common::{Address, QuoteHash, TxHash, U256};
-    use crate::transaction::{get_chunk_payment_event, get_transaction_by_hash};
+    use crate::common::{Address, U256};
+    use crate::transaction::{
+        get_chunk_payment_event, get_transaction_receipt_by_hash, verify_chunk_payment,
+    };
     use crate::Network;
-    use alloy::hex;
     use alloy::hex::FromHex;
+    use alloy::primitives::b256;
 
     #[tokio::test]
-    async fn test_get_transaction_by_hash() {
+    async fn test_get_transaction_receipt_by_hash() {
         let network = Network::ArbitrumOne;
 
-        let tx_hash =
-            TxHash::from_hex("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066")
-                .unwrap();
+        let tx_hash = b256!("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066");
 
-        assert!(get_transaction_by_hash(&network, tx_hash)
+        assert!(get_transaction_receipt_by_hash(&network, tx_hash)
             .await
             .unwrap()
             .is_some());
@@ -114,20 +135,30 @@ mod tests {
         let network = Network::ArbitrumOne;
 
         let block_number: u64 = 250043261;
-
         let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap();
-
         let amount = U256::from(200);
-
-        let quote_hash = QuoteHash::new(hex!(
-            "477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c"
-        ));
+        let quote_hash = b256!("477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c");
 
         let logs =
             get_chunk_payment_event(&network, block_number, quote_hash, reward_address, amount)
                 .await
                 .unwrap();
 
-        println!("{logs:?}");
+        assert_eq!(logs.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_verify_chunk_payment() {
+        let network = Network::ArbitrumOne;
+
+        let tx_hash = b256!("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066");
+        let quote_hash = b256!("477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c");
+        let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap();
+        let amount = U256::from(200);
+
+        let result =
+            verify_chunk_payment(&network, tx_hash, quote_hash, reward_address, amount).await;
+
+        assert!(result.is_ok());
     }
 }

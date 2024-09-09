@@ -4,12 +4,16 @@ use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, Walle
 use alloy::providers::{ProviderBuilder, ReqwestProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::{Client, Http};
-use evmlib::contract::network_token::NetworkToken;
+use evmlib::common::{Address, Amount, QuotePayment};
+use evmlib::contract::chunk_payments::ChunkPayments;
+use evmlib::utils::{dummy_address, dummy_hash};
 
 #[allow(clippy::unwrap_used)]
-pub async fn deploy_network_token_contract(
+pub async fn deploy_chunk_payments_contract(
     anvil: &AnvilInstance,
-) -> NetworkToken<
+    token_address: Address,
+    royalties_wallet: Address,
+) -> ChunkPayments<
     Http<Client>,
     FillProvider<
         JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
@@ -19,8 +23,8 @@ pub async fn deploy_network_token_contract(
     >,
     Ethereum,
 > {
-    // Set up signer from the first default Anvil account (Alice).
-    let signer: PrivateKeySigner = anvil.keys()[0].clone().into();
+    // Set up signer from the second default Anvil account (Bob).
+    let signer: PrivateKeySigner = anvil.keys()[1].clone().into();
     let wallet = EthereumWallet::from(signer);
 
     let rpc_url = anvil.endpoint().parse().unwrap();
@@ -31,5 +35,12 @@ pub async fn deploy_network_token_contract(
         .on_http(rpc_url);
 
     // Deploy the contract.
-    NetworkToken::deploy(provider).await
+    ChunkPayments::deploy(provider, token_address, royalties_wallet).await
+}
+
+pub fn random_quote_payment() -> QuotePayment {
+    let quote_hash = dummy_hash();
+    let reward_address = dummy_address();
+    let amount = Amount::from(200);
+    (quote_hash, reward_address, amount)
 }
