@@ -35,6 +35,9 @@
 //!
 //! - `local`: Discover local peers using mDNS. Useful for development.
 
+// docs.rs generation will enable unstable `doc_cfg` feature
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.

@@ -5,9 +5,17 @@ use sn_client::networking::{multiaddr_is_global, Network, NetworkBuilder, Networ
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use tokio::{sync::mpsc::Receiver, time::interval};
 
+#[cfg(feature = "data")]
+#[cfg_attr(docsrs, doc(cfg(feature = "data")))]
 mod data;
+#[cfg(feature = "files")]
+#[cfg_attr(docsrs, doc(cfg(feature = "files")))]
 mod files;
+#[cfg(feature = "registers")]
+#[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
 mod registers;
+#[cfg(feature = "transfers")]
+#[cfg_attr(docsrs, doc(cfg(feature = "transfers")))]
 mod transfers;
 
 /// Time before considering the connection timed out.
