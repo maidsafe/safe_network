@@ -39,7 +39,7 @@ pub enum ConnectError {
     /// Did not manage to connect to enough peers in time.
     #[error("Could not connect to enough peers in time.")]
     TimedOut,
-    /// Same as [`TimedOut`] but with a list of incompatible protocols.
+    /// Same as [`ConnectError::TimedOut`] but with a list of incompatible protocols.
     #[error("Could not connect to peers due to incompatible protocol: {0:?}")]
     TimedOutWithIncompatibleProtocol(HashSet<String>, String),
 }
