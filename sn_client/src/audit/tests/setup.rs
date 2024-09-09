@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use bls::SecretKey;
 use eyre::{eyre, Result};
 use sn_evm::{
-    get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    get_genesis_sk, CashNote, DerivationIndex, MainPubkey, MainSecretKey, AttoTokens, SignedSpend,
     SignedTransaction, SpendAddress, SpendReason, GENESIS_CASHNOTE,
 };
 
@@ -46,7 +46,7 @@ impl MockNetwork {
         );
 
         // spend genesis
-        let everything = GENESIS_CASHNOTE.value().as_nano();
+        let everything = GENESIS_CASHNOTE.value().as_atto().try_into().unwrap_or(u64::MAX);
         let spent_addrs = net
             .send(&genesis_pk, &genesis_pk, everything)
             .map_err(|e| eyre!("failed to send genesis: {e}"))?;
@@ -88,6 +88,7 @@ impl MockNetwork {
         to: &MainPubkey,
         amount: u64,
     ) -> Result<Vec<SpendAddress>> {
+        let amount = AttoTokens::from_u64(amount);
         let mut rng = rand::thread_rng();
         let from_wallet = self
             .wallets
@@ -101,7 +102,7 @@ impl MockNetwork {
         // perform offline transfer
         let derivation_index = DerivationIndex::random(&mut rng);
         let recipient = vec![(
-            NanoTokens::from(amount),
+            amount,
             to_wallet.sk.main_pubkey(),
             derivation_index,
             false,

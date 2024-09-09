@@ -12,10 +12,11 @@ use std::fmt::Debug;
 
 use crate::UniquePubkey;
 use crate::{
-    error::Result, CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    error::Result, CashNote, DerivationIndex, MainPubkey, MainSecretKey, AttoTokens, SignedSpend,
     SignedTransaction, Spend, SpendReason, TransferError,
 };
 
+use evmlib::common::Amount;
 use serde::{Deserialize, Serialize};
 
 /// A local transaction that has not been signed yet
@@ -64,21 +65,21 @@ impl UnsignedTransaction {
     /// Once created, the `UnsignedTransaction` can be signed with the owner's `MainSecretKey` using the `sign` method
     pub fn new(
         available_cash_notes: Vec<CashNote>,
-        recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex, bool)>,
+        recipients: Vec<(AttoTokens, MainPubkey, DerivationIndex, bool)>,
         change_to: MainPubkey,
         input_reason_hash: SpendReason,
     ) -> Result<Self> {
         // check output amounts (reject zeroes and overflowing values)
         let total_output_amount = recipients
             .iter()
-            .try_fold(NanoTokens::zero(), |total, (amount, _, _, _)| {
+            .try_fold(AttoTokens::zero(), |total, (amount, _, _, _)| {
                 total.checked_add(*amount)
             })
             .ok_or(TransferError::ExcessiveNanoValue)?;
-        if total_output_amount == NanoTokens::zero()
+        if total_output_amount == AttoTokens::zero()
             || recipients
                 .iter()
-                .any(|(amount, _, _, _)| amount.as_nano() == 0)
+                .any(|(amount, _, _, _)| amount.as_atto() == Amount::ZERO)
         {
             return Err(TransferError::ZeroOutputs);
         }
@@ -87,7 +88,7 @@ impl UnsignedTransaction {
         let total_input_amount = available_cash_notes
             .iter()
             .map(|cn| cn.value())
-            .try_fold(NanoTokens::zero(), |total, amount| {
+            .try_fold(AttoTokens::zero(), |total, amount| {
                 total.checked_add(amount)
             })
             .ok_or(TransferError::ExcessiveNanoValue)?;
@@ -99,7 +100,7 @@ impl UnsignedTransaction {
         }
 
         // create empty output cash notes for recipients
-        let outputs: Vec<(CashNote, NanoTokens, bool)> = recipients
+        let outputs: Vec<(CashNote, AttoTokens, bool)> = recipients
             .iter()
             .map(|(amount, main_pk, derivation_index, is_royaltiy)| {
                 let cn = CashNote {
@@ -122,8 +123,8 @@ impl UnsignedTransaction {
         let mut outputs_iter = outputs.iter();
         let mut current_output = outputs_iter.next();
         let mut current_output_remaining_value = current_output
-            .map(|(_, amount, _)| amount.as_nano())
-            .unwrap_or(0);
+            .map(|(_, amount, _)| amount.as_atto())
+            .unwrap_or(Amount::ZERO);
         let mut no_more_outputs = false;
         for input in cashnotes_big_to_small {
             let input_key = input.unique_pubkey();
@@ -133,36 +134,36 @@ impl UnsignedTransaction {
                 .iter()
                 .map(|s| *s.unique_pubkey())
                 .collect();
-            let mut input_remaining_value = input_value.as_nano();
+            let mut input_remaining_value = input_value.as_atto();
             let mut donate_to = BTreeMap::new();
             let mut royalties = vec![];
 
             // take value from input and distribute it to outputs
-            while input_remaining_value > 0 {
+            while input_remaining_value > Amount::ZERO {
                 if let Some((output, _, is_royalty)) = current_output {
                     // give as much as possible to the current output
                     let amount_to_take = min(input_remaining_value, current_output_remaining_value);
                     input_remaining_value -= amount_to_take;
                     current_output_remaining_value -= amount_to_take;
                     let output_key = output.unique_pubkey();
-                    donate_to.insert(output_key, NanoTokens::from(amount_to_take));
+                    donate_to.insert(output_key, AttoTokens::from_atto(amount_to_take));
                     if *is_royalty {
                         royalties.push(output.derivation_index);
                     }
 
                     // move to the next output if the current one is fully funded
-                    if current_output_remaining_value == 0 {
+                    if current_output_remaining_value == Amount::ZERO {
                         current_output = outputs_iter.next();
                         current_output_remaining_value = current_output
-                            .map(|(_, amount, _)| amount.as_nano())
-                            .unwrap_or(0);
+                            .map(|(_, amount, _)| amount.as_atto())
+                            .unwrap_or(Amount::ZERO);
                     }
                 } else {
                     // if we run out of outputs, send the rest as change
                     let rng = &mut rand::thread_rng();
                     let change_derivation_index = DerivationIndex::random(rng);
                     let change_key = change_to.new_unique_pubkey(&change_derivation_index);
-                    donate_to.insert(change_key, NanoTokens::from(input_remaining_value));
+                    donate_to.insert(change_key, AttoTokens::from_atto(input_remaining_value));
 
                     // assign the change cash note
                     change_cn = Some(CashNote {
@@ -170,7 +171,7 @@ impl UnsignedTransaction {
                         main_pubkey: change_to,
                         derivation_index: change_derivation_index,
                     });
-                    let change_amount = NanoTokens::from(input_remaining_value);
+                    let change_amount = AttoTokens::from_atto(input_remaining_value);
                     donate_to.insert(change_key, change_amount);
                     no_more_outputs = true;
                     break;
@@ -252,16 +253,16 @@ impl UnsignedTransaction {
     /// Verify the `UnsignedTransaction`
     pub fn verify(&self) -> Result<()> {
         // verify that the tx is balanced
-        let input_sum: u64 = self
+        let input_sum: Amount = self
             .spends
             .iter()
-            .map(|(spend, _)| spend.amount().as_nano())
+            .map(|(spend, _)| spend.amount().as_atto())
             .sum();
-        let output_sum: u64 = self
+        let output_sum: Amount = self
             .output_cashnotes_without_spends
             .iter()
             .chain(self.change_cashnote_without_spends.iter())
-            .map(|cn| cn.value().as_nano())
+            .map(|cn| cn.value().as_atto())
             .sum();
         if input_sum != output_sum {
             return Err(TransferError::InvalidUnsignedTransaction(format!(
@@ -300,8 +301,8 @@ impl UnsignedTransaction {
             for (k, v) in &spend.descendants {
                 amounts_by_unique_pubkey
                     .entry(*k)
-                    .and_modify(|sum| *sum += v.as_nano())
-                    .or_insert(v.as_nano());
+                    .and_modify(|sum| *sum += v.as_atto())
+                    .or_insert(v.as_atto());
             }
         }
         for cn in self
@@ -310,8 +311,8 @@ impl UnsignedTransaction {
             .chain(self.change_cashnote_without_spends.iter())
         {
             let u = cn.unique_pubkey();
-            let expected_amount = amounts_by_unique_pubkey.get(&u).copied().unwrap_or(0);
-            let amount = cn.value().as_nano();
+            let expected_amount = amounts_by_unique_pubkey.get(&u).copied().unwrap_or(Amount::ZERO);
+            let amount = cn.value().as_atto();
             if expected_amount != amount {
                 return Err(TransferError::InvalidUnsignedTransaction(
                     format!("Invalid amount for CashNote: {u} has {expected_amount} acording to spends but self reports {amount}"),
@@ -322,7 +323,7 @@ impl UnsignedTransaction {
     }
 
     /// Return the unique keys of the CashNotes that have been spent along with their amounts
-    pub fn spent_unique_keys(&self) -> BTreeSet<(UniquePubkey, NanoTokens)> {
+    pub fn spent_unique_keys(&self) -> BTreeSet<(UniquePubkey, AttoTokens)> {
         self.spends
             .iter()
             .map(|(spend, _)| (spend.unique_pubkey, spend.amount()))
@@ -330,7 +331,7 @@ impl UnsignedTransaction {
     }
 
     /// Return the unique keys of the CashNotes that have been created along with their amounts
-    pub fn output_unique_keys(&self) -> BTreeSet<(UniquePubkey, NanoTokens)> {
+    pub fn output_unique_keys(&self) -> BTreeSet<(UniquePubkey, AttoTokens)> {
         self.spends
             .iter()
             .flat_map(|(spend, _)| spend.descendants.iter().map(|(k, v)| (*k, *v)))
@@ -377,13 +378,13 @@ mod tests {
         }];
         let recipients = vec![
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
@@ -411,13 +412,13 @@ mod tests {
         let available_cash_notes = vec![];
         let recipients = vec![
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
@@ -434,8 +435,8 @@ mod tests {
         assert_eq!(
             tx,
             Err(TransferError::NotEnoughBalance(
-                NanoTokens::zero(),
-                NanoTokens::from(2)
+                AttoTokens::zero(),
+                AttoTokens::from_u64(2)
             ))
         );
         Ok(())
@@ -460,7 +461,7 @@ mod tests {
         );
         assert_eq!(tx, Err(TransferError::ZeroOutputs));
         let recipients = vec![(
-            NanoTokens::zero(),
+            AttoTokens::zero(),
             MainSecretKey::random().main_pubkey(),
             DerivationIndex::random(&mut rng),
             false,
@@ -496,13 +497,13 @@ mod tests {
         let available_cash_notes = vec![cn1];
         let recipients = vec![
             (
-                NanoTokens::from(50),
+                AttoTokens::from_u64(50),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(55),
+                AttoTokens::from_u64(55),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
@@ -520,8 +521,8 @@ mod tests {
         assert_eq!(
             tx,
             Err(TransferError::NotEnoughBalance(
-                NanoTokens::from(100),
-                NanoTokens::from(105)
+                AttoTokens::from_u64(100),
+                AttoTokens::from_u64(105)
             ))
         );
         Ok(())
@@ -548,13 +549,13 @@ mod tests {
         let available_cash_notes = vec![cn1];
         let recipients = vec![
             (
-                NanoTokens::from(50),
+                AttoTokens::from_u64(50),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(25),
+                AttoTokens::from_u64(25),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
@@ -577,20 +578,20 @@ mod tests {
         signed_tx.verify().expect("verify to succeed");
 
         // check the output cash notes
-        let output_values: BTreeSet<u64> = signed_tx
+        let output_values: BTreeSet<Amount> = signed_tx
             .output_cashnotes
             .iter()
-            .map(|cn| cn.value().as_nano())
+            .map(|cn| cn.value().as_atto())
             .collect();
-        assert_eq!(output_values, BTreeSet::from_iter([50, 25]));
+        assert_eq!(output_values, BTreeSet::from_iter([Amount::from(50), Amount::from(25)]));
         assert_eq!(
             signed_tx
                 .change_cashnote
                 .as_ref()
                 .expect("to have a change cashnote")
                 .value()
-                .as_nano(),
-            25
+                .as_atto(),
+            Amount::from(25)
         );
         Ok(())
     }
@@ -625,7 +626,7 @@ mod tests {
         // 50 + 25 -> 75 + 0 change
         let available_cash_notes = vec![cn1, cn2];
         let recipients = vec![(
-            NanoTokens::from(75),
+            AttoTokens::from_u64(75),
             MainSecretKey::random().main_pubkey(),
             DerivationIndex::random(&mut rng),
             false,
@@ -647,12 +648,12 @@ mod tests {
         signed_tx.verify().expect("verify to succeed");
 
         // check the output cash notes
-        let output_values: BTreeSet<u64> = signed_tx
+        let output_values: BTreeSet<Amount> = signed_tx
             .output_cashnotes
             .iter()
-            .map(|cn| cn.value().as_nano())
+            .map(|cn| cn.value().as_atto())
             .collect();
-        assert_eq!(output_values, BTreeSet::from_iter([75]));
+        assert_eq!(output_values, BTreeSet::from_iter([Amount::from(75)]));
         assert_eq!(signed_tx.change_cashnote, None);
         Ok(())
     }
@@ -688,13 +689,13 @@ mod tests {
         let available_cash_notes = vec![cn1, cn2];
         let recipients = vec![
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(60),
+                AttoTokens::from_u64(60),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
@@ -717,20 +718,20 @@ mod tests {
         signed_tx.verify().expect("verify to succeed");
 
         // check the output cash notes
-        let output_values: BTreeSet<u64> = signed_tx
+        let output_values: BTreeSet<Amount> = signed_tx
             .output_cashnotes
             .iter()
-            .map(|cn| cn.value().as_nano())
+            .map(|cn| cn.value().as_atto())
             .collect();
-        assert_eq!(output_values, BTreeSet::from_iter([10, 60]));
+        assert_eq!(output_values, BTreeSet::from_iter([Amount::from(10), Amount::from(60)]));
         assert_eq!(
             signed_tx
                 .change_cashnote
                 .as_ref()
                 .expect("to have a change cashnote")
                 .value()
-                .as_nano(),
-            5
+                .as_atto(),
+            Amount::from(5)
         );
         Ok(())
     }
@@ -776,13 +777,13 @@ mod tests {
         let available_cash_notes = vec![cn1, cn2, cn3];
         let recipients = vec![
             (
-                NanoTokens::from(31),
+                AttoTokens::from_u64(31),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(21),
+                AttoTokens::from_u64(21),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
@@ -805,20 +806,20 @@ mod tests {
         signed_tx.verify().expect("verify to succeed");
 
         // check the output cash notes
-        let output_values: BTreeSet<u64> = signed_tx
+        let output_values: BTreeSet<Amount> = signed_tx
             .output_cashnotes
             .iter()
-            .map(|cn| cn.value().as_nano())
+            .map(|cn| cn.value().as_atto())
             .collect();
-        assert_eq!(output_values, BTreeSet::from_iter([31, 21]));
+        assert_eq!(output_values, BTreeSet::from_iter([Amount::from(31), Amount::from(21)]));
         assert_eq!(
             signed_tx
                 .change_cashnote
                 .as_ref()
                 .expect("to have a change cashnote")
                 .value()
-                .as_nano(),
-            8
+                .as_atto(),
+            Amount::from(8)
         );
         Ok(())
     }
@@ -864,73 +865,73 @@ mod tests {
         let available_cash_notes = vec![cn1, cn2, cn3];
         let recipients = vec![
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
@@ -953,14 +954,23 @@ mod tests {
         signed_tx.verify().expect("verify to succeed");
 
         // check the output cash notes
-        let output_values: BTreeSet<u64> = signed_tx
+        let output_values: BTreeSet<Amount> = signed_tx
             .output_cashnotes
             .iter()
-            .map(|cn| cn.value().as_nano())
+            .map(|cn| cn.value().as_atto())
             .collect();
         assert_eq!(
             output_values,
-            BTreeSet::from_iter([10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1])
+            BTreeSet::from_iter([
+                Amount::from(10),
+                Amount::from(1),
+                Amount::from(10),
+                Amount::from(1),
+                Amount::from(10),
+                Amount::from(1),
+                Amount::from(10),
+                Amount::from(1),
+            ])
         );
         assert_eq!(
             signed_tx
@@ -968,8 +978,8 @@ mod tests {
                 .as_ref()
                 .expect("to have a change cashnote")
                 .value()
-                .as_nano(),
-            54
+                .as_atto(),
+            Amount::from(54)
         );
         assert_eq!(signed_tx.spends.len(), 1); // only used the first input
         Ok(())
@@ -1016,73 +1026,73 @@ mod tests {
         let available_cash_notes = vec![cn1, cn2, cn3];
         let recipients = vec![
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
             ),
             (
-                NanoTokens::from(10),
+                AttoTokens::from_u64(10),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 true,
@@ -1105,14 +1115,23 @@ mod tests {
         signed_tx.verify().expect("verify to succeed");
 
         // check the output cash notes
-        let output_values: BTreeSet<u64> = signed_tx
+        let output_values: BTreeSet<Amount> = signed_tx
             .output_cashnotes
             .iter()
-            .map(|cn| cn.value().as_nano())
+            .map(|cn| cn.value().as_atto())
             .collect();
         assert_eq!(
             output_values,
-            BTreeSet::from_iter([10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1])
+            BTreeSet::from_iter([
+                Amount::from(10),
+                Amount::from(1),
+                Amount::from(10),
+                Amount::from(1),
+                Amount::from(10),
+                Amount::from(1),
+                Amount::from(10),
+                Amount::from(1),
+            ])
         );
         assert_eq!(
             signed_tx
@@ -1120,8 +1139,8 @@ mod tests {
                 .as_ref()
                 .expect("to have a change cashnote")
                 .value()
-                .as_nano(),
-            29
+                .as_atto(),
+            Amount::from(29)
         );
         Ok(())
     }

@@ -20,7 +20,7 @@ use color_eyre::{eyre::eyre, Result};
 use dialoguer::Confirm;
 use sn_client::acc_packet::{load_or_create_mnemonic, secret_key_from_mnemonic};
 use sn_client::transfers::{
-    HotWallet, MainPubkey, MainSecretKey, NanoTokens, Transfer, TransferError, UnsignedTransaction,
+    HotWallet, MainPubkey, MainSecretKey, AttoTokens, Transfer, TransferError, UnsignedTransaction,
     WalletError,
 };
 use sn_client::{
@@ -317,7 +317,7 @@ async fn send(
 ) -> Result<()> {
     let from = load_account_wallet_or_create_with_mnemonic(root_dir, None)?;
 
-    let amount = match NanoTokens::from_str(&amount) {
+    let amount = match AttoTokens::from_str(&amount) {
         Ok(amount) => amount,
         Err(err) => {
             println!("The amount cannot be parsed. Nothing sent.");

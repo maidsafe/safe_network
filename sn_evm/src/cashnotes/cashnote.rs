@@ -7,12 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, AttoTokens, SignedSpend,
     UniquePubkey,
 };
 
 use crate::{Result, TransferError};
 
+use evmlib::common::Amount;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::fmt::Debug;
@@ -119,16 +120,16 @@ impl CashNote {
     }
 
     /// Return the value in NanoTokens for this CashNote.
-    pub fn value(&self) -> NanoTokens {
-        let mut total_amount: u64 = 0;
+    pub fn value(&self) -> AttoTokens {
+        let mut total_amount = Amount::ZERO;
         for p in self.parent_spends.iter() {
             let amount = p
                 .spend
                 .get_output_amount(&self.unique_pubkey())
-                .unwrap_or(NanoTokens::zero());
-            total_amount += amount.as_nano();
+                .unwrap_or(AttoTokens::zero());
+            total_amount += amount.as_atto();
         }
-        NanoTokens::from(total_amount)
+        AttoTokens::from_atto(total_amount)
     }
 
     /// Generate the hash of this CashNote

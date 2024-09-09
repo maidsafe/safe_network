@@ -10,7 +10,7 @@ use std::collections::BTreeSet;
 
 use crate::error::Result;
 use crate::{
-    CashNote, DerivationIndex, MainPubkey, MainSecretKey, NanoTokens, SignedSpend, SpendReason,
+    CashNote, DerivationIndex, MainPubkey, MainSecretKey, AttoTokens, SignedSpend, SpendReason,
     TransferError, UnsignedTransaction,
 };
 use serde::{Deserialize, Serialize};
@@ -37,7 +37,7 @@ impl SignedTransaction {
     /// - `main_key`: the main secret key that owns the available cash notes, used for signature
     pub fn new(
         available_cash_notes: Vec<CashNote>,
-        recipients: Vec<(NanoTokens, MainPubkey, DerivationIndex, bool)>,
+        recipients: Vec<(AttoTokens, MainPubkey, DerivationIndex, bool)>,
         change_to: MainPubkey,
         input_reason_hash: SpendReason,
         main_key: &MainSecretKey,
@@ -105,13 +105,13 @@ mod tests {
         }];
         let recipients = vec![
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
@@ -152,13 +152,13 @@ mod tests {
         }];
         let recipients = vec![
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,
             ),
             (
-                NanoTokens::from(1),
+                AttoTokens::from_u64(1),
                 MainSecretKey::random().main_pubkey(),
                 DerivationIndex::random(&mut rng),
                 false,

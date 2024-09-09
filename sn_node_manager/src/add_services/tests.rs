@@ -23,7 +23,7 @@ use libp2p::Multiaddr;
 use mockall::{mock, predicate::*, Sequence};
 use predicates::prelude::*;
 use service_manager::ServiceInstallCtx;
-use sn_evm::NanoTokens;
+use sn_evm::AttoTokens;
 use sn_service_management::{auditor::AuditorServiceData, control::ServiceControl};
 use sn_service_management::{error::Result as ServiceControlResult, NatDetectionStatus};
 use sn_service_management::{
@@ -231,7 +231,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             pid: None,
             peer_id: None,
             owner: None,
-            reward_balance: Some(NanoTokens::zero()),
+            reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: ServiceStatus::Added,
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -882,7 +882,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             owner: None,
             peer_id: None,
             pid: None,
-            reward_balance: Some(NanoTokens::zero()),
+            reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -1351,7 +1351,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
             owner: None,
             peer_id: None,
             pid: None,
-            reward_balance: Some(NanoTokens::zero()),
+            reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -1442,7 +1442,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
             owner: None,
             peer_id: None,
             pid: None,
-            reward_balance: Some(NanoTokens::zero()),
+            reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -2005,7 +2005,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
             owner: None,
             peer_id: None,
             pid: None,
-            reward_balance: Some(NanoTokens::zero()),
+            reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -2097,7 +2097,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
             owner: None,
             peer_id: None,
             pid: None,
-            reward_balance: Some(NanoTokens::zero()),
+            reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -2394,7 +2394,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
             owner: None,
             peer_id: None,
             pid: None,
-            reward_balance: Some(NanoTokens::zero()),
+            reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),
@@ -2486,7 +2486,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             owner: None,
             peer_id: None,
             pid: None,
-            reward_balance: Some(NanoTokens::zero()),
+            reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
             service_name: "safenode1".to_string(),

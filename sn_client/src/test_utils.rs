@@ -10,7 +10,7 @@ use crate::{
     acc_packet::{create_faucet_account_and_wallet, load_account_wallet_or_create_with_mnemonic},
     send, Client, WalletClient,
 };
-use sn_evm::{HotWallet, NanoTokens};
+use sn_evm::{HotWallet, AttoTokens};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::{storage::Chunk, NetworkAddress};
 
@@ -64,7 +64,7 @@ pub fn random_file_chunk() -> Chunk {
 
 /// Creates and funds a new hot-wallet at the provided path
 pub async fn get_funded_wallet(client: &Client, wallet_dir: &Path) -> Result<HotWallet> {
-    let wallet_balance = NanoTokens::from(AMOUNT_TO_FUND_WALLETS);
+    let wallet_balance = AttoTokens::from_u64(AMOUNT_TO_FUND_WALLETS);
     let _guard = FAUCET_WALLET_MUTEX.lock().await;
     let from_faucet_wallet = load_faucet_wallet().await?;
 

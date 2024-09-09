@@ -13,7 +13,7 @@ mod upload;
 use self::upload::{start_upload, InnerUploader, MAX_REPAYMENTS_PER_FAILED_ITEM};
 use crate::{Client, ClientRegister, Error, Result, BATCH_SIZE};
 use itertools::Either;
-use sn_evm::{NanoTokens, WalletApi};
+use sn_evm::{AttoTokens, WalletApi};
 use sn_networking::PayeeQuote;
 use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
@@ -55,9 +55,9 @@ impl Default for UploadCfg {
 /// The result of a successful upload.
 #[derive(Debug, Clone)]
 pub struct UploadSummary {
-    pub storage_cost: NanoTokens,
-    pub royalty_fees: NanoTokens,
-    pub final_balance: NanoTokens,
+    pub storage_cost: AttoTokens,
+    pub royalty_fees: AttoTokens,
+    pub final_balance: AttoTokens,
     pub uploaded_addresses: BTreeSet<NetworkAddress>,
     pub uploaded_registers: BTreeMap<RegisterAddress, ClientRegister>,
     pub uploaded_count: usize,
@@ -109,9 +109,9 @@ pub enum UploadEvent {
     RegisterUpdated(ClientRegister),
     /// Payment for a batch of records has been made.
     PaymentMade {
-        storage_cost: NanoTokens,
-        royalty_fees: NanoTokens,
-        new_balance: NanoTokens,
+        storage_cost: AttoTokens,
+        royalty_fees: AttoTokens,
+        new_balance: AttoTokens,
     },
     /// The upload process has terminated with an error.
     // Note:  We cannot send the Error enum as it does not implement Clone. So we cannot even do Result<UploadEvent> if
@@ -438,13 +438,13 @@ enum TaskResult {
     },
     MakePaymentsOk {
         paid_xornames: Vec<XorName>,
-        storage_cost: NanoTokens,
-        royalty_fees: NanoTokens,
-        new_balance: NanoTokens,
+        storage_cost: AttoTokens,
+        royalty_fees: AttoTokens,
+        new_balance: AttoTokens,
     },
     MakePaymentsErr {
         failed_xornames: Vec<(XorName, Box<PayeeQuote>)>,
-        insufficient_balance: Option<(NanoTokens, NanoTokens)>,
+        insufficient_balance: Option<(AttoTokens, AttoTokens)>,
     },
     UploadOk(XorName),
     UploadErr {

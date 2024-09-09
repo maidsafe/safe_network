@@ -6,7 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{NanoTokens, RewardsAddress, WalletError};
+use crate::{AttoTokens, WalletError};
+use evmlib::{common::{Address as RewardsAddress, QuoteHash}, utils::dummy_address};
 use libp2p::{identity::PublicKey, PeerId};
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
@@ -62,7 +63,7 @@ pub struct PaymentQuote {
     /// the content paid for
     pub content: XorName,
     /// how much the node demands for storing the content
-    pub cost: NanoTokens,
+    pub cost: AttoTokens,
     /// the local node time when the quote was created
     pub timestamp: SystemTime,
     /// quoting metrics being used to generate this quote
@@ -84,20 +85,27 @@ impl PaymentQuote {
     pub fn zero() -> Self {
         Self {
             content: Default::default(),
-            cost: NanoTokens::zero(),
+            cost: AttoTokens::zero(),
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
             payment_id: rand::random(),
-            rewards_address: RewardsAddress::dummy(),
+            rewards_address: dummy_address(),
             pub_key: vec![],
             signature: vec![],
         }
     }
 
+    pub fn hash(&self) -> QuoteHash {
+        let mut bytes = self.bytes_for_sig();
+        bytes.extend_from_slice(self.pub_key.as_slice());
+        bytes.extend_from_slice(self.signature.as_slice());
+        evmlib::cryptography::hash(bytes)
+    }
+
     /// returns the bytes to be signed from the given parameters
     pub fn bytes_for_signing(
         xorname: XorName,
-        cost: NanoTokens,
+        cost: AttoTokens,
         timestamp: SystemTime,
         quoting_metrics: &QuotingMetrics,
         payment_id: u64,
@@ -115,7 +123,7 @@ impl PaymentQuote {
         let serialised_quoting_metrics = rmp_serde::to_vec(quoting_metrics).unwrap_or_default();
         bytes.extend_from_slice(&serialised_quoting_metrics);
         bytes.extend_from_slice(&payment_id.to_le_bytes());
-        bytes.extend_from_slice(rewards_address.as_bytes());
+        bytes.extend_from_slice(rewards_address.as_slice());
         bytes
     }
 
@@ -179,7 +187,7 @@ impl PaymentQuote {
     }
 
     /// test utility to create a dummy quote
-    pub fn test_dummy(xorname: XorName, cost: NanoTokens) -> Self {
+    pub fn test_dummy(xorname: XorName, cost: AttoTokens) -> Self {
         Self {
             content: xorname,
             cost,
@@ -188,7 +196,7 @@ impl PaymentQuote {
             pub_key: vec![],
             signature: vec![],
             payment_id: rand::random(),
-            rewards_address: RewardsAddress::dummy(),
+            rewards_address: dummy_address(),
         }
     }
 

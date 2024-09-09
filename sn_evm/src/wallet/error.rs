@@ -135,4 +135,8 @@ pub enum Error {
     /// Wallet is already encrypted
     #[error("Wallet is already encrypted")]
     WalletAlreadyEncrypted,
+
+    /// EVM wallet error
+    #[error("EVM wallet error: {0}")]
+    EvmWallet(String),
 }

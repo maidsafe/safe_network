@@ -10,7 +10,7 @@ use crate::{Client, Error, SpendDag};
 
 use futures::{future::join_all, StreamExt};
 use sn_evm::{
-    NanoTokens, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError, WalletResult,
+    AttoTokens, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError, WalletResult,
     DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
 };
 use sn_networking::{GetRecordError, NetworkError};
@@ -138,10 +138,10 @@ impl Client {
     /// Return with UTXOs for re-attempt (with insertion time stamp)
     pub async fn crawl_to_next_utxos(
         &self,
-        addrs_to_get: &mut BTreeSet<(SpendAddress, NanoTokens)>,
+        addrs_to_get: &mut BTreeSet<(SpendAddress, AttoTokens)>,
         sender: Sender<(SignedSpend, u64, bool)>,
         reattempt_interval: Duration,
-    ) -> BTreeMap<SpendAddress, (Instant, NanoTokens)> {
+    ) -> BTreeMap<SpendAddress, (Instant, AttoTokens)> {
         let mut failed_utxos = BTreeMap::new();
         let mut tasks = JoinSet::new();
 
@@ -529,7 +529,7 @@ impl Client {
 
 /// Helper function to analyze spend for beta_tracking optimization.
 /// returns the new_utxos that needs to be further tracked.
-fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, NanoTokens)> {
+fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, AttoTokens)> {
     // Filter out royalty outputs
     let royalty_pubkeys: BTreeSet<_> = spend
         .spend

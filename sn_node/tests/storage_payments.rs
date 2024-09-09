@@ -14,7 +14,7 @@ use eyre::{eyre, Result};
 use libp2p::PeerId;
 use rand::Rng;
 use sn_client::{Error as ClientError, FilesDownload, Uploader, WalletClient};
-use sn_evm::{NanoTokens, PaymentQuote, RewardsAddress};
+use sn_evm::{Amount, AttoTokens, PaymentQuote};
 use sn_logging::LogBuilder;
 use sn_networking::{GetRecordError, NetworkError};
 use sn_protocol::{
@@ -111,7 +111,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
     let paying_wallet_dir: TempDir = TempDir::new()?;
 
     let (client, paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
-    let wallet_original_balance = paying_wallet.balance().as_nano();
+    let wallet_original_balance = paying_wallet.balance().as_atto();
     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     // generate a random number (between 50 and 100) of random addresses
@@ -135,7 +135,7 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
         .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
 
     // check we've paid only for the subset of addresses, 1 nano per addr
-    let new_balance = NanoTokens::from(wallet_original_balance - total_cost.as_nano());
+    let new_balance = AttoTokens::from_atto(wallet_original_balance - total_cost.as_atto());
     info!("Verifying new balance on paying wallet is {new_balance} ...");
     let paying_wallet = wallet_client.into_wallet();
     assert_eq!(paying_wallet.balance(), new_balance);
@@ -160,8 +160,8 @@ async fn storage_payment_proofs_cached_in_wallet() -> Result<()> {
         .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
 
     // check we've paid only for addresses we haven't previously paid for, 1 nano per addr
-    let new_balance = NanoTokens::from(
-        wallet_original_balance - (random_content_addrs.len() as u64 * total_cost.as_nano()),
+    let new_balance = AttoTokens::from_atto(
+        wallet_original_balance - (Amount::from(random_content_addrs.len()) * total_cost.as_atto()),
     );
     println!("Verifying new balance on paying wallet is now {new_balance} ...");
     let paying_wallet = wallet_client.into_wallet();
@@ -228,8 +228,8 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
         no_data_payments.insert(
             *chunk_name,
             (
-                RewardsAddress::dummy(),
-                PaymentQuote::test_dummy(*chunk_name, NanoTokens::from(0)),
+                sn_evm::utils::dummy_address(),
+                PaymentQuote::test_dummy(*chunk_name, AttoTokens::from_u64(0)),
                 PeerId::random().to_bytes(),
             ),
         );
@@ -237,7 +237,8 @@ async fn storage_payment_chunk_upload_fails_if_no_tokens_sent() -> Result<()> {
 
     let _ = wallet_client
         .mut_wallet()
-        .local_send_storage_payment(&no_data_payments)?;
+        .send_storage_payment(&no_data_payments)
+        .await?;
 
     sleep(Duration::from_secs(5)).await;
 
@@ -365,15 +366,16 @@ async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
             .as_xorname()
             .expect("RegisterAddress should convert to XorName"),
         (
-            RewardsAddress::dummy(),
-            PaymentQuote::test_dummy(xor_name, NanoTokens::from(0)),
+            sn_evm::utils::dummy_address(),
+            PaymentQuote::test_dummy(xor_name, AttoTokens::from_u64(0)),
             vec![],
         ),
     );
 
     let _ = wallet_client
         .mut_wallet()
-        .local_send_storage_payment(&no_data_payments)?;
+        .send_storage_payment(&no_data_payments)
+        .await?;
 
     // this should fail to store as the amount paid is not enough
     let (mut register, _cost, _royalties_fees) = client

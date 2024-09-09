@@ -7,9 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{wallet::send, Client, Error, Result};
-use sn_evm::{load_genesis_wallet, HotWallet, NanoTokens, Transfer, FOUNDATION_PK};
-
-const INITIAL_FAUCET_BALANCE: NanoTokens = NanoTokens::from(900000000000000000);
+use sn_evm::{load_genesis_wallet, HotWallet, AttoTokens, Transfer, FOUNDATION_PK};
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
@@ -17,6 +15,8 @@ pub async fn fund_faucet_from_genesis_wallet(
     client: &Client,
     faucet_wallet: &mut HotWallet,
 ) -> Result<()> {
+    let initial_faucet_balance: AttoTokens = AttoTokens::from_u64(900000000000000000);
+
     faucet_wallet.try_load_cash_notes()?;
     let faucet_balance = faucet_wallet.balance();
     if !faucet_balance.is_zero() {
@@ -47,14 +47,14 @@ pub async fn fund_faucet_from_genesis_wallet(
     let genesis_balance = genesis_wallet.balance();
 
     let (foundation_cashnote, faucet_cashnote) = {
-        println!("Sending {INITIAL_FAUCET_BALANCE}  from genesis to faucet wallet..");
-        debug!("Sending {INITIAL_FAUCET_BALANCE}  from genesis to faucet wallet..");
+        println!("Sending {initial_faucet_balance}  from genesis to faucet wallet..");
+        debug!("Sending {initial_faucet_balance}  from genesis to faucet wallet..");
 
         println!("Faucet wallet balance: {}", faucet_wallet.balance());
         debug!("Faucet wallet balance: {}", faucet_wallet.balance());
         let faucet_cashnote = send(
             genesis_wallet,
-            INITIAL_FAUCET_BALANCE,
+            initial_faucet_balance,
             faucet_wallet.address(),
             client,
             true,
@@ -67,7 +67,7 @@ pub async fn fund_faucet_from_genesis_wallet(
 
         // now send the money to the foundation
         let foundation_balance = genesis_balance
-            .checked_sub(INITIAL_FAUCET_BALANCE)
+            .checked_sub(initial_faucet_balance)
             .ok_or(Error::GenesisDisbursement)?;
 
         println!("Sending {foundation_balance:?} from genesis to foundation wallet..");

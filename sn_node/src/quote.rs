@@ -8,7 +8,7 @@
 
 use crate::{node::Node, Error, Result};
 use libp2p::PeerId;
-use sn_evm::{NanoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
+use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_networking::{calculate_cost_for_records, Network, NodeIssue};
 use sn_protocol::{error::Error as ProtocolError, storage::ChunkAddress, NetworkAddress};
 use std::time::Duration;
@@ -16,7 +16,7 @@ use std::time::Duration;
 impl Node {
     pub(crate) fn create_quote_for_storecost(
         network: &Network,
-        cost: NanoTokens,
+        cost: AttoTokens,
         address: &NetworkAddress,
         quoting_metrics: &QuotingMetrics,
         payment_address: &RewardsAddress,
@@ -44,7 +44,7 @@ impl Node {
             quoting_metrics: quoting_metrics.clone(),
             pub_key: network.get_pub_key(),
             payment_id,
-            rewards_address: payment_address.clone(),
+            rewards_address: *payment_address,
             signature,
         };
 
@@ -102,7 +102,7 @@ pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, 
                 .filter(|(peer_id, quote)| {
                     let is_same_target = quote.content == self_quote.content;
                     let is_not_self = *peer_id != network.peer_id();
-                    let is_not_zero_quote = quote.cost != NanoTokens::zero();
+                    let is_not_zero_quote = quote.cost != AttoTokens::zero();
 
                     let time_gap = Duration::from_secs(10);
                     let is_around_same_time = if quote.timestamp > self_quote.timestamp {
@@ -125,7 +125,7 @@ pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, 
 
             quotes_for_nodes_duty.retain(|(peer_id, quote)| {
                 let cost = calculate_cost_for_records(&quote.quoting_metrics);
-                let is_same_as_expected = quote.cost == NanoTokens::from(cost);
+                let is_same_as_expected = quote.cost == AttoTokens::from_u64(cost);
 
                 if !is_same_as_expected {
                     info!("Quote from {peer_id:?} using a different quoting_metrics to achieve the claimed cost. Quote {quote:?} can only result in cost {cost:?}");

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use sn_evm::{NanoTokens, WalletError};
+use sn_evm::{AttoTokens, WalletError};
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
 use thiserror::Error;
 
@@ -68,8 +68,8 @@ pub enum Error {
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
     PaymentProofInsufficientAmount {
-        paid: NanoTokens,
-        expected: NanoTokens,
+        paid: AttoTokens,
+        expected: AttoTokens,
     },
     #[error("A payment we received contains cash notes already confirmed to be spent")]
     ReusedPayment,
@@ -87,4 +87,7 @@ pub enum Error {
     /// Error occurred in an async thread
     #[error("Error occured in async thread: {0}")]
     JoinErrorInAsyncThread(String),
+
+    #[error("EVM Network error: {0}")]
+    EvmNetwork(String),
 }

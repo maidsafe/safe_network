@@ -25,9 +25,8 @@ use crate::wallet::keys::{
 };
 use crate::{
     calculate_royalties_fee, transfers::SignedTransaction, CashNote, CashNoteRedemption,
-    DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, NanoTokens, SignedSpend,
+    DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, AttoTokens, SignedSpend,
     SpendAddress, SpendReason, Transfer, UniquePubkey, UnsignedTransaction, WalletError,
-    NETWORK_ROYALTIES_PK,
 };
 use crate::{wallet::authentication::AuthenticationManager, RewardsAddress};
 use std::{
@@ -36,6 +35,8 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
+use evmlib::{common::Amount, wallet::Wallet as EvmWallet};
+use evmlib::Network as EvmNetwork;
 use xor_name::XorName;
 
 /// A locked file handle, that when dropped releases the lock.
@@ -341,7 +342,7 @@ impl HotWallet {
         self.unconfirmed_spend_requests = Default::default();
     }
 
-    pub fn balance(&self) -> NanoTokens {
+    pub fn balance(&self) -> AttoTokens {
         self.watchonly_wallet.balance()
     }
 
@@ -408,7 +409,7 @@ impl HotWallet {
 
     pub fn build_unsigned_transaction(
         &mut self,
-        to: Vec<(NanoTokens, MainPubkey)>,
+        to: Vec<(AttoTokens, MainPubkey)>,
         reason: Option<SpendReason>,
     ) -> Result<UnsignedTransaction> {
         self.watchonly_wallet.build_unsigned_transaction(to, reason)
@@ -417,7 +418,7 @@ impl HotWallet {
     /// Make a transfer and return all created cash_notes
     pub fn local_send(
         &mut self,
-        to: Vec<(NanoTokens, MainPubkey)>,
+        to: Vec<(AttoTokens, MainPubkey)>,
         reason: Option<SpendReason>,
     ) -> Result<Vec<CashNote>> {
         let mut rng = &mut rand::rngs::OsRng;
@@ -451,41 +452,53 @@ impl HotWallet {
     /// Performs a payment for each content address.
     /// Includes payment of network royalties.
     /// Returns the amount paid for storage, including the network royalties fee paid.
-    pub fn local_send_storage_payment(
+    pub async fn send_storage_payment(
         &mut self,
         price_map: &BTreeMap<XorName, (RewardsAddress, PaymentQuote, Vec<u8>)>,
-    ) -> Result<(NanoTokens, NanoTokens)> {
-        let mut storage_cost = NanoTokens::zero();
-        let mut royalties_fees = NanoTokens::zero();
+    ) -> Result<(AttoTokens, AttoTokens)> {
+        let mut total_storage_cost = AttoTokens::zero();
+        let mut total_royalties_fees = AttoTokens::zero();
 
         let start = Instant::now();
 
         // calculate total storage cost incl royalties fees
-        let mut recipients_and_cost_by_xor = BTreeMap::new();
-        for (xorname, (rewards_address, quote, _peer_id_bytes)) in price_map.iter() {
+        let mut quotes_payment = BTreeSet::new();
+        for (_xorname, (rewards_address, quote, _peer_id_bytes)) in price_map.iter() {
             let royalties_fee = calculate_royalties_fee(quote.cost);
-            let royalties_payee = (royalties_fee, *NETWORK_ROYALTIES_PK);
 
-            storage_cost = storage_cost
+            total_storage_cost = total_storage_cost
                 .checked_add(quote.cost)
                 .ok_or(WalletError::TotalPriceTooHigh)?;
-            royalties_fees = royalties_fees
+            total_royalties_fees = total_royalties_fees
                 .checked_add(royalties_fee)
                 .ok_or(WalletError::TotalPriceTooHigh)?;
 
-            recipients_and_cost_by_xor
-                .insert(xorname, ((rewards_address, quote.cost), royalties_payee));
+            let cost = Amount::from(quote.cost.as_atto());
+
+            quotes_payment.insert((quote.hash(), *rewards_address, cost));
+            // quotes_payment.insert((quote.hash(), *NETWORK_ROYALTIES_PK, royalties_fee)); // NB TODO deal with royalties payment
         }
 
         // NB TODO: perform evm payments here
-        println!("TODO: placholder for payment for: {recipients_and_cost_by_xor:#?}");
+        // load evm wallet
+        let evm_sk = std::env::var("EVM_SK")
+            .map_err(|_| Error::EvmWallet(
+                "No evm wallet secret key found. EVM_SK env var not set. Please set the EVM_SK env var to your evm wallet secret key hex string.".to_string()
+            ))?;
+        // TODO make network configurable here
+        let evm_wallet = EvmWallet::new_from_private_key(EvmNetwork::ArbitrumOne, &evm_sk)
+            .map_err(|_| Error::EvmWallet(
+                "Failed to parse EVM key from EVM_SK env var. Please set the EVM_SK env var to your evm wallet secret key in hex string format.".to_string()
+            ))?;
+
+        evm_wallet.pay_for_quotes(quotes_payment).await.map_err(|e| Error::EvmWallet(format!("Failed to pay for quotes {e}")))?;
 
         trace!(
             "local_send_storage_payment completed payments insertion in {:?}",
             start.elapsed()
         );
 
-        Ok((storage_cost, royalties_fees))
+        Ok((total_storage_cost, total_royalties_fees))
     }
 
     #[cfg(feature = "test-utils")]
@@ -620,16 +633,17 @@ mod tests {
 
     use super::HotWallet;
     use crate::wallet::authentication::AuthenticationManager;
-    use crate::RewardsAddress;
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
         wallet::{
             data_payments::PaymentQuote, hot_wallet::WALLET_DIR_NAME, wallet_file::store_wallet,
             watch_only::WatchOnlyWallet, KeyLessWallet,
         },
-        MainSecretKey, NanoTokens, SpendAddress,
+        MainSecretKey, AttoTokens, SpendAddress,
     };
     use assert_fs::TempDir;
+    use evmlib::common::Amount;
+    use evmlib::utils::dummy_address;
     use eyre::Result;
     use xor_name::XorName;
 
@@ -651,8 +665,8 @@ mod tests {
         let deserialized =
             KeyLessWallet::load_from(&wallet_dir)?.expect("There to be a wallet on disk.");
 
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, deserialized.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), wallet.balance().as_atto());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), deserialized.balance().as_atto());
 
         Ok(())
     }
@@ -671,7 +685,7 @@ mod tests {
         };
 
         assert_eq!(main_pubkey, deposit_only.address());
-        assert_eq!(NanoTokens::zero(), deposit_only.balance());
+        assert_eq!(AttoTokens::zero(), deposit_only.balance());
 
         assert!(deposit_only
             .watchonly_wallet
@@ -700,7 +714,7 @@ mod tests {
 
         deposit_only.deposit_and_store_to_disk(&vec![])?;
 
-        assert_eq!(NanoTokens::zero(), deposit_only.balance());
+        assert_eq!(AttoTokens::zero(), deposit_only.balance());
 
         assert!(deposit_only
             .watchonly_wallet
@@ -726,7 +740,7 @@ mod tests {
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis])?;
 
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, deposit_only.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), deposit_only.balance().as_atto());
 
         Ok(())
     }
@@ -748,7 +762,7 @@ mod tests {
 
         local_wallet.deposit_and_store_to_disk(&vec![genesis])?;
 
-        assert_eq!(NanoTokens::zero(), local_wallet.balance());
+        assert_eq!(AttoTokens::zero(), local_wallet.balance());
 
         Ok(())
     }
@@ -771,13 +785,13 @@ mod tests {
         };
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis_0.clone()])?;
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, deposit_only.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), deposit_only.balance().as_atto());
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis_0])?;
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, deposit_only.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), deposit_only.balance().as_atto());
 
         deposit_only.deposit_and_store_to_disk(&vec![genesis_1])?;
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, deposit_only.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), deposit_only.balance().as_atto());
 
         Ok(())
     }
@@ -796,8 +810,8 @@ mod tests {
         let deserialized = HotWallet::load_from(&root_dir)?;
 
         assert_eq!(depositor.address(), deserialized.address());
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, depositor.balance().as_nano());
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, deserialized.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), depositor.balance().as_atto());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), deserialized.balance().as_atto());
 
         assert_eq!(1, depositor.watchonly_wallet.available_cash_notes().len());
 
@@ -837,23 +851,23 @@ mod tests {
             create_first_cash_note_from_key(&sender.key).expect("Genesis creation to succeed.");
         sender.deposit_and_store_to_disk(&vec![sender_cash_note])?;
 
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, sender.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), sender.balance().as_atto());
 
         // We send to a new address.
         let send_amount = 100;
         let recipient_key = MainSecretKey::random();
         let recipient_main_pubkey = recipient_key.main_pubkey();
-        let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
+        let to = vec![(AttoTokens::from_u64(send_amount), recipient_main_pubkey)];
         let created_cash_notes = sender.local_send(to, None)?;
 
         assert_eq!(1, created_cash_notes.len());
         assert_eq!(
-            GENESIS_CASHNOTE_AMOUNT - send_amount,
-            sender.balance().as_nano()
+            Amount::from(GENESIS_CASHNOTE_AMOUNT - send_amount),
+            sender.balance().as_atto()
         );
 
         let recipient_cash_note = &created_cash_notes[0];
-        assert_eq!(NanoTokens::from(send_amount), recipient_cash_note.value());
+        assert_eq!(AttoTokens::from_u64(send_amount), recipient_cash_note.value());
         assert_eq!(&recipient_main_pubkey, recipient_cash_note.main_pubkey());
 
         Ok(())
@@ -875,19 +889,19 @@ mod tests {
         let send_amount = 100;
         let recipient_key = MainSecretKey::random();
         let recipient_main_pubkey = recipient_key.main_pubkey();
-        let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
+        let to = vec![(AttoTokens::from_u64(send_amount), recipient_main_pubkey)];
         let _created_cash_notes = sender.local_send(to, None)?;
 
         let deserialized = HotWallet::load_from(&root_dir)?;
 
         assert_eq!(sender.address(), deserialized.address());
         assert_eq!(
-            GENESIS_CASHNOTE_AMOUNT - send_amount,
-            sender.balance().as_nano()
+            Amount::from(GENESIS_CASHNOTE_AMOUNT - send_amount),
+            sender.balance().as_atto()
         );
         assert_eq!(
-            GENESIS_CASHNOTE_AMOUNT - send_amount,
-            deserialized.balance().as_nano()
+            Amount::from(GENESIS_CASHNOTE_AMOUNT - send_amount),
+            deserialized.balance().as_atto()
         );
 
         assert_eq!(1, sender.watchonly_wallet.available_cash_notes().len());
@@ -936,7 +950,7 @@ mod tests {
 
         let recipient_main_pubkey = recipient.key.main_pubkey();
 
-        let to = vec![(NanoTokens::from(send_amount), recipient_main_pubkey)];
+        let to = vec![(AttoTokens::from_u64(send_amount), recipient_main_pubkey)];
         let created_cash_notes = sender.local_send(to, None)?;
         let cash_note = created_cash_notes[0].clone();
         let unique_pubkey = cash_note.unique_pubkey();
@@ -956,7 +970,7 @@ mod tests {
         // Move the created cash_note to the recipient's received_cash_notes dir.
         std::fs::rename(created_cash_note_file, received_cash_note_file)?;
 
-        assert_eq!(0, recipient.balance().as_nano());
+        assert_eq!(Amount::from(0), recipient.balance().as_atto());
 
         recipient.try_load_cash_notes()?;
 
@@ -970,7 +984,7 @@ mod tests {
             .expect("There to be an available CashNote.");
 
         assert_eq!(available, &unique_pubkey);
-        assert_eq!(send_amount, recipient.balance().as_nano());
+        assert_eq!(Amount::from(send_amount), recipient.balance().as_atto());
 
         Ok(())
     }
@@ -993,10 +1007,10 @@ mod tests {
         let xor3 = XorName::random(&mut rng);
         let xor4 = XorName::random(&mut rng);
 
-        let key1a = RewardsAddress::dummy();
-        let key2a = RewardsAddress::dummy();
-        let key3a = RewardsAddress::dummy();
-        let key4a = RewardsAddress::dummy();
+        let key1a = dummy_address();
+        let key2a = dummy_address();
+        let key3a = dummy_address();
+        let key4a = dummy_address();
 
         let map = BTreeMap::from([
             (
@@ -1017,10 +1031,10 @@ mod tests {
             ),
         ]);
 
-        let (price, _) = sender.local_send_storage_payment(&map)?;
+        let (price, _) = sender.send_storage_payment(&map).await?;
 
-        let expected_price: u64 = map.values().map(|(_, quote, _)| quote.cost.as_nano()).sum();
-        assert_eq!(price.as_nano(), expected_price);
+        let expected_price: Amount = map.values().map(|(_, quote, _)| quote.cost.as_atto()).sum();
+        assert_eq!(price.as_atto(), expected_price);
 
         Ok(())
     }

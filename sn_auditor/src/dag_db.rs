@@ -15,7 +15,7 @@ use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use sn_client::transfers::{
-    Hash, NanoTokens, SignedSpend, SpendAddress, DEFAULT_PAYMENT_FORWARD_SK,
+    Hash, AttoTokens, SignedSpend, SpendAddress, DEFAULT_PAYMENT_FORWARD_SK,
 };
 use sn_client::transfers::{DEFAULT_NETWORK_ROYALTIES_PK, NETWORK_ROYALTIES_PK};
 use sn_client::{Client, SpendDag, SpendDagGet};
@@ -62,7 +62,7 @@ pub struct SpendDagDb {
     dag: Arc<RwLock<SpendDag>>,
     beta_tracking: Arc<RwLock<BetaTracking>>,
     beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
-    utxo_addresses: Arc<RwLock<BTreeMap<SpendAddress, (Instant, NanoTokens)>>>,
+    utxo_addresses: Arc<RwLock<BTreeMap<SpendAddress, (Instant, AttoTokens)>>>,
     encryption_sk: Option<SecretKey>,
 }
 
@@ -76,11 +76,11 @@ struct BetaTracking {
 }
 
 /// Map of Discord usernames to their tracked forwarded payments
-type ForwardedPayments = BTreeMap<String, BTreeSet<(SpendAddress, NanoTokens)>>;
+type ForwardedPayments = BTreeMap<String, BTreeSet<(SpendAddress, AttoTokens)>>;
 
 type UtxoStatus = (
-    BTreeMap<SpendAddress, (Instant, NanoTokens)>,
-    BTreeMap<SpendAddress, (Instant, NanoTokens)>,
+    BTreeMap<SpendAddress, (Instant, AttoTokens)>,
+    BTreeMap<SpendAddress, (Instant, AttoTokens)>,
 );
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -230,7 +230,7 @@ impl SpendDagDb {
         {
             let mut utxo_addresses = self.utxo_addresses.write().await;
             for addr in start_dag.get_utxos().iter() {
-                let _ = utxo_addresses.insert(*addr, (Instant::now(), NanoTokens::zero()));
+                let _ = utxo_addresses.insert(*addr, (Instant::now(), AttoTokens::zero()));
             }
         }
 
@@ -341,7 +341,7 @@ impl SpendDagDb {
                         a,
                         (
                             Instant::now() + *UTXO_REATTEMPT_INTERVAL,
-                            NanoTokens::zero(),
+                            AttoTokens::zero(),
                         ),
                     )
                 }));
@@ -431,7 +431,7 @@ impl SpendDagDb {
             if default_royalty_pubkeys.contains(unique_pk) || royalty_pubkeys.contains(unique_pk) {
                 let _ = royalties.insert(
                     SpendAddress::from_unique_pubkey(unique_pk),
-                    amount.as_nano(),
+                    amount.as_atto(),
                 );
             }
         }
@@ -441,7 +441,7 @@ impl SpendDagDb {
                 "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
                 spend.spend.unique_pubkey,
                 royalties.len(),
-                spend.spend.amount().as_nano(),
+                spend.spend.amount().as_atto(),
                 spend.spend.reason
             );
             eprintln!(
@@ -454,7 +454,7 @@ impl SpendDagDb {
                 "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
                 spend.spend.unique_pubkey,
                 royalties.len(),
-                spend.spend.amount().as_nano(),
+                spend.spend.amount().as_atto(),
                 spend.spend.reason
             );
             warn!(
@@ -587,7 +587,7 @@ impl SpendDagDb {
             total_hits += rewards.len() as u64;
             let total_rewards = rewards
                 .iter()
-                .map(|(_, amount)| amount.as_nano())
+                .map(|(_, amount)| amount.as_atto())
                 .sum::<u64>();
             total_amount += total_rewards;
 
@@ -612,29 +612,29 @@ impl SpendDagDb {
         // which indicates the `wallet balance`
         let (big_utxos, small_utxos): UtxoStatus = utxo_addresses
             .iter()
-            .partition(|(_address, (_time_stamp, amount))| amount.as_nano() > 100000);
+            .partition(|(_address, (_time_stamp, amount))| amount.as_atto() > 100000);
 
         let total_big_utxo_amount = big_utxos
             .iter()
-            .map(|(_addr, (_time, amount))| amount.as_nano())
+            .map(|(_addr, (_time, amount))| amount.as_atto())
             .sum::<u64>();
         tracking_performance =
             format!("{tracking_performance}\ntotal_big_utxo_amount: {total_big_utxo_amount}");
 
         let total_small_utxo_amount = small_utxos
             .iter()
-            .map(|(_addr, (_time, amount))| amount.as_nano())
+            .map(|(_addr, (_time, amount))| amount.as_atto())
             .sum::<u64>();
         tracking_performance =
             format!("{tracking_performance}\ntotal_small_utxo_amount: {total_small_utxo_amount}");
 
         for (addr, (_time, amount)) in big_utxos.iter() {
             tracking_performance =
-                format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
+                format!("{tracking_performance}\n{addr:?}, {}", amount.as_atto());
         }
         for (addr, (_time, amount)) in small_utxos.iter() {
             tracking_performance =
-                format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
+                format!("{tracking_performance}\n{addr:?}, {}", amount.as_atto());
         }
 
         Ok((json, tracking_performance))

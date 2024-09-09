@@ -20,7 +20,7 @@ use sn_client::{
     acc_packet::load_account_wallet_or_create_with_mnemonic, fund_faucet_from_genesis_wallet, send,
     Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver,
 };
-use sn_evm::{get_faucet_data_dir, HotWallet, MainPubkey, NanoTokens, Transfer};
+use sn_evm::{get_faucet_data_dir, Amount, AttoTokens, HotWallet, MainPubkey, Transfer};
 use sn_logging::{Level, LogBuilder, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
 use std::{path::PathBuf, time::Duration};
@@ -236,8 +236,8 @@ async fn claim_genesis(client: &Client, mut wallet: HotWallet) -> Result<()> {
 async fn send_tokens(client: &Client, from: HotWallet, amount: &str, to: &str) -> Result<String> {
     let to = MainPubkey::from_hex(to)?;
     use std::str::FromStr;
-    let amount = NanoTokens::from_str(amount)?;
-    if amount.as_nano() == 0 {
+    let amount = AttoTokens::from_str(amount)?;
+    if amount.as_atto() == Amount::ZERO {
         println!("Invalid format or zero amount passed in. Nothing sent.");
         return Err(eyre!(
             "Invalid format or zero amount passed in. Nothing sent."

@@ -59,7 +59,7 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use rand::Rng;
-use sn_evm::{NanoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
+use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
@@ -583,7 +583,7 @@ impl Network {
     pub async fn get_local_storecost(
         &self,
         key: RecordKey,
-    ) -> Result<(NanoTokens, QuotingMetrics)> {
+    ) -> Result<(AttoTokens, QuotingMetrics)> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetLocalStoreCost { key, sender });
 
@@ -1114,18 +1114,18 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 1..CLOSE_GROUP_SIZE {
-            let addr = RewardsAddress::dummy();
+            let addr = sn_evm::utils::dummy_address();
             costs.push((
                 NetworkAddress::from_peer(PeerId::random()),
                 addr,
-                PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i as u64)),
+                PaymentQuote::test_dummy(Default::default(), AttoTokens::from_u64(i as u64)),
             ));
         }
-        let expected_price = costs[0].2.cost.as_nano();
+        let expected_price = costs[0].2.cost.as_atto();
         let (_peer_id, _key, price) = get_fees_from_store_cost_responses(costs)?;
 
         assert_eq!(
-            price.cost.as_nano(),
+            price.cost.as_atto(),
             expected_price,
             "price should be {expected_price}"
         );
@@ -1141,17 +1141,17 @@ mod tests {
         let mut costs = vec![];
         for i in 1..responses_count {
             // push random addr and Nano
-            let addr = RewardsAddress::dummy();
+            let addr = sn_evm::utils::dummy_address();
             costs.push((
                 NetworkAddress::from_peer(PeerId::random()),
                 addr,
-                PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i)),
+                PaymentQuote::test_dummy(Default::default(), AttoTokens::from_u64(i)),
             ));
             println!("price added {i}");
         }
 
         // this should be the lowest price
-        let expected_price = costs[0].2.cost.as_nano();
+        let expected_price = costs[0].2.cost.as_atto();
 
         let (_peer_id, _key, price) = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
@@ -1159,7 +1159,7 @@ mod tests {
         };
 
         assert_eq!(
-            price.cost.as_nano(),
+            price.cost.as_atto(),
             expected_price,
             "price should be {expected_price}"
         );

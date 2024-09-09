@@ -55,7 +55,7 @@ where
         self.contract = ChunkPaymentsContract::new(address, provider);
     }
 
-    /// Pay for chunks.
+    /// Pay for quotes.
     /// Input: (quote_id, reward_address, amount).
     pub async fn pay_for_quotes<I: IntoIterator<Item = common::QuotePayment>>(
         &self,

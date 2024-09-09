@@ -21,7 +21,7 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
-use sn_evm::{NanoTokens, PaymentQuote, QuotingMetrics};
+use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics};
 use sn_protocol::{
     messages::{Cmd, Request, Response},
     storage::{RecordHeader, RecordKind, RecordType},
@@ -91,7 +91,7 @@ pub enum LocalSwarmCmd {
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
         key: RecordKey,
-        sender: oneshot::Sender<(NanoTokens, QuotingMetrics)>,
+        sender: oneshot::Sender<(AttoTokens, QuotingMetrics)>,
     },
     /// Notify the node received a payment.
     PaymentReceived,
@@ -561,7 +561,7 @@ impl SwarmDriver {
                     .store_cost(&key);
 
                 self.record_metrics(Marker::StoreCost {
-                    cost: cost.as_nano(),
+                    cost: cost.as_atto(),
                     quoting_metrics: &quoting_metrics,
                 });
 

@@ -12,8 +12,7 @@ use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 use sn_evm::{
-    is_genesis_spend, CashNoteRedemption, DerivationIndex, Hash, NanoTokens, SignedSpend,
-    SpendAddress, UniquePubkey,
+    is_genesis_spend, Amount, AttoTokens, CashNoteRedemption, DerivationIndex, Hash, SignedSpend, SpendAddress, UniquePubkey
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -39,7 +38,7 @@ use super::dag_error::{DagError, SpendFault};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpendDag {
     /// A directed graph of spend addresses
-    dag: DiGraph<SpendAddress, NanoTokens>,
+    dag: DiGraph<SpendAddress, AttoTokens>,
     /// All the spends refered to in the dag indexed by their SpendAddress
     spends: BTreeMap<SpendAddress, DagEntry>,
     /// The source of the DAG (aka Genesis)
@@ -191,9 +190,8 @@ impl SpendDag {
         if spend_addr == self.source {
             return true;
         }
-
         // link to ancestors
-        const PENDING_AMOUNT: NanoTokens = NanoTokens::from(0);
+        let pending_amount = AttoTokens::from_u64(0);
         for ancestor in spend.spend.ancestors.iter() {
             let ancestor_addr = SpendAddress::from_unique_pubkey(ancestor);
 
@@ -208,7 +206,7 @@ impl SpendDag {
                 DagEntry::NotGatheredYet(idx) => {
                     let ancestor_idx = NodeIndex::new(*idx);
                     self.dag
-                        .update_edge(ancestor_idx, new_node_idx, PENDING_AMOUNT);
+                        .update_edge(ancestor_idx, new_node_idx, pending_amount);
                 }
                 DagEntry::Spend(ancestor_spend, idx) => {
                     let ancestor_idx = NodeIndex::new(*idx);
@@ -218,7 +216,7 @@ impl SpendDag {
                         .iter()
                         .find(|(descendant, _amount)| **descendant == spend.spend.unique_pubkey)
                         .map(|(_descendant, amount)| *amount)
-                        .unwrap_or(PENDING_AMOUNT);
+                        .unwrap_or(pending_amount);
                     self.dag
                         .update_edge(ancestor_idx, new_node_idx, ancestor_given_amount);
                 }
@@ -238,7 +236,7 @@ impl SpendDag {
                                     **descendant == spend.spend.unique_pubkey
                                 })
                                 .map(|(_descendant, amount)| *amount)
-                                .unwrap_or(PENDING_AMOUNT);
+                                .unwrap_or(pending_amount);
                             self.dag
                                 .update_edge(ancestor_idx, new_node_idx, ancestor_given_amount);
                         }
@@ -286,7 +284,7 @@ impl SpendDag {
     }
 
     pub fn dump_payment_forward_statistics(&self, sk: &SecretKey) -> String {
-        let mut statistics: BTreeMap<String, Vec<NanoTokens>> = Default::default();
+        let mut statistics: BTreeMap<String, Vec<AttoTokens>> = Default::default();
 
         let mut hash_dictionary: BTreeMap<Hash, String> = Default::default();
 
@@ -319,10 +317,11 @@ impl SpendDag {
 
         let mut content = "Sender, Times, Amount".to_string();
         for (sender, payments) in statistics.iter() {
-            let total_amount: u64 = payments
+            let total_amount: Amount = payments
                 .iter()
-                .map(|nano_tokens| nano_tokens.as_nano())
+                .map(|nano_tokens| nano_tokens.as_atto())
                 .sum();
+            let total_amount = Amount::from(total_amount);
             content = format!("{content}\n{sender}, {}, {total_amount}", payments.len());
         }
         content

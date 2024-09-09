@@ -13,7 +13,7 @@ use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
 use libp2p::PeerId;
 use sn_evm::{
-    CashNote, HotWallet, MainPubkey, NanoTokens, PaymentQuote, ProofOfPayment, RewardsAddress,
+    CashNote, HotWallet, MainPubkey, AttoTokens, PaymentQuote, ProofOfPayment, RewardsAddress,
     SignedSpend, SpendAddress, Transfer, WalletError, WalletResult,
 };
 use sn_networking::target_arch::Instant;
@@ -39,8 +39,8 @@ pub struct WalletClient {
 
 /// The result of the payment made for a set of Content Addresses
 pub struct StoragePaymentResult {
-    pub storage_cost: NanoTokens,
-    pub royalty_fees: NanoTokens,
+    pub storage_cost: AttoTokens,
+    pub royalty_fees: AttoTokens,
     pub skipped_chunks: Vec<XorName>,
 }
 
@@ -107,7 +107,7 @@ impl WalletClient {
     /// println!("{}" ,wallet_client.balance());
     /// # Ok(())
     /// # }
-    pub fn balance(&self) -> NanoTokens {
+    pub fn balance(&self) -> AttoTokens {
         self.wallet.balance()
     }
 
@@ -243,7 +243,7 @@ impl WalletClient {
     /// ```
     pub async fn send_cash_note(
         &mut self,
-        amount: NanoTokens,
+        amount: AttoTokens,
         to: MainPubkey,
         verify_store: bool,
     ) -> WalletResult<CashNote> {
@@ -358,7 +358,6 @@ impl WalletClient {
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
     ) -> WalletResult<StoragePaymentResult> {
-        let verify_store = true;
         let c: Vec<_> = content_addrs.collect();
         // Using default ExponentialBackoff doesn't make sense,
         // as it will just fail after the first payment failure.
@@ -368,7 +367,7 @@ impl WalletClient {
         while let Some(delay) = backoff.next_backoff() {
             trace!("Paying for storage (w/backoff retries) for: {:?}", c);
             match self
-                .pay_for_storage_once(c.clone().into_iter(), verify_store)
+                .pay_for_storage_once(c.clone().into_iter())
                 .await
             {
                 Ok(payment_result) => return Ok(payment_result),
@@ -389,7 +388,6 @@ impl WalletClient {
     async fn pay_for_storage_once(
         &mut self,
         content_addrs: impl Iterator<Item = NetworkAddress>,
-        verify_store: bool,
     ) -> WalletResult<StoragePaymentResult> {
         // get store cost from network in parallel
         let mut tasks = JoinSet::new();
@@ -416,7 +414,7 @@ impl WalletClient {
             match res {
                 Ok((content_addr, Ok(cost))) => {
                     if let Some(xorname) = content_addr.as_xorname() {
-                        if cost.2.cost == NanoTokens::zero() {
+                        if cost.2.cost == AttoTokens::zero() {
                             skipped_chunks.push(xorname);
                             debug!("Skipped existing chunk {content_addr:?}");
                         } else {
@@ -441,7 +439,7 @@ impl WalletClient {
         info!("Storecosts retrieved for all the provided content addrs");
 
         // pay for records
-        let (storage_cost, royalty_fees) = self.pay_for_records(&cost_map, verify_store).await?;
+        let (storage_cost, royalty_fees) = self.pay_for_records(&cost_map).await?;
         let res = StoragePaymentResult {
             storage_cost,
             royalty_fees,
@@ -485,63 +483,12 @@ impl WalletClient {
     pub async fn pay_for_records(
         &mut self,
         cost_map: &BTreeMap<XorName, (RewardsAddress, PaymentQuote, Vec<u8>)>,
-        verify_store: bool,
-    ) -> WalletResult<(NanoTokens, NanoTokens)> {
-        // Before wallet progress, there shall be no `unconfirmed_spend_requests`
-        self.resend_pending_transaction_until_success(verify_store)
-            .await?;
+    ) -> WalletResult<(AttoTokens, AttoTokens)> {
         let start = Instant::now();
-        let total_cost = self.wallet.local_send_storage_payment(cost_map)?;
+        let total_cost = self.wallet.send_storage_payment(cost_map).await?;
 
         trace!(
-            "local_send_storage_payment of {} chunks completed in {:?}",
-            cost_map.len(),
-            start.elapsed()
-        );
-
-        // send to network
-        trace!("Sending storage payment transfer to the network");
-        let start = Instant::now();
-        let spend_attempt_result = self
-            .client
-            .send_spends(
-                self.wallet.unconfirmed_spend_requests().iter(),
-                verify_store,
-            )
-            .await;
-
-        trace!(
-            "send_spends of {} chunks completed in {:?}",
-            cost_map.len(),
-            start.elapsed()
-        );
-
-        // Here is bit risky that for the whole bunch of spends to the chunks' store_costs and royalty_fee
-        // they will get re-paid again for ALL, if any one of the payment failed to be put.
-        let start = Instant::now();
-        if let Err(error) = spend_attempt_result {
-            warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
-
-            // if we have a DoubleSpend error, lets remove the CashNote from the wallet
-            if let WalletError::DoubleSpendAttemptedForCashNotes(spent_cash_notes) = &error {
-                for cash_note_key in spent_cash_notes {
-                    warn!("Removing double spends CashNote from wallet: {cash_note_key:?}");
-                    self.wallet.mark_notes_as_spent([cash_note_key]);
-                    self.wallet.clear_specific_spend_request(*cash_note_key);
-                }
-            }
-
-            self.wallet.store_unconfirmed_spend_requests()?;
-
-            return Err(WalletError::CouldNotSendMoney(format!(
-                "The storage payment transfer was not successfully registered in the network: {error:?}"
-            )));
-        } else {
-            info!("Spend has completed: {:?}", spend_attempt_result);
-            self.wallet.clear_confirmed_spend_requests();
-        }
-        trace!(
-            "clear up spends of {} chunks completed in {:?}",
+            "send_storage_payment of {} chunks completed in {:?}",
             cost_map.len(),
             start.elapsed()
         );
@@ -1059,7 +1006,7 @@ impl Client {
 /// ```
 pub async fn send(
     from: HotWallet,
-    amount: NanoTokens,
+    amount: AttoTokens,
     to: MainPubkey,
     client: &Client,
     verify_store: bool,

@@ -14,8 +14,7 @@ use common::client::{get_client_and_funded_wallet, get_wallet};
 use eyre::{bail, Result};
 use itertools::Itertools;
 use sn_evm::{
-    get_genesis_sk, rng, DerivationIndex, HotWallet, NanoTokens, SignedTransaction, SpendReason,
-    WalletError, GENESIS_CASHNOTE,
+    get_genesis_sk, rng, Amount, AttoTokens, DerivationIndex, HotWallet, SignedTransaction, SpendReason, WalletError, GENESIS_CASHNOTE
 };
 use sn_logging::LogBuilder;
 use sn_networking::NetworkError;
@@ -29,18 +28,18 @@ async fn cash_note_transfer_double_spend_fail() -> Result<()> {
     let first_wallet_dir = TempDir::new()?;
 
     let (client, mut first_wallet) = get_client_and_funded_wallet(first_wallet_dir.path()).await?;
-    let first_wallet_balance = first_wallet.balance().as_nano();
+    let first_wallet_balance = first_wallet.balance().as_atto();
 
     // create wallet 2 and 3 to receive money from 1
     let second_wallet_dir = TempDir::new()?;
     let second_wallet = get_wallet(second_wallet_dir.path());
-    assert_eq!(second_wallet.balance(), NanoTokens::zero());
+    assert_eq!(second_wallet.balance(), AttoTokens::zero());
     let third_wallet_dir = TempDir::new()?;
     let third_wallet = get_wallet(third_wallet_dir.path());
-    assert_eq!(third_wallet.balance(), NanoTokens::zero());
+    assert_eq!(third_wallet.balance(), AttoTokens::zero());
 
     // manually forge two transfers of the same source
-    let amount = NanoTokens::from(first_wallet_balance / 3);
+    let amount = AttoTokens::from_atto(first_wallet_balance / Amount::from(3));
     let to1 = first_wallet.address();
     let to2 = second_wallet.address();
     let to3 = third_wallet.address();
@@ -184,14 +183,14 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
     let wallet_dir_1 = TempDir::new()?;
 
     let (client, mut wallet_1) = get_client_and_funded_wallet(wallet_dir_1.path()).await?;
-    let balance_1 = wallet_1.balance().as_nano();
-    let amount = NanoTokens::from(balance_1 / 2);
+    let balance_1 = wallet_1.balance().as_atto();
+    let amount = AttoTokens::from_atto(balance_1 / Amount::from(2));
     let to1 = wallet_1.address();
 
     // Send from 1 -> 2
     let wallet_dir_2 = TempDir::new()?;
     let mut wallet_2 = get_wallet(wallet_dir_2.path());
-    assert_eq!(wallet_2.balance(), NanoTokens::zero());
+    assert_eq!(wallet_2.balance(), AttoTokens::zero());
 
     let to2 = wallet_2.address();
     let (cash_notes_1, _exclusive_access) = wallet_1.available_cash_notes()?;
@@ -217,7 +216,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
     // Send from 2 -> 22
     let wallet_dir_22 = TempDir::new()?;
     let mut wallet_22 = get_wallet(wallet_dir_22.path());
-    assert_eq!(wallet_22.balance(), NanoTokens::zero());
+    assert_eq!(wallet_22.balance(), AttoTokens::zero());
 
     let (cash_notes_2, _exclusive_access) = wallet_2.available_cash_notes()?;
     assert!(!cash_notes_2.is_empty());
@@ -247,7 +246,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
     // Try to double spend from 1 -> 3
     let wallet_dir_3 = TempDir::new()?;
     let wallet_3 = get_wallet(wallet_dir_3.path());
-    assert_eq!(wallet_3.balance(), NanoTokens::zero());
+    assert_eq!(wallet_3.balance(), AttoTokens::zero());
 
     let to_3_unique_key = (
         amount,
@@ -274,7 +273,7 @@ async fn poisoning_old_spend_should_not_affect_descendant() -> Result<()> {
     // The old spend has been poisoned, but spends from 22 -> 222 should still work
     let wallet_dir_222 = TempDir::new()?;
     let wallet_222 = get_wallet(wallet_dir_222.path());
-    assert_eq!(wallet_222.balance(), NanoTokens::zero());
+    assert_eq!(wallet_222.balance(), AttoTokens::zero());
 
     let (cash_notes_22, _exclusive_access) = wallet_22.available_cash_notes()?;
     assert!(!cash_notes_22.is_empty());
@@ -338,13 +337,13 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     let wallet_dir_a = TempDir::new()?;
 
     let (client, mut wallet_a) = get_client_and_funded_wallet(wallet_dir_a.path()).await?;
-    let balance_a = wallet_a.balance().as_nano();
-    let amount = NanoTokens::from(balance_a / 2);
+    let balance_a = wallet_a.balance().as_atto();
+    let amount = AttoTokens::from_atto(balance_a / Amount::from(2));
 
     // Send from A -> B
     let wallet_dir_b = TempDir::new()?;
     let mut wallet_b = get_wallet(wallet_dir_b.path());
-    assert_eq!(wallet_b.balance(), NanoTokens::zero());
+    assert_eq!(wallet_b.balance(), AttoTokens::zero());
 
     let (cash_notes_a, _exclusive_access) = wallet_a.available_cash_notes()?;
     let to_b_unique_key = (
@@ -374,7 +373,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     // Send from B -> C
     let wallet_dir_c = TempDir::new()?;
     let mut wallet_c = get_wallet(wallet_dir_c.path());
-    assert_eq!(wallet_c.balance(), NanoTokens::zero());
+    assert_eq!(wallet_c.balance(), AttoTokens::zero());
 
     let (cash_notes_b, _exclusive_access) = wallet_b.available_cash_notes()?;
     assert!(!cash_notes_b.is_empty());
@@ -405,7 +404,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     // Try to double spend from A -> X
     let wallet_dir_x = TempDir::new()?;
     let wallet_x = get_wallet(wallet_dir_x.path());
-    assert_eq!(wallet_x.balance(), NanoTokens::zero());
+    assert_eq!(wallet_x.balance(), AttoTokens::zero());
 
     let to_x_unique_key = (
         amount,
@@ -438,7 +437,7 @@ async fn parent_and_child_double_spends_should_lead_to_cashnote_being_invalid() 
     // Try to double spend from B -> Y
     let wallet_dir_y = TempDir::new()?;
     let wallet_y = get_wallet(wallet_dir_y.path());
-    assert_eq!(wallet_y.balance(), NanoTokens::zero());
+    assert_eq!(wallet_y.balance(), AttoTokens::zero());
 
     let to_y_unique_key = (
         amount,
@@ -511,13 +510,13 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
     let wallet_dir_a = TempDir::new()?;
 
     let (client, mut wallet_a) = get_client_and_funded_wallet(wallet_dir_a.path()).await?;
-    let balance_a = wallet_a.balance().as_nano();
-    let amount = NanoTokens::from(balance_a / 2);
+    let balance_a = wallet_a.balance().as_atto();
+    let amount = AttoTokens::from_atto(balance_a / Amount::from(2));
 
     // Send from A -> B
     let wallet_dir_b = TempDir::new()?;
     let mut wallet_b = get_wallet(wallet_dir_b.path());
-    assert_eq!(wallet_b.balance(), NanoTokens::zero());
+    assert_eq!(wallet_b.balance(), AttoTokens::zero());
 
     let (cash_notes_a, _exclusive_access) = wallet_a.available_cash_notes()?;
     let to_b_unique_key = (
@@ -555,7 +554,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
     // Send from B -> C
     let wallet_dir_c = TempDir::new()?;
     let mut wallet_c = get_wallet(wallet_dir_c.path());
-    assert_eq!(wallet_c.balance(), NanoTokens::zero());
+    assert_eq!(wallet_c.balance(), AttoTokens::zero());
 
     let (cash_notes_b, _exclusive_access) = wallet_b.available_cash_notes()?;
     assert!(!cash_notes_b.is_empty());
@@ -585,7 +584,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
     // Try to double spend from A -> X
     let wallet_dir_x = TempDir::new()?;
     let wallet_x = get_wallet(wallet_dir_x.path());
-    assert_eq!(wallet_x.balance(), NanoTokens::zero());
+    assert_eq!(wallet_x.balance(), AttoTokens::zero());
 
     let to_x_unique_key = (
         amount,
@@ -634,7 +633,7 @@ async fn spamming_double_spends_should_not_shadow_live_branch() -> Result<()> {
         info!("Spamming double spends on A");
         let wallet_dir_y = TempDir::new()?;
         let wallet_y = get_wallet(wallet_dir_y.path());
-        assert_eq!(wallet_y.balance(), NanoTokens::zero());
+        assert_eq!(wallet_y.balance(), AttoTokens::zero());
 
         let to_y_unique_key = (
             amount,
