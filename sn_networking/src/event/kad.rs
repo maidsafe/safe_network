@@ -92,9 +92,8 @@ impl SwarmDriver {
                 ref step,
             } => {
                 event_string = "kad_event::get_closest_peers_err";
-                error!("GetClosest Query task {id:?} errored with {err:?}, {stats:?} - {step:?}");
 
-                let (_address, get_closest_type, mut current_closest) =
+                let (address, get_closest_type, mut current_closest) =
                     self.pending_get_closest_peers.remove(&id).ok_or_else(|| {
                         debug!(
                             "Can't locate query task {id:?}, it has likely been completed already."
@@ -111,13 +110,23 @@ impl SwarmDriver {
                 match err {
                     GetClosestPeersError::Timeout { ref peers, .. } => {
                         current_closest.extend(peers.iter().map(|i| i.peer_id));
+                        if current_closest.len() < CLOSE_GROUP_SIZE {
+                            error!(
+                                "GetClosest Query task {id:?} errored, not enough found. {err:?}, {stats:?} - {step:?}"
+                            );
+                        }
                     }
                 }
 
                 match get_closest_type {
-                    PendingGetClosestType::NetworkDiscovery => self
-                        .network_discovery
-                        .handle_get_closest_query(&current_closest),
+                    PendingGetClosestType::NetworkDiscovery => {
+                        // do not set this via function calls, as that could potentially
+                        // skew the results in favour of heavily queried (and manipulated)
+                        // areas of the network
+                        self.set_request_range(address, &current_closest);
+                        self.network_discovery
+                            .handle_get_closest_query(&current_closest);
+                    }
                     PendingGetClosestType::FunctionCall(sender) => {
                         sender
                             .send(current_closest)
