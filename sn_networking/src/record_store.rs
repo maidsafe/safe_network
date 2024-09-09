@@ -514,7 +514,6 @@ impl NodeRecordStore {
     }
 
     /// Returns the reference to the set of `NetworkAddress::RecordKey` held by the store
-    #[allow(clippy::mutable_key_type)]
     pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
         &self.records
     }
@@ -652,7 +651,6 @@ impl NodeRecordStore {
     }
 
     /// Calculate the cost to store data for our current store state
-    #[allow(clippy::mutable_key_type)]
     pub(crate) fn store_cost(&self, key: &Key) -> (NanoTokens, QuotingMetrics) {
         let records_stored = self.records.len();
         let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
@@ -698,7 +696,6 @@ impl NodeRecordStore {
     }
 
     /// Calculate how many records are stored within a distance range
-    #[allow(clippy::mutable_key_type)]
     pub fn get_records_within_distance_range(
         &self,
         records: HashSet<&Key>,
@@ -885,7 +882,6 @@ impl ClientRecordStore {
         HashMap::new()
     }
 
-    #[allow(clippy::mutable_key_type)]
     pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
         &self.empty_record_addresses
     }
@@ -966,7 +962,7 @@ fn positive_input_0_1_sigmoid(x: f64) -> f64 {
     1.0 / (1.0 + (-30.0 * (x - 0.5)).exp())
 }
 
-#[allow(trivial_casts)]
+#[expect(trivial_casts)]
 #[cfg(test)]
 mod tests {
 
@@ -1332,7 +1328,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[allow(clippy::mutable_key_type)]
     async fn get_records_within_bucket_range() -> eyre::Result<()> {
         let max_records = 50;
 
@@ -1593,7 +1588,7 @@ mod tests {
 
     // Split nodes into groups based on its kBucketKey's leading byte of hashed_bytes.
     // This will result in 256 groups, and collect number of nodes and chunks fell into.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn log_chunks_distribution(peers: &HashMap<PeerId, (usize, u64, usize)>) {
         // Using `times_of_earned` to reflect chunks hit the group.
         // This can avoid `replication counts` causing mis-understanding.

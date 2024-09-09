@@ -14,7 +14,6 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Internal error.
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
 pub enum Error {
     #[error("Network error {0}")]
     Network(#[from] sn_networking::NetworkError),

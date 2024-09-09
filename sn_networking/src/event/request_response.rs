@@ -219,7 +219,6 @@ impl SwarmDriver {
         //        start chunk_proof check against a randomly selected chunk type record to the sender
         //   3, For those spends that we have that differ in the hash, we fetch the other version
         //         and update our local copy.
-        #[allow(clippy::mutable_key_type)]
         let all_keys = self
             .swarm
             .behaviour_mut()
@@ -254,7 +253,6 @@ impl SwarmDriver {
 
     /// Check among all chunk type records that we have, select those close to the peer,
     /// and randomly pick one as the verification candidate.
-    #[allow(clippy::mutable_key_type)]
     fn select_verification_data_candidates(&mut self, peer: NetworkAddress) -> Vec<NetworkAddress> {
         let mut closest_peers = self
             .swarm
@@ -273,7 +271,6 @@ impl SwarmDriver {
             return vec![];
         };
 
-        #[allow(clippy::mutable_key_type)]
         let all_keys = self
             .swarm
             .behaviour_mut()

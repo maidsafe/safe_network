@@ -23,7 +23,7 @@ pub mod storage;
 pub mod version;
 
 // this includes code generated from .proto files
-#[allow(clippy::unwrap_used, clippy::clone_on_ref_ptr)]
+#[expect(clippy::unwrap_used, clippy::clone_on_ref_ptr)]
 #[cfg(feature = "rpc")]
 pub mod safenode_proto {
     tonic::include_proto!("safenode_proto");

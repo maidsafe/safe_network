@@ -27,7 +27,6 @@ use super::NetworkAddress;
 
 use serde::{Deserialize, Serialize};
 
-#[allow(clippy::large_enum_variant)]
 /// A request to peers in the network
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Request {

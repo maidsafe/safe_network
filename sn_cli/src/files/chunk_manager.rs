@@ -341,7 +341,6 @@ impl ChunkManager {
 
     /// Mark all the chunks as completed. This removes the chunks from the CHUNK_ARTIFACTS_DIR.
     /// But keeps the folder and metadata file that denotes that the file has been already completed.
-    #[allow(dead_code)]
     pub fn mark_completed_all(&mut self) -> Result<()> {
         let all_chunks = self
             .chunks

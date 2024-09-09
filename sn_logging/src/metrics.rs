@@ -16,7 +16,6 @@ const TO_MB: u64 = 1_000_000;
 
 // The following Metrics are collected and logged
 #[derive(Debug, Serialize)]
-#[allow(dead_code)]
 struct Metrics {
     // Number of threads in the system
     physical_cpu_threads: usize,
@@ -27,7 +26,6 @@ struct Metrics {
 }
 
 #[derive(Debug, Serialize)]
-#[allow(dead_code)]
 struct ProcessMetrics {
     // Percentage of CPU used by the process
     cpu_usage_percent: f32,
