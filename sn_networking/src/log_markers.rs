@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use libp2p::PeerId;
-use sn_evm::QuotingMetrics;
+use sn_evm::{QuotingMetrics, Amount};
 // this gets us to_string easily enough
 use strum::Display;
 
@@ -24,7 +24,7 @@ pub enum Marker<'a> {
     /// Store cost
     StoreCost {
         /// Cost
-        cost: u64,
+        cost: Amount,
         quoting_metrics: &'a QuotingMetrics,
     },
     /// The peer has been considered as bad

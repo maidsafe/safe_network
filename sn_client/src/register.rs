@@ -13,7 +13,7 @@ use libp2p::{
     kad::{Quorum, Record},
     PeerId,
 };
-use sn_evm::{NanoTokens, ProofOfPayment};
+use sn_evm::{AttoTokens, ProofOfPayment};
 use sn_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -150,7 +150,7 @@ impl ClientRegister {
         wallet_client: &mut WalletClient,
         verify_store: bool,
         perms: Permissions,
-    ) -> Result<(Self, NanoTokens, NanoTokens)> {
+    ) -> Result<(Self, AttoTokens, AttoTokens)> {
         let mut reg = Self::create_register(client, meta, perms);
         let (storage_cost, royalties_fees) = reg.sync(wallet_client, verify_store, None).await?;
         Ok((reg, storage_cost, royalties_fees))
@@ -493,11 +493,11 @@ impl ClientRegister {
         wallet_client: &mut WalletClient,
         verify_store: bool,
         mut payment_info: Option<(ProofOfPayment, PeerId)>,
-    ) -> Result<(NanoTokens, NanoTokens)> {
+    ) -> Result<(AttoTokens, AttoTokens)> {
         let addr = *self.address();
         debug!("Syncing Register at {addr:?}!");
-        let mut storage_cost = NanoTokens::zero();
-        let mut royalties_fees = NanoTokens::zero();
+        let mut storage_cost = AttoTokens::zero();
+        let mut royalties_fees = AttoTokens::zero();
         let reg_result = if verify_store {
             debug!("VERIFYING REGISTER STORED {:?}", self.address());
 

@@ -57,7 +57,7 @@ impl Wallet {
         transfer_tokens(self.wallet.clone(), &self.network, to, amount).await
     }
 
-    /// Pays for a single chunk. Returns transaction hash of the payment.
+    /// Pays for a single quote. Returns transaction hash of the payment.
     pub async fn pay_for_quote(
         &self,
         quote_hash: QuoteHash,
@@ -69,7 +69,7 @@ impl Wallet {
             .map(|v| v.first().cloned().expect("Infallible"))
     }
 
-    /// Function for batch payments of chunks. It accepts an iterator of ChunkPayment and returns
+    /// Function for batch payments of quotes. It accepts an iterator of QuotePayment and returns
     /// transaction hashes of the payments.
     pub async fn pay_for_quotes<I: IntoIterator<Item = QuotePayment>>(
         &self,

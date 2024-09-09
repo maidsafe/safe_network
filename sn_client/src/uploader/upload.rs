@@ -18,7 +18,7 @@ use crate::{
 use bytes::Bytes;
 use itertools::Either;
 use libp2p::PeerId;
-use sn_evm::{NanoTokens, WalletApi};
+use sn_evm::{AttoTokens, WalletApi};
 use sn_networking::PayeeQuote;
 use sn_protocol::{
     messages::RegisterCmd,
@@ -328,7 +328,7 @@ pub(super) async fn start_upload(
 
                 trace!("GetStoreCostOk for {xorname:?}'s store_cost {:?}", quote.2);
 
-                if quote.2.cost != NanoTokens::zero() {
+                if quote.2.cost != AttoTokens::zero() {
                     uploader.pending_to_pay.push((xorname, quote));
                 }
                 // if cost is 0, then it already in the network.
@@ -685,9 +685,9 @@ pub(super) struct InnerUploader {
     pub(super) make_payments_errors: usize,
 
     // Upload summary
-    pub(super) upload_storage_cost: NanoTokens,
-    pub(super) upload_royalty_fees: NanoTokens,
-    pub(super) upload_final_balance: NanoTokens,
+    pub(super) upload_storage_cost: AttoTokens,
+    pub(super) upload_royalty_fees: AttoTokens,
+    pub(super) upload_final_balance: AttoTokens,
     pub(super) max_repayments_reached: BTreeSet<XorName>,
     pub(super) uploaded_addresses: BTreeSet<NetworkAddress>,
     pub(super) uploaded_registers: BTreeMap<RegisterAddress, ClientRegister>,
@@ -732,9 +732,9 @@ impl InnerUploader {
             max_repayments_reached: Default::default(),
             make_payments_errors: Default::default(),
 
-            upload_storage_cost: NanoTokens::zero(),
-            upload_royalty_fees: NanoTokens::zero(),
-            upload_final_balance: NanoTokens::zero(),
+            upload_storage_cost: AttoTokens::zero(),
+            upload_royalty_fees: AttoTokens::zero(),
+            upload_final_balance: AttoTokens::zero(),
             uploaded_addresses: Default::default(),
             uploaded_registers: Default::default(),
             uploaded_count: Default::default(),
@@ -817,7 +817,6 @@ impl InnerUploader {
     ) -> Result<()> {
         let mut wallet_client = Self::load_wallet_client(self.client.clone(), &self.root_dir)?;
 
-        let verify_store = self.cfg.verify_store;
         let _handle = tokio::spawn(async move {
             debug!("Spawning the long running make payment processing loop.");
 
@@ -866,7 +865,7 @@ impl InnerUploader {
 
                     let mut terminate_process = false;
 
-                    let result = match wallet_client.pay_for_records(&cost_map, verify_store).await
+                    let result = match wallet_client.pay_for_records(&cost_map).await
                     {
                         Ok((storage_cost, royalty_fees)) => {
                             let paid_xornames = std::mem::take(&mut current_batch);

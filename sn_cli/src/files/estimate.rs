@@ -14,7 +14,7 @@ use color_eyre::Result;
 
 use sn_client::{
     protocol::{storage::ChunkAddress, NetworkAddress},
-    transfers::NanoTokens,
+    transfers::{Amount, AttoTokens},
     FilesApi,
 };
 
@@ -41,12 +41,12 @@ impl Estimator {
         self.chunk_manager
             .chunk_path(&path, false, make_data_public)?;
 
-        let mut estimate: u64 = 0;
+        let mut estimate: Amount = Amount::ZERO;
 
         let balance = FilesApi::new(self.files_api.client().clone(), root_dir.to_path_buf())
             .wallet()?
             .balance()
-            .as_nano();
+            .as_atto();
 
         for (chunk_address, _location) in self.chunk_manager.get_chunks() {
             let c = self.files_api.clone();
@@ -60,7 +60,7 @@ impl Estimator {
                     ))
                     .await
                     .expect("estimate_cost: Error with file.");
-                quote.cost.as_nano()
+                quote.cost.as_atto()
             })
             .await
             .map(|nanos| estimate += nanos)
@@ -70,11 +70,11 @@ impl Estimator {
         let total = balance.saturating_sub(estimate);
 
         println!("**************************************");
-        println!("Your current balance: {}", NanoTokens::from(balance));
-        println!("Transfer cost estimate: {}", NanoTokens::from(estimate));
+        println!("Your current balance: {}", AttoTokens::from_atto(balance));
+        println!("Transfer cost estimate: {}", AttoTokens::from_atto(estimate));
         println!(
             "Your balance estimate after transfer: {}",
-            NanoTokens::from(total)
+            AttoTokens::from_atto(total)
         );
         println!("**************************************");
 

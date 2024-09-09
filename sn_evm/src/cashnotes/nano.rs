@@ -8,66 +8,76 @@
 
 use crate::{Result, TransferError};
 
+pub use evmlib::common::Amount;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display, Formatter},
     str::FromStr,
 };
 
-/// The conversion from NanoTokens to raw value
-const TOKEN_TO_RAW_POWER_OF_10_CONVERSION: u32 = 9;
-
-/// The conversion from NanoTokens to raw value
-const TOKEN_TO_RAW_CONVERSION: u64 = 1_000_000_000;
+/// The conversion from AttoTokens to raw value
+const TOKEN_TO_RAW_POWER_OF_10_CONVERSION: u64 = 18;
+/// The conversion from AttoTokens to raw value
+const TOKEN_TO_RAW_CONVERSION: u64 = 1_000_000_000_000_000_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-/// An amount in SNT Nanos. 10^9 Nanos = 1 SNT.
-pub struct NanoTokens(u64);
+/// An amount in SNT Atto. 10^18 Nanos = 1 SNT.
+pub struct AttoTokens(Amount);
 
-impl NanoTokens {
-    /// Type safe representation of zero NanoTokens.
+impl AttoTokens {
+    /// Type safe representation of zero AttoTokens.
     pub const fn zero() -> Self {
-        Self(0)
+        Self(Amount::ZERO)
     }
 
-    /// Returns whether it's a representation of zero NanoTokens.
-    pub const fn is_zero(&self) -> bool {
-        self.0 == 0
+    /// Returns whether it's a representation of zero AttoTokens.
+    pub fn is_zero(&self) -> bool {
+        self.0.is_zero()
     }
 
-    /// New value from a number of nano tokens.
-    pub const fn from(value: u64) -> Self {
+    /// New value from an amount
+    pub fn from_atto(value: Amount) -> Self {
         Self(value)
     }
 
-    /// Total NanoTokens expressed in number of nano tokens.
-    pub const fn as_nano(self) -> u64 {
+    /// New value from a number of atto tokens.
+    pub fn from_u64(value: u64) -> Self {
+        Self(Amount::from(value))
+    }
+
+    /// New value from a number of atto tokens.
+    pub fn from_u128(value: u128) -> Self {
+        Self(Amount::from(value))
+    }
+
+    /// Total AttoTokens expressed in number of nano tokens.
+    pub fn as_atto(self) -> Amount {
         self.0
     }
 
     /// Computes `self + rhs`, returning `None` if overflow occurred.
-    pub fn checked_add(self, rhs: NanoTokens) -> Option<NanoTokens> {
-        self.0.checked_add(rhs.0).map(Self::from)
+    pub fn checked_add(self, rhs: AttoTokens) -> Option<AttoTokens> {
+        self.0.checked_add(rhs.0).map(Self::from_atto)
     }
 
     /// Computes `self - rhs`, returning `None` if overflow occurred.
-    pub fn checked_sub(self, rhs: NanoTokens) -> Option<NanoTokens> {
-        self.0.checked_sub(rhs.0).map(Self::from)
+    pub fn checked_sub(self, rhs: AttoTokens) -> Option<AttoTokens> {
+        self.0.checked_sub(rhs.0).map(Self::from_atto)
     }
 
     /// Converts the Nanos into bytes
     pub fn to_bytes(&self) -> [u8; 8] {
-        self.0.to_ne_bytes()
+        self.0.to_be_bytes()
     }
 }
 
-impl From<u64> for NanoTokens {
+impl From<u64> for AttoTokens {
     fn from(value: u64) -> Self {
-        Self(value)
+        Self(Amount::from(value))
     }
 }
 
-impl FromStr for NanoTokens {
+impl FromStr for AttoTokens {
     type Err = TransferError;
 
     fn from_str(value_str: &str) -> Result<Self> {
@@ -75,13 +85,13 @@ impl FromStr for NanoTokens {
         let converted_units = {
             let units = itr
                 .next()
-                .and_then(|s| s.parse::<u64>().ok())
+                .and_then(|s| s.parse::<Amount>().ok())
                 .ok_or_else(|| {
-                    TransferError::FailedToParseNanoToken("Can't parse token units".to_string())
+                    TransferError::FailedToParseAttoToken("Can't parse token units".to_string())
                 })?;
 
             units
-                .checked_mul(TOKEN_TO_RAW_CONVERSION)
+                .checked_mul(Amount::from(TOKEN_TO_RAW_CONVERSION))
                 .ok_or(TransferError::ExcessiveNanoValue)?
         };
 
@@ -89,27 +99,27 @@ impl FromStr for NanoTokens {
             let remainder_str = itr.next().unwrap_or_default().trim_end_matches('0');
 
             if remainder_str.is_empty() {
-                0
+                Amount::ZERO
             } else {
-                let parsed_remainder = remainder_str.parse::<u64>().map_err(|_| {
-                    TransferError::FailedToParseNanoToken("Can't parse token remainder".to_string())
+                let parsed_remainder = remainder_str.parse::<Amount>().map_err(|_| {
+                    TransferError::FailedToParseAttoToken("Can't parse token remainder".to_string())
                 })?;
 
                 let remainder_conversion = TOKEN_TO_RAW_POWER_OF_10_CONVERSION
-                    .checked_sub(remainder_str.len() as u32)
+                    .checked_sub(remainder_str.len() as u64)
                     .ok_or(TransferError::LossOfNanoPrecision)?;
-                parsed_remainder * 10_u64.pow(remainder_conversion)
+                parsed_remainder * Amount::from(10).pow(Amount::from(remainder_conversion))
             }
         };
 
-        Ok(Self::from(converted_units + remainder))
+        Ok(Self(converted_units + remainder))
     }
 }
 
-impl Display for NanoTokens {
+impl Display for AttoTokens {
     fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
-        let unit = self.0 / TOKEN_TO_RAW_CONVERSION;
-        let remainder = self.0 % TOKEN_TO_RAW_CONVERSION;
+        let unit = self.0 / Amount::from(TOKEN_TO_RAW_CONVERSION);
+        let remainder = self.0 % Amount::from(TOKEN_TO_RAW_CONVERSION);
         write!(formatter, "{unit}.{remainder:09}")
     }
 }
@@ -120,91 +130,91 @@ mod tests {
 
     #[test]
     fn from_str() -> Result<()> {
-        assert_eq!(NanoTokens(0), NanoTokens::from_str("0")?);
-        assert_eq!(NanoTokens(0), NanoTokens::from_str("0.")?);
-        assert_eq!(NanoTokens(0), NanoTokens::from_str("0.0")?);
-        assert_eq!(NanoTokens(1), NanoTokens::from_str("0.000000001")?);
-        assert_eq!(NanoTokens(1_000_000_000), NanoTokens::from_str("1")?);
-        assert_eq!(NanoTokens(1_000_000_000), NanoTokens::from_str("1.")?);
-        assert_eq!(NanoTokens(1_000_000_000), NanoTokens::from_str("1.0")?);
+        assert_eq!(AttoTokens::from_u64(0), AttoTokens::from_str("0")?);
+        assert_eq!(AttoTokens::from_u64(0), AttoTokens::from_str("0.")?);
+        assert_eq!(AttoTokens::from_u64(0), AttoTokens::from_str("0.0")?);
+        assert_eq!(AttoTokens::from_u64(1), AttoTokens::from_str("0.000000000000000001")?);
+        assert_eq!(AttoTokens::from_u64(1_000_000_000_000_000_000), AttoTokens::from_str("1")?);
+        assert_eq!(AttoTokens::from_u64(1_000_000_000_000_000_000), AttoTokens::from_str("1.")?);
+        assert_eq!(AttoTokens::from_u64(1_000_000_000_000_000_000), AttoTokens::from_str("1.0")?);
         assert_eq!(
-            NanoTokens(1_000_000_001),
-            NanoTokens::from_str("1.000000001")?
+            AttoTokens::from_u64(1_000_000_000_000_000_001),
+            AttoTokens::from_str("1.000000000000000001")?
         );
-        assert_eq!(NanoTokens(1_100_000_000), NanoTokens::from_str("1.1")?);
+        assert_eq!(AttoTokens::from_u64(1_100_000_000), AttoTokens::from_str("1.1")?);
         assert_eq!(
-            NanoTokens(1_100_000_001),
-            NanoTokens::from_str("1.100000001")?
-        );
-        assert_eq!(
-            NanoTokens(4_294_967_295_000_000_000),
-            NanoTokens::from_str("4294967295")?
+            AttoTokens::from_u64(1_100_000_000_000_000_001),
+            AttoTokens::from_str("1.100000000000000001")?
         );
         assert_eq!(
-            NanoTokens(4_294_967_295_999_999_999),
-            NanoTokens::from_str("4294967295.999999999")?,
+            AttoTokens::from_u128(4_294_967_295_000_000_000_000_000_000u128),
+            AttoTokens::from_str("4294967295")?
         );
         assert_eq!(
-            NanoTokens(4_294_967_295_999_999_999),
-            NanoTokens::from_str("4294967295.9999999990000")?,
+            AttoTokens::from_u128(4_294_967_295_999_999_999_000_000_000_000_000u128),
+            AttoTokens::from_str("4294967295.999999999")?,
+        );
+        assert_eq!(
+            AttoTokens::from_u128(4_294_967_295_999_999_999_000_000_000_000_000u128),
+            AttoTokens::from_str("4294967295.9999999990000")?,
         );
 
         assert_eq!(
-            Err(TransferError::FailedToParseNanoToken(
+            Err(TransferError::FailedToParseAttoToken(
                 "Can't parse token units".to_string()
             )),
-            NanoTokens::from_str("a")
+            AttoTokens::from_str("a")
         );
         assert_eq!(
-            Err(TransferError::FailedToParseNanoToken(
+            Err(TransferError::FailedToParseAttoToken(
                 "Can't parse token remainder".to_string()
             )),
-            NanoTokens::from_str("0.a")
+            AttoTokens::from_str("0.a")
         );
         assert_eq!(
-            Err(TransferError::FailedToParseNanoToken(
+            Err(TransferError::FailedToParseAttoToken(
                 "Can't parse token remainder".to_string()
             )),
-            NanoTokens::from_str("0.0.0")
+            AttoTokens::from_str("0.0.0")
         );
         assert_eq!(
             Err(TransferError::LossOfNanoPrecision),
-            NanoTokens::from_str("0.0000000009")
+            AttoTokens::from_str("0.0000000009")
         );
         assert_eq!(
             Err(TransferError::ExcessiveNanoValue),
-            NanoTokens::from_str("18446744074")
+            AttoTokens::from_str("18446744074")
         );
         Ok(())
     }
 
     #[test]
     fn display() {
-        assert_eq!("0.000000000", format!("{}", NanoTokens(0)));
-        assert_eq!("0.000000001", format!("{}", NanoTokens(1)));
-        assert_eq!("0.000000010", format!("{}", NanoTokens(10)));
-        assert_eq!("1.000000000", format!("{}", NanoTokens(1_000_000_000)));
-        assert_eq!("1.000000001", format!("{}", NanoTokens(1_000_000_001)));
+        assert_eq!("0.000000000", format!("{}", AttoTokens::from_u64(0)));
+        assert_eq!("0.000000001", format!("{}", AttoTokens::from_u64(1)));
+        assert_eq!("0.000000010", format!("{}", AttoTokens::from_u64(10)));
+        assert_eq!("1.000000000", format!("{}", AttoTokens::from_u64(1_000_000_000_000_000_000)));
+        assert_eq!("1.000000001", format!("{}", AttoTokens::from_u64(1_000_000_000_000_000_001)));
         assert_eq!(
             "4294967295.000000000",
-            format!("{}", NanoTokens(4_294_967_295_000_000_000))
+            format!("{}", AttoTokens::from_u64(4_294_967_295_000_000_000))
         );
     }
 
     #[test]
     fn checked_add_sub() {
         assert_eq!(
-            Some(NanoTokens(3)),
-            NanoTokens(1).checked_add(NanoTokens(2))
+            Some(AttoTokens::from_u64(3)),
+            AttoTokens::from_u64(1).checked_add(AttoTokens::from_u64(2))
         );
-        assert_eq!(None, NanoTokens(u64::MAX).checked_add(NanoTokens(1)));
-        assert_eq!(None, NanoTokens(u64::MAX).checked_add(NanoTokens(u64::MAX)));
+        assert_eq!(None, AttoTokens::from_u64(u64::MAX).checked_add(AttoTokens::from_u64(1)));
+        assert_eq!(None, AttoTokens::from_u64(u64::MAX).checked_add(AttoTokens::from_u64(u64::MAX)));
 
         assert_eq!(
-            Some(NanoTokens(0)),
-            NanoTokens(u64::MAX).checked_sub(NanoTokens(u64::MAX))
+            Some(AttoTokens::from_u64(0)),
+            AttoTokens::from_u64(u64::MAX).checked_sub(AttoTokens::from_u64(u64::MAX))
         );
-        assert_eq!(None, NanoTokens(0).checked_sub(NanoTokens(u64::MAX)));
-        assert_eq!(None, NanoTokens(10).checked_sub(NanoTokens(11)));
+        assert_eq!(None, AttoTokens::from_u64(0).checked_sub(AttoTokens::from_u64(u64::MAX)));
+        assert_eq!(None, AttoTokens::from_u64(10).checked_sub(AttoTokens::from_u64(11)));
     }
 }

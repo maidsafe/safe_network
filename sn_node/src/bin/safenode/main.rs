@@ -35,6 +35,7 @@ use tokio::{
     time::sleep,
 };
 use tracing_appender::non_blocking::WorkerGuard;
+use const_hex::traits::FromHex;
 
 #[derive(Debug, Clone)]
 pub enum LogOutputDestArg {
@@ -190,7 +191,7 @@ fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
 
-    let rewards_address = RewardsAddress::new(opt.rewards_address.clone());
+    let rewards_address = RewardsAddress::from_hex(&opt.rewards_address)?;
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
 

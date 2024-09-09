@@ -7,13 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::spend_reason::SpendReason;
-use super::{Hash, NanoTokens, UniquePubkey};
+use super::{Hash, AttoTokens, UniquePubkey};
 use crate::{
     DerivationIndex, DerivedSecretKey, Result, Signature, SpendAddress, TransferError,
     NETWORK_ROYALTIES_PK,
 };
 
 use custom_debug::Debug;
+use evmlib::common::Amount;
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
@@ -54,7 +55,7 @@ impl SignedSpend {
     }
 
     /// Get Nano
-    pub fn amount(&self) -> NanoTokens {
+    pub fn amount(&self) -> AttoTokens {
         self.spend.amount()
     }
 
@@ -112,7 +113,7 @@ impl SignedSpend {
                 .push(s);
         }
 
-        let mut total_inputs: u64 = 0;
+        let mut total_inputs = Amount::ZERO;
         for (_, spends) in parents_by_key {
             // check for double spend parents
             if spends.len() > 1 {
@@ -124,7 +125,7 @@ impl SignedSpend {
             if let Some(parent) = spends.first() {
                 match parent.spend.get_output_amount(unique_key) {
                     Some(amount) => {
-                        total_inputs += amount.as_nano();
+                        total_inputs += amount.as_atto();
                     }
                     None => {
                         return Err(TransferError::InvalidParentSpend(format!(
@@ -136,7 +137,7 @@ impl SignedSpend {
             }
         }
 
-        let total_outputs = self.amount().as_nano();
+        let total_outputs = self.amount().as_atto();
         if total_outputs != total_inputs {
             return Err(TransferError::InvalidParentSpend(format!(
                 "Parents total input value {total_inputs:?} doesn't match Spend's value {total_outputs:?}"
@@ -168,7 +169,7 @@ impl SignedSpend {
             unique_pubkey,
             reason,
             ancestors: BTreeSet::from_iter(vec![ancestor]),
-            descendants: BTreeMap::from_iter(vec![(output, (NanoTokens::from(value)))]),
+            descendants: BTreeMap::from_iter(vec![(output, (AttoTokens::from_u64(value)))]),
             royalties: vec![],
         };
         let derived_key_sig = derived_sk.sign(&spend.to_bytes_for_signing());
@@ -211,7 +212,7 @@ pub struct Spend {
     /// parent spends of this spend
     pub ancestors: BTreeSet<UniquePubkey>,
     /// spends we are parents of along with the amount we commited to give them
-    pub descendants: BTreeMap<UniquePubkey, NanoTokens>,
+    pub descendants: BTreeMap<UniquePubkey, AttoTokens>,
     /// royalties outputs' derivation indexes
     pub royalties: Vec<DerivationIndex>,
 }
@@ -251,17 +252,17 @@ impl Spend {
     }
 
     /// Returns the amount to be spent in this Spend
-    pub fn amount(&self) -> NanoTokens {
-        let amount: u64 = self
+    pub fn amount(&self) -> AttoTokens {
+        let amount: Amount = self
             .descendants
             .values()
-            .map(|amount| amount.as_nano())
+            .map(|amount| amount.as_atto())
             .sum();
-        NanoTokens::from(amount)
+        AttoTokens::from_atto(amount)
     }
 
     /// Returns the royalties descendants of this Spend
-    pub fn network_royalties(&self) -> BTreeSet<(UniquePubkey, NanoTokens, DerivationIndex)> {
+    pub fn network_royalties(&self) -> BTreeSet<(UniquePubkey, AttoTokens, DerivationIndex)> {
         let roy_pks: BTreeMap<UniquePubkey, DerivationIndex> = self
             .royalties
             .iter()
@@ -275,7 +276,7 @@ impl Spend {
 
     /// Returns the amount of a particual output target.
     /// None if the target is not one of the outputs
-    pub fn get_output_amount(&self, target: &UniquePubkey) -> Option<NanoTokens> {
+    pub fn get_output_amount(&self, target: &UniquePubkey) -> Option<AttoTokens> {
         self.descendants.get(target).copied()
     }
 }

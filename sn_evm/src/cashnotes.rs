@@ -17,13 +17,15 @@ mod unique_keys;
 pub use address::SpendAddress;
 pub use cashnote::CashNote;
 pub use hash::Hash;
-pub use nano::NanoTokens;
+pub use nano::{AttoTokens, Amount};
 pub use signed_spend::{SignedSpend, Spend};
 pub use spend_reason::SpendReason;
 pub use unique_keys::{DerivationIndex, DerivedSecretKey, MainPubkey, MainSecretKey, UniquePubkey};
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use evmlib::common::Amount;
+
     use super::*;
     use crate::TransferError;
 
@@ -35,7 +37,7 @@ pub(crate) mod tests {
         output: UniquePubkey,
     ) -> BTreeSet<SignedSpend> {
         let mut descendants = BTreeMap::new();
-        let _ = descendants.insert(output, NanoTokens::from(amount));
+        let _ = descendants.insert(output, AttoTokens::from_u64(amount));
         let spend = Spend {
             unique_pubkey: derived_sk.unique_pubkey(),
             reason: SpendReason::default(),
@@ -76,7 +78,7 @@ pub(crate) mod tests {
         let hex = cashnote.to_hex()?;
 
         let cashnote = CashNote::from_hex(&hex)?;
-        assert_eq!(cashnote.value().as_nano(), 1_530_000_000);
+        assert_eq!(cashnote.value().as_atto(), Amount::from(1_530_000_000));
 
         Ok(())
     }

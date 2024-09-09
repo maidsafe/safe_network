@@ -71,16 +71,17 @@ pub use self::{
     wallet_file::wallet_lockfile_name,
     watch_only::WatchOnlyWallet,
 };
+use evmlib::common::Amount;
 pub(crate) use keys::store_new_keypair;
 
-use crate::{NanoTokens, UniquePubkey};
+use crate::{AttoTokens, UniquePubkey};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fs, path::Path};
 use wallet_file::wallet_file_name;
 
 #[derive(Default, Serialize, Deserialize)]
 pub(super) struct KeyLessWallet {
-    available_cash_notes: BTreeMap<UniquePubkey, NanoTokens>,
+    available_cash_notes: BTreeMap<UniquePubkey, AttoTokens>,
 }
 
 impl KeyLessWallet {
@@ -128,11 +129,11 @@ impl KeyLessWallet {
         Ok(wallet)
     }
 
-    pub fn balance(&self) -> NanoTokens {
-        let mut balance = 0;
+    pub fn balance(&self) -> AttoTokens {
+        let mut balance = Amount::ZERO;
         for (_unique_pubkey, value) in self.available_cash_notes.iter() {
-            balance += value.as_nano();
+            balance += value.as_atto();
         }
-        NanoTokens::from(balance)
+        AttoTokens::from_atto(balance)
     }
 }

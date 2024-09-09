@@ -10,7 +10,7 @@ use super::wallet::HotWallet;
 
 use crate::{
     wallet::Result as WalletResult, CashNote, DerivationIndex, MainPubkey, MainSecretKey,
-    NanoTokens, SignedSpend, Spend, SpendReason, TransferError, UniquePubkey,
+    AttoTokens, SignedSpend, Spend, SpendReason, TransferError, UniquePubkey,
 };
 
 use bls::SecretKey;
@@ -42,10 +42,10 @@ const DEFAULT_LIVE_GENESIS_PK: &str = "9934c21469a68415e6b06a435709e16bff6e92bf3
 
 /// Based on the given store cost, it calculates what's the expected amount to be paid as network royalties.
 /// Network royalties fee is expected to be 15% of the payment amount, i.e. 85% of store cost + 15% royalties fees.
-pub fn calculate_royalties_fee(store_cost: NanoTokens) -> NanoTokens {
-    let fees_amount = (store_cost.as_nano() as f64 * 0.15) / 0.85;
+pub fn calculate_royalties_fee(store_cost: AttoTokens) -> AttoTokens {
+    let fees_amount = (f64::from(store_cost.as_atto()) * 0.15) / 0.85;
     // we round down the calculated amount
-    NanoTokens::from(fees_amount as u64)
+    AttoTokens::from_u64(fees_amount as u64)
 }
 
 /// A specialised `Result` type for genesis crate.
@@ -140,7 +140,7 @@ pub fn is_genesis_spend(spend: &SignedSpend) -> bool {
     let bytes = spend.spend.to_bytes_for_signing();
     spend.spend.unique_pubkey == *GENESIS_SPEND_UNIQUE_KEY
         && GENESIS_SPEND_UNIQUE_KEY.verify(&spend.derived_key_sig, bytes)
-        && spend.spend.amount() == NanoTokens::from(GENESIS_CASHNOTE_AMOUNT)
+        && spend.spend.amount() == AttoTokens::from_u64(GENESIS_CASHNOTE_AMOUNT)
 }
 
 pub fn load_genesis_wallet() -> Result<HotWallet, Error> {
@@ -198,7 +198,7 @@ pub fn create_first_cash_note_from_key(
     let input_sk = first_cash_note_key.derive_key(&GENESIS_INPUT_DERIVATION_INDEX);
     let input_pk = input_sk.unique_pubkey();
     let output_pk = main_pubkey.new_unique_pubkey(&GENESIS_OUTPUT_DERIVATION_INDEX);
-    let amount = NanoTokens::from(GENESIS_CASHNOTE_AMOUNT);
+    let amount = AttoTokens::from_u64(GENESIS_CASHNOTE_AMOUNT);
 
     let pre_genesis_spend = Spend {
         unique_pubkey: input_pk,

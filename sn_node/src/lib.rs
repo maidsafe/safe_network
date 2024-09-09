@@ -46,7 +46,6 @@ pub use self::{
 use crate::error::{Error, Result};
 
 use libp2p::PeerId;
-use sn_evm::NanoTokens;
 use sn_networking::{Network, SwarmLocalState};
 use sn_protocol::{get_port_from_multiaddr, NetworkAddress};
 use std::{
@@ -78,12 +77,6 @@ impl RunningNode {
     #[allow(rustdoc::invalid_html_tags)]
     pub fn root_dir_path(&self) -> PathBuf {
         self.network.root_dir_path().clone()
-    }
-
-    /// Returns the earnings this node has accrued so far
-    pub fn get_node_earnings(&self) -> Result<NanoTokens> {
-        // NB TODO fix this! might be good to use node metrics here!
-        Ok(NanoTokens::from(0))
     }
 
     /// Returns a `SwarmLocalState` with some information obtained from swarm's local state.

@@ -30,7 +30,7 @@ use prometheus_client::metrics::gauge::Gauge;
 use rand::RngCore;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-use sn_evm::{NanoTokens, QuotingMetrics, TOTAL_SUPPLY};
+use sn_evm::{AttoTokens, QuotingMetrics, TOTAL_SUPPLY};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
@@ -647,7 +647,7 @@ impl NodeRecordStore {
 
     /// Calculate the cost to store data for our current store state
     #[allow(clippy::mutable_key_type)]
-    pub(crate) fn store_cost(&self, key: &Key) -> (NanoTokens, QuotingMetrics) {
+    pub(crate) fn store_cost(&self, key: &Key) -> (AttoTokens, QuotingMetrics) {
         let records_stored = self.records.len();
         let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
 
@@ -681,7 +681,7 @@ impl NodeRecordStore {
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
 
-        (NanoTokens::from(cost), quoting_metrics)
+        (AttoTokens::from_u64(cost), quoting_metrics)
     }
 
     /// Notify the node received a payment.

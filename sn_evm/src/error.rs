@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{NanoTokens, UniquePubkey};
+use crate::{AttoTokens, UniquePubkey};
 use thiserror::Error;
 
 /// Specialisation of `std::Result`.
@@ -22,7 +22,7 @@ pub enum TransferError {
     #[error("The token amount would exceed the maximum value (u64::MAX).")]
     ExcessiveNanoValue,
     #[error("Failed to parse: {0}")]
-    FailedToParseNanoToken(String),
+    FailedToParseAttoToken(String),
     #[error("Invalid Spend: value was tampered with {0:?}")]
     InvalidSpendValue(UniquePubkey),
     #[error("Invalid parent spend: {0}")]
@@ -46,7 +46,7 @@ pub enum TransferError {
     #[error("Overflow occurred while adding values")]
     NumericOverflow,
     #[error("Not enough balance, {0} available, {1} required")]
-    NotEnoughBalance(NanoTokens, NanoTokens),
+    NotEnoughBalance(AttoTokens, AttoTokens),
 
     #[error("CashNoteRedemption serialisation failed")]
     CashNoteRedemptionSerialisationFailed,

@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
+use crate::{node::Node, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
-use sn_evm::{calculate_royalties_fee, ProofOfPayment, SignedSpend, TransferError, UniquePubkey};
+use sn_evm::{ProofOfPayment, SignedSpend, TransferError, UniquePubkey};
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     storage::{
@@ -465,9 +465,15 @@ impl Node {
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
         debug!("Validating record payment for {pretty_key}");
 
-        // NB TODO verify payment on blockchain + royalties
-        println!("TODO VERIFY PAYMENT HERE: {payment:?}");
-        let received_fee = payment.quote.cost; // NB TODO set this to the actual fee received
+        // check if the quote is valid
+        let storecost = payment.quote.cost;
+        debug!("Payment quote is valid for record {pretty_key}");
+
+        debug!("Verifying payment for record {pretty_key}");
+        // check if payment is valid on chain
+        self.evm_network().verify_chunk_payment(payment.tx_hash, payment.quote.hash(), *self.reward_address(), storecost.as_atto()).await
+            .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
+        debug!("Payment is valid for record {pretty_key}");
 
         // Notify `record_store` that the node received a payment.
         self.network().notify_payment_received();
@@ -476,32 +482,12 @@ impl Node {
         if let Some(node_metrics) = self.node_metrics() {
             let _prev = node_metrics
                 .current_rewards_collected
-                .inc_by(received_fee.as_nano() as i64);
+                .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX));// TODO maybe metrics should be in u256 too?
         }
 
-        // check if the quote is valid
-        let storecost = payment.quote.cost;
-        verify_quote_for_storecost(self.network(), payment.quote, address)?;
-        debug!("Payment quote valid for record {pretty_key}");
-
-        // Let's check payment is sufficient both for our store cost and for network royalties
-        // Since the storage payment is made to a single node, we can calculate the royalties fee based on that single payment.
-        let expected_royalties_fee = calculate_royalties_fee(storecost);
-        let expected_fee = storecost
-            .checked_add(expected_royalties_fee)
-            .ok_or(Error::NumericOverflow)?;
-
-        // finally, (after we accept any payments to us as they are ours now anyway)
-        // lets check they actually paid enough
-        if received_fee < expected_fee {
-            debug!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {expected_fee:?}");
-            return Err(Error::PaymentProofInsufficientAmount {
-                paid: received_fee,
-                expected: expected_fee,
-            });
-        }
+        // NB TODO: tell happybeing about the AttoToken change
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");
+        info!("Total payment of {storecost:?} nanos accepted for record {pretty_key}");
 
         Ok(())
     }

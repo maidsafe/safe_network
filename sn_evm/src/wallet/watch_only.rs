@@ -18,7 +18,7 @@ use super::{
     KeyLessWallet,
 };
 use crate::{
-    evm::ProofOfPayment, CashNote, DerivationIndex, MainPubkey, NanoTokens, SpendReason,
+    evm::ProofOfPayment, CashNote, DerivationIndex, MainPubkey, AttoTokens, SpendReason,
     UniquePubkey, UnsignedTransaction,
 };
 #[cfg(not(target_arch = "wasm32"))]
@@ -114,7 +114,7 @@ impl WatchOnlyWallet {
         self.main_pubkey
     }
 
-    pub fn balance(&self) -> NanoTokens {
+    pub fn balance(&self) -> AttoTokens {
         self.keyless_wallet.balance()
     }
 
@@ -194,7 +194,7 @@ impl WatchOnlyWallet {
     }
 
     /// Return UniquePubkeys of cash_notes we own that are not yet spent.
-    pub fn available_cash_notes(&self) -> &BTreeMap<UniquePubkey, NanoTokens> {
+    pub fn available_cash_notes(&self) -> &BTreeMap<UniquePubkey, AttoTokens> {
         &self.keyless_wallet.available_cash_notes
     }
 
@@ -210,7 +210,7 @@ impl WatchOnlyWallet {
 
     pub fn build_unsigned_transaction(
         &mut self,
-        to: Vec<(NanoTokens, MainPubkey)>,
+        to: Vec<(AttoTokens, MainPubkey)>,
         reason_hash: Option<SpendReason>,
     ) -> Result<UnsignedTransaction> {
         let mut rng = &mut rand::rngs::OsRng;
@@ -332,9 +332,10 @@ mod tests {
     use crate::{
         genesis::{create_first_cash_note_from_key, GENESIS_CASHNOTE_AMOUNT},
         wallet::KeyLessWallet,
-        MainSecretKey, NanoTokens,
+        MainSecretKey, AttoTokens,
     };
     use assert_fs::TempDir;
+    use evmlib::common::Amount;
     use eyre::Result;
 
     #[test]
@@ -346,7 +347,7 @@ mod tests {
 
         assert_eq!(wallet_dir.path(), wallet.wallet_dir());
         assert_eq!(main_pubkey, wallet.address());
-        assert_eq!(NanoTokens::zero(), wallet.balance());
+        assert_eq!(AttoTokens::zero(), wallet.balance());
         assert!(wallet.available_cash_notes().is_empty());
 
         Ok(())
@@ -367,8 +368,8 @@ mod tests {
         assert_eq!(deserialised.wallet_dir(), wallet.wallet_dir());
         assert_eq!(deserialised.address(), wallet.address());
 
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, deserialised.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), wallet.balance().as_atto());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), deserialised.balance().as_atto());
 
         assert_eq!(1, wallet.available_cash_notes().len());
         assert_eq!(1, deserialised.available_cash_notes().len());
@@ -390,16 +391,16 @@ mod tests {
         // depositing owned cash note shall be deposited and increase the balance
         let owned_cash_note = create_first_cash_note_from_key(&main_sk)?;
         wallet.deposit(&vec![owned_cash_note.clone()])?;
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), wallet.balance().as_atto());
 
         // depositing non-owned cash note shall be dropped and not change the balance
         let non_owned_cash_note = create_first_cash_note_from_key(&MainSecretKey::random())?;
         wallet.deposit(&vec![non_owned_cash_note])?;
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), wallet.balance().as_atto());
 
         // depositing is idempotent
         wallet.deposit(&vec![owned_cash_note])?;
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), wallet.balance().as_atto());
 
         Ok(())
     }
@@ -413,15 +414,15 @@ mod tests {
 
         let cash_note = create_first_cash_note_from_key(&main_sk)?;
         wallet.deposit(&vec![cash_note.clone()])?;
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), wallet.balance().as_atto());
 
         wallet.reload()?;
-        assert_eq!(NanoTokens::zero(), wallet.balance());
+        assert_eq!(AttoTokens::zero(), wallet.balance());
 
         wallet.deposit_and_store_to_disk(&vec![cash_note])?;
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), wallet.balance().as_atto());
         wallet.reload()?;
-        assert_eq!(GENESIS_CASHNOTE_AMOUNT, wallet.balance().as_nano());
+        assert_eq!(Amount::from(GENESIS_CASHNOTE_AMOUNT), wallet.balance().as_atto());
 
         Ok(())
     }

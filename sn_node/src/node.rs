@@ -19,7 +19,7 @@ use prometheus_client::metrics::info::Info;
 #[cfg(feature = "open-metrics")]
 use prometheus_client::registry::Registry;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
-use sn_evm::{NanoTokens, RewardsAddress};
+use sn_evm::{AttoTokens, RewardsAddress};
 use sn_networking::{
     close_group_majority, Instant, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
     SwarmDriver,
@@ -42,6 +42,8 @@ use tokio::{
     sync::mpsc::Receiver,
     task::{spawn, JoinHandle},
 };
+
+use sn_evm::EvmNetwork;
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any node will be half this
@@ -165,6 +167,9 @@ impl NodeBuilder {
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
+        
+        // TODO: make this configurable by users
+        let evm_network = EvmNetwork::ArbitrumOne;
 
         let node = NodeInner {
             network: network.clone(),
@@ -173,6 +178,7 @@ impl NodeBuilder {
             reward_address: self.evm_address,
             #[cfg(feature = "open-metrics")]
             node_metrics,
+            evm_network,
         };
         let node = Node {
             inner: Arc::new(node),
@@ -207,6 +213,7 @@ struct NodeInner {
     #[cfg(feature = "open-metrics")]
     node_metrics: Option<NodeMetricsRecorder>,
     reward_address: RewardsAddress,
+    evm_network: EvmNetwork,
 }
 
 impl Node {
@@ -234,6 +241,10 @@ impl Node {
     /// Returns the reward address of the node
     pub(crate) fn reward_address(&self) -> &RewardsAddress {
         &self.inner.reward_address
+    }
+
+    pub(crate) fn evm_network(&self) -> &EvmNetwork {
+        &self.inner.evm_network
     }
 
     /// Runs the provided `SwarmDriver` and spawns a task to process for `NetworkEvents`
@@ -432,7 +443,7 @@ impl Node {
             NetworkEvent::QueryRequestReceived { query, channel } => {
                 event_header = "QueryRequestReceived";
                 let network = self.network().clone();
-                let payment_address = self.reward_address().clone();
+                let payment_address = *self.reward_address();
 
                 let _handle = spawn(async move {
                     let res = Self::handle_query(&network, query, payment_address).await;
@@ -608,7 +619,7 @@ impl Node {
 
                 match store_cost {
                     Ok((cost, quoting_metrics)) => {
-                        if cost == NanoTokens::zero() {
+                        if cost == AttoTokens::zero() {
                             QueryResponse::GetStoreCost {
                                 quote: Err(ProtocolError::RecordExists(
                                     PrettyPrintRecordKey::from(&record_key).into_owned(),

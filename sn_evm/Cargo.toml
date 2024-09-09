@@ -18,6 +18,7 @@ bls = { package = "blsttc", version = "8.0.1" }
 chrono = "0.4.38"
 custom_debug = "~0.6.1"
 dirs-next = "~2.0.0"
+evmlib = { path = "../evmlib" }
 hex = "~0.4.3"
 lazy_static = "~1.4.0"
 libp2p = { version = "0.53", features = ["identify", "kad"] }

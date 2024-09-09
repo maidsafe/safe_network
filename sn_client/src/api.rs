@@ -19,7 +19,7 @@ use libp2p::{
 };
 use rand::{thread_rng, Rng};
 use sn_evm::{
-    CashNote, CashNoteRedemption, MainPubkey, NanoTokens, ProofOfPayment, SignedSpend,
+    CashNote, CashNoteRedemption, MainPubkey, AttoTokens, ProofOfPayment, SignedSpend,
     TransferError, GENESIS_SPEND_UNIQUE_KEY,
 };
 use sn_networking::{
@@ -530,7 +530,7 @@ impl Client {
         wallet_client: &mut WalletClient,
         verify_store: bool,
         perms: Permissions,
-    ) -> Result<(ClientRegister, NanoTokens, NanoTokens)> {
+    ) -> Result<(ClientRegister, AttoTokens, AttoTokens)> {
         info!("Instantiating a new Register replica with address {address:?}");
         let (reg, mut total_cost, mut total_royalties) = ClientRegister::create_online(
             self.clone(),

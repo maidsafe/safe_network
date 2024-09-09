@@ -18,7 +18,7 @@ use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, FilesApi, FilesDownload, Uploader, WalletClient};
 use sn_evm::HotWallet;
-use sn_evm::{CashNote, MainSecretKey, NanoTokens};
+use sn_evm::{CashNote, MainSecretKey, AttoTokens};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},
@@ -309,7 +309,7 @@ fn create_cash_note_task(
 
             let dest_pk = MainSecretKey::random().main_pubkey();
             let cash_note = wallet_client
-                .send_cash_note(NanoTokens::from(10), dest_pk, true)
+                .send_cash_note(AttoTokens::from_u64(10), dest_pk, true)
                 .await
                 .unwrap_or_else(|_| panic!("Failed to send CashNote to {dest_pk:?}"));
 
