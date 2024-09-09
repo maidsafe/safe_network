@@ -156,9 +156,6 @@ pub enum NetworkError {
     #[error("Could not get enough peers ({required}) to satisfy the request, found {found}")]
     NotEnoughPeers { found: usize, required: usize },
 
-    #[error("Close group size must be a non-zero usize")]
-    InvalidCloseGroupSize,
-
     #[error("Node Listen Address was not provided during construction")]
     ListenAddressNotProvided,
 

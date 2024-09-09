@@ -42,6 +42,7 @@ use crate::error::{Error, Result};
 use colored::Colorize;
 use semver::Version;
 use sn_evm::HotWallet;
+use sn_service_management::rpc::RpcActions;
 use sn_service_management::{
     control::ServiceControl, error::Error as ServiceError, rpc::RpcClient, NodeRegistry,
     NodeService, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
@@ -376,8 +377,16 @@ pub async fn status_report(
     detailed_view: bool,
     output_json: bool,
     fail: bool,
+    is_local_network: bool,
 ) -> Result<()> {
-    refresh_node_registry(node_registry, service_control, !output_json, true).await?;
+    refresh_node_registry(
+        node_registry,
+        service_control,
+        !output_json,
+        true,
+        is_local_network,
+    )
+    .await?;
 
     if output_json {
         let json = serde_json::to_string_pretty(&node_registry.to_status_summary())?;
@@ -516,18 +525,23 @@ pub async fn status_report(
 
 /// Refreshes the status of the node registry's services.
 ///
-/// At a minimum, the refresh determines if each service is running. It does that by trying to find
-/// a process whose binary path matches the path of the binary for the service. Since each service
-/// uses its own binary, the path is a unique identifer. So you can know if any *particular*
-/// service is running or not.
+/// The mechanism is different, depending on whether it's a service-based network or a local
+/// network.
 ///
-/// A full refresh uses the RPC client to connect to the node's RPC service to determine things
-/// like the number of connected peers.
+/// For a service-based network, at a minimum, the refresh determines if each service is running.
+/// It does that by trying to find a process whose binary path matches the path of the binary for
+/// the service. Since each service uses its own binary, the path is a unique identifer. So you can
+/// know if any *particular* service is running or not. A full refresh uses the RPC client to
+/// connect to the node's RPC service to determine things like the number of connected peers.
+///
+/// For a local network, the node paths are not unique, so we can't use that. We consider the node
+/// running if we can connect to its RPC service; otherwise it is considered stopped.
 pub async fn refresh_node_registry(
     node_registry: &mut NodeRegistry,
     service_control: &dyn ServiceControl,
     print_refresh_message: bool,
     full_refresh: bool,
+    is_local_network: bool,
 ) -> Result<()> {
     // This message is useful for users, but needs to be suppressed when a JSON output is
     // requested.
@@ -553,37 +567,62 @@ pub async fn refresh_node_registry(
 
         let mut rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         rpc_client.set_max_attempts(1);
-        let mut service = NodeService::new(node, Box::new(rpc_client));
-        match service_control.get_process_pid(&service.bin_path()) {
-            Ok(pid) => {
-                debug!(
-                    "{} is running with PID {pid}",
-                    service.service_data.service_name
-                );
-                service.on_start(Some(pid), full_refresh).await?;
+        let mut service = NodeService::new(node, Box::new(rpc_client.clone()));
+
+        if is_local_network {
+            // For a local network, retrieving the process by its path does not work, because the
+            // paths are not unique: they are all launched from the same binary. Instead we will
+            // just determine whether the node is running by connecting to its RPC service. We
+            // only need to distinguish between `RUNNING` and `STOPPED` for a local network.
+            match rpc_client.node_info().await {
+                Ok(info) => {
+                    let pid = info.pid;
+                    debug!(
+                        "local node {} is running with PID {pid}",
+                        service.service_data.service_name
+                    );
+                    service.on_start(Some(pid), full_refresh).await?;
+                }
+                Err(_) => {
+                    debug!(
+                        "Failed to retrieve PID for local node {}",
+                        service.service_data.service_name
+                    );
+                    service.on_stop().await?;
+                }
             }
-            Err(_) => {
-                match service.status() {
-                    ServiceStatus::Added => {
-                        // If the service is still at `Added` status, there hasn't been an attempt
-                        // to start it since it was installed. It's useful to keep this status
-                        // rather than setting it to `STOPPED`, so that the user can differentiate.
-                        debug!(
-                            "{} has not been started since it was installed",
-                            service.service_data.service_name
-                        );
-                    }
-                    ServiceStatus::Removed => {
-                        // In the case of the service being removed, we want to retain that state
-                        // and not have it marked `STOPPED`.
-                        debug!("{} has been removed", service.service_data.service_name);
-                    }
-                    _ => {
-                        debug!(
-                            "Failed to retrieve PID for {}",
-                            service.service_data.service_name
-                        );
-                        service.on_stop().await?;
+        } else {
+            match service_control.get_process_pid(&service.bin_path()) {
+                Ok(pid) => {
+                    debug!(
+                        "{} is running with PID {pid}",
+                        service.service_data.service_name
+                    );
+                    service.on_start(Some(pid), full_refresh).await?;
+                }
+                Err(_) => {
+                    match service.status() {
+                        ServiceStatus::Added => {
+                            // If the service is still at `Added` status, there hasn't been an attempt
+                            // to start it since it was installed. It's useful to keep this status
+                            // rather than setting it to `STOPPED`, so that the user can differentiate.
+                            debug!(
+                                "{} has not been started since it was installed",
+                                service.service_data.service_name
+                            );
+                        }
+                        ServiceStatus::Removed => {
+                            // In the case of the service being removed, we want to retain that state
+                            // and not have it marked `STOPPED`.
+                            debug!("{} has been removed", service.service_data.service_name);
+                        }
+                        _ => {
+                            debug!(
+                                "Failed to retrieve PID for {}",
+                                service.service_data.service_name
+                            );
+                            service.on_stop().await?;
+                        }
                     }
                 }
             }

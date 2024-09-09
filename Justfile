@@ -373,10 +373,11 @@ package-arch arch:
   if [[ -n $PACKAGE_VERSION ]]; then
     version="$PACKAGE_VERSION"
   else
-    current_date=$(date +%Y.%m)
+    release_year=$(grep 'release-year:' release-cycle-info | awk '{print $2}')
+    release_month=$(grep 'release-month:' release-cycle-info | awk '{print $2}')
     release_cycle=$(grep 'release-cycle:' release-cycle-info | awk '{print $2}')
     release_cycle_counter=$(grep 'release-cycle-counter:' release-cycle-info | awk '{print $2}')
-    version="$current_date.$release_cycle.$release_cycle_counter"
+    version="$release_year.$release_month.$release_cycle.$release_cycle_counter"
   fi
   architecture="{{arch}}"
   zip_filename="${version}.autonomi.${architecture}.zip"

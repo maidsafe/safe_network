@@ -54,7 +54,7 @@ impl ChangeDrivePopup {
     pub fn new(storage_mountpoint: PathBuf) -> Result<Self> {
         let drives_and_space = system::get_list_of_available_drives_and_available_space()?;
 
-        let mut selected_drive: DriveItem = DriveItem::default();
+        let mut selected_connection_mode: DriveItem = DriveItem::default();
         // Create a vector of DriveItem from drives_and_space
         let drives_items: Vec<DriveItem> = drives_and_space
             .iter()
@@ -66,7 +66,7 @@ impl ChangeDrivePopup {
                     mountpoint: mountpoint.clone(),
                     size: size_str,
                     status: if mountpoint == &storage_mountpoint {
-                        selected_drive = DriveItem {
+                        selected_connection_mode = DriveItem {
                             name: drive_name.to_string(),
                             mountpoint: mountpoint.clone(),
                             size: size_str_cloned,
@@ -89,8 +89,8 @@ impl ChangeDrivePopup {
             active: false,
             state: ChangeDriveState::Selection,
             items,
-            drive_selection: selected_drive.clone(),
-            drive_selection_initial_state: selected_drive.clone(),
+            drive_selection: selected_connection_mode.clone(),
+            drive_selection_initial_state: selected_connection_mode.clone(),
             can_select: false,
         })
     }

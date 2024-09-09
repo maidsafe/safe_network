@@ -30,9 +30,9 @@ use warp::{
 #[cfg(feature = "initial-data")]
 use crate::gutenberger::{download_book, State};
 #[cfg(feature = "initial-data")]
-use autonomi::FilesUploader;
-#[cfg(feature = "initial-data")]
 use reqwest::Client as ReqwestClient;
+#[cfg(feature = "initial-data")]
+use sn_cli::FilesUploader;
 #[cfg(feature = "initial-data")]
 use sn_client::{UploadCfg, BATCH_SIZE};
 #[cfg(feature = "initial-data")]
@@ -63,11 +63,10 @@ use tokio::{fs, io::AsyncWriteExt};
 pub async fn run_faucet_server(client: &Client) -> Result<()> {
     let root_dir = get_faucet_data_dir();
     let wallet = load_account_wallet_or_create_with_mnemonic(&root_dir, None)?;
-    claim_genesis(client, wallet).await.map_err(|err| {
+    claim_genesis(client, wallet).await.inspect_err(|_err| {
         println!("Faucet Server couldn't start as we failed to claim Genesis");
         eprintln!("Faucet Server couldn't start as we failed to claim Genesis");
         error!("Faucet Server couldn't start as we failed to claim Genesis");
-        err
     })?;
 
     #[cfg(feature = "initial-data")]

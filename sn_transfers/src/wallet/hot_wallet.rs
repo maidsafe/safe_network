@@ -16,7 +16,7 @@ use super::{
         store_created_cash_notes, store_unconfirmed_spend_requests,
     },
     watch_only::WatchOnlyWallet,
-    Error, Result,
+    Error, KeyLessWallet, Result,
 };
 use crate::wallet::authentication::AuthenticationManager;
 use crate::wallet::encryption::EncryptedSecretKey;
@@ -56,7 +56,18 @@ pub struct HotWallet {
 }
 
 impl HotWallet {
-    #[cfg(feature = "test-utils")]
+    pub fn new(key: MainSecretKey, wallet_dir: PathBuf) -> Self {
+        let watchonly_wallet =
+            WatchOnlyWallet::new(key.main_pubkey(), &wallet_dir, KeyLessWallet::default());
+
+        Self {
+            key,
+            watchonly_wallet,
+            unconfirmed_spend_requests: Default::default(),
+            authentication_manager: AuthenticationManager::new(wallet_dir),
+        }
+    }
+
     pub fn key(&self) -> &MainSecretKey {
         &self.key
     }
@@ -67,6 +78,14 @@ impl HotWallet {
 
     pub fn root_dir(&self) -> &Path {
         self.watchonly_wallet.api().wallet_dir()
+    }
+
+    pub fn wo_wallet(&self) -> &WatchOnlyWallet {
+        &self.watchonly_wallet
+    }
+
+    pub fn wo_wallet_mut(&mut self) -> &mut WatchOnlyWallet {
+        &mut self.watchonly_wallet
     }
 
     /// Returns whether a wallet in the specified directory is encrypted or not.
@@ -274,6 +293,10 @@ impl HotWallet {
 
     pub fn unconfirmed_spend_requests(&self) -> &BTreeSet<SignedSpend> {
         &self.unconfirmed_spend_requests
+    }
+
+    pub fn unconfirmed_spend_requests_mut(&mut self) -> &mut BTreeSet<SignedSpend> {
+        &mut self.unconfirmed_spend_requests
     }
 
     /// Moves all files for the current wallet, including keys and cashnotes

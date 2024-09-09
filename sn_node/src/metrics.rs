@@ -15,7 +15,7 @@ use prometheus_client::{
         gauge::Gauge,
         histogram::{exponential_buckets, Histogram},
     },
-    registry::{Registry, Unit},
+    registry::Registry,
 };
 use sn_networking::Instant;
 
@@ -34,8 +34,9 @@ pub(crate) struct NodeMetricsRecorder {
     peer_added_to_routing_table: Counter,
     peer_removed_from_routing_table: Counter,
 
-    // rewards
-    pub(crate) current_rewards_collected: Gauge,
+    // wallet
+    pub(crate) current_reward_wallet_balance: Gauge,
+    pub(crate) total_forwarded_rewards: Gauge,
 
     // to track the uptime of the node.
     pub(crate) started_instant: Instant,
@@ -100,19 +101,24 @@ impl NodeMetricsRecorder {
             peer_removed_from_routing_table.clone(),
         );
 
-        let current_rewards_collected = Gauge::default();
-        sub_registry.register_with_unit(
+        let current_reward_wallet_balance = Gauge::default();
+        sub_registry.register(
             "current_reward_wallet_balance",
             "The number of Nanos in the node reward wallet",
-            Unit::Other("Nano".to_string()),
-            current_rewards_collected.clone(),
+            current_reward_wallet_balance.clone(),
+        );
+
+        let total_forwarded_rewards = Gauge::default();
+        sub_registry.register(
+            "total_forwarded_rewards",
+            "The cumulative number of Nanos forwarded by the node",
+            total_forwarded_rewards.clone(),
         );
 
         let uptime = Gauge::default();
-        sub_registry.register_with_unit(
+        sub_registry.register(
             "uptime",
             "The uptime of the node in seconds",
-            Unit::Seconds,
             uptime.clone(),
         );
 
@@ -123,7 +129,8 @@ impl NodeMetricsRecorder {
             replication_keys_to_fetch,
             peer_added_to_routing_table,
             peer_removed_from_routing_table,
-            current_rewards_collected,
+            current_reward_wallet_balance,
+            total_forwarded_rewards,
             started_instant: Instant::now(),
             uptime,
         }

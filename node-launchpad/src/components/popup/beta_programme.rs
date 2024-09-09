@@ -11,13 +11,16 @@ use super::super::Component;
 use crate::{
     action::{Action, OptionsActions},
     mode::{InputMode, Scene},
-    style::{clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
+    style::{clear_area, EUCALYPTUS, GHOST_WHITE, INDIGO, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
     widgets::hyperlink::Hyperlink,
 };
 use color_eyre::Result;
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 use tui_input::{backend::crossterm::EventHandler, Input};
+
+const INPUT_SIZE_USERNAME: u16 = 32; // as per discord docs
+const INPUT_AREA_USERNAME: u16 = INPUT_SIZE_USERNAME + 2; // +2 for the padding
 
 pub struct BetaProgramme {
     /// Whether the component is active right now, capturing keystrokes + draw things.
@@ -199,9 +202,9 @@ impl Component for BetaProgramme {
                         // for the prompt text
                         Constraint::Length(3),
                         // for the input
-                        Constraint::Length(3),
+                        Constraint::Length(1),
                         // for the text
-                        Constraint::Length(4),
+                        Constraint::Length(6),
                         // gap
                         Constraint::Length(1),
                         // for the buttons
@@ -211,26 +214,24 @@ impl Component for BetaProgramme {
                 .split(layer_one[1]);
 
                 let prompt_text = Paragraph::new("Discord Username associated with this device:")
+                    .block(Block::default())
                     .alignment(Alignment::Center)
                     .fg(GHOST_WHITE);
 
                 f.render_widget(prompt_text, layer_two[0]);
 
-                let input = Paragraph::new(self.discord_input_filed.value())
-                    .alignment(Alignment::Center)
-                    .fg(VIVID_SKY_BLUE);
-                f.set_cursor(
-                    // Put cursor past the end of the input text
-                    layer_two[1].x
-                        + (layer_two[1].width / 2) as u16
-                        + (self.discord_input_filed.value().len() / 2) as u16
-                        + if self.discord_input_filed.value().len() % 2 != 0 {
-                            1
-                        } else {
-                            0
-                        },
-                    layer_two[1].y,
+                let spaces = " ".repeat(
+                    (INPUT_AREA_USERNAME - 1) as usize - self.discord_input_filed.value().len(),
                 );
+                let input = Paragraph::new(Span::styled(
+                    format!("{}{} ", spaces, self.discord_input_filed.value()),
+                    Style::default()
+                        .fg(VIVID_SKY_BLUE)
+                        .bg(INDIGO)
+                        .underlined()
+                        .underline_color(VIVID_SKY_BLUE),
+                ))
+                .alignment(Alignment::Center);
                 f.render_widget(input, layer_two[1]);
 
                 let text = Paragraph::new(Text::from(vec![
@@ -238,7 +239,11 @@ impl Component for BetaProgramme {
                     Line::raw("and any Nanos left on this device will be lost."),
                 ]))
                 .alignment(Alignment::Center)
-                .block(Block::default().padding(Padding::horizontal(2)));
+                .block(
+                    Block::default()
+                        .padding(Padding::horizontal(2))
+                        .padding(Padding::top(2)),
+                );
 
                 f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
 
@@ -276,7 +281,7 @@ impl Component for BetaProgramme {
                     Direction::Vertical,
                     [
                         // for the text
-                        Constraint::Length(6),
+                        Constraint::Length(7),
                         // for the hypertext
                         Constraint::Length(1),
                         // gap
@@ -287,8 +292,18 @@ impl Component for BetaProgramme {
                 )
                 .split(layer_one[1]);
 
-                let text = Paragraph::new("  Earn a slice of millions of tokens created at\n  the genesis of the Autonomi Network by running\n  nodes to build and test the Beta.\n\n  To continue in the beta Rewards Program you\n  agree to the Terms and Conditions found here:");
+                let text = Paragraph::new(vec![
+                    Line::from(Span::styled("Earn a slice of millions of tokens created at the genesis of the Autonomi Network by running nodes to build and test the Beta.",Style::default())),
+                    Line::from(Span::styled("\n\n",Style::default())),
+                    Line::from(Span::styled("To continue in the beta Rewards Program you agree to the Terms and Conditions found here:",Style::default())),
+                    Line::from(Span::styled("\n\n",Style::default())),
+                    ]
+                )
+                .block(Block::default().padding(Padding::horizontal(2)))
+                .wrap(Wrap { trim: false });
+
                 f.render_widget(text.fg(GHOST_WHITE), layer_two[0]);
+
                 let link = Hyperlink::new(
                     Span::styled(
                         "  https://autonomi.com/beta/terms",
@@ -336,7 +351,17 @@ impl Component for BetaProgramme {
                 )
                 .split(layer_one[1]);
 
-                let text = Paragraph::new("  Terms and conditions not accepted\n  Beta Rewards Program entry not approved\n  You can still run nodes on the network, but\n  you will not be part of the Beta Rewards\n  Program.\n");
+                let text = Paragraph::new(vec![
+                    Line::from(Span::styled("Terms and conditions not accepted.",Style::default())),
+                    Line::from(Span::styled("\n\n",Style::default())),
+                    Line::from(Span::styled("Beta Rewards Program entry not approved.",Style::default())),
+                    Line::from(Span::styled("\n\n",Style::default())),
+                    Line::from(Span::styled("You can still run nodes on the network, but you will not be part of the Beta Rewards Program.",Style::default())),
+                    ]
+                )
+                .block(Block::default().padding(Padding::horizontal(2)))
+                .wrap(Wrap { trim: false });
+
                 f.render_widget(text.fg(GHOST_WHITE), layer_two[0]);
 
                 let dash = Block::new()
@@ -359,9 +384,9 @@ impl Component for BetaProgramme {
                         // for the input
                         Constraint::Length(2),
                         // for the text
-                        Constraint::Length(3),
+                        Constraint::Length(5),
                         // gap
-                        Constraint::Length(3),
+                        Constraint::Length(1),
                         // for the buttons
                         Constraint::Length(1),
                     ],
@@ -373,24 +398,34 @@ impl Component for BetaProgramme {
 
                 f.render_widget(prompt.fg(GHOST_WHITE), layer_two[0]);
 
-                let input = Paragraph::new(self.discord_input_filed.value())
-                    .alignment(Alignment::Center)
-                    .fg(VIVID_SKY_BLUE);
-                f.set_cursor(
-                    // Put cursor past the end of the input text
-                    layer_two[1].x
-                        + (layer_two[1].width / 2) as u16
-                        + (self.discord_input_filed.value().len() / 2) as u16
-                        + if self.discord_input_filed.value().len() % 2 != 0 {
-                            1
-                        } else {
-                            0
-                        },
-                    layer_two[1].y,
+                let spaces = " ".repeat(
+                    (INPUT_AREA_USERNAME - 1) as usize - self.discord_input_filed.value().len(),
                 );
+                let input = Paragraph::new(Span::styled(
+                    format!("{}{} ", spaces, self.discord_input_filed.value()),
+                    Style::default()
+                        .fg(VIVID_SKY_BLUE)
+                        .bg(INDIGO)
+                        .underlined()
+                        .underline_color(VIVID_SKY_BLUE),
+                ))
+                .alignment(Alignment::Center);
                 f.render_widget(input, layer_two[1]);
 
-                let text = Paragraph::new("  Submit your username and track your progress on\n  our Discord server. Note: your username may be\n  different from your display name.");
+                let text = Paragraph::new(vec![
+                    Line::from(Span::styled(
+                        "Submit your username and track your progress on our Discord server.",
+                        Style::default(),
+                    )),
+                    Line::from(Span::styled("\n\n", Style::default())),
+                    Line::from(Span::styled(
+                        "Note: your username may be different from your display name.",
+                        Style::default(),
+                    )),
+                ])
+                .block(Block::default().padding(Padding::horizontal(2)))
+                .wrap(Wrap { trim: false });
+
                 f.render_widget(text.fg(GHOST_WHITE), layer_two[2]);
 
                 let dash = Block::new()
