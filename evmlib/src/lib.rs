@@ -66,7 +66,16 @@ impl Network {
         quote_hash: QuoteHash,
         reward_addr: Address,
         amount: U256,
+        quote_expiration_timestamp_in_secs: u64,
     ) -> Result<(), transaction::Error> {
-        verify_chunk_payment(self, tx_hash, quote_hash, reward_addr, amount).await
+        verify_chunk_payment(
+            self,
+            tx_hash,
+            quote_hash,
+            reward_addr,
+            amount,
+            quote_expiration_timestamp_in_secs,
+        )
+        .await
     }
 }
