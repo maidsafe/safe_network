@@ -159,7 +159,6 @@ struct Opt {
     ///  - Linux: $HOME/.local/share/safe/client/logs
     ///  - macOS: $HOME/Library/Application Support/safe/client/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
-    #[expect(rustdoc::invalid_html_tags)]
     #[clap(long, value_parser = parse_log_output, verbatim_doc_comment, default_value = "data-dir")]
     pub log_output_dest: LogOutputDest,
 
