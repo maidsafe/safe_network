@@ -118,7 +118,7 @@ pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, 
                 .collect();
 
             quotes_for_nodes_duty.retain(|(peer_id, quote)| {
-                let cost = calculate_cost_for_records(&quote.quoting_metrics);
+                let cost = calculate_cost_for_records(quote.quoting_metrics.close_records_stored);
                 let is_same_as_expected = quote.cost == NanoTokens::from(cost);
 
                 if !is_same_as_expected {
