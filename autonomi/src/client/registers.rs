@@ -24,14 +24,18 @@ use super::data::PayError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RegisterError {
-    #[error("Network error: {0}")]
+    #[error("Network error")]
     Network(#[from] NetworkError),
     #[error("Serialization error")]
     Serialization,
     #[error("Payment failure occurred during register creation.")]
     Pay(#[from] PayError),
-    #[error("TODO")]
+    #[error("Failed to retrieve wallet payment")]
     Wallet(#[from] sn_transfers::WalletError),
+    #[error("Failed to write to low-level register")]
+    Write(#[source] sn_registers::Error),
+    #[error("Failed to sign register")]
+    CouldNotSign(#[source] sn_registers::Error),
 }
 
 #[derive(Clone, Debug)]
@@ -50,8 +54,7 @@ impl Register {
     pub fn values(&self) -> Vec<Bytes> {
         self.inner
             .clone()
-            .register()
-            .expect("TODO")
+            .base_register()
             .read()
             .into_iter()
             .map(|(_hash, value)| value.into())
@@ -80,8 +83,9 @@ impl Client {
             .into_iter()
             .map(|(entry_hash, _value)| entry_hash)
             .collect();
-        // TODO: Handle error.
-        let _ = register.write(value.into(), &entries, &owner);
+        register
+            .write(value.into(), &entries, &owner)
+            .map_err(RegisterError::Write)?;
 
         let _payment_result = self
             .pay(std::iter::once(register.address().xorname()), wallet)
@@ -90,7 +94,10 @@ impl Client {
         let (payment, payee) =
             self.get_recent_payment_for_addr(&register.address().xorname(), wallet)?;
 
-        let signed_register = register.clone().into_signed(&owner).expect("TODO");
+        let signed_register = register
+            .clone()
+            .into_signed(&owner)
+            .map_err(RegisterError::CouldNotSign)?;
 
         let record = Record {
             key: address.to_record_key(),
@@ -150,7 +157,7 @@ impl Client {
     ) -> Result<(), RegisterError> {
         // Fetch the current register
         let mut signed_register = register.inner;
-        let mut register = signed_register.clone().register().expect("TODO");
+        let mut register = signed_register.base_register().clone();
 
         // Get all current branches
         let children: BTreeSet<EntryHash> = register.read().into_iter().map(|(e, _)| e).collect();
@@ -158,10 +165,12 @@ impl Client {
         // Write the new value to all branches
         let (_, op) = register
             .write(new_value.to_vec(), &children, &owner)
-            .expect("TODO");
+            .map_err(RegisterError::Write)?;
 
         // Apply the operation to the register
-        signed_register.add_op(op.clone()).expect("TODO");
+        signed_register
+            .add_op(op.clone())
+            .map_err(RegisterError::Write)?;
 
         // Prepare the record for network storage
         let record = Record {
