@@ -11,7 +11,7 @@ on:
 env:
   CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
   DEFAULT_PAYMENT_FORWARD_SK: 49113d2083f57a976076adbe85decb75115820de1e6e74b47e0429338cef124a
-  NETWORK_NAME: NightlyE2E
+  NETWORK_NAME: DEV-01
   WORKFLOW_URL: https://github.com/maidsafe/stableset_net/actions/runs
 jobs:
   e2e:
@@ -44,7 +44,7 @@ jobs:
           ssh-secret-key: ${{ secrets.SN_TESTNET_SSH_KEY }}
 
       - name: launch ${{ env.NETWORK_NAME }}
-        uses: ermineJose/sn-testnet-control-action/launch-network@wan_nightly
+        uses: ermineJose/sn-testnet-control-action/launch-network@main
         with:
           ansible-forks: ${{ env.ANSIBLE_FORKS }}
           beta-encryption-key: ${{ env.DEFAULT_PAYMENT_FORWARD_SK }}
