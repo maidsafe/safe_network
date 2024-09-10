@@ -11,7 +11,6 @@ use sn_registers::{Register, RegisterAddress, RegisterOp};
 use serde::{Deserialize, Serialize};
 
 /// A register cmd that is sent over to the Network
-#[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum RegisterCmd {
     /// Create a new register on the network.

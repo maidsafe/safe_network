@@ -100,7 +100,6 @@ const MIN_WAIT_BEFORE_READING_A_PUT: Duration = Duration::from_millis(300);
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
-#[allow(clippy::result_large_err)]
 pub fn sort_peers_by_address<'a>(
     peers: &'a Vec<PeerId>,
     address: &NetworkAddress,
@@ -111,7 +110,6 @@ pub fn sort_peers_by_address<'a>(
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
 /// Return with the closest expected number of entries if has.
-#[allow(clippy::result_large_err)]
 pub fn sort_peers_by_key<'a, T>(
     peers: &'a Vec<PeerId>,
     key: &KBucketKey<T>,
@@ -409,7 +407,6 @@ impl Network {
                 .distance(peer_address_a)
                 .cmp(&record_address.distance(peer_address_b))
         });
-        #[allow(clippy::mutable_key_type)]
         let ignore_peers = ignore_peers
             .into_iter()
             .map(NetworkAddress::from_peer)

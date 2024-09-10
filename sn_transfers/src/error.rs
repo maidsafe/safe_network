@@ -12,7 +12,6 @@ use thiserror::Error;
 /// Specialisation of `std::Result`.
 pub type Result<T, E = TransferError> = std::result::Result<T, E>;
 
-#[allow(clippy::large_enum_variant)]
 #[derive(Error, Debug, Clone, PartialEq)]
 #[non_exhaustive]
 /// Transfer errors

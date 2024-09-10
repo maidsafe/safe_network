@@ -470,7 +470,6 @@ impl WalletClient {
         // collect store costs
         let mut cost_map = BTreeMap::default();
         let mut skipped_chunks = vec![];
-        #[allow(clippy::mutable_key_type)]
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((content_addr, Ok(cost))) => {

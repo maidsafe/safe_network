@@ -87,7 +87,6 @@ impl FoldersApi {
 
     /// Return the list of metadata chunks addresses that need to be payed for in order to be
     /// able to then store all data on the network upon calling `sync` method.
-    #[allow(clippy::mutable_key_type)]
     pub fn meta_addrs_to_pay(&self) -> BTreeSet<NetworkAddress> {
         self.metadata
             .iter()
@@ -100,7 +99,6 @@ impl FoldersApi {
     }
 
     /// Return the list of metadata chunks.
-    #[allow(clippy::mutable_key_type)]
     pub fn meta_chunks(&self) -> BTreeSet<Chunk> {
         self.metadata
             .iter()

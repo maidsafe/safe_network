@@ -228,12 +228,12 @@ impl Status {
         self.node_table_state.select(Some(i));
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn unselect_table_item(&mut self) {
         self.node_table_state.select(None);
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn get_service_name_of_selected_table_item(&self) -> Option<String> {
         let Some(service_idx) = self.node_table_state.selected() else {
             warn!("No item selected from table, not removing anything");
@@ -268,7 +268,6 @@ impl Component for Status {
         Ok(r)
     }
 
-    #[allow(clippy::comparison_chain)]
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::Tick => {

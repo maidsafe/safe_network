@@ -29,7 +29,7 @@ pub(crate) enum DataMapLevel {
     Additional(DataMap),
 }
 
-#[allow(unused)]
+#[expect(unused)]
 pub(crate) fn encrypt_from_path(path: &Path, output_dir: &Path) -> Result<(Chunk, Vec<XorName>)> {
     let (data_map, mut encrypted_chunks) = self_encryption::encrypt_from_file(path, output_dir)?;
 
@@ -45,7 +45,6 @@ pub(crate) fn encrypt_from_path(path: &Path, output_dir: &Path) -> Result<(Chunk
     Ok((data_map_chunk, encrypted_chunks))
 }
 
-#[allow(unused_assignments)]
 pub(crate) fn encrypt_large(
     file_path: &Path,
     output_dir: &Path,

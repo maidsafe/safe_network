@@ -97,7 +97,6 @@ impl UnifiedRecordStore {
         }
     }
 
-    #[allow(clippy::mutable_key_type)]
     pub(crate) fn record_addresses_ref(&self) -> &HashMap<RecordKey, (NetworkAddress, RecordType)> {
         match self {
             Self::Client(store) => store.record_addresses_ref(),

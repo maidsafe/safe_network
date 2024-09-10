@@ -79,7 +79,6 @@ impl ChangeConnectionModePopUp {
     }
     /// Assigns to self.connection_mode_selection the selected connection mode in the list
     ///
-    #[allow(dead_code)]
     fn assign_connection_mode_selection(&mut self) {
         self.deselect_all();
         if let Some(i) = self.items.state.selected() {
