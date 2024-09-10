@@ -1430,7 +1430,8 @@ mod tests {
         use rayon::prelude::*;
 
         let num_of_peers = 100_000;
-        let num_of_chunks_per_itr = 100_000;
+        let num_of_chunks_per_hour = 100_000;
+        let max_hours = 500;
 
         //
         let k = K_VALUE;
@@ -1448,7 +1449,7 @@ mod tests {
             })
             .collect();
 
-        let mut iteration = 0;
+        let mut hour = 0;
         let mut total_received_payment_count = 0;
 
         let peers_len = peers.len();
@@ -1466,7 +1467,7 @@ mod tests {
 
         loop {
             // Parallel processing of chunks
-            let _chunk_results: Vec<_> = (0..num_of_chunks_per_itr)
+            let _chunk_results: Vec<_> = (0..num_of_chunks_per_hour)
                 .into_par_iter()
                 .map(|_| {
                     // Generate a random chunk address
@@ -1521,22 +1522,9 @@ mod tests {
                 .collect();
 
             // Parallel reduction to calculate statistics
-            let (
-                received_payment_count,
-                empty_earned_nodes,
-                // min_earned,
-                // max_earned,
-                // min_store_cost,
-                // max_store_cost,
-            ) = peers
+            let (received_payment_count, empty_earned_nodes) = peers
                 .par_iter()
                 .map(|peer| {
-                    // let cost = calculate_cost_for_records(&QuotingMetrics {
-                    //     close_records_stored: peer.records_stored.load(Ordering::Relaxed),
-                    //     max_records: MAX_RECORDS_COUNT,
-                    //     received_payment_count: peer.payments_received.load(Ordering::Relaxed),
-                    //     live_time: 0,
-                    // });
                     (
                         peer.payments_received.load(Ordering::Relaxed),
                         if peer.nanos_earned.load(Ordering::Relaxed) == 0 {
@@ -1544,52 +1532,29 @@ mod tests {
                         } else {
                             0
                         },
-                        // peer.nanos_earned.load(Ordering::Relaxed),
-                        // peer.nanos_earned.load(Ordering::Relaxed),
-                        // cost,
-                        // cost,
                     )
                 })
                 .reduce(
                     || (0, 0),
                     |a, b| {
-                        let (
-                            a_received_payment_count,
-                            a_empty_earned_nodes,
-                            // a_min_earned,
-                            // a_max_earned,
-                            // a_min_store_cost,
-                            // a_max_store_cost,
-                        ) = a;
-                        let (
-                            b_received_payment_count,
-                            b_empty_earned_nodes,
-                            // b_min_earned,
-                            // b_max_earned,
-                            // b_min_store_cost,
-                            // b_max_store_cost,
-                        ) = b;
+                        let (a_received_payment_count, a_empty_earned_nodes) = a;
+                        let (b_received_payment_count, b_empty_earned_nodes) = b;
                         (
                             a_received_payment_count + b_received_payment_count,
                             a_empty_earned_nodes + b_empty_earned_nodes,
-                            // a_min_earned.min(b_min_earned),
-                            // a_max_earned.max(b_max_earned),
-                            // a_min_store_cost.min(b_min_store_cost),
-                            // a_max_store_cost.max(b_max_store_cost),
                         )
                     },
                 );
 
-            total_received_payment_count += num_of_chunks_per_itr;
+            total_received_payment_count += num_of_chunks_per_hour;
             assert_eq!(total_received_payment_count, received_payment_count);
 
-            println!("After the completion of iteration {iteration} with {num_of_chunks_per_itr} chunks put, there are {empty_earned_nodes} nodes which earned nothing");
-            // println!("\t\t with storecost variation of (min {min_store_cost} - max {max_store_cost}), and earned variation of (min {min_earned} - masx {max_earned})");
+            println!("After the completion of hour {hour} with {num_of_chunks_per_hour} chunks put this hour, there are {empty_earned_nodes} nodes which earned nothing");
 
-            iteration += 1;
+            hour += 1;
 
             // Check termination condition
-            if iteration == 500 {
+            if hour == max_hours {
                 let acceptable_percentage = 0.01; //%
 
                 // Calculate acceptable empty nodes based on % of total nodes
@@ -1601,16 +1566,7 @@ mod tests {
                     empty_earned_nodes <= acceptable_empty_nodes,
                     "More than {acceptable_percentage}% of nodes ({acceptable_empty_nodes}) still not earning: {empty_earned_nodes}"
                 );
-                // assert!(
-                //     (max_store_cost / min_store_cost) < 100,
-                //     "store cost is not 'balanced', expected ratio max/min to be < 1000, but was {}",
-                //     max_store_cost / min_store_cost
-                // );
-                // assert!(
-                //     (max_earned / min_earned) < 1000,
-                //     "earning distribution is not balanced, expected to be < 1000, but was {}",
-                //     max_earned / min_earned
-                // );
+
                 break;
             }
         }
@@ -1626,10 +1582,11 @@ mod tests {
             let peer_addr = peers[i].address.clone();
             let pk = peers[i].pk;
             let close_records_stored = peers[i].records_stored.load(Ordering::Relaxed);
+            let cost = NanoTokens::from(calculate_cost_for_records(close_records_stored));
 
             let quote = PaymentQuote {
                 content: XorName::default(), // unimportant for cost calc
-                cost: NanoTokens::from(calculate_cost_for_records(close_records_stored)),
+                cost,
                 timestamp: std::time::SystemTime::now(),
                 quoting_metrics: QuotingMetrics {
                     close_records_stored,
@@ -1644,14 +1601,12 @@ mod tests {
             costs_vec.push((peer_addr, pk, quote));
         }
 
-        let Ok((recip_id, pk, q)) = get_fees_from_store_cost_responses(costs_vec) else {
+        let Ok((recip_id, _pk, _q)) = get_fees_from_store_cost_responses(costs_vec) else {
             bail!("Failed to get fees from store cost responses")
         };
 
-        let Some(index) = address_to_index
-            .get(&NetworkAddress::from_peer(recip_id))
-            .copied()
-        else {
+        let recipient_addr = NetworkAddress::from_peer(recip_id);
+        let Some(index) = address_to_index.get(&recipient_addr).copied() else {
             bail!("Cannot find the index for the cheapest payee");
         };
 
