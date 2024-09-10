@@ -23,13 +23,11 @@ impl Node {
     ) -> Result<PaymentQuote, ProtocolError> {
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
-        let payment_id = rand::random();
         let bytes = PaymentQuote::bytes_for_signing(
             content,
             cost,
             timestamp,
             quoting_metrics,
-            payment_id,
             payment_address,
         );
 
@@ -43,7 +41,6 @@ impl Node {
             timestamp,
             quoting_metrics: quoting_metrics.clone(),
             pub_key: network.get_pub_key(),
-            payment_id,
             rewards_address: *payment_address,
             signature,
         };

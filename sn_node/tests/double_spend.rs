@@ -14,7 +14,8 @@ use common::client::{get_client_and_funded_wallet, get_wallet};
 use eyre::{bail, Result};
 use itertools::Itertools;
 use sn_evm::{
-    get_genesis_sk, rng, Amount, AttoTokens, DerivationIndex, HotWallet, SignedTransaction, SpendReason, WalletError, GENESIS_CASHNOTE
+    get_genesis_sk, rng, Amount, AttoTokens, DerivationIndex, HotWallet, SignedTransaction,
+    SpendReason, WalletError, GENESIS_CASHNOTE,
 };
 use sn_logging::LogBuilder;
 use sn_networking::NetworkError;

@@ -18,7 +18,7 @@ use eyre::{bail, eyre, Result};
 use rand::{rngs::OsRng, Rng};
 use sn_client::{Client, Error, FilesApi, FilesDownload, Uploader, WalletClient};
 use sn_evm::HotWallet;
-use sn_evm::{CashNote, MainSecretKey, AttoTokens};
+use sn_evm::{AttoTokens, CashNote, MainSecretKey};
 use sn_logging::LogBuilder;
 use sn_protocol::{
     storage::{ChunkAddress, RegisterAddress, SpendAddress},

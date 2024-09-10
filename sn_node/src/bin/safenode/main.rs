@@ -12,9 +12,10 @@ extern crate tracing;
 mod rpc_service;
 
 use clap::Parser;
+use const_hex::traits::FromHex;
 use eyre::{eyre, Result};
 use libp2p::{identity::Keypair, PeerId};
-use sn_evm::RewardsAddress;
+use sn_evm::{EvmNetwork, RewardsAddress};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
@@ -35,7 +36,6 @@ use tokio::{
     time::sleep,
 };
 use tracing_appender::non_blocking::WorkerGuard;
-use const_hex::traits::FromHex;
 
 #[derive(Debug, Clone)]
 pub enum LogOutputDestArg {
@@ -126,6 +126,12 @@ struct Opt {
     #[clap(long)]
     rewards_address: String,
 
+    /// Specify the EVM Network to connect to
+    /// This feature is not implemented yet, but coming soon!
+    /// It defaults to ArbitrumOne
+    #[clap(long)]
+    evm_network: Option<String>,
+
     /// Specify the node's data directory.
     ///
     /// If not provided, the default location is platform specific:
@@ -191,7 +197,14 @@ fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
 
+    // evm config 
+    // TODO: custom evm nets
     let rewards_address = RewardsAddress::from_hex(&opt.rewards_address)?;
+    let evm_network = match &opt.evm_network {
+        Some(_ignored_custom_todo) => EvmNetwork::ArbitrumOne,
+        None => EvmNetwork::ArbitrumOne,
+    };
+
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
 
@@ -223,6 +236,7 @@ fn main() -> Result<()> {
         let mut node_builder = NodeBuilder::new(
             keypair,
             rewards_address,
+            evm_network,
             node_socket_addr,
             bootstrap_peers,
             opt.local,
