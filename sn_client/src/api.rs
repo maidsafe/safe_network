@@ -436,6 +436,7 @@ impl Client {
             retry_strategy,
             target_record: None,
             expected_holders: Default::default(),
+            is_register: true,
         };
 
         let maybe_record = self.network.get_record_from_network(key, &get_cfg).await;
