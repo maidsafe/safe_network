@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725957456328,
+  "lastUpdate": 1725957460250,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "362c9a3d31601dc2eeb38e3c376301fb26a5b5e1",
-          "message": "chore(CI): upload faucet log during CI",
-          "timestamp": "2024-04-24T14:43:47Z",
-          "tree_id": "d8fb990831c933f2579f69cae8b3df540ec42c6d",
-          "url": "https://github.com/maidsafe/safe_network/commit/362c9a3d31601dc2eeb38e3c376301fb26a5b5e1"
-        },
-        "date": 1713972628447,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 201,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e453ee22d84de69bd2beed9d347f84fc69027447",
+          "message": "Merge pull request #2090 from joshuef/UpdateSim\n\ntest(networking): speed up and simplify address sim",
+          "timestamp": "2024-09-10T07:44:14Z",
+          "tree_id": "3f736f14b68f4f8ecdd56e13390aab79a94d875e",
+          "url": "https://github.com/maidsafe/safe_network/commit/e453ee22d84de69bd2beed9d347f84fc69027447"
+        },
+        "date": 1725957459574,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 207,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
