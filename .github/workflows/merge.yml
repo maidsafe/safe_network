@@ -902,7 +902,7 @@ jobs:
           ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
           echo "----------"
           cat second.txt
-          if grep "genesis is already spent" second.txt; then
+          if grep "Faucet disbursement has already occured" second.txt; then
             echo "Duplicated faucet rejected"
           else
             echo "Duplicated faucet not rejected!"
