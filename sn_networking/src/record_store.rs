@@ -1429,13 +1429,15 @@ mod tests {
     fn address_distribution_sim() {
         use rayon::prelude::*;
 
-        let num_of_peers = 100_000;
-        let num_of_chunks_per_hour = 100_000;
-        let max_hours = 500;
+        // as network saturates, we can see that peers all eventually earn similarly
+        let num_of_peers = 5_000;
+        let num_of_chunks_per_hour = 1_000_000;
+        let max_hours = 50;
 
         //
-        let k = K_VALUE;
-        let close_group_size = k.get() / 3;
+        let k = K_VALUE.get();
+
+        let replication_group_size = k / 3;
 
         // Initialize peers with random addresses
         let mut peers: Vec<PeerStats> = (0..num_of_peers)
@@ -1481,26 +1483,28 @@ mod tests {
                     });
 
                     // Collect close_group_size closest peers
-                    let mut close_group = Vec::with_capacity(close_group_size);
+                    let mut close_group = Vec::with_capacity(replication_group_size);
                     let mut left = partition_point;
                     let mut right = partition_point;
 
-                    while close_group.len() < close_group_size && (left > 0 || right < peers_len) {
+                    while close_group.len() < replication_group_size
+                        && (left > 0 || right < peers_len)
+                    {
                         if left > 0 {
                             left -= 1;
                             close_group.push(left);
                         }
-                        if close_group.len() < close_group_size && right < peers_len {
+                        if close_group.len() < replication_group_size && right < peers_len {
                             close_group.push(right);
                             right += 1;
                         }
                     }
 
                     // Truncate to ensure we have exactly close_group_size peers
-                    close_group.truncate(close_group_size);
+                    close_group.truncate(replication_group_size);
 
                     // Find the cheapest payee among the close group
-                    let Ok(payee_index) = pick_cheapest_payee(&peers, &close_group) else {
+                    let Ok((payee_index, cost)) = pick_cheapest_payee(&peers, &close_group) else {
                         bail!("Failed to find a payee");
                     };
 
@@ -1509,10 +1513,8 @@ mod tests {
                         peer.records_stored.fetch_add(1, Ordering::Relaxed);
 
                         if peer_index == payee_index {
-                            let cost = calculate_cost_for_records(
-                                peer.records_stored.load(Ordering::Relaxed),
-                            );
-                            peer.nanos_earned.fetch_add(cost, Ordering::Relaxed);
+                            peer.nanos_earned
+                                .fetch_add(cost.as_nano(), Ordering::Relaxed);
                             peer.payments_received.fetch_add(1, Ordering::Relaxed);
                         }
                     }
@@ -1522,26 +1524,54 @@ mod tests {
                 .collect();
 
             // Parallel reduction to calculate statistics
-            let (received_payment_count, empty_earned_nodes) = peers
+            let (
+                received_payment_count,
+                empty_earned_nodes,
+                min_earned,
+                max_earned,
+                min_store_cost,
+                max_store_cost,
+            ) = peers
                 .par_iter()
                 .map(|peer| {
+                    let cost =
+                        calculate_cost_for_records(peer.records_stored.load(Ordering::Relaxed));
+                    let earned = peer.nanos_earned.load(Ordering::Relaxed);
                     (
                         peer.payments_received.load(Ordering::Relaxed),
-                        if peer.nanos_earned.load(Ordering::Relaxed) == 0 {
-                            1
-                        } else {
-                            0
-                        },
+                        if earned == 0 { 1 } else { 0 },
+                        earned,
+                        earned,
+                        cost,
+                        cost,
                     )
                 })
                 .reduce(
-                    || (0, 0),
+                    || (0, 0, u64::MAX, 0, u64::MAX, 0),
                     |a, b| {
-                        let (a_received_payment_count, a_empty_earned_nodes) = a;
-                        let (b_received_payment_count, b_empty_earned_nodes) = b;
+                        let (
+                            a_received_payment_count,
+                            a_empty_earned_nodes,
+                            a_min_earned,
+                            a_max_earned,
+                            a_min_store_cost,
+                            a_max_store_cost,
+                        ) = a;
+                        let (
+                            b_received_payment_count,
+                            b_empty_earned_nodes,
+                            b_min_earned,
+                            b_max_earned,
+                            b_min_store_cost,
+                            b_max_store_cost,
+                        ) = b;
                         (
                             a_received_payment_count + b_received_payment_count,
                             a_empty_earned_nodes + b_empty_earned_nodes,
+                            a_min_earned.min(b_min_earned),
+                            a_max_earned.max(b_max_earned),
+                            a_min_store_cost.min(b_min_store_cost),
+                            a_max_store_cost.max(b_max_store_cost),
                         )
                     },
                 );
@@ -1549,7 +1579,8 @@ mod tests {
             total_received_payment_count += num_of_chunks_per_hour;
             assert_eq!(total_received_payment_count, received_payment_count);
 
-            println!("After the completion of hour {hour} with {num_of_chunks_per_hour} chunks put this hour, there are {empty_earned_nodes} nodes which earned nothing");
+            println!("After the completion of hour {hour} with {num_of_chunks_per_hour} chunks put, there are {empty_earned_nodes} nodes which earned nothing");
+            println!("\t\t with storecost variation of (min {min_store_cost} - max {max_store_cost}), and earned variation of (min {min_earned} - max {max_earned})");
 
             hour += 1;
 
@@ -1566,22 +1597,33 @@ mod tests {
                     empty_earned_nodes <= acceptable_empty_nodes,
                     "More than {acceptable_percentage}% of nodes ({acceptable_empty_nodes}) still not earning: {empty_earned_nodes}"
                 );
-
+                assert!(
+                    (max_store_cost / min_store_cost) < 100,
+                    "store cost is not 'balanced', expected ratio max/min to be < 100, but was {}",
+                    max_store_cost / min_store_cost
+                );
+                assert!(
+                    (max_earned / min_earned) < 1500,
+                    "earning distribution is not balanced, expected to be < 1500, but was {}",
+                    max_earned / min_earned
+                );
                 break;
             }
         }
     }
 
-    fn pick_cheapest_payee(peers: &[PeerStats], close_group: &[usize]) -> eyre::Result<usize> {
-        let mut costs_vec = vec![];
-
+    fn pick_cheapest_payee(
+        peers: &[PeerStats],
+        close_group: &[usize],
+    ) -> eyre::Result<(usize, NanoTokens)> {
+        let mut costs_vec = Vec::with_capacity(close_group.len());
         let mut address_to_index = BTreeMap::new();
-        for &i in close_group {
-            address_to_index.insert(peers[i].address.clone(), i);
 
-            let peer_addr = peers[i].address.clone();
-            let pk = peers[i].pk;
-            let close_records_stored = peers[i].records_stored.load(Ordering::Relaxed);
+        for &i in close_group {
+            let peer = &peers[i];
+            address_to_index.insert(peer.address.clone(), i);
+
+            let close_records_stored = peer.records_stored.load(Ordering::Relaxed);
             let cost = NanoTokens::from(calculate_cost_for_records(close_records_stored));
 
             let quote = PaymentQuote {
@@ -1589,27 +1631,32 @@ mod tests {
                 cost,
                 timestamp: std::time::SystemTime::now(),
                 quoting_metrics: QuotingMetrics {
-                    close_records_stored,
+                    close_records_stored: peer.records_stored.load(Ordering::Relaxed),
                     max_records: MAX_RECORDS_COUNT,
                     received_payment_count: 1, // unimportant for cost calc
                     live_time: 0,              // unimportant for cost calc
                 },
-                pub_key: pk.to_bytes().to_vec(),
+                pub_key: peer.pk.to_bytes().to_vec(),
                 signature: vec![], // unimportant for cost calc
             };
 
-            costs_vec.push((peer_addr, pk, quote));
+            costs_vec.push((peer.address.clone(), peer.pk, quote));
         }
 
-        let Ok((recip_id, _pk, _q)) = get_fees_from_store_cost_responses(costs_vec) else {
+        // sort by address first
+        costs_vec.sort_by(|(a_addr, _, _), (b_addr, _, _)| a_addr.cmp(b_addr));
+
+        let Ok((recip_id, _pk, q)) = get_fees_from_store_cost_responses(costs_vec) else {
             bail!("Failed to get fees from store cost responses")
         };
 
-        let recipient_addr = NetworkAddress::from_peer(recip_id);
-        let Some(index) = address_to_index.get(&recipient_addr).copied() else {
+        let Some(index) = address_to_index
+            .get(&NetworkAddress::from_peer(recip_id))
+            .copied()
+        else {
             bail!("Cannot find the index for the cheapest payee");
         };
 
-        Ok(index)
+        Ok((index, q.cost))
     }
 }
