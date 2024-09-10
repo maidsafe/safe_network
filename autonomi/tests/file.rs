@@ -5,6 +5,7 @@ use tokio::time::sleep;
 
 mod common;
 
+#[cfg(feature = "files")]
 #[tokio::test]
 async fn file() -> Result<(), Box<dyn std::error::Error>> {
     common::enable_logging();

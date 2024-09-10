@@ -5,6 +5,7 @@ use tokio::time::sleep;
 
 mod common;
 
+#[cfg(feature = "data")]
 #[tokio::test]
 async fn put() {
     common::enable_logging();

@@ -7,6 +7,7 @@ use xor_name::XorName;
 
 mod common;
 
+#[cfg(feature = "registers")]
 #[tokio::test]
 async fn register() {
     common::enable_logging();
