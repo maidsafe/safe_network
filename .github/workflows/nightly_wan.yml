@@ -63,41 +63,41 @@ jobs:
            echo "Peer is $SAFE_PEERS"
            echo "Deployment inventory is $SN_INVENTORY"
       
-      # - name: Obtain the funds from the faucet
-      #   run: |
-      #     # read the inventory file
-      #     inventory_path=/home/runner/.local/share/safe/testnet-deploy/NightlyE2E-inventory.json
-      #     echo "Inventory Path: $inventory_path"
-      #     faucet_address=$(jq -r '.faucet_address' $inventory_path)
-      #     cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
-      #   env:
-      #     SN_LOG: "all"
-      #   timeout-minutes: 2
-      #
-      # - name: Start a client to carry out chunk actions
-      #   run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
-      #   env:
-      #     SN_LOG: "all"
-      #   timeout-minutes: 2
-      #
-      # - name: Start a client to create a register
-      #   run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
-      #   env:
-      #     SN_LOG: "all"
-      #   timeout-minutes: 2
-      #
-      # - name: Start a client to get a register
-      #   run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
-      #   env:
-      #     SN_LOG: "all"
-      #   timeout-minutes: 2
-      #
-      # - name: Start a client to edit a register
-      #   run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
-      #   env:
-      #     SN_LOG: "all"
-      #   timeout-minutes: 2
-      #
+      - name: Obtain the funds from the faucet
+        run: |
+          # read the inventory file
+          inventory_path=/home/runner/.local/share/safe/testnet-deploy/${{ env.NETWORK_NAME }}-inventory.json
+          echo "Inventory Path: $inventory_path"
+          faucet_address=$(jq -r '.faucet_address' $inventory_path)
+          cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+      
+      - name: Start a client to carry out chunk actions
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+      
+      - name: Start a client to create a register
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+      
+      - name: Start a client to get a register
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+      
+      - name: Start a client to edit a register
+        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 2
+      
       # - name: Fetch network logs
       #   if: always()
       #   uses: maidsafe/sn-testnet-action@main
@@ -118,15 +118,15 @@ jobs:
       #     safe-network-user: maidsafe
       #     safe-network-branch: main
       #
-      # - name: Upload local logs
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: local_logs_NightlyE2E
-      #     path: |
-      #       ~/.local/share/safe/node/*/logs/*.log*
-      #       ~/.local/share/safe/*/*/*.log*
-      #       ~/.local/share/safe/client/logs/*/*.log*
+      - name: Upload local logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local_logs_NightlyE2E
+          path: |
+            ~/.local/share/safe/node/*/logs/*.log*
+            ~/.local/share/safe/*/*/*.log*
+            ~/.local/share/safe/client/logs/*/*.log*
 
       - name: destroy network
         uses: maidsafe/sn-testnet-control-action/destroy-network@main
@@ -134,13 +134,13 @@ jobs:
           network-name: ${{ env.NETWORK_NAME }}
           provider: digital-ocean
 
-      # - name: post notification to slack on failure
-      #   if: ${{ failure() }}
-      #   uses: bryannice/gitactions-slack-notification@2.0.0
-      #   env:
-      #     SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-      #     SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-      #     SLACK_TITLE: "Nightly E2E Test Run Failed"
+      - name: post notification to slack on failure
+        if: ${{ failure() }}
+        uses: bryannice/gitactions-slack-notification@2.0.0
+        env:
+          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
+          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
+          SLACK_TITLE: "Nightly E2E Test Run Failed"
 
   # spend_test:
   #   name: Spend tests against network
