@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725821306003,
+  "lastUpdate": 1725957338123,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "362c9a3d31601dc2eeb38e3c376301fb26a5b5e1",
-          "message": "chore(CI): upload faucet log during CI",
-          "timestamp": "2024-04-24T14:43:47Z",
-          "tree_id": "d8fb990831c933f2579f69cae8b3df540ec42c6d",
-          "url": "https://github.com/maidsafe/safe_network/commit/362c9a3d31601dc2eeb38e3c376301fb26a5b5e1"
-        },
-        "date": 1713972503542,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1692990302169666,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6166911938735413,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.38497824904961,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.76970425999086,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e453ee22d84de69bd2beed9d347f84fc69027447",
+          "message": "Merge pull request #2090 from joshuef/UpdateSim\n\ntest(networking): speed up and simplify address sim",
+          "timestamp": "2024-09-10T07:44:14Z",
+          "tree_id": "3f736f14b68f4f8ecdd56e13390aab79a94d875e",
+          "url": "https://github.com/maidsafe/safe_network/commit/e453ee22d84de69bd2beed9d347f84fc69027447"
+        },
+        "date": 1725957331439,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2729675173061614,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6745406220443444,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 59.892914706187604,
             "unit": "MiB/s"
           }
         ]
