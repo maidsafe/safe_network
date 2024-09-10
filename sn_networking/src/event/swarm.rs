@@ -7,8 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::LocalSwarmCmd, event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p,
-    relay_manager::is_a_relayed_peer, target_arch::Instant, NetworkEvent, Result, SwarmDriver,
+    cmd::{LocalSwarmCmd, NetworkSwarmCmd},
+    event::NodeEvent,
+    multiaddr_is_global, multiaddr_strip_p2p,
+    relay_manager::is_a_relayed_peer,
+    target_arch::Instant,
+    NetworkEvent, Result, SwarmDriver,
 };
 #[cfg(feature = "local-discovery")]
 use libp2p::mdns;
@@ -25,7 +29,7 @@ use libp2p::{
 };
 use sn_protocol::version::{IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR};
 use std::collections::HashSet;
-use tokio::time::Duration;
+use tokio::{sync::oneshot, time::Duration};
 
 impl SwarmDriver {
     /// Handle `SwarmEvents`
@@ -391,6 +395,7 @@ impl SwarmDriver {
                 let _ = self.live_connected_peers.remove(&connection_id);
                 self.record_connection_metrics();
 
+                let mut failed_peer_addresses = vec![];
                 // we need to decide if this was a critical error and the peer should be removed from the routing table
                 let (should_clean_peer, should_track_issue) = match error {
                     DialError::Transport(errors) => {
@@ -401,8 +406,12 @@ impl SwarmDriver {
                         // unless there are _specific_ errors (connection refused eg)
                         error!("Dial errors len : {:?}", errors.len());
                         let mut remove_peer_track_peer_issue = (false, false);
-                        for (_addr, err) in errors {
+                        for (addr, err) in errors {
                             error!("OutgoingTransport error : {err:?}");
+
+                            if !failed_peer_addresses.contains(&addr) {
+                                failed_peer_addresses.push(addr)
+                            }
 
                             match err {
                                 TransportError::MultiaddrNotSupported(addr) => {
@@ -508,6 +517,15 @@ impl SwarmDriver {
                         peer_id: failed_peer_id,
                         issue: crate::NodeIssue::ConnectionIssue,
                     })?;
+                }
+
+                if !should_clean_peer {
+                    // lets try and redial.
+                    for addr in failed_peer_addresses {
+                        let (sender, _recv) = oneshot::channel();
+
+                        self.queue_network_swarm_cmd(NetworkSwarmCmd::Dial { addr, sender });
+                    }
                 }
             }
             SwarmEvent::IncomingConnectionError {
