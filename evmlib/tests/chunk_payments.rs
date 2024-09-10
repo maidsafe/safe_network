@@ -12,10 +12,9 @@ use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, Walle
 use alloy::providers::{ProviderBuilder, ReqwestProvider, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{Client, Http};
-use evmlib::common::{Amount, QuotePayment, U256};
+use evmlib::common::U256;
 use evmlib::contract::chunk_payments::{ChunkPayments, MAX_TRANSFERS_PER_TRANSACTION};
 use evmlib::contract::network_token::NetworkToken;
-use evmlib::utils::{dummy_address, dummy_hash};
 use evmlib::wallet::wallet_address;
 
 async fn setup() -> (
