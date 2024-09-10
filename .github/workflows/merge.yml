@@ -913,7 +913,7 @@ jobs:
   #   timeout-minutes: 5
 
   # - name: Attempt second faucet genesis disbursement
-  #   run: ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1)  > second.txt 2>&1
+  #   run: ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1)  > second.txt 2>&1 || true
   #   env:
   #     SN_LOG: "all"
   #   timeout-minutes: 5
