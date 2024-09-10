@@ -14,10 +14,6 @@ version = "0.95.0"
 path = "src/bin/main.rs"
 name = "safe"
 
-[lib]
-path = "src/lib.rs"
-name = "autonomi"
-
 [[bench]]
 name = "files"
 harness = false
