@@ -891,22 +891,42 @@ jobs:
         continue-on-error: true
         if: always()
 
-      - name: Create and fund a wallet second time
+      - name: Cleanup prior faucet and cashnotes
         run: |
           ls -l /home/runner/.local/share
           ls -l /home/runner/.local/share/safe
           rm -rf /home/runner/.local/share/safe/test_faucet
           rm -rf /home/runner/.local/share/safe/test_genesis
           rm -rf /home/runner/.local/share/safe/client
-          ~/safe --log-output-dest=data-dir wallet create --no-password
-          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
-          echo "----------"
-          cat second.txt
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+
+      - name: Create a new wallet
+        run: ~/safe --log-output-dest=data-dir wallet create --no-password
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+
+      - name: Attempt second faucet genesis disbursement
+        run: ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1)  > second.txt 2>&1
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+
+      - name: cat second.txt
+        run: cat second.txt
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
+
+      - name: Verify a second disbursement is rejected
+        run: |
           if grep "Faucet disbursement has already occured" second.txt; then
-            echo "Duplicated faucet rejected"
+          echo "Duplicated faucet rejected"
           else
-            echo "Duplicated faucet not rejected!"
-            exit 1
+          echo "Duplicated faucet not rejected!"
+          exit 1
           fi
         env:
           SN_LOG: "all"
