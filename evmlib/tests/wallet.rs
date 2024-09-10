@@ -69,6 +69,7 @@ async fn funded_wallet(network: &Network, genesis_wallet: EthereumWallet) -> Wal
 #[tokio::test]
 async fn test_pay_for_quotes_and_chunk_payment_verification() {
     const TRANSFERS: usize = 600;
+    const EXPIRATION_TIMESTAMP_IN_SECS: u64 = 4102441200; // The year 2100
 
     let (_anvil, network, genesis_wallet) = local_testnet().await;
     let wallet = funded_wallet(&network, genesis_wallet).await;
@@ -98,6 +99,7 @@ async fn test_pay_for_quotes_and_chunk_payment_verification() {
             quote_payment.0,
             quote_payment.1,
             quote_payment.2,
+            EXPIRATION_TIMESTAMP_IN_SECS,
         )
         .await;
 
