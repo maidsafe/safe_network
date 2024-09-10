@@ -244,7 +244,7 @@ impl SwarmDriver {
                         }
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if self.local || has_dialed {
+                        if !self.local && has_dialed {
                             // A bad node cannot establish a connection with us. So we can add it to the RT directly.
                             self.remove_bootstrap_from_full(peer_id);
 
@@ -254,7 +254,10 @@ impl SwarmDriver {
                                     multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit))
                                 });
                             }
+                        }
 
+                        if self.local || has_dialed {
+                            // If we are not local, we care only for peers that we dialed and thus are reachable.
                             debug!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
                             // Attempt to add the addresses to the routing table.
