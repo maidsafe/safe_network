@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725965096088,
+  "lastUpdate": 1725973495580,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "2c5209b0f2a53ec1aaa703e5877df92b0f16b24a",
-          "message": "feat(client): speed up register checks when paying\n\nWe take the existence of Payment at regsiter.sync as a proxy for intent to create a register.\nWith that we can effectively use RetryStrategy::Quick under the hood to speed up initial\nregister PUTs (15s check vs 60s with retries).",
-          "timestamp": "2024-04-25T07:56:23Z",
-          "tree_id": "8f169565123d1f65f7206c804dff0565f03264fc",
-          "url": "https://github.com/maidsafe/safe_network/commit/2c5209b0f2a53ec1aaa703e5877df92b0f16b24a"
-        },
-        "date": 1714034579123,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.220787700760608,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.630899559117196,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.79290131794749,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.509812472385654,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b421ef747f3e4d6d121644edb0849947a44e2402",
+          "message": "Merge pull request #2093 from b-zee/feat-client-api-skeleton\n\nfeat: client API first iteration",
+          "timestamp": "2024-09-10T12:19:30Z",
+          "tree_id": "e980c3c0071c4c3aad4a7b996b528b77a8b6f46a",
+          "url": "https://github.com/maidsafe/safe_network/commit/b421ef747f3e4d6d121644edb0849947a44e2402"
+        },
+        "date": 1725973488854,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2533494813911257,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7089319602877662,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.401408166503295,
             "unit": "MiB/s"
           }
         ]
