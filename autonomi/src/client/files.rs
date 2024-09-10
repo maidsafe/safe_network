@@ -29,14 +29,18 @@ pub struct FilePointer {
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
-    #[error("TODO")]
+    #[error("Failed to recursively traverse directory")]
     WalkDir(#[from] walkdir::Error),
-    #[error("TODO")]
+    #[error("Input/output failure")]
     IoError(#[from] std::io::Error),
-    #[error("TODO")]
+    #[error("Failed to upload file")]
     PutError(#[from] PutError),
-    #[error("TODO")]
+    #[error("Failed to fetch file")]
     GetError(#[from] GetError),
+    #[error("Failed to serialize")]
+    Serialization(#[from] rmp_serde::encode::Error),
+    #[error("Failed to deserialize")]
+    Deserialization(#[from] rmp_serde::decode::Error),
 }
 
 impl Client {
@@ -60,7 +64,7 @@ impl Client {
         }
 
         let root = Root { map };
-        let root_serialized = rmp_serde::to_vec(&root).expect("TODO");
+        let root_serialized = rmp_serde::to_vec(&root)?;
 
         let xor_name = self.put(Bytes::from(root_serialized), wallet).await?;
 
@@ -70,7 +74,7 @@ impl Client {
     /// Fetch a directory from the network.
     pub async fn fetch_root(&mut self, address: XorName) -> Result<Root, UploadError> {
         let data = self.get(address).await?;
-        let root: Root = rmp_serde::from_slice(&data[..]).expect("TODO");
+        let root: Root = rmp_serde::from_slice(&data[..])?;
 
         Ok(root)
     }
