@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725973614810,
+  "lastUpdate": 1725973616542,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "2c5209b0f2a53ec1aaa703e5877df92b0f16b24a",
-          "message": "feat(client): speed up register checks when paying\n\nWe take the existence of Payment at regsiter.sync as a proxy for intent to create a register.\nWith that we can effectively use RetryStrategy::Quick under the hood to speed up initial\nregister PUTs (15s check vs 60s with retries).",
-          "timestamp": "2024-04-25T07:56:23Z",
-          "tree_id": "8f169565123d1f65f7206c804dff0565f03264fc",
-          "url": "https://github.com/maidsafe/safe_network/commit/2c5209b0f2a53ec1aaa703e5877df92b0f16b24a"
-        },
-        "date": 1714034702682,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7844,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 37156,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b421ef747f3e4d6d121644edb0849947a44e2402",
+          "message": "Merge pull request #2093 from b-zee/feat-client-api-skeleton\n\nfeat: client API first iteration",
+          "timestamp": "2024-09-10T12:19:30Z",
+          "tree_id": "e980c3c0071c4c3aad4a7b996b528b77a8b6f46a",
+          "url": "https://github.com/maidsafe/safe_network/commit/b421ef747f3e4d6d121644edb0849947a44e2402"
+        },
+        "date": 1725973616039,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4116,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 24163,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
