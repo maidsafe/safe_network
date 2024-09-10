@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725973616542,
+  "lastUpdate": 1725978537624,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "ac77ad7951f11412d5d3335654d5e846c990d271",
-          "message": "chore(network): remove nat detection via incoming connections check",
-          "timestamp": "2024-04-25T12:23:56Z",
-          "tree_id": "6a5b19608a2f2fafada1cda0c99a30d32b7c9a42",
-          "url": "https://github.com/maidsafe/safe_network/commit/ac77ad7951f11412d5d3335654d5e846c990d271"
-        },
-        "date": 1714050915930,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1996335871081791,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6155408751874818,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.001155660343876,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.401408166503295,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "abf5cd8c4680939ca216761ca55d2b08415c50a7",
+          "message": "Merge pull request #2098 from b-zee/chore-expect-lint\n\nchore(global): replace allow with expect lint",
+          "timestamp": "2024-09-10T13:43:45Z",
+          "tree_id": "99ba7359258163b44f56b36e7d84a08d96dc9436",
+          "url": "https://github.com/maidsafe/safe_network/commit/abf5cd8c4680939ca216761ca55d2b08415c50a7"
+        },
+        "date": 1725978530285,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2289239644554426,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6229024760969966,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.753203619123596,
             "unit": "MiB/s"
           }
         ]
