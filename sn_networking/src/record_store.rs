@@ -955,12 +955,17 @@ fn positive_input_0_1_sigmoid(x: f64) -> f64 {
 #[cfg(test)]
 mod tests {
 
+    use crate::get_fees_from_store_cost_responses;
+
     use super::*;
+    use bls::SecretKey;
     use bytes::Bytes;
-    use eyre::ContextCompat;
+    use eyre::{bail, ContextCompat};
     use libp2p::kad::K_VALUE;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
+    use sn_transfers::{MainPubkey, PaymentQuote};
+    use std::collections::BTreeMap;
     use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
     use sn_protocol::storage::{try_serialize_record, ChunkAddress};
@@ -1414,6 +1419,7 @@ mod tests {
 
     struct PeerStats {
         address: NetworkAddress,
+        pk: MainPubkey,
         records_stored: AtomicUsize,
         nanos_earned: AtomicU64,
         payments_received: AtomicUsize,
@@ -1438,6 +1444,7 @@ mod tests {
                 records_stored: AtomicUsize::new(0),
                 nanos_earned: AtomicU64::new(0),
                 payments_received: AtomicUsize::new(0),
+                pk: MainPubkey::new(SecretKey::random().public_key()),
             })
             .collect();
 
@@ -1492,7 +1499,9 @@ mod tests {
                     close_group.truncate(close_group_size);
 
                     // Find the cheapest payee among the close group
-                    let payee_index = pick_cheapest_payee(&peers, &close_group);
+                    let Ok(payee_index) = pick_cheapest_payee(&peers, &close_group) else {
+                        bail!("Failed to find a payee");
+                    };
 
                     for &peer_index in &close_group {
                         let peer = &peers[peer_index];
@@ -1506,6 +1515,8 @@ mod tests {
                             peer.payments_received.fetch_add(1, Ordering::Relaxed);
                         }
                     }
+
+                    Ok(())
                 })
                 .collect();
 
@@ -1605,12 +1616,45 @@ mod tests {
         }
     }
 
-    fn pick_cheapest_payee(peers: &[PeerStats], close_group: &[usize]) -> usize {
-        *close_group
-            .iter()
-            .min_by_key(|&&i| {
-                calculate_cost_for_records(peers[i].records_stored.load(Ordering::Relaxed))
-            })
-            .expect("Cannot find cheapest payee")
+    fn pick_cheapest_payee(peers: &[PeerStats], close_group: &[usize]) -> eyre::Result<usize> {
+        let mut costs_vec = vec![];
+
+        let mut address_to_index = BTreeMap::new();
+        for &i in close_group {
+            address_to_index.insert(peers[i].address.clone(), i);
+
+            let peer_addr = peers[i].address.clone();
+            let pk = peers[i].pk;
+            let close_records_stored = peers[i].records_stored.load(Ordering::Relaxed);
+
+            let quote = PaymentQuote {
+                content: XorName::default(), // unimportant for cost calc
+                cost: NanoTokens::from(calculate_cost_for_records(close_records_stored)),
+                timestamp: std::time::SystemTime::now(),
+                quoting_metrics: QuotingMetrics {
+                    close_records_stored,
+                    max_records: MAX_RECORDS_COUNT,
+                    received_payment_count: 1, // unimportant for cost calc
+                    live_time: 0,              // unimportant for cost calc
+                },
+                pub_key: pk.to_bytes().to_vec(),
+                signature: vec![], // unimportant for cost calc
+            };
+
+            costs_vec.push((peer_addr, pk, quote));
+        }
+
+        let Ok((recip_id, pk, q)) = get_fees_from_store_cost_responses(costs_vec) else {
+            bail!("Failed to get fees from store cost responses")
+        };
+
+        let Some(index) = address_to_index
+            .get(&NetworkAddress::from_peer(recip_id))
+            .copied()
+        else {
+            bail!("Cannot find the index for the cheapest payee");
+        };
+
+        Ok(index)
     }
 }
