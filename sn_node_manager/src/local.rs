@@ -45,6 +45,7 @@ pub trait Launcher {
         node_port: Option<u16>,
         owner: Option<String>,
         rpc_socket_addr: SocketAddr,
+        rewards_address: String,
     ) -> Result<()>;
     fn wait(&self, delay: u64);
 }
@@ -83,8 +84,12 @@ impl Launcher for LocalSafeLauncher {
         node_port: Option<u16>,
         owner: Option<String>,
         rpc_socket_addr: SocketAddr,
+        rewards_address: String,
     ) -> Result<()> {
         let mut args = Vec::new();
+        
+        args.push("--rewards-address".to_string());
+        args.push(rewards_address);
 
         if let Some(owner) = owner {
             args.push("--owner".to_string());
@@ -218,6 +223,7 @@ pub struct LocalNetworkOptions {
     pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
     pub log_format: Option<LogFormat>,
+    pub rewards_address: String,
 }
 
 pub async fn run_network(
@@ -295,6 +301,7 @@ pub async fn run_network(
                 owner,
                 rpc_socket_addr,
                 version: get_bin_version(&launcher.get_safenode_path())?,
+                rewards_address: options.rewards_address.clone(),
             },
             &launcher,
             &rpc_client,
@@ -342,6 +349,7 @@ pub async fn run_network(
                 owner,
                 rpc_socket_addr,
                 version: get_bin_version(&launcher.get_safenode_path())?,
+                rewards_address: options.rewards_address.clone(),
             },
             &launcher,
             &rpc_client,
@@ -398,6 +406,7 @@ pub struct RunNodeOptions {
     pub owner: Option<String>,
     pub rpc_socket_addr: SocketAddr,
     pub version: String,
+    pub rewards_address: String,
 }
 
 pub async fn run_node(
@@ -414,6 +423,7 @@ pub async fn run_node(
         run_options.node_port,
         run_options.owner.clone(),
         run_options.rpc_socket_addr,
+        run_options.rewards_address.clone(),
     )?;
     launcher.wait(run_options.interval);
 
@@ -561,9 +571,10 @@ mod tests {
                 eq(None),
                 eq(None),
                 eq(rpc_socket_addr),
+                eq("0x24D1E7a7EC1aDd67F0D4B2745971dd0D31F648b4".to_string()),
             )
             .times(1)
-            .returning(|_, _, _, _, _, _| Ok(()));
+            .returning(|_, _, _, _, _, _, _| Ok(()));
         mock_launcher
             .expect_wait()
             .with(eq(100))
@@ -610,6 +621,7 @@ mod tests {
                 owner: None,
                 rpc_socket_addr,
                 version: "0.100.12".to_string(),
+                rewards_address: "0x24D1E7a7EC1aDd67F0D4B2745971dd0D31F648b4".to_string(),
             },
             &mock_launcher,
             &mock_rpc_client,
