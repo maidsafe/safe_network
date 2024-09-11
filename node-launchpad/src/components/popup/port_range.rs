@@ -45,6 +45,7 @@ pub struct PortRangePopUp {
     port_from_old_value: u32,
     port_to_old_value: u32,
     can_save: bool,
+    first_stroke: bool,
 }
 
 impl PortRangePopUp {
@@ -59,6 +60,7 @@ impl PortRangePopUp {
             port_from_old_value: Default::default(),
             port_to_old_value: Default::default(),
             can_save: false,
+            first_stroke: true,
         }
     }
 
@@ -88,6 +90,7 @@ impl PortRangePopUp {
             Block::default()
                 .borders(Borders::ALL)
                 .title(" Custom Ports ")
+                .bold()
                 .title_style(Style::new().fg(VIVID_SKY_BLUE))
                 .padding(Padding::uniform(2))
                 .border_style(Style::new().fg(VIVID_SKY_BLUE)),
@@ -119,7 +122,6 @@ impl PortRangePopUp {
         f.render_widget(prompt.fg(GHOST_WHITE), layer_two[0]);
 
         let spaces_from = " ".repeat((INPUT_AREA - 1) as usize - self.port_from.value().len());
-        let spaces_to = " ".repeat((INPUT_AREA - 1) as usize - self.port_to.value().len());
 
         let input_line = Line::from(vec![
             Span::styled(
@@ -130,10 +132,7 @@ impl PortRangePopUp {
                     .underlined(),
             ),
             Span::styled(" to ", Style::default().fg(GHOST_WHITE)),
-            Span::styled(
-                format!("{}{} ", spaces_to, self.port_to.value()),
-                Style::default().fg(VIVID_SKY_BLUE),
-            ),
+            Span::styled(self.port_to.value(), Style::default().fg(LIGHT_PERIWINKLE)),
         ])
         .alignment(Alignment::Center);
 
@@ -145,11 +144,11 @@ impl PortRangePopUp {
                     "Choose the start of the range of {} ports.",
                     PORT_ALLOCATION + 1
                 ),
-                Style::default().fg(GHOST_WHITE),
+                Style::default().fg(LIGHT_PERIWINKLE),
             )),
             Line::from(Span::styled(
                 format!("This must be between {} and {}.", PORT_MIN, PORT_MAX),
-                Style::default().fg(if self.can_save { GHOST_WHITE } else { RED }),
+                Style::default().fg(if self.can_save { LIGHT_PERIWINKLE } else { RED }),
             )),
         ])
         .block(block::Block::default().padding(Padding::horizontal(2)))
@@ -198,6 +197,7 @@ impl PortRangePopUp {
             Block::default()
                 .borders(Borders::ALL)
                 .title(" Port Forwarding For Private IPs ")
+                .bold()
                 .title_style(Style::new().fg(VIVID_SKY_BLUE))
                 .padding(Padding::uniform(2))
                 .border_style(Style::new().fg(VIVID_SKY_BLUE)),
@@ -370,6 +370,10 @@ impl Component for PortRangePopUp {
                         vec![]
                     }
                     _ => {
+                        if self.first_stroke {
+                            self.first_stroke = false;
+                            self.port_from = Input::default().with_value("".to_string());
+                        }
                         // if max limit reached, we should not allow any more inputs.
                         if self.port_from.value().len() < INPUT_SIZE as usize {
                             self.port_from.handle_event(&Event::Key(key));
@@ -407,6 +411,7 @@ impl Component for PortRangePopUp {
                 } => {
                     if self.connection_mode == ConnectionMode::CustomPorts {
                         self.active = true;
+                        self.first_stroke = true;
                         self.connection_mode_old_value = connection_mode_old_value;
                         self.validate();
                         self.port_from_old_value =
