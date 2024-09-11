@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726041697126,
+  "lastUpdate": 1726041698667,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "b1885903e49d8069cd2ea52ab9ba61be80a901f9",
-          "message": "refactor(network): move event handling to its own module",
-          "timestamp": "2024-04-29T11:32:40Z",
-          "tree_id": "c9da0cf0b7202e717192b5477fa455aa75cd671a",
-          "url": "https://github.com/maidsafe/safe_network/commit/b1885903e49d8069cd2ea52ab9ba61be80a901f9"
-        },
-        "date": 1714393228263,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7355,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33796,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 25247,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5fe9ecd4ec055838b7bf167b154516dcf62cb121",
+          "message": "Merge pull request #2073 from joshuef/ScratchPad\n\nfeat(protocol): add Scratchpad data type",
+          "timestamp": "2024-09-11T07:15:26Z",
+          "tree_id": "bfcc027a1754bce0dfa32130c9d391727493ea34",
+          "url": "https://github.com/maidsafe/safe_network/commit/5fe9ecd4ec055838b7bf167b154516dcf62cb121"
+        },
+        "date": 1726041698349,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4572,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 27683,
             "unit": "ms"
           },
           {
