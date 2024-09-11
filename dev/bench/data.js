@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726067210172,
+  "lastUpdate": 1726067212401,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "jacderida"
           },
           "distinct": true,
-          "id": "7c410fc1294a8186dfe5111fc144381032c41886",
-          "message": "chore: rename `node-launchpad` crate to `sn_node_launchpad`\n\nThe binary name will be `node-launchpad`, but the crate is named consistently along with the other\ncrates in the workspace (including the use of underscores rather than hyphens).",
-          "timestamp": "2024-05-01T18:02:48+01:00",
-          "tree_id": "f29c088ce36d4559ad61ba635bc31741c221780f",
-          "url": "https://github.com/maidsafe/safe_network/commit/7c410fc1294a8186dfe5111fc144381032c41886"
-        },
-        "date": 1714584263781,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7784,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35419,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
           "id": "79ea950913c89f7cc6f6ff92fd2d9d360e760e6a",
           "message": "test: disable node man integration tests\n\nThese tests are no longer passing and it's not completely clear why. In any case, I think they need\nto be a bit more isolated, and operate on their own local network.\n\nAt the moment there is not enough time to address that.",
           "timestamp": "2024-05-01T18:14:56+01:00",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 29695,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d636aa2691f3190374f36aa14c6b3cc590a573ac",
+          "message": "Merge pull request #2102 from maqi/increase_circuit_bytes_limit\n\nfeat(networking): increase circuit bytes limit",
+          "timestamp": "2024-09-11T14:16:24Z",
+          "tree_id": "f2ba476fd0dd41ce46d71acb101e182870eb9309",
+          "url": "https://github.com/maidsafe/safe_network/commit/d636aa2691f3190374f36aa14c6b3cc590a573ac"
+        },
+        "date": 1726067211592,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4852,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 30697,
             "unit": "ms"
           },
           {
