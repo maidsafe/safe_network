@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726054103623,
+  "lastUpdate": 1726054105276,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "a4efbee09400ddabeee859297f79d4fb72bc8379",
-          "message": "refactor: rebased and removed custom rustfmt",
-          "timestamp": "2024-05-01T17:02:34+01:00",
-          "tree_id": "b7cf60b5b1827b18638859235bf78125ee2be956",
-          "url": "https://github.com/maidsafe/safe_network/commit/a4efbee09400ddabeee859297f79d4fb72bc8379"
-        },
-        "date": 1714580628425,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 205,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 202,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "35eb5f64428cdcc6602b375e8f9739f88b4561e1",
+          "message": "Merge pull request #2101 from b-zee/feat-update-libp2p-0.54.1\n\nfeat(global): update libp2p to 0.54.1",
+          "timestamp": "2024-09-11T10:39:05Z",
+          "tree_id": "109282483af6569c368b231842a80241239a6d6c",
+          "url": "https://github.com/maidsafe/safe_network/commit/35eb5f64428cdcc6602b375e8f9739f88b4561e1"
+        },
+        "date": 1726054104732,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 200,
             "unit": "MB"
           },
           {
