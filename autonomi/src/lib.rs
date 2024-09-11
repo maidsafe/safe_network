@@ -47,7 +47,10 @@ pub use client::{Client, ConnectError, CONNECT_TIMEOUT_SECS};
 
 mod client;
 mod secrets;
+#[cfg(feature = "data")]
 mod self_encryption;
+#[cfg(feature = "transfers")]
 mod wallet;
 
+#[cfg(feature = "transfers")]
 const VERIFY_STORE: bool = true;
