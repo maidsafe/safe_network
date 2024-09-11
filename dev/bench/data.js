@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726054106942,
+  "lastUpdate": 1726067086416,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "7c410fc1294a8186dfe5111fc144381032c41886",
-          "message": "chore: rename `node-launchpad` crate to `sn_node_launchpad`\n\nThe binary name will be `node-launchpad`, but the crate is named consistently along with the other\ncrates in the workspace (including the use of underscores rather than hyphens).",
-          "timestamp": "2024-05-01T18:02:48+01:00",
-          "tree_id": "f29c088ce36d4559ad61ba635bc31741c221780f",
-          "url": "https://github.com/maidsafe/safe_network/commit/7c410fc1294a8186dfe5111fc144381032c41886"
-        },
-        "date": 1714584131073,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2203158475915026,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6377808415767818,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.926460057784915,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.113955297489234,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d636aa2691f3190374f36aa14c6b3cc590a573ac",
+          "message": "Merge pull request #2102 from maqi/increase_circuit_bytes_limit\n\nfeat(networking): increase circuit bytes limit",
+          "timestamp": "2024-09-11T14:16:24Z",
+          "tree_id": "f2ba476fd0dd41ce46d71acb101e182870eb9309",
+          "url": "https://github.com/maidsafe/safe_network/commit/d636aa2691f3190374f36aa14c6b3cc590a573ac"
+        },
+        "date": 1726067079158,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2400050538861183,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7069728848203907,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.43233748866496,
             "unit": "MiB/s"
           }
         ]
