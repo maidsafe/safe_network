@@ -138,6 +138,7 @@ impl Client {
             retry_strategy: None,
             target_record: None,
             expected_holders: Default::default(),
+            is_register: true,
         };
 
         let record = self.network.get_record_from_network(key, &get_cfg).await?;

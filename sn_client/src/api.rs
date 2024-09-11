@@ -617,6 +617,7 @@ impl Client {
                 retry_strategy,
                 target_record: None, // Not used since we use ChunkProof
                 expected_holders: Default::default(),
+                is_register: false,
             };
             // The `ChunkWithPayment` is only used to send out via PutRecord.
             // The holders shall only hold the `Chunk` copies.
@@ -702,6 +703,7 @@ impl Client {
             retry_strategy: Some(retry_strategy.unwrap_or(RetryStrategy::Quick)),
             target_record: None,
             expected_holders,
+            is_register: false,
         };
         let record = self.network.get_record_from_network(key, &get_cfg).await?;
         let header = RecordHeader::from_record(&record)?;
@@ -856,6 +858,7 @@ impl Client {
             retry_strategy: None,
             target_record: record_to_verify,
             expected_holders,
+            is_register: false,
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::Majority,
@@ -903,6 +906,7 @@ impl Client {
                 retry_strategy: Some(RetryStrategy::Balanced),
                 target_record: None,
                 expected_holders: Default::default(),
+                is_register: false,
             },
         )
         .await
@@ -919,6 +923,7 @@ impl Client {
                 retry_strategy: None,
                 target_record: None,
                 expected_holders: Default::default(),
+                is_register: false,
             },
         )
         .await
@@ -934,6 +939,7 @@ impl Client {
                 retry_strategy: None,
                 target_record: None,
                 expected_holders: Default::default(),
+                is_register: false,
             },
         )
         .await

@@ -49,13 +49,14 @@ use libp2p::{
 use prometheus_client::{metrics::info::Info, registry::Registry};
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
-    storage::RetryStrategy,
+    storage::{try_deserialize_record, RetryStrategy},
     version::{
         IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
         REQ_RESPONSE_VERSION_STR,
     },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
+use sn_registers::SignedRegister;
 use sn_transfers::PaymentQuote;
 use std::{
     collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
@@ -138,11 +139,41 @@ pub struct GetRecordCfg {
     pub target_record: Option<Record>,
     /// Logs if the record was not fetched from the provided set of peers.
     pub expected_holders: HashSet<PeerId>,
+    /// For register record, only root value shall be checked, not the entire content.
+    pub is_register: bool,
 }
 
 impl GetRecordCfg {
     pub fn does_target_match(&self, record: &Record) -> bool {
-        self.target_record.as_ref().is_some_and(|t| t == record)
+        if let Some(ref target_record) = self.target_record {
+            if self.is_register {
+                let pretty_key = PrettyPrintRecordKey::from(&target_record.key);
+
+                let fetched_register = match try_deserialize_record::<SignedRegister>(record) {
+                    Ok(fetched_register) => fetched_register,
+                    Err(err) => {
+                        error!("When try to deserialize register from fetched record {pretty_key:?}, have error {err:?}");
+                        return false;
+                    }
+                };
+                let target_register = match try_deserialize_record::<SignedRegister>(target_record)
+                {
+                    Ok(target_register) => target_register,
+                    Err(err) => {
+                        error!("When try to deserialize register from target record {pretty_key:?}, have error {err:?}");
+                        return false;
+                    }
+                };
+
+                // Only compare root values of the register
+                target_register.base_register().read() == fetched_register.base_register().read()
+            } else {
+                target_record == record
+            }
+        } else {
+            // Not have target_record to check with
+            true
+        }
     }
 }
 
