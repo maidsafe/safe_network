@@ -7,7 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod chunk;
+mod scratchpad;
 
 pub use self::chunk::ChunkAddress;
+pub use self::scratchpad::ScratchpadAddress;
 pub use sn_registers::RegisterAddress;
 pub use sn_transfers::SpendAddress;

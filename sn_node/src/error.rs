@@ -49,6 +49,13 @@ pub enum Error {
     #[error("The Record::key does not match with the key derived from Record::value")]
     RecordKeyMismatch,
 
+    // Scratchpad is old version
+    #[error("A newer version of this Scratchpad already exists")]
+    IgnoringOutdatedScratchpadPut,
+    // Scratchpad is invalid
+    #[error("Scratchpad signature is invalid over the counter + content hash")]
+    InvalidScratchpadSignature,
+
     // ---------- Payment Errors
     #[error("The content of the payment quote is invalid")]
     InvalidQuoteContent,

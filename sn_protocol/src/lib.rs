@@ -29,6 +29,7 @@ pub mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
 pub use error::Error;
+use storage::ScratchpadAddress;
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
 use bytes::Bytes;
@@ -82,6 +83,8 @@ pub enum NetworkAddress {
     RegisterAddress(RegisterAddress),
     /// The NetworkAddress is representing a RecordKey.
     RecordKey(Bytes),
+    /// The NetworkAddress is representing a ScratchpadAddress.
+    ScratchpadAddress(ScratchpadAddress),
 }
 
 impl NetworkAddress {
@@ -118,6 +121,7 @@ impl NetworkAddress {
             NetworkAddress::SpendAddress(cash_note_address) => {
                 cash_note_address.xorname().0.to_vec()
             }
+            NetworkAddress::ScratchpadAddress(addr) => addr.xorname().0.to_vec(),
             NetworkAddress::RegisterAddress(register_address) => {
                 register_address.xorname().0.to_vec()
             }
@@ -164,6 +168,7 @@ impl NetworkAddress {
             NetworkAddress::SpendAddress(cash_note_address) => {
                 RecordKey::new(cash_note_address.xorname())
             }
+            NetworkAddress::ScratchpadAddress(addr) => RecordKey::new(&addr.xorname()),
             NetworkAddress::PeerId(bytes) => RecordKey::new(bytes),
         }
     }
@@ -216,6 +221,12 @@ impl Debug for NetworkAddress {
                     &spend_address.to_hex()[0..6]
                 )
             }
+            NetworkAddress::ScratchpadAddress(scratchpad_address) => {
+                format!(
+                    "NetworkAddress::ScratchpadAddress({} - ",
+                    &scratchpad_address.to_hex()[0..6]
+                )
+            }
             NetworkAddress::RegisterAddress(register_address) => format!(
                 "NetworkAddress::RegisterAddress({} - ",
                 &register_address.to_hex()[0..6]
@@ -244,6 +255,9 @@ impl Display for NetworkAddress {
             }
             NetworkAddress::SpendAddress(addr) => {
                 write!(f, "NetworkAddress::SpendAddress({addr:?})")
+            }
+            NetworkAddress::ScratchpadAddress(addr) => {
+                write!(f, "NetworkAddress::ScratchpadAddress({addr:?})")
             }
             NetworkAddress::RegisterAddress(addr) => {
                 write!(f, "NetworkAddress::RegisterAddress({addr:?})")

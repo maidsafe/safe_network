@@ -43,6 +43,8 @@ pub enum Marker<'a> {
     ValidRegisterRecordPutFromNetwork(&'a PrettyPrintRecordKey<'a>),
     /// Valid non-existing Spend record PUT from the network received and stored
     ValidSpendRecordPutFromNetwork(&'a PrettyPrintRecordKey<'a>),
+    /// Valid Scratchpad record PUT from the network received and stored
+    ValidScratchpadRecordPutFromNetwork(&'a PrettyPrintRecordKey<'a>),
 
     /// Valid paid to us and royalty paid chunk stored
     ValidPaidChunkPutFromClient(&'a PrettyPrintRecordKey<'a>),
@@ -50,6 +52,8 @@ pub enum Marker<'a> {
     ValidPaidRegisterPutFromClient(&'a PrettyPrintRecordKey<'a>),
     /// Valid spend stored
     ValidSpendPutFromClient(&'a PrettyPrintRecordKey<'a>),
+    /// Valid scratchpad stored
+    ValidScratchpadRecordPutFromClient(&'a PrettyPrintRecordKey<'a>),
 
     /// Record rejected
     RecordRejected(&'a PrettyPrintRecordKey<'a>, &'a Error),
