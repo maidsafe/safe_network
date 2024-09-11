@@ -1133,6 +1133,8 @@ jobs:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: Replication bench with heavy upload
     runs-on: ubuntu-latest
+    env:
+      CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
     steps:
       - uses: actions/checkout@v4
 
@@ -1209,6 +1211,20 @@ jobs:
             echo "SAFE_PEERS has been set to $SAFE_PEERS"
           fi
 
+      - name: Sleep 15s
+        shell: bash
+        run: sleep 15
+
+      - name: Check faucet has been funded
+        shell: bash
+        run: |
+          cash_note_count=$(ls -l /home/runner/.local/share/safe/test_faucet/wallet/cash_notes/ | wc -l)
+          echo $cash_note_count
+          if [ "$cash_note_count" -eq 0 ]; then
+            echo "Error: Expected at least 1 cash note, but found $cash_note_count"
+            exit 1
+          fi
+
       - name: Create and fund a wallet to pay for files storage
         run: |
           ./target/release/safe --log-output-dest=data-dir wallet create --no-password
@@ -1248,8 +1264,7 @@ jobs:
             echo "Got too many payment files leftover: $payment_files"
             exit 1
           fi
-        env:
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+
         timeout-minutes: 10
 
       - name: Wait for certain period
@@ -1281,8 +1296,6 @@ jobs:
             echo "Got too many payment files leftover: $payment_files"
             exit 1
           fi
-        env:
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
         timeout-minutes: 10
 
       - name: Wait for certain period
@@ -1306,7 +1319,6 @@ jobs:
         env:
           SN_LOG: "all"
           SAFE_DATA_PATH: /home/runner/.local/share/safe
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
         timeout-minutes: 25
 
       - name: Use second client to upload third file
@@ -1335,8 +1347,6 @@ jobs:
             echo "Got too many payment files leftover: $payment_files"
             exit 1
           fi
-        env:
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
         timeout-minutes: 10
 
       - name: Stop the local network and upload logs
