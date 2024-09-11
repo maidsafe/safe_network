@@ -375,22 +375,22 @@ pub async fn run_network(
         validate_network(node_registry, bootstrap_peers.clone()).await?;
     }
 
-    if !options.join {
-        println!("Launching the faucet server...");
-        let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
-        let version = get_bin_version(&options.faucet_bin_path)?;
-        let faucet = FaucetServiceData {
-            faucet_path: options.faucet_bin_path,
-            local: true,
-            log_dir_path: get_faucet_data_dir(),
-            pid: Some(pid),
-            service_name: "faucet".to_string(),
-            status: ServiceStatus::Running,
-            user: get_username()?,
-            version,
-        };
-        node_registry.faucet = Some(faucet);
-    }
+    // if !options.join {
+    //     println!("Launching the faucet server...");
+    //     let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
+    //     let version = get_bin_version(&options.faucet_bin_path)?;
+    //     let faucet = FaucetServiceData {
+    //         faucet_path: options.faucet_bin_path,
+    //         local: true,
+    //         log_dir_path: get_faucet_data_dir(),
+    //         pid: Some(pid),
+    //         service_name: "faucet".to_string(),
+    //         status: ServiceStatus::Running,
+    //         user: get_username()?,
+    //         version,
+    //     };
+    //     node_registry.faucet = Some(faucet);
+    // }
 
     Ok(())
 }

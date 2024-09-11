@@ -66,8 +66,8 @@ impl AttoTokens {
     }
 
     /// Converts the Nanos into bytes
-    pub fn to_bytes(&self) -> [u8; 8] {
-        self.0.to_be_bytes()
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.as_le_bytes().to_vec()
     }
 }
 
