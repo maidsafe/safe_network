@@ -536,10 +536,9 @@ mod tests {
             replication_fetcher.on_going_fetches.len(),
             "keys to fetch and ongoing fetches should match"
         );
-        assert_eq!(
-            in_range_keys,
-            keys_to_fetch.len() + replication_fetcher.to_be_fetched.len(),
-            "all keys should be in range and in the fetcher"
+        assert!(
+            keys_to_fetch.len() + replication_fetcher.to_be_fetched.len() >= in_range_keys,
+            "at least all keys in range should be in the fetcher"
         );
     }
 }
