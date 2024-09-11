@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726041647140,
+  "lastUpdate": 1726041648382,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "1cc37d4a8230c696676f4c9e694a194ace9ea9c6",
-          "message": "chore: addres review comments",
-          "timestamp": "2024-04-29T10:24:05Z",
-          "tree_id": "4920d9519d633e8e913cef7ba920fd84a412aa30",
-          "url": "https://github.com/maidsafe/safe_network/commit/1cc37d4a8230c696676f4c9e694a194ace9ea9c6"
-        },
-        "date": 1714389557046,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 186,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0100bc57b8f0600b95ea873bce71bea0a61f00cc",
+          "message": "Merge pull request #2100 from joshuef/FeatFlagAut\n\nchore(cli_aut): feat flag to avoid clippy errors",
+          "timestamp": "2024-09-11T07:11:23Z",
+          "tree_id": "63af2b1a93221eb5482067a7603095f1037b2291",
+          "url": "https://github.com/maidsafe/safe_network/commit/0100bc57b8f0600b95ea873bce71bea0a61f00cc"
+        },
+        "date": 1726041648136,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 180,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
