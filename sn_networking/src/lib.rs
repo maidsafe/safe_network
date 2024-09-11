@@ -148,7 +148,7 @@ pub fn sort_peers_by_key<'a, T>(
     Ok(sorted_peers)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// API to interact with the underlying Swarm
 pub struct Network {
     inner: Arc<NetworkInner>,
@@ -156,6 +156,7 @@ pub struct Network {
 
 /// The actual implementation of the Network. The other is just a wrapper around this, so that we don't expose
 /// the Arc from the interface.
+#[derive(Debug)]
 struct NetworkInner {
     network_swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
     local_swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
