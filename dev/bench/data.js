@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726041532039,
+  "lastUpdate": 1726041577248,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "b1885903e49d8069cd2ea52ab9ba61be80a901f9",
-          "message": "refactor(network): move event handling to its own module",
-          "timestamp": "2024-04-29T11:32:40Z",
-          "tree_id": "c9da0cf0b7202e717192b5477fa455aa75cd671a",
-          "url": "https://github.com/maidsafe/safe_network/commit/b1885903e49d8069cd2ea52ab9ba61be80a901f9"
-        },
-        "date": 1714393104145,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2192099086777177,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6535288502845271,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.07997965143257,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.6990789845101,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5fe9ecd4ec055838b7bf167b154516dcf62cb121",
+          "message": "Merge pull request #2073 from joshuef/ScratchPad\n\nfeat(protocol): add Scratchpad data type",
+          "timestamp": "2024-09-11T07:15:26Z",
+          "tree_id": "bfcc027a1754bce0dfa32130c9d391727493ea34",
+          "url": "https://github.com/maidsafe/safe_network/commit/5fe9ecd4ec055838b7bf167b154516dcf62cb121"
+        },
+        "date": 1726041570653,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2098147667715133,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6843416379368903,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.93595107060202,
             "unit": "MiB/s"
           }
         ]
