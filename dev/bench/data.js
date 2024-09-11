@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726045766983,
+  "lastUpdate": 1726053981913,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "a4efbee09400ddabeee859297f79d4fb72bc8379",
-          "message": "refactor: rebased and removed custom rustfmt",
-          "timestamp": "2024-05-01T17:02:34+01:00",
-          "tree_id": "b7cf60b5b1827b18638859235bf78125ee2be956",
-          "url": "https://github.com/maidsafe/safe_network/commit/a4efbee09400ddabeee859297f79d4fb72bc8379"
-        },
-        "date": 1714580501731,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1671337348937791,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6276701444508193,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.29465374181407,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.01060899739863,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "35eb5f64428cdcc6602b375e8f9739f88b4561e1",
+          "message": "Merge pull request #2101 from b-zee/feat-update-libp2p-0.54.1\n\nfeat(global): update libp2p to 0.54.1",
+          "timestamp": "2024-09-11T10:39:05Z",
+          "tree_id": "109282483af6569c368b231842a80241239a6d6c",
+          "url": "https://github.com/maidsafe/safe_network/commit/35eb5f64428cdcc6602b375e8f9739f88b4561e1"
+        },
+        "date": 1726053974967,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2377951597800971,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6906339228925436,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.113955297489234,
             "unit": "MiB/s"
           }
         ]
