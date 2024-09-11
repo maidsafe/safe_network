@@ -1224,14 +1224,18 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 5
 
-      - name: Ensure no leftover cash_notes and payment files
+      - name: Check current directories
         run: |
-          expected_cash_notes_files="1"
-          expected_payment_files="0"
           pwd
           ls $CLIENT_DATA_PATH/ -l
           ls $CLIENT_DATA_PATH/wallet -l
           ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+        timeout-minutes: 1
+
+      - name: Ensure no leftover cash_notes and payment files
+        run: |
+          expected_cash_notes_files="1"
+          expected_payment_files="0"
           cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
           echo "Find $cash_note_files cash_note files"
           if [ $expected_cash_notes_files -lt $cash_note_files ]; then
