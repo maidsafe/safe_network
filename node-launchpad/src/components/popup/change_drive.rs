@@ -23,7 +23,10 @@ use ratatui::{
 
 use crate::{
     action::{Action, OptionsActions},
-    components::Component,
+    components::{
+        popup::manage_nodes::{GB, GB_PER_NODE},
+        Component,
+    },
     config::get_launchpad_nodes_data_dir_path,
     mode::{InputMode, Scene},
     style::{
@@ -61,6 +64,7 @@ impl ChangeDrivePopup {
             .map(|(drive_name, mountpoint, space, available)| {
                 let size_str = format!("{:.2} GB", *space as f64 / 1e9);
                 let size_str_cloned = size_str.clone();
+                let has_enough_space = *space >= (GB_PER_NODE * GB) as u64;
                 DriveItem {
                     name: drive_name.to_string(),
                     mountpoint: mountpoint.clone(),
@@ -75,6 +79,8 @@ impl ChangeDrivePopup {
                         DriveStatus::Selected
                     } else if !available {
                         DriveStatus::NotAvailable
+                    } else if !has_enough_space {
+                        DriveStatus::NotEnoughSpace
                     } else {
                         DriveStatus::NotSelected
                     },
@@ -101,7 +107,9 @@ impl ChangeDrivePopup {
     ///
     fn deselect_all(&mut self) {
         for item in &mut self.items.items {
-            if item.status != DriveStatus::NotAvailable {
+            if item.status != DriveStatus::NotAvailable
+                && item.status != DriveStatus::NotEnoughSpace
+            {
                 item.status = DriveStatus::NotSelected;
             }
         }
@@ -382,7 +390,8 @@ impl Component for ChangeDrivePopup {
                             self.items.previous();
                             let drive = self.return_selection();
                             self.can_select = drive.mountpoint != self.drive_selection.mountpoint
-                                && drive.status != DriveStatus::NotAvailable;
+                                && drive.status != DriveStatus::NotAvailable
+                                && drive.status != DriveStatus::NotEnoughSpace;
                         }
                         vec![]
                     }
@@ -391,7 +400,8 @@ impl Component for ChangeDrivePopup {
                             self.items.next();
                             let drive = self.return_selection();
                             self.can_select = drive.mountpoint != self.drive_selection.mountpoint
-                                && drive.status != DriveStatus::NotAvailable;
+                                && drive.status != DriveStatus::NotAvailable
+                                && drive.status != DriveStatus::NotEnoughSpace;
                         }
                         vec![]
                     }
@@ -558,6 +568,7 @@ enum DriveStatus {
     Selected,
     #[default]
     NotSelected,
+    NotEnoughSpace,
     NotAvailable,
 }
 
@@ -585,6 +596,12 @@ impl DriveItem {
                 Span::styled(self.name.clone(), Style::default().fg(VIVID_SKY_BLUE)),
                 Span::raw(" ".repeat(spaces)),
                 Span::styled(self.size.clone(), Style::default().fg(GHOST_WHITE)),
+            ]),
+            DriveStatus::NotEnoughSpace => Line::from(vec![
+                Span::raw("   "),
+                Span::styled(self.name.clone(), Style::default().fg(COOL_GREY)),
+                Span::raw(" ".repeat(spaces)),
+                Span::styled(self.size.clone(), Style::default().fg(COOL_GREY)),
             ]),
             DriveStatus::NotAvailable => {
                 let legend = "No Access";
