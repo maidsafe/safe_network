@@ -17,7 +17,7 @@ transfers = []
 bip39 = "2.0.0"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
-libp2p = "0.53"
+libp2p = "0.54.1"
 rand = "0.8.5"
 rmp-serde = "1.1.1"
 self_encryption = "~0.29.0"

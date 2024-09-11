@@ -76,6 +76,8 @@ pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(15
 /// Interval over which we query relay manager to check if we can make any more reservations.
 pub(crate) const RELAY_MANAGER_RESERVATION_INTERVAL: Duration = Duration::from_secs(30);
 
+const KAD_STREAM_PROTOCOL_ID: StreamProtocol = StreamProtocol::new("/autonomi/kad/1.0.0");
+
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
     /// The network discovery method is present at the networking layer
@@ -314,7 +316,7 @@ impl NetworkBuilder {
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
     pub fn build_node(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
-        let mut kad_cfg = kad::Config::default();
+        let mut kad_cfg = kad::Config::new(KAD_STREAM_PROTOCOL_ID);
         let _ = kad_cfg
             .set_kbucket_inserts(libp2p::kad::BucketInserts::Manual)
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
@@ -399,7 +401,7 @@ impl NetworkBuilder {
     pub fn build_client(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
-        let mut kad_cfg = kad::Config::default(); // default query timeout is 60 secs
+        let mut kad_cfg = kad::Config::new(KAD_STREAM_PROTOCOL_ID); // default query timeout is 60 secs
 
         // 1mb packet size
         let _ = kad_cfg

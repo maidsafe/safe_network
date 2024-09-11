@@ -7,7 +7,11 @@ use crate::{behaviour::PROTOCOL_VERSION, App};
 impl App {
     pub(crate) fn on_event_identify(&mut self, event: identify::Event) {
         match event {
-            identify::Event::Received { peer_id, info } => {
+            identify::Event::Received {
+                peer_id,
+                info,
+                connection_id,
+            } => {
                 debug!(
                     %peer_id,
                     protocols=?info.protocols,
@@ -18,7 +22,7 @@ impl App {
 
                 // Disconnect if peer has incompatible protocol version.
                 if info.protocol_version != PROTOCOL_VERSION {
-                    warn!(%peer_id, "Incompatible protocol version. Disconnecting from peer.");
+                    warn!(conn_id=%connection_id, %peer_id, "Incompatible protocol version. Disconnecting from peer.");
                     let _ = self.swarm.disconnect_peer_id(peer_id);
                     return;
                 }
@@ -29,12 +33,12 @@ impl App {
                     .iter()
                     .any(|p| *p == autonat::DEFAULT_PROTOCOL_NAME)
                 {
-                    warn!(%peer_id, "Peer does not support AutoNAT. Disconnecting from peer.");
+                    warn!(conn_id=%connection_id, %peer_id, "Peer does not support AutoNAT. Disconnecting from peer.");
                     let _ = self.swarm.disconnect_peer_id(peer_id);
                     return;
                 }
 
-                info!(%peer_id, "Received peer info: confirmed it supports AutoNAT");
+                info!(conn_id=%connection_id, %peer_id, "Received peer info: confirmed it supports AutoNAT");
 
                 // If we're a client and the peer has (a) global listen address(es),
                 // add it as an AutoNAT server.
