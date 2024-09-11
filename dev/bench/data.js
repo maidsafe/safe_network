@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726040539140,
+  "lastUpdate": 1726041532039,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "1cc37d4a8230c696676f4c9e694a194ace9ea9c6",
-          "message": "chore: addres review comments",
-          "timestamp": "2024-04-29T10:24:05Z",
-          "tree_id": "4920d9519d633e8e913cef7ba920fd84a412aa30",
-          "url": "https://github.com/maidsafe/safe_network/commit/1cc37d4a8230c696676f4c9e694a194ace9ea9c6"
-        },
-        "date": 1714389427126,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1942541775972209,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6041071006005951,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.74470492340892,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.365380345434836,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0100bc57b8f0600b95ea873bce71bea0a61f00cc",
+          "message": "Merge pull request #2100 from joshuef/FeatFlagAut\n\nchore(cli_aut): feat flag to avoid clippy errors",
+          "timestamp": "2024-09-11T07:11:23Z",
+          "tree_id": "63af2b1a93221eb5482067a7603095f1037b2291",
+          "url": "https://github.com/maidsafe/safe_network/commit/0100bc57b8f0600b95ea873bce71bea0a61f00cc"
+        },
+        "date": 1726041525584,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2868054102104376,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7224992500234821,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.6990789845101,
             "unit": "MiB/s"
           }
         ]
