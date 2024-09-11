@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726045644545,
+  "lastUpdate": 1726045761951,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "5252242d0cbdaf9cbc1a7c58983128a7921a2d36",
-          "message": "chore: rename output reason to purpose for clarity",
-          "timestamp": "2024-04-30T14:37:53Z",
-          "tree_id": "6d074670ec32c24c50cb9342eaf86c15a36f5de9",
-          "url": "https://github.com/maidsafe/safe_network/commit/5252242d0cbdaf9cbc1a7c58983128a7921a2d36"
-        },
-        "date": 1714490845091,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 148,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d6b55bccedc2aee1b45e1997ab546447ce0853a0",
+          "message": "Merge pull request #2088 from maqi/auditor_not_reattempt_fetched_spends\n\nImprove auditor detecting speed",
+          "timestamp": "2024-09-11T08:15:36Z",
+          "tree_id": "04e09d385a22f933a147cbfd641cf501e1fdcb13",
+          "url": "https://github.com/maidsafe/safe_network/commit/d6b55bccedc2aee1b45e1997ab546447ce0853a0"
+        },
+        "date": 1726045760937,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 129,
             "unit": "MB"
           }
         ]
