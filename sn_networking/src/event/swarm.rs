@@ -115,8 +115,12 @@ impl SwarmDriver {
                 event_string = "identify";
 
                 match *iden {
-                    libp2p::identify::Event::Received { peer_id, info } => {
-                        debug!(%peer_id, ?info, "identify: received info");
+                    libp2p::identify::Event::Received {
+                        peer_id,
+                        info,
+                        connection_id,
+                    } => {
+                        debug!(conn_id=%connection_id, %peer_id, ?info, "identify: received info");
 
                         if info.protocol_version != IDENTIFY_PROTOCOL_STR.to_string() {
                             warn!(?info.protocol_version, "identify: {peer_id:?} does not have the same protocol. Our IDENTIFY_PROTOCOL_STR: {:?}", IDENTIFY_PROTOCOL_STR.as_str());

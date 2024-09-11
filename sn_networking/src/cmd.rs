@@ -735,7 +735,7 @@ impl SwarmDriver {
                     if let Some(distance) = range.0.ilog2() {
                         let peers_in_kbucket = kbucket
                             .iter()
-                            .map(|peer_entry| peer_entry.node.key.clone().into_preimage())
+                            .map(|peer_entry| (*peer_entry.node.key).into_preimage())
                             .collect::<Vec<PeerId>>();
                         let _ = ilog2_kbuckets.insert(distance, peers_in_kbucket);
                     } else {
