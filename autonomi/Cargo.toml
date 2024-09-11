@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = []
+default = ["data"]
 full = ["data", "files", "fs", "registers", "transfers"]
 data = ["transfers"]
-files = ["transfers"]
+files = ["transfers", "data"]
 fs = []
 local = ["sn_client/local-discovery"]
 registers = ["transfers"]
