@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1725978663014,
+  "lastUpdate": 1726040409324,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "e44f46dfc83590f8a539982249b0a00767fe96e0",
-          "message": "feat: provide `--home-network` arg for `add` cmd\n\nThe `add` command now enables the user to pass the `--home-network` argument to the `safenode`\nservice.\n\nBREAKING CHANGE: the addition of the `home_network` field to `NodeServiceData` will mean this\nversion of the node manager will not be able to deserialize old node registry files.",
-          "timestamp": "2024-04-25T15:23:27Z",
-          "tree_id": "6e1f9f4c5fd3a7506bfc40862e49e4facf78e676",
-          "url": "https://github.com/maidsafe/safe_network/commit/e44f46dfc83590f8a539982249b0a00767fe96e0"
-        },
-        "date": 1714061662107,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2204185085657062,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6426028091834455,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.206243019023766,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.753203619123596,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c1540cc769b439619448b098b8f3e5c9e13244a8",
+          "message": "Merge pull request #2085 from mazzi/fix_snagging\n\nfix(launchpad): styling tweaks",
+          "timestamp": "2024-09-11T06:54:26Z",
+          "tree_id": "e4dab85cecf8ebfe147ad43654c1e117945af134",
+          "url": "https://github.com/maidsafe/safe_network/commit/c1540cc769b439619448b098b8f3e5c9e13244a8"
+        },
+        "date": 1726040402107,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2482808677449768,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6857116500701659,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.365380345434836,
             "unit": "MiB/s"
           }
         ]
