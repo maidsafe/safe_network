@@ -526,6 +526,10 @@ jobs:
           platform: ${{ matrix.os }}
           build: true
 
+      # incase the faucet is not ready yet
+      - name: 30s sleep for faucet completion
+        run: sleep 30
+
       - name: Check SAFE_PEERS was set
         shell: bash
         run: |
