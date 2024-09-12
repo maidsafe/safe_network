@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726104188365,
+  "lastUpdate": 1726104305535,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "jacderida"
           },
           "distinct": true,
-          "id": "79ea950913c89f7cc6f6ff92fd2d9d360e760e6a",
-          "message": "test: disable node man integration tests\n\nThese tests are no longer passing and it's not completely clear why. In any case, I think they need\nto be a bit more isolated, and operate on their own local network.\n\nAt the moment there is not enough time to address that.",
-          "timestamp": "2024-05-01T18:14:56+01:00",
-          "tree_id": "f3999ce7e9c59bd6d80427becfc5a36dc0f5867e",
-          "url": "https://github.com/maidsafe/safe_network/commit/79ea950913c89f7cc6f6ff92fd2d9d360e760e6a"
-        },
-        "date": 1714585001248,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 51,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
           "id": "ff83510da343c9763bdba5132fcdbc822e4b704e",
           "message": "ci: add `node-launchpad` binary to release process\n\nThe new TUI for the node manager is a new, separate binary that is being added in to the release\nprocess. It will have a Github release.\n\nFor some reason it seems to have became necessary to explicitly call `rustup target` during the\nartifacts build process. Without doing it, I was getting build errors on macOS.",
           "timestamp": "2024-05-01T20:22:23+01:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 136,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "09a19be274dc3f28e56a688778cfb9f8646ba244",
+          "message": "Merge pull request #2104 from mazzi/not_enough_space\n\nNot enough space",
+          "timestamp": "2024-09-12T00:36:06Z",
+          "tree_id": "9ffb1a4b508ffcd0bf9cc2ae490c2171486c3dbc",
+          "url": "https://github.com/maidsafe/safe_network/commit/09a19be274dc3f28e56a688778cfb9f8646ba244"
+        },
+        "date": 1726104304684,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 138,
             "unit": "MB"
           }
         ]
