@@ -451,7 +451,7 @@ impl Component for ChangeDrivePopup {
                                     self.drive_selection.mountpoint.clone(),
                                     self.drive_selection.name.clone(),
                                 )),
-                                Action::SwitchScene(Scene::Options),
+                                Action::SwitchScene(Scene::Status),
                             ]
                         }
                         Err(e) => {

@@ -69,7 +69,7 @@ impl BetaProgramme {
                 vec![
                     Action::StoreDiscordUserName(self.discord_input_filed.value().to_string()),
                     Action::OptionsActions(OptionsActions::UpdateBetaProgrammeUsername(username)),
-                    Action::SwitchScene(Scene::Options),
+                    Action::SwitchScene(Scene::Status),
                 ]
             }
             KeyCode::Esc => {
