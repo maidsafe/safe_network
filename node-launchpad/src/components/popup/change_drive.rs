@@ -508,6 +508,13 @@ impl Component for ChangeDrivePopup {
                 let _ = self.update_drive_items();
                 None
             }
+            Action::StoreStorageDrive(mountpoint, _drive_name) => {
+                self.storage_mountpoint = mountpoint;
+                let _ = self.update_drive_items();
+                self.select_drive();
+                None
+            }
+
             _ => None,
         };
         Ok(send_back)
