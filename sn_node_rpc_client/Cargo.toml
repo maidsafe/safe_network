@@ -25,7 +25,7 @@ libp2p = { version="0.53", features = ["kad"]}
 libp2p-identity = { version="0.2.7", features = ["rand"] }
 sn_client = { path = "../sn_client", version = "0.110.0" }
 sn_logging = { path = "../sn_logging", version = "0.2.33" }
-sn_node = { path = "../sn_node", version = "0.111.0" }
+sn_node = { path = "../sn_node", version = "0.111.1" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.0" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.8", features=["rpc"] }
 sn_service_management = { path = "../sn_service_management", version = "0.3.11" }
