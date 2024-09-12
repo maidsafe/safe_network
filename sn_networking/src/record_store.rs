@@ -9,9 +9,9 @@
 
 use crate::cmd::LocalSwarmCmd;
 use crate::driver::MAX_PACKET_SIZE;
+use crate::send_local_swarm_cmd;
 use crate::target_arch::{spawn, Instant};
 use crate::{event::NetworkEvent, log_markers::Marker};
-use crate::{send_local_swarm_cmd, CLOSE_GROUP_SIZE};
 use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
     Aes256GcmSiv, Nonce,
@@ -34,7 +34,7 @@ use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{NanoTokens, QuotingMetrics, TOTAL_SUPPLY};
+use sn_transfers::{NanoTokens, QuotingMetrics};
 use std::collections::VecDeque;
 use std::{
     borrow::Cow,
@@ -61,6 +61,12 @@ const MAX_RECORDS_CACHE_SIZE: usize = 100;
 
 /// File name of the recorded historical quoting metrics.
 const HISTORICAL_QUOTING_METRICS_FILENAME: &str = "historic_quoting_metrics";
+
+/// Max store cost for a chunk.
+const MAX_STORE_COST: u64 = 1_000_000;
+
+// Min store cost for a chunk.
+const MIN_STORE_COST: u64 = 1;
 
 /// A `RecordStore` that stores records on disk.
 pub struct NodeRecordStore {
@@ -508,7 +514,6 @@ impl NodeRecordStore {
     }
 
     /// Returns the reference to the set of `NetworkAddress::RecordKey` held by the store
-    #[allow(clippy::mutable_key_type)]
     pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
         &self.records
     }
@@ -646,7 +651,6 @@ impl NodeRecordStore {
     }
 
     /// Calculate the cost to store data for our current store state
-    #[allow(clippy::mutable_key_type)]
     pub(crate) fn store_cost(&self, key: &Key) -> (NanoTokens, QuotingMetrics) {
         let records_stored = self.records.len();
         let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
@@ -676,7 +680,7 @@ impl NodeRecordStore {
         let cost = if self.contains(key) {
             0
         } else {
-            calculate_cost_for_records(&quoting_metrics)
+            calculate_cost_for_records(quoting_metrics.close_records_stored)
         };
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
@@ -692,7 +696,6 @@ impl NodeRecordStore {
     }
 
     /// Calculate how many records are stored within a distance range
-    #[allow(clippy::mutable_key_type)]
     pub fn get_records_within_distance_range(
         &self,
         records: HashSet<&Key>,
@@ -879,7 +882,6 @@ impl ClientRecordStore {
         HashMap::new()
     }
 
-    #[allow(clippy::mutable_key_type)]
     pub(crate) fn record_addresses_ref(&self) -> &HashMap<Key, (NetworkAddress, RecordType)> {
         &self.empty_record_addresses
     }
@@ -924,62 +926,47 @@ impl RecordStore for ClientRecordStore {
     fn remove_provider(&mut self, _key: &Key, _provider: &PeerId) {}
 }
 
-// Using a linear growth function, and be tweaked by `received_payment_count`,
-// `max_records` and `live_time`(in seconds),
-// to allow nodes receiving too many replication copies can still got paid,
+// Using a linear growth function tweaked by `max_records`,
 // and gives an exponential pricing curve when storage reaches high.
 // and give extra reward (lower the quoting price to gain a better chance) to long lived nodes.
-pub fn calculate_cost_for_records(quoting_metrics: &QuotingMetrics) -> u64 {
+pub fn calculate_cost_for_records(records_stored: usize) -> u64 {
     use std::cmp::{max, min};
 
-    let records_stored = quoting_metrics.close_records_stored;
-    let received_payment_count = quoting_metrics.received_payment_count;
-    let max_records = quoting_metrics.max_records;
-    let live_time = quoting_metrics.live_time;
+    let max_records = MAX_RECORDS_COUNT;
 
-    let ori_cost = (10 * records_stored) as u64;
-    let divider = max(1, records_stored / max(1, received_payment_count)) as u64;
+    let ori_cost = positive_input_0_1_sigmoid(records_stored as f64 / max_records as f64)
+        * MAX_STORE_COST as f64;
 
-    // Gaining one step for every day that staying in the network
-    let reward_steps: u64 = live_time / (24 * 3600);
-    let base_multiplier = 1.1_f32;
-    let rewarder = max(1, base_multiplier.powf(reward_steps as f32) as u64);
-
-    // Fine tuning here helps to get a desired curve:
-    // 1, Close to the max supply (4.3E+18) when stored records reaching full.
-    // 2, Charging around `token`s near the situation of 80% storage reached.
-    //
-    // 1.02.powf(1638) = 1.25E+14 => charge_at_full = 10 * MAX_RECORDS * 1.25E+14 = 5.4E+18
-    // 1.02.powf(820) = 1.1E+7 => charge_at_80_percent = 10 * 0.8 * MAX_RECORDS * 1.1E+7 = 3.6E+11 (360 tokens)
-    let base_multiplier = 1.0225_f32;
-
-    // Given currently the max_records is set at MAX_RECORDS,
-    // hence setting the multiplier trigger at 60% of the max_records
-    let exponential_pricing_trigger = 6 * max_records / 10;
-
-    let multiplier = max(
-        1,
-        base_multiplier.powf(records_stored.saturating_sub(exponential_pricing_trigger) as f32)
-            as u64,
-    );
-
-    let charge = max(10, ori_cost.saturating_mul(multiplier) / divider / rewarder);
+    // Deploy a lower cap safe_guard to the store_cost
+    let charge = max(MIN_STORE_COST, ori_cost as u64);
     // Deploy an upper cap safe_guard to the store_cost
-    min(TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64, charge)
+    min(MAX_STORE_COST, charge)
 }
 
-#[allow(trivial_casts)]
+fn positive_input_0_1_sigmoid(x: f64) -> f64 {
+    1.0 / (1.0 + (-30.0 * (x - 0.5)).exp())
+}
+
+#[expect(trivial_casts)]
 #[cfg(test)]
 mod tests {
 
+    use crate::get_fees_from_store_cost_responses;
+
     use super::*;
-    use crate::{close_group_majority, sort_peers_by_key, REPLICATION_PEERS_COUNT};
+    use bls::SecretKey;
+    use sn_protocol::storage::{Scratchpad, ScratchpadAddress};
+    use xor_name::XorName;
+
     use bytes::Bytes;
-    use eyre::ContextCompat;
+    use eyre::{bail, ContextCompat};
+    use libp2p::kad::K_VALUE;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
-    use sn_protocol::storage::{try_serialize_record, ChunkAddress};
+    use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress};
+    use sn_transfers::{MainPubkey, PaymentQuote};
     use std::collections::BTreeMap;
+    use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
     use tokio::runtime::Runtime;
     use tokio::time::{sleep, Duration};
 
@@ -1020,101 +1007,66 @@ mod tests {
 
     #[test]
     fn test_calculate_max_cost_for_records() {
-        let sut = calculate_cost_for_records(&QuotingMetrics {
-            close_records_stored: MAX_RECORDS_COUNT + 1,
-            max_records: MAX_RECORDS_COUNT,
-            received_payment_count: MAX_RECORDS_COUNT + 1,
-            live_time: 1,
-        });
-        assert_eq!(sut, TOTAL_SUPPLY / CLOSE_GROUP_SIZE as u64);
+        let sut = calculate_cost_for_records(MAX_RECORDS_COUNT + 1);
+        assert_eq!(sut, MAX_STORE_COST - 1);
     }
 
     #[test]
     fn test_calculate_50_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 50 / 100;
-        let sut = calculate_cost_for_records(&QuotingMetrics {
-            close_records_stored: percent,
-            max_records: MAX_RECORDS_COUNT,
-            received_payment_count: percent,
-            live_time: 1,
-        });
+        let sut = calculate_cost_for_records(percent);
+
         // at this point we should be at max cost
-        assert_eq!(sut, 20480);
+        assert_eq!(sut, 500000);
     }
     #[test]
     fn test_calculate_60_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 60 / 100;
-        let sut = calculate_cost_for_records(&QuotingMetrics {
-            close_records_stored: percent,
-            max_records: MAX_RECORDS_COUNT,
-            received_payment_count: percent,
-            live_time: 1,
-        });
+        let sut = calculate_cost_for_records(percent);
+
         // at this point we should be at max cost
-        assert_eq!(sut, 24570);
+        assert_eq!(sut, 952375);
     }
 
     #[test]
     fn test_calculate_65_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 65 / 100;
-        let sut = calculate_cost_for_records(&QuotingMetrics {
-            close_records_stored: percent,
-            max_records: MAX_RECORDS_COUNT,
-            received_payment_count: percent,
-            live_time: 1,
-        });
+        let sut = calculate_cost_for_records(percent);
+
         // at this point we should be at max cost
-        assert_eq!(sut, 2528900);
+        assert_eq!(sut, 988981);
     }
 
     #[test]
     fn test_calculate_70_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 70 / 100;
-        let sut = calculate_cost_for_records(&QuotingMetrics {
-            close_records_stored: percent,
-            max_records: MAX_RECORDS_COUNT,
-            received_payment_count: percent,
-            live_time: 1,
-        });
+        let sut = calculate_cost_for_records(percent);
+
         // at this point we should be at max cost
-        assert_eq!(sut, 262645870);
+        assert_eq!(sut, 997523);
     }
 
     #[test]
     fn test_calculate_80_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 80 / 100;
-        let sut = calculate_cost_for_records(&QuotingMetrics {
-            close_records_stored: percent,
-            max_records: MAX_RECORDS_COUNT,
-            received_payment_count: percent,
-            live_time: 1,
-        });
+        let sut = calculate_cost_for_records(percent);
+
         // at this point we should be at max cost
-        assert_eq!(sut, 2689140767040);
+        assert_eq!(sut, 999875);
     }
 
     #[test]
     fn test_calculate_90_percent_cost_for_records() {
         let percent = MAX_RECORDS_COUNT * 90 / 100;
-        let sut = calculate_cost_for_records(&QuotingMetrics {
-            close_records_stored: percent,
-            max_records: MAX_RECORDS_COUNT,
-            received_payment_count: percent,
-            live_time: 1,
-        });
+        let sut = calculate_cost_for_records(percent);
         // at this point we should be at max cost
-        assert_eq!(sut, 27719885856440320);
+        assert_eq!(sut, 999993);
     }
 
     #[test]
     fn test_calculate_min_cost_for_records() {
-        let sut = calculate_cost_for_records(&QuotingMetrics {
-            close_records_stored: 0,
-            max_records: MAX_RECORDS_COUNT,
-            received_payment_count: 0,
-            live_time: 1,
-        });
-        assert_eq!(sut, 10);
+        let sut = calculate_cost_for_records(0);
+        assert_eq!(sut, MIN_STORE_COST);
     }
 
     #[test]
@@ -1203,6 +1155,147 @@ mod tests {
         assert!(store.get(&r.key).is_none());
     }
 
+    #[tokio::test]
+    async fn can_store_and_retrieve_chunk() {
+        let temp_dir = std::env::temp_dir();
+        let store_config = NodeRecordStoreConfig {
+            storage_dir: temp_dir,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
+
+        // Create a chunk
+        let chunk_data = Bytes::from_static(b"Test chunk data");
+        let chunk = Chunk::new(chunk_data.clone());
+        let chunk_address = *chunk.address();
+
+        // Create a record from the chunk
+        let record = Record {
+            key: NetworkAddress::ChunkAddress(chunk_address).to_record_key(),
+            value: chunk_data.to_vec(),
+            expires: None,
+            publisher: None,
+        };
+
+        // Store the chunk using put_verified
+        assert!(store
+            .put_verified(record.clone(), RecordType::Chunk)
+            .is_ok());
+
+        // Mark as stored (simulating the CompletedWrite event)
+        store.mark_as_stored(record.key.clone(), RecordType::Chunk);
+
+        // Verify the chunk is stored
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Chunk should be stored");
+
+        if let Some(stored) = stored_record {
+            assert_eq!(
+                stored.value, chunk_data,
+                "Stored chunk data should match original"
+            );
+
+            let stored_address = ChunkAddress::new(XorName::from_content(&stored.value));
+            assert_eq!(
+                stored_address, chunk_address,
+                "Stored chunk address should match original"
+            );
+        }
+
+        // Clean up
+        store.remove(&record.key);
+        assert!(
+            store.get(&record.key).is_none(),
+            "Chunk should be removed after cleanup"
+        );
+    }
+
+    #[tokio::test]
+    async fn can_store_and_retrieve_scratchpad() {
+        let temp_dir = std::env::temp_dir();
+        let store_config = NodeRecordStoreConfig {
+            storage_dir: temp_dir,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
+
+        // Create a scratchpad
+        let scratchpad_data = Bytes::from_static(b"Test scratchpad data");
+
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+
+        let mut signing_bytes = 0_u64.to_be_bytes().to_vec();
+        signing_bytes.extend(XorName::from_content(&scratchpad_data).to_vec()); // add the count
+
+        let sig = owner_sk.sign(&signing_bytes);
+        let scratchpad = Scratchpad::new(owner_pk, scratchpad_data.clone(), 0, sig);
+        let scratchpad_address = *scratchpad.address();
+
+        // Create a record from the scratchpad
+        let record = Record {
+            key: NetworkAddress::ScratchpadAddress(scratchpad_address).to_record_key(),
+            value: scratchpad_data.to_vec(),
+            expires: None,
+            publisher: None,
+        };
+
+        // Store the scratchpad using put_verified
+        assert!(store
+            .put_verified(
+                record.clone(),
+                RecordType::NonChunk(XorName::from_content(&record.value))
+            )
+            .is_ok());
+
+        // Mark as stored (simulating the CompletedWrite event)
+        store.mark_as_stored(
+            record.key.clone(),
+            RecordType::NonChunk(XorName::from_content(&record.value)),
+        );
+
+        // Verify the scratchpad is stored
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Scratchpad should be stored");
+
+        if let Some(stored) = stored_record {
+            assert_eq!(
+                stored.value, scratchpad_data,
+                "Stored scratchpad data should match original"
+            );
+
+            let stored_address = ScratchpadAddress::new(owner_pk);
+            assert_eq!(
+                stored_address, scratchpad_address,
+                "Stored scratchpad address should match original"
+            );
+        }
+
+        // Clean up
+        store.remove(&record.key);
+        assert!(
+            store.get(&record.key).is_none(),
+            "Scratchpad should be removed after cleanup"
+        );
+    }
     #[tokio::test]
     async fn pruning_on_full() -> Result<()> {
         let max_iterations = 10;
@@ -1334,7 +1427,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[allow(clippy::mutable_key_type)]
     async fn get_records_within_bucket_range() -> eyre::Result<()> {
         let max_records = 50;
 
@@ -1366,7 +1458,9 @@ mod tests {
         for _ in 0..max_records - 1 {
             let record_key = NetworkAddress::from_peer(PeerId::random()).to_record_key();
             let value = match try_serialize_record(
-                &(0..50).map(|_| rand::random::<u8>()).collect::<Bytes>(),
+                &(0..max_records)
+                    .map(|_| rand::random::<u8>())
+                    .collect::<Bytes>(),
                 RecordKind::Chunk,
             ) {
                 Ok(value) => value.to_vec(),
@@ -1461,199 +1555,246 @@ mod tests {
         Ok(())
     }
 
+    struct PeerStats {
+        address: NetworkAddress,
+        pk: MainPubkey,
+        records_stored: AtomicUsize,
+        nanos_earned: AtomicU64,
+        payments_received: AtomicUsize,
+    }
+
     #[test]
     fn address_distribution_sim() {
-        // Map of peers and correspondent stats of `(num_of_records, Nano_earned, received_payment_count)`.
-        let mut peers: HashMap<PeerId, (usize, u64, usize)> = Default::default();
-        let mut peers_vec = vec![];
+        use rayon::prelude::*;
 
-        let num_of_peers = 2000;
-        let num_of_chunks_per_itr = 2000;
+        // as network saturates, we can see that peers all eventually earn similarly
+        let num_of_peers = 5_000;
+        let num_of_chunks_per_hour = 1_000_000;
+        let max_hours = 50;
 
-        for _ in 0..num_of_peers {
-            let peer_id = PeerId::random();
-            let _ = peers.insert(peer_id, (0, 0, 0));
-            peers_vec.push(peer_id);
-        }
+        //
+        let k = K_VALUE.get();
 
-        let mut iteration = 0;
+        let replication_group_size = k / 3;
+
+        // Initialize peers with random addresses
+        let mut peers: Vec<PeerStats> = (0..num_of_peers)
+            .into_par_iter()
+            .map(|_| PeerStats {
+                address: NetworkAddress::from_peer(PeerId::random()),
+                records_stored: AtomicUsize::new(0),
+                nanos_earned: AtomicU64::new(0),
+                payments_received: AtomicUsize::new(0),
+                pk: MainPubkey::new(SecretKey::random().public_key()),
+            })
+            .collect();
+
+        let mut hour = 0;
         let mut total_received_payment_count = 0;
 
+        let peers_len = peers.len();
+
+        // Generate a random sorting target address
+        let sorting_target_address =
+            NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::default()));
+
+        // Sort all peers based on their distance to the sorting target
+        peers.par_sort_by(|a, b| {
+            sorting_target_address
+                .distance(&a.address)
+                .cmp(&sorting_target_address.distance(&b.address))
+        });
+
         loop {
-            for _ in 0..num_of_chunks_per_itr {
-                let name = xor_name::rand::random();
-                let address = NetworkAddress::from_chunk_address(ChunkAddress::new(name));
-                match sort_peers_by_key(
-                    &peers_vec,
-                    &address.as_kbucket_key(),
-                    REPLICATION_PEERS_COUNT,
-                ) {
-                    Ok(peers_in_replicate_range) => {
-                        let peers_in_replicate_range: Vec<PeerId> = peers_in_replicate_range
-                            .iter()
-                            .map(|peer_id| **peer_id)
-                            .collect();
-                        let peers_in_close: Vec<PeerId> = match sort_peers_by_key(
-                            &peers_in_replicate_range,
-                            &address.as_kbucket_key(),
-                            close_group_majority(),
-                        ) {
-                            Ok(peers_in_close) => {
-                                peers_in_close.iter().map(|peer_id| **peer_id).collect()
-                            }
-                            Err(err) => {
-                                panic!("Can't find close range of {name:?} with error {err:?}")
-                            }
-                        };
+            // Parallel processing of chunks
+            let _chunk_results: Vec<_> = (0..num_of_chunks_per_hour)
+                .into_par_iter()
+                .map(|_| {
+                    // Generate a random chunk address
+                    let name = xor_name::rand::random();
+                    let chunk_address = NetworkAddress::from_chunk_address(ChunkAddress::new(name));
 
-                        let payee = pick_cheapest_payee(&peers_in_close, &peers);
+                    let chunk_distance_to_sorting = sorting_target_address.distance(&chunk_address);
+                    // Binary search to find the insertion point for the chunk
+                    let partition_point = peers.partition_point(|peer| {
+                        sorting_target_address.distance(&peer.address) < chunk_distance_to_sorting
+                    });
 
-                        for peer in peers_in_replicate_range.iter() {
-                            let (close_records_stored, nanos_earnt, received_payment_count) =
-                                peers.entry(*peer).or_insert((0, 0, 0));
-                            if *peer == payee {
-                                let cost = calculate_cost_for_records(&QuotingMetrics {
-                                    close_records_stored: *close_records_stored,
-                                    max_records: MAX_RECORDS_COUNT,
-                                    received_payment_count: *received_payment_count,
-                                    live_time: 0,
-                                });
-                                *nanos_earnt += cost;
-                                *received_payment_count += 1;
-                            }
-                            *close_records_stored += 1;
+                    // Collect close_group_size closest peers
+                    let mut close_group = Vec::with_capacity(replication_group_size);
+                    let mut left = partition_point;
+                    let mut right = partition_point;
+
+                    while close_group.len() < replication_group_size
+                        && (left > 0 || right < peers_len)
+                    {
+                        if left > 0 {
+                            left -= 1;
+                            close_group.push(left);
+                        }
+                        if close_group.len() < replication_group_size && right < peers_len {
+                            close_group.push(right);
+                            right += 1;
                         }
                     }
-                    Err(err) => {
-                        panic!("Can't find replicate range of {name:?} with error {err:?}")
+
+                    // Truncate to ensure we have exactly close_group_size peers
+                    close_group.truncate(replication_group_size);
+
+                    // Find the cheapest payee among the close group
+                    let Ok((payee_index, cost)) = pick_cheapest_payee(&peers, &close_group) else {
+                        bail!("Failed to find a payee");
+                    };
+
+                    for &peer_index in &close_group {
+                        let peer = &peers[peer_index];
+                        peer.records_stored.fetch_add(1, Ordering::Relaxed);
+
+                        if peer_index == payee_index {
+                            peer.nanos_earned
+                                .fetch_add(cost.as_nano(), Ordering::Relaxed);
+                            peer.payments_received.fetch_add(1, Ordering::Relaxed);
+                        }
                     }
-                }
-            }
 
-            let mut received_payment_count = 0;
-            let mut empty_earned_nodes = 0;
+                    Ok(())
+                })
+                .collect();
 
-            let mut min_earned = u64::MAX;
-            let mut min_store_cost = u64::MAX;
-            let mut max_earned = 0;
-            let mut max_store_cost = 0;
+            // Parallel reduction to calculate statistics
+            let (
+                received_payment_count,
+                empty_earned_nodes,
+                min_earned,
+                max_earned,
+                min_store_cost,
+                max_store_cost,
+            ) = peers
+                .par_iter()
+                .map(|peer| {
+                    let cost =
+                        calculate_cost_for_records(peer.records_stored.load(Ordering::Relaxed));
+                    let earned = peer.nanos_earned.load(Ordering::Relaxed);
+                    (
+                        peer.payments_received.load(Ordering::Relaxed),
+                        if earned == 0 { 1 } else { 0 },
+                        earned,
+                        earned,
+                        cost,
+                        cost,
+                    )
+                })
+                .reduce(
+                    || (0, 0, u64::MAX, 0, u64::MAX, 0),
+                    |a, b| {
+                        let (
+                            a_received_payment_count,
+                            a_empty_earned_nodes,
+                            a_min_earned,
+                            a_max_earned,
+                            a_min_store_cost,
+                            a_max_store_cost,
+                        ) = a;
+                        let (
+                            b_received_payment_count,
+                            b_empty_earned_nodes,
+                            b_min_earned,
+                            b_max_earned,
+                            b_min_store_cost,
+                            b_max_store_cost,
+                        ) = b;
+                        (
+                            a_received_payment_count + b_received_payment_count,
+                            a_empty_earned_nodes + b_empty_earned_nodes,
+                            a_min_earned.min(b_min_earned),
+                            a_max_earned.max(b_max_earned),
+                            a_min_store_cost.min(b_min_store_cost),
+                            a_max_store_cost.max(b_max_store_cost),
+                        )
+                    },
+                );
 
-            for (_peer_id, (close_records_stored, nanos_earnt, times_paid)) in peers.iter() {
-                let cost = calculate_cost_for_records(&QuotingMetrics {
-                    close_records_stored: *close_records_stored,
-                    max_records: MAX_RECORDS_COUNT,
-                    received_payment_count: *times_paid,
-                    live_time: 0,
-                });
-                // println!("{peer_id:?}:{stats:?} with storecost to be {cost}");
-                received_payment_count += times_paid;
-                if *nanos_earnt == 0 {
-                    empty_earned_nodes += 1;
-                }
-
-                if *nanos_earnt < min_earned {
-                    min_earned = *nanos_earnt;
-                }
-                if *nanos_earnt > max_earned {
-                    max_earned = *nanos_earnt;
-                }
-                if cost < min_store_cost {
-                    min_store_cost = cost;
-                }
-                if cost > max_store_cost {
-                    max_store_cost = cost;
-                }
-            }
-
-            total_received_payment_count += num_of_chunks_per_itr;
+            total_received_payment_count += num_of_chunks_per_hour;
             assert_eq!(total_received_payment_count, received_payment_count);
 
-            println!("After the completion of {iteration} with {num_of_chunks_per_itr} chunks, there is still {empty_earned_nodes} nodes earned nothing");
+            println!("After the completion of hour {hour} with {num_of_chunks_per_hour} chunks put, there are {empty_earned_nodes} nodes which earned nothing");
             println!("\t\t with storecost variation of (min {min_store_cost} - max {max_store_cost}), and earned variation of (min {min_earned} - max {max_earned})");
 
-            iteration += 1;
+            hour += 1;
 
-            // Execute for 50 iterations, which allows the test can be executed in normal CI runs.
-            if iteration == 50 {
-                assert_eq!(0, empty_earned_nodes, "every node has earnt _something_");
+            // Check termination condition
+            if hour == max_hours {
+                let acceptable_percentage = 0.01; //%
+
+                // Calculate acceptable empty nodes based on % of total nodes
+                let acceptable_empty_nodes =
+                    (num_of_peers as f64 * acceptable_percentage).ceil() as usize;
+
+                // Assert conditions for termination
                 assert!(
-                    (max_store_cost / min_store_cost) < 100,
-                    "store cost is balanced"
+                    empty_earned_nodes <= acceptable_empty_nodes,
+                    "More than {acceptable_percentage}% of nodes ({acceptable_empty_nodes}) still not earning: {empty_earned_nodes}"
                 );
                 assert!(
-                    (max_earned / min_earned) < 1000,
-                    "earning distribution is well balanced"
+                    (max_store_cost / min_store_cost) < 100,
+                    "store cost is not 'balanced', expected ratio max/min to be < 100, but was {}",
+                    max_store_cost / min_store_cost
+                );
+                assert!(
+                    (max_earned / min_earned) < 1500,
+                    "earning distribution is not balanced, expected to be < 1500, but was {}",
+                    max_earned / min_earned
                 );
                 break;
             }
         }
-
-        // log_chunks_distribution(&peers);
     }
 
-    // Split nodes into groups based on its kBucketKey's leading byte of hashed_bytes.
-    // This will result in 256 groups, and collect number of nodes and chunks fell into.
-    #[allow(dead_code)]
-    fn log_chunks_distribution(peers: &HashMap<PeerId, (usize, u64, usize)>) {
-        // Using `times_of_earned` to reflect chunks hit the group.
-        // This can avoid `replication counts` causing mis-understanding.
-        // (number_of_nodes, times_of_earned)
-        let mut distribution_map: BTreeMap<u8, (usize, usize)> = Default::default();
-
-        for (peer_id, stats) in peers.iter() {
-            let leading_byte = NetworkAddress::from_peer(*peer_id)
-                .as_kbucket_key()
-                .hashed_bytes()[0];
-            let entry = distribution_map.entry(leading_byte).or_insert((0, 0));
-            entry.0 += 1;
-            entry.1 += stats.2;
-        }
-
-        for (leading_byte, stats) in distribution_map.iter() {
-            println!("{leading_byte:08b}\t{}\t{} ", stats.0, stats.1)
-        }
-    }
-
-    // After the completion of 0 with 2000 chunks, there is still 875 nodes earned nothing
-    // After the completion of 1 with 2000 chunks, there is still 475 nodes earned nothing
-    // After the completion of 2 with 2000 chunks, there is still 314 nodes earned nothing
-    // After the completion of 3 with 2000 chunks, there is still 218 nodes earned nothing
-    // ... ...
-    // After the completion of 115 with 2000 chunks, there is still 56 nodes earned nothing
-    // After the completion of 116 with 2000 chunks, there is still 56 nodes earned nothing
-    // After the completion of 117 with 2000 chunks, there is still 56 nodes earned nothing
-    // After the completion of 118 with 2000 chunks, there is still 56 nodes earned nothing
-    // After the completion of 119 with 2000 chunks, there is still 56 nodes earned nothing
-    // After the completion of 120 with 2000 chunks, there is still 56 nodes earned nothing
-    // After the completion of 121 with 2000 chunks, there is still 56 nodes earned nothing
     fn pick_cheapest_payee(
-        peers_in_close: &Vec<PeerId>,
-        peers: &HashMap<PeerId, (usize, u64, usize)>,
-    ) -> PeerId {
-        let mut payee = None;
-        let mut cheapest_cost = u64::MAX;
+        peers: &[PeerStats],
+        close_group: &[usize],
+    ) -> eyre::Result<(usize, NanoTokens)> {
+        let mut costs_vec = Vec::with_capacity(close_group.len());
+        let mut address_to_index = BTreeMap::new();
 
-        for peer in peers_in_close {
-            if let Some(stats) = peers.get(peer) {
-                let store_cost = calculate_cost_for_records(&QuotingMetrics {
-                    close_records_stored: stats.0,
+        for &i in close_group {
+            let peer = &peers[i];
+            address_to_index.insert(peer.address.clone(), i);
+
+            let close_records_stored = peer.records_stored.load(Ordering::Relaxed);
+            let cost = NanoTokens::from(calculate_cost_for_records(close_records_stored));
+
+            let quote = PaymentQuote {
+                content: XorName::default(), // unimportant for cost calc
+                cost,
+                timestamp: std::time::SystemTime::now(),
+                quoting_metrics: QuotingMetrics {
+                    close_records_stored: peer.records_stored.load(Ordering::Relaxed),
                     max_records: MAX_RECORDS_COUNT,
-                    received_payment_count: stats.2,
-                    live_time: 0,
-                });
-                if store_cost < cheapest_cost {
-                    cheapest_cost = store_cost;
-                    payee = Some(*peer);
-                }
-            } else {
-                panic!("Cannot find stats of {peer:?}");
-            }
+                    received_payment_count: 1, // unimportant for cost calc
+                    live_time: 0,              // unimportant for cost calc
+                },
+                pub_key: peer.pk.to_bytes().to_vec(),
+                signature: vec![], // unimportant for cost calc
+            };
+
+            costs_vec.push((peer.address.clone(), peer.pk, quote));
         }
 
-        if let Some(peer_id) = payee {
-            peer_id
-        } else {
-            panic!("Cannot find cheapest payee among {peers_in_close:?}");
-        }
+        // sort by address first
+        costs_vec.sort_by(|(a_addr, _, _), (b_addr, _, _)| a_addr.cmp(b_addr));
+
+        let Ok((recip_id, _pk, q)) = get_fees_from_store_cost_responses(costs_vec) else {
+            bail!("Failed to get fees from store cost responses")
+        };
+
+        let Some(index) = address_to_index
+            .get(&NetworkAddress::from_peer(recip_id))
+            .copied()
+        else {
+            bail!("Cannot find the index for the cheapest payee");
+        };
+
+        Ok((index, q.cost))
     }
 }

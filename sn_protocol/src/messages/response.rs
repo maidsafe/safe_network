@@ -16,7 +16,6 @@ use sn_transfers::{MainPubkey, PaymentQuote};
 use std::fmt::Debug;
 
 /// The response to a query, containing the query result.
-#[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum QueryResponse {
     // ===== GetStoreCost =====

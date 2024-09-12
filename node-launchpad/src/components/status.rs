@@ -228,12 +228,12 @@ impl Status {
         self.node_table_state.select(Some(i));
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn unselect_table_item(&mut self) {
         self.node_table_state.select(None);
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn get_service_name_of_selected_table_item(&self) -> Option<String> {
         let Some(service_idx) = self.node_table_state.selected() else {
             warn!("No item selected from table, not removing anything");
@@ -268,7 +268,6 @@ impl Component for Status {
         Ok(r)
     }
 
-    #[allow(clippy::comparison_chain)]
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::Tick => {
@@ -532,7 +531,7 @@ impl Component for Status {
             )]);
             let line2 = Line::from(vec![
                 Span::styled("Press ", Style::default().fg(VERY_LIGHT_AZURE)),
-                Span::styled("[Ctrl+B]", Style::default().fg(GHOST_WHITE)),
+                Span::styled("[Ctrl+B]", Style::default().fg(GHOST_WHITE).bold()),
                 Span::styled(" to add your ", Style::default().fg(VERY_LIGHT_AZURE)),
                 Span::styled(
                     "Discord Username",
@@ -543,6 +542,7 @@ impl Component for Status {
                 Paragraph::new(vec![Line::raw(""), Line::raw(""), line1, line2]).block(
                     Block::default()
                         .title(" Device Status ")
+                        .bold()
                         .title_style(Style::new().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
                         .padding(Padding::horizontal(1))
@@ -636,6 +636,7 @@ impl Component for Status {
                 .block(
                     Block::default()
                         .title(" Device Status ")
+                        .bold()
                         .title_style(Style::default().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
                         .padding(Padding::horizontal(1))
@@ -672,9 +673,9 @@ impl Component for Status {
         if node_rows.is_empty() {
             let line1 = Line::from(vec![
                 Span::styled("Press ", Style::default().fg(LIGHT_PERIWINKLE)),
-                Span::styled("[Ctrl+G] ", Style::default().fg(GHOST_WHITE)),
+                Span::styled("[Ctrl+G] ", Style::default().fg(GHOST_WHITE).bold()),
                 Span::styled("to Add and ", Style::default().fg(LIGHT_PERIWINKLE)),
-                Span::styled("Start Nodes ", Style::default().fg(GHOST_WHITE)),
+                Span::styled("Start Nodes ", Style::default().fg(GHOST_WHITE).bold()),
                 Span::styled("on this device", Style::default().fg(LIGHT_PERIWINKLE)),
             ]);
 
@@ -691,7 +692,10 @@ impl Component for Status {
                     .fg(LIGHT_PERIWINKLE)
                     .block(
                         Block::default()
-                            .title(" Nodes (0) ".to_string())
+                            .title(Line::from(vec![
+                                Span::styled(" Nodes", Style::default().fg(GHOST_WHITE).bold()),
+                                Span::styled(" (0) ", Style::default().fg(LIGHT_PERIWINKLE)),
+                            ]))
                             .title_style(Style::default().fg(LIGHT_PERIWINKLE))
                             .borders(Borders::ALL)
                             .border_style(style::Style::default().fg(EUCALYPTUS))
@@ -711,7 +715,13 @@ impl Component for Status {
                 .highlight_style(Style::new().reversed())
                 .block(
                     Block::default()
-                        .title(format!(" Nodes ({}) ", self.nodes_to_start))
+                        .title(Line::from(vec![
+                            Span::styled(" Nodes", Style::default().fg(GHOST_WHITE).bold()),
+                            Span::styled(
+                                format!(" ({}) ", self.nodes_to_start),
+                                Style::default().fg(LIGHT_PERIWINKLE),
+                            ),
+                        ]))
                         .padding(Padding::new(2, 2, 1, 1))
                         .title_style(Style::default().fg(GHOST_WHITE))
                         .borders(Borders::ALL)
@@ -751,6 +761,7 @@ impl Component for Status {
                 Block::default()
                     .borders(Borders::ALL)
                     .title(" Manage Nodes ")
+                    .bold()
                     .title_style(Style::new().fg(VIVID_SKY_BLUE))
                     .padding(Padding::uniform(2))
                     .border_style(Style::new().fg(GHOST_WHITE)),

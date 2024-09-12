@@ -118,6 +118,7 @@ impl Component for ResetNodesPopup {
             Block::default()
                 .borders(Borders::ALL)
                 .title(" Reset Nodes ")
+                .bold()
                 .title_style(Style::new().fg(VIVID_SKY_BLUE))
                 .padding(Padding::uniform(2))
                 .border_style(Style::new().fg(VIVID_SKY_BLUE)),

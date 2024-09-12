@@ -9,15 +9,17 @@
 mod address;
 mod chunks;
 mod header;
+mod scratchpad;
 
 use crate::error::Error;
 use core::fmt;
 use std::{str::FromStr, time::Duration};
 
 pub use self::{
-    address::{ChunkAddress, RegisterAddress, SpendAddress},
+    address::{ChunkAddress, RegisterAddress, ScratchpadAddress, SpendAddress},
     chunks::Chunk,
     header::{try_deserialize_record, try_serialize_record, RecordHeader, RecordKind, RecordType},
+    scratchpad::Scratchpad,
 };
 
 /// Represents the strategy for retrying operations. This encapsulates both the duration it may take for an operation to

@@ -38,7 +38,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<()>` - An Ok result or an error.
-    #[allow(unused_variables)]
+    #[expect(unused_variables)]
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         Ok(())
     }
@@ -51,7 +51,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<()>` - An Ok result or an error.
-    #[allow(unused_variables)]
+    #[expect(unused_variables)]
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         Ok(())
     }
@@ -93,7 +93,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<Option<Action>>` - An action to be processed or none.
-    #[allow(unused_variables)]
+    #[expect(unused_variables)]
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         Ok(vec![])
     }
@@ -106,7 +106,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<Option<Action>>` - An action to be processed or none.
-    #[allow(unused_variables)]
+    #[expect(unused_variables)]
     fn handle_mouse_events(&mut self, mouse: MouseEvent) -> Result<Vec<Action>> {
         Ok(vec![])
     }
@@ -119,7 +119,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<Option<Action>>` - An action to be processed or none.
-    #[allow(unused_variables)]
+    #[expect(unused_variables)]
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         Ok(None)
     }

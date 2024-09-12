@@ -14,7 +14,6 @@ pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Internal error.
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
 pub enum Error {
     #[error("Network error {0}")]
     Network(#[from] sn_networking::NetworkError),
@@ -49,6 +48,13 @@ pub enum Error {
     // The Record::key must match with the one that is derived from the Record::value
     #[error("The Record::key does not match with the key derived from Record::value")]
     RecordKeyMismatch,
+
+    // Scratchpad is old version
+    #[error("A newer version of this Scratchpad already exists")]
+    IgnoringOutdatedScratchpadPut,
+    // Scratchpad is invalid
+    #[error("Scratchpad signature is invalid over the counter + content hash")]
+    InvalidScratchpadSignature,
 
     // ---------- Payment Errors
     #[error("The content of the payment quote is invalid")]

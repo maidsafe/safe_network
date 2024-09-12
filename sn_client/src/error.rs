@@ -20,7 +20,6 @@ use xor_name::XorName;
 
 /// Internal error.
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
 pub enum Error {
     #[error("Genesis disbursement failed")]
     GenesisDisbursement,

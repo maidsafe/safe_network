@@ -14,7 +14,7 @@ use crate::{
     action::Action,
     components::header::Header,
     mode::{InputMode, Scene},
-    style::{EUCALYPTUS, GHOST_WHITE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE},
+    style::{COOL_GREY, GHOST_WHITE},
     widgets::hyperlink::Hyperlink,
 };
 use ansi_to_tui::IntoText;
@@ -46,11 +46,7 @@ impl Component for Help {
         // We define a layout, top and down box.
         let layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Length(1),
-                Constraint::Min(7),
-                Constraint::Max(13),
-            ])
+            .constraints(vec![Constraint::Length(1), Constraint::Length(9)])
             .split(area);
 
         // ==== Header =====
@@ -132,150 +128,14 @@ impl Component for Help {
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .border_style(Style::default().fg(COOL_GREY))
                 .padding(Padding::uniform(1))
                 .title(" Get Help & Support ")
-                .title_style(Style::default().bold()),
+                .bold()
+                .title_style(Style::default().bold().fg(GHOST_WHITE)),
         );
 
         f.render_widget(table_help_and_support, layout[1]);
-
-        // ---- Keyboard shortcuts ----
-        let rows_keyboard_shortcuts = vec![
-            Row::new(vec![
-                Cell::from(Line::from(vec![
-                    Span::styled("[S] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Status", Style::default().fg(VIVID_SKY_BLUE)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+G] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Manage Nodes", Style::default().fg(EUCALYPTUS)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+D] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled(
-                        "Change Storage Drive",
-                        Style::default().fg(VERY_LIGHT_AZURE),
-                    ),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                Cell::from(Line::from(vec![
-                    Span::styled("[O] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Options", Style::default().fg(VIVID_SKY_BLUE)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+S] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Start All Nodes", Style::default().fg(EUCALYPTUS)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+K] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled(
-                        "Switch Connection Mode",
-                        Style::default().fg(VERY_LIGHT_AZURE),
-                    ),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                Cell::from(Line::from(vec![
-                    Span::styled("[H] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Help", Style::default().fg(VIVID_SKY_BLUE)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+X] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Stop All Nodes", Style::default().fg(EUCALYPTUS)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+P] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled(
-                        "Edit Custom Port Range",
-                        Style::default().fg(VERY_LIGHT_AZURE),
-                    ),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                Cell::from(Line::from(vec![
-                    Span::styled("[Q] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Quit", Style::default().fg(VIVID_SKY_BLUE)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+R] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Reset All Nodes", Style::default().fg(EUCALYPTUS)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+B] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled(
-                        "Edit Discord Username",
-                        Style::default().fg(VERY_LIGHT_AZURE),
-                    ),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+L] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Open Logs Folder", Style::default().fg(VERY_LIGHT_AZURE)),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+L] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Open Logs Folder", Style::default().fg(VERY_LIGHT_AZURE)),
-                ])),
-            ]),
-        ];
-
-        let table_keyboard_shortcuts = Table::new(
-            rows_keyboard_shortcuts,
-            vec![
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-            ],
-        )
-        .block(
-            Block::new()
-                .borders(Borders::ALL)
-                .padding(Padding::uniform(1))
-                .title(" Keyboard Shortcuts ")
-                .title_style(Style::default().bold()),
-        );
-
-        f.render_widget(table_keyboard_shortcuts, layout[2]);
 
         Ok(())
     }

@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 /// Network, and their semantics.
 ///
 /// [`protocol`]: crate
-#[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
 pub enum Query {
     /// Retrieve the cost of storing a record at the given address.

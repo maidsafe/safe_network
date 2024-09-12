@@ -27,9 +27,7 @@ use xor_name::XorName;
 pub(super) type Result<T, E = NetworkError> = std::result::Result<T, E>;
 
 /// GetRecord Query errors
-#[derive(Error)]
-#[allow(missing_docs)]
-#[derive(Clone)]
+#[derive(Error, Clone)]
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
     NotEnoughCopies {
@@ -87,7 +85,6 @@ impl Debug for GetRecordError {
 
 /// Network Errors
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
 pub enum NetworkError {
     #[error("Dial Error")]
     DialError(#[from] DialError),

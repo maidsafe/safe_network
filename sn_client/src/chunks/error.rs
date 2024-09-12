@@ -16,7 +16,6 @@ pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Internal error.
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
 pub enum Error {
     #[error("Failed to get find payment for record: {0:?}")]
     NoPaymentForRecord(PrettyPrintRecordKey<'static>),

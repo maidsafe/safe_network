@@ -40,12 +40,18 @@ const DEFAULT_LIVE_GENESIS_SK: &str =
 /// Default genesis PK for testing purposes. Be sure to pass the correct `GENESIS_PK` value via env for release.
 const DEFAULT_LIVE_GENESIS_PK: &str = "9934c21469a68415e6b06a435709e16bff6e92bf302aeb0ea9199d2d06a55f1b1a21e155853d3f94ae31f8f313f886ee"; // DevSkim: ignore DS173237
 
+/// MIN_STORE_COST is 1, hence to have a MIN_ROYALTY_FEE to avoid zero royalty_fee.
+const MIN_ROYALTY_FEE: u64 = 1;
+
 /// Based on the given store cost, it calculates what's the expected amount to be paid as network royalties.
 /// Network royalties fee is expected to be 15% of the payment amount, i.e. 85% of store cost + 15% royalties fees.
 pub fn calculate_royalties_fee(store_cost: NanoTokens) -> NanoTokens {
-    let fees_amount = (store_cost.as_nano() as f64 * 0.15) / 0.85;
+    let fees_amount = std::cmp::max(
+        MIN_ROYALTY_FEE,
+        ((store_cost.as_nano() as f64 * 0.15) / 0.85) as u64,
+    );
     // we round down the calculated amount
-    NanoTokens::from(fees_amount as u64)
+    NanoTokens::from(fees_amount)
 }
 
 /// A specialised `Result` type for genesis crate.

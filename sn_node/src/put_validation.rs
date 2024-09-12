@@ -12,7 +12,7 @@ use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkEr
 use sn_protocol::{
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
-        SpendAddress,
+        Scratchpad, SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
@@ -87,8 +87,58 @@ impl Node {
 
                 store_chunk_result
             }
+
             RecordKind::Chunk => {
                 error!("Chunk should not be validated at this point");
+                Err(Error::InvalidPutWithoutPayment(
+                    PrettyPrintRecordKey::from(&record.key).into_owned(),
+                ))
+            }
+            RecordKind::ScratchpadWithPayment => {
+                let record_key = record.key.clone();
+                let (payment, scratchpad) =
+                    try_deserialize_record::<(Payment, Scratchpad)>(&record)?;
+                let _already_exists = self
+                    .validate_key_and_existence(&scratchpad.network_address(), &record_key)
+                    .await?;
+
+                // Validate the payment and that we received what we asked.
+                // This stores any payments to disk
+                let payment_res = self
+                    .payment_for_us_exists_and_is_still_valid(
+                        &scratchpad.network_address(),
+                        payment,
+                    )
+                    .await;
+
+                // Finally before we store, lets bail for any payment issues
+                payment_res?;
+
+                // Writing chunk to disk takes time, hence try to execute it first.
+                // So that when the replicate target asking for the copy,
+                // the node can have a higher chance to respond.
+                let store_scratchpad_result = self
+                    .validate_and_store_scratchpad_record(record, true)
+                    .await;
+
+                if store_scratchpad_result.is_ok() {
+                    Marker::ValidScratchpadRecordPutFromClient(&PrettyPrintRecordKey::from(
+                        &record_key,
+                    ))
+                    .log();
+                    self.replicate_valid_fresh_record(record_key.clone(), RecordType::Scratchpad);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network()
+                        .notify_fetch_completed(record_key, RecordType::Scratchpad);
+                }
+
+                store_scratchpad_result
+            }
+            RecordKind::Scratchpad => {
+                error!("Scratchpad should not be validated at this point");
                 Err(Error::InvalidPutWithoutPayment(
                     PrettyPrintRecordKey::from(&record.key).into_owned(),
                 ))
@@ -213,7 +263,9 @@ impl Node {
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
             // A separate flow handles payment for chunks and registers
-            RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
+            RecordKind::ChunkWithPayment
+            | RecordKind::RegisterWithPayment
+            | RecordKind::ScratchpadWithPayment => {
                 warn!("Prepaid record came with Payment, which should be handled in another flow");
                 Err(Error::UnexpectedRecordWithPayment(
                     PrettyPrintRecordKey::from(&record.key).into_owned(),
@@ -235,6 +287,10 @@ impl Node {
                 }
 
                 self.store_chunk(&chunk)
+            }
+            RecordKind::Scratchpad => {
+                self.validate_and_store_scratchpad_record(record, false)
+                    .await
             }
             RecordKind::Spend => {
                 let record_key = record.key.clone();
@@ -323,6 +379,65 @@ impl Node {
         Ok(())
     }
 
+    /// Validate and store a `Scratchpad` to the RecordStore
+    ///
+    /// When a node receives an update packet:
+    /// Verify Name: It MUST hash the provided public key and confirm it matches the name in the packet.
+    /// Check Counter: It MUST ensure that the new counter value is strictly greater than the currently stored value to prevent replay attacks.
+    /// Verify Signature: It MUST use the public key to verify the BLS12-381 signature against the content hash and the counter.
+    /// Accept or Reject: If all verifications succeed, the node MUST accept the packet and replace any previous version. Otherwise, it MUST reject the update.
+
+    pub(crate) async fn validate_and_store_scratchpad_record(
+        &self,
+        record: Record,
+        is_client_put: bool,
+    ) -> Result<()> {
+        let record_key = record.key.clone();
+
+        let scratchpad = try_deserialize_record::<Scratchpad>(&record)?;
+
+        // owner PK is defined herein, so as long as record key and this match, we're good
+        let addr = scratchpad.address();
+        debug!("Validating and storing scratchpad {addr:?}");
+
+        // check if the deserialized value's RegisterAddress matches the record's key
+        let scratchpad_key = NetworkAddress::ScratchpadAddress(*addr).to_record_key();
+        if scratchpad_key != record_key {
+            warn!("Record's key does not match with the value's ScratchpadAddress, ignoring PUT.");
+            return Err(Error::RecordKeyMismatch);
+        }
+
+        // check if the Scratchpad is present locally that we don't have a newer version
+        if let Some(local_pad) = self.network().get_local_record(&scratchpad_key).await? {
+            let local_pad = try_deserialize_record::<Scratchpad>(&local_pad)?;
+            if local_pad.counter >= scratchpad.counter {
+                warn!("Rejecting Scratchpad PUT with counter less than or equal to the current counter");
+                return Err(Error::IgnoringOutdatedScratchpadPut);
+            }
+        }
+
+        // ensure data integrity
+        if !scratchpad.is_valid() {
+            warn!("Rejecting Scratchpad PUT with invalid signature");
+            return Err(Error::InvalidScratchpadSignature);
+        }
+
+        info!(
+            "Storing sratchpad {addr:?} with content of {:?} as Record locally",
+            scratchpad.encrypted_data_hash()
+        );
+        self.network().put_local_record(record);
+
+        let pretty_key = PrettyPrintRecordKey::from(&record_key);
+
+        self.record_metrics(Marker::ValidScratchpadRecordPutFromNetwork(&pretty_key));
+
+        if is_client_put {
+            self.replicate_valid_fresh_record(record_key, RecordType::Scratchpad);
+        }
+
+        Ok(())
+    }
     /// Validate and store a `Register` to the RecordStore
     pub(crate) async fn validate_and_store_register(
         &self,

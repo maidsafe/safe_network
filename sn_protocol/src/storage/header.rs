@@ -21,6 +21,7 @@ use xor_name::XorName;
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub enum RecordType {
     Chunk,
+    Scratchpad,
     NonChunk(XorName),
 }
 
@@ -36,6 +37,8 @@ pub enum RecordKind {
     Spend,
     Register,
     RegisterWithPayment,
+    Scratchpad,
+    ScratchpadWithPayment,
 }
 
 impl Serialize for RecordKind {
@@ -49,6 +52,8 @@ impl Serialize for RecordKind {
             Self::Spend => serializer.serialize_u32(2),
             Self::Register => serializer.serialize_u32(3),
             Self::RegisterWithPayment => serializer.serialize_u32(4),
+            Self::Scratchpad => serializer.serialize_u32(5),
+            Self::ScratchpadWithPayment => serializer.serialize_u32(6),
         }
     }
 }
@@ -65,6 +70,8 @@ impl<'de> Deserialize<'de> for RecordKind {
             2 => Ok(Self::Spend),
             3 => Ok(Self::Register),
             4 => Ok(Self::RegisterWithPayment),
+            5 => Ok(Self::Scratchpad),
+            6 => Ok(Self::ScratchpadWithPayment),
             _ => Err(serde::de::Error::custom(
                 "Unexpected integer for RecordKind variant",
             )),
@@ -184,6 +191,18 @@ mod tests {
         }
         .try_serialize()?;
         assert_eq!(register.len(), RecordHeader::SIZE);
+
+        let scratchpad = RecordHeader {
+            kind: RecordKind::Scratchpad,
+        }
+        .try_serialize()?;
+        assert_eq!(scratchpad.len(), RecordHeader::SIZE);
+
+        let scratchpad_with_payment = RecordHeader {
+            kind: RecordKind::ScratchpadWithPayment,
+        }
+        .try_serialize()?;
+        assert_eq!(scratchpad_with_payment.len(), RecordHeader::SIZE);
 
         Ok(())
     }

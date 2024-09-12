@@ -173,7 +173,6 @@ impl Node {
 
             let our_peer_id = network.peer_id();
             let our_address = NetworkAddress::from_peer(our_peer_id);
-            #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
             let keys = vec![(data_addr.clone(), record_type.clone())];
 
             for peer_id in sorted_based_on_addr {

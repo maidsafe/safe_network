@@ -57,6 +57,11 @@ impl SignedRegister {
         }
     }
 
+    /// Return the base register. This is the register before any operations have been applied.
+    pub fn base_register(&self) -> &Register {
+        &self.base_register
+    }
+
     /// Verfies a SignedRegister
     pub fn verify(&self) -> Result<()> {
         let bytes = self.base_register.bytes()?;

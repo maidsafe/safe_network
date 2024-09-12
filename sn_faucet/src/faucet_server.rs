@@ -32,9 +32,9 @@ use warp::{
 #[cfg(feature = "initial-data")]
 use crate::gutenberger::{download_book, State};
 #[cfg(feature = "initial-data")]
-use autonomi::FilesUploader;
-#[cfg(feature = "initial-data")]
 use reqwest::Client as ReqwestClient;
+#[cfg(feature = "initial-data")]
+use sn_cli::FilesUploader;
 #[cfg(feature = "initial-data")]
 use sn_client::{UploadCfg, BATCH_SIZE};
 #[cfg(feature = "initial-data")]
@@ -65,11 +65,10 @@ use tokio::{fs, io::AsyncWriteExt};
 pub async fn run_faucet_server(client: &Client) -> Result<()> {
     let root_dir = get_faucet_data_dir();
     let wallet = load_account_wallet_or_create_with_mnemonic(&root_dir, None)?;
-    claim_genesis(client, wallet).await.map_err(|err| {
+    claim_genesis(client, wallet).await.inspect_err(|_err| {
         println!("Faucet Server couldn't start as we failed to claim Genesis");
         eprintln!("Faucet Server couldn't start as we failed to claim Genesis");
         error!("Faucet Server couldn't start as we failed to claim Genesis");
-        err
     })?;
 
     #[cfg(feature = "initial-data")]
@@ -396,7 +395,7 @@ async fn respond_to_donate_request(
 }
 
 #[cfg(not(feature = "gifting"))]
-#[allow(clippy::unused_async)]
+#[expect(clippy::unused_async)]
 async fn respond_to_gift_request(
     _client: Client,
     _key: String,
@@ -458,7 +457,7 @@ async fn startup_server(client: Client) -> Result<()> {
     // Create a semaphore with a single permit
     let semaphore = Arc::new(Semaphore::new(1));
 
-    #[allow(unused)]
+    #[expect(unused)]
     let mut balances = HashMap::<String, NanoTokens>::new();
     #[cfg(feature = "distribution")]
     {

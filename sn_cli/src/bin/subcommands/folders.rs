@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use autonomi::AccountPacket;
+use sn_cli::AccountPacket;
 
 use sn_client::{
     protocol::storage::RetryStrategy, transfers::MainSecretKey, Client, UploadCfg, BATCH_SIZE,
