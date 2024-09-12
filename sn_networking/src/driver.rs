@@ -600,6 +600,8 @@ impl NetworkBuilder {
                 max_circuits: 1024, // The total amount of relayed connections at any given moment.
                 max_circuits_per_peer: 256, // Amount of relayed connections per peer (both dst and src)
                 circuit_src_rate_limiters: vec![], // No extra rate limiting for now
+                // We should at least be able to relay packets with chunks etc.
+                max_circuit_bytes: MAX_PACKET_SIZE as u64,
                 ..Default::default()
             };
             libp2p::relay::Behaviour::new(peer_id, relay_server_cfg)
