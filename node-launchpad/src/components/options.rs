@@ -169,24 +169,14 @@ impl Component for Options {
                         .alignment(Alignment::Left),
                     ),
                     Cell::from(
-                        Line::from(vec![
-                            Span::styled(
-                                port_legend,
-                                if self.connection_mode == ConnectionMode::CustomPorts {
-                                    Style::default().fg(VERY_LIGHT_AZURE)
-                                } else {
-                                    Style::default().fg(COOL_GREY)
-                                },
-                            ),
-                            Span::styled(
-                                port_key,
-                                if self.connection_mode == ConnectionMode::CustomPorts {
-                                    Style::default().fg(GHOST_WHITE)
-                                } else {
-                                    Style::default().fg(COOL_GREY)
-                                },
-                            ),
-                        ])
+                        Line::from(if self.connection_mode == ConnectionMode::CustomPorts {
+                            vec![
+                                Span::styled(port_legend, Style::default().fg(VERY_LIGHT_AZURE)),
+                                Span::styled(port_key, Style::default().fg(GHOST_WHITE)),
+                            ]
+                        } else {
+                            vec![]
+                        })
                         .alignment(Alignment::Right),
                     ),
                 ]),
