@@ -242,6 +242,12 @@ jobs:
           SN_LOG: "all"
         timeout-minutes: 10
 
+      - name: Api tests against local network
+        run: cargo test --release --package autonomi --features="full,local"
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 10
+
       # CLI Acc-Packet files and folders tests against local network
       - name: CLI Acc-Packet files and folders tests
         run: cargo test --release -p sn_cli test_acc_packet -- --nocapture
