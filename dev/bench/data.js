@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726067212401,
+  "lastUpdate": 1726104188365,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "79ea950913c89f7cc6f6ff92fd2d9d360e760e6a",
-          "message": "test: disable node man integration tests\n\nThese tests are no longer passing and it's not completely clear why. In any case, I think they need\nto be a bit more isolated, and operate on their own local network.\n\nAt the moment there is not enough time to address that.",
-          "timestamp": "2024-05-01T18:14:56+01:00",
-          "tree_id": "f3999ce7e9c59bd6d80427becfc5a36dc0f5867e",
-          "url": "https://github.com/maidsafe/safe_network/commit/79ea950913c89f7cc6f6ff92fd2d9d360e760e6a"
-        },
-        "date": 1714584873572,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1621442014496757,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.599405321000326,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 55.64322860540368,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.43233748866496,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "09a19be274dc3f28e56a688778cfb9f8646ba244",
+          "message": "Merge pull request #2104 from mazzi/not_enough_space\n\nNot enough space",
+          "timestamp": "2024-09-12T00:36:06Z",
+          "tree_id": "9ffb1a4b508ffcd0bf9cc2ae490c2171486c3dbc",
+          "url": "https://github.com/maidsafe/safe_network/commit/09a19be274dc3f28e56a688778cfb9f8646ba244"
+        },
+        "date": 1726104181049,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2530001775166701,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7102488338739192,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.69454352189301,
             "unit": "MiB/s"
           }
         ]
