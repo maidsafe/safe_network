@@ -9,11 +9,12 @@
 #[macro_use]
 extern crate tracing;
 
-pub use evmlib::Network as EvmNetwork;
-pub use evmlib::wallet::Wallet as EvmWallet;
 pub use evmlib::common::Address as RewardsAddress;
-pub use evmlib::common::{TxHash, QuoteHash};
+pub use evmlib::common::{QuoteHash, TxHash};
 pub use evmlib::utils;
+pub use evmlib::wallet::Wallet as EvmWallet;
+pub use evmlib::CustomNetwork as EvmNetworkCustom;
+pub use evmlib::Network as EvmNetwork;
 
 mod cashnotes;
 mod error;
@@ -26,8 +27,8 @@ pub use evm::ProofOfPayment;
 
 /// Types used in the public API
 pub use cashnotes::{
-    CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey, MainSecretKey, AttoTokens,
-    Amount, SignedSpend, Spend, SpendAddress, SpendReason, UniquePubkey,
+    Amount, AttoTokens, CashNote, DerivationIndex, DerivedSecretKey, Hash, MainPubkey,
+    MainSecretKey, SignedSpend, Spend, SpendAddress, SpendReason, UniquePubkey,
 };
 pub use error::{Result, TransferError};
 /// Utilities exposed

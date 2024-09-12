@@ -70,6 +70,7 @@ const UNRELEVANT_RECORDS_CLEANUP_INTERVAL: Duration = Duration::from_secs(3600);
 pub struct NodeBuilder {
     identity_keypair: Keypair,
     evm_address: RewardsAddress,
+    evm_network: EvmNetwork,
     addr: SocketAddr,
     initial_peers: Vec<Multiaddr>,
     local: bool,
@@ -85,9 +86,11 @@ pub struct NodeBuilder {
 
 impl NodeBuilder {
     /// Instantiate the builder
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         identity_keypair: Keypair,
         evm_address: RewardsAddress,
+        evm_network: EvmNetwork,
         addr: SocketAddr,
         initial_peers: Vec<Multiaddr>,
         local: bool,
@@ -97,6 +100,7 @@ impl NodeBuilder {
         Self {
             identity_keypair,
             evm_address,
+            evm_network,
             addr,
             initial_peers,
             local,
@@ -167,9 +171,6 @@ impl NodeBuilder {
 
         let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
         let node_events_channel = NodeEventsChannel::default();
-        
-        // TODO: make this configurable by users
-        let evm_network = EvmNetwork::ArbitrumOne;
 
         let node = NodeInner {
             network: network.clone(),
@@ -178,7 +179,7 @@ impl NodeBuilder {
             reward_address: self.evm_address,
             #[cfg(feature = "open-metrics")]
             node_metrics,
-            evm_network,
+            evm_network: self.evm_network,
         };
         let node = Node {
             inner: Arc::new(node),
