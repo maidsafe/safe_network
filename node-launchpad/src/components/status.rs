@@ -275,7 +275,7 @@ impl Component for Status {
                 self.try_update_node_stats(false)?;
             }
             Action::SwitchScene(scene) => match scene {
-                Scene::Status => {
+                Scene::Status | Scene::StatusBetaProgrammePopUp => {
                     self.active = true;
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
@@ -478,6 +478,9 @@ impl Component for Status {
                     info!("Stopping node service: {running_nodes:?}");
 
                     stop_nodes(running_nodes, action_sender);
+                }
+                StatusActions::TriggerBetaProgramme => {
+                    return Ok(Some(Action::SwitchScene(Scene::StatusBetaProgrammePopUp)));
                 }
             },
             Action::OptionsActions(OptionsActions::ResetNodes) => {

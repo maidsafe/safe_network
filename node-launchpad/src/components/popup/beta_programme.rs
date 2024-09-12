@@ -29,6 +29,7 @@ pub struct BetaProgramme {
     discord_input_filed: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
+    back_to: Scene,
 }
 
 enum BetaProgrammeState {
@@ -50,6 +51,7 @@ impl BetaProgramme {
             state,
             discord_input_filed: Input::default().with_value(username),
             old_value: Default::default(),
+            back_to: Scene::Status,
         }
     }
 
@@ -69,7 +71,7 @@ impl BetaProgramme {
                 vec![
                     Action::StoreDiscordUserName(self.discord_input_filed.value().to_string()),
                     Action::OptionsActions(OptionsActions::UpdateBetaProgrammeUsername(username)),
-                    Action::SwitchScene(Scene::Status),
+                    Action::SwitchScene(self.back_to),
                 ]
             }
             KeyCode::Esc => {
@@ -82,7 +84,7 @@ impl BetaProgramme {
                     .discord_input_filed
                     .clone()
                     .with_value(self.old_value.clone());
-                vec![Action::SwitchScene(Scene::Options)]
+                vec![Action::SwitchScene(self.back_to)]
             }
             KeyCode::Char(' ') => vec![],
             KeyCode::Backspace => {
@@ -135,7 +137,7 @@ impl Component for BetaProgramme {
                     debug!("RejectTCs msg closed. Switching to Status scene.");
                     self.state = BetaProgrammeState::ShowTCs;
                 }
-                vec![Action::SwitchScene(Scene::Status)]
+                vec![Action::SwitchScene(self.back_to)]
             }
             BetaProgrammeState::AcceptTCsAndEnterDiscordId => self.capture_inputs(key),
         };
@@ -145,9 +147,14 @@ impl Component for BetaProgramme {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::BetaProgrammePopUp => {
+                Scene::StatusBetaProgrammePopUp | Scene::OptionsBetaProgrammePopUp => {
                     self.active = true;
                     self.old_value = self.discord_input_filed.value().to_string();
+                    if scene == Scene::StatusBetaProgrammePopUp {
+                        self.back_to = Scene::Status;
+                    } else if scene == Scene::OptionsBetaProgrammePopUp {
+                        self.back_to = Scene::Options;
+                    }
                     // Set to InputMode::Entry as we want to handle everything within our handle_key_events
                     // so by default if this scene is active, we capture inputs.
                     Some(Action::SwitchInputMode(InputMode::Entry))
