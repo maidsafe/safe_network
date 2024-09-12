@@ -2,15 +2,6 @@
 
 use bytes::Bytes;
 use rand::Rng;
-use sn_client::acc_packet::load_account_wallet_or_create_with_mnemonic;
-use sn_transfers::{get_faucet_data_dir, HotWallet};
-
-/// When launching a testnet locally, we can use the faucet wallet.
-pub fn load_hot_wallet_from_faucet() -> HotWallet {
-    let root_dir = get_faucet_data_dir();
-    load_account_wallet_or_create_with_mnemonic(&root_dir, None)
-        .expect("faucet wallet should be available for tests")
-}
 
 pub fn gen_random_data(len: usize) -> Bytes {
     let mut data = vec![0u8; len];

@@ -2,8 +2,10 @@ use std::collections::BTreeSet;
 
 use crate::Client;
 
+use super::data::PayError;
 use bls::SecretKey;
 use bytes::Bytes;
+use evmlib::wallet::Wallet;
 use libp2p::kad::{Quorum, Record};
 use sn_client::networking::GetRecordCfg;
 use sn_client::networking::NetworkError;
@@ -12,15 +14,12 @@ use sn_client::registers::EntryHash;
 use sn_client::registers::Permissions;
 use sn_client::registers::Register as ClientRegister;
 use sn_client::registers::SignedRegister;
-use sn_client::transfers::HotWallet;
 use sn_protocol::storage::try_deserialize_record;
 use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
 use sn_protocol::storage::RegisterAddress;
 use sn_protocol::NetworkAddress;
 use xor_name::XorName;
-
-use super::data::PayError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RegisterError {
@@ -31,7 +30,7 @@ pub enum RegisterError {
     #[error("Payment failure occurred during register creation.")]
     Pay(#[from] PayError),
     #[error("TODO")]
-    Wallet(#[from] sn_transfers::WalletError),
+    Wallet(#[from] evmlib::wallet::Error),
 }
 
 #[derive(Clone, Debug)]
@@ -66,7 +65,7 @@ impl Client {
         value: Bytes,
         name: XorName,
         owner: SecretKey,
-        wallet: &mut HotWallet,
+        wallet: &Wallet,
     ) -> Result<Register, RegisterError> {
         let pk = owner.public_key();
 
@@ -80,22 +79,20 @@ impl Client {
             .into_iter()
             .map(|(entry_hash, _value)| entry_hash)
             .collect();
+
         // TODO: Handle error.
         let _ = register.write(value.into(), &entries, &owner);
-
-        let _payment_result = self
-            .pay(std::iter::once(register.address().xorname()), wallet)
-            .await?;
-
-        let (payment, payee) =
-            self.get_recent_payment_for_addr(&register.address().xorname(), wallet)?;
-
+        let reg_xor = register.address().xorname();
+        let (payment_proofs, _) = self.pay(std::iter::once(reg_xor), wallet).await?;
+        // Should always be there, else it would have failed on the payment step.
+        let proof = payment_proofs.get(&reg_xor).expect("Missing proof");
+        let payee = proof.to_peer_id_payee();
         let signed_register = register.clone().into_signed(&owner).expect("TODO");
 
         let record = Record {
             key: address.to_record_key(),
             value: try_serialize_record(
-                &(payment, &signed_register),
+                &(proof, &signed_register),
                 RecordKind::RegisterWithPayment,
             )
             .map_err(|_| RegisterError::Serialization)?

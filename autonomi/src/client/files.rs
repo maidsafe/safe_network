@@ -1,14 +1,12 @@
 use std::{collections::HashMap, path::PathBuf};
 
+use super::data::{GetError, PutError};
+use crate::Client;
 use bytes::Bytes;
+use evmlib::wallet::Wallet;
 use serde::{Deserialize, Serialize};
-use sn_transfers::HotWallet;
 use walkdir::WalkDir;
 use xor_name::XorName;
-
-use crate::Client;
-
-use super::data::{GetError, PutError};
 
 /// Directory-like structure that containing file paths and their metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,7 +43,7 @@ impl Client {
     pub async fn upload_from_dir(
         &mut self,
         path: PathBuf,
-        wallet: &mut HotWallet,
+        wallet: &Wallet,
     ) -> Result<(Root, XorName), UploadError> {
         let mut map = HashMap::new();
         for entry in WalkDir::new(path) {
@@ -85,7 +83,7 @@ impl Client {
 async fn upload_from_file(
     client: &mut Client,
     path: PathBuf,
-    wallet: &mut HotWallet,
+    wallet: &Wallet,
 ) -> Result<FilePointer, UploadError> {
     let data = tokio::fs::read(path).await?;
     let data = Bytes::from(data);
