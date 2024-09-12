@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-09-12
+
+### Network
+
+#### Changed
+
+- The circuit-bytes limit is increased. This enables `libp2p-relay` to forward large records, such
+  as `ChunkWithPayment`, enabling home nodes to be notified that they have been paid.
+
 ## 2024-09-09
 
 ### Network
