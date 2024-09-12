@@ -531,15 +531,19 @@ jobs:
   #         platform: ${{ matrix.os }}
   #         build: true
 
-  #     - name: Check SAFE_PEERS was set
-  #       shell: bash
-  #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
-  #           exit 1
-  #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
-  #         fi
+  # # incase the faucet is not ready yet
+  # - name: 30s sleep for faucet completion
+  #   run: sleep 30
+
+  # - name: Check SAFE_PEERS was set
+  #   shell: bash
+  #   run: |
+  #     if [[ -z "$SAFE_PEERS" ]]; then
+  #       echo "The SAFE_PEERS variable has not been set"
+  #       exit 1
+  #     else
+  #       echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #     fi
 
   #     - name: execute token_distribution tests
   #       run: cargo test --release --features=local,distribution token_distribution -- --nocapture --test-threads=1
