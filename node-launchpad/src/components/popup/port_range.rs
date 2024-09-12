@@ -393,9 +393,9 @@ impl Component for PortRangePopUp {
             }
             PortRangeState::ConfirmChange => match key.code {
                 KeyCode::Enter => {
-                    debug!("Got Enter, saving the ports and switching to Options Screen",);
+                    debug!("Got Enter, saving the ports and switching to Status Screen",);
                     self.state = PortRangeState::Selection;
-                    vec![Action::SwitchScene(Scene::Options)]
+                    vec![Action::SwitchScene(Scene::Status)]
                 }
                 _ => vec![],
             },

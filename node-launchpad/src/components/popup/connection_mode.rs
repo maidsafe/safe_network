@@ -138,7 +138,7 @@ impl Component for ChangeConnectionModePopUp {
                                 ),
                             })
                         } else {
-                            Action::SwitchScene(Scene::Options)
+                            Action::SwitchScene(Scene::Status)
                         },
                     ]
                 } else {
