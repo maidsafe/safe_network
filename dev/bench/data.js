@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726146926781,
+  "lastUpdate": 1726146928362,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "ff83510da343c9763bdba5132fcdbc822e4b704e",
-          "message": "ci: add `node-launchpad` binary to release process\n\nThe new TUI for the node manager is a new, separate binary that is being added in to the release\nprocess. It will have a Github release.\n\nFor some reason it seems to have became necessary to explicitly call `rustup target` during the\nartifacts build process. Without doing it, I was getting build errors on macOS.",
-          "timestamp": "2024-05-01T20:22:23+01:00",
-          "tree_id": "1a308fde9158d5b7e52e4597c161ea2295b59311",
-          "url": "https://github.com/maidsafe/safe_network/commit/ff83510da343c9763bdba5132fcdbc822e4b704e"
-        },
-        "date": 1714592209628,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7640,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35568,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 29259,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "b26bbe3009d4c1ed066a3a4a211f3251725a375b",
+          "message": "Merge branch 'hotfix-2024.09.1.4'",
+          "timestamp": "2024-09-12T13:54:12+01:00",
+          "tree_id": "89135b59a79834d4fd151105b249afb14f221ba0",
+          "url": "https://github.com/maidsafe/safe_network/commit/b26bbe3009d4c1ed066a3a4a211f3251725a375b"
+        },
+        "date": 1726146928022,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5421,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34122,
             "unit": "ms"
           },
           {
