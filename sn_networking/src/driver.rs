@@ -918,7 +918,7 @@ impl SwarmDriver {
         let mut all_peers: Vec<PeerId> = vec![];
         for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
             for entry in kbucket.iter() {
-                let id = entry.node.key.clone().into_preimage();
+                let id = entry.node.key.into_preimage();
 
                 if id != our_peer_id {
                     all_peers.push(id);
