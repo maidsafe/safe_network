@@ -50,7 +50,6 @@ impl Testnet {
     }
 }
 
-#[allow(clippy::unwrap_used)]
 /// Runs a local Anvil node.
 pub fn start_node() -> AnvilInstance {
     // Spin up a local Anvil node.
@@ -60,7 +59,6 @@ pub fn start_node() -> AnvilInstance {
         .expect("Could not spawn Anvil node")
 }
 
-#[allow(clippy::unwrap_used)]
 pub async fn deploy_network_token_contract(
     anvil: &AnvilInstance,
 ) -> NetworkToken<
@@ -77,7 +75,7 @@ pub async fn deploy_network_token_contract(
     let signer: PrivateKeySigner = anvil.keys()[0].clone().into();
     let wallet = EthereumWallet::from(signer);
 
-    let rpc_url = anvil.endpoint().parse().unwrap();
+    let rpc_url = anvil.endpoint().parse().expect("Could not parse RPC URL");
 
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
@@ -88,7 +86,6 @@ pub async fn deploy_network_token_contract(
     NetworkToken::deploy(provider).await
 }
 
-#[allow(clippy::unwrap_used)]
 pub async fn deploy_chunk_payments_contract(
     anvil: &AnvilInstance,
     token_address: Address,
@@ -107,7 +104,7 @@ pub async fn deploy_chunk_payments_contract(
     let signer: PrivateKeySigner = anvil.keys()[1].clone().into();
     let wallet = EthereumWallet::from(signer);
 
-    let rpc_url = anvil.endpoint().parse().unwrap();
+    let rpc_url = anvil.endpoint().parse().expect("Could not parse RPC URL");
 
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
