@@ -10,11 +10,14 @@
 extern crate tracing;
 
 mod rpc_service;
+mod subcommands;
 
+use crate::subcommands::EvmNetworkCommand;
 use clap::Parser;
+use const_hex::traits::FromHex;
 use eyre::{eyre, Result};
 use libp2p::{identity::Keypair, PeerId};
-use sn_evm::RewardsAddress;
+use sn_evm::{EvmNetwork, RewardsAddress};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
@@ -35,7 +38,6 @@ use tokio::{
     time::sleep,
 };
 use tracing_appender::non_blocking::WorkerGuard;
-use const_hex::traits::FromHex;
 
 #[derive(Debug, Clone)]
 pub enum LogOutputDestArg {
@@ -126,6 +128,13 @@ struct Opt {
     #[clap(long)]
     rewards_address: String,
 
+    /// Specify the EVM network to use.
+    /// The network can either be a pre-configured one or a custom network.
+    /// When setting a custom network, you must specify the RPC URL to a fully synced node and
+    /// the addresses of the network token and chunk payments contracts.
+    #[command(subcommand)]
+    evm_network: Option<EvmNetworkCommand>,
+
     /// Specify the node's data directory.
     ///
     /// If not provided, the default location is platform specific:
@@ -192,6 +201,14 @@ fn main() -> Result<()> {
     let opt = Opt::parse();
 
     let rewards_address = RewardsAddress::from_hex(&opt.rewards_address)?;
+
+    let evm_network: EvmNetwork = opt
+        .evm_network
+        .as_ref()
+        .cloned()
+        .map(|v| v.into())
+        .unwrap_or_default();
+
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
 
@@ -223,11 +240,11 @@ fn main() -> Result<()> {
         let mut node_builder = NodeBuilder::new(
             keypair,
             rewards_address,
+            evm_network,
             node_socket_addr,
             bootstrap_peers,
             opt.local,
             root_dir,
-            #[cfg(feature = "upnp")]
             opt.upnp,
         );
         node_builder.is_behind_home_network = opt.home_network;

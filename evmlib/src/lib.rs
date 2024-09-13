@@ -2,12 +2,14 @@ use crate::common::{Address, QuoteHash, TxHash, U256};
 use crate::transaction::verify_chunk_payment;
 use alloy::primitives::address;
 use alloy::transports::http::reqwest;
+use std::str::FromStr;
 use std::sync::LazyLock;
 
 pub mod common;
 pub mod contract;
 pub mod cryptography;
 pub(crate) mod event;
+pub mod testnet;
 pub mod transaction;
 pub mod utils;
 pub mod wallet;
@@ -30,6 +32,18 @@ pub struct CustomNetwork {
     pub rpc_url_http: reqwest::Url,
     pub payment_token_address: Address,
     pub chunk_payments_address: Address,
+}
+
+impl CustomNetwork {
+    pub fn new(rpc_url: &str, payment_token_addr: &str, chunk_payments_addr: &str) -> Self {
+        Self {
+            rpc_url_http: reqwest::Url::parse(rpc_url).expect("Invalid RPC URL"),
+            payment_token_address: Address::from_str(payment_token_addr)
+                .expect("Invalid payment token address"),
+            chunk_payments_address: Address::from_str(chunk_payments_addr)
+                .expect("Invalid chunk payments address"),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -77,5 +91,11 @@ impl Network {
             quote_expiration_timestamp_in_secs,
         )
         .await
+    }
+}
+
+impl Default for Network {
+    fn default() -> Self {
+        Self::ArbitrumOne
     }
 }

@@ -2892,6 +2892,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "evm_testnet"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "evmlib",
+ "tokio",
+]
+
+[[package]]
 name = "evmlib"
 version = "0.1.0"
 dependencies = [

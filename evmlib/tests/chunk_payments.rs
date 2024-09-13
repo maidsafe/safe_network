@@ -1,8 +1,6 @@
 mod common;
 
-use crate::common::chunk_payments::{deploy_chunk_payments_contract, random_quote_payment};
-use crate::common::local_testnet::start_anvil_node;
-use crate::common::network_token::deploy_network_token_contract;
+use crate::common::quote::random_quote_payment;
 use crate::common::ROYALTIES_WALLET;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::node_bindings::AnvilInstance;
@@ -15,6 +13,7 @@ use alloy::transports::http::{Client, Http};
 use evmlib::common::U256;
 use evmlib::contract::chunk_payments::{ChunkPayments, MAX_TRANSFERS_PER_TRANSACTION};
 use evmlib::contract::network_token::NetworkToken;
+use evmlib::testnet::{deploy_chunk_payments_contract, deploy_network_token_contract, start_node};
 use evmlib::wallet::wallet_address;
 
 async fn setup() -> (
@@ -40,7 +39,7 @@ async fn setup() -> (
         Ethereum,
     >,
 ) {
-    let anvil = start_anvil_node().await;
+    let anvil = start_node();
 
     let network_token = deploy_network_token_contract(&anvil).await;
 
@@ -53,7 +52,7 @@ async fn setup() -> (
 
 #[allow(clippy::unwrap_used)]
 #[allow(clippy::type_complexity)]
-async fn provider_with_funded_wallet(
+async fn provider_with_gas_funded_wallet(
     anvil: &AnvilInstance,
 ) -> FillProvider<
     JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
