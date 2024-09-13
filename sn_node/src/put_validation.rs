@@ -501,7 +501,7 @@ impl Node {
         #[cfg(feature = "open-metrics")]
         if let Some(node_metrics) = self.node_metrics() {
             let _prev = node_metrics
-                .current_rewards_collected
+                .current_reward_wallet_balance
                 .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX)); // TODO maybe metrics should be in u256 too?
         }
 
