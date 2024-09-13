@@ -86,7 +86,7 @@ pub struct NodeBuilder {
 
 impl NodeBuilder {
     /// Instantiate the builder
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         identity_keypair: Keypair,
         evm_address: RewardsAddress,
