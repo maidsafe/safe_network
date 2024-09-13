@@ -55,11 +55,9 @@ impl Testnet {
 pub fn start_node() -> AnvilInstance {
     // Spin up a local Anvil node.
     // Requires you to have Foundry installed: https://book.getfoundry.sh/getting-started/installation
-    let anvil = Anvil::new()
+    Anvil::new()
         .try_spawn()
-        .expect("Could not spawn Anvil node");
-    println!("Anvil running at `{}`", anvil.endpoint());
-    anvil
+        .expect("Could not spawn Anvil node")
 }
 
 #[allow(clippy::unwrap_used)]
