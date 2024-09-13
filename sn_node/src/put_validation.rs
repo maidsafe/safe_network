@@ -8,7 +8,7 @@
 
 use crate::{node::Node, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
-use sn_evm::{ProofOfPayment, SignedSpend, TransferError, UniquePubkey};
+use sn_evm::{ProofOfPayment, SignedSpend, TransferError, UniquePubkey, QUOTE_EXPIRATION_SECS};
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     storage::{
@@ -19,6 +19,7 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use std::collections::BTreeSet;
+use std::time::UNIX_EPOCH;
 use tokio::task::JoinSet;
 use xor_name::XorName;
 
@@ -465,13 +466,32 @@ impl Node {
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
         debug!("Validating record payment for {pretty_key}");
 
+        // Quote creation timestamp in seconds from UNIX epoch.
+        let quote_creation_time_in_secs = payment
+            .quote
+            .timestamp
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_secs();
+
+        // Quote expiration timestamp in seconds from UNIX epoch.
+        let quote_expiration_time_in_secs = quote_creation_time_in_secs + QUOTE_EXPIRATION_SECS;
+
         // check if the quote is valid
         let storecost = payment.quote.cost;
         debug!("Payment quote is valid for record {pretty_key}");
 
         debug!("Verifying payment for record {pretty_key}");
         // check if payment is valid on chain
-        self.evm_network().verify_chunk_payment(payment.tx_hash, payment.quote.hash(), *self.reward_address(), storecost.as_atto()).await
+        self.evm_network()
+            .verify_chunk_payment(
+                payment.tx_hash,
+                payment.quote.hash(),
+                *self.reward_address(),
+                storecost.as_atto(),
+                quote_expiration_time_in_secs,
+            )
+            .await
             .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
         debug!("Payment is valid for record {pretty_key}");
 
@@ -482,7 +502,7 @@ impl Node {
         if let Some(node_metrics) = self.node_metrics() {
             let _prev = node_metrics
                 .current_rewards_collected
-                .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX));// TODO maybe metrics should be in u256 too?
+                .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX)); // TODO maybe metrics should be in u256 too?
         }
 
         // NB TODO: tell happybeing about the AttoToken change
