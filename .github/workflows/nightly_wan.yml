@@ -1,9 +1,9 @@
 name: Nightly -- Full WAN Network Tests
 
 on:
-# todo: this is totally broken atm. Fix and re-enable.
-#   schedule:
-#     - cron: "0 0 * * *"
+  # schedule:
+  #   - cron: "0 0 * * *"
+# enable below for testing purpose.
   pull_request:
     branches: ["*"]
   workflow_dispatch:
@@ -65,6 +65,8 @@ jobs:
       
       - name: Obtain the funds from the faucet
         run: |
+          set -e
+
           # read the inventory file
           inventory_path=/home/runner/.local/share/safe/testnet-deploy/${{ env.NETWORK_NAME }}-inventory.json
           echo "Inventory Path: $inventory_path"
