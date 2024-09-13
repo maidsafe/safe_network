@@ -9,6 +9,7 @@ pub mod common;
 pub mod contract;
 pub mod cryptography;
 pub(crate) mod event;
+pub mod testnet;
 pub mod transaction;
 pub mod utils;
 pub mod wallet;

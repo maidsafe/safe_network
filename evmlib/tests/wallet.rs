@@ -1,8 +1,6 @@
 mod common;
 
-use crate::common::chunk_payments::{deploy_chunk_payments_contract, random_quote_payment};
-use crate::common::local_testnet::start_anvil_node;
-use crate::common::network_token::deploy_network_token_contract;
+use crate::common::quote::random_quote_payment;
 use crate::common::ROYALTIES_WALLET;
 use alloy::network::EthereumWallet;
 use alloy::node_bindings::AnvilInstance;
@@ -12,6 +10,7 @@ use alloy::providers::{ProviderBuilder, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use evmlib::common::{Amount, TxHash};
 use evmlib::contract::chunk_payments::MAX_TRANSFERS_PER_TRANSACTION;
+use evmlib::testnet::{deploy_chunk_payments_contract, deploy_network_token_contract, start_node};
 use evmlib::transaction::verify_chunk_payment;
 use evmlib::wallet::{transfer_tokens, wallet_address, Wallet};
 use evmlib::{CustomNetwork, Network};
@@ -19,7 +18,7 @@ use std::collections::HashSet;
 
 #[allow(clippy::unwrap_used)]
 async fn local_testnet() -> (AnvilInstance, Network, EthereumWallet) {
-    let anvil = start_anvil_node().await;
+    let anvil = start_node();
     let rpc_url = anvil.endpoint().parse().unwrap();
     let network_token = deploy_network_token_contract(&anvil).await;
     let payment_token_address = *network_token.contract.address();
