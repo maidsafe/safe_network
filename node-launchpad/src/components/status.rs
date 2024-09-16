@@ -552,7 +552,18 @@ impl Component for Status {
                 layout[1],
             );
         } else {
-            // Device Status as a table
+            // Device Status as a block with two tables so we can shrink the screen
+            // and preserve as much as we can information
+
+            let combined_block = Block::default()
+                .title(" Device Status ")
+                .bold()
+                .title_style(Style::default().fg(GHOST_WHITE))
+                .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
+                .style(Style::default().fg(VERY_LIGHT_AZURE));
+
+            f.render_widget(combined_block.clone(), layout[1]);
 
             let storage_allocated_row = Row::new(vec![
                 Cell::new("Storage Allocated".to_string()).fg(GHOST_WHITE),
@@ -585,11 +596,16 @@ impl Component for Status {
 
             let connection_mode_row = Row::new(vec![
                 Cell::new("Connection".to_string()).fg(GHOST_WHITE),
-                Cell::new(connection_mode_string).fg(GHOST_WHITE),
+                Cell::new(connection_mode_string).fg(LIGHT_PERIWINKLE),
             ]);
 
-            // Combine "Nanos Earned" and "Discord Username" into a single row
-            let discord_username_placeholder = "Discord Username: "; // Used to calculate the width of the username column
+            let stats_rows = vec![storage_allocated_row, memory_use_row, connection_mode_row];
+            let stats_width = [Constraint::Length(5)];
+            let column_constraints = [Constraint::Length(23), Constraint::Fill(1)];
+            let stats_table = Table::new(stats_rows, stats_width).widths(column_constraints);
+
+            // Combine "Nanos Earned" and "Username" into a single row
+            let discord_username_placeholder = "Username: "; // Used to calculate the width of the username column
             let discord_username_title = Span::styled(
                 discord_username_placeholder,
                 Style::default().fg(VIVID_SKY_BLUE),
@@ -619,13 +635,8 @@ impl Component for Status {
                 ),
             ]);
 
-            let stats_rows = vec![
-                storage_allocated_row,
-                memory_use_row,
-                connection_mode_row,
-                total_nanos_earned_and_discord_row,
-            ];
-            let stats_width = [Constraint::Length(5)];
+            let nanos_discord_rows = vec![total_nanos_earned_and_discord_row];
+            let nanos_discord_width = [Constraint::Length(5)];
             let column_constraints = [
                 Constraint::Length(23),
                 Constraint::Fill(1),
@@ -633,18 +644,19 @@ impl Component for Status {
                     (discord_username_placeholder.len() + self.discord_username.len()) as u16,
                 ),
             ];
-            let stats_table = Table::new(stats_rows, stats_width)
-                .block(
-                    Block::default()
-                        .title(" Device Status ")
-                        .bold()
-                        .title_style(Style::default().fg(GHOST_WHITE))
-                        .borders(Borders::ALL)
-                        .padding(Padding::horizontal(1))
-                        .style(Style::default().fg(VERY_LIGHT_AZURE)),
-                )
-                .widths(column_constraints);
-            f.render_widget(stats_table, layout[1]);
+            let nanos_discord_table =
+                Table::new(nanos_discord_rows, nanos_discord_width).widths(column_constraints);
+
+            let inner_area = combined_block.inner(layout[1]);
+            let device_layout = Layout::new(
+                Direction::Vertical,
+                vec![Constraint::Length(5), Constraint::Length(1)],
+            )
+            .split(inner_area);
+
+            // Render both tables inside the combined block
+            f.render_widget(stats_table, device_layout[0]);
+            f.render_widget(nanos_discord_table, device_layout[1]);
         };
 
         // ==== Node Status =====
@@ -709,10 +721,10 @@ impl Component for Status {
             );
         } else {
             let node_widths = [
-                Constraint::Max(15),
-                Constraint::Min(40),
-                Constraint::Max(10),
-                Constraint::Max(10),
+                Constraint::Length(11),
+                Constraint::Fill(1),
+                Constraint::Length(9),
+                Constraint::Length(8),
             ];
             let table = Table::new(node_rows.clone(), node_widths)
                 .column_spacing(2)
@@ -739,7 +751,11 @@ impl Component for Status {
 
         let footer = Footer::default();
         let footer_state = if !node_rows.is_empty() {
-            &mut NodesToStart::Configured
+            if !self.get_running_nodes().is_empty() {
+                &mut NodesToStart::Running
+            } else {
+                &mut NodesToStart::Configured
+            }
         } else {
             &mut NodesToStart::NotConfigured
         };
