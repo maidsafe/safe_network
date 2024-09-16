@@ -6,9 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod subcommands;
+
+use crate::subcommands::evm_network::EvmNetworkCommand;
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
 use libp2p::Multiaddr;
+use sn_evm::RewardsAddress;
 use sn_logging::{LogBuilder, LogFormat};
 use sn_node_manager::{
     add_services::config::PortRange,
@@ -854,6 +858,12 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         rpc_port: Option<PortRange>,
+        /// Specify the wallet address that will receive the node's earnings.
+        #[clap(long)]
+        rewards_address: RewardsAddress,
+        /// Optionally specify what EVM network to use for payments.
+        #[command(subcommand)]
+        evm_network: Option<EvmNetworkCommand>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -973,6 +983,12 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         rpc_port: Option<PortRange>,
+        /// Specify the wallet address that will receive the node's earnings.
+        #[clap(long)]
+        rewards_address: RewardsAddress,
+        /// Optionally specify what EVM network to use for payments.
+        #[command(subcommand)]
+        evm_network: Option<EvmNetworkCommand>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -1170,6 +1186,8 @@ async fn main() -> Result<()> {
                 owner_prefix,
                 peers,
                 rpc_port,
+                rewards_address,
+                evm_network,
                 skip_validation: _,
                 evm_rewards_address,
             } => {
@@ -1189,6 +1207,8 @@ async fn main() -> Result<()> {
                     owner_prefix,
                     peers,
                     rpc_port,
+                    rewards_address,
+                    evm_network.map(|v| v.into()),
                     true,
                     verbosity,
                     evm_rewards_address,
@@ -1212,6 +1232,8 @@ async fn main() -> Result<()> {
                 owner,
                 owner_prefix,
                 rpc_port,
+                rewards_address,
+                evm_network,
                 skip_validation: _,
                 evm_rewards_address,
             } => {
@@ -1231,6 +1253,8 @@ async fn main() -> Result<()> {
                     owner,
                     owner_prefix,
                     rpc_port,
+                    rewards_address,
+                    evm_network.map(|v| v.into()),
                     true,
                     verbosity,
                     evm_rewards_address,

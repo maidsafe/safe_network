@@ -15,6 +15,7 @@ use crate::{
     print_banner, status_report, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Report, Result};
+use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
@@ -39,9 +40,10 @@ pub async fn join(
     owner_prefix: Option<String>,
     peers_args: PeersArgs,
     rpc_port: Option<PortRange>,
+    rewards_address: RewardsAddress,
+    evm_network: Option<EvmNetwork>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
-    evm_rewards_address: String,
 ) -> Result<(), Report> {
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Joining Local Network");
@@ -108,7 +110,8 @@ pub async fn join(
         safenode_bin_path,
         skip_validation,
         log_format,
-        rewards_address: evm_rewards_address,
+        rewards_address,
+        evm_network,
     };
     run_network(options, &mut local_node_registry, &ServiceController {}).await?;
     Ok(())
@@ -147,9 +150,10 @@ pub async fn run(
     owner: Option<String>,
     owner_prefix: Option<String>,
     rpc_port: Option<PortRange>,
+    rewards_address: RewardsAddress,
+    evm_network: Option<EvmNetwork>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
-    evm_rewards_address: String,
 ) -> Result<(), Report> {
     if (enable_metrics_server || metrics_port.is_some()) && !cfg!(feature = "open-metrics") && build
     {
@@ -222,7 +226,8 @@ pub async fn run(
         safenode_bin_path,
         skip_validation,
         log_format,
-        rewards_address: evm_rewards_address,
+        rewards_address,
+        evm_network,
     };
     run_network(options, &mut local_node_registry, &ServiceController {}).await?;
 
