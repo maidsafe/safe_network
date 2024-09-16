@@ -60,10 +60,6 @@ impl BetaProgramme {
             KeyCode::Enter => {
                 let username = self.discord_input_filed.value().to_string();
 
-                if username.is_empty() {
-                    debug!("Got Enter, but username is empty, ignoring.");
-                    return vec![];
-                }
                 debug!(
                     "Got Enter, saving the discord username {username:?}  and switching to DiscordIdAlreadySet, and Home Scene",
                 );
@@ -268,14 +264,10 @@ impl Component for BetaProgramme {
                 )]);
 
                 f.render_widget(button_no, buttons_layer[0]);
-                let button_yes_style = if self.discord_input_filed.value().is_empty() {
-                    Style::default().fg(LIGHT_PERIWINKLE)
-                } else {
-                    Style::default().fg(EUCALYPTUS)
-                };
+
                 let button_yes = Line::from(vec![Span::styled(
                     "Save Username [Enter]",
-                    button_yes_style,
+                    Style::default().fg(EUCALYPTUS),
                 )]);
                 f.render_widget(button_yes, buttons_layer[1]);
             }
@@ -443,15 +435,10 @@ impl Component for BetaProgramme {
                     "  No, Cancel [Esc]",
                     Style::default().fg(LIGHT_PERIWINKLE),
                 )]);
-                let button_yes_style = if self.discord_input_filed.value().is_empty() {
-                    Style::default().fg(LIGHT_PERIWINKLE)
-                } else {
-                    Style::default().fg(EUCALYPTUS)
-                };
                 f.render_widget(button_no, buttons_layer[0]);
                 let button_yes = Line::from(vec![Span::styled(
                     "Submit Username [Enter]",
-                    button_yes_style,
+                    Style::default().fg(EUCALYPTUS),
                 )]);
                 f.render_widget(button_yes, buttons_layer[1]);
             }
