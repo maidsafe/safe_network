@@ -1,11 +1,11 @@
 name: Nightly -- Full WAN Network Tests
 
 on:
-  # schedule:
-  #   - cron: "0 0 * * *"
-# enable below for testing purpose.
-  pull_request:
-    branches: ["*"]
+  schedule:
+    - cron: "0 0 * * *"
+# enable as below for testing purpose.
+  # pull_request:
+  #   branches: ["*"]
   workflow_dispatch:
 
 env:
