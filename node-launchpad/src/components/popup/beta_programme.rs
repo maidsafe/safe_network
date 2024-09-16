@@ -407,11 +407,7 @@ impl Component for BetaProgramme {
                 );
                 let input = Paragraph::new(Span::styled(
                     format!("{}{} ", spaces, self.discord_input_filed.value()),
-                    Style::default()
-                        .fg(VIVID_SKY_BLUE)
-                        .bg(INDIGO)
-                        .underlined()
-                        .underline_color(VIVID_SKY_BLUE),
+                    Style::default().fg(VIVID_SKY_BLUE).bg(INDIGO).underlined(),
                 ))
                 .alignment(Alignment::Center);
                 f.render_widget(input, layer_two[1]);
