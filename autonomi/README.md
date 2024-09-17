@@ -11,15 +11,24 @@ See [docs.rs/autonomi](https://docs.rs/autonomi) for usage examples.
 
 ## Running tests
 
-Run a local network with the `local-discovery` feature:
+1. Run a local EVM node:
 
 ```sh
-cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean
+cargo run --bin evm_testnet -- --royalties-wallet <ETHEREUM_ADDRESS>
 ```
 
-Then run the tests with the `local` feature:
+Take note of the console output for the next step (`RPC URL`, `Payment token address` & `Chunk payments address`).
+
+2. Run a local network with the `local-discovery` feature and pass the EVM params:
+
 ```sh
-$ cargo test --package=autonomi --features=local
+cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-custom --rpc-url <RPC_URL> --payment-token-address <TOKEN_ADDRESS> --chunk-payments-address <CONTRACT_ADDRESS>
+```
+
+3. Then run the tests with the `local` feature and pass the EVM params again:
+
+```sh
+$ RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> CHUNK_PAYMENTS_ADDRESS=<CONTRACT_ADDRESS> cargo test --package=autonomi --features=local
 # Or with logs
-$ RUST_LOG=autonomi cargo test --package=autonomi --features=local -- --nocapture
+$ RUST_LOG=autonomi RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> CHUNK_PAYMENTS_ADDRESS=<CONTRACT_ADDRESS> cargo test --package=autonomi --features=local -- --nocapture
 ```
