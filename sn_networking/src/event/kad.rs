@@ -612,7 +612,7 @@ impl SwarmDriver {
         record: Record,
         cfg: &GetRecordCfg,
     ) -> Result<()> {
-        let res = if cfg.target_record.is_none() || cfg.does_target_match(&record) {
+        let res = if cfg.does_target_match(&record) {
             Ok(record)
         } else {
             Err(GetRecordError::RecordDoesNotMatch(record))

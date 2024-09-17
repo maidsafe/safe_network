@@ -318,6 +318,7 @@ async fn store_spend(network: Network, spend: SignedSpend) -> Result<(), Network
         retry_strategy: None,
         target_record: record_to_verify,
         expected_holders,
+        is_register: false,
     };
     let put_cfg = PutRecordCfg {
         put_quorum: Quorum::Majority,
