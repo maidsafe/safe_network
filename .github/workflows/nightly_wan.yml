@@ -1,11 +1,11 @@
 name: Nightly -- Full WAN Network Tests
 
 on:
-  schedule:
-    - cron: "0 0 * * *"
+  # schedule:
+  #   - cron: "0 0 * * *"
 # enable as below for testing purpose.
-  # pull_request:
-  #   branches: ["*"]
+  pull_request:
+    branches: ["*"]
   workflow_dispatch:
 
 env:
@@ -47,12 +47,13 @@ jobs:
         uses: maidsafe/sn-testnet-control-action/launch-network@main
         with:
           ansible-forks: ${{ env.ANSIBLE_FORKS }}
-          beta-encryption-key: ${{ env.DEFAULT_PAYMENT_FORWARD_SK }}
           environment-type: development
-          faucet-version: ${{ env.FAUCET_VERSION }}
+          node-vm-count: 10
+          node-count: 20
+          uploader-vm-count: 0
+          bootstrap-node-vm-count: 0
           log-format: json
           network-name: ${{ env.NETWORK_NAME }}
-          network-contacts-file-name: ${{ env.NETWORK_CONTACTS_FILE_NAME }}
           provider: digital-ocean
           safe-network-branch: main
           safe-network-user: maidsafe
