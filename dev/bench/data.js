@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726574266315,
+  "lastUpdate": 1726574268068,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "36ac059e4a41cf3cd9d4fb5750e588c9855b764a",
-          "message": "chore: disable network contacts feature flag on launchpad",
-          "timestamp": "2024-05-02T14:14:07+01:00",
-          "tree_id": "877b4faa1f2b88fa434009715d017448472a5d23",
-          "url": "https://github.com/maidsafe/safe_network/commit/36ac059e4a41cf3cd9d4fb5750e588c9855b764a"
-        },
-        "date": 1714656509149,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7279,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33884,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 31965,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 6,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0c650cc986002a2cd3e40f4a666b42b92ee974b2",
+          "message": "Merge pull request #2103 from maqi/not_to_verify_register_record_by_entire_content\n\nfix(network): register record shall not be verified by entire content",
+          "timestamp": "2024-09-17T11:02:51Z",
+          "tree_id": "069a0bb9bfad5f0001cc5c6df824fd169165246d",
+          "url": "https://github.com/maidsafe/safe_network/commit/0c650cc986002a2cd3e40f4a666b42b92ee974b2"
+        },
+        "date": 1726574267564,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 5475,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 34984,
             "unit": "ms"
           },
           {
