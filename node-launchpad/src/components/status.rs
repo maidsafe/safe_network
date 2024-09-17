@@ -368,7 +368,7 @@ impl Component for Status {
                 StatusActions::ErrorLoadingNodeRegistry { raw_error }
                 | StatusActions::ErrorGettingNodeRegistryPath { raw_error } => {
                     self.error_popup = Some(ErrorPopup::new(
-                        " Error ".to_string(),
+                        "Error".to_string(),
                         "Error getting node registry path".to_string(),
                         raw_error,
                     ));
@@ -380,7 +380,7 @@ impl Component for Status {
                 }
                 StatusActions::ErrorScalingUpNodes { raw_error } => {
                     self.error_popup = Some(ErrorPopup::new(
-                        " Error ".to_string(),
+                        "Erro ".to_string(),
                         "Error adding new nodes".to_string(),
                         raw_error,
                     ));
@@ -392,7 +392,7 @@ impl Component for Status {
                 }
                 StatusActions::ErrorStoppingNodes { raw_error } => {
                     self.error_popup = Some(ErrorPopup::new(
-                        " Error ".to_string(),
+                        "Error".to_string(),
                         "Error stopping nodes".to_string(),
                         raw_error,
                     ));
@@ -404,7 +404,7 @@ impl Component for Status {
                 }
                 StatusActions::ErrorResettingNodes { raw_error } => {
                     self.error_popup = Some(ErrorPopup::new(
-                        " Error ".to_string(),
+                        "Error".to_string(),
                         "Error resetting nodes".to_string(),
                         raw_error,
                     ));
