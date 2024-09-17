@@ -366,7 +366,7 @@ impl Network {
         let mut all_costs = vec![];
         let mut all_quotes = vec![];
         for response in responses.into_values().flatten() {
-            debug!(
+            info!(
                 "StoreCostReq for {record_address:?} received response: {:?}",
                 response
             );
@@ -376,6 +376,14 @@ impl Network {
                     payment_address,
                     peer_address,
                 }) => {
+                    // Check the quote itself is valid.
+                    if quote.cost.as_nano()
+                        != calculate_cost_for_records(quote.quoting_metrics.close_records_stored)
+                    {
+                        warn!("Received invalid quote from {peer_address:?}, {quote:?}");
+                        continue;
+                    }
+
                     all_costs.push((peer_address.clone(), payment_address, quote.clone()));
                     all_quotes.push((peer_address, quote));
                 }
