@@ -19,7 +19,7 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use std::collections::BTreeSet;
-use std::time::UNIX_EPOCH;
+use std::time::{Duration, UNIX_EPOCH};
 use tokio::task::JoinSet;
 use xor_name::XorName;
 
@@ -466,17 +466,6 @@ impl Node {
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
         debug!("Validating record payment for {pretty_key}");
 
-        // Quote creation timestamp in seconds from UNIX epoch.
-        let quote_creation_time_in_secs = payment
-            .quote
-            .timestamp
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs();
-
-        // Quote expiration timestamp in seconds from UNIX epoch.
-        let quote_expiration_time_in_secs = quote_creation_time_in_secs + QUOTE_EXPIRATION_SECS;
-
         // check if the quote is valid
         let storecost = payment.quote.cost;
         let self_peer_id = self.network().peer_id();
@@ -492,7 +481,7 @@ impl Node {
         let quote_timestamp = payment.quote.timestamp;
         let quote_expiration_time = quote_timestamp + Duration::from_secs(QUOTE_EXPIRATION_SECS);
         let quote_expiration_time_in_secs = quote_expiration_time
-            .duration_since(std::time::UNIX_EPOCH)
+            .duration_since(UNIX_EPOCH)
             .map_err(|e| {
                 Error::InvalidRequest(format!(
                     "Payment quote timestamp is invalid for record {pretty_key}: {e}"
