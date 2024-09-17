@@ -41,6 +41,7 @@ pub async fn join(
     rpc_port: Option<PortRange>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
+    evm_rewards_address: String,
 ) -> Result<(), Report> {
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Joining Local Network");
@@ -107,6 +108,7 @@ pub async fn join(
         safenode_bin_path,
         skip_validation,
         log_format,
+        rewards_address: evm_rewards_address,
     };
     run_network(options, &mut local_node_registry, &ServiceController {}).await?;
     Ok(())
@@ -147,6 +149,7 @@ pub async fn run(
     rpc_port: Option<PortRange>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
+    evm_rewards_address: String,
 ) -> Result<(), Report> {
     if (enable_metrics_server || metrics_port.is_some()) && !cfg!(feature = "open-metrics") && build
     {
@@ -219,6 +222,7 @@ pub async fn run(
         safenode_bin_path,
         skip_validation,
         log_format,
+        rewards_address: evm_rewards_address,
     };
     run_network(options, &mut local_node_registry, &ServiceController {}).await?;
 
