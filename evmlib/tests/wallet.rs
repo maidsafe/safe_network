@@ -88,10 +88,8 @@ async fn test_pay_for_quotes_and_chunk_payment_verification() {
         TRANSFERS.div_ceil(MAX_TRANSFERS_PER_TRANSACTION)
     );
 
-    for (i, quote_payment) in quote_payments.iter().enumerate() {
-        let tx_index = i / MAX_TRANSFERS_PER_TRANSACTION;
-
-        let tx_hash = *tx_hashes.get(tx_index).unwrap();
+    for quote_payment in quote_payments.iter() {
+        let tx_hash = *tx_hashes.get(&quote_payment.0).unwrap();
 
         let result = verify_chunk_payment(
             &network,
@@ -105,7 +103,7 @@ async fn test_pay_for_quotes_and_chunk_payment_verification() {
 
         assert!(
             result.is_ok(),
-            "Verification failed for({i}): {quote_payment:?}. Error: {:?}",
+            "Verification failed for: {quote_payment:?}. Error: {:?}",
             result.err()
         );
     }

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
 use crate::contract::chunk_payments::{ChunkPayments, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
@@ -66,15 +68,15 @@ impl Wallet {
     ) -> Result<TxHash, chunk_payments::error::Error> {
         self.pay_for_quotes([(quote_hash, rewards_addr, amount)])
             .await
-            .map(|v| v.first().cloned().expect("Infallible"))
+            .map(|v| v.values().last().cloned().expect("Infallible"))
     }
 
     /// Function for batch payments of quotes. It accepts an iterator of QuotePayment and returns
-    /// transaction hashes of the payments.
+    /// transaction hashes of the payments by quotes.
     pub async fn pay_for_quotes<I: IntoIterator<Item = QuotePayment>>(
         &self,
         chunk_payments: I,
-    ) -> Result<Vec<TxHash>, chunk_payments::error::Error> {
+    ) -> Result<BTreeMap<QuoteHash, TxHash>, chunk_payments::error::Error> {
         pay_for_quotes(self.wallet.clone(), &self.network, chunk_payments).await
     }
 }
@@ -154,7 +156,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     wallet: EthereumWallet,
     network: &Network,
     payments: T,
-) -> Result<Vec<TxHash>, chunk_payments::error::Error> {
+) -> Result<BTreeMap<QuoteHash, TxHash>, chunk_payments::error::Error> {
     let payments: Vec<_> = payments.into_iter().collect();
     let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
     let royalties = calculate_royalties_from_amount(total_amount);
@@ -174,18 +176,21 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
     let chunk_payments = ChunkPayments::new(*network.chunk_payments_address(), provider);
 
-    let mut tx_hashes = Vec::new();
+    let mut tx_hashes_by_quote = BTreeMap::new();
 
     // Divide transfers over multiple transactions if they exceed the max per transaction.
     let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);
 
     for batch in chunks {
         let batch: Vec<QuotePayment> = batch.to_vec();
-        let tx_hash = chunk_payments.pay_for_quotes(batch).await?;
-        tx_hashes.push(tx_hash);
+        let tx_hash = chunk_payments.pay_for_quotes(batch.clone()).await?;
+
+        for quote in batch.iter().map(|(quote, _, _)| *quote) {
+            tx_hashes_by_quote.insert(quote, tx_hash);
+        }
     }
 
-    Ok(tx_hashes)
+    Ok(tx_hashes_by_quote)
 }
 
 #[cfg(test)]
