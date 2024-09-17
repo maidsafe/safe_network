@@ -49,10 +49,10 @@ pub async fn add(
     metrics_port: Option<PortRange>,
     node_port: Option<PortRange>,
     owner: Option<String>,
+    path: Option<PathBuf>,
     peers_args: PeersArgs,
     rpc_address: Option<Ipv4Addr>,
     rpc_port: Option<PortRange>,
-    src_path: Option<PathBuf>,
     upnp: bool,
     url: Option<String>,
     user: Option<String>,
@@ -86,7 +86,7 @@ pub async fn add(
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
-    let (safenode_src_path, version) = if let Some(path) = src_path.clone() {
+    let (safenode_src_path, version) = if let Some(path) = path.clone() {
         let version = get_bin_version(&path)?;
         (path, version)
     } else {
@@ -137,7 +137,7 @@ pub async fn add(
         auto_set_nat_flags,
         bootstrap_peers,
         count,
-        delete_safenode_src: src_path.is_none(),
+        delete_safenode_src: path.is_none(),
         enable_metrics_server,
         env_variables,
         genesis: is_first,
@@ -595,10 +595,11 @@ pub async fn maintain_n_running_nodes(
     auto_restart: bool,
     auto_set_nat_flags: bool,
     connection_timeout_s: u64,
-    max_nodes_to_run: u16,
+    count: u16,
     data_dir_path: Option<PathBuf>,
     enable_metrics_server: bool,
     env_variables: Option<Vec<(String, String)>>,
+    interval: Option<u64>,
     home_network: bool,
     local: bool,
     log_dir_path: Option<PathBuf>,
@@ -606,16 +607,15 @@ pub async fn maintain_n_running_nodes(
     metrics_port: Option<PortRange>,
     node_port: Option<PortRange>,
     owner: Option<String>,
+    path: Option<PathBuf>,
     peers: PeersArgs,
     rpc_address: Option<Ipv4Addr>,
     rpc_port: Option<PortRange>,
-    src_path: Option<PathBuf>,
-    url: Option<String>,
     upnp: bool,
+    url: Option<String>,
     user: Option<String>,
     version: Option<String>,
     verbosity: VerbosityLevel,
-    start_node_interval: Option<u64>,
 ) -> Result<()> {
     let node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let running_nodes = node_registry
@@ -626,7 +626,7 @@ pub async fn maintain_n_running_nodes(
         .collect::<Vec<_>>();
 
     let running_count = running_nodes.len();
-    let target_count = max_nodes_to_run as usize;
+    let target_count = count as usize;
 
     info!(
         "Current running nodes: {}, Target: {}",
@@ -669,7 +669,7 @@ pub async fn maintain_n_running_nodes(
                 );
                 start(
                     connection_timeout_s,
-                    start_node_interval,
+                    interval,
                     vec![],
                     nodes_to_start,
                     verbosity,
@@ -706,10 +706,10 @@ pub async fn maintain_n_running_nodes(
                         metrics_port.clone(),
                         Some(PortRange::Single(port)),
                         owner.clone(),
+                        path.clone(),
                         peers.clone(),
                         rpc_address,
                         rpc_port.clone(),
-                        src_path.clone(),
                         upnp,
                         url.clone(),
                         user.clone(),
@@ -721,7 +721,7 @@ pub async fn maintain_n_running_nodes(
                     if i == 0 {
                         start(
                             connection_timeout_s,
-                            start_node_interval,
+                            interval,
                             vec![],
                             added_service,
                             verbosity,
@@ -733,7 +733,7 @@ pub async fn maintain_n_running_nodes(
                 if !inactive_nodes.is_empty() {
                     start(
                         connection_timeout_s,
-                        start_node_interval,
+                        interval,
                         vec![],
                         inactive_nodes,
                         verbosity,

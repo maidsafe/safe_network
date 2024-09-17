@@ -6950,7 +6950,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.10.3"
+version = "0.11.3"
 dependencies = [
  "assert_cmd",
  "assert_fs",

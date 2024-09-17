@@ -46,7 +46,7 @@ pub fn account_wallet_secret_key(
     Ok(MainSecretKey::new(sk))
 }
 
-#[expect(dead_code)] // as yet unused, will be used soon
+#[allow(dead_code)] // as yet unused, will be used soon
 /// Derive an xorname from the mnemonic for the account to store data.
 pub(crate) fn account_root_xorname(mnemonic: bip39::Mnemonic, passphrase: &str) -> Result<XorName> {
     let seed = mnemonic.to_seed(passphrase);

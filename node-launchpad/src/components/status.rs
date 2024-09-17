@@ -228,12 +228,12 @@ impl Status {
         self.node_table_state.select(Some(i));
     }
 
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     fn unselect_table_item(&mut self) {
         self.node_table_state.select(None);
     }
 
-    #[expect(dead_code)]
+    #[allow(dead_code)]
     fn get_service_name_of_selected_table_item(&self) -> Option<String> {
         let Some(service_idx) = self.node_table_state.selected() else {
             warn!("No item selected from table, not removing anything");

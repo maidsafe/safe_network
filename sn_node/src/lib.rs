@@ -75,7 +75,7 @@ impl RunningNode {
     ///  - Linux: $HOME/.local/share/safe/node/<peer-id>
     ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>
-    #[expect(rustdoc::invalid_html_tags)]
+    #[allow(rustdoc::invalid_html_tags)]
     pub fn root_dir_path(&self) -> PathBuf {
         self.network.root_dir_path().clone()
     }

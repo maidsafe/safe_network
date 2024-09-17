@@ -762,7 +762,7 @@
 // /// Double spend a transaction whose outputs are all UTXO.
 // /// Returns the set of input cashnotes to double spend and the keys of the output cashnotes that will be unspendable
 // /// after the attack.
-// #[expect(clippy::type_complexity)]
+// #[allow(clippy::type_complexity)]
 // fn get_cashnotes_to_double_spend(
 //     our_id: WalletId,
 //     state: &mut State,

@@ -277,7 +277,7 @@ impl FilesUploader {
         Ok(failed_chunks)
     }
 
-    #[expect(clippy::type_complexity)]
+    #[allow(clippy::type_complexity)]
     fn spawn_upload_events_handler(
         mut chunk_manager: ChunkManager,
         make_data_public: bool,

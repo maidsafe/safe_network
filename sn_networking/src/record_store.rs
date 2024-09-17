@@ -947,7 +947,7 @@ fn positive_input_0_1_sigmoid(x: f64) -> f64 {
     1.0 / (1.0 + (-30.0 * (x - 0.5)).exp())
 }
 
-#[expect(trivial_casts)]
+#[allow(trivial_casts)]
 #[cfg(test)]
 mod tests {
 

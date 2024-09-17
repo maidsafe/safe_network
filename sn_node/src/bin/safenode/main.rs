@@ -89,7 +89,7 @@ struct Opt {
     ///  - Linux: $HOME/.local/share/safe/node/<peer-id>/logs
     ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>\logs
-    #[expect(rustdoc::invalid_html_tags)]
+    #[allow(rustdoc::invalid_html_tags)]
     #[clap(long, default_value_t = LogOutputDestArg::DataDir, value_parser = parse_log_output, verbatim_doc_comment)]
     log_output_dest: LogOutputDestArg,
 
@@ -124,7 +124,7 @@ struct Opt {
     ///  - Linux: $HOME/.local/share/safe/node/<peer-id>
     ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>
-    #[expect(rustdoc::invalid_html_tags)]
+    #[allow(rustdoc::invalid_html_tags)]
     #[clap(long, verbatim_doc_comment)]
     root_dir: Option<PathBuf>,
 
