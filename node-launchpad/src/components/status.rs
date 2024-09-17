@@ -524,139 +524,117 @@ impl Component for Status {
 
         // ==== Device Status =====
 
-        if self.discord_username.is_empty() {
-            let line1 = Line::from(vec![Span::styled(
-                "Add this device to the Beta Rewards Program",
-                Style::default().fg(VERY_LIGHT_AZURE),
-            )]);
-            let line2 = Line::from(vec![
-                Span::styled("Press ", Style::default().fg(VERY_LIGHT_AZURE)),
-                Span::styled("[Ctrl+B]", Style::default().fg(GHOST_WHITE).bold()),
-                Span::styled(" to add your ", Style::default().fg(VERY_LIGHT_AZURE)),
-                Span::styled(
-                    "Discord Username",
-                    Style::default().fg(VERY_LIGHT_AZURE).bold(),
-                ),
-            ]);
-            f.render_widget(
-                Paragraph::new(vec![Line::raw(""), Line::raw(""), line1, line2]).block(
-                    Block::default()
-                        .title(" Device Status ")
-                        .bold()
-                        .title_style(Style::new().fg(GHOST_WHITE))
-                        .borders(Borders::ALL)
-                        .padding(Padding::horizontal(1))
-                        .border_style(Style::new().fg(VERY_LIGHT_AZURE)),
-                ),
-                layout[1],
-            );
-        } else {
-            // Device Status as a block with two tables so we can shrink the screen
-            // and preserve as much as we can information
+        // Device Status as a block with two tables so we can shrink the screen
+        // and preserve as much as we can information
 
-            let combined_block = Block::default()
-                .title(" Device Status ")
-                .bold()
-                .title_style(Style::default().fg(GHOST_WHITE))
-                .borders(Borders::ALL)
-                .padding(Padding::horizontal(1))
-                .style(Style::default().fg(VERY_LIGHT_AZURE));
+        let combined_block = Block::default()
+            .title(" Device Status ")
+            .bold()
+            .title_style(Style::default().fg(GHOST_WHITE))
+            .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
+            .style(Style::default().fg(VERY_LIGHT_AZURE));
 
-            f.render_widget(combined_block.clone(), layout[1]);
+        f.render_widget(combined_block.clone(), layout[1]);
 
-            let storage_allocated_row = Row::new(vec![
-                Cell::new("Storage Allocated".to_string()).fg(GHOST_WHITE),
-                Cell::new(format!("{} GB", self.nodes_to_start * GB_PER_NODE)).fg(GHOST_WHITE),
-            ]);
-            let memory_use_val = if self.node_stats.memory_usage_mb as f64 / 1024_f64 > 1.0 {
-                format!(
-                    "{:.2} GB",
-                    self.node_stats.memory_usage_mb as f64 / 1024_f64
-                )
-            } else {
-                format!("{} MB", self.node_stats.memory_usage_mb)
-            };
-
-            let memory_use_row = Row::new(vec![
-                Cell::new("Memory Use".to_string()).fg(GHOST_WHITE),
-                Cell::new(memory_use_val).fg(GHOST_WHITE),
-            ]);
-
-            let connection_mode_string = match self.connection_mode {
-                ConnectionMode::HomeNetwork => "Home Network",
-                ConnectionMode::UPnP => "UPnP",
-                ConnectionMode::CustomPorts => &format!(
-                    "Custom Ports  {}-{}",
-                    self.port_from.unwrap_or(PORT_MIN),
-                    self.port_to.unwrap_or(PORT_MIN + PORT_ALLOCATION)
-                ),
-                ConnectionMode::Automatic => "Automatic",
-            };
-
-            let connection_mode_row = Row::new(vec![
-                Cell::new("Connection".to_string()).fg(GHOST_WHITE),
-                Cell::new(connection_mode_string).fg(LIGHT_PERIWINKLE),
-            ]);
-
-            let stats_rows = vec![storage_allocated_row, memory_use_row, connection_mode_row];
-            let stats_width = [Constraint::Length(5)];
-            let column_constraints = [Constraint::Length(23), Constraint::Fill(1)];
-            let stats_table = Table::new(stats_rows, stats_width).widths(column_constraints);
-
-            // Combine "Nanos Earned" and "Username" into a single row
-            let discord_username_placeholder = "Username: "; // Used to calculate the width of the username column
-            let discord_username_title = Span::styled(
-                discord_username_placeholder,
-                Style::default().fg(VIVID_SKY_BLUE),
-            );
-
-            let discord_username = if !self.discord_username.is_empty() {
-                Span::styled(
-                    self.discord_username.clone(),
-                    Style::default().fg(VIVID_SKY_BLUE),
-                )
-                .bold()
-            } else {
-                Span::styled(
-                    "[Ctrl+B] to set".to_string(),
-                    Style::default().fg(GHOST_WHITE),
-                )
-            };
-
-            let total_nanos_earned_and_discord_row = Row::new(vec![
-                Cell::new("Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
-                Cell::new(self.node_stats.forwarded_rewards.to_string())
-                    .fg(VIVID_SKY_BLUE)
-                    .bold(),
-                Cell::new(
-                    Line::from(vec![discord_username_title, discord_username])
-                        .alignment(Alignment::Right),
-                ),
-            ]);
-
-            let nanos_discord_rows = vec![total_nanos_earned_and_discord_row];
-            let nanos_discord_width = [Constraint::Length(5)];
-            let column_constraints = [
-                Constraint::Length(23),
-                Constraint::Fill(1),
-                Constraint::Length(
-                    (discord_username_placeholder.len() + self.discord_username.len()) as u16,
-                ),
-            ];
-            let nanos_discord_table =
-                Table::new(nanos_discord_rows, nanos_discord_width).widths(column_constraints);
-
-            let inner_area = combined_block.inner(layout[1]);
-            let device_layout = Layout::new(
-                Direction::Vertical,
-                vec![Constraint::Length(5), Constraint::Length(1)],
+        let storage_allocated_row = Row::new(vec![
+            Cell::new("Storage Allocated".to_string()).fg(GHOST_WHITE),
+            Cell::new(format!("{} GB", self.nodes_to_start * GB_PER_NODE)).fg(GHOST_WHITE),
+        ]);
+        let memory_use_val = if self.node_stats.memory_usage_mb as f64 / 1024_f64 > 1.0 {
+            format!(
+                "{:.2} GB",
+                self.node_stats.memory_usage_mb as f64 / 1024_f64
             )
-            .split(inner_area);
-
-            // Render both tables inside the combined block
-            f.render_widget(stats_table, device_layout[0]);
-            f.render_widget(nanos_discord_table, device_layout[1]);
+        } else {
+            format!("{} MB", self.node_stats.memory_usage_mb)
         };
+
+        let memory_use_row = Row::new(vec![
+            Cell::new("Memory Use".to_string()).fg(GHOST_WHITE),
+            Cell::new(memory_use_val).fg(GHOST_WHITE),
+        ]);
+
+        let connection_mode_string = match self.connection_mode {
+            ConnectionMode::HomeNetwork => "Home Network",
+            ConnectionMode::UPnP => "UPnP",
+            ConnectionMode::CustomPorts => &format!(
+                "Custom Ports  {}-{}",
+                self.port_from.unwrap_or(PORT_MIN),
+                self.port_to.unwrap_or(PORT_MIN + PORT_ALLOCATION)
+            ),
+            ConnectionMode::Automatic => "Automatic",
+        };
+
+        let connection_mode_row = Row::new(vec![
+            Cell::new("Connection".to_string()).fg(GHOST_WHITE),
+            Cell::new(connection_mode_string).fg(LIGHT_PERIWINKLE),
+        ]);
+
+        let stats_rows = vec![storage_allocated_row, memory_use_row, connection_mode_row];
+        let stats_width = [Constraint::Length(5)];
+        let column_constraints = [Constraint::Length(23), Constraint::Fill(1)];
+        let stats_table = Table::new(stats_rows, stats_width).widths(column_constraints);
+
+        // Combine "Nanos Earned" and "Username" into a single row
+        let discord_username_placeholder = "Username: "; // Used to calculate the width of the username column
+        let discord_username_no_username = "[Ctrl+B] to set";
+        let discord_username_title = Span::styled(
+            discord_username_placeholder,
+            Style::default().fg(VIVID_SKY_BLUE),
+        );
+
+        let discord_username = if !self.discord_username.is_empty() {
+            Span::styled(
+                self.discord_username.clone(),
+                Style::default().fg(VIVID_SKY_BLUE),
+            )
+            .bold()
+        } else {
+            Span::styled(
+                discord_username_no_username,
+                Style::default().fg(GHOST_WHITE),
+            )
+        };
+
+        let total_nanos_earned_and_discord_row = Row::new(vec![
+            Cell::new("Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
+            Cell::new(self.node_stats.forwarded_rewards.to_string())
+                .fg(VIVID_SKY_BLUE)
+                .bold(),
+            Cell::new(
+                Line::from(vec![discord_username_title, discord_username])
+                    .alignment(Alignment::Right),
+            ),
+        ]);
+
+        let nanos_discord_rows = vec![total_nanos_earned_and_discord_row];
+        let nanos_discord_width = [Constraint::Length(5)];
+        let column_constraints = [
+            Constraint::Length(23),
+            Constraint::Fill(1),
+            Constraint::Length(
+                discord_username_placeholder.len() as u16
+                    + if !self.discord_username.is_empty() {
+                        self.discord_username.len() as u16
+                    } else {
+                        discord_username_no_username.len() as u16
+                    },
+            ),
+        ];
+        let nanos_discord_table =
+            Table::new(nanos_discord_rows, nanos_discord_width).widths(column_constraints);
+
+        let inner_area = combined_block.inner(layout[1]);
+        let device_layout = Layout::new(
+            Direction::Vertical,
+            vec![Constraint::Length(5), Constraint::Length(1)],
+        )
+        .split(inner_area);
+
+        // Render both tables inside the combined block
+        f.render_widget(stats_table, device_layout[0]);
+        f.render_widget(nanos_discord_table, device_layout[1]);
 
         // ==== Node Status =====
 
