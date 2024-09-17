@@ -32,3 +32,22 @@ $ RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> CHUNK_PAYMENTS_ADDRESS
 # Or with logs
 $ RUST_LOG=autonomi RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> CHUNK_PAYMENTS_ADDRESS=<CONTRACT_ADDRESS> cargo test --package=autonomi --features=local -- --nocapture
 ```
+
+## Faucet (local)
+
+There is no faucet server, but instead you can use the `Deployer wallet private key` printed in the EVM node output to
+initialise a wallet from with almost infinite gas and payment tokens. Example:
+
+```rust
+let private_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+let network = evm_network_from_env();
+let deployer_wallet = Wallet::new_from_private_key(network, private_key).unwrap();
+let receiving_wallet = Wallet::new_with_random_wallet(network);
+
+// Send 10 payment tokens (atto)
+let _ = deployer_wallet
+.transfer_tokens(receiving_wallet.address(), Amount::from(10))
+.await;
+```
+
+
