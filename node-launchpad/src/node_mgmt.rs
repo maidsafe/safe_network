@@ -17,7 +17,7 @@ use sn_releases::{self, ReleaseType, SafeReleaseRepoActions};
 pub const PORT_MAX: u32 = 65535;
 pub const PORT_MIN: u32 = 1024;
 
-const PORT_ASSIGNMENT_MAX_RETRIES: u32 = 5;
+const NODE_ADD_MAX_RETRIES: u32 = 5;
 
 /// Stop the specified services
 pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
@@ -332,7 +332,7 @@ async fn add_nodes(
 ) {
     let mut retry_count = 0;
 
-    while nodes_to_add > 0 && retry_count < PORT_ASSIGNMENT_MAX_RETRIES {
+    while nodes_to_add > 0 && retry_count < NODE_ADD_MAX_RETRIES {
         // Find the next available port
         while used_ports.contains(current_port) && *current_port <= max_port {
             *current_port += 1;
@@ -397,16 +397,42 @@ async fn add_nodes(
                         "Port {} is being used, retrying with a different port. Attempt {}/{}",
                         current_port,
                         retry_count + 1,
-                        PORT_ASSIGNMENT_MAX_RETRIES
+                        NODE_ADD_MAX_RETRIES
                     );
-                    *current_port += 1;
-                    retry_count += 1;
+                } else if err
+                    .to_string()
+                    .contains("Failed to add one or more services")
+                    && retry_count >= NODE_ADD_MAX_RETRIES
+                {
+                    if let Err(err) = action_sender.send(Action::StatusActions(
+                        StatusActions::ErrorScalingUpNodes {
+                            raw_error: "When trying to add a node, we failed.\n\n\
+                                 Maybe you ran out of disk space?\n\n\
+                                 Maybe you need to change the port range\n\n"
+                                .to_string(),
+                        },
+                    )) {
+                        error!("Error while sending action: {err:?}");
+                    }
                 } else {
                     error!("Range of ports to be used {:?}", *current_port..max_port);
                     error!("Error while adding node on port {}: {err:?}", current_port);
-                    retry_count += 1;
                 }
+                // In case of error, we increase the port and the retry count
+                *current_port += 1;
+                retry_count += 1;
             }
+        }
+    }
+    if retry_count >= NODE_ADD_MAX_RETRIES {
+        if let Err(err) = action_sender.send(Action::StatusActions(StatusActions::ErrorScalingUpNodes {
+            raw_error: format!(
+                "When trying to assign an available port to run a node, we reached the maximum amount of retries ({}).",
+                NODE_ADD_MAX_RETRIES
+            ),
+        }))
+        {
+            error!("Error while sending action: {err:?}");
         }
     }
 }

@@ -269,7 +269,7 @@ impl Component for Options {
 
         // Reset All Nodes
         let reset_legend = " Begin Reset ";
-        let reset_key = " [Ctrl+ R] ";
+        let reset_key = " [Ctrl+R] ";
         let block4 = Block::default()
             .title(" Reset All Nodes ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
@@ -302,8 +302,8 @@ impl Component for Options {
         .style(Style::default().fg(GHOST_WHITE));
 
         // Quit
-        let quit_legend = " Quit ";
-        let quit_key = " [Q] ";
+        let quit_legend = "Quit ";
+        let quit_key = "[Q] ";
         let block5 = Block::default()
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
