@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726555122254,
+  "lastUpdate": 1726555123483,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "d884f9da4769795c6abc4c0aece59fc45462a5a8",
-          "message": "chore(CI): disable the audit step during memcheck test",
-          "timestamp": "2024-05-02T12:23:10Z",
-          "tree_id": "db2ff1706b47d33c7f9e2be80c6b7482a7a3ecce",
-          "url": "https://github.com/maidsafe/safe_network/commit/d884f9da4769795c6abc4c0aece59fc45462a5a8"
-        },
-        "date": 1714655475138,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 181,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "5c51f43915c950f00160cb41e214f02c1e4a701f",
+          "message": "Merge pull request #2106 from mazzi/snagging_II\n\nfix(launchpad): tweaks and fixes",
+          "timestamp": "2024-09-17T05:46:24Z",
+          "tree_id": "d99ff8050a3964c49438f6018515a057105c9ace",
+          "url": "https://github.com/maidsafe/safe_network/commit/5c51f43915c950f00160cb41e214f02c1e4a701f"
+        },
+        "date": 1726555123132,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 186,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 87,
             "unit": "MB"
           }
         ]
