@@ -67,6 +67,11 @@ pub fn get_list_of_available_drives_and_available_space(
     let disks = Disks::new_with_refreshed_list();
     let mut drives: Vec<(String, PathBuf, u64, bool)> = Vec::new();
 
+    let default_mountpoint = match get_default_mount_point() {
+        Ok((_name, mountpoint)) => mountpoint,
+        Err(_) => PathBuf::new(),
+    };
+
     for disk in disks.list() {
         let disk_info = (
             disk.name()
@@ -76,7 +81,8 @@ pub fn get_list_of_available_drives_and_available_space(
                 .to_string(),
             disk.mount_point().to_path_buf(),
             disk.available_space(),
-            has_read_write_access(disk.mount_point().to_path_buf()),
+            has_read_write_access(disk.mount_point().to_path_buf())
+                || default_mountpoint == disk.mount_point().to_path_buf(),
         );
 
         // We avoid adding the same disk multiple times if it's mounted in multiple places

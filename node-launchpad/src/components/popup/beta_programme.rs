@@ -69,7 +69,7 @@ impl BetaProgramme {
                 vec![
                     Action::StoreDiscordUserName(self.discord_input_filed.value().to_string()),
                     Action::OptionsActions(OptionsActions::UpdateBetaProgrammeUsername(username)),
-                    Action::SwitchScene(Scene::Options),
+                    Action::SwitchScene(Scene::Status),
                 ]
             }
             KeyCode::Esc => {
@@ -226,11 +226,7 @@ impl Component for BetaProgramme {
                 );
                 let input = Paragraph::new(Span::styled(
                     format!("{}{} ", spaces, self.discord_input_filed.value()),
-                    Style::default()
-                        .fg(VIVID_SKY_BLUE)
-                        .bg(INDIGO)
-                        .underlined()
-                        .underline_color(VIVID_SKY_BLUE),
+                    Style::default().fg(VIVID_SKY_BLUE).bg(INDIGO).underlined(),
                 ))
                 .alignment(Alignment::Center);
                 f.render_widget(input, layer_two[1]);
