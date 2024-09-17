@@ -582,6 +582,7 @@ mod tests {
     async fn run_node_should_launch_the_genesis_node() -> Result<()> {
         let mut mock_launcher = MockLauncher::new();
         let mut mock_rpc_client = MockRpcClient::new();
+        let rewards_address = dummy_address();
 
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
@@ -594,7 +595,7 @@ mod tests {
                 eq(None),
                 eq(None),
                 eq(rpc_socket_addr),
-                eq(dummy_address()),
+                eq(rewards_address),
                 eq(None),
             )
             .times(1)
@@ -644,7 +645,7 @@ mod tests {
                 number: 1,
                 owner: None,
                 rpc_socket_addr,
-                rewards_address: dummy_address(),
+                rewards_address,
                 evm_network: None,
                 version: "0.100.12".to_string(),
             },
