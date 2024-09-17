@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726574713663,
+  "lastUpdate": 1726574715210,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "bc3cd63be52a8ca8c5f7bbc5e57673793de3b092",
-          "message": "fix: do not create wallet on registry refresh\n\nUse the `try_load_from` mechanism, rather than `try_load`, because the former will not create the\nwallet directory if it does not exist.\n\nThe node manager refreshes its registry when it runs commands like `start` and `stop`, which can be\nrunning as the root user. The refresh now involves getting the balance of the wallet. Therefore,\nwhen `start` ran for the first time, the `try_load` function was creating a directory owned by the\nroot user. This would cause the node to crash because it couldn't write to that directory.\n\nA new Clippy warning is also fixed and I removed the superfluous comments around the code it was\nreferring to.",
-          "timestamp": "2024-05-02T15:43:54Z",
-          "tree_id": "64e8f7e284eb81fa3ca0e4055bdcbf926149bab2",
-          "url": "https://github.com/maidsafe/safe_network/commit/bc3cd63be52a8ca8c5f7bbc5e57673793de3b092"
-        },
-        "date": 1714667378740,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 199,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 87,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0bb025cbe8b47a44677df4ed45832aaf88c58fd6",
+          "message": "Merge pull request #2115 from b-zee/test-api-peers-from-env\n\ntest(autonomi): connect to peers from env",
+          "timestamp": "2024-09-17T11:13:10Z",
+          "tree_id": "2af4205408360cc7c05270257d1ca699b8eadc45",
+          "url": "https://github.com/maidsafe/safe_network/commit/0bb025cbe8b47a44677df4ed45832aaf88c58fd6"
+        },
+        "date": 1726574714754,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 189,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
