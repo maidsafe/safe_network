@@ -2,6 +2,7 @@ use crate::common::Address;
 use crate::contract::chunk_payments::ChunkPayments;
 use crate::contract::network_token::NetworkToken;
 use crate::{CustomNetwork, Network};
+use alloy::hex::ToHexExt;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::node_bindings::{Anvil, AnvilInstance};
 use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
@@ -47,6 +48,12 @@ impl Testnet {
             payment_token_address: self.network_token_address,
             chunk_payments_address: self.chunk_payments_address,
         })
+    }
+
+    pub fn default_wallet_private_key(&self) -> String {
+        // Fetches private key from the first default Anvil account (Alice).
+        let signer: PrivateKeySigner = self.anvil.keys()[0].clone().into();
+        signer.to_bytes().encode_hex_with_prefix()
     }
 }
 

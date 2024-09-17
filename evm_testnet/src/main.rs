@@ -43,17 +43,14 @@ fn print_testnet_details(testnet: &Testnet) {
         "Chunk payments address: {}",
         network.chunk_payments_address()
     );
+    println!(
+        "Deployer wallet private key: {}",
+        testnet.default_wallet_private_key()
+    )
 }
 
 async fn keep_alive<T>(variable: T) {
-    loop {
-        tokio::select! {
-            _ = tokio::signal::ctrl_c() => {
-                println!("Received Ctrl-C, stopping...");
-                break;
-            }
-        }
-    }
-
+    let _ = tokio::signal::ctrl_c().await;
+    println!("Received Ctrl-C, stopping...");
     drop(variable);
 }
