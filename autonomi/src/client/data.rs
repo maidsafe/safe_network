@@ -16,7 +16,7 @@ use sn_protocol::{
     },
     NetworkAddress,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use xor_name::XorName;
 
 /// Errors that can occur during the put operation.
@@ -214,7 +214,7 @@ impl Client {
 
     /// Actually store a chunk to a peer.
     async fn store_chunk(&self, chunk: Chunk, payment: ProofOfPayment) -> Result<(), PutError> {
-        let storing_node = payment.to_peer_id_payee();
+        let storing_node = payment.to_peer_id_payee().expect("Missing node Peer ID");
 
         tracing::debug!("Storing chunk: {chunk:?} to {:?}", storing_node);
 
@@ -304,7 +304,7 @@ fn extract_quote_payments(
 /// Construct payment proofs from cost map and payments map.
 fn construct_proofs(
     cost_map: &HashMap<XorName, PayeeQuote>,
-    payments: &HashMap<QuoteHash, TxHash>,
+    payments: &BTreeMap<QuoteHash, TxHash>,
 ) -> HashMap<XorName, ProofOfPayment> {
     cost_map
         .iter()

@@ -86,7 +86,7 @@ impl Client {
         let (payment_proofs, _) = self.pay(std::iter::once(reg_xor), wallet).await?;
         // Should always be there, else it would have failed on the payment step.
         let proof = payment_proofs.get(&reg_xor).expect("Missing proof");
-        let payee = proof.to_peer_id_payee();
+        let payee = proof.to_peer_id_payee().expect("Missing payee Peer ID");
         let signed_register = register.clone().into_signed(&owner).expect("TODO");
 
         let record = Record {

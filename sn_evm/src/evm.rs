@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use evmlib::common::TxHash;
+use libp2p::identity::PublicKey;
 use libp2p::PeerId;
 use serde::{Deserialize, Serialize};
 
@@ -22,8 +23,8 @@ pub struct ProofOfPayment {
 }
 
 impl ProofOfPayment {
-    pub fn to_peer_id_payee(&self) -> PeerId {
-        PeerId::from_bytes(self.quote.pub_key.as_slice())
-            .expect("Could not init Peer ID from pub key")
+    pub fn to_peer_id_payee(&self) -> Option<PeerId> {
+        let pub_key = PublicKey::try_decode_protobuf(&self.quote.pub_key).ok()?;
+        Some(PeerId::from_public_key(&pub_key))
     }
 }
