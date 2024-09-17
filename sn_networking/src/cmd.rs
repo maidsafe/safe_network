@@ -1011,16 +1011,16 @@ impl SwarmDriver {
         target_address: &NetworkAddress,
     ) -> Vec<PeerId> {
         let filtered_peers = self.get_filtered_peers_exceeding_range(target_address);
-        let cloest_node_buffer_zone = CLOSE_GROUP_SIZE + close_group_majority();
-        if filtered_peers.len() >= cloest_node_buffer_zone {
+        let closest_node_buffer_zone = CLOSE_GROUP_SIZE + close_group_majority();
+        if filtered_peers.len() >= closest_node_buffer_zone {
             filtered_peers
         } else {
-            warn!("Insufficient peers within replication range of {target_address:?}. Falling back to use {cloest_node_buffer_zone:?} closest nodes");
+            warn!("Insufficient peers within replication range of {target_address:?}. Falling back to use {closest_node_buffer_zone:?} closest nodes");
             let all_peers = self.get_all_local_peers_excluding_self();
             match sort_peers_by_address_and_limit(
                 &all_peers,
                 target_address,
-                cloest_node_buffer_zone,
+                closest_node_buffer_zone,
             ) {
                 Ok(peers) => peers.iter().map(|p| **p).collect(),
                 Err(err) => {

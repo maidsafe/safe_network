@@ -805,7 +805,7 @@ impl SwarmDriver {
                     // logging for handling events happens inside handle_swarm_events
                     // otherwise we're rewriting match statements etc around this anwyay
                     if let Err(err) = self.handle_swarm_events(swarm_event) {
-                        trace!("Issue while handling swarm event: {err}");
+                        warn!("Issue while handling swarm event: {err}");
                     }
                 },
                 // thereafter we can check our intervals
@@ -817,7 +817,6 @@ impl SwarmDriver {
                 _ = set_farthest_record_interval.tick() => {
                     if !self.is_client {
                         let get_range = self.get_request_range();
-                        // set any new distance to farthest record in the store
                         self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(get_range);
 
                         // the distance range within the replication_fetcher shall be in sync as well
