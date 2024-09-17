@@ -406,7 +406,7 @@ async fn add_nodes(
                         StatusActions::ErrorScalingUpNodes {
                             raw_error: "When trying to add a node, we failed.\n\n\
                                  Maybe you ran out of disk space?\n\n\
-                                 Maybe you need to change the port range\n\n"
+                                 Maybe you need to change the port range?\n\n"
                                 .to_string(),
                         },
                     )) {
@@ -423,12 +423,13 @@ async fn add_nodes(
         }
     }
     if retry_count >= NODE_ADD_MAX_RETRIES {
-        if let Err(err) = action_sender.send(Action::StatusActions(StatusActions::ErrorScalingUpNodes {
-            raw_error: format!(
-                "When trying to assign an available port to run a node, we reached the maximum amount of retries ({}).",
-                NODE_ADD_MAX_RETRIES
-            ),
-        }))
+        if let Err(err) =
+            action_sender.send(Action::StatusActions(StatusActions::ErrorScalingUpNodes {
+                raw_error: format!(
+                    "When trying run a node, we reached the maximum amount of retries ({}).",
+                    NODE_ADD_MAX_RETRIES
+                ),
+            }))
         {
             error!("Error while sending action: {err:?}");
         }
