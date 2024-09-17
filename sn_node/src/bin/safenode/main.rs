@@ -200,6 +200,8 @@ fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
 
+    // evm config
+    // TODO: custom evm nets
     let rewards_address = RewardsAddress::from_hex(&opt.rewards_address)?;
 
     let evm_network: EvmNetwork = opt

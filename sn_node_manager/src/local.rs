@@ -18,7 +18,7 @@ use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
 
-use sn_evm::get_faucet_data_dir;
+use sn_evm::{get_faucet_data_dir, EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_service_management::{
     control::ServiceControl,
@@ -37,6 +37,7 @@ use sysinfo::{Pid, System};
 pub trait Launcher {
     fn get_safenode_path(&self) -> PathBuf;
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
+    #[expect(clippy::too_many_arguments)]
     fn launch_node(
         &self,
         bootstrap_peers: Vec<Multiaddr>,
@@ -45,6 +46,8 @@ pub trait Launcher {
         node_port: Option<u16>,
         owner: Option<String>,
         rpc_socket_addr: SocketAddr,
+        rewards_address: RewardsAddress,
+        evm_network: Option<EvmNetwork>,
     ) -> Result<()>;
     fn wait(&self, delay: u64);
 }
@@ -83,6 +86,8 @@ impl Launcher for LocalSafeLauncher {
         node_port: Option<u16>,
         owner: Option<String>,
         rpc_socket_addr: SocketAddr,
+        rewards_address: RewardsAddress,
+        evm_network: Option<EvmNetwork>,
     ) -> Result<()> {
         let mut args = Vec::new();
 
@@ -118,6 +123,22 @@ impl Launcher for LocalSafeLauncher {
         args.push("--local".to_string());
         args.push("--rpc".to_string());
         args.push(rpc_socket_addr.to_string());
+
+        args.push("--rewards-address".to_string());
+        args.push(rewards_address.to_string());
+
+        if let Some(network) = evm_network {
+            args.push(format!("evm-{}", network.identifier()));
+
+            if let EvmNetwork::Custom(custom) = network {
+                args.push("--rpc-url".to_string());
+                args.push(custom.rpc_url_http.to_string());
+                args.push("--payment-token-address".to_string());
+                args.push(custom.payment_token_address.to_string());
+                args.push("--chunk-payments-address".to_string());
+                args.push(custom.chunk_payments_address.to_string());
+            }
+        }
 
         Command::new(self.safenode_bin_path.clone())
             .args(args)
@@ -218,6 +239,8 @@ pub struct LocalNetworkOptions {
     pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
     pub log_format: Option<LogFormat>,
+    pub rewards_address: RewardsAddress,
+    pub evm_network: Option<EvmNetwork>,
 }
 
 pub async fn run_network(
@@ -294,6 +317,8 @@ pub async fn run_network(
                 number,
                 owner,
                 rpc_socket_addr,
+                rewards_address: options.rewards_address,
+                evm_network: options.evm_network.clone(),
                 version: get_bin_version(&launcher.get_safenode_path())?,
             },
             &launcher,
@@ -341,6 +366,8 @@ pub async fn run_network(
                 number,
                 owner,
                 rpc_socket_addr,
+                rewards_address: options.rewards_address,
+                evm_network: options.evm_network.clone(),
                 version: get_bin_version(&launcher.get_safenode_path())?,
             },
             &launcher,
@@ -367,22 +394,23 @@ pub async fn run_network(
         validate_network(node_registry, bootstrap_peers.clone()).await?;
     }
 
-    if !options.join {
-        println!("Launching the faucet server...");
-        let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
-        let version = get_bin_version(&options.faucet_bin_path)?;
-        let faucet = FaucetServiceData {
-            faucet_path: options.faucet_bin_path,
-            local: true,
-            log_dir_path: get_faucet_data_dir(),
-            pid: Some(pid),
-            service_name: "faucet".to_string(),
-            status: ServiceStatus::Running,
-            user: get_username()?,
-            version,
-        };
-        node_registry.faucet = Some(faucet);
-    }
+    // TODO: re-enable faucet when it can do EVM payments or when we switch back to native payments
+    // if !options.join {
+    //     println!("Launching the faucet server...");
+    //     let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
+    //     let version = get_bin_version(&options.faucet_bin_path)?;
+    //     let faucet = FaucetServiceData {
+    //         faucet_path: options.faucet_bin_path,
+    //         local: true,
+    //         log_dir_path: get_faucet_data_dir(),
+    //         pid: Some(pid),
+    //         service_name: "faucet".to_string(),
+    //         status: ServiceStatus::Running,
+    //         user: get_username()?,
+    //         version,
+    //     };
+    //     node_registry.faucet = Some(faucet);
+    // }
 
     Ok(())
 }
@@ -397,6 +425,8 @@ pub struct RunNodeOptions {
     pub number: u16,
     pub owner: Option<String>,
     pub rpc_socket_addr: SocketAddr,
+    pub rewards_address: RewardsAddress,
+    pub evm_network: Option<EvmNetwork>,
     pub version: String,
 }
 
@@ -414,6 +444,8 @@ pub async fn run_node(
         run_options.node_port,
         run_options.owner.clone(),
         run_options.rpc_socket_addr,
+        run_options.rewards_address,
+        run_options.evm_network,
     )?;
     launcher.wait(run_options.interval);
 
@@ -524,6 +556,7 @@ mod tests {
     use libp2p_identity::PeerId;
     use mockall::mock;
     use mockall::predicate::*;
+    use sn_evm::utils::dummy_address;
     use sn_service_management::{
         error::Result as RpcResult,
         rpc::{NetworkInfo, NodeInfo, RecordAddress, RpcActions},
@@ -549,6 +582,7 @@ mod tests {
     async fn run_node_should_launch_the_genesis_node() -> Result<()> {
         let mut mock_launcher = MockLauncher::new();
         let mut mock_rpc_client = MockRpcClient::new();
+        let rewards_address = dummy_address();
 
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
@@ -561,9 +595,11 @@ mod tests {
                 eq(None),
                 eq(None),
                 eq(rpc_socket_addr),
+                eq(rewards_address),
+                eq(None),
             )
             .times(1)
-            .returning(|_, _, _, _, _, _| Ok(()));
+            .returning(|_, _, _, _, _, _, _, _| Ok(()));
         mock_launcher
             .expect_wait()
             .with(eq(100))
@@ -609,6 +645,8 @@ mod tests {
                 number: 1,
                 owner: None,
                 rpc_socket_addr,
+                rewards_address,
+                evm_network: None,
                 version: "0.100.12".to_string(),
             },
             &mock_launcher,

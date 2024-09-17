@@ -18,7 +18,7 @@ use super::{
     watch_only::WatchOnlyWallet,
     Error, Result,
 };
-use crate::wallet::encryption::EncryptedSecretKey;
+use crate::{wallet::encryption::EncryptedSecretKey, ProofOfPayment};
 use crate::wallet::keys::{
     delete_encrypted_main_secret_key, delete_unencrypted_main_secret_key, get_main_pubkey,
     store_main_secret_key,
@@ -463,6 +463,7 @@ impl HotWallet {
 
         // calculate total storage cost incl royalties fees
         let mut quotes_payment = BTreeSet::new();
+        let mut quotes_by_hash = BTreeMap::new();
         for (_xorname, (rewards_address, quote, _peer_id_bytes)) in price_map.iter() {
             let royalties_fee = calculate_royalties_fee(quote.cost);
 
@@ -476,22 +477,31 @@ impl HotWallet {
             let cost = Amount::from(quote.cost.as_atto());
 
             quotes_payment.insert((quote.hash(), *rewards_address, cost));
-            // quotes_payment.insert((quote.hash(), *NETWORK_ROYALTIES_PK, royalties_fee)); // NB TODO deal with royalties payment
+            quotes_by_hash.insert(quote.hash(), quote.clone());
         }
 
-        // NB TODO: perform evm payments here
         // load evm wallet
         let evm_sk = std::env::var("EVM_SK")
             .map_err(|_| Error::EvmWallet(
                 "No evm wallet secret key found. EVM_SK env var not set. Please set the EVM_SK env var to your evm wallet secret key hex string.".to_string()
-            ))?;
+            )).expect("Failed to get EVM_SK env var");
         // TODO make network configurable here
         let evm_wallet = EvmWallet::new_from_private_key(EvmNetwork::ArbitrumOne, &evm_sk)
             .map_err(|_| Error::EvmWallet(
                 "Failed to parse EVM key from EVM_SK env var. Please set the EVM_SK env var to your evm wallet secret key in hex string format.".to_string()
             ))?;
 
-        evm_wallet.pay_for_quotes(quotes_payment).await.map_err(|e| Error::EvmWallet(format!("Failed to pay for quotes {e}")))?;
+        // perform evm payments
+        let tx_hashes_by_quote = evm_wallet.pay_for_quotes(quotes_payment).await.map_err(|e| Error::EvmWallet(format!("Failed to pay for quotes {e}")))?;
+        for (quote_hash, tx_hash) in tx_hashes_by_quote.iter() {
+            let quote = quotes_by_hash.get(quote_hash).ok_or(Error::EvmWallet(format!("Quote was forgotten during payment {quote_hash:?}")))?;
+            let proof = ProofOfPayment {
+                quote: quote.clone(),
+                tx_hash: *tx_hash,
+            };
+            // save payment to disk so it can be recovered later
+            let _ = self.watchonly_wallet.insert_payment_transaction(quote.content, proof);
+        }
 
         trace!(
             "local_send_storage_payment completed payments insertion in {:?}",

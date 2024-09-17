@@ -19,12 +19,12 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use std::collections::BTreeSet;
-use std::time::UNIX_EPOCH;
+use std::time::{Duration, UNIX_EPOCH};
 use tokio::task::JoinSet;
 use xor_name::XorName;
 
 impl Node {
-    /// Validate a record and it's payment, and store the record to the RecordStore
+    /// Validate a record and its payment, and store the record to the RecordStore
     pub(crate) async fn validate_and_store_record(&self, record: Record) -> Result<()> {
         let record_header = RecordHeader::from_record(&record)?;
 
@@ -466,23 +466,31 @@ impl Node {
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
         debug!("Validating record payment for {pretty_key}");
 
-        // Quote creation timestamp in seconds from UNIX epoch.
-        let quote_creation_time_in_secs = payment
-            .quote
-            .timestamp
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs();
-
-        // Quote expiration timestamp in seconds from UNIX epoch.
-        let quote_expiration_time_in_secs = quote_creation_time_in_secs + QUOTE_EXPIRATION_SECS;
-
         // check if the quote is valid
         let storecost = payment.quote.cost;
-        debug!("Payment quote is valid for record {pretty_key}");
+        let self_peer_id = self.network().peer_id();
+        if !payment.quote.check_is_signed_by_claimed_peer(self_peer_id) {
+            warn!("Payment quote signature is not valid for record {pretty_key}");
+            return Err(Error::InvalidRequest(format!(
+                "Payment quote signature is not valid for record {pretty_key}"
+            )));
+        }
+        debug!("Payment quote signature is valid for record {pretty_key}");
 
-        debug!("Verifying payment for record {pretty_key}");
+        // verify quote timestamp
+        let quote_timestamp = payment.quote.timestamp;
+        let quote_expiration_time = quote_timestamp + Duration::from_secs(QUOTE_EXPIRATION_SECS);
+        let quote_expiration_time_in_secs = quote_expiration_time
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| {
+                Error::InvalidRequest(format!(
+                    "Payment quote timestamp is invalid for record {pretty_key}: {e}"
+                ))
+            })?
+            .as_secs();
+
         // check if payment is valid on chain
+        debug!("Verifying payment for record {pretty_key}");
         self.evm_network()
             .verify_chunk_payment(
                 payment.tx_hash,

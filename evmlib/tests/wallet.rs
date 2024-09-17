@@ -91,7 +91,7 @@ async fn test_pay_for_quotes_and_chunk_payment_verification() {
     );
 
     for quote_payment in quote_payments.iter() {
-        let tx_hash = tx_hashes.get(&quote_payment.0).cloned().unwrap();
+        let tx_hash = *tx_hashes.get(&quote_payment.0).unwrap();
 
         let result = verify_chunk_payment(
             &network,
