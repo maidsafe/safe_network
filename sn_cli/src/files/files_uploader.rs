@@ -448,7 +448,6 @@ impl FilesUploadStatusNotifier for StdOutPrinter {
             "Made payment of {:?} for royalties fees",
             upload_sum.royalty_fees
         );
-        println!("New wallet balance: {}", upload_sum.final_balance);
     }
 }
 

@@ -114,9 +114,16 @@ impl WalletApi {
         let payment_file_path = self.payment_dir.join(unique_file_name);
 
         debug!("Getting payment from {payment_file_path:?}");
-        let file = fs::File::open(&payment_file_path)?;
-        let payments = rmp_serde::from_read(&file)?;
+        if let Ok(file) = fs::File::open(&payment_file_path) {
+            if let Ok(payments) = rmp_serde::from_read(&file) {
+                return Ok(payments)
+            } else {
+                warn!("Failed to read payment file for {name:?}");
+            }
+        } else {
+            warn!("Failed to open payment file for {name:?}");
+        }
 
-        Ok(payments)
+        Ok(vec![])
     }
 }

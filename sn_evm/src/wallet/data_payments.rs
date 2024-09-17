@@ -68,8 +68,6 @@ pub struct PaymentQuote {
     pub timestamp: SystemTime,
     /// quoting metrics being used to generate this quote
     pub quoting_metrics: QuotingMetrics,
-    /// the unique identifier for the payment
-    pub payment_id: u64,
     /// the node's wallet address
     pub rewards_address: RewardsAddress,
     /// the node's libp2p identity public key in bytes (PeerId)
@@ -88,7 +86,6 @@ impl PaymentQuote {
             cost: AttoTokens::zero(),
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
-            payment_id: rand::random(),
             rewards_address: dummy_address(),
             pub_key: vec![],
             signature: vec![],
@@ -108,7 +105,6 @@ impl PaymentQuote {
         cost: AttoTokens,
         timestamp: SystemTime,
         quoting_metrics: &QuotingMetrics,
-        payment_id: u64,
         rewards_address: &RewardsAddress,
     ) -> Vec<u8> {
         let mut bytes = xorname.to_vec();
@@ -122,7 +118,6 @@ impl PaymentQuote {
         );
         let serialised_quoting_metrics = rmp_serde::to_vec(quoting_metrics).unwrap_or_default();
         bytes.extend_from_slice(&serialised_quoting_metrics);
-        bytes.extend_from_slice(&payment_id.to_le_bytes());
         bytes.extend_from_slice(rewards_address.as_slice());
         bytes
     }
@@ -134,7 +129,6 @@ impl PaymentQuote {
             self.cost,
             self.timestamp,
             &self.quoting_metrics,
-            self.payment_id,
             &self.rewards_address,
         )
     }
@@ -195,7 +189,6 @@ impl PaymentQuote {
             quoting_metrics: Default::default(),
             pub_key: vec![],
             signature: vec![],
-            payment_id: rand::random(),
             rewards_address: dummy_address(),
         }
     }

@@ -66,7 +66,7 @@ impl SafeNode for SafeNodeRpcService {
             pid: process::id(),
             bin_version: env!("CARGO_PKG_VERSION").to_string(),
             uptime_secs: self.started_instant.elapsed().as_secs(),
-            wallet_balance: 0, // NB TODO: Implement this
+            wallet_balance: 0, // NB TODO: Implement this using metrics data?
         });
 
         Ok(resp)
