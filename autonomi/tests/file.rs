@@ -10,7 +10,7 @@ mod common;
 async fn file() -> Result<(), Box<dyn std::error::Error>> {
     common::enable_logging();
 
-    let mut client = Client::connect(&[]).await?;
+    let mut client = Client::connect(&common::peers_from_env()?).await?;
     let mut wallet = common::load_hot_wallet_from_faucet();
 
     // let data = common::gen_random_data(1024 * 1024 * 1000);

@@ -443,6 +443,7 @@ dependencies = [
  "self_encryption",
  "serde",
  "sn_client",
+ "sn_peers_acquisition",
  "sn_protocol",
  "sn_registers",
  "sn_transfers",

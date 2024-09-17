@@ -10,7 +10,9 @@ mod common;
 async fn put() {
     common::enable_logging();
 
-    let mut client = Client::connect(&[]).await.unwrap();
+    let mut client = Client::connect(&common::peers_from_env().unwrap())
+        .await
+        .unwrap();
     let mut wallet = common::load_hot_wallet_from_faucet();
     let data = common::gen_random_data(1024 * 1024 * 10);
 
