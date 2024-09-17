@@ -12,6 +12,7 @@ local = ["sn_client/local-discovery"]
 bip39 = "2.0.0"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
+const-hex = "1.12.0"
 evmlib = { path = "../evmlib", version = "0.1" }
 libp2p = "0.53"
 rand = "0.8.5"

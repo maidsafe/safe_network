@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use autonomi::Wallet;
 use bytes::Bytes;
 use evmlib::{CustomNetwork, Network};
 use rand::Rng;
@@ -30,4 +31,11 @@ pub fn evm_network_from_env() -> Network {
         &payment_token_address,
         &chunk_payments_address,
     ))
+}
+
+pub fn deployer_wallet_from_network(network: Network) -> Wallet {
+    const DEPLOYER_WALLET_PRIVATE_KEY: &str =
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+    Wallet::new_from_private_key(network, DEPLOYER_WALLET_PRIVATE_KEY).expect("Invalid private key")
 }
