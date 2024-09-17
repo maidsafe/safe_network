@@ -108,13 +108,19 @@ impl Client {
             xor_names.push(*chunk.name());
         }
 
+        // Pay for all chunks + data map chunk
         let (payment_proofs, _free_chunks) = self.pay(xor_names.into_iter(), wallet).await?;
 
+        // Upload data map
+        if let Some(proof) = payment_proofs.get(&map_xor_name) {
+            self.upload_chunk(data_map_chunk.clone(), proof.clone())
+                .await?;
+        }
+
+        // Upload the rest of the chunks
         for chunk in chunks {
             if let Some(proof) = payment_proofs.get(chunk.name()) {
                 self.upload_chunk(chunk, proof.clone()).await?;
-            } else {
-                // TODO: Not sure what to do with free / already paid for chunks, since we can't (re)upload without payment proofs.
             }
         }
 
