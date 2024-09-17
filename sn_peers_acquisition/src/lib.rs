@@ -159,7 +159,7 @@ impl PeersArgs {
 }
 
 /// Parse strings like `1.2.3.4:1234` and `/ip4/1.2.3.4/tcp/1234` into a multiaddr.
-pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
+pub fn parse_peer_addr(addr: &str) -> std::result::Result<Multiaddr, libp2p::multiaddr::Error> {
     // Parse valid IPv4 socket address, e.g. `1.2.3.4:1234`.
     if let Ok(addr) = addr.parse::<std::net::SocketAddrV4>() {
         let start_addr = Multiaddr::from(*addr.ip());
@@ -180,12 +180,7 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
     }
 
     // Parse any valid multiaddr string
-    if let Ok(addr) = addr.parse::<Multiaddr>() {
-        debug!("Parsing a full multiaddr: {:?}", addr);
-        return Ok(addr);
-    }
-
-    Err(Error::InvalidPeerAddr)
+    addr.parse::<Multiaddr>()
 }
 
 /// Get and parse a list of peers from a URL. The URL should contain one multiaddr per line.

@@ -12,7 +12,9 @@ mod common;
 async fn register() {
     common::enable_logging();
 
-    let mut client = Client::connect(&[]).await.unwrap();
+    let mut client = Client::connect(&common::peers_from_env().unwrap())
+        .await
+        .unwrap();
     let mut wallet = common::load_hot_wallet_from_faucet();
 
     // Owner key of the register.
