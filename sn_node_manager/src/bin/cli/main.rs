@@ -867,8 +867,6 @@ pub enum LocalSubCmd {
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
-        /// Evm rewards address
-        evm_rewards_address: String,
     },
     /// Run a local network.
     ///
@@ -992,9 +990,6 @@ pub enum LocalSubCmd {
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
-        /// Evm rewards address
-        #[clap(long)]
-        evm_rewards_address: String,
     },
     /// Get the status of the local nodes.
     #[clap(name = "status")]
@@ -1189,7 +1184,6 @@ async fn main() -> Result<()> {
                 rewards_address,
                 evm_network,
                 skip_validation: _,
-                evm_rewards_address,
             } => {
                 cmd::local::join(
                     build,
@@ -1211,7 +1205,6 @@ async fn main() -> Result<()> {
                     evm_network.map(|v| v.into()),
                     true,
                     verbosity,
-                    evm_rewards_address,
                 )
                 .await
             }
@@ -1235,7 +1228,6 @@ async fn main() -> Result<()> {
                 rewards_address,
                 evm_network,
                 skip_validation: _,
-                evm_rewards_address,
             } => {
                 cmd::local::run(
                     build,
@@ -1257,7 +1249,6 @@ async fn main() -> Result<()> {
                     evm_network.map(|v| v.into()),
                     true,
                     verbosity,
-                    evm_rewards_address,
                 )
                 .await
             }
