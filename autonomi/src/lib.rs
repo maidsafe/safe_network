@@ -43,7 +43,6 @@ pub use libp2p::Multiaddr;
 pub use client::{Client, ConnectError, CONNECT_TIMEOUT_SECS};
 
 mod client;
-mod secrets;
 mod self_encryption;
 
 pub type Wallet = evmlib::wallet::Wallet;
