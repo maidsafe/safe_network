@@ -58,6 +58,7 @@ use libp2p::{
     request_response::OutboundFailure,
     Multiaddr, PeerId,
 };
+use rand::prelude::SliceRandom;
 use rand::Rng;
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -958,40 +959,55 @@ impl Network {
     }
 }
 
-/// Given `all_costs` it will return the closest / lowest cost
-/// Closest requiring it to be within CLOSE_GROUP nodes
+/// Given `all_quotes` that collected, this function picks one as the payee,
+/// based on the following algorithm:
+///     randomly pick one that is within the 10% range of the lowest relevant_recrods count
 fn get_fees_from_store_cost_responses(
     all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
 ) -> Result<PayeeQuote> {
-    // Find the minimum cost using a linear scan with random tie break
-    let mut rng = rand::thread_rng();
-    let payee = all_costs
+    if all_costs.is_empty() {
+        return Err(NetworkError::NoStoreCostResponses);
+    }
+
+    // Extract relevant_records counts
+    let mut relevant_records: Vec<u64> = all_costs
+        .iter()
+        .map(|(_, _, quote)| quote.quoting_metrics.close_records_stored as u64)
+        .collect();
+
+    relevant_records.sort_unstable();
+    let upper_bound = (relevant_records[0] as f64 * 1.1) as u64;
+
+    // Filter responses within the range
+    let mut filtered_costs: Vec<_> = all_costs
         .into_iter()
-        .min_by(
-            |(_address_a, _main_key_a, cost_a), (_address_b, _main_key_b, cost_b)| {
-                let cmp = cost_a.cost.cmp(&cost_b.cost);
-                if cmp == std::cmp::Ordering::Equal {
-                    if rng.gen() {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    }
-                } else {
-                    cmp
-                }
-            },
-        )
+        .filter(|(_, _, quote)| {
+            let count = quote.quoting_metrics.close_records_stored as u64;
+            count <= upper_bound
+        })
+        .collect();
+
+    if filtered_costs.is_empty() {
+        return Err(NetworkError::NoStoreCostResponses);
+    }
+
+    // Randomly select one from the filtered responses
+    let mut rng = rand::thread_rng();
+    let payee = filtered_costs
+        .choose_mut(&mut rng)
         .ok_or(NetworkError::NoStoreCostResponses)?;
 
     info!("Final fees calculated as: {payee:?}");
-    // we dont need to have the address outside of here for now
+
+    // Extract PeerId from NetworkAddress
     let payee_id = if let Some(peer_id) = payee.0.as_peer_id() {
         peer_id
     } else {
         error!("Can't get PeerId from payee {:?}", payee.0);
         return Err(NetworkError::NoStoreCostResponses);
     };
-    Ok((payee_id, payee.1, payee.2))
+
+    Ok((payee_id, payee.1, payee.2.clone()))
 }
 
 /// Get the value of the provided Quorum
@@ -1118,8 +1134,6 @@ mod tests {
 
     #[test]
     fn test_get_fee_from_store_cost_responses() -> Result<()> {
-        // for a vec of different costs of CLOSE_GROUP size
-        // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 1..CLOSE_GROUP_SIZE {
             let addr = MainPubkey::new(bls::SecretKey::random().public_key());
@@ -1129,14 +1143,10 @@ mod tests {
                 PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i as u64)),
             ));
         }
-        let expected_price = costs[0].2.cost.as_nano();
+        let lowest_price = costs[0].2.cost.as_nano();
         let (_peer_id, _key, price) = get_fees_from_store_cost_responses(costs)?;
 
-        assert_eq!(
-            price.cost.as_nano(),
-            expected_price,
-            "price should be {expected_price}"
-        );
+        assert!(price.cost.as_nano() >= lowest_price);
 
         Ok(())
     }
@@ -1159,18 +1169,14 @@ mod tests {
         }
 
         // this should be the lowest price
-        let expected_price = costs[0].2.cost.as_nano();
+        let lowest_price = costs[0].2.cost.as_nano();
 
         let (_peer_id, _key, price) = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
             Ok(cost) => cost,
         };
 
-        assert_eq!(
-            price.cost.as_nano(),
-            expected_price,
-            "price should be {expected_price}"
-        );
+        assert!(price.cost.as_nano() >= lowest_price);
 
         Ok(())
     }
