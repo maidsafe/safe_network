@@ -139,7 +139,7 @@ impl PeersArgs {
     }
 
     // should not be reachable, but needed for the compiler to be happy.
-    #[expect(clippy::unused_async)]
+    #[allow(clippy::unused_async)]
     #[cfg(not(feature = "network-contacts"))]
     async fn get_network_contacts(&self) -> Result<Vec<Multiaddr>> {
         Ok(vec![])

@@ -238,6 +238,177 @@ pub enum SubCmd {
     Faucet(FaucetSubCmd),
     #[clap(subcommand)]
     Local(LocalSubCmd),
+    #[clap(name = "maintain")]
+    Maintain {
+        /// Set to automatically restart safenode services upon OS reboot.
+        ///
+        /// If not used, any added services will *not* restart automatically when the OS reboots
+        /// and they will need to be explicitly started again.
+        #[clap(long, default_value_t = false)]
+        auto_restart: bool,
+        /// Auto set NAT flags (--upnp or --home-network) if our NAT status has been obtained by
+        /// running the NAT detection command.
+        ///
+        /// Using the argument will cause an error if the NAT detection command has not already
+        /// ran.
+        ///
+        /// This will override any --upnp or --home-network options.
+        #[clap(long, default_value_t = false)]
+        auto_set_nat_flags: bool,
+        /// The max time in seconds to wait for a node to connect to the network. If the node does not connect to the
+        /// network within this time, the node is considered failed.
+        ///
+        /// This argument is mutually exclusive with the 'interval' argument.
+        ///
+        /// Defaults to 300s.
+        #[clap(long, default_value_t = DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S, conflicts_with = "interval")]
+        connection_timeout: u64,
+        /// The number of service instances.
+        #[clap(long, default_value_t = 1)]
+        count: u16,
+        /// Provide the path for the data directory for the installed node.
+        ///
+        /// This path is a prefix. Each installed node will have its own directory underneath it.
+        ///
+        /// If not provided, the default location is platform specific:
+        ///  - Linux/macOS (system-wide): /var/safenode-manager/services
+        ///  - Linux/macOS (user-mode): ~/.local/share/safe/node
+        ///  - Windows: C:\ProgramData\safenode\services
+        #[clap(long, verbatim_doc_comment)]
+        data_dir_path: Option<PathBuf>,
+        /// Set this flag to enable the metrics server. The ports will be selected at random.
+        ///
+        /// If you're passing the compiled safenode via --path, make sure to enable the open-metrics feature
+        /// when compiling.
+        ///
+        /// If you want to specify the ports, use the --metrics-port argument.
+        #[clap(long)]
+        enable_metrics_server: bool,
+        /// Provide environment variables for the safenode service.
+        ///
+        /// Useful to set log levels. Variables should be comma separated without spaces.
+        ///
+        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
+        env_variables: Option<Vec<(String, String)>>,
+        /// Set this flag to use the safenode '--home-network' feature.
+        ///
+        /// This enables the use of safenode services from a home network with a router.
+        #[clap(long)]
+        home_network: bool,
+        /// An interval applied between launching each service.
+        ///
+        /// Use connection-timeout to scale the interval automatically. This argument is mutually exclusive with the
+        /// 'connection-timeout' argument.
+        ///
+        /// Units are milliseconds.
+        #[clap(long, conflicts_with = "connection-timeout")]
+        interval: Option<u64>,
+        /// Set this flag to launch safenode with the --local flag.
+        ///
+        /// This is useful for building a service-based local network.
+        #[clap(long)]
+        local: bool,
+        /// Provide the path for the log directory for the installed node.
+        ///
+        /// This path is a prefix. Each installed node will have its own directory underneath it.
+        ///
+        /// If not provided, the default location is platform specific:
+        ///  - Linux/macOS (system-wide): /var/log/safenode
+        ///  - Linux/macOS (user-mode): ~/.local/share/safe/node/*/logs
+        ///  - Windows: C:\ProgramData\safenode\logs
+        #[clap(long, verbatim_doc_comment)]
+        log_dir_path: Option<PathBuf>,
+        /// Specify the logging format for started nodes.
+        ///
+        /// Valid values are "default" or "json".
+        ///
+        /// If the argument is not used, the default format will be applied.
+        #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
+        log_format: Option<LogFormat>,
+        /// Specify a port for the open metrics server.
+        ///
+        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature
+        /// when compiling.
+        ///
+        /// If not set, metrics server will not be started. Use --enable-metrics-server to start
+        /// the metrics server without specifying a port.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = PortRange::parse)]
+        metrics_port: Option<PortRange>,
+        /// Specify a port for the safenode service(s).
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = PortRange::parse)]
+        node_port: Option<PortRange>,
+        /// Provide a path for the safenode binary to be used by the service.
+        ///
+        /// Useful for creating the service using a custom built binary.
+        #[clap(long)]
+        path: Option<PathBuf>,
+        #[command(flatten)]
+        peers: PeersArgs,
+        /// Specify the owner for the node service.
+        ///
+        /// This is mainly used for the 'Beta Rewards' programme, for linking your Discord username
+        /// to the node.
+        ///
+        /// If the option is not used, the node will assign its own username and the service will
+        /// run as normal.
+        #[clap(long)]
+        owner: Option<String>,
+        /// Specify an Ipv4Addr for the node's RPC server to run on.
+        ///
+        /// Useful if you want to expose the RPC server pubilcly. Ports are assigned automatically.
+        ///
+        /// If not set, the RPC server is run locally.
+        #[clap(long)]
+        rpc_address: Option<Ipv4Addr>,
+        /// Specify a port for the RPC service(s).
+        ///
+        /// If not used, ports will be selected at random.
+        ///
+        /// If multiple services are being added and this argument is used, you must specify a
+        /// range. For example, '12000-12004'. The length of the range must match the number of
+        /// services, which in this case would be 5. The range must also go from lower to higher.
+        #[clap(long, value_parser = PortRange::parse)]
+        rpc_port: Option<PortRange>,
+        /// Try to use UPnP to open a port in the home router and allow incoming connections.
+        ///
+        /// This requires a safenode binary built with the 'upnp' feature.
+        #[clap(long, default_value_t = false)]
+        upnp: bool,
+        /// Provide a safenode binary using a URL.
+        ///
+        /// The binary must be inside a zip or gzipped tar archive.
+        ///
+        /// This option can be used to test a safenode binary that has been built from a forked
+        /// branch and uploaded somewhere. A typical use case would be for a developer who launches
+        /// a testnet to test some changes they have on a fork.
+        #[clap(long, conflicts_with = "version")]
+        url: Option<String>,
+        /// The user the service should run as.
+        ///
+        /// If the account does not exist, it will be created.
+        ///
+        /// On Windows this argument will have no effect.
+        #[clap(long)]
+        user: Option<String>,
+        /// Provide a specific version of safenode to be installed.
+        ///
+        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
+        ///
+        /// The binary will be downloaded.
+        #[clap(long)]
+        version: Option<String>,
+    },
     #[clap(subcommand)]
     NatDetection(NatDetectionSubCmd),
     /// Remove safenode service(s).
@@ -1047,10 +1218,10 @@ async fn main() -> Result<()> {
                 metrics_port,
                 node_port,
                 owner,
+                path,
                 peers,
                 rpc_address,
                 rpc_port,
-                path,
                 upnp,
                 url,
                 user,
@@ -1059,7 +1230,7 @@ async fn main() -> Result<()> {
             )
             .await?;
             Ok(())
-        }
+        },
         SubCmd::Auditor(AuditorSubCmd::Add {
             beta_encryption_key,
             env_variables,
@@ -1080,7 +1251,7 @@ async fn main() -> Result<()> {
                 verbosity,
             )
             .await
-        }
+        },
         SubCmd::Auditor(AuditorSubCmd::Start {}) => cmd::auditor::start(verbosity).await,
         SubCmd::Auditor(AuditorSubCmd::Stop {}) => cmd::auditor::stop(verbosity).await,
         SubCmd::Auditor(AuditorSubCmd::Upgrade {
@@ -1091,7 +1262,7 @@ async fn main() -> Result<()> {
             version,
         }) => {
             cmd::auditor::upgrade(do_not_start, force, env_variables, url, version, verbosity).await
-        }
+        },
         SubCmd::Balance {
             peer_id: peer_ids,
             service_name: service_names,
@@ -1232,6 +1403,60 @@ async fn main() -> Result<()> {
                 json,
             } => cmd::local::status(details, fail, json).await,
         },
+        SubCmd::Maintain {
+            auto_restart,
+            auto_set_nat_flags,
+            connection_timeout,
+            count,
+            data_dir_path,
+            enable_metrics_server,
+            env_variables,
+            interval,
+            home_network,
+            local,
+            log_dir_path,
+            log_format,
+            metrics_port,
+            node_port,
+            owner,
+            path,
+            peers,
+            rpc_address,
+            rpc_port,
+            upnp,
+            url,
+            user,
+            version,
+        } => {
+            let _ = cmd::node::maintain_n_running_nodes(
+                auto_restart,
+                auto_set_nat_flags,
+                connection_timeout,
+                count,
+                data_dir_path,
+                enable_metrics_server,
+                env_variables,
+                interval,
+                home_network,
+                local,
+                log_dir_path,
+                log_format,
+                metrics_port,
+                node_port,
+                owner,
+                path,
+                peers,
+                rpc_address,
+                rpc_port,
+                upnp,
+                url,
+                user,
+                version,
+                verbosity,
+            )
+            .await?;
+            Ok(())
+        },
         SubCmd::NatDetection(NatDetectionSubCmd::Run {
             path,
             servers,
@@ -1240,7 +1465,7 @@ async fn main() -> Result<()> {
         }) => {
             cmd::nat_detection::run_nat_detection(servers, true, path, url, version, verbosity)
                 .await
-        }
+        },
         SubCmd::Remove {
             keep_directories,
             peer_id: peer_ids,
@@ -1261,7 +1486,7 @@ async fn main() -> Result<()> {
                 verbosity,
             )
             .await
-        }
+        },
         SubCmd::Status {
             details,
             fail,

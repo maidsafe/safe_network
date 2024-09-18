@@ -16,7 +16,7 @@ use crate::TransferError;
 pub struct Hash([u8; 32]);
 
 impl Hash {
-    #[expect(clippy::self_named_constructors)]
+    #[allow(clippy::self_named_constructors)]
     /// sha3 256 hash
     pub fn hash(input: &[u8]) -> Self {
         Self::from(sha3_256(input))

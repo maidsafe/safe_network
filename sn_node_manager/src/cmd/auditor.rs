@@ -25,7 +25,7 @@ use sn_service_management::{
 };
 use std::path::PathBuf;
 
-#[expect(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub async fn add(
     beta_encryption_key: Option<String>,
     env_variables: Option<Vec<(String, String)>>,

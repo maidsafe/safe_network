@@ -291,6 +291,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         config.data_dir_path.clone(),
         true,
         None,
+        None,
         config.home_network,
         false,
         None,
@@ -298,16 +299,15 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         None,
         None, // We don't care about the port, as we are scaling down
         config.owner.clone(),
+        config.safenode_path.clone(),
         config.peers_args.clone(),
         None,
-        None,
-        config.safenode_path.clone(),
         None,
         config.upnp,
         None,
         None,
-        VerbosityLevel::Minimal,
         None,
+        VerbosityLevel::Minimal
     )
     .await
     {
@@ -361,6 +361,7 @@ async fn add_nodes(
             config.data_dir_path.clone(),
             true,
             None,
+            None,
             config.home_network,
             false,
             None,
@@ -368,16 +369,15 @@ async fn add_nodes(
             None,
             port_range,
             config.owner.clone(),
+            config.safenode_path.clone(),
             config.peers_args.clone(),
             None,
-            None,
-            config.safenode_path.clone(),
             None,
             config.upnp,
             None,
             None,
-            VerbosityLevel::Minimal,
             None,
+            VerbosityLevel::Minimal
         )
         .await
         {

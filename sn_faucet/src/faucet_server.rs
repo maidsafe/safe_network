@@ -395,7 +395,7 @@ async fn respond_to_donate_request(
 }
 
 #[cfg(not(feature = "gifting"))]
-#[expect(clippy::unused_async)]
+#[allow(clippy::unused_async)]
 async fn respond_to_gift_request(
     _client: Client,
     _key: String,
@@ -457,7 +457,7 @@ async fn startup_server(client: Client) -> Result<()> {
     // Create a semaphore with a single permit
     let semaphore = Arc::new(Semaphore::new(1));
 
-    #[expect(unused)]
+    #[allow(unused)]
     let mut balances = HashMap::<String, NanoTokens>::new();
     #[cfg(feature = "distribution")]
     {
