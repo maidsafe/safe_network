@@ -394,61 +394,9 @@ impl<'a> std::fmt::Debug for PrettyPrintRecordKey<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{NetworkAddress, PrettyPrintRecordKey};
+    use crate::NetworkAddress;
     use bls::rand::thread_rng;
-    use bytes::Bytes;
-    use libp2p::kad::{KBucketKey, RecordKey};
     use sn_transfers::SpendAddress;
-
-    // A struct that implements hex representation of RecordKey using `bytes::Bytes`
-    struct OldRecordKeyPrint(RecordKey);
-
-    // old impl using Bytes
-    impl std::fmt::Display for OldRecordKeyPrint {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let b: Vec<u8> = self.0.as_ref().to_vec();
-            let record_key_b = Bytes::from(b);
-            let record_key_str = &format!("{record_key_b:64x}")[0..6]; // only the first 6 chars are logged
-            write!(
-                f,
-                "{record_key_str}({:?})",
-                OldKBucketKeyPrint(NetworkAddress::from_record_key(&self.0).as_kbucket_key())
-            )
-        }
-    }
-
-    impl std::fmt::Debug for OldRecordKeyPrint {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{self}")
-        }
-    }
-
-    // A struct that implements hex representation of KBucketKey using `bytes::Bytes`
-    pub struct OldKBucketKeyPrint(KBucketKey<Vec<u8>>);
-
-    // old impl using Bytes
-    impl std::fmt::Display for OldKBucketKeyPrint {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let kbucket_key_b = Bytes::from(self.0.hashed_bytes().to_vec());
-            write!(f, "{kbucket_key_b:64x}")
-        }
-    }
-
-    impl std::fmt::Debug for OldKBucketKeyPrint {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{self}")
-        }
-    }
-
-    #[test]
-    fn verify_custom_hex_representation() {
-        let random = xor_name::XorName::random(&mut thread_rng());
-        let key = RecordKey::new(&random.0);
-        let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
-        let old_record_key = OldRecordKeyPrint(key);
-
-        assert_eq!(format!("{pretty_key:?}"), format!("{old_record_key:?}"));
-    }
 
     #[test]
     fn verify_spend_addr_is_actionable() {
