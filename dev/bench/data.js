@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726624133188,
+  "lastUpdate": 1726624222122,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "1f13f66893ef9f00720df8555e635866de4bc68c",
-          "message": "style: cargo fmt",
-          "timestamp": "2024-05-06T09:20:45Z",
-          "tree_id": "0d0e356d70f4c7d2dd943c88b523dabed9a51c05",
-          "url": "https://github.com/maidsafe/safe_network/commit/1f13f66893ef9f00720df8555e635866de4bc68c"
-        },
-        "date": 1714990406954,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2195758641210388,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6548949550636352,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.31546067132682,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.209345188536496,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "def4cd81632a3419806ba1d61a8792618ca2e974",
+          "message": "Merge pull request #2116 from mazzi/fix_error_handling\n\nfix(launchpad): some error handling when sn_node_manager fails",
+          "timestamp": "2024-09-18T01:03:24Z",
+          "tree_id": "4d44e8c90dfd43a88844f184df91b4fa92def222",
+          "url": "https://github.com/maidsafe/safe_network/commit/def4cd81632a3419806ba1d61a8792618ca2e974"
+        },
+        "date": 1726624215041,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.23634876470649,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6827837865918993,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.39537603468591,
             "unit": "MiB/s"
           }
         ]
