@@ -22,21 +22,32 @@ use sn_service_management::{
     },
     NodeRegistry,
 };
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use tonic::{transport::Server, Code, Request, Response, Status};
 use tracing::Level;
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[command(author, version = sn_build_info::version_string(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR), about, long_about = None, name = "Autonomi Node Manager RPC Daemon")]
 struct Args {
-    /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
-    #[clap(long, default_value_t = DAEMON_DEFAULT_PORT)]
-    port: u16,
     /// Specify an Ipv4Addr for the daemon to listen on. This is useful if you want to manage the nodes remotely.
     ///
     /// If not set, the daemon listens locally for commands.
     #[clap(long, default_value_t = Ipv4Addr::new(127, 0, 0, 1))]
     address: Ipv4Addr,
+    /// Print the crate version.
+    #[clap(long)]
+    pub crate_version: bool,
+    /// Print the package version.
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    pub package_version: bool,
+    /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
+    #[clap(long, default_value_t = DAEMON_DEFAULT_PORT)]
+    port: u16,
+    /// Print the network protocol version.
+    #[clap(long)]
+    pub protocol_version: bool,
 }
 
 struct SafeNodeManagerDaemon {}
@@ -131,9 +142,25 @@ async fn main() -> Result<()> {
     let _log_handles = get_log_builder()?.initialize()?;
     println!("Starting safenodemand");
     let args = Args::parse();
+
+    if args.crate_version {
+        println!("{}", sn_build_info::version_string(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR));
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if args.package_version {
+        println!("{}", sn_build_info::package_version());
+        return Ok(());
+    }
+
+    if args.protocol_version {
+        println!("{}", IDENTIFY_PROTOCOL_STR.to_string());
+        return Ok(());
+    }
+
     let service = SafeNodeManagerDaemon {};
 
-    // adding our service to our server.
     if let Err(err) = Server::builder()
         .add_service(SafeNodeManagerServer::new(service))
         .serve(SocketAddr::new(IpAddr::V4(args.address), args.port))

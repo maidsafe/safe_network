@@ -11,15 +11,18 @@ extern crate tracing;
 
 mod rpc_service;
 
-use clap::Parser;
-use eyre::{eyre, Result};
+use clap::{command, Parser};
+use color_eyre::{eyre::eyre, Result};
 use libp2p::{identity::Keypair, PeerId};
+use sn_build_info;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::PeersArgs;
-use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl};
+use sn_protocol::{
+    node::get_safenode_root_dir, node_rpc::NodeCtrl, version::IDENTIFY_PROTOCOL_STR,
+};
 use std::{
     env,
     io::Write,
@@ -65,7 +68,7 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDestArg> {
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
-#[clap(name = "safenode cli", version = env!("CARGO_PKG_VERSION"))]
+#[command(version = sn_build_info::version_string(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR), about, long_about = None, name = "Autonomi Node")]
 struct Opt {
     /// Specify whether the node is operating from a home network and situated behind a NAT without port forwarding
     /// capabilities. Setting this to true, activates hole-punching to facilitate direct connections from other nodes.
@@ -177,11 +180,40 @@ struct Opt {
         required_if_eq("metrics_server_port", "0")
     )]
     enable_metrics_server: bool,
+
+    /// Print the crate version.
+    #[clap(long)]
+    crate_version: bool,
+
+    /// Print the network protocol version.
+    #[clap(long)]
+    protocol_version: bool,
+
+    /// Print the package version.
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    package_version: bool,
 }
 
 fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
+
+    if opt.crate_version {
+        println!("Crate version: {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if opt.protocol_version {
+        println!("Network version: {}", IDENTIFY_PROTOCOL_STR.to_string());
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if opt.package_version {
+        println!("Package version: {}", sn_build_info::package_version());
+        return Ok(());
+    }
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
@@ -197,10 +229,8 @@ fn main() -> Result<()> {
         env!("CARGO_PKG_VERSION")
     );
     info!("\n{}\n{}", msg, "=".repeat(msg.len()));
-    debug!(
-        "safenode built with git version: {}",
-        sn_build_info::git_info()
-    );
+
+    sn_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR);
 
     info!("Node started with initial_peers {bootstrap_peers:?}");
 

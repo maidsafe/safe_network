@@ -30,6 +30,7 @@ use sn_client::transfers::bls_secret_from_hex;
 use sn_client::{Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver};
 #[cfg(feature = "metrics")]
 use sn_logging::{metrics::init_metrics, Level, LogBuilder, LogFormat};
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use std::{io, path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 
@@ -39,6 +40,22 @@ const CLIENT_KEY: &str = "clientkey";
 async fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
+
+    if opt.crate_version {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if opt.protocol_version {
+        println!("{}", IDENTIFY_PROTOCOL_STR.to_string());
+        return Ok(());
+    }
+
+    if opt.package_version {
+        println!("{}", sn_build_info::package_version());
+        return Ok(());
+    }
+
     let logging_targets = vec![
         // TODO: Reset to nice and clean defaults once we have a better idea of what we want
         ("sn_networking".to_string(), Level::INFO),

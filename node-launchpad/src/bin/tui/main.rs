@@ -21,11 +21,12 @@ use node_launchpad::{
 #[cfg(target_os = "windows")]
 use sn_node_manager::config::is_running_as_root;
 use sn_peers_acquisition::PeersArgs;
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use std::{env, path::PathBuf};
 use tokio::task::LocalSet;
 
 #[derive(Parser, Debug)]
-#[command(author, version = version(), about)]
+#[command(author, version = version(), about, name = "Autonomi Node Launchpad")]
 pub struct Cli {
     #[arg(
         short,
@@ -53,11 +54,40 @@ pub struct Cli {
 
     #[command(flatten)]
     pub(crate) peers: PeersArgs,
+
+    /// Print the crate version.
+    #[clap(long)]
+    crate_version: bool,
+
+    /// Print the network protocol version.
+    #[clap(long)]
+    protocol_version: bool,
+
+    /// Print the package version.
+    #[clap(long)]
+    #[cfg(not(feature = "nightly"))]
+    package_version: bool,
 }
 
 async fn tokio_main() -> Result<()> {
     initialize_panic_handler()?;
     let args = Cli::parse();
+
+    if args.crate_version {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if args.protocol_version {
+        println!("{}", IDENTIFY_PROTOCOL_STR.to_string());
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if args.package_version {
+        println!("{}", sn_build_info::package_version());
+        return Ok(());
+    }
 
     info!("Starting app with args: {args:?}");
     let mut app = App::new(

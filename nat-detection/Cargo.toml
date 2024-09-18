@@ -13,6 +13,9 @@ version = "0.2.4"
 name = "nat-detection"
 path = "src/main.rs"
 
+[features]
+nightly = []
+
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 clap-verbosity-flag = "2.2.0"
@@ -28,7 +31,9 @@ libp2p = { version = "0.54.1", features = [
     "macros",
     "upnp",
 ] }
+sn_build_info = { path = "../sn_build_info", version = "0.1.12" }
 sn_networking = { path = "../sn_networking", version = "0.18.1" }
+sn_protocol = { path = "../sn_protocol", version = "0.17.8" }
 tokio = { version = "1.32.0", features = ["full"] }
 tracing = { version = "~0.1.26" }
 tracing-log = "0.2.0"

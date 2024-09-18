@@ -14,6 +14,9 @@ version = "0.6.28"
 name = "safenode_rpc_client"
 path = "src/main.rs"
 
+[features]
+nightly = []
+
 [dependencies]
 assert_fs = "1.0.0"
 async-trait = "0.1"
@@ -23,6 +26,7 @@ color-eyre = "0.6.2"
 hex = "~0.4.3"
 libp2p = { version = "0.54.1", features = ["kad"]}
 libp2p-identity = { version="0.2.7", features = ["rand"] }
+sn_build_info = { path = "../sn_build_info", version = "0.1.12" }
 sn_client = { path = "../sn_client", version = "0.110.0" }
 sn_logging = { path = "../sn_logging", version = "0.2.33" }
 sn_node = { path = "../sn_node", version = "0.111.1" }

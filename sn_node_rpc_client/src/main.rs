@@ -9,26 +9,36 @@
 
 use clap::Parser;
 use color_eyre::eyre::Result;
-
 use sn_logging::{Level, LogBuilder};
 use sn_node::NodeEvent;
-
 use sn_protocol::safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest};
-
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use sn_service_management::rpc::{RpcActions, RpcClient};
-
 use std::{net::SocketAddr, time::Duration};
 use tokio_stream::StreamExt;
 use tonic::Request;
 
 #[derive(Parser, Debug)]
-#[clap(version, name = "safenode RPC client")]
+#[command(author, version = sn_build_info::version_string(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR), about, long_about = None, name = "Autonomi Node RPC Client")]
 struct Opt {
     /// Address of the node's RPC service, e.g. 127.0.0.1:12001.
     addr: SocketAddr,
     /// subcommands
     #[clap(subcommand)]
     cmd: Cmd,
+
+    /// Print the crate version.
+    #[clap(long)]
+    crate_version: bool,
+
+    /// Print the network protocol version.
+    #[clap(long)]
+    protocol_version: bool,
+
+    /// Print the package version.
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    package_version: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -90,6 +100,23 @@ async fn main() -> Result<()> {
     let _log_appender_guard = LogBuilder::new(logging_targets).initialize()?;
 
     let opt = Opt::parse();
+
+    if opt.crate_version {
+        println!("Crate version: {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if opt.protocol_version {
+        println!("Network version: {}", IDENTIFY_PROTOCOL_STR.to_string());
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if opt.package_version {
+        println!("Package version: {}", sn_build_info::package_version());
+        return Ok(());
+    }
+
     let addr = opt.addr;
 
     match opt.cmd {

@@ -16,12 +16,13 @@ use clap::Subcommand;
 use color_eyre::Result;
 use sn_logging::{LogFormat, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use std::time::Duration;
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version = sn_build_info::version_string(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR), about, long_about = None, name = "Autonomi CLI")]
 pub(crate) struct Opt {
     /// Specify the logging output destination.
     ///
@@ -60,6 +61,18 @@ pub(crate) struct Opt {
     /// This may increase operation speed, but offers no guarantees that operations were successful.
     #[clap(global = true, long = "no-verify", short = 'x')]
     pub no_verify: bool,
+
+    /// Print the crate version.
+    #[clap(long)]
+    pub crate_version: bool,
+
+    /// Print the network protocol version.
+    #[clap(long)]
+    pub protocol_version: bool,
+
+    /// Print the package version.
+    #[clap(long)]
+    pub package_version: bool,
 }
 
 #[derive(Subcommand, Debug)]

@@ -13,6 +13,7 @@ use libp2p::autonat::NatStatus;
 use libp2p::core::{multiaddr::Protocol, Multiaddr};
 use libp2p::swarm::SwarmEvent;
 use libp2p::{noise, tcp, yamux};
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use std::collections::HashSet;
 use std::net::Ipv4Addr;
 use std::time::Duration;
@@ -35,7 +36,7 @@ const RETRY_INTERVAL: Duration = Duration::from_secs(10);
 /// - 11: Public under UPnP
 /// - 12: Private or Unknown NAT
 #[derive(Debug, Parser)]
-#[clap(version, author, verbatim_doc_comment)]
+#[clap(version = sn_build_info::version_string(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR), author, verbatim_doc_comment)]
 struct Opt {
     /// Port to listen on.
     ///
@@ -60,14 +61,42 @@ struct Opt {
 
     #[command(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
+
+    /// Print the crate version
+    #[clap(long)]
+    crate_version: bool,
+
+    /// Print the protocol version
+    #[clap(long)]
+    protocol_version: bool,
+
+    /// Print the package version
+    #[clap(long)]
+    #[cfg(not(feature = "nightly"))]
+    package_version: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
-    // Process command line arguments.
     let opt = Opt::parse();
+
+    if opt.crate_version {
+        println!("Crate version: {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if opt.protocol_version {
+        println!("Network version: {}", IDENTIFY_PROTOCOL_STR.to_string());
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if opt.package_version {
+        println!("Package version: {}", sn_build_info::package_version());
+        return Ok(());
+    }
 
     let registry = tracing_subscriber::registry().with(tracing_subscriber::fmt::layer());
     // Use `RUST_LOG` if set, else use the verbosity flag (where `-vvvv` is trace level).

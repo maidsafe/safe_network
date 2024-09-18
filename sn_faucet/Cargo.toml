@@ -15,6 +15,7 @@ default = ["gifting"]
 distribution = ["base64", "bitcoin", "minreq"]
 gifting = []
 initial-data = ["reqwest", "futures"]
+nightly = []
 
 [[bin]]
 path = "src/main.rs"

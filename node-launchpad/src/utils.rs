@@ -8,20 +8,12 @@
 
 use crate::config::get_launchpad_data_dir_path;
 use color_eyre::eyre::{Context, Result};
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use tracing::error;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
     self, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, Layer,
 };
-
-const VERSION_MESSAGE: &str = concat!(
-    env!("CARGO_PKG_VERSION"),
-    "-",
-    env!("VERGEN_GIT_DESCRIBE"),
-    " (",
-    env!("VERGEN_BUILD_DATE"),
-    ")"
-);
 
 pub fn initialize_panic_handler() -> Result<()> {
     let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
@@ -135,12 +127,12 @@ macro_rules! trace_dbg {
 
 pub fn version() -> String {
     let author = clap::crate_authors!();
-
+    let version_message =
+        sn_build_info::version_string(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR);
     let data_dir_path = get_launchpad_data_dir_path().unwrap().display().to_string();
-
     format!(
         "\
-{VERSION_MESSAGE}
+{version_message}
 
 Authors: {author}
 

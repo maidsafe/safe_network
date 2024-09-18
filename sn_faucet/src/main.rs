@@ -22,14 +22,31 @@ use sn_client::{
 };
 use sn_logging::{Level, LogBuilder, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use sn_transfers::{get_faucet_data_dir, HotWallet, MainPubkey, NanoTokens, Transfer};
 use std::{path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
+
+    if opt.crate_version {
+        println!("Crate version: {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if opt.protocol_version {
+        println!("Network version: {}", IDENTIFY_PROTOCOL_STR.to_string());
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if opt.package_version {
+        println!("Package version: {}", sn_build_info::package_version());
+        return Ok(());
+    }
 
     let bootstrap_peers = opt.peers.get_peers().await?;
     let bootstrap_peers = if bootstrap_peers.is_empty() {
@@ -57,14 +74,8 @@ async fn main() -> Result<()> {
     log_builder.output_dest(opt.log_output_dest);
     let _log_handles = log_builder.initialize()?;
 
-    debug!(
-        "faucet built with git version: {}",
-        sn_build_info::git_info()
-    );
-    println!(
-        "faucet built with git version: {}",
-        sn_build_info::git_info()
-    );
+    sn_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR);
+
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
@@ -147,7 +158,7 @@ fn spawn_connection_progress_bar(mut rx: ClientEventsReceiver) -> (ProgressBar, 
 }
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version = sn_build_info::version_string(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR), about, long_about = None)]
 struct Opt {
     /// Specify the logging output destination.
     ///
@@ -168,6 +179,19 @@ struct Opt {
     /// Available sub commands.
     #[clap(subcommand)]
     pub cmd: SubCmd,
+
+    /// Print the crate version
+    #[clap(long)]
+    crate_version: bool,
+
+    /// Print the protocol version
+    #[clap(long)]
+    protocol_version: bool,
+
+    /// Print the package version
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    package_version: bool,
 }
 
 #[derive(Subcommand, Debug, Clone)]

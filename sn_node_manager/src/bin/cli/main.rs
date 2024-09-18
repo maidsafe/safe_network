@@ -16,28 +16,42 @@ use sn_node_manager::{
     VerbosityLevel, DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S,
 };
 use sn_peers_acquisition::PeersArgs;
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use std::{net::Ipv4Addr, path::PathBuf};
 use tracing::Level;
 
 const DEFAULT_NODE_COUNT: u16 = 25;
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version = sn_build_info::version_string(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR), about, long_about = None, name = "Autonomi Node Manager")]
 pub(crate) struct Cmd {
     /// Available sub commands.
     #[clap(subcommand)]
     pub cmd: SubCmd,
 
-    #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
-    verbose: u8,
+    /// Print the crate version.
+    #[clap(long)]
+    pub crate_version: bool,
 
     /// Output debug-level logging to stderr.
     #[clap(long, conflicts_with = "trace")]
     debug: bool,
 
+    /// Print the package version.
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    pub package_version: bool,
+
+    /// Print the network protocol version.
+    #[clap(long)]
+    pub protocol_version: bool,
+
     /// Output trace-level logging to stderr.
     #[clap(long, conflicts_with = "debug")]
     trace: bool,
+
+    #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
+    verbose: u8,
 }
 
 #[derive(Subcommand, Debug)]
@@ -997,6 +1011,23 @@ pub enum LocalSubCmd {
 async fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Cmd::parse();
+
+    if args.crate_version {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if args.protocol_version {
+        println!("{}", IDENTIFY_PROTOCOL_STR.to_string());
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if args.package_version {
+        println!("{}", sn_build_info::package_version());
+        return Ok(());
+    }
+
     let verbosity = VerbosityLevel::from(args.verbose);
 
     let _log_handle = if args.debug || args.trace {

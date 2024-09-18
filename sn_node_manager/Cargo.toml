@@ -22,6 +22,7 @@ chaos = []
 default = ["quic"]
 local-discovery = []
 network-contacts = []
+nightly = []
 open-metrics = []
 otlp = []
 quic = []
@@ -44,6 +45,7 @@ semver = "1.0.20"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 service-manager = "0.7.0"
+sn_build_info = { path = "../sn_build_info", version = "0.1.12" }
 sn_logging = { path = "../sn_logging", version = "0.2.33" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.0" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.8" }

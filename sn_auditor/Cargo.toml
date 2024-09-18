@@ -16,6 +16,7 @@ local-discovery = [
     "sn_peers_acquisition/local-discovery",
 ]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
+nightly = []
 open-metrics = ["sn_client/open-metrics"]
 websockets = ["sn_client/websockets"]
 svg-dag = ["graphviz-rust", "dag-collection"]
@@ -31,9 +32,11 @@ graphviz-rust = { version = "0.9.0", optional = true }
 lazy_static = "1.4.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
 serde_json = "1.0.108"
+sn_build_info = { path = "../sn_build_info", version = "0.1.12" }
 sn_client = { path = "../sn_client", version = "0.110.0" }
 sn_logging = { path = "../sn_logging", version = "0.2.33" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.0" }
+sn_protocol = { path = "../sn_protocol", version = "0.17.8" }
 tiny_http = { version = "0.12", features = ["ssl-rustls"] }
 tracing = { version = "~0.1.26" }
 tokio = { version = "1.32.0", features = [
