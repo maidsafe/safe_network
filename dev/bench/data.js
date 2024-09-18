@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726627759343,
+  "lastUpdate": 1726627760556,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1",
-          "message": "feat(launchpad): ensure start mac launchapd with sudo only if not set",
-          "timestamp": "2024-05-07T09:19:28+09:00",
-          "tree_id": "067f44435f18359fe969d91164280b6a4c35257e",
-          "url": "https://github.com/maidsafe/safe_network/commit/fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1"
-        },
-        "date": 1715042005231,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 201,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "a96ee615673fdaf8ba12254e9970a954e806ab5d",
           "message": "chore(ci): allow publish of creates from stable branch\n\nThis strips the workspace publish=false,\nallowing subsequent release-plz invocations to publish crates",
           "timestamp": "2024-05-07T13:12:36+09:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 84,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3eba08f0060e2443f48d2caacef2e239239a9912",
+          "message": "Merge pull request #2107 from loziniak/main\n\nfeat(client): enable Debug",
+          "timestamp": "2024-09-18T02:00:42Z",
+          "tree_id": "86a1646b7c60b7744d792adc042e7195cb13ce09",
+          "url": "https://github.com/maidsafe/safe_network/commit/3eba08f0060e2443f48d2caacef2e239239a9912"
+        },
+        "date": 1726627760238,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 188,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
