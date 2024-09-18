@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726648185684,
+  "lastUpdate": 1726648187312,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "a96ee615673fdaf8ba12254e9970a954e806ab5d",
-          "message": "chore(ci): allow publish of creates from stable branch\n\nThis strips the workspace publish=false,\nallowing subsequent release-plz invocations to publish crates",
-          "timestamp": "2024-05-07T13:12:36+09:00",
-          "tree_id": "90b5e5af5bfc52ebc53b80066ff5e32faf360058",
-          "url": "https://github.com/maidsafe/safe_network/commit/a96ee615673fdaf8ba12254e9970a954e806ab5d"
-        },
-        "date": 1715055998174,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 194,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "62cd849cba8eb6dd22ed0279713d2747603ec99f",
           "message": "feat(launchpad): remove separate ai launcher bin references",
           "timestamp": "2024-05-07T13:37:19+09:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "299f5fc7cd7c9da079a003336bad46b89b17e683",
+          "message": "Merge pull request #2120 from joshuef/LpDeadCode\n\nchore(lp): remove some dead code",
+          "timestamp": "2024-09-18T07:42:41Z",
+          "tree_id": "bfdf8d38a95d4c6d99d31ef6aa398cd60421ef8d",
+          "url": "https://github.com/maidsafe/safe_network/commit/299f5fc7cd7c9da079a003336bad46b89b17e683"
+        },
+        "date": 1726648186808,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 169,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 80,
             "unit": "MB"
           }
         ]
