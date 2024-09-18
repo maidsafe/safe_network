@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726624344520,
+  "lastUpdate": 1726626189204,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "b8094a430614fe6c75f0e0eddcca7f0b79240845",
-          "message": "chore: check DAG crawling performance",
-          "timestamp": "2024-05-06T14:22:58Z",
-          "tree_id": "9bebc727b5ae81432813b1f99f4f79fd3c60da00",
-          "url": "https://github.com/maidsafe/safe_network/commit/b8094a430614fe6c75f0e0eddcca7f0b79240845"
-        },
-        "date": 1715008161017,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.211442878337752,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6229487127275204,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 55.42232526421448,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 60.39537603468591,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "46f4f0bac4e64105143bb61bad489bbaf52c63ab",
+          "message": "Merge pull request #2105 from joshuef/Vault1\n\nfeat(aut): add basic vault api for storing data to Scratchpad",
+          "timestamp": "2024-09-18T01:28:29Z",
+          "tree_id": "d2e67552f91b1126948f2f4e0a1a6d55a2819ee9",
+          "url": "https://github.com/maidsafe/safe_network/commit/46f4f0bac4e64105143bb61bad489bbaf52c63ab"
+        },
+        "date": 1726626181613,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2996901957528462,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7488587112224674,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 62.6181263817514,
             "unit": "MiB/s"
           }
         ]
