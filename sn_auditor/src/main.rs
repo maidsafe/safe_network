@@ -19,6 +19,7 @@ use dag_db::SpendDagDb;
 use sn_client::Client;
 use sn_logging::{Level, LogBuilder, LogFormat, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use tiny_http::{Response, Server};
@@ -27,7 +28,7 @@ use tiny_http::{Response, Server};
 const BETA_REWARDS_BACKUP_INTERVAL_SECS: u64 = 20 * 60;
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(disable_version_flag = true)]
 struct Opt {
     #[command(flatten)]
     peers: PeersArgs,
@@ -70,14 +71,59 @@ struct Opt {
     /// discord usernames of the beta participants
     #[clap(short = 'k', long, value_name = "hex_secret_key")]
     beta_encryption_key: Option<String>,
+
+    /// Print the crate version.
+    #[clap(long)]
+    pub crate_version: bool,
+
+    /// Print the network protocol version.
+    #[clap(long)]
+    pub protocol_version: bool,
+
+    /// Print the package version.
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    pub package_version: bool,
+
+    /// Print version information.
+    #[clap(long)]
+    version: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
+
+    if opt.version {
+        println!(
+            "{}",
+            sn_build_info::version_string(
+                "Autonomi Auditor",
+                env!("CARGO_PKG_VERSION"),
+                Some(&IDENTIFY_PROTOCOL_STR)
+            )
+        );
+        return Ok(());
+    }
+
+    if opt.crate_version {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if opt.package_version {
+        println!("{}", sn_build_info::package_version());
+        return Ok(());
+    }
+
+    if opt.protocol_version {
+        println!("{}", *IDENTIFY_PROTOCOL_STR);
+        return Ok(());
+    }
+
     let log_builder = logging_init(opt.log_output_dest, opt.log_format)?;
     let _log_handles = log_builder.initialize()?;
-
     let beta_participants = load_and_update_beta_participants(opt.beta_participants)?;
 
     let maybe_sk = if let Some(sk_str) = opt.beta_encryption_key {

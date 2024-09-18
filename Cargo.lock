@@ -4621,7 +4621,9 @@ dependencies = [
  "color-eyre",
  "futures",
  "libp2p",
+ "sn_build_info",
  "sn_networking",
+ "sn_protocol",
  "tokio",
  "tracing",
  "tracing-log 0.2.0",
@@ -4758,7 +4760,9 @@ dependencies = [
  "signal-hook",
  "sn-node-manager",
  "sn-releases",
+ "sn_build_info",
  "sn_peers_acquisition",
+ "sn_protocol",
  "sn_service_management",
  "strip-ansi-escapes",
  "strum",
@@ -6986,6 +6990,7 @@ dependencies = [
  "serde_json",
  "service-manager",
  "sn-releases",
+ "sn_build_info",
  "sn_logging",
  "sn_peers_acquisition",
  "sn_protocol",
@@ -7034,9 +7039,11 @@ dependencies = [
  "lazy_static",
  "serde",
  "serde_json",
+ "sn_build_info",
  "sn_client",
  "sn_logging",
  "sn_peers_acquisition",
+ "sn_protocol",
  "tiny_http",
  "tokio",
  "tracing",
@@ -7059,6 +7066,8 @@ dependencies = [
 name = "sn_build_info"
 version = "0.1.13"
 dependencies = [
+ "chrono",
+ "tracing",
  "vergen",
 ]
 
@@ -7368,6 +7377,7 @@ dependencies = [
  "hex 0.4.3",
  "libp2p",
  "libp2p-identity",
+ "sn_build_info",
  "sn_client",
  "sn_logging",
  "sn_node",

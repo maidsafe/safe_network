@@ -16,7 +16,7 @@ use color_eyre::eyre::Result;
 use node_launchpad::{
     app::App,
     config::configure_winsw,
-    utils::{initialize_logging, initialize_panic_handler, version},
+    utils::{initialize_logging, initialize_panic_handler},
 };
 #[cfg(target_os = "windows")]
 use sn_node_manager::config::is_running_as_root;
@@ -25,7 +25,7 @@ use std::{env, path::PathBuf};
 use tokio::task::LocalSet;
 
 #[derive(Parser, Debug)]
-#[command(author, version = version(), about)]
+#[command(disable_version_flag = true)]
 pub struct Cli {
     #[arg(
         short,
@@ -53,11 +53,47 @@ pub struct Cli {
 
     #[command(flatten)]
     pub(crate) peers: PeersArgs,
+
+    /// Print the crate version.
+    #[clap(long)]
+    crate_version: bool,
+
+    /// Print the package version.
+    #[clap(long)]
+    #[cfg(not(feature = "nightly"))]
+    package_version: bool,
+
+    /// Print the version.
+    #[clap(long)]
+    version: bool,
 }
 
 async fn tokio_main() -> Result<()> {
     initialize_panic_handler()?;
     let args = Cli::parse();
+
+    if args.version {
+        println!(
+            "{}",
+            sn_build_info::version_string(
+                "Autonomi Node Launchpad",
+                env!("CARGO_PKG_VERSION"),
+                None
+            )
+        );
+        return Ok(());
+    }
+
+    if args.crate_version {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if args.package_version {
+        println!("{}", sn_build_info::package_version());
+        return Ok(());
+    }
 
     info!("Starting app with args: {args:?}");
     let mut app = App::new(

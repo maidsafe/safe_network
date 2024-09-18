@@ -22,14 +22,43 @@ use sn_client::{
 };
 use sn_logging::{Level, LogBuilder, LogOutputDest};
 use sn_peers_acquisition::PeersArgs;
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use sn_transfers::{get_faucet_data_dir, HotWallet, MainPubkey, NanoTokens, Transfer};
 use std::{path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::parse();
+
+    if opt.version {
+        println!(
+            "{}",
+            sn_build_info::version_string(
+                "Autonomi Test Faucet",
+                env!("CARGO_PKG_VERSION"),
+                Some(&IDENTIFY_PROTOCOL_STR.to_string())
+            )
+        );
+        return Ok(());
+    }
+
+    if opt.crate_version {
+        println!("Crate version: {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if opt.protocol_version {
+        println!("Network version: {}", *IDENTIFY_PROTOCOL_STR);
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if opt.package_version {
+        println!("Package version: {}", sn_build_info::package_version());
+        return Ok(());
+    }
 
     let bootstrap_peers = opt.peers.get_peers().await?;
     let bootstrap_peers = if bootstrap_peers.is_empty() {
@@ -57,14 +86,8 @@ async fn main() -> Result<()> {
     log_builder.output_dest(opt.log_output_dest);
     let _log_handles = log_builder.initialize()?;
 
-    debug!(
-        "faucet built with git version: {}",
-        sn_build_info::git_info()
-    );
-    println!(
-        "faucet built with git version: {}",
-        sn_build_info::git_info()
-    );
+    sn_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR);
+
     info!("Instantiating a SAFE Test Faucet...");
 
     let secret_key = bls::SecretKey::random();
@@ -147,7 +170,7 @@ fn spawn_connection_progress_bar(mut rx: ClientEventsReceiver) -> (ProgressBar, 
 }
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(disable_version_flag = true)]
 struct Opt {
     /// Specify the logging output destination.
     ///
@@ -167,7 +190,24 @@ struct Opt {
 
     /// Available sub commands.
     #[clap(subcommand)]
-    pub cmd: SubCmd,
+    pub cmd: Option<SubCmd>,
+
+    /// Print the crate version
+    #[clap(long)]
+    crate_version: bool,
+
+    /// Print the protocol version
+    #[clap(long)]
+    protocol_version: bool,
+
+    /// Print the package version
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    package_version: bool,
+
+    /// Print version information.
+    #[clap(long)]
+    version: bool,
 }
 
 #[derive(Subcommand, Debug, Clone)]
@@ -198,22 +238,29 @@ enum SubCmd {
     RestartServer,
 }
 
-async fn faucet_cmds(cmds: SubCmd, client: &Client, funded_wallet: HotWallet) -> Result<()> {
-    match cmds {
-        SubCmd::ClaimGenesis => {
-            claim_genesis(client, funded_wallet).await?;
+async fn faucet_cmds(
+    cmds: Option<SubCmd>,
+    client: &Client,
+    funded_wallet: HotWallet,
+) -> Result<()> {
+    if let Some(cmds) = cmds {
+        match cmds {
+            SubCmd::ClaimGenesis => {
+                claim_genesis(client, funded_wallet).await?;
+            }
+            SubCmd::Send { amount, to } => {
+                send_tokens(client, funded_wallet, &amount, &to).await?;
+            }
+            SubCmd::Server => {
+                run_faucet_server(client).await?;
+            }
+            SubCmd::RestartServer => {
+                restart_faucet_server(client).await?;
+            }
         }
-        SubCmd::Send { amount, to } => {
-            send_tokens(client, funded_wallet, &amount, &to).await?;
-        }
-        SubCmd::Server => {
-            // shouldn't return except on error
-            run_faucet_server(client).await?;
-        }
-        SubCmd::RestartServer => {
-            // shouldn't return except on error
-            restart_faucet_server(client).await?;
-        }
+    } else {
+        // Handle the case when no subcommand is provided
+        println!("No subcommand provided. Use --help for more information.");
     }
     Ok(())
 }

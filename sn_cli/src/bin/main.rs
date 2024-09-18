@@ -30,6 +30,7 @@ use sn_client::transfers::bls_secret_from_hex;
 use sn_client::{Client, ClientEvent, ClientEventsBroadcaster, ClientEventsReceiver};
 #[cfg(feature = "metrics")]
 use sn_logging::{metrics::init_metrics, Level, LogBuilder, LogFormat};
+use sn_protocol::version::IDENTIFY_PROTOCOL_STR;
 use std::{io, path::PathBuf, time::Duration};
 use tokio::{sync::broadcast::error::RecvError, task::JoinHandle};
 
@@ -39,6 +40,35 @@ const CLIENT_KEY: &str = "clientkey";
 async fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
+
+    if opt.version {
+        println!(
+            "{}",
+            sn_build_info::version_string(
+                "Autonomi CLI",
+                env!("CARGO_PKG_VERSION"),
+                Some(&IDENTIFY_PROTOCOL_STR)
+            )
+        );
+        return Ok(());
+    }
+
+    if opt.crate_version {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if opt.protocol_version {
+        println!("{}", *IDENTIFY_PROTOCOL_STR);
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if opt.package_version {
+        println!("{}", sn_build_info::package_version());
+        return Ok(());
+    }
+
     let logging_targets = vec![
         // TODO: Reset to nice and clean defaults once we have a better idea of what we want
         ("sn_networking".to_string(), Level::INFO),
@@ -74,7 +104,7 @@ async fn main() -> Result<()> {
 
     let client_data_dir_path = get_client_data_dir_path()?;
     // Perform actions that do not require us connecting to the network and return early
-    if let SubCmd::Wallet(cmds) = &opt.cmd {
+    if let Some(SubCmd::Wallet(cmds)) = &opt.cmd {
         if let WalletCmds::Address { .. }
         | WalletCmds::Balance { .. }
         | WalletCmds::Create { .. }
@@ -87,7 +117,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    if let SubCmd::WatchOnlyWallet(cmds) = &opt.cmd {
+    if let Some(SubCmd::WatchOnlyWallet(cmds)) = &opt.cmd {
         if let WatchOnlyWalletCmds::Addresses
         | WatchOnlyWalletCmds::Balance { .. }
         | WatchOnlyWalletCmds::Deposit { .. }
@@ -138,30 +168,32 @@ async fn main() -> Result<()> {
     };
     progress_bar_handler.await?;
 
-    // default to verifying storage
     let should_verify_store = !opt.no_verify;
 
     // PowerShell seems having issue to showing the unwrapped error
     // Hence capture the result and print it out explicity.
-    let cmd_str = format!("{:?}", opt.cmd);
     let result = match opt.cmd {
-        SubCmd::Wallet(cmds) => {
+        Some(SubCmd::Wallet(cmds)) => {
             wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
-        SubCmd::WatchOnlyWallet(cmds) => {
+        Some(SubCmd::WatchOnlyWallet(cmds)) => {
             wo_wallet_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
-        SubCmd::Files(cmds) => {
+        Some(SubCmd::Files(cmds)) => {
             files_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
-        SubCmd::Folders(cmds) => {
+        Some(SubCmd::Folders(cmds)) => {
             folders_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
-        SubCmd::Register(cmds) => {
+        Some(SubCmd::Register(cmds)) => {
             register_cmds(cmds, &client, &client_data_dir_path, should_verify_store).await
         }
+        None => {
+            println!("Use --help to see available commands");
+            return Ok(());
+        }
     };
-    println!("Completed with {result:?} of execute {cmd_str:?}");
+    println!("Completed with {result:?}");
 
     Ok(())
 }

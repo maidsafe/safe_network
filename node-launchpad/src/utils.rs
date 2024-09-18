@@ -14,15 +14,6 @@ use tracing_subscriber::{
     self, prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt, Layer,
 };
 
-const VERSION_MESSAGE: &str = concat!(
-    env!("CARGO_PKG_VERSION"),
-    "-",
-    env!("VERGEN_GIT_DESCRIBE"),
-    " (",
-    env!("VERGEN_BUILD_DATE"),
-    ")"
-);
-
 pub fn initialize_panic_handler() -> Result<()> {
     let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
         .panic_section(format!(
@@ -131,19 +122,4 @@ macro_rules! trace_dbg {
     ($ex:expr) => {
         trace_dbg!(level: tracing::Level::DEBUG, $ex)
     };
-}
-
-pub fn version() -> String {
-    let author = clap::crate_authors!();
-
-    let data_dir_path = get_launchpad_data_dir_path().unwrap().display().to_string();
-
-    format!(
-        "\
-{VERSION_MESSAGE}
-
-Authors: {author}
-
-Data directory: {data_dir_path}"
-    )
 }

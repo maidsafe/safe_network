@@ -35,7 +35,7 @@ const RETRY_INTERVAL: Duration = Duration::from_secs(10);
 /// - 11: Public under UPnP
 /// - 12: Private or Unknown NAT
 #[derive(Debug, Parser)]
-#[clap(version, author, verbatim_doc_comment)]
+#[clap(disable_version_flag = true)]
 struct Opt {
     /// Port to listen on.
     ///
@@ -60,14 +60,49 @@ struct Opt {
 
     #[command(flatten)]
     verbose: clap_verbosity_flag::Verbosity,
+
+    /// Print the crate version
+    #[clap(long)]
+    crate_version: bool,
+
+    /// Print the package version
+    #[clap(long)]
+    #[cfg(not(feature = "nightly"))]
+    package_version: bool,
+
+    /// Print version information.
+    #[clap(long)]
+    version: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
-    // Process command line arguments.
     let opt = Opt::parse();
+
+    if opt.version {
+        println!(
+            "{}",
+            sn_build_info::version_string(
+                "Autonomi NAT Detection",
+                env!("CARGO_PKG_VERSION"),
+                None
+            )
+        );
+        return Ok(());
+    }
+
+    if opt.crate_version {
+        println!("Crate version: {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if opt.package_version {
+        println!("Package version: {}", sn_build_info::package_version());
+        return Ok(());
+    }
 
     let registry = tracing_subscriber::registry().with(tracing_subscriber::fmt::layer());
     // Use `RUST_LOG` if set, else use the verbosity flag (where `-vvvv` is trace level).
