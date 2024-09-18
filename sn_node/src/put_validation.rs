@@ -512,6 +512,8 @@ impl Node {
                 .current_rewards_collected
                 .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX)); // TODO maybe metrics should be in u256 too?
         }
+        self.events_channel()
+            .broadcast(crate::NodeEvent::RewardReceived(storecost, address.clone()));
 
         // NB TODO: tell happybeing about the AttoToken change
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
