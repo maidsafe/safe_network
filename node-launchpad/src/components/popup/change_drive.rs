@@ -128,7 +128,8 @@ impl ChangeDrivePopup {
             .iter()
             .map(|(drive_name, mountpoint, space, available)| {
                 let size_str = format!("{:.2} GB", *space as f64 / 1e9);
-                let has_enough_space = *space >= (GB_PER_NODE * GB * self.nodes_to_start) as u64;
+                let has_enough_space = *space as u128
+                    >= (GB_PER_NODE as u128 * GB as u128 * self.nodes_to_start as u128);
                 DriveItem {
                     name: drive_name.to_string(),
                     mountpoint: mountpoint.clone(),
