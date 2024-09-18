@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726621708039,
+  "lastUpdate": 1726621709600,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "920caec314aa6a91b7ee8590ae52fdb4481d7cbd",
-          "message": "feat(manager): reuse downloaded binaries",
-          "timestamp": "2024-05-04T14:28:58+01:00",
-          "tree_id": "252cde9041ca8d8b78fda90961817418523feb56",
-          "url": "https://github.com/maidsafe/safe_network/commit/920caec314aa6a91b7ee8590ae52fdb4481d7cbd"
-        },
-        "date": 1714830540090,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 190,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f5573ad525b6cb92624b2f579bc3091593541229",
+          "message": "Merge pull request #2118 from maqi/client_side_quote_self_validation\n\nfeat(client): carry out quote self validation",
+          "timestamp": "2024-09-18T00:21:42Z",
+          "tree_id": "19e2a1f2f61f39dd080b08dce8db1a85c8d9a046",
+          "url": "https://github.com/maidsafe/safe_network/commit/f5573ad525b6cb92624b2f579bc3091593541229"
+        },
+        "date": 1726621709099,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 181,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 86,
             "unit": "MB"
           }
         ]
