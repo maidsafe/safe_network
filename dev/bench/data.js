@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726624129036,
+  "lastUpdate": 1726624130990,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "bbcb5a35eed329f8b24ab0f5520bc2d3cf4284d9",
-          "message": "ci: package launcher artifacts\n\nThis was mistakenly not added on the previous commit.",
-          "timestamp": "2024-05-04T23:39:36+01:00",
-          "tree_id": "752185a669ad15843e65117f46e077cb69ef6e14",
-          "url": "https://github.com/maidsafe/safe_network/commit/bbcb5a35eed329f8b24ab0f5520bc2d3cf4284d9"
-        },
-        "date": 1714863222381,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 203,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 80,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "489a6d386562ace1f34673e7392c35463b517874",
+          "message": "Merge pull request #2108 from mazzi/discord_username_from_status\n\nfix(launchpad): discord popup from Status screen and fixes",
+          "timestamp": "2024-09-18T01:01:19Z",
+          "tree_id": "aa46776fb943dadd83becd62a1653c86fc1b5542",
+          "url": "https://github.com/maidsafe/safe_network/commit/489a6d386562ace1f34673e7392c35463b517874"
+        },
+        "date": 1726624130231,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 169,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
