@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726624045615,
+  "lastUpdate": 1726624046829,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "jacderida"
           },
           "distinct": true,
-          "id": "a58c73a1c4306967e46d9234e8571001ecd27c84",
-          "message": "feat: provide `autonomi-launcher` binary\n\nThis small binary attempts to detect the presence of a terminal executable, then uses it to run the\n`node-launchpad` TUI inside it.\n\nThe TUI is downloaded and stored at `~/.local/bin/autonomi-launcher` on Linux/macOS and\n`%USERPROFILE%\\safe\\autonomi-launcher.exe` on Windows. Right now, the version it downloads is hard\ncoded to `0.1.0-alpha.0`. This can be changed quite easily once we get a new release.\n\nThe launcher is added to the release process as a new binary. However, there is a complication not\nyet dealt with. The `autonomi-launcher` and `node-launchpad` binaries are in the same crate, so the\nprocess for uploading assets to Github releases will need to be modified to accommodate that. We can\ncome back to it.",
-          "timestamp": "2024-05-04T23:09:58+01:00",
-          "tree_id": "2da968e97989aa880744bfc5b78668f3af1c264f",
-          "url": "https://github.com/maidsafe/safe_network/commit/a58c73a1c4306967e46d9234e8571001ecd27c84"
-        },
-        "date": 1714861454937,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 198,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
           "id": "bbcb5a35eed329f8b24ab0f5520bc2d3cf4284d9",
           "message": "ci: package launcher artifacts\n\nThis was mistakenly not added on the previous commit.",
           "timestamp": "2024-05-04T23:39:36+01:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 86,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "eec49dc3edfecfd7bbbf18c98c993a66dccb3d32",
+          "message": "Merge pull request #2113 from mazzi/status_flexible_layout\n\nfeat(launchpad): flexible status layout",
+          "timestamp": "2024-09-18T01:00:20Z",
+          "tree_id": "9516a479d5ae1f436b0b8d1171dcb9d3a04127b5",
+          "url": "https://github.com/maidsafe/safe_network/commit/eec49dc3edfecfd7bbbf18c98c993a66dccb3d32"
+        },
+        "date": 1726624046583,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 180,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 80,
             "unit": "MB"
           }
         ]
