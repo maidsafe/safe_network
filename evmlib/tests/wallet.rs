@@ -1,8 +1,6 @@
 mod common;
 
-use crate::common::chunk_payments::{deploy_chunk_payments_contract, random_quote_payment};
-use crate::common::local_testnet::start_anvil_node;
-use crate::common::network_token::deploy_network_token_contract;
+use crate::common::quote::random_quote_payment;
 use crate::common::ROYALTIES_WALLET;
 use alloy::network::EthereumWallet;
 use alloy::node_bindings::AnvilInstance;
@@ -10,15 +8,17 @@ use alloy::primitives::utils::parse_ether;
 use alloy::providers::ext::AnvilApi;
 use alloy::providers::{ProviderBuilder, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
-use evmlib::common::Amount;
+use evmlib::common::{Amount, TxHash};
 use evmlib::contract::chunk_payments::MAX_TRANSFERS_PER_TRANSACTION;
+use evmlib::testnet::{deploy_chunk_payments_contract, deploy_network_token_contract, start_node};
 use evmlib::transaction::verify_chunk_payment;
 use evmlib::wallet::{transfer_tokens, wallet_address, Wallet};
 use evmlib::{CustomNetwork, Network};
+use std::collections::HashSet;
 
 #[allow(clippy::unwrap_used)]
 async fn local_testnet() -> (AnvilInstance, Network, EthereumWallet) {
-    let anvil = start_anvil_node().await;
+    let anvil = start_node();
     let rpc_url = anvil.endpoint().parse().unwrap();
     let network_token = deploy_network_token_contract(&anvil).await;
     let payment_token_address = *network_token.contract.address();
@@ -69,6 +69,7 @@ async fn funded_wallet(network: &Network, genesis_wallet: EthereumWallet) -> Wal
 #[tokio::test]
 async fn test_pay_for_quotes_and_chunk_payment_verification() {
     const TRANSFERS: usize = 600;
+    const EXPIRATION_TIMESTAMP_IN_SECS: u64 = 4102441200; // The year 2100
 
     let (_anvil, network, genesis_wallet) = local_testnet().await;
     let wallet = funded_wallet(&network, genesis_wallet).await;
@@ -82,15 +83,15 @@ async fn test_pay_for_quotes_and_chunk_payment_verification() {
 
     let tx_hashes = wallet.pay_for_quotes(quote_payments.clone()).await.unwrap();
 
+    let unique_tx_hashes: HashSet<TxHash> = tx_hashes.values().cloned().collect();
+
     assert_eq!(
-        tx_hashes.len(),
+        unique_tx_hashes.len(),
         TRANSFERS.div_ceil(MAX_TRANSFERS_PER_TRANSACTION)
     );
 
-    for (i, quote_payment) in quote_payments.iter().enumerate() {
-        let tx_index = i / MAX_TRANSFERS_PER_TRANSACTION;
-
-        let tx_hash = *tx_hashes.get(tx_index).unwrap();
+    for quote_payment in quote_payments.iter() {
+        let tx_hash = *tx_hashes.get(&quote_payment.0).unwrap();
 
         let result = verify_chunk_payment(
             &network,
@@ -98,12 +99,13 @@ async fn test_pay_for_quotes_and_chunk_payment_verification() {
             quote_payment.0,
             quote_payment.1,
             quote_payment.2,
+            EXPIRATION_TIMESTAMP_IN_SECS,
         )
         .await;
 
         assert!(
             result.is_ok(),
-            "Verification failed for({i}): {quote_payment:?}. Error: {:?}",
+            "Verification failed for: {quote_payment:?}. Error: {:?}",
             result.err()
         );
     }

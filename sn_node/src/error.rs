@@ -90,4 +90,6 @@ pub enum Error {
 
     #[error("EVM Network error: {0}")]
     EvmNetwork(String),
+    #[error("Invalid quote timestamp: {0}")]
+    InvalidQuoteTimestamp(String),
 }

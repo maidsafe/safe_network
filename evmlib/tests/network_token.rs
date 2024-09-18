@@ -1,7 +1,5 @@
 mod common;
 
-use crate::common::local_testnet::start_anvil_node;
-use crate::common::network_token::deploy_network_token_contract;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
 use alloy::node_bindings::AnvilInstance;
 use alloy::primitives::U256;
@@ -10,6 +8,7 @@ use alloy::providers::{ReqwestProvider, WalletProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::{Client, Http};
 use evmlib::contract::network_token::NetworkToken;
+use evmlib::testnet::{deploy_network_token_contract, start_node};
 use evmlib::wallet::wallet_address;
 use std::str::FromStr;
 
@@ -26,7 +25,7 @@ async fn setup() -> (
         Ethereum,
     >,
 ) {
-    let anvil = start_anvil_node().await;
+    let anvil = start_node();
 
     let network_token = deploy_network_token_contract(&anvil).await;
 

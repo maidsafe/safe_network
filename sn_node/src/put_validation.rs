@@ -8,7 +8,7 @@
 
 use crate::{node::Node, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
-use sn_evm::{ProofOfPayment, SignedSpend, TransferError, UniquePubkey};
+use sn_evm::{ProofOfPayment, SignedSpend, TransferError, UniquePubkey, QUOTE_EXPIRATION_SECS};
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     storage::{
@@ -19,11 +19,12 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use std::collections::BTreeSet;
+use std::time::{Duration, UNIX_EPOCH};
 use tokio::task::JoinSet;
 use xor_name::XorName;
 
 impl Node {
-    /// Validate a record and it's payment, and store the record to the RecordStore
+    /// Validate a record and its payment, and store the record to the RecordStore
     pub(crate) async fn validate_and_store_record(&self, record: Record) -> Result<()> {
         let record_header = RecordHeader::from_record(&record)?;
 
@@ -467,11 +468,38 @@ impl Node {
 
         // check if the quote is valid
         let storecost = payment.quote.cost;
-        debug!("Payment quote is valid for record {pretty_key}");
+        let self_peer_id = self.network().peer_id();
+        if !payment.quote.check_is_signed_by_claimed_peer(self_peer_id) {
+            warn!("Payment quote signature is not valid for record {pretty_key}");
+            return Err(Error::InvalidRequest(format!(
+                "Payment quote signature is not valid for record {pretty_key}"
+            )));
+        }
+        debug!("Payment quote signature is valid for record {pretty_key}");
 
-        debug!("Verifying payment for record {pretty_key}");
+        // verify quote timestamp
+        let quote_timestamp = payment.quote.timestamp;
+        let quote_expiration_time = quote_timestamp + Duration::from_secs(QUOTE_EXPIRATION_SECS);
+        let quote_expiration_time_in_secs = quote_expiration_time
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| {
+                Error::InvalidRequest(format!(
+                    "Payment quote timestamp is invalid for record {pretty_key}: {e}"
+                ))
+            })?
+            .as_secs();
+
         // check if payment is valid on chain
-        self.evm_network().verify_chunk_payment(payment.tx_hash, payment.quote.hash(), *self.reward_address(), storecost.as_atto()).await
+        debug!("Verifying payment for record {pretty_key}");
+        self.evm_network()
+            .verify_chunk_payment(
+                payment.tx_hash,
+                payment.quote.hash(),
+                *self.reward_address(),
+                storecost.as_atto(),
+                quote_expiration_time_in_secs,
+            )
+            .await
             .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
         debug!("Payment is valid for record {pretty_key}");
 
@@ -482,7 +510,7 @@ impl Node {
         if let Some(node_metrics) = self.node_metrics() {
             let _prev = node_metrics
                 .current_rewards_collected
-                .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX));// TODO maybe metrics should be in u256 too?
+                .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX)); // TODO maybe metrics should be in u256 too?
         }
 
         // NB TODO: tell happybeing about the AttoToken change

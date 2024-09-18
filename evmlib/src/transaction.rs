@@ -1,9 +1,10 @@
 use crate::common::{Address, QuoteHash, TxHash, U256};
 use crate::event::{ChunkPaymentEvent, CHUNK_PAYMENT_EVENT_SIGNATURE};
 use crate::Network;
+use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::FixedBytes;
 use alloy::providers::{Provider, ProviderBuilder};
-use alloy::rpc::types::{Filter, Log, TransactionReceipt};
+use alloy::rpc::types::{Block, Filter, Log, TransactionReceipt};
 use alloy::transports::{RpcError, TransportErrorKind};
 
 #[derive(thiserror::Error, Debug)]
@@ -16,8 +17,12 @@ pub enum Error {
     TransactionNotFound,
     #[error("Transaction has not been included in a block yet")]
     TransactionNotInBlock,
+    #[error("Block was not found")]
+    BlockNotFound,
     #[error("No event proof found")]
     EventProofNotFound,
+    #[error("Payment was done after the quote expired")]
+    QuoteExpired,
 }
 
 /// Get a transaction receipt by its hash.
@@ -30,6 +35,17 @@ pub async fn get_transaction_receipt_by_hash(
         .on_http(network.rpc_url().clone());
     let maybe_receipt = provider.get_transaction_receipt(transaction_hash).await?;
     Ok(maybe_receipt)
+}
+
+/// Get a block by its block number.
+async fn get_block_by_number(network: &Network, block_number: u64) -> Result<Option<Block>, Error> {
+    let provider = ProviderBuilder::new()
+        .with_recommended_fillers()
+        .on_http(network.rpc_url().clone());
+    let block = provider
+        .get_block_by_number(BlockNumberOrTag::Number(block_number), true)
+        .await?;
+    Ok(block)
 }
 
 /// Get transaction logs using a filter.
@@ -70,6 +86,7 @@ pub async fn verify_chunk_payment(
     quote_hash: QuoteHash,
     reward_addr: Address,
     amount: U256,
+    quote_expiration_timestamp_in_secs: u64,
 ) -> Result<(), Error> {
     let transaction = get_transaction_receipt_by_hash(network, tx_hash)
         .await?
@@ -83,6 +100,15 @@ pub async fn verify_chunk_payment(
     let block_number = transaction
         .block_number
         .ok_or(Error::TransactionNotInBlock)?;
+
+    let block = get_block_by_number(network, block_number)
+        .await?
+        .ok_or(Error::BlockNotFound)?;
+
+    // Check if payment was done within the quote expiration timeframe.
+    if quote_expiration_timestamp_in_secs < block.header.timestamp {
+        return Err(Error::QuoteExpired);
+    }
 
     let logs =
         get_chunk_payment_event(network, block_number, quote_hash, reward_addr, amount).await?;
@@ -156,9 +182,16 @@ mod tests {
         let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap();
         let amount = U256::from(200);
 
-        let result =
-            verify_chunk_payment(&network, tx_hash, quote_hash, reward_address, amount).await;
+        let result = verify_chunk_payment(
+            &network,
+            tx_hash,
+            quote_hash,
+            reward_address,
+            amount,
+            4102441200,
+        )
+        .await;
 
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "Error: {:?}", result.err());
     }
 }

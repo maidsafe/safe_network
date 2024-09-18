@@ -22,7 +22,7 @@ members = [
     "sn_evm",
     "test_utils",
     "token_supplies",
-    "evmlib",
+    "evmlib", "evm_testnet",
 ]
 
 [workspace.lints.rust]
