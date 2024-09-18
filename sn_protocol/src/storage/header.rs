@@ -30,7 +30,8 @@ pub struct RecordHeader {
     pub kind: RecordKind,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[repr(u32)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
 pub enum RecordKind {
     Chunk,
     ChunkWithPayment,
@@ -41,43 +42,6 @@ pub enum RecordKind {
     ScratchpadWithPayment,
 }
 
-impl Serialize for RecordKind {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match *self {
-            Self::ChunkWithPayment => serializer.serialize_u32(0),
-            Self::Chunk => serializer.serialize_u32(1),
-            Self::Spend => serializer.serialize_u32(2),
-            Self::Register => serializer.serialize_u32(3),
-            Self::RegisterWithPayment => serializer.serialize_u32(4),
-            Self::Scratchpad => serializer.serialize_u32(5),
-            Self::ScratchpadWithPayment => serializer.serialize_u32(6),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for RecordKind {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let num = u32::deserialize(deserializer)?;
-        match num {
-            0 => Ok(Self::ChunkWithPayment),
-            1 => Ok(Self::Chunk),
-            2 => Ok(Self::Spend),
-            3 => Ok(Self::Register),
-            4 => Ok(Self::RegisterWithPayment),
-            5 => Ok(Self::Scratchpad),
-            6 => Ok(Self::ScratchpadWithPayment),
-            _ => Err(serde::de::Error::custom(
-                "Unexpected integer for RecordKind variant",
-            )),
-        }
-    }
-}
 impl Display for RecordKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "RecordKind({self:?})")
