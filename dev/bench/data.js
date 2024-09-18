@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726621711258,
+  "lastUpdate": 1726623925994,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chris.oneil@gmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": true,
-          "id": "a58c73a1c4306967e46d9234e8571001ecd27c84",
-          "message": "feat: provide `autonomi-launcher` binary\n\nThis small binary attempts to detect the presence of a terminal executable, then uses it to run the\n`node-launchpad` TUI inside it.\n\nThe TUI is downloaded and stored at `~/.local/bin/autonomi-launcher` on Linux/macOS and\n`%USERPROFILE%\\safe\\autonomi-launcher.exe` on Windows. Right now, the version it downloads is hard\ncoded to `0.1.0-alpha.0`. This can be changed quite easily once we get a new release.\n\nThe launcher is added to the release process as a new binary. However, there is a complication not\nyet dealt with. The `autonomi-launcher` and `node-launchpad` binaries are in the same crate, so the\nprocess for uploading assets to Github releases will need to be modified to accommodate that. We can\ncome back to it.",
-          "timestamp": "2024-05-04T23:09:58+01:00",
-          "tree_id": "2da968e97989aa880744bfc5b78668f3af1c264f",
-          "url": "https://github.com/maidsafe/safe_network/commit/a58c73a1c4306967e46d9234e8571001ecd27c84"
-        },
-        "date": 1714861334992,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2165393648772405,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6674670270782592,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.36699175959642,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 62.21323260640506,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "eec49dc3edfecfd7bbbf18c98c993a66dccb3d32",
+          "message": "Merge pull request #2113 from mazzi/status_flexible_layout\n\nfeat(launchpad): flexible status layout",
+          "timestamp": "2024-09-18T01:00:20Z",
+          "tree_id": "9516a479d5ae1f436b0b8d1171dcb9d3a04127b5",
+          "url": "https://github.com/maidsafe/safe_network/commit/eec49dc3edfecfd7bbbf18c98c993a66dccb3d32"
+        },
+        "date": 1726623919321,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2712022465696962,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6974057352292202,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.67580637302299,
             "unit": "MiB/s"
           }
         ]
