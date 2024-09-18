@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726626310547,
+  "lastUpdate": 1726626313075,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "b8094a430614fe6c75f0e0eddcca7f0b79240845",
-          "message": "chore: check DAG crawling performance",
-          "timestamp": "2024-05-06T14:22:58Z",
-          "tree_id": "9bebc727b5ae81432813b1f99f4f79fd3c60da00",
-          "url": "https://github.com/maidsafe/safe_network/commit/b8094a430614fe6c75f0e0eddcca7f0b79240845"
-        },
-        "date": 1715008285619,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7684,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36140,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "46f4f0bac4e64105143bb61bad489bbaf52c63ab",
+          "message": "Merge pull request #2105 from joshuef/Vault1\n\nfeat(aut): add basic vault api for storing data to Scratchpad",
+          "timestamp": "2024-09-18T01:28:29Z",
+          "tree_id": "d2e67552f91b1126948f2f4e0a1a6d55a2819ee9",
+          "url": "https://github.com/maidsafe/safe_network/commit/46f4f0bac4e64105143bb61bad489bbaf52c63ab"
+        },
+        "date": 1726626312054,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 4355,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 25662,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 5,
             "unit": "ms"
           }
         ]
