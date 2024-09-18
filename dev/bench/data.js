@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726626313075,
+  "lastUpdate": 1726627637690,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1",
-          "message": "feat(launchpad): ensure start mac launchapd with sudo only if not set",
-          "timestamp": "2024-05-07T09:19:28+09:00",
-          "tree_id": "067f44435f18359fe969d91164280b6a4c35257e",
-          "url": "https://github.com/maidsafe/safe_network/commit/fa6ffe26d9e7f365ac1ec8a0dab799cee56d8ec1"
-        },
-        "date": 1715041884735,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2205433219536541,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6669081454543568,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.90361369493903,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 62.6181263817514,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3eba08f0060e2443f48d2caacef2e239239a9912",
+          "message": "Merge pull request #2107 from loziniak/main\n\nfeat(client): enable Debug",
+          "timestamp": "2024-09-18T02:00:42Z",
+          "tree_id": "86a1646b7c60b7744d792adc042e7195cb13ce09",
+          "url": "https://github.com/maidsafe/safe_network/commit/3eba08f0060e2443f48d2caacef2e239239a9912"
+        },
+        "date": 1726627630946,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2185174321883396,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6877460973264151,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.47392001590549,
             "unit": "MiB/s"
           }
         ]
