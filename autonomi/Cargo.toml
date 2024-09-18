@@ -5,8 +5,9 @@ edition = "2021"
 
 [features]
 default = ["data"]
-full = ["data", "files", "fs", "registers", "transfers"]
+full = ["data", "files", "fs", "registers", "transfers", "vault"]
 data = ["transfers"]
+vault = ["data"]
 files = ["transfers", "data"]
 fs = []
 local = ["sn_client/local-discovery"]
@@ -34,6 +35,7 @@ walkdir = "2.5.0"
 xor_name = "5.0.0"
 
 [dev-dependencies]
+eyre = "0.6.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [lints]

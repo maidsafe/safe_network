@@ -97,6 +97,10 @@ impl NetworkAddress {
     pub fn from_spend_address(cash_note_address: SpendAddress) -> Self {
         NetworkAddress::SpendAddress(cash_note_address)
     }
+    /// Return a `NetworkAddress` representation of the `SpendAddress`.
+    pub fn from_scratchpad_address(address: ScratchpadAddress) -> Self {
+        NetworkAddress::ScratchpadAddress(address)
+    }
 
     /// Return a `NetworkAddress` representation of the `RegisterAddress`.
     pub fn from_register_address(register_address: RegisterAddress) -> Self {
@@ -145,6 +149,7 @@ impl NetworkAddress {
             NetworkAddress::SpendAddress(cash_note_address) => Some(*cash_note_address.xorname()),
             NetworkAddress::ChunkAddress(chunk_address) => Some(*chunk_address.xorname()),
             NetworkAddress::RegisterAddress(register_address) => Some(register_address.xorname()),
+            NetworkAddress::ScratchpadAddress(address) => Some(address.xorname()),
             _ => None,
         }
     }
