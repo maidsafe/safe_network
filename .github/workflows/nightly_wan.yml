@@ -133,6 +133,7 @@ jobs:
             ~/.local/share/safe/client/logs/*/*.log*
 
       - name: destroy network
+        if: always()
         uses: maidsafe/sn-testnet-control-action/destroy-network@main
         with:
           network-name: ${{ env.NETWORK_NAME }}
