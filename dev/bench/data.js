@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726624342734,
+  "lastUpdate": 1726624344520,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "1f13f66893ef9f00720df8555e635866de4bc68c",
-          "message": "style: cargo fmt",
-          "timestamp": "2024-05-06T09:20:45Z",
-          "tree_id": "0d0e356d70f4c7d2dd943c88b523dabed9a51c05",
-          "url": "https://github.com/maidsafe/safe_network/commit/1f13f66893ef9f00720df8555e635866de4bc68c"
-        },
-        "date": 1714990538261,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7543,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34892,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 60046,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "def4cd81632a3419806ba1d61a8792618ca2e974",
+          "message": "Merge pull request #2116 from mazzi/fix_error_handling\n\nfix(launchpad): some error handling when sn_node_manager fails",
+          "timestamp": "2024-09-18T01:03:24Z",
+          "tree_id": "4d44e8c90dfd43a88844f184df91b4fa92def222",
+          "url": "https://github.com/maidsafe/safe_network/commit/def4cd81632a3419806ba1d61a8792618ca2e974"
+        },
+        "date": 1726624344034,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 17633,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 59173,
             "unit": "ms"
           },
           {
