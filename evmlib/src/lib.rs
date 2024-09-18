@@ -27,7 +27,7 @@ const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
 const ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS: Address =
     address!("F15BfEA73b6a551C5c2e66026e4eB3b69c1F602c");
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CustomNetwork {
     pub rpc_url_http: reqwest::Url,
     pub payment_token_address: Address,
@@ -46,13 +46,20 @@ impl CustomNetwork {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Network {
     ArbitrumOne,
     Custom(CustomNetwork),
 }
 
 impl Network {
+    pub fn identifier(&self) -> &str {
+        match self {
+            Network::ArbitrumOne => "arbitrum-one",
+            Network::Custom(_) => "custom",
+        }
+    }
+
     pub fn rpc_url(&self) -> &reqwest::Url {
         match self {
             Network::ArbitrumOne => &PUBLIC_ARBITRUM_ONE_HTTP_RPC_URL,
