@@ -3,7 +3,7 @@ authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Autonomi client API"
 name = "autonomi"
 license = "GPL-3.0"
-version = "0.1.0-rc.2"
+version = "0.1.0-rc.3"
 edition = "2021"
 homepage = "https://maidsafe.net"
 readme = "README.md"
@@ -28,10 +28,10 @@ rand = "0.8.5"
 rmp-serde = "1.1.1"
 self_encryption = "~0.29.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
-sn_client = { path = "../sn_client", version = "0.110.1-rc.2" }
-sn_protocol = { version = "0.17.9-rc.2", path = "../sn_protocol" }
-sn_registers = { path = "../sn_registers", version = "0.3.19-rc.2" }
-sn_transfers = { path = "../sn_transfers", version = "0.19.1-rc.2" }
+sn_client = { path = "../sn_client", version = "0.110.1-rc.3" }
+sn_protocol = { version = "0.17.9-rc.3", path = "../sn_protocol" }
+sn_registers = { path = "../sn_registers", version = "0.3.19-rc.3" }
+sn_transfers = { path = "../sn_transfers", version = "0.19.1-rc.3" }
 thiserror = "1.0.23"
 tokio = { version = "1.35.0", features = ["sync", "fs"] }
 tracing = { version = "~0.1.26" }
