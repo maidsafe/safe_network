@@ -6,16 +6,20 @@ use crate::contract::network_token::NetworkToken;
 use crate::contract::{chunk_payments, network_token};
 use crate::utils::calculate_royalties_from_amount;
 use crate::Network;
-use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
+use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
 use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
-use alloy::providers::{ProviderBuilder, ReqwestProvider};
+use alloy::providers::{Provider, ProviderBuilder, ReqwestProvider};
+use alloy::rpc::types::TransactionRequest;
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{reqwest, Client, Http};
+use alloy::transports::{RpcError, TransportErrorKind};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Private key is invalid")]
     PrivateKeyInvalid,
+    #[error(transparent)]
+    RpcError(#[from] RpcError<TransportErrorKind>),
     #[error("Network token contract error: {0}")]
     NetworkTokenContract(#[from] network_token::Error),
     #[error("Chunk payments contract error: {0}")]
@@ -49,18 +53,32 @@ impl Wallet {
         wallet_address(&self.wallet)
     }
 
-    /// Returns the raw balance of tokens for this wallet.
+    /// Returns the raw balance of payment tokens for this wallet.
     pub async fn balance_of_tokens(&self) -> Result<U256, network_token::Error> {
         balance_of_tokens(self.wallet.clone(), &self.network).await
     }
 
-    /// Transfer a raw amount of tokens to another address.
+    /// Returns the raw balance of gas tokens for this wallet.
+    pub async fn balance_of_gas_tokens(&self) -> Result<U256, network_token::Error> {
+        balance_of_gas_tokens(self.wallet.clone(), &self.network).await
+    }
+
+    /// Transfer a raw amount of payment tokens to another address.
     pub async fn transfer_tokens(
         &self,
         to: Address,
         amount: U256,
     ) -> Result<TxHash, network_token::Error> {
         transfer_tokens(self.wallet.clone(), &self.network, to, amount).await
+    }
+
+    /// Transfer a raw amount of gas tokens to another address.
+    pub async fn transfer_gas_tokens(
+        &self,
+        to: Address,
+        amount: U256,
+    ) -> Result<TxHash, network_token::Error> {
+        transfer_gas_tokens(self.wallet.clone(), &self.network, to, amount).await
     }
 
     /// Pays for a single quote. Returns transaction hash of the payment.
@@ -120,7 +138,7 @@ pub fn wallet_address(wallet: &EthereumWallet) -> Address {
     <EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
 }
 
-/// Returns the raw balance of tokens for this wallet.
+/// Returns the raw balance of payment tokens for this wallet.
 pub async fn balance_of_tokens(
     wallet: EthereumWallet,
     network: &Network,
@@ -131,7 +149,18 @@ pub async fn balance_of_tokens(
     network_token.balance_of(account).await
 }
 
-/// Approve an address / smart contract to spend this wallet's tokens.
+/// Returns the raw balance of gas tokens for this wallet.
+pub async fn balance_of_gas_tokens(
+    wallet: EthereumWallet,
+    network: &Network,
+) -> Result<U256, network_token::Error> {
+    let account = wallet_address(&wallet);
+    let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
+    let balance = provider.get_balance(account).await?;
+    Ok(balance)
+}
+
+/// Approve an address / smart contract to spend this wallet's payment tokens.
 async fn approve_to_spend_tokens(
     wallet: EthereumWallet,
     network: &Network,
@@ -143,7 +172,7 @@ async fn approve_to_spend_tokens(
     network_token.approve(spender, amount).await
 }
 
-/// Transfer tokens from the supplied wallet to an address.
+/// Transfer payment tokens from the supplied wallet to an address.
 pub async fn transfer_tokens(
     wallet: EthereumWallet,
     network: &Network,
@@ -159,6 +188,23 @@ pub async fn transfer_tokens(
 #[expect(dead_code)]
 #[derive(Debug)]
 pub struct PayForQuotesError(Error, BTreeMap<QuoteHash, TxHash>);
+
+/// Transfer native/gas tokens from the supplied wallet to an address.
+pub async fn transfer_gas_tokens(
+    wallet: EthereumWallet,
+    network: &Network,
+    receiver: Address,
+    amount: U256,
+) -> Result<TxHash, network_token::Error> {
+    let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
+    let tx = TransactionRequest::default()
+        .with_to(receiver)
+        .with_value(amount);
+
+    let tx_hash = provider.send_transaction(tx).await?.watch().await?;
+
+    Ok(tx_hash)
+}
 
 /// Use this wallet to pay for chunks in batched transfer transactions.
 /// If the amount of transfers is more than one transaction can contain, the transfers will be split up over multiple transactions.
@@ -210,7 +256,10 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 
 #[cfg(test)]
 mod tests {
-    use crate::wallet::from_private_key;
+    use crate::common::Amount;
+    use crate::testnet::Testnet;
+    use crate::utils::dummy_address;
+    use crate::wallet::{from_private_key, Wallet};
     use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
     use alloy::primitives::address;
 
@@ -225,5 +274,29 @@ mod tests {
             account,
             address!("1975d01f46D70AAc0dd3fCf942d92650eE63C79A")
         );
+    }
+
+    #[tokio::test]
+    async fn test_transfer_gas_tokens() {
+        let testnet = Testnet::new(dummy_address()).await;
+        let network = testnet.to_network();
+        let wallet =
+            Wallet::new_from_private_key(network.clone(), &testnet.default_wallet_private_key())
+                .unwrap();
+        let receiver_wallet = Wallet::new_with_random_wallet(network);
+        let transfer_amount = Amount::from(117);
+
+        let initial_balance = receiver_wallet.balance_of_gas_tokens().await.unwrap();
+
+        assert_eq!(initial_balance, Amount::from(0));
+
+        let _ = wallet
+            .transfer_gas_tokens(receiver_wallet.address(), transfer_amount)
+            .await
+            .unwrap();
+
+        let final_balance = receiver_wallet.balance_of_gas_tokens().await.unwrap();
+
+        assert_eq!(final_balance, transfer_amount);
     }
 }
