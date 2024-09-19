@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726741562334,
+  "lastUpdate": 1726765876169,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fb767f8cf45a906c2d5d14c37c8693c2b112482f",
-          "message": "ci(release): fix stable release cargo-publish permissive step",
-          "timestamp": "2024-05-07T16:36:09+09:00",
-          "tree_id": "d5c56dc45d432daa3ad31de54ea16d0993c31e3c",
-          "url": "https://github.com/maidsafe/safe_network/commit/fb767f8cf45a906c2d5d14c37c8693c2b112482f"
-        },
-        "date": 1715068098240,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2289405193288823,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.627668757405699,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.16488920181213,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.40525860011065,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bda1bc49b8b2b98c3a299d8fef74ff800e9e4596",
+          "message": "Merge pull request #2130 from RolandSherwin/safenode_manager_ip\n\nfeat(manager): provide option to specify node ip",
+          "timestamp": "2024-09-19T16:24:08Z",
+          "tree_id": "90613f115b3afeb0c81aaf6ae5030d00ffd9599b",
+          "url": "https://github.com/maidsafe/safe_network/commit/bda1bc49b8b2b98c3a299d8fef74ff800e9e4596"
+        },
+        "date": 1726765869320,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1932487007783004,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6616756282134804,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.45552163529043,
             "unit": "MiB/s"
           }
         ]
