@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726709105261,
+  "lastUpdate": 1726709223440,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "4413dad6baa36253608c84d55dc6d3c1fbc65f51",
-          "message": "chore(ci): keep main up to date if we bump on stable",
-          "timestamp": "2024-05-07T14:10:37+09:00",
-          "tree_id": "926886337ffead362c307fbe54d7e645e05941c7",
-          "url": "https://github.com/maidsafe/safe_network/commit/4413dad6baa36253608c84d55dc6d3c1fbc65f51"
-        },
-        "date": 1715059487113,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "d3de16bc5420017bbf8c229e613a85e4dd4dfa8c",
           "message": "feat(scripts): easy updating versions to match crates.io",
           "timestamp": "2024-05-07T15:25:27+09:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 146,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6fefb4441cb8976c9aa1af7c6a808c3b3448fb4d",
+          "message": "Merge pull request #2122 from joshuef/RemoveOldKeyPrintTest\n\nchore(proto): remove OldKeyPrint variants",
+          "timestamp": "2024-09-19T00:38:16Z",
+          "tree_id": "d00e65649a8af42f5f02d092a32172de1d363bac",
+          "url": "https://github.com/maidsafe/safe_network/commit/6fefb4441cb8976c9aa1af7c6a808c3b3448fb4d"
+        },
+        "date": 1726709222883,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 136,
             "unit": "MB"
           }
         ]
