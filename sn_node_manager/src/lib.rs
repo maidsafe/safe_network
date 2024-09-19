@@ -774,6 +774,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -875,6 +876,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -941,6 +943,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1050,6 +1053,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1129,6 +1133,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1218,6 +1223,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1306,6 +1312,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1364,6 +1371,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1412,6 +1420,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1458,6 +1467,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1507,6 +1517,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1569,6 +1580,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1694,6 +1706,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1781,6 +1794,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -1913,6 +1927,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2057,6 +2072,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2196,6 +2212,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2336,6 +2353,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2506,6 +2524,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2659,6 +2678,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: Some(LogFormat::Json),
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             owner: None,
             number: 1,
@@ -2815,6 +2835,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2853,6 +2874,163 @@ mod tests {
             .await?;
 
         assert!(service_manager.service.service_data.home_network);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn upgrade_should_retain_custom_node_ip() -> Result<()> {
+        let current_version = "0.1.0";
+        let target_version = "0.2.0";
+
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let current_install_dir = tmp_data_dir.child("safenode_install");
+        current_install_dir.create_dir_all()?;
+
+        let current_node_bin = current_install_dir.child("safenode");
+        current_node_bin.write_binary(b"fake safenode binary")?;
+        let target_node_bin = tmp_data_dir.child("safenode");
+        target_node_bin.write_binary(b"fake safenode binary")?;
+
+        let mut mock_service_control = MockServiceControl::new();
+        let mut mock_rpc_client = MockRpcClient::new();
+
+        // before binary upgrade
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
+            .times(1)
+            .returning(|_| Ok(1000));
+        mock_service_control
+            .expect_stop()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        // after binary upgrade
+        mock_service_control
+            .expect_uninstall()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_service_control
+            .expect_install()
+            .with(
+                eq(ServiceInstallCtx {
+                    args: vec![
+                        OsString::from("--rpc"),
+                        OsString::from("127.0.0.1:8081"),
+                        OsString::from("--root-dir"),
+                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("--log-output-dest"),
+                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("--ip"),
+                        OsString::from("192.168.1.1"),
+                    ],
+                    autostart: false,
+                    contents: None,
+                    environment: None,
+                    label: "safenode1".parse()?,
+                    program: current_node_bin.to_path_buf(),
+                    username: Some("safe".to_string()),
+                    working_directory: None,
+                }),
+                eq(false),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        // after service restart
+        mock_service_control
+            .expect_start()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_service_control
+            .expect_wait()
+            .with(eq(3000))
+            .times(1)
+            .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
+            .times(1)
+            .returning(|_| Ok(100));
+
+        mock_rpc_client.expect_node_info().times(1).returning(|| {
+            Ok(NodeInfo {
+                pid: 2000,
+                peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
+                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                version: target_version.to_string(),
+                uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
+            })
+        });
+        mock_rpc_client
+            .expect_network_info()
+            .times(1)
+            .returning(|| {
+                Ok(NetworkInfo {
+                    connected_peers: Vec::new(),
+                    listeners: Vec::new(),
+                })
+            });
+
+        let mut service_data = NodeServiceData {
+            auto_restart: false,
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_format: None,
+            metrics_port: None,
+            number: 1,
+            node_ip: Some(Ipv4Addr::new(192, 168, 1, 1)),
+            node_port: None,
+            owner: None,
+            peer_id: Some(PeerId::from_str(
+                "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
+            )?),
+            pid: Some(1000),
+            reward_balance: Some(NanoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: current_node_bin.to_path_buf(),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Running,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: current_version.to_string(),
+        };
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
+        let mut service_manager = ServiceManager::new(
+            service,
+            Box::new(mock_service_control),
+            VerbosityLevel::Normal,
+        );
+
+        service_manager
+            .upgrade(UpgradeOptions {
+                auto_restart: false,
+                bootstrap_peers: Vec::new(),
+                env_variables: None,
+                force: false,
+                start_service: true,
+                target_bin_path: target_node_bin.to_path_buf(),
+                target_version: Version::parse(target_version).unwrap(),
+            })
+            .await?;
+
+        assert_eq!(
+            service_manager.service.service_data.node_ip,
+            Some(Ipv4Addr::new(192, 168, 1, 1))
+        );
 
         Ok(())
     }
@@ -2969,6 +3147,7 @@ mod tests {
             log_format: None,
             metrics_port: None,
             number: 1,
+            node_ip: None,
             node_port: Some(12000),
             owner: None,
             peer_id: Some(PeerId::from_str(
@@ -3121,6 +3300,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: Some(12000),
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -3277,6 +3457,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: Some(12000),
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -3433,6 +3614,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: Some("discord_username".to_string()),
@@ -3589,6 +3771,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: Some("discord_username".to_string()),
@@ -3744,6 +3927,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -3815,6 +3999,7 @@ mod tests {
             log_dir_path: log_dir.to_path_buf(),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -3871,6 +4056,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -3943,6 +4129,7 @@ mod tests {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -4007,6 +4194,7 @@ mod tests {
             log_dir_path: log_dir.to_path_buf(),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -4069,6 +4257,7 @@ mod tests {
             log_dir_path: log_dir.to_path_buf(),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,

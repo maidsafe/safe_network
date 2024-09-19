@@ -122,6 +122,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
@@ -155,6 +156,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -226,6 +228,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             pid: None,
@@ -271,6 +274,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: Some(custom_rpc_address),
             rpc_port: None,
@@ -339,6 +343,7 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -413,6 +418,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
@@ -450,6 +456,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         log_format: None,
         metrics_port: None,
         name: "safenode2".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
@@ -487,6 +494,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
         metrics_port: None,
         name: "safenode3".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085),
@@ -521,6 +529,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -644,6 +653,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
@@ -677,6 +687,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -774,6 +785,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
@@ -807,6 +819,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -877,6 +890,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -922,6 +936,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         log_format: None,
         metrics_port: None,
         name: "safenode2".to_string(),
+        node_ip: None,
         node_port: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
         owner: None,
@@ -956,6 +971,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -993,6 +1009,129 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
     );
     assert_matches!(node_registry.nodes[0].status, ServiceStatus::Added);
     assert!(!node_registry.nodes[0].auto_restart);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_node_should_use_custom_ip() -> Result<()> {
+    let tmp_data_dir = assert_fs::TempDir::new()?;
+    let node_reg_path = tmp_data_dir.child("node_reg.json");
+
+    let mut mock_service_control = MockServiceControl::new();
+
+    let mut node_registry = NodeRegistry {
+        auditor: None,
+        faucet: None,
+        save_path: node_reg_path.to_path_buf(),
+        nat_status: None,
+        nodes: vec![],
+        bootstrap_peers: vec![],
+        environment_variables: None,
+        daemon: None,
+    };
+    let latest_version = "0.96.4";
+    let temp_dir = assert_fs::TempDir::new()?;
+    let node_data_dir = temp_dir.child("data");
+    node_data_dir.create_dir_all()?;
+    let node_logs_dir = temp_dir.child("logs");
+    node_logs_dir.create_dir_all()?;
+    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
+    safenode_download_path.write_binary(b"fake safenode bin")?;
+
+    let custom_ip = Ipv4Addr::new(192, 168, 1, 1);
+
+    let mut seq = Sequence::new();
+
+    mock_service_control
+        .expect_get_available_port()
+        .times(1)
+        .returning(|| Ok(12001))
+        .in_sequence(&mut seq);
+
+    mock_service_control
+        .expect_install()
+        .times(1)
+        .with(
+            eq(ServiceInstallCtx {
+                args: vec![
+                    OsString::from("--rpc"),
+                    OsString::from("127.0.0.1:12001"),
+                    OsString::from("--root-dir"),
+                    OsString::from(
+                        node_data_dir
+                            .to_path_buf()
+                            .join("safenode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--log-output-dest"),
+                    OsString::from(
+                        node_logs_dir
+                            .to_path_buf()
+                            .join("safenode1")
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    OsString::from("--ip"),
+                    OsString::from(custom_ip.to_string()),
+                ],
+                autostart: false,
+                contents: None,
+                environment: None,
+                label: "safenode1".parse()?,
+                program: node_data_dir
+                    .to_path_buf()
+                    .join("safenode1")
+                    .join(SAFENODE_FILE_NAME),
+                username: Some(get_username()),
+                working_directory: None,
+            }),
+            eq(false),
+        )
+        .returning(|_, _| Ok(()))
+        .in_sequence(&mut seq);
+
+    add_node(
+        AddNodeServiceOptions {
+            auto_restart: false,
+            auto_set_nat_flags: false,
+            bootstrap_peers: vec![],
+            count: None,
+            delete_safenode_src: true,
+            enable_metrics_server: false,
+            env_variables: None,
+            genesis: false,
+            home_network: false,
+            local: false,
+            log_format: None,
+            metrics_port: None,
+            owner: None,
+            node_ip: Some(custom_ip),
+            node_port: None,
+            rpc_address: None,
+            rpc_port: None,
+            safenode_dir_path: temp_dir.to_path_buf(),
+            safenode_src_path: safenode_download_path.to_path_buf(),
+            service_data_dir_path: node_data_dir.to_path_buf(),
+            service_log_dir_path: node_logs_dir.to_path_buf(),
+            upnp: false,
+            user: Some(get_username()),
+            user_mode: false,
+            version: latest_version.to_string(),
+        },
+        &mut node_registry,
+        &mock_service_control,
+        VerbosityLevel::Normal,
+    )
+    .await?;
+
+    safenode_download_path.assert(predicate::path::missing());
+    node_data_dir.assert(predicate::path::is_dir());
+    node_logs_dir.assert(predicate::path::is_dir());
+
+    assert_eq!(node_registry.nodes.len(), 1);
+    assert_eq!(node_registry.nodes[0].node_ip, Some(custom_ip));
 
     Ok(())
 }
@@ -1044,6 +1183,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: Some(custom_port),
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
@@ -1078,6 +1218,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: Some(PortRange::Single(custom_port)),
             rpc_address: None,
             rpc_port: None,
@@ -1296,6 +1437,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: Some(PortRange::Range(12000, 12002)),
             rpc_address: None,
             rpc_port: None,
@@ -1346,6 +1488,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
             log_format: None,
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             metrics_port: None,
+            node_ip: None,
             node_port: Some(12000),
             number: 1,
             owner: None,
@@ -1389,6 +1532,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: Some(PortRange::Single(12000)),
             rpc_address: None,
             rpc_port: None,
@@ -1437,6 +1581,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
             log_format: None,
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             metrics_port: None,
+            node_ip: None,
             node_port: Some(12000),
             number: 1,
             owner: None,
@@ -1480,6 +1625,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: Some(PortRange::Range(12000, 12002)),
             rpc_address: None,
             rpc_port: None,
@@ -1546,6 +1692,7 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: Some(PortRange::Range(12000, 12002)),
             rpc_address: None,
             rpc_port: None,
@@ -1617,6 +1764,7 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: Some(PortRange::Single(12000)),
             rpc_address: None,
             rpc_port: None,
@@ -1741,6 +1889,7 @@ async fn add_node_should_set_random_ports_if_enable_metrics_server_is_true() -> 
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -1953,6 +2102,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
             log_format: None,
             metrics_port: Some(PortRange::Range(12000, 12002)),
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -2000,6 +2150,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: Some(12000),
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2043,6 +2194,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
             log_format: None,
             metrics_port: Some(PortRange::Single(12000)),
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -2092,6 +2244,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: Some(12000),
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2135,6 +2288,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
             log_format: None,
             metrics_port: Some(PortRange::Range(12000, 12002)),
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -2331,6 +2485,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: Some(PortRange::Range(20000, 20002)),
@@ -2389,6 +2544,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2432,6 +2588,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: Some(PortRange::Single(8081)),
@@ -2481,6 +2638,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
             log_format: None,
             metrics_port: None,
+            node_ip: None,
             node_port: None,
             number: 1,
             owner: None,
@@ -2524,6 +2682,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: Some(PortRange::Range(8081, 8082)),
@@ -2597,6 +2756,7 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
@@ -2630,6 +2790,7 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -2700,6 +2861,7 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
@@ -2733,6 +2895,7 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -2803,6 +2966,7 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
@@ -2836,6 +3000,7 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -2910,6 +3075,7 @@ async fn add_node_should_return_an_error_if_nat_status_is_none_but_auto_set_nat_
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -3521,6 +3687,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
@@ -3555,6 +3722,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -3626,6 +3794,7 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
@@ -3660,6 +3829,7 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -3731,6 +3901,7 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
@@ -3765,6 +3936,7 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -3833,6 +4005,7 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
         log_format: None,
         metrics_port: None,
         name: "safenode1".to_string(),
+        node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
@@ -3867,6 +4040,7 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
             log_format: None,
             metrics_port: None,
             owner: None,
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -3982,6 +4156,7 @@ async fn add_node_should_assign_an_owner() -> Result<()> {
             log_format: None,
             metrics_port: None,
             owner: Some("discord_username".to_string()),
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
@@ -4099,6 +4274,7 @@ async fn add_node_should_auto_restart() -> Result<()> {
             log_format: None,
             metrics_port: None,
             owner: Some("discord_username".to_string()),
+            node_ip: None,
             node_port: None,
             rpc_address: None,
             rpc_port: None,
