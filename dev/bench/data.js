@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726741559159,
+  "lastUpdate": 1726741560638,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "d3de16bc5420017bbf8c229e613a85e4dd4dfa8c",
-          "message": "feat(scripts): easy updating versions to match crates.io",
-          "timestamp": "2024-05-07T15:25:27+09:00",
-          "tree_id": "e20be45bc75ddd281590be7369606f4c01462728",
-          "url": "https://github.com/maidsafe/safe_network/commit/d3de16bc5420017bbf8c229e613a85e4dd4dfa8c"
-        },
-        "date": 1715063969608,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 189,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "fb767f8cf45a906c2d5d14c37c8693c2b112482f",
           "message": "ci(release): fix stable release cargo-publish permissive step",
           "timestamp": "2024-05-07T16:36:09+09:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cddbdbf5d81c688fd7fa7bd56a8ce096ae19e457",
+          "message": "Merge pull request #2128 from maidsafe/feat-enable_e2e_wan_nightly\n\nfix: enable e2e wan nightly tests",
+          "timestamp": "2024-09-19T09:32:21Z",
+          "tree_id": "26090f9e2d2f483bfe2362013dc77586a9a0a9c3",
+          "url": "https://github.com/maidsafe/safe_network/commit/cddbdbf5d81c688fd7fa7bd56a8ce096ae19e457"
+        },
+        "date": 1726741560173,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 175,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 80,
             "unit": "MB"
           }
         ]
