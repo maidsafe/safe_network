@@ -268,8 +268,11 @@ impl SwarmDriver {
                 event_string = "kad_event::RoutingUpdated";
                 if is_new_peer {
                     self.update_on_peer_addition(peer);
+                }
 
+                if !self.first_contact_made {
                     // This should only happen once
+                    self.first_contact_made = true;
                     info!("Performing the first bootstrap");
                     self.trigger_network_discovery();
                 }
