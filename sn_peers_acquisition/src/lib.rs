@@ -15,8 +15,6 @@ use lazy_static::lazy_static;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use rand::{seq::SliceRandom, thread_rng};
 use reqwest::Client;
-#[cfg(feature = "network-contacts")]
-use sn_protocol::version::get_network_version;
 use std::time::Duration;
 use tracing::*;
 use url::Url;
@@ -24,11 +22,8 @@ use url::Url;
 #[cfg(feature = "network-contacts")]
 lazy_static! {
     // URL containing the multi-addresses of the bootstrap nodes.
-    pub static ref NETWORK_CONTACTS_URL: String = {
-        let version = get_network_version();
-        let version_prefix = if !version.is_empty() { format!("{version}-") } else { version.to_string() };
-        format!("https://sn-testnet.s3.eu-west-2.amazonaws.com/{version_prefix}network-contacts")
-    };
+    pub static ref NETWORK_CONTACTS_URL: String =
+       "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts".to_string();
 }
 
 // The maximum number of retries to be performed while trying to get peers from a URL.
