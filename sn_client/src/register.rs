@@ -844,7 +844,6 @@ impl ClientRegister {
             retry_strategy: Some(RetryStrategy::Quick),
             target_record: record_to_verify,
             expected_holders,
-            is_register: true,
         };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,

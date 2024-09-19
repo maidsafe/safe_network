@@ -90,7 +90,6 @@ impl Client {
             retry_strategy: None,
             target_record: None,
             expected_holders: HashSet::new(),
-            is_register: false,
         };
         let record = self.network.get_record_from_network(key, &get_cfg).await?;
         let header = RecordHeader::from_record(&record)?;

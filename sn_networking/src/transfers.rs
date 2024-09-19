@@ -35,7 +35,6 @@ impl Network {
             // what we will have in hand.
             target_record: None,
             expected_holders: Default::default(),
-            is_register: false,
         };
         let record = self.get_record_from_network(key.clone(), &get_cfg).await?;
         debug!(
@@ -56,7 +55,6 @@ impl Network {
             retry_strategy: Some(RetryStrategy::Quick),
             target_record: None,
             expected_holders: Default::default(),
-            is_register: false,
         };
         let record = match self.get_record_from_network(key.clone(), &get_cfg).await {
             Ok(record) => record,

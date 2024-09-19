@@ -75,9 +75,6 @@ impl Node {
                         retry_strategy: None,
                         target_record: None,
                         expected_holders: Default::default(),
-                        // This is for replication, which doesn't have target_recrod to verify with.
-                        // Hence value of the flag actually doesn't matter.
-                        is_register: false,
                     };
                     match node.network().get_record_from_network(key, &get_cfg).await {
                         Ok(record) => record,
