@@ -79,6 +79,7 @@ pub struct InstallNodeServiceCtxBuilder {
     pub log_format: Option<LogFormat>,
     pub name: String,
     pub metrics_port: Option<u16>,
+    pub node_ip: Option<Ipv4Addr>,
     pub node_port: Option<u16>,
     pub owner: Option<String>,
     pub rpc_socket_addr: SocketAddr,
@@ -114,6 +115,10 @@ impl InstallNodeServiceCtxBuilder {
         }
         if self.upnp {
             args.push(OsString::from("--upnp"));
+        }
+        if let Some(node_ip) = self.node_ip {
+            args.push(OsString::from("--ip"));
+            args.push(OsString::from(node_ip.to_string()));
         }
         if let Some(node_port) = self.node_port {
             args.push(OsString::from("--port"));
@@ -166,6 +171,7 @@ pub struct AddNodeServiceOptions {
     pub log_format: Option<LogFormat>,
     pub metrics_port: Option<PortRange>,
     pub owner: Option<String>,
+    pub node_ip: Option<Ipv4Addr>,
     pub node_port: Option<PortRange>,
     pub rpc_address: Option<Ipv4Addr>,
     pub rpc_port: Option<PortRange>,

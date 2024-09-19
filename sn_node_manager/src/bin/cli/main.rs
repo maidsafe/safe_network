@@ -146,6 +146,11 @@ pub enum SubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         metrics_port: Option<PortRange>,
+        /// Specify the IP address for the safenode service(s).
+        ///
+        /// If not set, we bind to all the available network interfaces.
+        #[clap(long)]
+        node_ip: Option<Ipv4Addr>,
         /// Specify a port for the safenode service(s).
         ///
         /// If not used, ports will be selected at random.
@@ -1022,6 +1027,7 @@ async fn main() -> Result<()> {
             log_dir_path,
             log_format,
             metrics_port,
+            node_ip,
             node_port,
             owner,
             path,
@@ -1045,6 +1051,7 @@ async fn main() -> Result<()> {
                 log_dir_path,
                 log_format,
                 metrics_port,
+                node_ip,
                 node_port,
                 owner,
                 peers,
