@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726648188980,
+  "lastUpdate": 1726708444026,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "62cd849cba8eb6dd22ed0279713d2747603ec99f",
-          "message": "feat(launchpad): remove separate ai launcher bin references",
-          "timestamp": "2024-05-07T13:37:19+09:00",
-          "tree_id": "f6973a3c21ec93889eee9af7028d010bb7bc0d93",
-          "url": "https://github.com/maidsafe/safe_network/commit/62cd849cba8eb6dd22ed0279713d2747603ec99f"
-        },
-        "date": 1715057360910,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2439279794462004,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6687423679754392,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.76783812430116,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.1781586049237,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d66b7d2f35188fa4de0ae92578871b85cb83027d",
+          "message": "Merge pull request #2121 from joshuef/SimplifyNetV\n\nfeat: remove version string restriction",
+          "timestamp": "2024-09-19T00:24:10Z",
+          "tree_id": "b369a29f18b20f060ca155c3725781fe1f83d2cf",
+          "url": "https://github.com/maidsafe/safe_network/commit/d66b7d2f35188fa4de0ae92578871b85cb83027d"
+        },
+        "date": 1726708437064,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2872678134826672,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.690065975876086,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 62.53182558393576,
             "unit": "MiB/s"
           }
         ]
