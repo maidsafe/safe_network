@@ -14,7 +14,13 @@ use service_manager::{ServiceInstallCtx, ServiceLabel};
 use sn_logging::LogFormat;
 use sn_protocol::get_port_from_multiaddr;
 use sn_transfers::NanoTokens;
-use std::{ffi::OsString, net::SocketAddr, path::PathBuf, str::FromStr, time::Duration};
+use std::{
+    ffi::OsString,
+    net::{Ipv4Addr, SocketAddr},
+    path::PathBuf,
+    str::FromStr,
+    time::Duration,
+};
 
 pub struct NodeService<'a> {
     pub service_data: &'a mut NodeServiceData,
@@ -80,6 +86,11 @@ impl<'a> ServiceStateActions for NodeService<'a> {
         }
         if self.service_data.home_network {
             args.push(OsString::from("--home-network"));
+        }
+
+        if let Some(node_ip) = self.service_data.node_ip {
+            args.push(OsString::from("--ip"));
+            args.push(OsString::from(node_ip.to_string()));
         }
 
         if let Some(node_port) = self.service_data.node_port {
@@ -260,6 +271,8 @@ pub struct NodeServiceData {
     pub metrics_port: Option<u16>,
     #[serde(default)]
     pub owner: Option<String>,
+    #[serde(default)]
+    pub node_ip: Option<Ipv4Addr>,
     #[serde(default)]
     pub node_port: Option<u16>,
     pub number: u16,

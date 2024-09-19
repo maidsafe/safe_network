@@ -296,6 +296,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         None,
         None,
         None,
+        None,
         None, // We don't care about the port, as we are scaling down
         config.owner.clone(),
         config.peers_args.clone(),
@@ -363,6 +364,7 @@ async fn add_nodes(
             None,
             config.home_network,
             false,
+            None,
             None,
             None,
             None,
