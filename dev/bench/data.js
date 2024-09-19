@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726708565294,
+  "lastUpdate": 1726709105261,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "4413dad6baa36253608c84d55dc6d3c1fbc65f51",
-          "message": "chore(ci): keep main up to date if we bump on stable",
-          "timestamp": "2024-05-07T14:10:37+09:00",
-          "tree_id": "926886337ffead362c307fbe54d7e645e05941c7",
-          "url": "https://github.com/maidsafe/safe_network/commit/4413dad6baa36253608c84d55dc6d3c1fbc65f51"
-        },
-        "date": 1715059367626,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2444786284360703,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.671198590234245,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.61222650289463,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 62.53182558393576,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6fefb4441cb8976c9aa1af7c6a808c3b3448fb4d",
+          "message": "Merge pull request #2122 from joshuef/RemoveOldKeyPrintTest\n\nchore(proto): remove OldKeyPrint variants",
+          "timestamp": "2024-09-19T00:38:16Z",
+          "tree_id": "d00e65649a8af42f5f02d092a32172de1d363bac",
+          "url": "https://github.com/maidsafe/safe_network/commit/6fefb4441cb8976c9aa1af7c6a808c3b3448fb4d"
+        },
+        "date": 1726709098180,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2911131170452754,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7191761106727046,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 62.18567737846888,
             "unit": "MiB/s"
           }
         ]
