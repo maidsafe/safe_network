@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::common::{deployer_wallet_from_network, evm_network_from_env};
+use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
 use autonomi::Client;
 use bytes::Bytes;
 use tokio::time::sleep;
@@ -14,7 +14,7 @@ async fn register() {
 
     let network = evm_network_from_env();
     let mut client = Client::connect(&[]).await.unwrap();
-    let mut wallet = deployer_wallet_from_network(network);
+    let mut wallet = evm_wallet_from_env_or_default(network);
 
     // Owner key of the register.
     let key = bls::SecretKey::random();
@@ -30,7 +30,7 @@ async fn register() {
         .await
         .unwrap();
 
-    sleep(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(10)).await;
 
     // Fetch the register again
     let register = client.fetch_register(*register.address()).await.unwrap();

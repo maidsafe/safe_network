@@ -1,4 +1,4 @@
-use crate::common::{deployer_wallet_from_network, evm_network_from_env};
+use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
 use autonomi::Wallet;
 use const_hex::traits::FromHex;
 use evmlib::common::{Address, Amount};
@@ -20,7 +20,7 @@ async fn from_private_key() {
 #[tokio::test]
 async fn send_tokens() {
     let network = evm_network_from_env();
-    let wallet = deployer_wallet_from_network(network.clone());
+    let wallet = evm_wallet_from_env_or_default(network.clone());
 
     let receiving_wallet = Wallet::new_with_random_wallet(network);
 

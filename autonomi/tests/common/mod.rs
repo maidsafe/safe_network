@@ -2,9 +2,14 @@
 
 use autonomi::Wallet;
 use bytes::Bytes;
+use const_hex::ToHexExt;
 use evmlib::{CustomNetwork, Network};
 use rand::Rng;
 use std::env;
+
+fn get_var_or_panic(var: &str) -> String {
+    env::var(var).expect(&format!("{} environment variable needs to be set", var))
+}
 
 pub fn gen_random_data(len: usize) -> Bytes {
     let mut data = vec![0u8; len];
@@ -20,11 +25,26 @@ pub fn enable_logging() {
 }
 
 pub fn evm_network_from_env() -> Network {
-    let rpc_url = env::var("RPC_URL").expect("RPC_URL environment variable needs to be set.");
-    let payment_token_address = env::var("PAYMENT_TOKEN_ADDRESS")
-        .expect("PAYMENT_TOKEN_ADDRESS environment variable needs to be set.");
-    let chunk_payments_address = env::var("CHUNK_PAYMENTS_ADDRESS")
-        .expect("CHUNK_PAYMENTS_ADDRESS environment variable needs to be set.");
+    let evm_network = env::var("EVM_NETWORK").ok();
+    let arbitrum_flag = evm_network.as_deref() == Some("arbitrum-one");
+
+    let (rpc_url, payment_token_address, chunk_payments_address) = if arbitrum_flag {
+        (
+            Network::ArbitrumOne.rpc_url().to_string(),
+            Network::ArbitrumOne
+                .payment_token_address()
+                .encode_hex_with_prefix(),
+            Network::ArbitrumOne
+                .chunk_payments_address()
+                .encode_hex_with_prefix(),
+        )
+    } else {
+        (
+            get_var_or_panic("RPC_URL"),
+            get_var_or_panic("PAYMENT_TOKEN_ADDRESS"),
+            get_var_or_panic("CHUNK_PAYMENTS_ADDRESS"),
+        )
+    };
 
     Network::Custom(CustomNetwork::new(
         &rpc_url,
@@ -33,9 +53,12 @@ pub fn evm_network_from_env() -> Network {
     ))
 }
 
-pub fn deployer_wallet_from_network(network: Network) -> Wallet {
-    const DEPLOYER_WALLET_PRIVATE_KEY: &str =
+pub fn evm_wallet_from_env_or_default(network: Network) -> Wallet {
+    // Default deployer wallet of the testnet.
+    const DEFAULT_WALLET_PRIVATE_KEY: &str =
         "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-    Wallet::new_from_private_key(network, DEPLOYER_WALLET_PRIVATE_KEY).expect("Invalid private key")
+    let private_key = env::var("PRIVATE_KEY").unwrap_or(DEFAULT_WALLET_PRIVATE_KEY.to_string());
+
+    Wallet::new_from_private_key(network, &private_key).expect("Invalid private key")
 }

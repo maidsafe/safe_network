@@ -11,6 +11,8 @@ See [docs.rs/autonomi](https://docs.rs/autonomi) for usage examples.
 
 ## Running tests
 
+### Using a local EVM testnet
+
 1. Run a local EVM node:
 
 ```sh
@@ -31,6 +33,26 @@ cargo run --bin=safenode-manager --features=local-discovery -- local run --build
 $ RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> CHUNK_PAYMENTS_ADDRESS=<CONTRACT_ADDRESS> cargo test --package=autonomi --features=local
 # Or with logs
 $ RUST_LOG=autonomi RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> CHUNK_PAYMENTS_ADDRESS=<CONTRACT_ADDRESS> cargo test --package=autonomi --features=local -- --nocapture
+```
+
+### Using a live testnet or mainnet
+
+Using the hardcoded Arbitrum One option as an example, but you can also use the command flags of the steps above and
+point it to a live network.
+
+1. Run a local network with the `local-discovery` feature:
+
+```sh
+cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-arbitrum-one
+```
+
+2. Then run the tests with the `local` feature. Make sure that the wallet of the private key you pass has enough gas and
+   payment tokens on the network (in this case Arbitrum One):
+
+```sh
+$ EVM_NETWORK=arbitrum-one PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
+# Or with logs
+$ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local -- --nocapture
 ```
 
 ## Faucet (local)
