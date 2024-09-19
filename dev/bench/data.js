@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726708444026,
+  "lastUpdate": 1726708562063,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "62cd849cba8eb6dd22ed0279713d2747603ec99f",
-          "message": "feat(launchpad): remove separate ai launcher bin references",
-          "timestamp": "2024-05-07T13:37:19+09:00",
-          "tree_id": "f6973a3c21ec93889eee9af7028d010bb7bc0d93",
-          "url": "https://github.com/maidsafe/safe_network/commit/62cd849cba8eb6dd22ed0279713d2747603ec99f"
-        },
-        "date": 1715057480257,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "4413dad6baa36253608c84d55dc6d3c1fbc65f51",
           "message": "chore(ci): keep main up to date if we bump on stable",
           "timestamp": "2024-05-07T14:10:37+09:00",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 133,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d66b7d2f35188fa4de0ae92578871b85cb83027d",
+          "message": "Merge pull request #2121 from joshuef/SimplifyNetV\n\nfeat: remove version string restriction",
+          "timestamp": "2024-09-19T00:24:10Z",
+          "tree_id": "b369a29f18b20f060ca155c3725781fe1f83d2cf",
+          "url": "https://github.com/maidsafe/safe_network/commit/d66b7d2f35188fa4de0ae92578871b85cb83027d"
+        },
+        "date": 1726708561586,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 146,
             "unit": "MB"
           }
         ]
