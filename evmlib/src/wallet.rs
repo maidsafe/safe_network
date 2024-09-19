@@ -16,6 +16,10 @@ use alloy::transports::http::{reqwest, Client, Http};
 pub enum Error {
     #[error("Private key is invalid")]
     PrivateKeyInvalid,
+    #[error("Network token contract error: {0}")]
+    NetworkTokenContract(#[from] network_token::Error),
+    #[error("Chunk payments contract error: {0}")]
+    ChunkPaymentsContract(#[from] chunk_payments::error::Error),
 }
 
 pub struct Wallet {
@@ -65,10 +69,11 @@ impl Wallet {
         quote_hash: QuoteHash,
         rewards_addr: Address,
         amount: U256,
-    ) -> Result<TxHash, chunk_payments::error::Error> {
+    ) -> Result<TxHash, Error> {
         self.pay_for_quotes([(quote_hash, rewards_addr, amount)])
             .await
             .map(|v| v.values().last().cloned().expect("Infallible"))
+            .map_err(|err| err.0)
     }
 
     /// Function for batch payments of quotes. It accepts an iterator of QuotePayment and returns
@@ -76,7 +81,7 @@ impl Wallet {
     pub async fn pay_for_quotes<I: IntoIterator<Item = QuotePayment>>(
         &self,
         chunk_payments: I,
-    ) -> Result<BTreeMap<QuoteHash, TxHash>, chunk_payments::error::Error> {
+    ) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
         pay_for_quotes(self.wallet.clone(), &self.network, chunk_payments).await
     }
 }
@@ -150,19 +155,26 @@ pub async fn transfer_tokens(
     network_token.transfer(receiver, amount).await
 }
 
+/// Contains the payment error and the already succeeded batch payments (if any).
+#[expect(dead_code)]
+#[derive(Debug)]
+pub struct PayForQuotesError(Error, BTreeMap<QuoteHash, TxHash>);
+
 /// Use this wallet to pay for chunks in batched transfer transactions.
 /// If the amount of transfers is more than one transaction can contain, the transfers will be split up over multiple transactions.
 pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     wallet: EthereumWallet,
     network: &Network,
     payments: T,
-) -> Result<BTreeMap<QuoteHash, TxHash>, chunk_payments::error::Error> {
+) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
     let payments: Vec<_> = payments.into_iter().collect();
     let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
     let royalties = calculate_royalties_from_amount(total_amount);
 
     // 2 * royalties to have a small buffer for different rounding in the smart contract.
     let total_amount_with_royalties = total_amount + (U256::from(2) * royalties);
+
+    let mut tx_hashes_by_quote = BTreeMap::new();
 
     // Approve the contract to spend enough of the client's tokens.
     approve_to_spend_tokens(
@@ -171,19 +183,22 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
         *network.chunk_payments_address(),
         total_amount_with_royalties,
     )
-    .await?;
+    .await
+    .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
 
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
     let chunk_payments = ChunkPayments::new(*network.chunk_payments_address(), provider);
-
-    let mut tx_hashes_by_quote = BTreeMap::new();
 
     // Divide transfers over multiple transactions if they exceed the max per transaction.
     let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);
 
     for batch in chunks {
         let batch: Vec<QuotePayment> = batch.to_vec();
-        let tx_hash = chunk_payments.pay_for_quotes(batch.clone()).await?;
+
+        let tx_hash = chunk_payments
+            .pay_for_quotes(batch.clone())
+            .await
+            .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
 
         for (quote_hash, _, _) in batch {
             tx_hashes_by_quote.insert(quote_hash, tx_hash);
