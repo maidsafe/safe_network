@@ -65,11 +65,12 @@ kill-testbed:
     doctl compute droplet delete $droplet_id
   fi
 
-build-release-artifacts arch:
+build-release-artifacts arch nightly="false":
   #!/usr/bin/env bash
   set -e
 
   arch="{{arch}}"
+  nightly="{{nightly}}"
   supported_archs=(
     "x86_64-pc-windows-msvc"
     "x86_64-apple-darwin"
@@ -107,9 +108,9 @@ build-release-artifacts arch:
   mkdir artifacts
   cargo clean
 
-  echo "==============="
-  echo "= Public Keys ="
-  echo "==============="
+  echo "================"
+  echo "= Network Keys ="
+  echo "================"
   echo "FOUNDATION_PK: $FOUNDATION_PK"
   echo "GENESIS_PK: $GENESIS_PK"
   echo "NETWORK_ROYALTIES_PK: $NETWORK_ROYALTIES_PK"
@@ -118,28 +119,33 @@ build-release-artifacts arch:
   cross_container_opts="--env \"GENESIS_PK=$GENESIS_PK\" --env \"GENESIS_SK=$GENESIS_SK\" --env \"FOUNDATION_PK=$FOUNDATION_PK\" --env \"NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK\" --env \"PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK\""
   export CROSS_CONTAINER_OPTS=$cross_container_opts
 
+  nightly_feature=""
+  if [[ "$nightly" == "true" ]]; then
+    nightly_feature="--features nightly"
+  fi
+
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
     echo "Passing to cross CROSS_CONTAINER_OPTS=$CROSS_CONTAINER_OPTS"
     cargo binstall --no-confirm cross
-    cross build --release --target $arch --bin faucet --features=distribution
-    cross build --release --target $arch --bin nat-detection
-    cross build --release --target $arch --bin node-launchpad
-    cross build --release --features="network-contacts,distribution" --target $arch --bin safe
-    cross build --release --features=network-contacts --target $arch --bin safenode
-    cross build --release --target $arch --bin safenode-manager
-    cross build --release --target $arch --bin safenodemand
-    cross build --release --target $arch --bin safenode_rpc_client
-    cross build --release --target $arch --bin sn_auditor
+    cross build --release --target $arch --bin faucet --features=distribution $nightly_feature
+    cross build --release --target $arch --bin nat-detection $nightly_feature
+    cross build --release --target $arch --bin node-launchpad $nightly_feature
+    cross build --release --features="network-contacts,distribution" --target $arch --bin safe $nightly_feature
+    cross build --release --features=network-contacts --target $arch --bin safenode $nightly_feature
+    cross build --release --target $arch --bin safenode-manager $nightly_feature
+    cross build --release --target $arch --bin safenodemand $nightly_feature
+    cross build --release --target $arch --bin safenode_rpc_client $nightly_feature
+    cross build --release --target $arch --bin sn_auditor $nightly_feature
   else
-    cargo build --release --target $arch --bin faucet --features=distribution
-    cargo build --release --target $arch --bin nat-detection
-    cargo build --release --target $arch --bin node-launchpad
-    cargo build --release --features="network-contacts,distribution" --target $arch --bin safe
-    cargo build --release --features=network-contacts --target $arch --bin safenode
-    cargo build --release --target $arch --bin safenode-manager
-    cargo build --release --target $arch --bin safenodemand
-    cargo build --release --target $arch --bin safenode_rpc_client
-    cargo build --release --target $arch --bin sn_auditor
+    cargo build --release --target $arch --bin faucet --features=distribution $nightly_feature
+    cargo build --release --target $arch --bin nat-detection $nightly_feature
+    cargo build --release --target $arch --bin node-launchpad $nightly_feature
+    cargo build --release --features="network-contacts,distribution" --target $arch --bin safe $nightly_feature
+    cargo build --release --features=network-contacts --target $arch --bin safenode $nightly_feature
+    cargo build --release --target $arch --bin safenode-manager $nightly_feature
+    cargo build --release --target $arch --bin safenodemand $nightly_feature
+    cargo build --release --target $arch --bin safenode_rpc_client $nightly_feature
+    cargo build --release --target $arch --bin sn_auditor $nightly_feature
   fi
 
   find target/$arch/release -maxdepth 1 -type f -exec cp '{}' artifacts \;
