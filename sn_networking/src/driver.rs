@@ -692,6 +692,7 @@ impl NetworkBuilder {
             quotes_history: Default::default(),
             replication_targets: Default::default(),
             range_distances: VecDeque::with_capacity(GET_RANGE_STORAGE_LIMIT),
+            first_contact_made: false,
         };
 
         let network = Network::new(
@@ -755,6 +756,8 @@ pub struct SwarmDriver {
     // Each update is generated when there is a routing table change
     // We use the largest of these X_STORAGE_LIMIT values as our X distance.
     pub(crate) range_distances: VecDeque<KBucketDistance>,
+    // have we found out initial peer
+    pub(crate) first_contact_made: bool,
 }
 
 impl SwarmDriver {
