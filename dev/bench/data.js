@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726709226616,
+  "lastUpdate": 1726741438672,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d3de16bc5420017bbf8c229e613a85e4dd4dfa8c",
-          "message": "feat(scripts): easy updating versions to match crates.io",
-          "timestamp": "2024-05-07T15:25:27+09:00",
-          "tree_id": "e20be45bc75ddd281590be7369606f4c01462728",
-          "url": "https://github.com/maidsafe/safe_network/commit/d3de16bc5420017bbf8c229e613a85e4dd4dfa8c"
-        },
-        "date": 1715063851546,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2379067103146777,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6836830450915414,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 57.10735635006252,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 62.18567737846888,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cddbdbf5d81c688fd7fa7bd56a8ce096ae19e457",
+          "message": "Merge pull request #2128 from maidsafe/feat-enable_e2e_wan_nightly\n\nfix: enable e2e wan nightly tests",
+          "timestamp": "2024-09-19T09:32:21Z",
+          "tree_id": "26090f9e2d2f483bfe2362013dc77586a9a0a9c3",
+          "url": "https://github.com/maidsafe/safe_network/commit/cddbdbf5d81c688fd7fa7bd56a8ce096ae19e457"
+        },
+        "date": 1726741431564,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.256566945061333,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6914870334226804,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.40525860011065,
             "unit": "MiB/s"
           }
         ]
