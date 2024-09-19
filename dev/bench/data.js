@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726765876169,
+  "lastUpdate": 1726765998196,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "fb767f8cf45a906c2d5d14c37c8693c2b112482f",
-          "message": "ci(release): fix stable release cargo-publish permissive step",
-          "timestamp": "2024-05-07T16:36:09+09:00",
-          "tree_id": "d5c56dc45d432daa3ad31de54ea16d0993c31e3c",
-          "url": "https://github.com/maidsafe/safe_network/commit/fb767f8cf45a906c2d5d14c37c8693c2b112482f"
-        },
-        "date": 1715068223053,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 140,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bda1bc49b8b2b98c3a299d8fef74ff800e9e4596",
+          "message": "Merge pull request #2130 from RolandSherwin/safenode_manager_ip\n\nfeat(manager): provide option to specify node ip",
+          "timestamp": "2024-09-19T16:24:08Z",
+          "tree_id": "90613f115b3afeb0c81aaf6ae5030d00ffd9599b",
+          "url": "https://github.com/maidsafe/safe_network/commit/bda1bc49b8b2b98c3a299d8fef74ff800e9e4596"
+        },
+        "date": 1726765997859,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 118,
             "unit": "MB"
           }
         ]
