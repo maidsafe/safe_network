@@ -239,6 +239,6 @@ pub async fn get_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
         trace!(
             "Failed to get peers from URL, retrying {retries}/{MAX_RETRIES_ON_GET_PEERS_FROM_URL}"
         );
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 }
