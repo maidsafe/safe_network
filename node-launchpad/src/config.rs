@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::system;
+use crate::connection_mode::ConnectionMode;
 use crate::system::get_primary_mount_point;
 use crate::{action::Action, mode::Scene};
 use color_eyre::eyre::{eyre, Result};
@@ -98,45 +98,63 @@ pub async fn configure_winsw() -> Result<()> {
     Ok(())
 }
 
-#[derive(Clone, Debug, Deserialize, Default, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AppData {
     pub discord_username: String,
     pub nodes_to_start: usize,
     pub storage_mountpoint: Option<PathBuf>,
     pub storage_drive: Option<String>,
+    pub connection_mode: Option<ConnectionMode>,
+    pub port_from: Option<u32>,
+    pub port_to: Option<u32>,
+}
+
+impl Default for AppData {
+    fn default() -> Self {
+        Self {
+            discord_username: "".to_string(),
+            nodes_to_start: 1,
+            storage_mountpoint: None,
+            storage_drive: None,
+            connection_mode: None,
+            port_from: None,
+            port_to: None,
+        }
+    }
 }
 
 impl AppData {
-    pub fn load() -> Result<Self> {
-        let config_dir =
-            get_config_dir().map_err(|_| color_eyre::eyre::eyre!("Could not obtain config dir"))?;
-        let config_path = config_dir.join("app_data.json");
+    pub fn load(custom_path: Option<PathBuf>) -> Result<Self> {
+        let config_path = if let Some(path) = custom_path {
+            path
+        } else {
+            get_config_dir()
+                .map_err(|_| color_eyre::eyre::eyre!("Could not obtain config dir"))?
+                .join("app_data.json")
+        };
 
         if !config_path.exists() {
             return Ok(Self::default());
         }
 
-        let data = std::fs::read_to_string(config_path)
+        let data = std::fs::read_to_string(&config_path)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to read app data file"))?;
 
-        let mut app_data: AppData = serde_json::from_str(&data)
+        let app_data: AppData = serde_json::from_str(&data)
             .map_err(|_| color_eyre::eyre::eyre!("Failed to parse app data"))?;
 
-        if app_data.storage_mountpoint.is_none() || app_data.storage_drive.is_none() {
-            // If the storage drive is not set, set it to the default mount point
-            let drive_info = system::get_default_mount_point()?;
-            app_data.storage_drive = Some(drive_info.0);
-            app_data.storage_mountpoint = Some(drive_info.1);
-            debug!("Setting storage drive to {:?}", app_data.storage_mountpoint);
-        }
         Ok(app_data)
     }
 
-    pub fn save(&self) -> Result<()> {
-        let config_dir = get_config_dir()
-            .map_err(|_| config::ConfigError::Message("Could not obtain data dir".to_string()))?;
+    pub fn save(&self, custom_path: Option<PathBuf>) -> Result<()> {
+        let config_path = if let Some(path) = custom_path {
+            path
+        } else {
+            get_config_dir()
+                .map_err(|_| config::ConfigError::Message("Could not obtain data dir".to_string()))?
+                .join("app_data.json")
+        };
 
-        let config_path = config_dir.join("app_data.json");
         let serialized_config = serde_json::to_string_pretty(&self)?;
         std::fs::write(config_path, serialized_config)?;
 
@@ -536,6 +554,7 @@ fn parse_color(s: &str) -> Option<Color> {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
+    use tempfile::tempdir;
 
     use super::*;
 
@@ -680,5 +699,116 @@ mod tests {
             parse_key_event("AlT-eNtEr").unwrap(),
             KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT)
         );
+    }
+
+    #[test]
+    fn test_app_data_file_does_not_exist() -> Result<()> {
+        let temp_dir = tempdir()?;
+        let non_existent_path = temp_dir.path().join("non_existent_app_data.json");
+
+        let app_data = AppData::load(Some(non_existent_path))?;
+
+        assert_eq!(app_data.discord_username, "");
+        assert_eq!(app_data.nodes_to_start, 1);
+        assert_eq!(app_data.storage_mountpoint, None);
+        assert_eq!(app_data.storage_drive, None);
+        assert_eq!(app_data.connection_mode, None);
+        assert_eq!(app_data.port_from, None);
+        assert_eq!(app_data.port_to, None);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_app_data_partial_info() -> Result<()> {
+        let temp_dir = tempdir()?;
+        let partial_data_path = temp_dir.path().join("partial_app_data.json");
+
+        let partial_data = r#"
+        {
+            "discord_username": "test_user",
+            "nodes_to_start": 3
+        }
+        "#;
+
+        std::fs::write(&partial_data_path, partial_data)?;
+
+        let app_data = AppData::load(Some(partial_data_path))?;
+
+        assert_eq!(app_data.discord_username, "test_user");
+        assert_eq!(app_data.nodes_to_start, 3);
+        assert_eq!(app_data.storage_mountpoint, None);
+        assert_eq!(app_data.storage_drive, None);
+        assert_eq!(app_data.connection_mode, None);
+        assert_eq!(app_data.port_from, None);
+        assert_eq!(app_data.port_to, None);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_app_data_missing_mountpoint() -> Result<()> {
+        let temp_dir = tempdir()?;
+        let missing_mountpoint_path = temp_dir.path().join("missing_mountpoint_app_data.json");
+
+        let missing_mountpoint_data = r#"
+        {
+            "discord_username": "test_user",
+            "nodes_to_start": 3,
+            "storage_drive": "C:"
+        }
+        "#;
+
+        std::fs::write(&missing_mountpoint_path, missing_mountpoint_data)?;
+
+        let app_data = AppData::load(Some(missing_mountpoint_path))?;
+
+        assert_eq!(app_data.discord_username, "test_user");
+        assert_eq!(app_data.nodes_to_start, 3);
+        assert_eq!(app_data.storage_mountpoint, None);
+        assert_eq!(app_data.storage_drive, Some("C:".to_string()));
+        assert_eq!(app_data.connection_mode, None);
+        assert_eq!(app_data.port_from, None);
+        assert_eq!(app_data.port_to, None);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_app_data_save_and_load() -> Result<()> {
+        let temp_dir = tempdir()?;
+        let test_path = temp_dir.path().join("test_app_data.json");
+
+        let mut app_data = AppData::default();
+        let var_name = &"save_load_user";
+        app_data.discord_username = var_name.to_string();
+        app_data.nodes_to_start = 4;
+        app_data.storage_mountpoint = Some(PathBuf::from("/mnt/test"));
+        app_data.storage_drive = Some("E:".to_string());
+        app_data.connection_mode = Some(ConnectionMode::CustomPorts);
+        app_data.port_from = Some(12000);
+        app_data.port_to = Some(13000);
+
+        // Save to custom path
+        app_data.save(Some(test_path.clone()))?;
+
+        // Load from custom path
+        let loaded_data = AppData::load(Some(test_path))?;
+
+        assert_eq!(loaded_data.discord_username, "save_load_user");
+        assert_eq!(loaded_data.nodes_to_start, 4);
+        assert_eq!(
+            loaded_data.storage_mountpoint,
+            Some(PathBuf::from("/mnt/test"))
+        );
+        assert_eq!(loaded_data.storage_drive, Some("E:".to_string()));
+        assert_eq!(
+            loaded_data.connection_mode,
+            Some(ConnectionMode::CustomPorts)
+        );
+        assert_eq!(loaded_data.port_from, Some(12000));
+        assert_eq!(loaded_data.port_to, Some(13000));
+
+        Ok(())
     }
 }

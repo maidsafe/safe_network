@@ -15,8 +15,11 @@ use super::{header::SelectedMenuItem, Component};
 use crate::{
     action::{Action, OptionsActions},
     components::header::Header,
+    connection_mode::ConnectionMode,
     mode::{InputMode, Scene},
-    style::{EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE},
+    style::{
+        COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE,
+    },
     system,
 };
 use sn_node_manager::config::get_service_log_dir_path;
@@ -26,6 +29,10 @@ pub struct Options {
     pub storage_mountpoint: PathBuf,
     pub storage_drive: String,
     pub discord_username: String,
+    pub connection_mode: ConnectionMode,
+    pub port_edit: bool,
+    pub port_from: Option<u32>,
+    pub port_to: Option<u32>,
     pub active: bool,
     pub action_tx: Option<UnboundedSender<Action>>,
 }
@@ -35,11 +42,18 @@ impl Options {
         storage_mountpoint: PathBuf,
         storage_drive: String,
         discord_username: String,
+        connection_mode: ConnectionMode,
+        port_from: Option<u32>,
+        port_to: Option<u32>,
     ) -> Result<Self> {
         Ok(Self {
             storage_mountpoint,
             storage_drive,
             discord_username,
+            connection_mode,
+            port_edit: false,
+            port_from,
+            port_to,
             active: false,
             action_tx: None,
         })
@@ -47,10 +61,6 @@ impl Options {
 }
 
 impl Component for Options {
-    fn init(&mut self, _area: Rect) -> Result<()> {
-        Ok(())
-    }
-
     fn draw(&mut self, f: &mut Frame<'_>, area: Rect) -> Result<()> {
         if !self.active {
             return Ok(());
@@ -61,7 +71,7 @@ impl Component for Options {
             .constraints(
                 [
                     Constraint::Length(1),
-                    Constraint::Length(5),
+                    Constraint::Length(9),
                     Constraint::Length(5),
                     Constraint::Length(5),
                     Constraint::Length(5),
@@ -76,7 +86,7 @@ impl Component for Options {
 
         // Storage Drive
         let block1 = Block::default()
-            .title(" Storage Drive ")
+            .title(" Device Options ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
@@ -86,8 +96,16 @@ impl Component for Options {
                 Row::new(vec![
                     Cell::from(Span::raw(" ")), // Empty row for padding
                     Cell::from(Span::raw(" ")),
+                    Cell::from(Span::raw(" ")),
                 ]),
                 Row::new(vec![
+                    Cell::from(
+                        Line::from(vec![Span::styled(
+                            " Storage Drive: ",
+                            Style::default().fg(LIGHT_PERIWINKLE),
+                        )])
+                        .alignment(Alignment::Left),
+                    ),
                     Cell::from(
                         Line::from(vec![Span::styled(
                             format!(" {} ", self.storage_drive),
@@ -103,15 +121,99 @@ impl Component for Options {
                         .alignment(Alignment::Right),
                     ),
                 ]),
+                Row::new(vec![
+                    Cell::from(Span::raw(" ")), // Empty row for padding
+                    Cell::from(Span::raw(" ")),
+                    Cell::from(Span::raw(" ")),
+                ]),
+                Row::new(vec![
+                    Cell::from(
+                        Line::from(vec![Span::styled(
+                            " Connection Mode: ",
+                            Style::default().fg(LIGHT_PERIWINKLE),
+                        )])
+                        .alignment(Alignment::Left),
+                    ),
+                    Cell::from(
+                        Line::from(vec![Span::styled(
+                            format!(" {} ", self.connection_mode),
+                            Style::default().fg(VIVID_SKY_BLUE),
+                        )])
+                        .alignment(Alignment::Left),
+                    ),
+                    Cell::from(
+                        Line::from(vec![
+                            Span::styled(" Change Mode ", Style::default().fg(VERY_LIGHT_AZURE)),
+                            Span::styled(" [Ctrl+K] ", Style::default().fg(GHOST_WHITE)),
+                        ])
+                        .alignment(Alignment::Right),
+                    ),
+                ]),
+                Row::new(vec![
+                    Cell::from(Span::raw(" ")), // Empty row for padding
+                    Cell::from(Span::raw(" ")),
+                    Cell::from(Span::raw(" ")),
+                ]),
+                Row::new(vec![
+                    Cell::from(
+                        Line::from(vec![Span::styled(
+                            " Port Range: ",
+                            Style::default().fg(LIGHT_PERIWINKLE),
+                        )])
+                        .alignment(Alignment::Left),
+                    ),
+                    Cell::from(
+                        Line::from(vec![
+                            if self.connection_mode == ConnectionMode::CustomPorts {
+                                Span::styled(
+                                    format!(
+                                        " {}-{} ",
+                                        self.port_from.unwrap_or(0),
+                                        self.port_to.unwrap_or(0)
+                                    ),
+                                    Style::default().fg(VIVID_SKY_BLUE),
+                                )
+                            } else {
+                                Span::styled(" Auto ", Style::default().fg(COOL_GREY))
+                            },
+                        ])
+                        .alignment(Alignment::Left),
+                    ),
+                    Cell::from(
+                        Line::from(vec![
+                            Span::styled(
+                                " Edit Port Range ",
+                                if self.connection_mode == ConnectionMode::CustomPorts {
+                                    Style::default().fg(VERY_LIGHT_AZURE)
+                                } else {
+                                    Style::default().fg(COOL_GREY)
+                                },
+                            ),
+                            Span::styled(
+                                " [Ctrl+P] ",
+                                if self.connection_mode == ConnectionMode::CustomPorts {
+                                    Style::default().fg(GHOST_WHITE)
+                                } else {
+                                    Style::default().fg(COOL_GREY)
+                                },
+                            ),
+                        ])
+                        .alignment(Alignment::Right),
+                    ),
+                ]),
             ],
-            &[Constraint::Percentage(50), Constraint::Percentage(50)],
+            &[
+                Constraint::Length(18),
+                Constraint::Percentage(25),
+                Constraint::Fill(1),
+            ],
         )
         .block(block1)
         .style(Style::default().fg(GHOST_WHITE));
 
-        // Beta Rewards Program — Discord Username
+        // Beta Rewards Program
         let block2 = Block::default()
-            .title(" Beta Rewards Program — Discord Username ")
+            .title(" Beta Rewards Program ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
@@ -122,8 +224,16 @@ impl Component for Options {
                     // Empty row for padding
                     Cell::from(Span::raw(" ")),
                     Cell::from(Span::raw(" ")),
+                    Cell::from(Span::raw(" ")),
                 ]),
                 Row::new(vec![
+                    Cell::from(
+                        Line::from(vec![Span::styled(
+                            " Discord Username: ",
+                            Style::default().fg(LIGHT_PERIWINKLE),
+                        )])
+                        .alignment(Alignment::Left),
+                    ),
                     Cell::from(
                         Line::from(vec![Span::styled(
                             format!(" {} ", self.discord_username),
@@ -143,7 +253,11 @@ impl Component for Options {
                     ),
                 ]),
             ],
-            &[Constraint::Percentage(50), Constraint::Percentage(50)],
+            &[
+                Constraint::Length(18),
+                Constraint::Percentage(25),
+                Constraint::Fill(1),
+            ],
         )
         .block(block2)
         .style(Style::default().fg(GHOST_WHITE));
@@ -232,9 +346,11 @@ impl Component for Options {
         match action {
             Action::SwitchScene(scene) => match scene {
                 Scene::Options
+                | Scene::ChangeDrivePopUp
+                | Scene::ChangeConnectionModePopUp
+                | Scene::ChangePortsPopUp { .. }
                 | Scene::BetaProgrammePopUp
-                | Scene::ResetNodesPopUp
-                | Scene::ChangeDrivePopUp => {
+                | Scene::ResetNodesPopUp => {
                     self.active = true;
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
@@ -248,6 +364,21 @@ impl Component for Options {
                 OptionsActions::UpdateStorageDrive(mountpoint, drive) => {
                     self.storage_mountpoint = mountpoint;
                     self.storage_drive = drive;
+                }
+                OptionsActions::TriggerChangeConnectionMode => {
+                    return Ok(Some(Action::SwitchScene(Scene::ChangeConnectionModePopUp)));
+                }
+                OptionsActions::UpdateConnectionMode(mode) => {
+                    self.connection_mode = mode;
+                }
+                OptionsActions::TriggerChangePortRange => {
+                    return Ok(Some(Action::SwitchScene(Scene::ChangePortsPopUp {
+                        connection_mode_old_value: None,
+                    })));
+                }
+                OptionsActions::UpdatePortRange(from, to) => {
+                    self.port_from = Some(from);
+                    self.port_to = Some(to);
                 }
                 OptionsActions::TriggerBetaProgramme => {
                     return Ok(Some(Action::SwitchScene(Scene::BetaProgrammePopUp)));

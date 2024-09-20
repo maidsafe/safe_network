@@ -13,11 +13,11 @@ use super::{
 };
 use crate::{get_stdin_password_response, get_stdin_response};
 
-use autonomi::utils::is_valid_key_hex;
 use bls::SecretKey;
 use clap::Parser;
 use color_eyre::{eyre::eyre, Result};
 use dialoguer::Confirm;
+use sn_cli::utils::is_valid_key_hex;
 use sn_client::acc_packet::{load_or_create_mnemonic, secret_key_from_mnemonic};
 use sn_client::transfers::{
     HotWallet, MainPubkey, MainSecretKey, AttoTokens, Transfer, TransferError, UnsignedTransaction,

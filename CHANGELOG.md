@@ -7,6 +7,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-09-09
+
+### Network
+
+#### Added
+
+- More logging for storage errors and setting the responsible range.
+
+#### Changed
+
+- The node's store cost calculation has had various updates:
+    + The minimum and maximum were previously set to 10 and infinity. They've now been updated to 1
+      and 1 million, respectively.
+    + We are now using a sigmoid curve, rather than a linear curve, as the base curve. The previous
+      curve only grew steep when the storage capacity was 40 to 60 percent.
+    + The overall calculation is simplified.
+- We expect the updates to the store cost calculation to prevent 'lottery' payments, where one node
+  would have abnormally high earnings.
+- The network version string, which is used when both nodes and clients connect to the network, now
+  uses the version number from the `sn_protocol` crate rather than `sn_networking`. This is a
+  breaking change in `sn_networking`.
+- External address management is improved. Before, if anyone observed us at a certain public
+  IP+port, we would trust that and add it if it matches our local port. Now, we’re keeping track and
+  making sure we only have a single external address that we set when we’ve been observed as that
+  address a certain amount of times (3 by default). It should even handle cases where our IP changes
+  because of (mobile) roaming.
+- The `Spend` network data type has been refactored to make it lighter and simpler.
+- The entire transaction system has been redesigned; the code size and complexity have been reduced
+  by an order of magnitude.
+- In addition, almost 10 types were removed from the transaction code, further reducing the
+  complexity.
+- The internals of the `Transfer` and `CashNote` types have been reworked.
+- The replication range has been reduced, which in turn reduces the base traffic for replication.
+
+### Client
+
+#### Fixed
+
+- Registers are fetched and merged correctly. 
+
+### Launchpad
+
+#### Added
+
+- A connection mode feature enables users to select whether they want their nodes to connect to the
+  network using automatic NAT detection, upnp, home network, or custom port mappings in their
+  connection. Previously, the launchpad used NAT detection on the user’s behalf. By providing the
+  ability to explore more connection modes, hopefully this will get more users connected.
+
+#### Changed
+
+- On the drive selection dialog, drives to which the user does not have read or write access are
+  marked as such.
+
+### Documentation
+
+#### Added
+
+- A README was provided for the `sn_registers` crate. It intends to give a comprehensive
+  understanding of the register data type and how it can be used by developers.
+
+#### Changed
+
+- Provided more information on connecting to the network using the four keys related to funds, fees
+  and royalties.
+
+## 2024-09-02
+
+### Launchpad
+
+#### Fixed
+
+- Some users encountered an error when the launchpad started, related to the storage mountpoint not
+  being set. We fix the error by providing default values for the mountpoint settings when the
+  `app_data.json` file doesn't exist (fresh install). In the case where it does exist, we validate
+  the contents.
+
 ## 2024-08-27
 
 ### Network

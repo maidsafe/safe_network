@@ -13,7 +13,13 @@ use super::{
     Component, Frame,
 };
 use crate::action::OptionsActions;
+use crate::components::popup::port_range::PORT_ALLOCATION;
 use crate::config::get_launchpad_nodes_data_dir_path;
+use crate::connection_mode::ConnectionMode;
+use crate::error::ErrorPopup;
+use crate::node_mgmt::MaintainNodesArgs;
+use crate::node_mgmt::{PORT_MAX, PORT_MIN};
+use crate::tui::Event;
 use crate::{
     action::{Action, StatusActions},
     config::Config,
@@ -27,6 +33,7 @@ use color_eyre::eyre::{OptionExt, Result};
 use crossterm::event::KeyEvent;
 use ratatui::text::Span;
 use ratatui::{prelude::*, widgets::*};
+use sn_node_manager::add_services::config::PortRange;
 use sn_node_manager::config::get_node_registry_path;
 use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{
@@ -69,6 +76,13 @@ pub struct Status {
     safenode_path: Option<PathBuf>,
     // Path where the node data is stored
     data_dir_path: PathBuf,
+    // Connection mode
+    connection_mode: ConnectionMode,
+    // Port from
+    port_from: Option<u32>,
+    // Port to
+    port_to: Option<u32>,
+    error_popup: Option<ErrorPopup>,
 }
 
 #[derive(Clone)]
@@ -78,16 +92,21 @@ pub enum LockRegistryState {
     ResettingNodes,
 }
 
+pub struct StatusConfig {
+    pub allocated_disk_space: usize,
+    pub discord_username: String,
+    pub peers_args: PeersArgs,
+    pub safenode_path: Option<PathBuf>,
+    pub data_dir_path: PathBuf,
+    pub connection_mode: ConnectionMode,
+    pub port_from: Option<u32>,
+    pub port_to: Option<u32>,
+}
+
 impl Status {
-    pub async fn new(
-        allocated_disk_space: usize,
-        discord_username: &str,
-        peers_args: PeersArgs,
-        safenode_path: Option<PathBuf>,
-        data_dir_path: PathBuf,
-    ) -> Result<Self> {
+    pub async fn new(config: StatusConfig) -> Result<Self> {
         let mut status = Self {
-            peers_args,
+            peers_args: config.peers_args,
             action_sender: Default::default(),
             config: Default::default(),
             active: true,
@@ -96,12 +115,16 @@ impl Status {
             error_while_running_nat_detection: 0,
             node_stats: NodeStats::default(),
             node_stats_last_update: Instant::now(),
-            nodes_to_start: allocated_disk_space,
+            nodes_to_start: config.allocated_disk_space,
             node_table_state: Default::default(),
             lock_registry: None,
-            discord_username: discord_username.to_string(),
-            safenode_path,
-            data_dir_path,
+            discord_username: config.discord_username,
+            safenode_path: config.safenode_path,
+            data_dir_path: config.data_dir_path,
+            connection_mode: config.connection_mode,
+            port_from: config.port_from,
+            port_to: config.port_to,
+            error_popup: None,
         };
 
         let now = Instant::now();
@@ -112,6 +135,7 @@ impl Status {
             &ServiceController {},
             false,
             true,
+            false,
         )
         .await?;
         node_registry.save()?;
@@ -146,7 +170,7 @@ impl Status {
             .filter(|node| node.status != ServiceStatus::Removed)
             .collect();
         info!(
-            "Loaded node registry. Running nodes: {:?}",
+            "Loaded node registry. Maintaining {:?} nodes.",
             self.node_services.len()
         );
 
@@ -236,6 +260,14 @@ impl Component for Status {
         Ok(())
     }
 
+    fn handle_events(&mut self, event: Option<Event>) -> Result<Vec<Action>> {
+        let r = match event {
+            Some(Event::Key(key_event)) => self.handle_key_events(key_event)?,
+            _ => vec![],
+        };
+        Ok(r)
+    }
+
     #[allow(clippy::comparison_chain)]
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
@@ -269,101 +301,185 @@ impl Component for Status {
                 self.discord_username = username;
 
                 if we_have_nodes && has_changed {
+                    debug!("Setting lock_registry to ResettingNodes");
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
-                    info!("Resetting safenode services because the discord username was reset.");
+                    info!("Resetting safenode services because the Discord Username was reset.");
                     let action_sender = self.get_actions_sender()?;
                     reset_nodes(action_sender, true);
                 }
             }
             Action::StoreStorageDrive(ref drive_mountpoint, ref _drive_name) => {
+                debug!("Setting lock_registry to ResettingNodes");
+                self.lock_registry = Some(LockRegistryState::ResettingNodes);
+                info!("Resetting safenode services because the Storage Drive was changed.");
                 let action_sender = self.get_actions_sender()?;
                 reset_nodes(action_sender, false);
                 self.data_dir_path =
                     get_launchpad_nodes_data_dir_path(&drive_mountpoint.to_path_buf(), false)?;
             }
-            Action::StatusActions(status_action) => {
-                match status_action {
-                    StatusActions::NodesStatsObtained(stats) => {
-                        self.node_stats = stats;
-                    }
-                    StatusActions::StartNodesCompleted | StatusActions::StopNodesCompleted => {
-                        self.lock_registry = None;
-                        self.load_node_registry_and_update_states()?;
-                    }
-                    StatusActions::ResetNodesCompleted { trigger_start_node } => {
-                        self.lock_registry = None;
-                        self.load_node_registry_and_update_states()?;
-
-                        if trigger_start_node {
-                            debug!("Reset nodes completed. Triggering start nodes.");
-                            return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
-                        }
-                        debug!("Reset nodes completed");
-                    }
-                    StatusActions::SuccessfullyDetectedNatStatus => {
-                        debug!("Successfully detected nat status, is_nat_status_determined set to true");
-                        self.is_nat_status_determined = true;
-                    }
-                    StatusActions::ErrorWhileRunningNatDetection => {
-                        self.error_while_running_nat_detection += 1;
-                        debug!(
-                            "Error while running nat detection. Error count: {}",
-                            self.error_while_running_nat_detection
-                        );
-                    }
-                    StatusActions::TriggerManageNodes => {
-                        return Ok(Some(Action::SwitchScene(Scene::ManageNodesPopUp)));
-                    }
-                    StatusActions::PreviousTableItem => {
-                        self.select_previous_table_item();
-                    }
-                    StatusActions::NextTableItem => {
-                        self.select_next_table_item();
-                    }
-                    StatusActions::StartNodes => {
-                        debug!("Got action to start nodes");
-                        if self.lock_registry.is_some() {
-                            error!("Registry is locked. Cannot start node now.");
-                            return Ok(None);
-                        }
-
-                        if self.nodes_to_start == 0 {
-                            info!("Nodes to start not set. Ask for input.");
-                            return Ok(Some(Action::StatusActions(
-                                StatusActions::TriggerManageNodes,
-                            )));
-                        }
-
-                        self.lock_registry = Some(LockRegistryState::StartingNodes);
-                        let action_sender = self.get_actions_sender()?;
-                        info!("Running maintain node count: {:?}", self.nodes_to_start);
-
-                        maintain_n_running_nodes(
-                            self.nodes_to_start as u16,
-                            self.discord_username.clone(),
-                            self.peers_args.clone(),
-                            self.should_we_run_nat_detection(),
-                            self.safenode_path.clone(),
-                            Some(self.data_dir_path.clone()),
-                            action_sender,
-                        );
-                    }
-                    StatusActions::StopNodes => {
-                        debug!("Got action to stop nodes");
-                        if self.lock_registry.is_some() {
-                            error!("Registry is locked. Cannot stop node now.");
-                            return Ok(None);
-                        }
-
-                        let running_nodes = self.get_running_nodes();
-                        self.lock_registry = Some(LockRegistryState::StoppingNodes);
-                        let action_sender = self.get_actions_sender()?;
-                        info!("Stopping node service: {running_nodes:?}");
-
-                        stop_nodes(running_nodes, action_sender);
-                    }
-                }
+            Action::StoreConnectionMode(connection_mode) => {
+                debug!("Setting lock_registry to ResettingNodes");
+                self.lock_registry = Some(LockRegistryState::ResettingNodes);
+                self.connection_mode = connection_mode;
+                info!("Resetting safenode services because the Connection Mode range was changed.");
+                let action_sender = self.get_actions_sender()?;
+                reset_nodes(action_sender, false);
             }
+            Action::StorePortRange(port_from, port_range) => {
+                debug!("Setting lock_registry to ResettingNodes");
+                self.lock_registry = Some(LockRegistryState::ResettingNodes);
+                self.port_from = Some(port_from);
+                self.port_to = Some(port_range);
+                info!("Resetting safenode services because the Port Range was changed.");
+                let action_sender = self.get_actions_sender()?;
+                reset_nodes(action_sender, false);
+            }
+            Action::StatusActions(status_action) => match status_action {
+                StatusActions::NodesStatsObtained(stats) => {
+                    self.node_stats = stats;
+                }
+                StatusActions::StartNodesCompleted | StatusActions::StopNodesCompleted => {
+                    self.lock_registry = None;
+                    self.load_node_registry_and_update_states()?;
+                }
+                StatusActions::ResetNodesCompleted { trigger_start_node } => {
+                    self.lock_registry = None;
+                    self.load_node_registry_and_update_states()?;
+
+                    if trigger_start_node {
+                        debug!("Reset nodes completed. Triggering start nodes.");
+                        return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
+                    }
+                    debug!("Reset nodes completed");
+                }
+                StatusActions::SuccessfullyDetectedNatStatus => {
+                    debug!(
+                        "Successfully detected nat status, is_nat_status_determined set to true"
+                    );
+                    self.is_nat_status_determined = true;
+                }
+                StatusActions::ErrorWhileRunningNatDetection => {
+                    self.error_while_running_nat_detection += 1;
+                    debug!(
+                        "Error while running nat detection. Error count: {}",
+                        self.error_while_running_nat_detection
+                    );
+                }
+                StatusActions::ErrorLoadingNodeRegistry { raw_error }
+                | StatusActions::ErrorGettingNodeRegistryPath { raw_error } => {
+                    self.error_popup = Some(ErrorPopup::new(
+                        " Error ".to_string(),
+                        "Error getting node registry path".to_string(),
+                        raw_error,
+                    ));
+                    if let Some(error_popup) = &mut self.error_popup {
+                        error_popup.show();
+                    }
+                    // Switch back to entry mode so we can handle key events
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Entry)));
+                }
+                StatusActions::ErrorScalingUpNodes { raw_error } => {
+                    self.error_popup = Some(ErrorPopup::new(
+                        " Error ".to_string(),
+                        "Error adding new nodes".to_string(),
+                        raw_error,
+                    ));
+                    if let Some(error_popup) = &mut self.error_popup {
+                        error_popup.show();
+                    }
+                    // Switch back to entry mode so we can handle key events
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Entry)));
+                }
+                StatusActions::ErrorStoppingNodes { raw_error } => {
+                    self.error_popup = Some(ErrorPopup::new(
+                        " Error ".to_string(),
+                        "Error stopping nodes".to_string(),
+                        raw_error,
+                    ));
+                    if let Some(error_popup) = &mut self.error_popup {
+                        error_popup.show();
+                    }
+                    // Switch back to entry mode so we can handle key events
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Entry)));
+                }
+                StatusActions::ErrorResettingNodes { raw_error } => {
+                    self.error_popup = Some(ErrorPopup::new(
+                        " Error ".to_string(),
+                        "Error resetting nodes".to_string(),
+                        raw_error,
+                    ));
+                    if let Some(error_popup) = &mut self.error_popup {
+                        error_popup.show();
+                    }
+                    // Switch back to entry mode so we can handle key events
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Entry)));
+                }
+                StatusActions::TriggerManageNodes => {
+                    return Ok(Some(Action::SwitchScene(Scene::ManageNodesPopUp)));
+                }
+                StatusActions::PreviousTableItem => {
+                    self.select_previous_table_item();
+                }
+                StatusActions::NextTableItem => {
+                    self.select_next_table_item();
+                }
+                StatusActions::StartNodes => {
+                    debug!("Got action to start nodes");
+
+                    if self.nodes_to_start == 0 {
+                        info!("Nodes to start not set. Ask for input.");
+                        return Ok(Some(Action::StatusActions(
+                            StatusActions::TriggerManageNodes,
+                        )));
+                    }
+
+                    if self.lock_registry.is_some() {
+                        error!("Registry is locked. Cannot start node now.");
+                        return Ok(None);
+                    }
+
+                    debug!("Setting lock_registry to StartingNodes");
+                    self.lock_registry = Some(LockRegistryState::StartingNodes);
+
+                    let port_range = PortRange::Range(
+                        self.port_from.unwrap_or(PORT_MIN) as u16,
+                        self.port_to.unwrap_or(PORT_MAX) as u16,
+                    );
+
+                    let action_sender = self.get_actions_sender()?;
+
+                    let maintain_nodes_args = MaintainNodesArgs {
+                        count: self.nodes_to_start as u16,
+                        owner: self.discord_username.clone(),
+                        peers_args: self.peers_args.clone(),
+                        run_nat_detection: self.should_we_run_nat_detection(),
+                        safenode_path: self.safenode_path.clone(),
+                        data_dir_path: Some(self.data_dir_path.clone()),
+                        action_sender: action_sender.clone(),
+                        connection_mode: self.connection_mode,
+                        port_range: Some(port_range),
+                    };
+
+                    debug!("Calling maintain_n_running_nodes");
+
+                    maintain_n_running_nodes(maintain_nodes_args);
+                }
+                StatusActions::StopNodes => {
+                    debug!("Got action to stop nodes");
+                    if self.lock_registry.is_some() {
+                        error!("Registry is locked. Cannot stop node now.");
+                        return Ok(None);
+                    }
+
+                    let running_nodes = self.get_running_nodes();
+                    debug!("Setting lock_registry to StoppingNodes");
+                    self.lock_registry = Some(LockRegistryState::StoppingNodes);
+                    let action_sender = self.get_actions_sender()?;
+                    info!("Stopping node service: {running_nodes:?}");
+
+                    stop_nodes(running_nodes, action_sender);
+                }
+            },
             Action::OptionsActions(OptionsActions::ResetNodes) => {
                 debug!("Got action to reset nodes");
                 if self.lock_registry.is_some() {
@@ -371,6 +487,7 @@ impl Component for Status {
                     return Ok(None);
                 }
 
+                debug!("Setting lock_registry to ResettingNodes");
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 let action_sender = self.get_actions_sender()?;
                 info!("Got action to reset nodes");
@@ -454,9 +571,26 @@ impl Component for Status {
                 Cell::new(memory_use_val).fg(GHOST_WHITE),
             ]);
 
+            let connection_mode_string = match self.connection_mode {
+                ConnectionMode::HomeNetwork => "Home Network",
+                ConnectionMode::UPnP => "UPnP",
+                ConnectionMode::CustomPorts => &format!(
+                    "Custom Ports  {}-{}",
+                    self.port_from.unwrap_or(PORT_MIN),
+                    self.port_to.unwrap_or(PORT_MIN + PORT_ALLOCATION)
+                ),
+                ConnectionMode::Automatic => "Automatic",
+            };
+
+            let connection_mode_row = Row::new(vec![
+                Cell::new("Connection".to_string()).fg(GHOST_WHITE),
+                Cell::new(connection_mode_string).fg(GHOST_WHITE),
+            ]);
+
             // Combine "Nanos Earned" and "Discord Username" into a single row
+            let discord_username_placeholder = "Discord Username: "; // Used to calculate the width of the username column
             let discord_username_title = Span::styled(
-                "Discord Username: ".to_string(),
+                discord_username_placeholder,
                 Style::default().fg(VIVID_SKY_BLUE),
             );
 
@@ -473,7 +607,7 @@ impl Component for Status {
                 )
             };
 
-            let total_nanos_earned_and_discord = Row::new(vec![
+            let total_nanos_earned_and_discord_row = Row::new(vec![
                 Cell::new("Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
                 Cell::new(self.node_stats.received_rewards.to_string())
                     .fg(VIVID_SKY_BLUE)
@@ -486,14 +620,17 @@ impl Component for Status {
 
             let stats_rows = vec![
                 storage_allocated_row,
-                memory_use_row.bottom_margin(1),
-                total_nanos_earned_and_discord,
+                memory_use_row,
+                connection_mode_row,
+                total_nanos_earned_and_discord_row,
             ];
             let stats_width = [Constraint::Length(5)];
             let column_constraints = [
-                Constraint::Percentage(25),
-                Constraint::Percentage(5),
-                Constraint::Percentage(70),
+                Constraint::Length(23),
+                Constraint::Fill(1),
+                Constraint::Length(
+                    (discord_username_placeholder.len() + self.discord_username.len()) as u16,
+                ),
             ];
             let stats_table = Table::new(stats_rows, stats_width)
                 .block(
@@ -596,6 +733,16 @@ impl Component for Status {
 
         // ===== Popup =====
 
+        // Error Popup
+        if let Some(error_popup) = &self.error_popup {
+            if error_popup.is_visible() {
+                error_popup.draw_error(f, area);
+
+                return Ok(());
+            }
+        }
+
+        // Status Popup
         if let Some(registry_state) = &self.lock_registry {
             let popup_area = centered_rect_fixed(50, 12, area);
             clear_area(f, popup_area);
@@ -620,32 +767,49 @@ impl Component for Status {
                             Line::raw("This may take a couple minutes."),
                         ]
                     } else {
-                        vec![Line::raw("Starting nodes...")]
+                        vec![
+                            Line::raw(""),
+                            Line::raw(""),
+                            Line::raw(""),
+                            Line::raw("Starting nodes..."),
+                        ]
                     }
                 }
-                LockRegistryState::StoppingNodes => vec![Line::raw("Stopping nodes...")],
-                LockRegistryState::ResettingNodes => vec![Line::raw("Resetting nodes...")],
+                LockRegistryState::StoppingNodes => {
+                    vec![
+                        Line::raw(""),
+                        Line::raw(""),
+                        Line::raw(""),
+                        Line::raw("Stopping nodes..."),
+                    ]
+                }
+                LockRegistryState::ResettingNodes => {
+                    vec![
+                        Line::raw(""),
+                        Line::raw(""),
+                        Line::raw(""),
+                        Line::raw("Resetting nodes..."),
+                    ]
+                }
             };
             let centred_area = Layout::new(
                 Direction::Vertical,
                 vec![
                     // border
-                    Constraint::Length(1),
-                    Constraint::Min(1),
+                    Constraint::Length(2),
                     // our text goes here
-                    Constraint::Length(3),
-                    Constraint::Min(1),
+                    Constraint::Min(5),
                     // border
                     Constraint::Length(1),
                 ],
             )
-            .split(popup_area)[2];
+            .split(popup_area);
             let text = Paragraph::new(popup_text)
                 .block(Block::default().padding(Padding::horizontal(2)))
                 .wrap(Wrap { trim: false })
                 .alignment(Alignment::Center)
                 .fg(EUCALYPTUS);
-            f.render_widget(text, centred_area);
+            f.render_widget(text, centred_area[1]);
 
             f.render_widget(popup_border, popup_area);
         }
@@ -655,6 +819,12 @@ impl Component for Status {
 
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         debug!("Key received in Status: {:?}", key);
+        if let Some(error_popup) = &mut self.error_popup {
+            if error_popup.is_visible() {
+                error_popup.handle_input(key);
+                return Ok(vec![Action::SwitchInputMode(InputMode::Navigation)]);
+            }
+        }
         Ok(vec![])
     }
 }
