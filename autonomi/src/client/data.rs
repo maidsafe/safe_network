@@ -3,6 +3,7 @@ use crate::Client;
 use bytes::Bytes;
 use evmlib::common::{QuoteHash, QuotePayment, TxHash};
 use evmlib::contract::chunk_payments;
+use evmlib::wallet;
 use evmlib::wallet::Wallet;
 use libp2p::futures;
 use libp2p::kad::{Quorum, Record};
@@ -43,8 +44,8 @@ pub enum PayError {
     CouldNotGetStoreCosts(NetworkError),
     #[error("Could not simultaneously fetch store costs: {0:?}")]
     JoinError(tokio::task::JoinError),
-    #[error("Chunk payments error: {0:?}")]
-    ChunkPaymentsError(#[from] chunk_payments::error::Error),
+    #[error("Wallet error: {0:?}")]
+    WalletError(#[from] wallet::Error),
 }
 
 /// Errors that can occur during the get operation.
@@ -177,11 +178,13 @@ impl Client {
         let cost_map = self.get_store_quotes(content_addrs).await?;
         let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
 
+        // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
+        // TODO: retry when it fails?
         // Execute chunk payments
         let payments = wallet
             .pay_for_quotes(quote_payments)
             .await
-            .map_err(PayError::ChunkPaymentsError)?;
+            .map_err(|err| PayError::from(err.0))?;
 
         let proofs = construct_proofs(&cost_map, &payments);
 
