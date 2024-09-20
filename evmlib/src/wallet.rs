@@ -202,9 +202,8 @@ pub async fn transfer_gas_tokens(
 }
 
 /// Contains the payment error and the already succeeded batch payments (if any).
-#[expect(dead_code)]
 #[derive(Debug)]
-pub struct PayForQuotesError(Error, BTreeMap<QuoteHash, TxHash>);
+pub struct PayForQuotesError(pub Error, pub BTreeMap<QuoteHash, TxHash>);
 
 /// Use this wallet to pay for chunks in batched transfer transactions.
 /// If the amount of transfers is more than one transaction can contain, the transfers will be split up over multiple transactions.
