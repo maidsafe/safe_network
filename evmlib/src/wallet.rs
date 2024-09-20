@@ -184,11 +184,6 @@ pub async fn transfer_tokens(
     network_token.transfer(receiver, amount).await
 }
 
-/// Contains the payment error and the already succeeded batch payments (if any).
-#[expect(dead_code)]
-#[derive(Debug)]
-pub struct PayForQuotesError(Error, BTreeMap<QuoteHash, TxHash>);
-
 /// Transfer native/gas tokens from the supplied wallet to an address.
 pub async fn transfer_gas_tokens(
     wallet: EthereumWallet,
@@ -205,6 +200,11 @@ pub async fn transfer_gas_tokens(
 
     Ok(tx_hash)
 }
+
+/// Contains the payment error and the already succeeded batch payments (if any).
+#[expect(dead_code)]
+#[derive(Debug)]
+pub struct PayForQuotesError(Error, BTreeMap<QuoteHash, TxHash>);
 
 /// Use this wallet to pay for chunks in batched transfer transactions.
 /// If the amount of transfers is more than one transaction can contain, the transfers will be split up over multiple transactions.
