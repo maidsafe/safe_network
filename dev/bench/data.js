@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726851669353,
+  "lastUpdate": 1726851799091,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "a75502f1f8dcb5e6f3fd9dd3569ce53875cab3f2",
-          "message": "chore(CI): upload bootstrap_node log",
-          "timestamp": "2024-05-07T12:27:24Z",
-          "tree_id": "bd1e3efbec21e48b6a921ebd62f053046fd75a53",
-          "url": "https://github.com/maidsafe/safe_network/commit/a75502f1f8dcb5e6f3fd9dd3569ce53875cab3f2"
-        },
-        "date": 1715087803253,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 55,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 146,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "43577b70c22161b919edca948c49ab145221e186",
+          "message": "Merge pull request #2133 from mazzi/feat_upgrade_ratatui\n\nchore(launchpad): ratataui 0.28.1",
+          "timestamp": "2024-09-20T16:10:47Z",
+          "tree_id": "d8c8551825b5288b6c28d68c49ac13a7efbcb45c",
+          "url": "https://github.com/maidsafe/safe_network/commit/43577b70c22161b919edca948c49ab145221e186"
+        },
+        "date": 1726851798312,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 139,
             "unit": "MB"
           }
         ]
