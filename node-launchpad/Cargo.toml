@@ -41,7 +41,7 @@ libc = "0.2.148"
 log = "0.4.20"
 pretty_assertions = "1.4.0"
 prometheus-parse = "0.2.5"
-ratatui = { version = "0.26.0", features = ["serde", "macros", "unstable-widget-ref"] }
+ratatui = { version = "0.28.1", features = ["serde", "macros", "unstable-widget-ref"] }
 reqwest = { version = "0.12.2", default-features = false, features = [
     "rustls-tls-manual-roots",
 ] }
