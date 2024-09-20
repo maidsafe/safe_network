@@ -492,7 +492,10 @@ impl HotWallet {
             ))?;
 
         // perform evm payments
-        let tx_hashes_by_quote = evm_wallet.pay_for_quotes(quotes_payment).await.map_err(|e| Error::EvmWallet(format!("Failed to pay for quotes {e}")))?;
+        let tx_hashes_by_quote = evm_wallet
+            .pay_for_quotes(quotes_payment)
+            .await
+            .map_err(|e| Error::EvmWallet(format!("Failed to pay for quotes {e:?}")))?;
         for (quote_hash, tx_hash) in tx_hashes_by_quote.iter() {
             let quote = quotes_by_hash.get(quote_hash).ok_or(Error::EvmWallet(format!("Quote was forgotten during payment {quote_hash:?}")))?;
             let proof = ProofOfPayment {
