@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1726766000960,
+  "lastUpdate": 1726846367445,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "3c1d03e47fde961a859bb5a507939b3ac44937f4",
-          "message": "feat(networking): pick random relay candidate",
-          "timestamp": "2024-05-07T11:55:08Z",
-          "tree_id": "8c8ff31b4652a3172667f59949d6e0ce894f0fac",
-          "url": "https://github.com/maidsafe/safe_network/commit/3c1d03e47fde961a859bb5a507939b3ac44937f4"
-        },
-        "date": 1715086016510,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2284402592303774,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6135809106081145,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.82114041699968,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.45552163529043,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fde643c3e66ebfd271e1a4501c0313e9e3c7044b",
+          "message": "Merge pull request #2124 from b-zee/fix-register-fetch-verification\n\nfix(autonomi): verify register on fetch",
+          "timestamp": "2024-09-20T14:39:13Z",
+          "tree_id": "bd2e5daa9944a2b27c9eecdea113da68a1678ffb",
+          "url": "https://github.com/maidsafe/safe_network/commit/fde643c3e66ebfd271e1a4501c0313e9e3c7044b"
+        },
+        "date": 1726846360448,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2739597327700711,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7075611356751625,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.121555050004815,
             "unit": "MiB/s"
           }
         ]
