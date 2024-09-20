@@ -28,6 +28,8 @@ pub enum RegisterError {
     Network(#[from] NetworkError),
     #[error("Serialization error")]
     Serialization,
+    #[error("Register could not be verified (corrupt)")]
+    FailedVerification,
     #[error("Payment failure occurred during register creation.")]
     Pay(#[from] PayError),
     #[error("Failed to retrieve wallet payment")]
@@ -54,7 +56,8 @@ impl Register {
     pub fn values(&self) -> Vec<Bytes> {
         self.inner
             .clone()
-            .base_register()
+            .register()
+            .expect("register to be valid")
             .read()
             .into_iter()
             .map(|(_hash, value)| value.into())
@@ -146,6 +149,11 @@ impl Client {
         let register: SignedRegister =
             try_deserialize_record(&record).map_err(|_| RegisterError::Serialization)?;
 
+        // Make sure the fetched record contains valid CRDT operations
+        register
+            .verify()
+            .map_err(|_| RegisterError::FailedVerification)?;
+
         Ok(Register { inner: register })
     }
 
@@ -158,7 +166,11 @@ impl Client {
     ) -> Result<(), RegisterError> {
         // Fetch the current register
         let mut signed_register = register.inner;
-        let mut register = signed_register.base_register().clone();
+        let mut register = signed_register
+            .clone()
+            .register()
+            .expect("register to be valid")
+            .clone();
 
         // Get all current branches
         let children: BTreeSet<EntryHash> = register.read().into_iter().map(|(e, _)| e).collect();
