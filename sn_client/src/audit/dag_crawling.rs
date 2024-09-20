@@ -10,8 +10,8 @@ use crate::{Client, Error, SpendDag};
 
 use futures::{future::join_all, StreamExt};
 use sn_evm::{
-    AttoTokens, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError, WalletResult,
-    DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
+    Amount, AttoTokens, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError,
+    WalletResult, DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
 };
 use sn_networking::{GetRecordError, NetworkError};
 use std::{
@@ -214,7 +214,7 @@ impl Client {
                         fetched_addrs.push(address);
                     }
                     InternalGetNetworkSpend::NotFound => {
-                        let reattempt_interval = if amount.as_nano() > 100000 {
+                        let reattempt_interval = if amount.as_atto() > Amount::from(100000) {
                             info!("Not find spend of big-UTXO {address:?} with {amount}");
                             reattempt_seconds
                         } else {
@@ -603,7 +603,7 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, Atto
             } else {
                 let addr = SpendAddress::from_unique_pubkey(unique_pubkey);
 
-                if amount.as_nano() > 100000 {
+                if amount.as_atto() > Amount::from(100000) {
                     info!("Spend {spend_addr:?} has a big-UTXO {addr:?} with {amount}");
                 }
 
