@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727104328459,
+  "lastUpdate": 1727104329903,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "300b549d756158ab93604093aca8ae4d40835eb5",
-          "message": "ci: fix packaging for node launchpad\n\nThe \"node_launchpad\" crate name was changed to \"node-launchpad\", and there was a small syntax error\nin the Bash script which meant the switch statement was not terminated correctly.",
-          "timestamp": "2024-05-08T10:04:11+09:00",
-          "tree_id": "9b38117b7f02bae599f16a48ded69e5e2e860812",
-          "url": "https://github.com/maidsafe/safe_network/commit/300b549d756158ab93604093aca8ae4d40835eb5"
-        },
-        "date": 1715131110524,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7349,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 33240,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 62922,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "0aedf80fd5f432ca4143302e5b37bad6d0e8ccce",
+          "message": "Merge branch 'rc-2024.09.2'",
+          "timestamp": "2024-09-23T15:50:54+01:00",
+          "tree_id": "fd9348c703b2d2b4ac437159507c90064aa9ffc7",
+          "url": "https://github.com/maidsafe/safe_network/commit/0aedf80fd5f432ca4143302e5b37bad6d0e8ccce"
+        },
+        "date": 1727104329611,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 18117,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 60814,
             "unit": "ms"
           },
           {
