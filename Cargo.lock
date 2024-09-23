@@ -7811,6 +7811,7 @@ dependencies = [
  "color-eyre",
  "dirs-next",
  "libp2p",
+ "semver",
  "serde",
  "serde_json",
 ]

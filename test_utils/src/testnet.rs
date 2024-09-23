@@ -8,13 +8,21 @@
 
 use color_eyre::{eyre::eyre, Result};
 use libp2p::PeerId;
-use serde::{de, Deserialize, Deserializer};
+use serde::{de, Deserialize, Deserializer,Serialize};
 use std::{
     collections::BTreeMap,
     net::{IpAddr, SocketAddr},
     path::PathBuf,
     str::FromStr,
 };
+use color_eyre::eyre;
+
+// use {Error, Result};
+
+use semver::Version;
+
+// use crate::error;
+// mod error;
 
 fn deserialize_peer_socket_map<'de, D>(
     deserializer: D,
@@ -34,23 +42,57 @@ where
     Ok(s.into_iter().collect())
 }
 
-// The contents of the file stored by sn-testnet-deploy.
-#[derive(Clone, Debug, Deserialize)]
+pub type VirtualMachine = (String, IpAddr);
+
+#[derive(Clone, Debug, serde::Serialize, Deserialize)]
+pub enum BinaryOption {
+    /// Binaries will be built from source.
+    BuildFromSource {
+        repo_owner: String,
+        branch: String,
+        /// A comma-separated list that will be passed to the `--features` argument.
+        safenode_features: Option<String>,
+        protocol_version: Option<String>,
+    },
+    /// Pre-built, versioned binaries will be fetched from S3.
+    Versioned {
+        faucet_version: Version,
+        safe_version: Version,
+        safenode_version: Version,
+        safenode_manager_version: Version,
+        sn_auditor_version: Version,
+    },
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub enum EnvironmentType {
+    #[default]
+    Development,
+    Production,
+    Staging,
+}
+
+
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeploymentInventory {
-    pub name: String,
-    pub version_info: Option<(String, String)>,
-    pub branch_info: Option<(String, String)>,
-    pub vm_list: Vec<(String, IpAddr)>,
-    #[serde(deserialize_with = "deserialize_peer_socket_map")]
-    pub rpc_endpoints: BTreeMap<PeerId, SocketAddr>,
-    #[serde(deserialize_with = "deserialize_peer_socket_map")]
-    pub safenodemand_endpoints: BTreeMap<PeerId, SocketAddr>,
-    pub node_count: u16,
-    pub ssh_user: String,
-    pub genesis_multiaddr: String,
-    pub peers: Vec<String>,
+    pub auditor_vms: Vec<VirtualMachine>,
+    pub binary_option: BinaryOption,
+    pub bootstrap_node_vms: Vec<VirtualMachine>,
+    pub bootstrap_peers: Vec<String>,
+    pub environment_type: EnvironmentType,
+    pub failed_node_registry_vms: Vec<String>,
     pub faucet_address: String,
+    pub genesis_multiaddr: String,
+    pub misc_vms: Vec<VirtualMachine>,
+    pub name: String,
+    pub node_vms: Vec<VirtualMachine>,
+    pub node_peers: Vec<String>,
+    pub rpc_endpoints: BTreeMap<String, SocketAddr>,
+    pub safenodemand_endpoints: Vec<SocketAddr>,
+    pub ssh_user: String,
     pub uploaded_files: Vec<(String, String)>,
+    pub uploader_vms: Vec<VirtualMachine>,
 }
 
 impl DeploymentInventory {
