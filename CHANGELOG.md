@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-09-24
+
+### Network
+
+#### Fixed
+
+- The auditor now uses width-first tracking, to bring it in alignment with the new wallet.
+
+### Client
+
+#### Added
+
+- The client will perform quote validation to avoid invalid quotes.
+- A new high-level client API, `autonomi`. The crate provides most of the features necessary to
+  build apps for the Autonomi network.
+
+### Node Manager
+
+#### Fixed
+
+- The node manager status command was not functioning correctly when used with a local network. The
+  mechanism for determining whether a node was running was changed to use the path of the service
+  process, but this did not work for a local network. The status command now differentiates between
+  a local and a service-based network, and the command now behaves as expected when using a local
+  network.
+
+### Documentation
+
+- In the main README for the repository, the four network keys were updated to reflect the keys
+  being used  by the new stable network.
+
 ## 2024-09-12
 
 ### Network
