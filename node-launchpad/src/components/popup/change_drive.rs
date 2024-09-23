@@ -108,7 +108,6 @@ impl ChangeDrivePopup {
     }
     /// Assigns to self.drive_selection the selected drive in the list
     ///
-    #[allow(dead_code)]
     fn assign_drive_selection(&mut self) {
         self.deselect_all();
         if let Some(i) = self.items.state.selected() {

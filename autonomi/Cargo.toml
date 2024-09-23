@@ -1,0 +1,49 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Autonomi client API"
+name = "autonomi"
+license = "GPL-3.0"
+version = "0.1.0"
+edition = "2021"
+homepage = "https://maidsafe.net"
+readme = "README.md"
+repository = "https://github.com/maidsafe/safe_network"
+
+[features]
+default = []
+full = ["data", "files", "fs", "registers", "transfers"]
+data = ["transfers"]
+files = ["transfers"]
+fs = []
+local = ["sn_client/local-discovery"]
+registers = ["transfers"]
+transfers = []
+
+[dependencies]
+bip39 = "2.0.0"
+bls = { package = "blsttc", version = "8.0.1" }
+bytes = { version = "1.0.1", features = ["serde"] }
+libp2p = "0.53"
+rand = "0.8.5"
+rmp-serde = "1.1.1"
+self_encryption = "~0.29.0"
+serde = { version = "1.0.133", features = ["derive", "rc"] }
+sn_client = { path = "../sn_client", version = "0.110.1" }
+sn_protocol = { version = "0.17.9", path = "../sn_protocol" }
+sn_registers = { path = "../sn_registers", version = "0.3.19" }
+sn_transfers = { path = "../sn_transfers", version = "0.19.1" }
+thiserror = "1.0.23"
+tokio = { version = "1.35.0", features = ["sync", "fs"] }
+tracing = { version = "~0.1.26" }
+walkdir = "2.5.0"
+xor_name = "5.0.0"
+
+[dev-dependencies]
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

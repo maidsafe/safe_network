@@ -35,12 +35,13 @@ pub const BETA_PARTICIPANTS_FILENAME: &str = "beta_participants.txt";
 
 lazy_static! {
     /// time in seconds UTXOs are refetched in DAG crawl
-    static ref UTXO_REATTEMPT_INTERVAL: Duration = Duration::from_secs(
-        std::env::var("UTXO_REATTEMPT_INTERVAL")
-            .unwrap_or("1800".to_string())
+    static ref UTXO_REATTEMPT_SECONDS: u64 = std::env::var("UTXO_REATTEMPT_INTERVAL")
+            .unwrap_or("7200".to_string())
             .parse::<u64>()
-            .unwrap_or(300)
-    );
+            .unwrap_or(7200);
+
+    /// time in seconds UTXOs are refetched in DAG crawl
+    static ref UTXO_REATTEMPT_INTERVAL: Duration = Duration::from_secs(*UTXO_REATTEMPT_SECONDS);
 
     /// time in seconds to rest between DAG crawls
     static ref DAG_CRAWL_REST_INTERVAL: Duration = Duration::from_secs(
@@ -62,7 +63,7 @@ pub struct SpendDagDb {
     dag: Arc<RwLock<SpendDag>>,
     beta_tracking: Arc<RwLock<BetaTracking>>,
     beta_participants: Arc<RwLock<BTreeMap<Hash, String>>>,
-    utxo_addresses: Arc<RwLock<BTreeMap<SpendAddress, (Instant, NanoTokens)>>>,
+    utxo_addresses: Arc<RwLock<BTreeMap<SpendAddress, UtxoStatus>>>,
     encryption_sk: Option<SecretKey>,
 }
 
@@ -78,9 +79,11 @@ struct BetaTracking {
 /// Map of Discord usernames to their tracked forwarded payments
 type ForwardedPayments = BTreeMap<String, BTreeSet<(SpendAddress, NanoTokens)>>;
 
-type UtxoStatus = (
-    BTreeMap<SpendAddress, (Instant, NanoTokens)>,
-    BTreeMap<SpendAddress, (Instant, NanoTokens)>,
+type UtxoStatus = (u64, Instant, NanoTokens);
+
+type PartitionedUtxoStatus = (
+    BTreeMap<SpendAddress, UtxoStatus>,
+    BTreeMap<SpendAddress, UtxoStatus>,
 );
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -230,7 +233,9 @@ impl SpendDagDb {
         {
             let mut utxo_addresses = self.utxo_addresses.write().await;
             for addr in start_dag.get_utxos().iter() {
-                let _ = utxo_addresses.insert(*addr, (Instant::now(), NanoTokens::zero()));
+                info!("Tracking genesis UTXO {addr:?}");
+                // The UTXO holding 30% will never be used, hence be counted as 0
+                let _ = utxo_addresses.insert(*addr, (0, Instant::now(), NanoTokens::zero()));
             }
         }
 
@@ -297,23 +302,21 @@ impl SpendDagDb {
             None
         };
 
-        let mut addrs_to_get = BTreeSet::new();
+        let mut addrs_to_get = BTreeMap::new();
 
         loop {
-            // `addrs_to_get` is always empty when reaching this point
-            // get expired utxos for the further fetch
+            // get expired utxos for re-attempt fetch
             {
                 let now = Instant::now();
-                let mut utxo_addresses = self.utxo_addresses.write().await;
-                let mut utxos_to_fetch = BTreeSet::new();
-                utxo_addresses.retain(|address, (time_stamp, amount)| {
-                    let not_expired = *time_stamp > now;
-                    if !not_expired {
-                        let _ = utxos_to_fetch.insert((*address, *amount));
+                let utxo_addresses = self.utxo_addresses.read().await;
+                for (address, (failure_times, time_stamp, amount)) in utxo_addresses.iter() {
+                    if now > *time_stamp {
+                        if amount.as_nano() > 100000 {
+                            info!("re-attempt fetching big-UTXO {address:?} with {amount}");
+                        }
+                        let _ = addrs_to_get.insert(*address, (*failure_times, *amount));
                     }
-                    not_expired
-                });
-                addrs_to_get.extend(utxos_to_fetch);
+                }
             }
 
             if addrs_to_get.is_empty() {
@@ -328,7 +331,7 @@ impl SpendDagDb {
             if cfg!(feature = "dag-collection") {
                 let new_utxos = self
                     .crawl_and_generate_local_dag(
-                        addrs_to_get.iter().map(|(addr, _amount)| *addr).collect(),
+                        addrs_to_get.keys().copied().collect(),
                         spend_processing.clone(),
                         client.clone(),
                     )
@@ -340,22 +343,23 @@ impl SpendDagDb {
                     (
                         a,
                         (
+                            0,
                             Instant::now() + *UTXO_REATTEMPT_INTERVAL,
                             NanoTokens::zero(),
                         ),
                     )
                 }));
             } else if let Some(sender) = spend_processing.clone() {
-                let reattempt_addrs = client
-                    .crawl_to_next_utxos(
-                        &mut addrs_to_get,
-                        sender.clone(),
-                        *UTXO_REATTEMPT_INTERVAL,
-                    )
+                let (reattempt_addrs, fetched_addrs) = client
+                    .crawl_to_next_utxos(&mut addrs_to_get, sender.clone(), *UTXO_REATTEMPT_SECONDS)
                     .await;
-
                 let mut utxo_addresses = self.utxo_addresses.write().await;
-                utxo_addresses.extend(reattempt_addrs);
+                for addr in fetched_addrs.iter() {
+                    let _ = utxo_addresses.remove(addr);
+                }
+                for (addr, tuple) in reattempt_addrs {
+                    let _ = utxo_addresses.insert(addr, tuple);
+                }
             } else {
                 panic!("There is no point in running the auditor if we are not collecting the DAG or collecting data through crawling. Please enable the `dag-collection` feature or provide beta program related arguments.");
             };
@@ -610,29 +614,32 @@ impl SpendDagDb {
 
         // UTXO amount that greater than 100000 nanos shall be considered as `change`
         // which indicates the `wallet balance`
-        let (big_utxos, small_utxos): UtxoStatus = utxo_addresses
-            .iter()
-            .partition(|(_address, (_time_stamp, amount))| amount.as_nano() > 100000);
+        let (big_utxos, small_utxos): PartitionedUtxoStatus =
+            utxo_addresses
+                .iter()
+                .partition(|(_address, (_failure_times, _time_stamp, amount))| {
+                    amount.as_nano() > 100000
+                });
 
         let total_big_utxo_amount = big_utxos
             .iter()
-            .map(|(_addr, (_time, amount))| amount.as_nano())
+            .map(|(_addr, (_failure_times, _time, amount))| amount.as_nano())
             .sum::<u64>();
         tracking_performance =
             format!("{tracking_performance}\ntotal_big_utxo_amount: {total_big_utxo_amount}");
 
         let total_small_utxo_amount = small_utxos
             .iter()
-            .map(|(_addr, (_time, amount))| amount.as_nano())
+            .map(|(_addr, (_failure_times, _time, amount))| amount.as_nano())
             .sum::<u64>();
         tracking_performance =
             format!("{tracking_performance}\ntotal_small_utxo_amount: {total_small_utxo_amount}");
 
-        for (addr, (_time, amount)) in big_utxos.iter() {
+        for (addr, (_failure_times, _time, amount)) in big_utxos.iter() {
             tracking_performance =
                 format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
         }
-        for (addr, (_time, amount)) in small_utxos.iter() {
+        for (addr, (_failure_times, _time, amount)) in small_utxos.iter() {
             tracking_performance =
                 format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
         }

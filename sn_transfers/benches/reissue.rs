@@ -146,7 +146,6 @@ fn bench_reissue_100_to_1(c: &mut Criterion) {
     });
 }
 
-#[allow(clippy::result_large_err)]
 fn generate_cashnote() -> (CashNote, MainSecretKey) {
     let key = MainSecretKey::random();
     let genesis = create_first_cash_note_from_key(&key).expect("Genesis creation to succeed.");

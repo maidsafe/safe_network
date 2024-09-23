@@ -51,7 +51,6 @@ struct Opt {
     ///  - Linux: $HOME/.local/share/safe/client/logs
     ///  - macOS: $HOME/Library/Application Support/safe/client/logs
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\client\logs
-    #[allow(rustdoc::invalid_html_tags)]
     #[clap(long, value_parser = LogOutputDest::parse_from_str, verbatim_doc_comment, default_value = "data-dir")]
     log_output_dest: LogOutputDest,
     /// Specify the logging format.

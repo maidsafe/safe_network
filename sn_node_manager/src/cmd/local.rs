@@ -237,6 +237,7 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
         details,
         json,
         fail,
+        true,
     )
     .await?;
     local_node_registry.save()?;

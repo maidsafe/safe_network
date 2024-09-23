@@ -44,7 +44,6 @@ pub async fn download_files(
         .join(DOWNLOAD_FOLDER);
     std::fs::create_dir_all(download_path.as_path())?;
 
-    #[allow(clippy::mutable_key_type)]
     let mut uploaded_files = BTreeSet::new();
 
     for entry in WalkDir::new(uploaded_files_path.clone()) {

@@ -100,7 +100,6 @@ const MIN_WAIT_BEFORE_READING_A_PUT: Duration = Duration::from_millis(300);
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
-#[allow(clippy::result_large_err)]
 pub fn sort_peers_by_address<'a>(
     peers: &'a Vec<PeerId>,
     address: &NetworkAddress,
@@ -111,7 +110,6 @@ pub fn sort_peers_by_address<'a>(
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
 /// Return with the closest expected number of entries if has.
-#[allow(clippy::result_large_err)]
 pub fn sort_peers_by_key<'a, T>(
     peers: &'a Vec<PeerId>,
     key: &KBucketKey<T>,
@@ -368,7 +366,7 @@ impl Network {
         let mut all_costs = vec![];
         let mut all_quotes = vec![];
         for response in responses.into_values().flatten() {
-            debug!(
+            info!(
                 "StoreCostReq for {record_address:?} received response: {:?}",
                 response
             );
@@ -378,6 +376,14 @@ impl Network {
                     payment_address,
                     peer_address,
                 }) => {
+                    // Check the quote itself is valid.
+                    if quote.cost.as_nano()
+                        != calculate_cost_for_records(quote.quoting_metrics.close_records_stored)
+                    {
+                        warn!("Received invalid quote from {peer_address:?}, {quote:?}");
+                        continue;
+                    }
+
                     all_costs.push((peer_address.clone(), payment_address, quote.clone()));
                     all_quotes.push((peer_address, quote));
                 }
@@ -409,7 +415,6 @@ impl Network {
                 .distance(peer_address_a)
                 .cmp(&record_address.distance(peer_address_b))
         });
-        #[allow(clippy::mutable_key_type)]
         let ignore_peers = ignore_peers
             .into_iter()
             .map(NetworkAddress::from_peer)
@@ -955,26 +960,28 @@ impl Network {
 /// Given `all_costs` it will return the closest / lowest cost
 /// Closest requiring it to be within CLOSE_GROUP nodes
 fn get_fees_from_store_cost_responses(
-    mut all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
+    all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
 ) -> Result<PayeeQuote> {
-    // sort all costs by fee, lowest to highest
-    // if there's a tie in cost, sort by pubkey
-    all_costs.sort_by(
-        |(address_a, _main_key_a, cost_a), (address_b, _main_key_b, cost_b)| match cost_a
-            .cost
-            .cmp(&cost_b.cost)
-        {
-            std::cmp::Ordering::Equal => address_a.cmp(address_b),
-            other => other,
-        },
-    );
-
-    // get the lowest cost
-    debug!("Got all costs: {all_costs:?}");
+    // Find the minimum cost using a linear scan with random tie break
+    let mut rng = rand::thread_rng();
     let payee = all_costs
         .into_iter()
-        .next()
+        .min_by(
+            |(_address_a, _main_key_a, cost_a), (_address_b, _main_key_b, cost_b)| {
+                let cmp = cost_a.cost.cmp(&cost_b.cost);
+                if cmp == std::cmp::Ordering::Equal {
+                    if rng.gen() {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                } else {
+                    cmp
+                }
+            },
+        )
         .ok_or(NetworkError::NoStoreCostResponses)?;
+
     info!("Final fees calculated as: {payee:?}");
     // we dont need to have the address outside of here for now
     let payee_id = if let Some(peer_id) = payee.0.as_peer_id() {

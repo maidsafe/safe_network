@@ -18,7 +18,6 @@ pub use sn_transfers::{Hash, PaymentQuote};
 /// Network, and their semantics.
 ///
 /// [`protocol`]: crate
-#[allow(clippy::large_enum_variant)]
 #[derive(Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Cmd {
     /// Write operation to notify peer fetch a list of [`NetworkAddress`] from the holder.

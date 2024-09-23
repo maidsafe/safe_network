@@ -331,6 +331,12 @@ async fn storage_payment_register_creation_succeeds() -> Result<()> {
 
         assert_eq!(retrieved_reg.read().iter().next().unwrap().1, random_entry);
 
+        println!("Current fetched register is {:?}", retrieved_reg.register);
+        println!(
+            "Fetched register has update history of {}",
+            retrieved_reg.register.log_update_history()
+        );
+
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 

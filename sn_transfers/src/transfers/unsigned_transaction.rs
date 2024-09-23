@@ -25,7 +25,7 @@ pub struct UnsignedTransaction {
     /// Output CashNotes stripped of their parent spends, unuseable as is
     output_cashnotes_without_spends: Vec<CashNote>,
     /// Change CashNote stripped of its parent spends, unuseable as is
-    change_cashnote_without_spends: Option<CashNote>,
+    pub change_cashnote_without_spends: Option<CashNote>,
     /// Spends waiting to be signed along with their secret derivation index
     spends: Vec<(Spend, DerivationIndex)>,
 }

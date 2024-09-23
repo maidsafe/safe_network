@@ -470,7 +470,6 @@ impl WalletClient {
         // collect store costs
         let mut cost_map = BTreeMap::default();
         let mut skipped_chunks = vec![];
-        #[allow(clippy::mutable_key_type)]
         while let Some(res) = tasks.join_next().await {
             match res {
                 Ok((content_addr, Ok(cost))) => {
@@ -864,7 +863,7 @@ impl Client {
 
         // send spends to the network in parralel
         for spend_request in spend_requests {
-            debug!(
+            trace!(
                 "sending spend request to the network: {:?}: {spend_request:#?}",
                 spend_request.unique_pubkey()
             );

@@ -20,7 +20,6 @@ use xor_name::XorName;
 
 /// Internal error.
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
 pub enum Error {
     #[error("Genesis disbursement failed")]
     GenesisDisbursement,
@@ -89,9 +88,6 @@ pub enum Error {
     /// CashNote add would overflow
     #[error("Total price exceed possible token amount")]
     TotalPriceTooHigh,
-
-    #[error("Logic error: NonZeroUsize was initialised as zero")]
-    NonZeroUsizeWasInitialisedAsZero,
 
     #[error("Could not connect to the network in {0:?}")]
     ConnectionTimeout(Duration),

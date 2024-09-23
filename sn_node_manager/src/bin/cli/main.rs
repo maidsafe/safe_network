@@ -591,7 +591,6 @@ pub enum DaemonSubCmd {
 }
 
 /// Manage the faucet service.
-#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug)]
 pub enum FaucetSubCmd {
     /// Add a faucet service.
@@ -733,7 +732,6 @@ pub enum NatDetectionSubCmd {
 }
 
 /// Manage local networks.
-#[allow(clippy::large_enum_variant)]
 #[derive(Subcommand, Debug)]
 pub enum LocalSubCmd {
     /// Kill the running local network.
