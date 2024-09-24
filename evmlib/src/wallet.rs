@@ -7,8 +7,10 @@ use crate::contract::{chunk_payments, network_token};
 use crate::utils::calculate_royalties_from_amount;
 use crate::Network;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
-use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
-use alloy::providers::{Provider, ProviderBuilder, ReqwestProvider};
+use alloy::providers::fillers::{
+    ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, RecommendedFiller, WalletFiller,
+};
+use alloy::providers::{Identity, Provider, ProviderBuilder, ReqwestProvider};
 use alloy::rpc::types::TransactionRequest;
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{reqwest, Client, Http};
@@ -55,12 +57,12 @@ impl Wallet {
 
     /// Returns the raw balance of payment tokens for this wallet.
     pub async fn balance_of_tokens(&self) -> Result<U256, network_token::Error> {
-        balance_of_tokens(self.wallet.clone(), &self.network).await
+        balance_of_tokens(wallet_address(&self.wallet), &self.network).await
     }
 
     /// Returns the raw balance of gas tokens for this wallet.
     pub async fn balance_of_gas_tokens(&self) -> Result<U256, network_token::Error> {
-        balance_of_gas_tokens(self.wallet.clone(), &self.network).await
+        balance_of_gas_tokens(wallet_address(&self.wallet), &self.network).await
     }
 
     /// Transfer a raw amount of payment tokens to another address.
@@ -118,6 +120,20 @@ fn from_private_key(private_key: &str) -> Result<EthereumWallet, Error> {
 
 // TODO(optimization): Find a way to reuse/persist contracts and/or a provider without the wallet nonce going out of sync
 
+#[allow(clippy::type_complexity)]
+fn http_provider(
+    rpc_url: reqwest::Url,
+) -> FillProvider<
+    JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
+    ReqwestProvider,
+    Http<Client>,
+    Ethereum,
+> {
+    ProviderBuilder::new()
+        .with_recommended_fillers()
+        .on_http(rpc_url)
+}
+
 fn http_provider_with_wallet(
     rpc_url: reqwest::Url,
     wallet: EthereumWallet,
@@ -140,22 +156,20 @@ pub fn wallet_address(wallet: &EthereumWallet) -> Address {
 
 /// Returns the raw balance of payment tokens for this wallet.
 pub async fn balance_of_tokens(
-    wallet: EthereumWallet,
+    account: Address,
     network: &Network,
 ) -> Result<U256, network_token::Error> {
-    let account = wallet_address(&wallet);
-    let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
+    let provider = http_provider(network.rpc_url().clone());
     let network_token = NetworkToken::new(*network.payment_token_address(), provider);
     network_token.balance_of(account).await
 }
 
 /// Returns the raw balance of gas tokens for this wallet.
 pub async fn balance_of_gas_tokens(
-    wallet: EthereumWallet,
+    account: Address,
     network: &Network,
 ) -> Result<U256, network_token::Error> {
-    let account = wallet_address(&wallet);
-    let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
+    let provider = http_provider(network.rpc_url().clone());
     let balance = provider.get_balance(account).await?;
     Ok(balance)
 }
