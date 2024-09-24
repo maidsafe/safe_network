@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727104329903,
+  "lastUpdate": 1727181718310,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cfe6da899ba9a472d361ecf56a6647f5bbea35da",
-          "message": "fix(launchpad): prevent loops from terminal/sudo relaunching",
-          "timestamp": "2024-05-08T10:33:20+09:00",
-          "tree_id": "f5a9b5bb2cb8d37bc06c37601fe476b2f52dd2ad",
-          "url": "https://github.com/maidsafe/safe_network/commit/cfe6da899ba9a472d361ecf56a6647f5bbea35da"
-        },
-        "date": 1715132789541,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.118915964709813,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.5427207890213561,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 52.532363878844386,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.370161399883855,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "aa4c00e0bab81878834c6717bee2c95eadd6fff3",
+          "message": "Merge pull request #2132 from b-zee/chore-fix-wasm32-compile-warnings\n\nchore(global): fix compile warnings on wasm32",
+          "timestamp": "2024-09-24T11:47:48Z",
+          "tree_id": "adced290aed805ca3233d7245f3d85756deb9450",
+          "url": "https://github.com/maidsafe/safe_network/commit/aa4c00e0bab81878834c6717bee2c95eadd6fff3"
+        },
+        "date": 1727181711681,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2584143963555285,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.715130982174951,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.37097630969436,
             "unit": "MiB/s"
           }
         ]
