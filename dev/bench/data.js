@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727181839173,
+  "lastUpdate": 1727189435357,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "f59f031e47e1e2efc3d5e44ec424b6f1ba9aeeba",
-          "message": "fix(release): justfile launcher->launcpad",
-          "timestamp": "2024-05-08T10:36:45+09:00",
-          "tree_id": "f2a31ab19845c1ea67c353143fb3e804e5f85efb",
-          "url": "https://github.com/maidsafe/safe_network/commit/f59f031e47e1e2efc3d5e44ec424b6f1ba9aeeba"
-        },
-        "date": 1715132905808,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2656114654234387,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6838135241647518,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 58.000746853807044,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.37097630969436,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "2238eeb707463139418466ed6bf5f6b8271ea958",
+          "message": "Merge branch 'hotfix-publish_api'",
+          "timestamp": "2024-09-24T15:38:10+01:00",
+          "tree_id": "79bde4b33404ecdc48f956ec41e4997abb5f7590",
+          "url": "https://github.com/maidsafe/safe_network/commit/2238eeb707463139418466ed6bf5f6b8271ea958"
+        },
+        "date": 1727189428731,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2349747125012538,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6500365374413386,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.96474039941352,
             "unit": "MiB/s"
           }
         ]
