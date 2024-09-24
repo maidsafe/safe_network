@@ -4,10 +4,5 @@ git_release_enable = false
 semver_check = false
 
 [[package]]
-name = "autonomi"
-publish = false
-release = false
-
-[[package]]
 name = "test_utils"
 release = false
