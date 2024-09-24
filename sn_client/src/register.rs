@@ -15,36 +15,41 @@ use libp2p::{
 };
 use sn_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use sn_protocol::{
-    error::Error as ProtocolError,
-    messages::RegisterCmd,
     storage::{try_serialize_record, RecordKind, RetryStrategy},
     NetworkAddress,
 };
-use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
+use sn_registers::{
+    Entry, EntryHash, Error as RegisterError, Permissions, Register, RegisterAddress, RegisterCrdt,
+    RegisterOp, SignedRegister,
+};
 use sn_transfers::{NanoTokens, Payment};
-use std::collections::{BTreeSet, HashSet, LinkedList};
+use std::collections::{BTreeSet, HashSet};
 use xor_name::XorName;
 
-/// Cached operations made to an offline Register instance are applied locally only,
+/// Cached operations made to an offline RegisterCrdt instance are applied locally only,
 /// and accumulated until the user explicitly calls 'sync'. The user can
 /// switch back to sync with the network for every op by invoking `online` API.
 #[derive(Clone, custom_debug::Debug)]
 pub struct ClientRegister {
     #[debug(skip)]
     client: Client,
-    pub register: Register,
-    pub ops: LinkedList<RegisterCmd>, // Cached operations.
+    register: Register,
+    /// CRDT data of the Register
+    crdt: RegisterCrdt,
+    /// Cached operations.
+    ops: BTreeSet<RegisterOp>,
 }
 
 impl ClientRegister {
-    fn create_register(client: Client, meta: XorName, perms: Permissions) -> Self {
-        let public_key = client.signer_pk();
-
-        let register = Register::new(public_key, meta, perms);
+    /// Create with specified meta and permission
+    pub fn create_register(client: Client, meta: XorName, perms: Permissions) -> Self {
+        let register = Register::new(client.signer_pk(), meta, perms);
+        let crdt = RegisterCrdt::new(*register.address());
         Self {
             client,
             register,
-            ops: LinkedList::new(),
+            crdt,
+            ops: BTreeSet::new(),
         }
     }
 
@@ -95,10 +100,12 @@ impl ClientRegister {
     /// ```
     pub fn create_with_addr(client: Client, addr: RegisterAddress) -> Self {
         let register = Register::new(addr.owner(), addr.meta(), Permissions::default());
+        let crdt = RegisterCrdt::new(addr);
         Self {
             client,
             register,
-            ops: LinkedList::new(),
+            crdt,
+            ops: BTreeSet::new(),
         }
     }
 
@@ -158,13 +165,12 @@ impl ClientRegister {
 
     /// Retrieve a Register from the network to work on it offline.
     pub(super) async fn retrieve(client: Client, address: RegisterAddress) -> Result<Self> {
-        let register = Self::get_register_from_network(&client, address).await?;
+        let signed_register = Self::get_register_from_network(&client, address).await?;
 
-        Ok(Self {
-            client,
-            register,
-            ops: LinkedList::new(),
-        })
+        let mut register = Self::create_with_addr(client, address);
+        register.merge(&signed_register);
+
+        Ok(register)
     }
 
     /// Return type: [RegisterAddress]
@@ -303,14 +309,17 @@ impl ClientRegister {
     /// # }
     /// ```
     pub fn size(&self) -> u64 {
-        self.register.size()
+        self.crdt.size()
     }
 
     /// Return a value corresponding to the provided 'hash', if present.
     // No usages found in All Places
     pub fn get(&self, hash: EntryHash) -> Result<&Entry> {
-        let entry = self.register.get(hash)?;
-        Ok(entry)
+        if let Some(entry) = self.crdt.get(hash) {
+            Ok(entry)
+        } else {
+            Err(RegisterError::NoSuchEntry(hash).into())
+        }
     }
 
     /// Read the last entry, or entries when there are branches, if the register is not empty.
@@ -333,7 +342,7 @@ impl ClientRegister {
     /// # }
     /// ```
     pub fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
-        self.register.read()
+        self.crdt.read()
     }
 
     /// Write a new value onto the Register atop latest value.
@@ -360,7 +369,7 @@ impl ClientRegister {
     /// # }
     /// ```
     pub fn write(&mut self, entry: &[u8]) -> Result<EntryHash> {
-        let children = self.register.read();
+        let children = self.crdt.read();
         if children.len() > 1 {
             return Err(Error::ContentBranchDetected(children));
         }
@@ -395,12 +404,8 @@ impl ClientRegister {
     /// # }
     /// ```
     pub fn write_merging_branches(&mut self, entry: &[u8]) -> Result<EntryHash> {
-        let children: BTreeSet<EntryHash> = self
-            .register
-            .read()
-            .into_iter()
-            .map(|(hash, _)| hash)
-            .collect();
+        let children: BTreeSet<EntryHash> =
+            self.crdt.read().into_iter().map(|(hash, _)| hash).collect();
 
         self.write_atop(entry, &children)
     }
@@ -440,14 +445,13 @@ impl ClientRegister {
         let public_key = self.client.signer_pk();
         self.register.check_user_permissions(public_key)?;
 
-        let (entry_hash, op) = self
-            .register
-            .write(entry.into(), children, self.client.signer())?;
-        let cmd = RegisterCmd::Edit(op);
+        let (hash, address, crdt_op) = self.crdt.write(entry.to_vec(), children)?;
 
-        self.ops.push_front(cmd);
+        let op = RegisterOp::new(address, crdt_op, self.client.signer());
 
-        Ok(entry_hash)
+        let _ = self.ops.insert(op);
+
+        Ok(hash)
     }
 
     // ********* Online methods  *********
@@ -500,8 +504,7 @@ impl ClientRegister {
         let mut royalties_fees = NanoTokens::zero();
         let reg_result = if verify_store {
             debug!("VERIFYING REGISTER STORED {:?}", self.address());
-
-            let res = if payment_info.is_some() {
+            if payment_info.is_some() {
                 // we expect this to be a _fresh_ register.
                 // It still could have been PUT previously, but we'll do a quick verification
                 // instead of thorough one.
@@ -510,28 +513,21 @@ impl ClientRegister {
                     .await
             } else {
                 self.client.verify_register_stored(*self.address()).await
-            };
-
-            // we need to keep the error here if verifying, so we can retry and pay for storage
-            // once more below
-            match res {
-                Ok(r) => Ok(r.register()?),
-                Err(error) => Err(error),
             }
         } else {
             Self::get_register_from_network(&self.client, addr).await
         };
-        let remote_replica = match reg_result {
-            Ok(r) => r,
+
+        match reg_result {
+            Ok(remote_replica) => {
+                self.merge(&remote_replica);
+                self.push(verify_store).await?;
+            }
             // any error here will result in a repayment of the register
             // TODO: be smart about this and only pay for storage if we need to
             Err(err) => {
                 debug!("Failed to get register: {err:?}");
                 debug!("Creating Register as it doesn't exist at {addr:?}!");
-                let cmd = RegisterCmd::Create {
-                    register: self.register.clone(),
-                    signature: self.client.sign(self.register.bytes()?),
-                };
 
                 // Let's check if the user has already paid for this address first
                 if payment_info.is_none() {
@@ -546,13 +542,11 @@ impl ClientRegister {
                     payment_info = Some((payment, payee));
                 }
 
-                Self::publish_register(self.client.clone(), cmd, payment_info, verify_store)
-                    .await?;
-                self.register.clone()
+                // The `creation register` has to come with `payment`.
+                // Hence it needs to be `published` to network separately.
+                self.publish_register(payment_info, verify_store).await?;
             }
-        };
-        self.register.merge(&remote_replica)?;
-        self.push(verify_store).await?;
+        }
 
         Ok((storage_cost, royalties_fees))
     }
@@ -581,27 +575,14 @@ impl ClientRegister {
     /// ```
     pub async fn push(&mut self, verify_store: bool) -> Result<()> {
         let ops_len = self.ops.len();
+        let address = *self.address();
         if ops_len > 0 {
-            let address = *self.address();
-            debug!("Pushing {ops_len} cached Register cmds at {address}!");
-
-            // TODO: send them all concurrently
-            while let Some(cmd) = self.ops.pop_back() {
-                // We don't need to send the payment proofs here since
-                // these are all Register mutation cmds which don't require payment.
-                let result =
-                    Self::publish_register(self.client.clone(), cmd.clone(), None, verify_store)
-                        .await;
-
-                if let Err(err) = result {
-                    warn!("Did not push Register cmd on all nodes in the close group!: {err}");
-                    // We keep the cmd for next sync to retry
-                    self.ops.push_back(cmd);
-                    return Err(err);
-                }
+            if let Err(err) = self.publish_register(None, verify_store).await {
+                warn!("Failed to push register {address:?} to network!: {err}");
+                return Err(err);
             }
 
-            debug!("Successfully pushed {ops_len} Register cmds at {address}!");
+            debug!("Successfully pushed register {address:?} to network!");
         }
 
         Ok(())
@@ -674,51 +655,20 @@ impl ClientRegister {
         self.push(verify_store).await
     }
 
-    /// Write a new value onto the Register atop the set of branches/entries
-    /// referenced by the provided list to their corresponding entry hash.
-    /// Note you can use `write_merging_branches` API if you
-    /// want to write atop of all exiting branches/entries instead.
-    ///
-    /// # Arguments
-    /// * 'entry' - u8 (i.e .as_bytes)
-    /// * 'children' - [BTreeSet]<[EntryHash]>
-    /// * 'verify_store' - Boolean
-    ///
-    /// Return type:
-    ///
-    /// # Example
-    /// ```no_run
-    /// # use sn_client::{Client, ClientRegister, Error};
-    /// # use bls::SecretKey;
-    /// # use xor_name::XorName;
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// # use std::collections::BTreeSet;
-    /// let mut rng = rand::thread_rng();
-    /// let address = XorName::random(&mut rng);
-    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
-    /// let entry = "Entry".as_bytes();
-    /// let tree_set = BTreeSet::new();
-    /// // Use of the 'write_atop_online':
-    /// let mut binding = ClientRegister::create(client, address);
-    /// let mut register = binding.write_atop_online(entry,&tree_set,false);
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn write_atop_online(
-        &mut self,
-        entry: &[u8],
-        children: &BTreeSet<EntryHash>,
-        verify_store: bool,
-    ) -> Result<()> {
-        self.write_atop(entry, children)?;
-        self.push(verify_store).await
-    }
-
     /// Access the underlying MerkleReg (e.g. for access to history)
     /// NOTE: This API is unstable and may be removed in the future
     pub fn merkle_reg(&self) -> &MerkleReg<Entry> {
-        self.register.merkle_reg()
+        self.crdt.merkle_reg()
+    }
+
+    /// Returns the local ops list
+    pub fn ops_list(&self) -> &BTreeSet<RegisterOp> {
+        &self.ops
+    }
+
+    /// Log the crdt DAG in tree structured view
+    pub fn log_update_history(&self) -> String {
+        self.crdt.log_update_history()
     }
 
     // ********* Private helpers  *********
@@ -761,44 +711,22 @@ impl ClientRegister {
     /// Publish a `Register` command on the network.
     /// If `verify_store` is true, it will verify the Register was stored on the network.
     /// Optionally contains the Payment and the PeerId that we paid to.
-    pub(crate) async fn publish_register(
-        client: Client,
-        cmd: RegisterCmd,
+    pub async fn publish_register(
+        &self,
         payment: Option<(Payment, PeerId)>,
         verify_store: bool,
     ) -> Result<()> {
-        let cmd_dst = cmd.dst();
-        debug!("Querying existing Register for cmd: {cmd_dst:?}");
-        let network_reg = client.get_signed_register_from_network(cmd.dst()).await;
+        let client = self.client.clone();
+        let signed_reg = self.get_signed_reg()?;
 
-        debug!("Publishing Register cmd: {cmd_dst:?}");
-        let register = match cmd {
-            RegisterCmd::Create {
-                register,
-                signature,
-            } => {
-                if let Ok(existing_reg) = network_reg {
-                    if existing_reg.owner() != register.owner() {
-                        return Err(ProtocolError::RegisterAlreadyClaimed(existing_reg.owner()))?;
-                    }
-                }
-                SignedRegister::new(register, signature)
-            }
-            RegisterCmd::Edit(op) => {
-                let mut reg = network_reg?;
-                reg.add_op(op)?;
-                reg
-            }
-        };
-
-        let network_address = NetworkAddress::from_register_address(*register.address());
+        let network_address = NetworkAddress::from_register_address(*self.register.address());
         let key = network_address.to_record_key();
         let (record, payee) = match payment {
             Some((payment, payee)) => {
                 let record = Record {
                     key: key.clone(),
                     value: try_serialize_record(
-                        &(payment, &register),
+                        &(payment, &signed_reg),
                         RecordKind::RegisterWithPayment,
                     )?
                     .to_vec(),
@@ -810,7 +738,7 @@ impl ClientRegister {
             None => {
                 let record = Record {
                     key: key.clone(),
-                    value: try_serialize_record(&register, RecordKind::Register)?.to_vec(),
+                    value: try_serialize_record(&signed_reg, RecordKind::Register)?.to_vec(),
                     publisher: None,
                     expires: None,
                 };
@@ -829,7 +757,7 @@ impl ClientRegister {
             (
                 Some(Record {
                     key,
-                    value: try_serialize_record(&register, RecordKind::Register)?.to_vec(),
+                    value: try_serialize_record(&signed_reg, RecordKind::Register)?.to_vec(),
                     publisher: None,
                     expires: None,
                 }),
@@ -858,13 +786,48 @@ impl ClientRegister {
     }
 
     /// Retrieve a `Register` from the Network.
-    async fn get_register_from_network(
+    pub async fn get_register_from_network(
         client: &Client,
         address: RegisterAddress,
-    ) -> Result<Register> {
+    ) -> Result<SignedRegister> {
         debug!("Retrieving Register from: {address}");
-        let reg = client.get_signed_register_from_network(address).await?;
-        reg.verify_with_address(address)?;
-        Ok(reg.register()?)
+        let signed_reg = client.get_signed_register_from_network(address).await?;
+        signed_reg.verify_with_address(address)?;
+        Ok(signed_reg)
+    }
+
+    /// Merge a network fetched copy with the local one.
+    /// Note the `get_register_from_network` already verified
+    ///   * the fetched register is the same (address) as to the local one
+    ///   * the ops of the fetched copy are all signed by the owner
+    pub fn merge(&mut self, signed_reg: &SignedRegister) {
+        debug!("Merging Register of: {:?}", self.register.address());
+
+        // Take out the difference between local ops and fetched ops
+        // note the `difference` functions gives entry that: in a but not in b
+        let diff: Vec<_> = signed_reg.ops().difference(&self.ops).cloned().collect();
+
+        // Apply the new ops to local
+        for op in diff {
+            // in case of deploying error, record then continue to next
+            if let Err(err) = self.crdt.apply_op(op.clone()) {
+                error!(
+                    "Apply op to local Register {:?} failed with {err:?}",
+                    self.register.address()
+                );
+            } else {
+                let _ = self.ops.insert(op);
+            }
+        }
+    }
+
+    /// Generate SignedRegister from local copy, so that can be published to network
+    fn get_signed_reg(&self) -> Result<SignedRegister> {
+        let signature = self.client.sign(self.register.bytes()?);
+        Ok(SignedRegister::new(
+            self.register.clone(),
+            signature,
+            self.ops.clone(),
+        ))
     }
 }

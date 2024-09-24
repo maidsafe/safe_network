@@ -314,37 +314,6 @@ impl Client {
     ///
     /// [Signature]
     ///
-    /// # Example
-    /// ```no_run
-    /// use sn_client::{Client, Error};
-    /// use bls::SecretKey;
-    ///
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// use tracing::callsite::register;
-    /// use xor_name::XorName;
-    /// use sn_registers::Register;
-    /// use sn_protocol::messages::RegisterCmd;
-    /// let client = Client::new(SecretKey::random(), None, None, None).await?;
-    ///
-    /// // Set up register prerequisites
-    /// let mut rng = rand::thread_rng();
-    /// let xorname = XorName::random(&mut rng);
-    /// let owner_sk = SecretKey::random();
-    /// let owner_pk = owner_sk.public_key();
-    ///
-    /// // set up register
-    /// let mut register = Register::new(owner_pk, xorname, Default::default());
-    /// let mut register_clone = register.clone();
-    ///
-    /// // Use of client.sign() with register through RegisterCmd::Create
-    /// let cmd = RegisterCmd::Create {
-    ///    register,
-    ///    signature: client.sign(register_clone.bytes()?),
-    /// };
-    /// # Ok(())
-    /// # }
-    /// ```
     pub fn sign<T: AsRef<[u8]>>(&self, data: T) -> Signature {
         self.signer.sign(data)
     }
@@ -1105,9 +1074,26 @@ fn merge_register_records(
 mod tests {
     use std::collections::BTreeSet;
 
-    use sn_registers::Register;
+    use sn_registers::{Register, RegisterCrdt, RegisterOp};
 
     use super::*;
+
+    fn write_atop(
+        signed_reg: &mut SignedRegister,
+        crdt_reg: &mut RegisterCrdt,
+        entry: &[u8],
+        owner: &SecretKey,
+    ) -> eyre::Result<()> {
+        let children: BTreeSet<_> = crdt_reg.read().iter().map(|(hash, _)| *hash).collect();
+
+        let (_hash, address, crdt_op) = crdt_reg.write(entry.to_vec(), &children)?;
+
+        let op = RegisterOp::new(address, crdt_op, owner);
+
+        signed_reg.add_op(op)?;
+
+        Ok(())
+    }
 
     #[test]
     fn test_merge_register_records() -> eyre::Result<()> {
@@ -1117,28 +1103,33 @@ mod tests {
         let owner_pk = owner_sk.public_key();
         let address = RegisterAddress::new(meta, owner_pk);
 
+        let base_register = Register::new(owner_pk, meta, Default::default());
+        let signature = owner_sk.sign(base_register.bytes()?);
+
         // prepare registers
-        let mut register_root = Register::new(owner_pk, meta, Default::default());
-        let (root_hash, _) =
-            register_root.write(b"root_entry".to_vec(), &BTreeSet::default(), &owner_sk)?;
-        let root = BTreeSet::from_iter(vec![root_hash]);
-        let signed_root = register_root.clone().into_signed(&owner_sk)?;
+        let mut register_root = SignedRegister::new(base_register, signature, BTreeSet::new());
+        let mut crdt_reg_root = RegisterCrdt::new(address);
 
-        let mut register1 = register_root.clone();
-        let (_hash, op1) = register1.write(b"entry1".to_vec(), &root, &owner_sk)?;
-        let mut signed_register1 = signed_root.clone();
-        signed_register1.add_op(op1)?;
+        write_atop(
+            &mut register_root,
+            &mut crdt_reg_root,
+            b"root_entry",
+            &owner_sk,
+        )?;
 
-        let mut register2 = register_root.clone();
-        let (_hash, op2) = register2.write(b"entry2".to_vec(), &root, &owner_sk)?;
-        let mut signed_register2 = signed_root;
-        signed_register2.add_op(op2)?;
+        let mut signed_register1 = register_root.clone();
+        let mut crdt_reg1 = crdt_reg_root.clone();
+        write_atop(&mut signed_register1, &mut crdt_reg1, b"entry1", &owner_sk)?;
 
-        let mut register_bad = Register::new(owner_pk, meta, Default::default());
-        let (_hash, _op_bad) =
-            register_bad.write(b"bad_root".to_vec(), &BTreeSet::default(), &owner_sk)?;
-        let invalid_sig = register2.sign(&owner_sk)?; // steal sig from something else
-        let signed_register_bad = SignedRegister::new(register_bad, invalid_sig);
+        let mut signed_register2 = register_root.clone();
+        let mut crdt_reg2 = crdt_reg_root.clone();
+        write_atop(&mut signed_register2, &mut crdt_reg2, b"entry2", &owner_sk)?;
+
+        let base_register_bad = Register::new(owner_pk, meta, Default::default());
+        let bad_sk = SecretKey::random();
+        let signature_bad = bad_sk.sign(base_register_bad.bytes()?);
+        let signed_register_bad =
+            SignedRegister::new(base_register_bad, signature_bad, BTreeSet::new());
 
         // prepare records
         let record1 = Record {

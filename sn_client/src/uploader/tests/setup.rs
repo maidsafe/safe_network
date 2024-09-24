@@ -22,7 +22,7 @@ use libp2p_identity::Keypair;
 use rand::thread_rng;
 use sn_networking::{NetworkBuilder, PayeeQuote};
 use sn_protocol::{storage::RetryStrategy, NetworkAddress};
-use sn_registers::{Register, RegisterAddress};
+use sn_registers::{Permissions, RegisterAddress, SignedRegister};
 use sn_transfers::{MainSecretKey, NanoTokens, PaymentQuote, WalletApi};
 use std::{
     collections::{BTreeMap, VecDeque},
@@ -50,7 +50,7 @@ impl UploaderInterface for TestUploader {
 
     fn submit_get_register_task(
         &mut self,
-        _client: Client,
+        client: Client,
         reg_addr: RegisterAddress,
         _task_result_sender: mpsc::Sender<TaskResult>,
     ) {
@@ -67,12 +67,10 @@ impl UploaderInterface for TestUploader {
         match step {
             TestSteps::GetRegisterOk => {
                 handle.spawn(async move {
-                    let reg = Register::test_new_from_address(reg_addr);
-
+                    let remote_register =
+                        SignedRegister::test_new_from_address(reg_addr, client.signer());
                     task_result_sender
-                        .send(TaskResult::GetRegisterFromNetworkOk {
-                            remote_register: reg,
-                        })
+                        .send(TaskResult::GetRegisterFromNetworkOk { remote_register })
                         .await
                         .expect("Failed to send task result");
                 });
@@ -449,9 +447,13 @@ pub fn get_dummy_registers(num: usize, client: Client) -> Vec<ClientRegister> {
     let mut rng = thread_rng();
     let mut registers = Vec::with_capacity(num);
     for _ in 0..num {
-        let mut client_reg = ClientRegister::create(client.clone(), XorName::random(&mut rng));
-        // test_new_from_address that is used during get_register, uses AnyoneCanWrite permission, so use the same here
-        client_reg.register = Register::test_new_from_address(*client_reg.address());
+        // test_new_from_address that is used during get_register,
+        // uses AnyoneCanWrite permission, so use the same here
+        let client_reg = ClientRegister::create_register(
+            client.clone(),
+            XorName::random(&mut rng),
+            Permissions::AnyoneCanWrite,
+        );
 
         registers.push(client_reg);
     }

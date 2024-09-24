@@ -374,6 +374,21 @@
 //         ),
 //     );
 
+//     println!(
+//         "current retrieved register entry length is {}",
+//         retrieved_reg.read().len()
+//     );
+//     println!("current expected entry length is {}", register.read().len());
+
+//     println!(
+//         "current retrieved register ops length is {}",
+//         retrieved_reg.ops_list().len()
+//     );
+//     println!(
+//         "current local cached ops length is {}",
+//         register.ops_list().len()
+//     );
+
 //     // TODO adapt to evm
 //     // let _ = wallet_client
 //     //     .mut_wallet()
@@ -390,6 +405,12 @@
 //         client.get_register(address).await,
 //         Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
 //     ));
+
+//     println!("Current fetched register is {:?}", retrieved_reg.address());
+//     println!(
+//         "Fetched register has update history of {}",
+//         retrieved_reg.log_update_history()
+//     );
 
 //     let random_entry = rng.gen::<[u8; 32]>().to_vec();
 //     register.write(&random_entry)?;

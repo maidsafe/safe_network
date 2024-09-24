@@ -20,11 +20,10 @@ use itertools::Either;
 use libp2p::PeerId;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
-    messages::RegisterCmd,
     storage::{Chunk, RetryStrategy},
     NetworkAddress,
 };
-use sn_registers::{Register, RegisterAddress};
+use sn_registers::{RegisterAddress, SignedRegister};
 use sn_transfers::{NanoTokens, WalletApi};
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
@@ -275,8 +274,7 @@ pub(super) async fn start_upload(
                     .get_mut(&xorname)
                     .ok_or(ClientError::UploadableItemNotFound(xorname))?;
                 if let UploadItem::Register { reg, .. } = reg {
-                    // todo: not error out here
-                    reg.register.merge(&remote_register)?;
+                    reg.merge(&remote_register);
                     uploader.pending_to_push_register.push(xorname);
                 }
             }
@@ -938,10 +936,8 @@ impl InnerUploader {
 
     // ====== Logic ======
 
-    async fn get_register(client: Client, reg_addr: RegisterAddress) -> Result<Register> {
-        let reg = client.verify_register_stored(reg_addr).await?;
-        let reg = reg.register()?;
-        Ok(reg)
+    async fn get_register(client: Client, reg_addr: RegisterAddress) -> Result<SignedRegister> {
+        client.verify_register_stored(reg_addr).await
     }
 
     async fn push_register(upload_item: UploadItem, verify_store: bool) -> Result<ClientRegister> {
@@ -1029,19 +1025,8 @@ impl InnerUploader {
                 trace!("Client upload completed for chunk: {xorname:?}");
             }
             UploadItem::Register { address: _, reg } => {
-                let signature = client.sign(reg.register.bytes()?);
-                trace!("Client upload started for register: {xorname:?}");
-
-                ClientRegister::publish_register(
-                    client,
-                    RegisterCmd::Create {
-                        register: reg.register,
-                        signature,
-                    },
-                    Some((payment, payee)),
-                    verify_store,
-                )
-                .await?;
+                reg.publish_register(Some((payment, payee)), verify_store)
+                    .await?;
                 trace!("Client upload completed for register: {xorname:?}");
             }
         }
