@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727181837832,
+  "lastUpdate": 1727181839173,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "cfe6da899ba9a472d361ecf56a6647f5bbea35da",
-          "message": "fix(launchpad): prevent loops from terminal/sudo relaunching",
-          "timestamp": "2024-05-08T10:33:20+09:00",
-          "tree_id": "f5a9b5bb2cb8d37bc06c37601fe476b2f52dd2ad",
-          "url": "https://github.com/maidsafe/safe_network/commit/cfe6da899ba9a472d361ecf56a6647f5bbea35da"
-        },
-        "date": 1715132922965,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 8535,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 40986,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "f59f031e47e1e2efc3d5e44ec424b6f1ba9aeeba",
           "message": "fix(release): justfile launcher->launcpad",
           "timestamp": "2024-05-08T10:36:45+09:00",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 60814,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "aa4c00e0bab81878834c6717bee2c95eadd6fff3",
+          "message": "Merge pull request #2132 from b-zee/chore-fix-wasm32-compile-warnings\n\nchore(global): fix compile warnings on wasm32",
+          "timestamp": "2024-09-24T11:47:48Z",
+          "tree_id": "adced290aed805ca3233d7245f3d85756deb9450",
+          "url": "https://github.com/maidsafe/safe_network/commit/aa4c00e0bab81878834c6717bee2c95eadd6fff3"
+        },
+        "date": 1727181838939,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 18116,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 61235,
             "unit": "ms"
           },
           {
