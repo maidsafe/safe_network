@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727200668048,
+  "lastUpdate": 1727200671033,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "756aa5803e5ddc427605cf177ad1a67ab35bed16",
-          "message": "chore(node): make owner optional",
-          "timestamp": "2024-05-08T10:36:08+09:00",
-          "tree_id": "639f332bf1e6bd5c13ea59e49f405265b4a927ee",
-          "url": "https://github.com/maidsafe/safe_network/commit/756aa5803e5ddc427605cf177ad1a67ab35bed16"
-        },
-        "date": 1715133049591,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 8006,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 36626,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 66245,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3f6be3897b845ff2ab8074daea3d12cd137c8720",
+          "message": "Merge pull request #2131 from maidsafe/ci-nightly_releases\n\nci: nightly releases",
+          "timestamp": "2024-09-24T17:08:38Z",
+          "tree_id": "5097b976da52ea451fb5d727dfb7217e542d8a76",
+          "url": "https://github.com/maidsafe/safe_network/commit/3f6be3897b845ff2ab8074daea3d12cd137c8720"
+        },
+        "date": 1727200669994,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 18494,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 63846,
             "unit": "ms"
           },
           {
