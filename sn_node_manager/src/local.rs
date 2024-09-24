@@ -197,7 +197,19 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
         if !keep_directories {
             // At this point we don't allow path overrides, so deleting the data directory will clear
             // the log directory also.
-            std::fs::remove_dir_all(&node.data_dir_path)?;
+            println!("nodedir: {:?}", node.data_dir_path);
+            if let Err(error) = std::fs::remove_dir_all(&node.data_dir_path) {
+                match error.kind() {
+                    std::io::ErrorKind::NotFound => {
+                        println!("Node data directory not found: {:?}", node.data_dir_path);
+                        // no worries we're removing it
+                    }
+                    _ => {
+                        error!("Failed to remove node data directory: {:?}", error);
+                        Err(error)?;
+                    }
+                }
+            };
             debug!("Removed node data directory: {:?}", node.data_dir_path);
             println!(
                 "  {} Removed {}",
