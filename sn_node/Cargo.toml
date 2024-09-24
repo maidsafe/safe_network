@@ -15,14 +15,15 @@ path = "src/bin/safenode/main.rs"
 
 [features]
 default = ["metrics", "upnp", "reward-forward", "open-metrics"]
+encrypt-records = ["sn_networking/encrypt-records"]
 local-discovery = ["sn_networking/local-discovery"]
-otlp = ["sn_logging/otlp"]
 metrics = ["sn_logging/process-metrics"]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
+nightly = []
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
-encrypt-records = ["sn_networking/encrypt-records"]
-upnp = ["sn_networking/upnp"]
+otlp = ["sn_logging/otlp"]
 reward-forward = ["sn_transfers/reward-forward"]
+upnp = ["sn_networking/upnp"]
 
 [dependencies]
 assert_fs = "1.0.0"

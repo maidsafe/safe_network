@@ -27,16 +27,26 @@ use tonic::{transport::Server, Code, Request, Response, Status};
 use tracing::Level;
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[command(disable_version_flag = true)]
 struct Args {
-    /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
-    #[clap(long, default_value_t = DAEMON_DEFAULT_PORT)]
-    port: u16,
     /// Specify an Ipv4Addr for the daemon to listen on. This is useful if you want to manage the nodes remotely.
     ///
     /// If not set, the daemon listens locally for commands.
     #[clap(long, default_value_t = Ipv4Addr::new(127, 0, 0, 1))]
     address: Ipv4Addr,
+    /// Print the crate version.
+    #[clap(long)]
+    pub crate_version: bool,
+    /// Print the package version.
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    pub package_version: bool,
+    /// Specify a port for the daemon to listen for RPCs. It defaults to 12500 if not set.
+    #[clap(long, default_value_t = DAEMON_DEFAULT_PORT)]
+    port: u16,
+    /// Print version information.
+    #[clap(long)]
+    version: bool,
 }
 
 struct SafeNodeManagerDaemon {}
@@ -128,12 +138,35 @@ impl SafeNodeManagerDaemon {}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
+    let args = Args::parse();
+
+    if args.version {
+        println!(
+            "{}",
+            sn_build_info::version_string(
+                "Autonomi Node Manager RPC Daemon",
+                env!("CARGO_PKG_VERSION"),
+                None
+            )
+        );
+        return Ok(());
+    }
+
+    if args.crate_version {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if args.package_version {
+        println!("{}", sn_build_info::package_version());
+        return Ok(());
+    }
+
     let _log_handles = get_log_builder()?.initialize()?;
     println!("Starting safenodemand");
-    let args = Args::parse();
     let service = SafeNodeManagerDaemon {};
 
-    // adding our service to our server.
     if let Err(err) = Server::builder()
         .add_service(SafeNodeManagerServer::new(service))
         .serve(SocketAddr::new(IpAddr::V4(args.address), args.port))

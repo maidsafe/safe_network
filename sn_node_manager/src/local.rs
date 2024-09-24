@@ -62,11 +62,18 @@ impl Launcher for LocalSafeLauncher {
 
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32> {
         info!("Launching the faucet server...");
+        debug!("Using genesis_multiaddr: {}", genesis_multiaddr.to_string());
         let args = vec![
             "--peer".to_string(),
             genesis_multiaddr.to_string(),
             "server".to_string(),
         ];
+
+        debug!(
+            "Using faucet binary: {}",
+            self.faucet_bin_path.to_string_lossy()
+        );
+        debug!("Using args: {}", args.join(" "));
         let child = Command::new(self.faucet_bin_path.clone())
             .args(args)
             .stdout(Stdio::inherit())
@@ -369,8 +376,8 @@ pub async fn run_network(
 
     if !options.join {
         println!("Launching the faucet server...");
-        let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
         let version = get_bin_version(&options.faucet_bin_path)?;
+        let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
         let faucet = FaucetServiceData {
             faucet_path: options.faucet_bin_path,
             local: true,

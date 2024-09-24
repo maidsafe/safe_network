@@ -27,6 +27,7 @@ local-discovery = [
 ]
 metrics = ["sn_logging/process-metrics"]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
+nightly = []
 open-metrics = ["sn_client/open-metrics"]
 
 [dependencies]

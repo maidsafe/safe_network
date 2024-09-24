@@ -276,7 +276,7 @@ pub async fn download_and_extract_release(
 }
 
 pub fn get_bin_version(bin_path: &PathBuf) -> Result<String> {
-    trace!("Obtaining version of binary {bin_path:?}");
+    debug!("Obtaining version of binary {bin_path:?}");
     let mut cmd = Command::new(bin_path)
         .arg("--version")
         .stdout(Stdio::piped())
@@ -293,15 +293,28 @@ pub fn get_bin_version(bin_path: &PathBuf) -> Result<String> {
         .read_to_string(&mut output)
         .inspect_err(|err| error!("Output contained non utf8 chars: {err:?}"))?;
 
-    let version = output
-        .split_whitespace()
-        .last()
-        .ok_or_else(|| {
-            error!("Failed to parse version");
-            eyre!("Failed to parse version")
-        })?
-        .to_string();
-    trace!("Obtained version of binary: {version}");
+    // Extract the first line of the output
+    let first_line = output.lines().next().ok_or_else(|| {
+        error!("No output received from binary");
+        eyre!("No output received from binary")
+    })?;
+
+    let version = if let Some(v_pos) = first_line.find('v') {
+        // Stable binary: Extract version after 'v'
+        first_line[v_pos + 1..]
+            .split_whitespace()
+            .next()
+            .map(String::from)
+    } else {
+        // Nightly binary: Extract the date at the end of the first line
+        first_line.split_whitespace().last().map(String::from)
+    }
+    .ok_or_else(|| {
+        error!("Failed to parse version from output");
+        eyre!("Failed to parse version from output")
+    })?;
+
+    debug!("Obtained version of binary: {version}");
 
     Ok(version)
 }

@@ -21,7 +21,7 @@ use std::time::Duration;
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(disable_version_flag = true)]
 pub(crate) struct Opt {
     /// Specify the logging output destination.
     ///
@@ -49,7 +49,7 @@ pub(crate) struct Opt {
 
     /// Available sub commands.
     #[clap(subcommand)]
-    pub cmd: SubCmd,
+    pub cmd: Option<SubCmd>,
 
     /// The maximum duration to wait for a connection to the network before timing out.
     #[clap(long = "timeout", global = true, value_parser = |t: &str| -> Result<Duration> { Ok(t.parse().map(Duration::from_secs)?) })]
@@ -60,6 +60,23 @@ pub(crate) struct Opt {
     /// This may increase operation speed, but offers no guarantees that operations were successful.
     #[clap(global = true, long = "no-verify", short = 'x')]
     pub no_verify: bool,
+
+    /// Print the crate version.
+    #[clap(long)]
+    pub crate_version: bool,
+
+    /// Print the network protocol version.
+    #[clap(long)]
+    pub protocol_version: bool,
+
+    /// Print the package version.
+    #[clap(long)]
+    #[cfg(not(feature = "nightly"))]
+    pub package_version: bool,
+
+    /// Print version information.
+    #[clap(long)]
+    pub version: bool,
 }
 
 #[derive(Subcommand, Debug)]
