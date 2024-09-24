@@ -18,6 +18,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
     NetworkAddress,
 };
+use sn_transfers::WalletError;
 
 use std::{
     fs::{self, create_dir_all, File},
@@ -125,7 +126,12 @@ impl FilesApi {
         trace!("Client upload started for chunk: {chunk_addr:?}");
 
         let wallet_client = self.wallet()?;
-        let (payment, payee) = wallet_client.get_recent_payment_for_addr(&chunk_addr)?;
+        let xorname = chunk_addr
+            .as_xorname()
+            .ok_or(WalletError::InvalidAddressType)?;
+        let (payment, payee) = wallet_client
+            .client
+            .cache_read_payment_for_addr(&xorname, wallet_client.wallet.root_dir())?;
 
         debug!("Payments for chunk: {chunk_addr:?} to {payee:?}:  {payment:?}");
 

@@ -12,12 +12,12 @@ use sn_client::{
     acc_packet::{create_faucet_account_and_wallet, load_account_wallet_or_create_with_mnemonic},
     send, Client,
 };
-use sn_evm::{AttoTokens, HotWallet, Transfer};
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
 use sn_service_management::{
     get_local_node_registry_path, safenode_manager_proto::NodeServiceRestartRequest, NodeRegistry,
 };
+use sn_transfers::{HotWallet, NanoTokens, Transfer};
 use std::{net::SocketAddr, path::Path};
 use test_utils::testnet::DeploymentInventory;
 use tokio::{
@@ -179,9 +179,9 @@ impl NonDroplet {
         initial_wallet: bool,
     ) -> Result<HotWallet> {
         let wallet_balance = if initial_wallet {
-            AttoTokens::from_u64(INITIAL_WALLET_BALANCE)
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
         } else {
-            AttoTokens::from_u64(ADD_FUNDS_TO_WALLET)
+            NanoTokens::from(ADD_FUNDS_TO_WALLET)
         };
         let _guard = FAUCET_WALLET_MUTEX.lock().await;
         let from_faucet_wallet = NonDroplet::load_faucet_wallet().await?;
@@ -326,11 +326,11 @@ impl Droplet {
 
         println!(
             "Getting {} tokens from the faucet... num_requests:{requests_to_faucet}",
-            AttoTokens::from_u64(INITIAL_WALLET_BALANCE)
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
         );
         info!(
             "Getting {} tokens from the faucet... num_requests:{requests_to_faucet}",
-            AttoTokens::from_u64(INITIAL_WALLET_BALANCE)
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
         );
         for _ in 0..requests_to_faucet {
             let faucet_url = format!("http://{faucet_socket}/{address_hex}");
@@ -360,11 +360,11 @@ impl Droplet {
         }
         println!(
             "Successfully got {} after {requests_to_faucet} requests to the faucet",
-            AttoTokens::from_u64(INITIAL_WALLET_BALANCE)
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
         );
         info!(
             "Successfully got {} after {requests_to_faucet} requests to the faucet",
-            AttoTokens::from_u64(INITIAL_WALLET_BALANCE)
+            NanoTokens::from(INITIAL_WALLET_BALANCE)
         );
 
         Ok(local_wallet)

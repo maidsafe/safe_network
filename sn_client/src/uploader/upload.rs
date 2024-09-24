@@ -11,14 +11,13 @@ use super::{
     UploaderInterface,
 };
 use crate::{
-    acc_packet::load_account_wallet_or_create_with_mnemonic,
-    transfers::{TransferError, WalletError},
-    Client, ClientRegister, Error as ClientError, Result, Uploader, WalletClient,
+    acc_packet::load_account_wallet_or_create_with_mnemonic, Client, ClientRegister,
+    Error as ClientError, Result, Uploader, WalletClient,
 };
 use bytes::Bytes;
 use itertools::Either;
 use libp2p::PeerId;
-use sn_evm::{AttoTokens, WalletApi};
+use sn_evm::AttoTokens;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
     messages::RegisterCmd,
@@ -26,6 +25,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Register, RegisterAddress};
+use sn_transfers::{NanoTokens, TransferError, WalletApi, WalletError};
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     path::{Path, PathBuf},
@@ -117,9 +117,7 @@ pub(super) async fn start_upload(
         if uploader.all_upload_items.is_empty() {
             debug!("Upload items are empty, exiting main upload loop.");
             // To avoid empty final_balance when all items are skipped.
-            uploader.upload_final_balance =
-                InnerUploader::load_wallet_client(uploader.client.clone(), &uploader.root_dir)?
-                    .balance();
+            uploader.upload_final_balance = AttoTokens::zero(); // TODO use the evm wallet, if we ever need this stat
             #[cfg(test)]
             trace!("UPLOADER STATE: finished uploading all items {uploader:?}");
             let summary = UploadSummary {
@@ -399,7 +397,7 @@ pub(super) async fn start_upload(
                 }
                 uploader.pending_to_upload.extend(paid_xornames);
                 uploader.make_payments_errors = 0;
-                uploader.upload_final_balance = new_balance;
+                uploader.upload_final_balance = AttoTokens::zero();
                 uploader.upload_storage_cost = uploader
                     .upload_storage_cost
                     .checked_add(storage_cost)
@@ -414,7 +412,7 @@ pub(super) async fn start_upload(
                 uploader.emit_upload_event(UploadEvent::PaymentMade {
                     storage_cost,
                     royalty_fees,
-                    new_balance,
+                    new_balance: AttoTokens::zero(), // TODO adapt all this to evm wallet
                 });
             }
             TaskResult::MakePaymentsErr {
@@ -428,9 +426,12 @@ pub(super) async fn start_upload(
                 );
                 if let Some((available, required)) = insufficient_balance {
                     error!("Wallet does not have enough funds. This error is not recoverable");
-                    return Err(ClientError::Wallet(WalletError::Transfer(
-                        TransferError::NotEnoughBalance(available, required),
-                    )));
+                    return Err(ClientError::Transfer(
+                        sn_transfers::TransferError::NotEnoughBalance(
+                            NanoTokens::from(available.as_atto().try_into().unwrap_or(0)),
+                            NanoTokens::from(required.as_atto().try_into().unwrap_or(0)),
+                        ),
+                    ));
                 }
 
                 for (xorname, quote) in failed_xornames {
@@ -836,6 +837,7 @@ impl InnerUploader {
                     // using None to indicate as all paid.
                     let make_payments = !cost_map.is_empty();
                     trace!("Got a forced forced round of make payment.");
+                    break;
                     // Note: There can be a mismatch of ordering between the main loop and the make payment loop because
                     // the instructions are sent via a task(channel.send().await). And there is no guarantee for the
                     // order to come in the same order as they were sent.
@@ -865,9 +867,8 @@ impl InnerUploader {
 
                     let mut terminate_process = false;
 
-                    let result = match wallet_client.pay_for_records(&cost_map).await
-                    {
-                        Ok((storage_cost, royalty_fees)) => {
+                    let result = match wallet_client.pay_for_records(&cost_map).await {
+                        Ok(storage_cost) => {
                             let paid_xornames = std::mem::take(&mut current_batch);
                             let paid_xornames = paid_xornames
                                 .into_iter()
@@ -881,7 +882,7 @@ impl InnerUploader {
                             TaskResult::MakePaymentsOk {
                                 paid_xornames,
                                 storage_cost,
-                                royalty_fees,
+                                royalty_fees: AttoTokens::zero(),
                                 new_balance: wallet_client.balance(),
                             }
                         }
@@ -902,7 +903,10 @@ impl InnerUploader {
                                     terminate_process = true;
                                     TaskResult::MakePaymentsErr {
                                         failed_xornames,
-                                        insufficient_balance: Some((available, required)),
+                                        insufficient_balance: Some((
+                                            AttoTokens::from_u64(available.as_nano()),
+                                            AttoTokens::from_u64(required.as_nano()),
+                                        )),
                                     }
                                 }
                                 _ => TaskResult::MakePaymentsErr {
@@ -964,11 +968,12 @@ impl InnerUploader {
         let filter_list = match get_store_cost_strategy {
             GetStoreCostStrategy::Cheapest => vec![],
             GetStoreCostStrategy::SelectDifferentPayee => {
+                let root_dir = wallet_api.root_dir();
                 // Check if we have already made payment for the provided xorname. If so filter out those payee
-                let filter_list = wallet_api
-                    .get_all_payments(&xorname)?
+                let filter_list = client
+                    .cache_read_payment_for_addr(&xorname, root_dir)
                     .into_iter()
-                    .map(|proof_of_payment| {
+                    .map(|(proof_of_payment, peerid)| {
                         let peer_id_bytes = proof_of_payment
                             .quote
                             .peer_id()
@@ -1011,7 +1016,8 @@ impl InnerUploader {
     ) -> Result<()> {
         let xorname = upload_item.xorname();
 
-        let payment = wallet_api.get_recent_payment(&xorname)?;
+        let root_dir = wallet_api.root_dir();
+        let (payment, _peer) = client.cache_read_payment_for_addr(&xorname, root_dir)?;
         let payee = payment
             .quote
             .peer_id()

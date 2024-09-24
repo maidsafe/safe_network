@@ -20,10 +20,11 @@ use eyre::Result;
 use libp2p::PeerId;
 use libp2p_identity::Keypair;
 use rand::thread_rng;
-use sn_evm::{AttoTokens, PaymentQuote, WalletApi};
+use sn_evm::{AttoTokens, PaymentQuote};
 use sn_networking::{NetworkBuilder, PayeeQuote};
 use sn_protocol::{storage::RetryStrategy, NetworkAddress};
 use sn_registers::{Register, RegisterAddress};
+use sn_transfers::{NanoTokens, WalletApi};
 use std::{
     collections::{BTreeMap, VecDeque},
     path::PathBuf,
@@ -197,7 +198,11 @@ impl UploaderInterface for TestUploader {
                     task_result_sender
                         .send(TaskResult::GetStoreCostOk {
                             xorname,
-                            quote: Box::new((PeerId::random(), sn_evm::utils::dummy_address(), quote)),
+                            quote: Box::new((
+                                PeerId::random(),
+                                sn_evm::utils::dummy_address(),
+                                quote,
+                            )),
                         })
                         .await
                         .expect("Failed to send task result");
@@ -289,7 +294,7 @@ impl UploaderInterface for TestUploader {
                             paid_xornames,
                             storage_cost: AttoTokens::from_u64(batch_size as u64 * 10),
                             royalty_fees: AttoTokens::from_u64(batch_size as u64 * 3),
-                            new_balance: AttoTokens::from_u64(batch_size as u64 * 1000),
+                            new_balance: NanoTokens::from(batch_size as u64 * 1000),
                         })
                         .await
                         .expect("Failed to send task result");

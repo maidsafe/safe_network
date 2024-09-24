@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{wallet::send, Client, Error, Result};
-use sn_evm::{load_genesis_wallet, HotWallet, AttoTokens, Transfer, FOUNDATION_PK};
+use sn_transfers::{load_genesis_wallet, HotWallet, NanoTokens, Transfer, FOUNDATION_PK};
 
 /// Use the client to load the faucet wallet from the genesis Wallet.
 /// With all balance transferred from the genesis_wallet to the faucet_wallet.
@@ -15,7 +15,7 @@ pub async fn fund_faucet_from_genesis_wallet(
     client: &Client,
     faucet_wallet: &mut HotWallet,
 ) -> Result<()> {
-    let initial_faucet_balance: AttoTokens = AttoTokens::from_u64(900000000000000000);
+    let initial_faucet_balance: NanoTokens = NanoTokens::from(900000000000000000);
 
     faucet_wallet.try_load_cash_notes()?;
     let faucet_balance = faucet_wallet.balance();

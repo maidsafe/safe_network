@@ -6,8 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{AttoTokens, WalletError};
-use evmlib::{common::{Address as RewardsAddress, QuoteHash}, utils::dummy_address};
+use crate::{AttoTokens, EvmError};
+use evmlib::{
+    common::{Address as RewardsAddress, QuoteHash},
+    utils::dummy_address,
+};
 use libp2p::{identity::PublicKey, PeerId};
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
@@ -134,12 +137,12 @@ impl PaymentQuote {
     }
 
     /// Returns the peer id of the node that created the quote
-    pub fn peer_id(&self) -> Result<PeerId, WalletError> {
+    pub fn peer_id(&self) -> Result<PeerId, EvmError> {
         if let Ok(pub_key) = libp2p::identity::PublicKey::try_decode_protobuf(&self.pub_key) {
             Ok(PeerId::from(pub_key.clone()))
         } else {
             error!("Cann't parse PublicKey from protobuf");
-            Err(WalletError::InvalidQuotePublicKey)
+            Err(EvmError::InvalidQuotePublicKey)
         }
     }
 

@@ -13,7 +13,7 @@ use std::collections::BTreeSet;
 use setup::MockNetwork;
 
 use eyre::Result;
-use sn_evm::SpendAddress;
+use sn_transfers::SpendAddress;
 
 use crate::{SpendDag, SpendFault};
 

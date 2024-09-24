@@ -132,4 +132,12 @@ pub enum Error {
     /// Wallet is already encrypted
     #[error("Wallet is already encrypted")]
     WalletAlreadyEncrypted,
+
+    #[error("Invalid quote: public key is in a bad format")]
+    InvalidQuotePublicKey,
+
+    #[error("Invalid peer ID for payment: {0}")]
+    InvalidPeerIdForPayment(String),
+    #[error("Evm wallet: {0}")]
+    EvmWallet(String),
 }

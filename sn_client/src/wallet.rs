@@ -11,14 +11,16 @@ use crate::Error;
 use super::{error::Result, Client};
 use backoff::{backoff::Backoff, ExponentialBackoff};
 use futures::{future::join_all, TryFutureExt};
-use libp2p::PeerId;
 use sn_evm::{
-    CashNote, HotWallet, MainPubkey, AttoTokens, PaymentQuote, ProofOfPayment, RewardsAddress,
-    SignedSpend, SpendAddress, Transfer, WalletError, WalletResult,
+    Amount, AttoTokens, EvmNetwork, EvmWallet, PaymentQuote, ProofOfPayment, RewardsAddress,
 };
 use sn_networking::target_arch::Instant;
 use sn_networking::{GetRecordError, PayeeQuote};
 use sn_protocol::NetworkAddress;
+use sn_transfers::{
+    CashNote, HotWallet, MainPubkey, NanoTokens, SignedSpend, SpendAddress, Transfer, WalletError,
+    WalletResult,
+};
 use std::{
     collections::{BTreeMap, BTreeSet},
     iter::Iterator,
@@ -33,8 +35,8 @@ const MAX_RESEND_PENDING_TX_ATTEMPTS: usize = 10;
 
 /// A wallet client can be used to send and receive tokens to and from other wallets.
 pub struct WalletClient {
-    client: Client,
-    wallet: HotWallet,
+    pub client: Client,
+    pub wallet: HotWallet,
 }
 
 /// The result of the payment made for a set of Content Addresses
@@ -56,7 +58,7 @@ impl WalletClient {
     /// use sn_client::{Client, WalletClient, Error};
     /// use tempfile::TempDir;
     /// use bls::SecretKey;
-    /// use sn_evm::{HotWallet, MainSecretKey};
+    /// use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
@@ -76,7 +78,7 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
@@ -97,7 +99,7 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
@@ -107,7 +109,7 @@ impl WalletClient {
     /// println!("{}" ,wallet_client.balance());
     /// # Ok(())
     /// # }
-    pub fn balance(&self) -> AttoTokens {
+    pub fn balance(&self) -> NanoTokens {
         self.wallet.balance()
     }
 
@@ -118,7 +120,7 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
@@ -132,50 +134,6 @@ impl WalletClient {
         self.wallet.unconfirmed_spend_requests_exist()
     }
 
-    /// Returns the most recent cached Payment for a provided NetworkAddress. This function does not check if the
-    /// quote has expired or not. Use get_non_expired_payment_for_addr if you want to get a non expired one.
-    ///
-    /// If multiple payments have been made to the same address, then we pick the last one as it is the most recent.
-    ///
-    /// # Arguments
-    /// * `address` - The [`NetworkAddress`].
-    ///
-    /// # Example
-    /// ```no_run
-    /// // Getting the payment for an address using a random PeerId
-    /// # use sn_client::{Client, WalletClient, Error};
-    /// # use tempfile::TempDir;
-    /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
-    /// # #[tokio::main]
-    /// # async fn main() -> Result<(),Error>{
-    /// # use std::io::Bytes;
-    /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
-    /// # let tmp_path = TempDir::new()?.path().to_owned();
-    /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-    /// use libp2p_identity::PeerId;
-    /// use sn_protocol::NetworkAddress;
-    ///
-    /// let mut wallet_client = WalletClient::new(client, wallet);
-    /// let network_address = NetworkAddress::from_peer(PeerId::random());
-    /// let payment = wallet_client.get_recent_payment_for_addr(&network_address)?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn get_recent_payment_for_addr(
-        &self,
-        address: &NetworkAddress,
-    ) -> WalletResult<(ProofOfPayment, PeerId)> {
-        let xorname = address
-            .as_xorname()
-            .ok_or(WalletError::InvalidAddressType)?;
-        let payment = self.wallet.api().get_recent_payment(&xorname)?;
-        trace!("Payment retrieved for {xorname:?} from wallet: {payment:?}");
-        let peer_id = payment.quote.peer_id()?;
-
-        Ok((payment, peer_id))
-    }
-
     /// Remove the payment for a given network address from disk.
     ///
     /// # Arguments
@@ -187,7 +145,7 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # use std::io::Bytes;
@@ -226,14 +184,14 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # use std::io::Bytes;
     /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
-    /// use sn_evm::NanoTokens;
+    /// use sn_transfers::NanoTokens;
     /// let mut wallet_client = WalletClient::new(client, wallet);
     /// let nano = NanoTokens::from(10);
     /// let main_pub_key = MainSecretKey::random().main_pubkey();
@@ -243,7 +201,7 @@ impl WalletClient {
     /// ```
     pub async fn send_cash_note(
         &mut self,
-        amount: AttoTokens,
+        amount: NanoTokens,
         to: MainPubkey,
         verify_store: bool,
     ) -> WalletResult<CashNote> {
@@ -293,7 +251,7 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # use xor_name::XorName;
@@ -335,7 +293,7 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # use xor_name::XorName;
@@ -366,10 +324,7 @@ impl WalletClient {
 
         while let Some(delay) = backoff.next_backoff() {
             trace!("Paying for storage (w/backoff retries) for: {:?}", c);
-            match self
-                .pay_for_storage_once(c.clone().into_iter())
-                .await
-            {
+            match self.pay_for_storage_once(c.clone().into_iter()).await {
                 Ok(payment_result) => return Ok(payment_result),
                 Err(WalletError::CouldNotSendMoney(err)) => {
                     warn!("Attempt to pay for data failed: {err:?}");
@@ -439,10 +394,10 @@ impl WalletClient {
         info!("Storecosts retrieved for all the provided content addrs");
 
         // pay for records
-        let (storage_cost, royalty_fees) = self.pay_for_records(&cost_map).await?;
+        let storage_cost = self.pay_for_records(&cost_map).await?;
         let res = StoragePaymentResult {
             storage_cost,
-            royalty_fees,
+            royalty_fees: AttoTokens::zero(),
             skipped_chunks,
         };
         Ok(res)
@@ -466,12 +421,12 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # use std::collections::BTreeMap;
     /// use xor_name::XorName;
-    /// use sn_evm::{RewardsAddress, Payment, PaymentQuote};
+    /// use sn_transfers::{RewardsAddress, Payment, PaymentQuote};
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// # let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
@@ -483,17 +438,61 @@ impl WalletClient {
     pub async fn pay_for_records(
         &mut self,
         cost_map: &BTreeMap<XorName, (RewardsAddress, PaymentQuote, Vec<u8>)>,
-    ) -> WalletResult<(AttoTokens, AttoTokens)> {
+    ) -> WalletResult<AttoTokens> {
         let start = Instant::now();
-        let total_cost = self.wallet.send_storage_payment(cost_map).await?;
+        let mut total_storage_cost = AttoTokens::zero();
+
+        // calculate total storage cost incl royalties fees
+        let mut quotes_payment = BTreeSet::new();
+        let mut quotes_by_hash = BTreeMap::new();
+        for (_xorname, (rewards_address, quote, _peer_id_bytes)) in cost_map.iter() {
+            total_storage_cost = total_storage_cost
+                .checked_add(quote.cost)
+                .ok_or(WalletError::TotalPriceTooHigh)?;
+
+            let cost = Amount::from(quote.cost.as_atto());
+
+            quotes_payment.insert((quote.hash(), *rewards_address, cost));
+            quotes_by_hash.insert(quote.hash(), quote.clone());
+        }
+
+        // load evm wallet
+        let evm_sk = std::env::var("EVM_SK")
+            .map_err(|_| WalletError::EvmWallet(
+                "No evm wallet secret key found. EVM_SK env var not set. Please set the EVM_SK env var to your evm wallet secret key hex string.".to_string()
+            )).expect("Failed to get EVM_SK env var");
+        // TODO make network configurable here, sorry about this Mick, I was in a rush
+        let evm_wallet = EvmWallet::new_from_private_key(EvmNetwork::ArbitrumOne, &evm_sk)
+            .map_err(|_| WalletError::EvmWallet(
+                "Failed to parse EVM key from EVM_SK env var. Please set the EVM_SK env var to your evm wallet secret key in hex string format.".to_string()
+            ))?;
+
+        // perform evm payments
+        let tx_hashes_by_quote = evm_wallet
+            .pay_for_quotes(quotes_payment)
+            .await
+            .map_err(|e| WalletError::EvmWallet(format!("Failed to pay for quotes {e:?}")))?;
+        for (quote_hash, tx_hash) in tx_hashes_by_quote.iter() {
+            let quote = quotes_by_hash
+                .get(quote_hash)
+                .ok_or(WalletError::EvmWallet(format!(
+                    "Quote was forgotten during payment {quote_hash:?}"
+                )))?;
+            let proof = ProofOfPayment {
+                quote: quote.clone(),
+                tx_hash: *tx_hash,
+            };
+            // save payment to disk so it can be recovered later
+            self.client
+                .cache_write_payment_for_addr(&quote.content, proof, self.wallet.root_dir());
+        }
 
         trace!(
-            "send_storage_payment of {} chunks completed in {:?}",
-            cost_map.len(),
+            "local_send_storage_payment completed payments insertion in {:?}",
             start.elapsed()
         );
 
-        Ok(total_cost)
+        Ok(total_storage_cost)
     }
 
     /// Resend failed transactions. This can optionally verify the store has been successful.
@@ -677,7 +676,7 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
@@ -702,7 +701,7 @@ impl WalletClient {
     /// # use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// # use bls::SecretKey;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
@@ -732,7 +731,7 @@ impl Client {
     /// use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// use bls::SecretKey;
-    /// use sn_evm::{HotWallet, MainSecretKey};
+    /// use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
@@ -828,11 +827,11 @@ impl Client {
     /// use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// use bls::SecretKey;
-    /// use sn_evm::{HotWallet, MainSecretKey};
+    /// use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// use tracing::error;
-    /// use sn_evm::Transfer;
+    /// use sn_transfers::Transfer;
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
@@ -919,11 +918,11 @@ impl Client {
     /// use sn_client::{Client, WalletClient, Error};
     /// # use tempfile::TempDir;
     /// use bls::SecretKey;
-    /// use sn_evm::{HotWallet, MainSecretKey};
+    /// use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// use tracing::error;
-    /// use sn_evm::Transfer;
+    /// use sn_transfers::Transfer;
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// # let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
@@ -984,12 +983,12 @@ impl Client {
 /// use sn_client::{Client, WalletClient, Error};
 /// # use tempfile::TempDir;
 /// use bls::SecretKey;
-/// use sn_evm::{HotWallet, MainSecretKey};
+/// use sn_transfers::{HotWallet, MainSecretKey};
 /// # #[tokio::main]
 /// # async fn main() -> Result<(),Error>{
 /// use tracing::error;
 /// use sn_client::send;
-/// use sn_evm::Transfer;
+/// use sn_transfers::Transfer;
 /// let client = Client::new(SecretKey::random(), None, None, None).await?;
 /// # let tmp_path = TempDir::new()?.path().to_owned();
 /// let mut first_wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
@@ -1006,7 +1005,7 @@ impl Client {
 /// ```
 pub async fn send(
     from: HotWallet,
-    amount: AttoTokens,
+    amount: NanoTokens,
     to: MainPubkey,
     client: &Client,
     verify_store: bool,

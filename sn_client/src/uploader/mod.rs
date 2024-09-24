@@ -13,13 +13,14 @@ mod upload;
 use self::upload::{start_upload, InnerUploader, MAX_REPAYMENTS_PER_FAILED_ITEM};
 use crate::{Client, ClientRegister, Error, Result, BATCH_SIZE};
 use itertools::Either;
-use sn_evm::{AttoTokens, WalletApi};
+use sn_evm::AttoTokens;
 use sn_networking::PayeeQuote;
 use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
     NetworkAddress,
 };
 use sn_registers::{Register, RegisterAddress};
+use sn_transfers::{NanoTokens, WalletApi};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Debug,
@@ -440,7 +441,7 @@ enum TaskResult {
         paid_xornames: Vec<XorName>,
         storage_cost: AttoTokens,
         royalty_fees: AttoTokens,
-        new_balance: AttoTokens,
+        new_balance: NanoTokens,
     },
     MakePaymentsErr {
         failed_xornames: Vec<(XorName, Box<PayeeQuote>)>,

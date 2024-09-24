@@ -26,13 +26,16 @@ pub enum Error {
     GenesisDisbursement,
 
     #[error("Genesis error {0}")]
-    GenesisError(#[from] sn_evm::GenesisError),
+    GenesisError(#[from] sn_transfers::GenesisError),
 
     #[error("Wallet Error {0}.")]
-    Wallet(#[from] sn_evm::WalletError),
+    Wallet(#[from] sn_transfers::WalletError),
 
     #[error("Transfer Error {0}.")]
-    Transfer(#[from] sn_evm::TransferError),
+    Transfer(#[from] sn_transfers::TransferError),
+
+    #[error("Evm Payment Error {0}.")]
+    Evm(#[from] sn_evm::EvmError),
 
     #[error("Network Error {0}.")]
     Network(#[from] sn_networking::NetworkError),

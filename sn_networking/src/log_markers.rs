@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use libp2p::PeerId;
-use sn_evm::{QuotingMetrics, Amount};
+use sn_evm::{Amount, QuotingMetrics};
 // this gets us to_string easily enough
 use strum::Display;
 

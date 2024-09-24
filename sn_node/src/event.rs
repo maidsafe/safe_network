@@ -10,7 +10,10 @@ use crate::error::{Error, Result};
 
 use serde::{Deserialize, Serialize};
 use sn_evm::AttoTokens;
-use sn_protocol::{storage::{ChunkAddress, RegisterAddress}, NetworkAddress};
+use sn_protocol::{
+    storage::{ChunkAddress, RegisterAddress},
+    NetworkAddress,
+};
 use tokio::sync::broadcast;
 
 const NODE_EVENT_CHANNEL_SIZE: usize = 500;

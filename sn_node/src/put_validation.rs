@@ -8,7 +8,7 @@
 
 use crate::{node::Node, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
-use sn_evm::{ProofOfPayment, SignedSpend, TransferError, UniquePubkey, QUOTE_EXPIRATION_SECS};
+use sn_evm::ProofOfPayment;
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     storage::{
@@ -18,6 +18,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
+use sn_transfers::{SignedSpend, TransferError, UniquePubkey, QUOTE_EXPIRATION_SECS};
 use std::collections::BTreeSet;
 use std::time::{Duration, UNIX_EPOCH};
 use tokio::task::JoinSet;

@@ -10,11 +10,11 @@ use crate::{
     close_group_majority, driver::GetRecordCfg, GetRecordError, Network, NetworkError, Result,
 };
 use libp2p::kad::{Quorum, Record};
-use sn_evm::{CashNote, CashNoteRedemption, HotWallet, MainPubkey, SignedSpend, Transfer};
 use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, RetryStrategy, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
+use sn_transfers::{CashNote, CashNoteRedemption, HotWallet, MainPubkey, SignedSpend, Transfer};
 use std::collections::BTreeSet;
 use tokio::task::JoinSet;
 

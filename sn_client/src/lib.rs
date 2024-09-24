@@ -59,10 +59,11 @@ pub mod test_utils;
 // re-export used crates to make them available to app builders
 // this ensures the version of the crates used by the app builders are the same as the ones used by the client
 // so they don't run into issues with incompatible types due to different versions of the same crate
-pub use sn_evm as transfers;
+pub use sn_evm as evm;
 pub use sn_networking as networking;
 pub use sn_protocol as protocol;
 pub use sn_registers as registers;
+pub use sn_transfers as transfers;
 
 const MAX_CONCURRENT_TASKS: usize = 4096;
 

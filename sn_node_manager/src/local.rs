@@ -8,8 +8,7 @@
 
 use crate::add_services::config::PortRange;
 use crate::helpers::{
-    check_port_availability, get_bin_version, get_start_port_if_applicable, get_username,
-    increment_port_option,
+    check_port_availability, get_bin_version, get_start_port_if_applicable, increment_port_option,
 };
 use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};
@@ -18,12 +17,12 @@ use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
 
-use sn_evm::{get_faucet_data_dir, EvmNetwork, RewardsAddress};
+use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_service_management::{
     control::ServiceControl,
     rpc::{RpcActions, RpcClient},
-    FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
+    NodeRegistry, NodeServiceData, ServiceStatus,
 };
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},

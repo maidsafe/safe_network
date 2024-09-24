@@ -17,7 +17,9 @@ use sn_client::{
     acc_packet::load_account_wallet_or_create_with_mnemonic, fund_faucet_from_genesis_wallet,
     Client,
 };
-use sn_evm::{get_faucet_data_dir, wallet_lockfile_name, AttoTokens, Transfer, WALLET_DIR_NAME};
+use sn_transfers::{
+    get_faucet_data_dir, wallet_lockfile_name, NanoTokens, Transfer, WALLET_DIR_NAME,
+};
 use std::path::Path;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Semaphore;
@@ -255,7 +257,7 @@ pub async fn restart_faucet_server(client: &Client) -> Result<()> {
 async fn respond_to_distribution_request(
     client: Client,
     query: HashMap<String, String>,
-    balances: HashMap<String, AttoTokens>,
+    balances: HashMap<String, NanoTokens>,
     semaphore: Arc<Semaphore>,
 ) -> std::result::Result<impl Reply, std::convert::Infallible> {
     let permit = semaphore.try_acquire();
@@ -456,7 +458,7 @@ async fn startup_server(client: Client) -> Result<()> {
     let semaphore = Arc::new(Semaphore::new(1));
 
     #[allow(unused)]
-    let mut balances = HashMap::<String, AttoTokens>::new();
+    let mut balances = HashMap::<String, NanoTokens>::new();
     #[cfg(feature = "distribution")]
     {
         balances = token_distribution::load_maid_snapshot()?;
@@ -561,7 +563,7 @@ fn deposit(root_dir: &Path) -> Result<()> {
 
     wallet.try_load_cash_notes()?;
 
-    let deposited = AttoTokens::from_atto(wallet.balance().as_atto() - previous_balance.as_atto());
+    let deposited = NanoTokens::from(wallet.balance().as_nano() - previous_balance.as_nano());
     if deposited.is_zero() {
         println!("Nothing deposited.");
     } else if let Err(err) = wallet.deposit_and_store_to_disk(&vec![]) {
