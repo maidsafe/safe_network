@@ -68,6 +68,7 @@ tracing-subscriber = { version = "0.3.17", features = ["env-filter", "serde"] }
 tui-input = "0.8.0"
 which = "6.0.1"
 faccess = "0.2.4"
+throbber-widgets-tui = "0.7.0"
 
 [build-dependencies]
 vergen = { version = "8.2.6", features = ["build", "git", "gitoxide", "cargo"] }
