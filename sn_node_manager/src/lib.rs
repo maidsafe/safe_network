@@ -41,13 +41,14 @@ impl From<u8> for VerbosityLevel {
 use crate::error::{Error, Result};
 use colored::Colorize;
 use semver::Version;
-use sn_evm::HotWallet;
+use sn_evm::AttoTokens;
 use sn_service_management::rpc::RpcActions;
 use sn_service_management::{
     control::ServiceControl, error::Error as ServiceError, rpc::RpcClient, NodeRegistry,
     NodeService, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
     UpgradeResult,
 };
+use sn_transfers::HotWallet;
 use tracing::debug;
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
@@ -555,7 +556,7 @@ pub async fn refresh_node_registry(
         // exists.
         match HotWallet::try_load_from(&node.data_dir_path) {
             Ok(wallet) => {
-                node.reward_balance = Some(wallet.balance());
+                node.reward_balance = Some(AttoTokens::from_u64(wallet.balance().as_nano()));
                 trace!(
                     "Wallet balance for node {}: {}",
                     node.service_name,

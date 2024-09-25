@@ -49,6 +49,7 @@ sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.0" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.8" }
 sn_service_management = { path = "../sn_service_management", version = "0.3.11" }
 sn-releases = "0.2.6"
+sn_transfers ={ path = "../sn_transfers", version = "0.19.0" }
 sn_evm = { path = "../sn_evm", version = "0.1" }
 sysinfo = "0.30.12"
 thiserror = "1.0.23"
@@ -56,7 +57,6 @@ tokio = { version = "1.26", features = ["full"] }
 tracing = { version = "~0.1.26" }
 tonic = { version = "0.6.2" }
 uuid = { version = "1.5.0", features = ["v4"] }
-which = "6.0.1"
 
 [target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
 nix = { version = "0.27.1", features = ["fs", "user"] }

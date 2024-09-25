@@ -11,8 +11,9 @@ use petgraph::dot::Dot;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
-use sn_evm::{
-    is_genesis_spend, Amount, AttoTokens, CashNoteRedemption, DerivationIndex, Hash, SignedSpend, SpendAddress, UniquePubkey
+use sn_transfers::{
+    is_genesis_spend, CashNoteRedemption, DerivationIndex, Hash, NanoTokens, SignedSpend,
+    SpendAddress, UniquePubkey,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -38,7 +39,7 @@ use super::dag_error::{DagError, SpendFault};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpendDag {
     /// A directed graph of spend addresses
-    dag: DiGraph<SpendAddress, AttoTokens>,
+    dag: DiGraph<SpendAddress, NanoTokens>,
     /// All the spends refered to in the dag indexed by their SpendAddress
     spends: BTreeMap<SpendAddress, DagEntry>,
     /// The source of the DAG (aka Genesis)
@@ -191,7 +192,7 @@ impl SpendDag {
             return true;
         }
         // link to ancestors
-        let pending_amount = AttoTokens::from_u64(0);
+        let pending_amount = NanoTokens::zero();
         for ancestor in spend.spend.ancestors.iter() {
             let ancestor_addr = SpendAddress::from_unique_pubkey(ancestor);
 
@@ -284,7 +285,7 @@ impl SpendDag {
     }
 
     pub fn dump_payment_forward_statistics(&self, sk: &SecretKey) -> String {
-        let mut statistics: BTreeMap<String, Vec<AttoTokens>> = Default::default();
+        let mut statistics: BTreeMap<String, Vec<NanoTokens>> = Default::default();
 
         let mut hash_dictionary: BTreeMap<Hash, String> = Default::default();
 
@@ -317,11 +318,10 @@ impl SpendDag {
 
         let mut content = "Sender, Times, Amount".to_string();
         for (sender, payments) in statistics.iter() {
-            let total_amount: Amount = payments
+            let total_amount: u64 = payments
                 .iter()
-                .map(|nano_tokens| nano_tokens.as_atto())
+                .map(|nano_tokens| nano_tokens.as_nano())
                 .sum();
-            let total_amount = Amount::from(total_amount);
             content = format!("{content}\n{sender}, {}, {total_amount}", payments.len());
         }
         content

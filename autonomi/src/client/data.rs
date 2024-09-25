@@ -2,7 +2,6 @@ use crate::self_encryption::{encrypt, DataMapLevel};
 use crate::Client;
 use bytes::Bytes;
 use evmlib::common::{QuoteHash, QuotePayment, TxHash};
-use evmlib::contract::chunk_payments;
 use evmlib::wallet;
 use evmlib::wallet::Wallet;
 use libp2p::futures;
@@ -30,7 +29,7 @@ pub enum PutError {
     #[error("A network error occurred.")]
     Network(#[from] NetworkError),
     #[error("A wallet error occurred.")]
-    Wallet(#[from] sn_evm::WalletError),
+    Wallet(#[from] sn_evm::EvmError),
     #[error("Error occurred during payment.")]
     PayError(#[from] PayError),
 }

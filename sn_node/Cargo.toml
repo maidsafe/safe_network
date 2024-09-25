@@ -56,6 +56,7 @@ sn_logging = { path = "../sn_logging", version = "0.2.33" }
 sn_networking = { path = "../sn_networking", version = "0.18.0" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.8" }
 sn_registers = { path = "../sn_registers", version = "0.3.18" }
+sn_transfers ={ path = "../sn_transfers", version = "0.19.0" }
 sn_evm = { path = "../sn_evm", version = "0.1" }
 sn_service_management = { path = "../sn_service_management", version = "0.3.11" }
 thiserror = "1.0.23"
@@ -79,7 +80,6 @@ strum = { version = "0.26.2", features = ["derive"] }
 color-eyre = "0.6.2"
 
 [dev-dependencies]
-assert_matches = "1.5.0"
 reqwest = { version = "0.12.2", default-features = false, features = [
     "rustls-tls-manual-roots",
 ] }

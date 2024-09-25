@@ -22,6 +22,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Entry, EntryHash, Permissions, Register, RegisterAddress, SignedRegister};
+use sn_transfers::WalletError;
 use std::collections::{BTreeSet, HashSet, LinkedList};
 use xor_name::XorName;
 
@@ -121,7 +122,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -177,7 +178,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -212,7 +213,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -247,7 +248,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -283,7 +284,7 @@ impl ClientRegister {
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
     /// # use sn_registers::Permissions;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// # let mut rng = rand::thread_rng();
@@ -473,7 +474,7 @@ impl ClientRegister {
     /// # use std::collections::BTreeSet;
     /// # use tempfile::TempDir;
     /// # use sn_client::WalletClient;
-    /// # use sn_evm::{HotWallet, MainSecretKey};
+    /// # use sn_transfers::{HotWallet, MainSecretKey};
     /// # let mut rng = rand::thread_rng();
     /// # let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let address = XorName::random(&mut rng);
@@ -541,7 +542,12 @@ impl ClientRegister {
                     royalties_fees = payment_result.royalty_fees;
 
                     // Get payment proofs needed to publish the Register
-                    let (payment, payee) = wallet_client.get_recent_payment_for_addr(&net_addr)?;
+                    let xorname = net_addr
+                        .as_xorname()
+                        .ok_or(WalletError::InvalidAddressType)?;
+                    let (payment, payee) = wallet_client
+                        .client
+                        .cache_read_payment_for_addr(&xorname, wallet_client.wallet.root_dir())?;
                     debug!("payments found: {payment:?}");
                     payment_info = Some((payment, payee));
                 }

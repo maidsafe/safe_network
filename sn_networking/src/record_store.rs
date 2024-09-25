@@ -30,7 +30,7 @@ use prometheus_client::metrics::gauge::Gauge;
 use rand::RngCore;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-use sn_evm::{AttoTokens, QuotingMetrics, TOTAL_SUPPLY};
+use sn_evm::{AttoTokens, QuotingMetrics};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,

@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{Result, TransferError};
+use crate::{EvmError, Result};
 
 pub use evmlib::common::Amount;
 use serde::{Deserialize, Serialize};
@@ -78,7 +78,7 @@ impl From<u64> for AttoTokens {
 }
 
 impl FromStr for AttoTokens {
-    type Err = TransferError;
+    type Err = EvmError;
 
     fn from_str(value_str: &str) -> Result<Self> {
         let mut itr = value_str.splitn(2, '.');
@@ -87,12 +87,12 @@ impl FromStr for AttoTokens {
                 .next()
                 .and_then(|s| s.parse::<Amount>().ok())
                 .ok_or_else(|| {
-                    TransferError::FailedToParseAttoToken("Can't parse token units".to_string())
+                    EvmError::FailedToParseAttoToken("Can't parse token units".to_string())
                 })?;
 
             units
                 .checked_mul(Amount::from(TOKEN_TO_RAW_CONVERSION))
-                .ok_or(TransferError::ExcessiveNanoValue)?
+                .ok_or(EvmError::ExcessiveValue)?
         };
 
         let remainder = {
@@ -102,12 +102,12 @@ impl FromStr for AttoTokens {
                 Amount::ZERO
             } else {
                 let parsed_remainder = remainder_str.parse::<Amount>().map_err(|_| {
-                    TransferError::FailedToParseAttoToken("Can't parse token remainder".to_string())
+                    EvmError::FailedToParseAttoToken("Can't parse token remainder".to_string())
                 })?;
 
                 let remainder_conversion = TOKEN_TO_RAW_POWER_OF_10_CONVERSION
                     .checked_sub(remainder_str.len() as u64)
-                    .ok_or(TransferError::LossOfNanoPrecision)?;
+                    .ok_or(EvmError::LossOfPrecision)?;
                 parsed_remainder * Amount::from(10).pow(Amount::from(remainder_conversion))
             }
         };
@@ -133,15 +133,30 @@ mod tests {
         assert_eq!(AttoTokens::from_u64(0), AttoTokens::from_str("0")?);
         assert_eq!(AttoTokens::from_u64(0), AttoTokens::from_str("0.")?);
         assert_eq!(AttoTokens::from_u64(0), AttoTokens::from_str("0.0")?);
-        assert_eq!(AttoTokens::from_u64(1), AttoTokens::from_str("0.000000000000000001")?);
-        assert_eq!(AttoTokens::from_u64(1_000_000_000_000_000_000), AttoTokens::from_str("1")?);
-        assert_eq!(AttoTokens::from_u64(1_000_000_000_000_000_000), AttoTokens::from_str("1.")?);
-        assert_eq!(AttoTokens::from_u64(1_000_000_000_000_000_000), AttoTokens::from_str("1.0")?);
+        assert_eq!(
+            AttoTokens::from_u64(1),
+            AttoTokens::from_str("0.000000000000000001")?
+        );
+        assert_eq!(
+            AttoTokens::from_u64(1_000_000_000_000_000_000),
+            AttoTokens::from_str("1")?
+        );
+        assert_eq!(
+            AttoTokens::from_u64(1_000_000_000_000_000_000),
+            AttoTokens::from_str("1.")?
+        );
+        assert_eq!(
+            AttoTokens::from_u64(1_000_000_000_000_000_000),
+            AttoTokens::from_str("1.0")?
+        );
         assert_eq!(
             AttoTokens::from_u64(1_000_000_000_000_000_001),
             AttoTokens::from_str("1.000000000000000001")?
         );
-        assert_eq!(AttoTokens::from_u64(1_100_000_000), AttoTokens::from_str("1.1")?);
+        assert_eq!(
+            AttoTokens::from_u64(1_100_000_000),
+            AttoTokens::from_str("1.1")?
+        );
         assert_eq!(
             AttoTokens::from_u64(1_100_000_000_000_000_001),
             AttoTokens::from_str("1.100000000000000001")?
@@ -160,29 +175,29 @@ mod tests {
         );
 
         assert_eq!(
-            Err(TransferError::FailedToParseAttoToken(
+            Err(EvmError::FailedToParseAttoToken(
                 "Can't parse token units".to_string()
             )),
             AttoTokens::from_str("a")
         );
         assert_eq!(
-            Err(TransferError::FailedToParseAttoToken(
+            Err(EvmError::FailedToParseAttoToken(
                 "Can't parse token remainder".to_string()
             )),
             AttoTokens::from_str("0.a")
         );
         assert_eq!(
-            Err(TransferError::FailedToParseAttoToken(
+            Err(EvmError::FailedToParseAttoToken(
                 "Can't parse token remainder".to_string()
             )),
             AttoTokens::from_str("0.0.0")
         );
         assert_eq!(
-            Err(TransferError::LossOfNanoPrecision),
+            Err(EvmError::LossOfPrecision),
             AttoTokens::from_str("0.0000000009")
         );
         assert_eq!(
-            Err(TransferError::ExcessiveNanoValue),
+            Err(EvmError::ExcessiveValue),
             AttoTokens::from_str("18446744074")
         );
         Ok(())
@@ -193,8 +208,14 @@ mod tests {
         assert_eq!("0.000000000", format!("{}", AttoTokens::from_u64(0)));
         assert_eq!("0.000000001", format!("{}", AttoTokens::from_u64(1)));
         assert_eq!("0.000000010", format!("{}", AttoTokens::from_u64(10)));
-        assert_eq!("1.000000000", format!("{}", AttoTokens::from_u64(1_000_000_000_000_000_000)));
-        assert_eq!("1.000000001", format!("{}", AttoTokens::from_u64(1_000_000_000_000_000_001)));
+        assert_eq!(
+            "1.000000000",
+            format!("{}", AttoTokens::from_u64(1_000_000_000_000_000_000))
+        );
+        assert_eq!(
+            "1.000000001",
+            format!("{}", AttoTokens::from_u64(1_000_000_000_000_000_001))
+        );
         assert_eq!(
             "4294967295.000000000",
             format!("{}", AttoTokens::from_u64(4_294_967_295_000_000_000))
@@ -207,14 +228,26 @@ mod tests {
             Some(AttoTokens::from_u64(3)),
             AttoTokens::from_u64(1).checked_add(AttoTokens::from_u64(2))
         );
-        assert_eq!(None, AttoTokens::from_u64(u64::MAX).checked_add(AttoTokens::from_u64(1)));
-        assert_eq!(None, AttoTokens::from_u64(u64::MAX).checked_add(AttoTokens::from_u64(u64::MAX)));
+        assert_eq!(
+            None,
+            AttoTokens::from_u64(u64::MAX).checked_add(AttoTokens::from_u64(1))
+        );
+        assert_eq!(
+            None,
+            AttoTokens::from_u64(u64::MAX).checked_add(AttoTokens::from_u64(u64::MAX))
+        );
 
         assert_eq!(
             Some(AttoTokens::from_u64(0)),
             AttoTokens::from_u64(u64::MAX).checked_sub(AttoTokens::from_u64(u64::MAX))
         );
-        assert_eq!(None, AttoTokens::from_u64(0).checked_sub(AttoTokens::from_u64(u64::MAX)));
-        assert_eq!(None, AttoTokens::from_u64(10).checked_sub(AttoTokens::from_u64(11)));
+        assert_eq!(
+            None,
+            AttoTokens::from_u64(0).checked_sub(AttoTokens::from_u64(u64::MAX))
+        );
+        assert_eq!(
+            None,
+            AttoTokens::from_u64(10).checked_sub(AttoTokens::from_u64(11))
+        );
     }
 }

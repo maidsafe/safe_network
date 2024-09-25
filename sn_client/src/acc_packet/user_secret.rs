@@ -6,13 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    error::{Error, Result},
-    transfers::MainSecretKey,
-};
+use crate::error::{Error, Result};
 use bls::SecretKey;
 use curv::elliptic::curves::ECScalar;
 use rand::RngCore;
+use sn_transfers::MainSecretKey;
 use std::path::Path;
 use xor_name::XorName;
 

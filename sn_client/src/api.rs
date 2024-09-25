@@ -18,10 +18,7 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use rand::{thread_rng, Rng};
-use sn_evm::{
-    CashNote, CashNoteRedemption, MainPubkey, AttoTokens, ProofOfPayment, SignedSpend,
-    TransferError, GENESIS_SPEND_UNIQUE_KEY,
-};
+use sn_evm::{AttoTokens, ProofOfPayment};
 use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
@@ -37,16 +34,25 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_registers::{Permissions, SignedRegister};
+use sn_transfers::{
+    CashNote, CashNoteRedemption, MainPubkey, SignedSpend, TransferError, WalletError,
+    WalletResult, GENESIS_SPEND_UNIQUE_KEY,
+};
 #[cfg(target_arch = "wasm32")]
 use std::path::PathBuf;
 use std::{
     collections::{HashMap, HashSet},
     num::NonZeroUsize,
+    path::Path,
     sync::Arc,
 };
 use tokio::time::Duration;
 use tracing::trace;
 use xor_name::XorName;
+
+/// temporary stuff for the payment proof cache
+pub const WALLET_DIR_NAME: &str = "wallet";
+const PAYMENTS_DIR_NAME: &str = "payments";
 
 /// The maximum duration the client will wait for a connection to the network before timing out.
 pub const CONNECTION_TIMEOUT: Duration = Duration::from_secs(30);
@@ -502,14 +508,14 @@ impl Client {
     /// use sn_client::{Client, WalletClient, Error};
     /// use tempfile::TempDir;
     /// use bls::SecretKey;
-    /// use sn_evm::{MainSecretKey};
+    /// use sn_transfers::{MainSecretKey};
     /// use xor_name::XorName;
     /// use sn_registers::RegisterAddress;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// // Set up Client, Wallet, etc
     /// use sn_registers::Permissions;
-    /// use sn_evm::HotWallet;
+    /// use sn_transfers::HotWallet;
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// let tmp_path = TempDir::new()?.path().to_owned();
     /// let mut wallet = HotWallet::load_from_path(&tmp_path,Some(MainSecretKey::new(SecretKey::random())))?;
@@ -572,8 +578,8 @@ impl Client {
                     .ok_or(Error::TotalPriceTooHigh)?;
                 total_royalties = total_cost
                     .checked_add(royalties_top_up)
-                    .ok_or(Error::Wallet(sn_evm::WalletError::from(
-                        sn_evm::TransferError::ExcessiveNanoValue,
+                    .ok_or(Error::Wallet(sn_transfers::WalletError::from(
+                        sn_transfers::TransferError::ExcessiveNanoValue,
                     )))?;
                 stored = self.verify_register_stored(*reg_address).await.is_ok();
             }
@@ -880,7 +886,7 @@ impl Client {
     /// use sn_client::{Client, Error};
     /// use bls::SecretKey;
     /// use xor_name::XorName;
-    /// use sn_evm::SpendAddress;
+    /// use sn_transfers::SpendAddress;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
@@ -1013,7 +1019,7 @@ impl Client {
     /// use bls::SecretKey;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(),Error>{
-    /// use sn_evm::{CashNote, CashNoteRedemption, MainPubkey};
+    /// use sn_transfers::{CashNote, CashNoteRedemption, MainPubkey};
     /// let client = Client::new(SecretKey::random(), None, None, None).await?;
     /// // Create a main public key
     /// let pk = SecretKey::random().public_key();
@@ -1037,6 +1043,75 @@ impl Client {
             .verify_cash_notes_redemptions(main_pubkey, cashnote_redemptions)
             .await?;
         Ok(cash_notes)
+    }
+
+    /// Reads the payment proof from disk
+    /// This is temporary until we have a better way to send this information around in our code
+    /// Maybe then, this will be caching only
+    pub fn cache_read_payment_for_addr(
+        &self,
+        xorname: &XorName,
+        root_dir: &Path,
+    ) -> WalletResult<(sn_evm::ProofOfPayment, PeerId)> {
+        // Read all the payments made to the provided xorname
+        let unique_file_name = format!("{}.payment", hex::encode(xorname));
+
+        let payment_dir = root_dir.join(PAYMENTS_DIR_NAME);
+        let payment_file_path = payment_dir.join(unique_file_name);
+
+        debug!("Getting payment from {payment_file_path:?}");
+        let payments = if let Ok(file) = std::fs::File::open(&payment_file_path) {
+            if let Ok(p) = rmp_serde::from_read(&file) {
+                p
+            } else {
+                warn!("Failed to read payment file for {xorname:?}");
+                vec![]
+            }
+        } else {
+            warn!("Failed to open payment file for {xorname:?}");
+            vec![]
+        };
+
+        let payment: &ProofOfPayment = payments
+            .last()
+            .ok_or(WalletError::NoPaymentForAddress(*xorname))?;
+        trace!("Payment retrieved for {xorname:?} from disk: {payment:?}");
+        let peer_id = payment.quote.peer_id().map_err(|e| {
+            WalletError::InvalidPeerIdForPayment(format!("quote peer invalid for {xorname:?}: {e}"))
+        })?;
+
+        Ok((payment.clone(), peer_id))
+    }
+
+    /// Writes the payment proof to disk to be recovered by the above function
+    /// This is temporary until we have a better way to send this information around in our code
+    /// Maybe then, this will be caching only
+    pub fn cache_write_payment_for_addr(
+        &self,
+        xorname: &XorName,
+        payment: ProofOfPayment,
+        root_dir: &Path,
+    ) {
+        // Write the payment to disk
+        let unique_file_name = format!("{}.payment", hex::encode(xorname));
+
+        let payment_dir = root_dir.join(PAYMENTS_DIR_NAME);
+        let payment_file_path = payment_dir.join(unique_file_name);
+
+        debug!("Writing payment to {payment_file_path:?}");
+        if let Err(e) = std::fs::create_dir_all(&payment_dir) {
+            warn!(
+                "{}",
+                WalletError::FailedToCreatePaymentDir(*xorname, e.to_string())
+            );
+        }
+        if let Ok(mut file) = std::fs::File::create(&payment_file_path) {
+            if let Err(e) = rmp_serde::encode::write(&mut file, &vec![payment]) {
+                warn!("Failed to write payment file for {xorname:?}: {e}");
+            }
+        } else {
+            warn!("Failed to create payment file for {xorname:?}");
+        }
     }
 }
 

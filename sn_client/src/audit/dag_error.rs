@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use serde::{Deserialize, Serialize};
-use sn_evm::SpendAddress;
+use sn_transfers::SpendAddress;
 use thiserror::Error;
 
 /// Errors that mean the DAG is invalid

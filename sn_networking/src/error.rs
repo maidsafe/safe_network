@@ -12,8 +12,8 @@ use libp2p::{
     swarm::DialError,
     PeerId, TransportError,
 };
-use sn_evm::{SignedSpend, SpendAddress};
 use sn_protocol::{messages::Response, storage::RecordKind, NetworkAddress, PrettyPrintRecordKey};
+use sn_transfers::{SignedSpend, SpendAddress};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
@@ -105,9 +105,11 @@ pub enum NetworkError {
     ProtocolError(#[from] sn_protocol::error::Error),
 
     #[error("Wallet Error {0}")]
-    Wallet(#[from] sn_evm::WalletError),
+    Wallet(#[from] sn_transfers::WalletError),
     #[error("Transfer Error {0}")]
-    Transfer(#[from] sn_evm::TransferError),
+    Transfer(#[from] sn_transfers::TransferError),
+    #[error("Evm payment Error {0}")]
+    EvmPaymemt(#[from] sn_evm::EvmError),
 
     #[error("Failed to sign the message with the PeerId keypair")]
     SigningFailed(#[from] libp2p::identity::SigningError),

@@ -17,6 +17,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::{Entry, EntryHash};
+use sn_transfers::WalletError;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -196,7 +197,13 @@ impl FoldersApi {
             }
         }
 
-        let payment_info = wallet_client.get_recent_payment_for_addr(&self.as_net_addr())?;
+        let xorname = self
+            .as_net_addr()
+            .as_xorname()
+            .ok_or(WalletError::InvalidAddressType)?;
+        let payment_info = wallet_client
+            .client
+            .cache_read_payment_for_addr(&xorname, wallet_client.wallet.root_dir())?;
 
         self.register
             .sync(

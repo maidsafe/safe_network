@@ -14,9 +14,9 @@ use color_eyre::Result;
 
 use sn_client::{
     protocol::{storage::ChunkAddress, NetworkAddress},
-    transfers::{Amount, AttoTokens},
     FilesApi,
 };
+use sn_evm::{Amount, AttoTokens};
 
 pub struct Estimator {
     chunk_manager: ChunkManager,
@@ -46,7 +46,7 @@ impl Estimator {
         let balance = FilesApi::new(self.files_api.client().clone(), root_dir.to_path_buf())
             .wallet()?
             .balance()
-            .as_atto();
+            .as_nano();
 
         for (chunk_address, _location) in self.chunk_manager.get_chunks() {
             let c = self.files_api.clone();
@@ -67,14 +67,17 @@ impl Estimator {
             .expect("estimate_cost: Concurrency error.");
         }
 
-        let total = balance.saturating_sub(estimate);
+        let total = balance.saturating_sub(estimate.try_into().unwrap_or(u64::MAX));
 
         println!("**************************************");
-        println!("Your current balance: {}", AttoTokens::from_atto(balance));
-        println!("Transfer cost estimate: {}", AttoTokens::from_atto(estimate));
+        println!("Your current balance: {}", AttoTokens::from_u64(balance));
+        println!(
+            "Transfer cost estimate: {}",
+            AttoTokens::from_atto(estimate)
+        );
         println!(
             "Your balance estimate after transfer: {}",
-            AttoTokens::from_atto(total)
+            AttoTokens::from_u64(total)
         );
         println!("**************************************");
 

@@ -38,6 +38,10 @@ impl WalletApi {
         }
     }
 
+    pub fn root_dir(&self) -> &Path {
+        self.payment_dir.parent().unwrap_or(&self.payment_dir)
+    }
+
     /// Create a new instance give the root dir.
     pub fn new_from_wallet_dir(wallet_dir: &Path) -> Self {
         Self {

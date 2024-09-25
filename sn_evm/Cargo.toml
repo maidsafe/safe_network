@@ -14,41 +14,24 @@ version = "0.1.0"
 test-utils = []
 
 [dependencies]
-bls = { package = "blsttc", version = "8.0.1" }
-chrono = "0.4.38"
 custom_debug = "~0.6.1"
-dirs-next = "~2.0.0"
 evmlib = { path = "../evmlib" }
 hex = "~0.4.3"
 lazy_static = "~1.4.0"
 libp2p = { version = "0.53", features = ["identify", "kad"] }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
-secrecy = "0.8.0"
-serde_bytes = "0.11"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
 serde_json = "1.0.108"
 thiserror = "1.0.24"
 tiny-keccak = { version = "~2.0.2", features = ["sha3"] }
 tracing = { version = "~0.1.26" }
-walkdir = "~2.5.0"
 xor_name = "5.0.0"
-rayon = "1.8.0"
 ring = "0.17.8"
 tempfile = "3.10.1"
 
 [dev-dependencies]
 tokio = { version = "1.32.0", features = ["macros", "rt"] }
-criterion = "0.5.1"
-assert_fs = "1.0.0"
-eyre = "0.6.8"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-fs2 = "0.4.3"
-
-[target."cfg(unix)".dev-dependencies.pprof]
-version = "0.13.0"
-features = ["flamegraph"]
 
 [lints]
 workspace = true

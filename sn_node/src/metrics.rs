@@ -36,7 +36,6 @@ pub(crate) struct NodeMetricsRecorder {
 
     // wallet
     pub(crate) current_reward_wallet_balance: Gauge,
-    pub(crate) total_forwarded_rewards: Gauge,
 
     // to track the uptime of the node.
     pub(crate) started_instant: Instant,
@@ -108,13 +107,6 @@ impl NodeMetricsRecorder {
             current_reward_wallet_balance.clone(),
         );
 
-        let total_forwarded_rewards = Gauge::default();
-        sub_registry.register(
-            "total_forwarded_rewards",
-            "The cumulative number of Nanos forwarded by the node",
-            total_forwarded_rewards.clone(),
-        );
-
         let uptime = Gauge::default();
         sub_registry.register(
             "uptime",
@@ -130,7 +122,6 @@ impl NodeMetricsRecorder {
             peer_added_to_routing_table,
             peer_removed_from_routing_table,
             current_reward_wallet_balance,
-            total_forwarded_rewards,
             started_instant: Instant::now(),
             uptime,
         }

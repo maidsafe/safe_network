@@ -8,7 +8,7 @@ use rand::Rng;
 use std::env;
 
 fn get_var_or_panic(var: &str) -> String {
-    env::var(var).expect(&format!("{} environment variable needs to be set", var))
+    env::var(var).expect(&format!("{var} environment variable needs to be set"))
 }
 
 pub fn gen_random_data(len: usize) -> Bytes {

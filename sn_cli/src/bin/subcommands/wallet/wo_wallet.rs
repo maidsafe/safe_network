@@ -15,7 +15,7 @@ use color_eyre::{
     Result,
 };
 use dialoguer::Confirm;
-use sn_client::transfers::{MainPubkey, AttoTokens, SignedTransaction, Transfer, WatchOnlyWallet};
+use sn_client::transfers::{MainPubkey, NanoTokens, SignedTransaction, Transfer, WatchOnlyWallet};
 use sn_client::Client;
 use std::{path::Path, str::FromStr};
 use walkdir::WalkDir;
@@ -126,7 +126,7 @@ pub(crate) async fn wo_wallet_cmds_without_client(
                     wallets.len(),
                     root_dir.display()
                 );
-                let mut total = AttoTokens::zero();
+                let mut total = NanoTokens::zero();
                 for (wo_wallet, folder_name) in wallets {
                     let balance = wo_wallet.balance();
                     println!("{folder_name}: {balance}");
@@ -209,7 +209,7 @@ fn get_watch_only_wallets(root_dir: &Path) -> Result<Vec<(WatchOnlyWallet, Strin
 fn build_unsigned_transaction(from: &str, amount: &str, to: &str, root_dir: &Path) -> Result<()> {
     let main_pk = MainPubkey::from_hex(from)?;
     let mut wallet = watch_only_wallet_from_pk(main_pk, root_dir)?;
-    let amount = match AttoTokens::from_str(amount) {
+    let amount = match NanoTokens::from_str(amount) {
         Ok(amount) => amount,
         Err(err) => {
             println!("The amount cannot be parsed. Nothing sent.");

@@ -9,11 +9,11 @@
 use crate::{Client, Error, SpendDag};
 
 use futures::{future::join_all, StreamExt};
-use sn_evm::{
-    Amount, AttoTokens, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError,
-    WalletResult, DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
-};
 use sn_networking::{GetRecordError, NetworkError};
+use sn_transfers::{
+    NanoTokens, SignedSpend, SpendAddress, SpendReason, UniquePubkey, WalletError, WalletResult,
+    DEFAULT_NETWORK_ROYALTIES_PK, GENESIS_SPEND_UNIQUE_KEY, NETWORK_ROYALTIES_PK,
+};
 use std::{
     collections::{BTreeMap, BTreeSet},
     time::{Duration, Instant},
@@ -149,11 +149,11 @@ impl Client {
     ///     2, addrs_to_get to hold the addresses for further track
     pub async fn crawl_to_next_utxos(
         &self,
-        addrs_to_get: &mut BTreeMap<SpendAddress, (u64, AttoTokens)>,
+        addrs_to_get: &mut BTreeMap<SpendAddress, (u64, NanoTokens)>,
         sender: Sender<(SignedSpend, u64, bool)>,
         reattempt_seconds: u64,
     ) -> (
-        BTreeMap<SpendAddress, (u64, Instant, AttoTokens)>,
+        BTreeMap<SpendAddress, (u64, Instant, NanoTokens)>,
         Vec<SpendAddress>,
     ) {
         let mut failed_utxos = BTreeMap::new();
@@ -214,7 +214,7 @@ impl Client {
                         fetched_addrs.push(address);
                     }
                     InternalGetNetworkSpend::NotFound => {
-                        let reattempt_interval = if amount.as_atto() > Amount::from(100000) {
+                        let reattempt_interval = if amount.as_nano() > 100000 {
                             info!("Not find spend of big-UTXO {address:?} with {amount}");
                             reattempt_seconds
                         } else {
@@ -575,7 +575,7 @@ impl Client {
 
 /// Helper function to analyze spend for beta_tracking optimization.
 /// returns the new_utxos that needs to be further tracked.
-fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, AttoTokens)> {
+fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, NanoTokens)> {
     // Filter out royalty outputs
     let royalty_pubkeys: BTreeSet<_> = spend
         .spend
@@ -603,7 +603,7 @@ fn beta_track_analyze_spend(spend: &SignedSpend) -> BTreeSet<(SpendAddress, Atto
             } else {
                 let addr = SpendAddress::from_unique_pubkey(unique_pubkey);
 
-                if amount.as_atto() > Amount::from(100000) {
+                if amount.as_nano() > 100000 {
                     info!("Spend {spend_addr:?} has a big-UTXO {addr:?} with {amount}");
                 }
 

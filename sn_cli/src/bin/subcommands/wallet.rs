@@ -11,7 +11,7 @@ pub(crate) mod helpers;
 pub(crate) mod hot_wallet;
 pub(crate) mod wo_wallet;
 
-use sn_client::transfers::{CashNote, HotWallet, MainPubkey, AttoTokens, WatchOnlyWallet};
+use sn_client::transfers::{CashNote, HotWallet, MainPubkey, NanoTokens, WatchOnlyWallet};
 use sn_protocol::storage::SpendAddress;
 
 use crate::get_stdin_password_response;
@@ -50,7 +50,7 @@ impl WalletApiHelper {
         Ok(())
     }
 
-    pub fn balance(&self) -> AttoTokens {
+    pub fn balance(&self) -> NanoTokens {
         match self {
             Self::WatchOnlyWallet(w) => w.balance(),
             Self::HotWallet(w) => w.balance(),
@@ -149,8 +149,8 @@ impl WalletApiHelper {
 
         self.try_load_cash_notes()?;
 
-        let deposited = AttoTokens::from_atto(self.balance().as_atto() - previous_balance.as_atto());
-        if deposited.is_zero() {
+        let deposited = self.balance().as_nano() - previous_balance.as_nano();
+        if deposited == 0 {
             println!("Nothing deposited.");
         } else if let Err(err) = self.deposit_and_store_to_disk(&vec![]) {
             println!("Failed to store deposited ({deposited}) amount: {err:?}");

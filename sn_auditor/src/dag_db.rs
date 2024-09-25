@@ -15,7 +15,7 @@ use graphviz_rust::{cmd::Format, exec, parse, printer::PrinterContext};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use sn_client::transfers::{
-    Hash, AttoTokens, SignedSpend, SpendAddress, DEFAULT_PAYMENT_FORWARD_SK,
+    Hash, NanoTokens, SignedSpend, SpendAddress, DEFAULT_PAYMENT_FORWARD_SK,
 };
 use sn_client::transfers::{DEFAULT_NETWORK_ROYALTIES_PK, NETWORK_ROYALTIES_PK};
 use sn_client::{Client, SpendDag, SpendDagGet};
@@ -77,9 +77,9 @@ struct BetaTracking {
 }
 
 /// Map of Discord usernames to their tracked forwarded payments
-type ForwardedPayments = BTreeMap<String, BTreeSet<(SpendAddress, AttoTokens)>>;
+type ForwardedPayments = BTreeMap<String, BTreeSet<(SpendAddress, NanoTokens)>>;
 
-type UtxoStatus = (u64, Instant, AttoTokens);
+type UtxoStatus = (u64, Instant, NanoTokens);
 
 type PartitionedUtxoStatus = (
     BTreeMap<SpendAddress, UtxoStatus>,
@@ -235,7 +235,7 @@ impl SpendDagDb {
             for addr in start_dag.get_utxos().iter() {
                 info!("Tracking genesis UTXO {addr:?}");
                 // The UTXO holding 30% will never be used, hence be counted as 0
-                let _ = utxo_addresses.insert(*addr, (0, Instant::now(), AttoTokens::zero()));
+                let _ = utxo_addresses.insert(*addr, (0, Instant::now(), NanoTokens::zero()));
             }
         }
 
@@ -345,7 +345,7 @@ impl SpendDagDb {
                         (
                             0,
                             Instant::now() + *UTXO_REATTEMPT_INTERVAL,
-                            AttoTokens::zero(),
+                            NanoTokens::zero(),
                         ),
                     )
                 }));
@@ -435,7 +435,7 @@ impl SpendDagDb {
             if default_royalty_pubkeys.contains(unique_pk) || royalty_pubkeys.contains(unique_pk) {
                 let _ = royalties.insert(
                     SpendAddress::from_unique_pubkey(unique_pk),
-                    amount.as_atto(),
+                    amount.as_nano(),
                 );
             }
         }
@@ -445,7 +445,7 @@ impl SpendDagDb {
                 "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
                 spend.spend.unique_pubkey,
                 royalties.len(),
-                spend.spend.amount().as_atto(),
+                spend.spend.amount().as_nano(),
                 spend.spend.reason
             );
             eprintln!(
@@ -458,7 +458,7 @@ impl SpendDagDb {
                 "Spend: {:?} has incorrect royalty of {}, with amount {} with reason {:?}",
                 spend.spend.unique_pubkey,
                 royalties.len(),
-                spend.spend.amount().as_atto(),
+                spend.spend.amount().as_nano(),
                 spend.spend.reason
             );
             warn!(
@@ -591,7 +591,7 @@ impl SpendDagDb {
             total_hits += rewards.len() as u64;
             let total_rewards = rewards
                 .iter()
-                .map(|(_, amount)| amount.as_atto())
+                .map(|(_, amount)| amount.as_nano())
                 .sum::<u64>();
             total_amount += total_rewards;
 
@@ -618,30 +618,30 @@ impl SpendDagDb {
             utxo_addresses
                 .iter()
                 .partition(|(_address, (_failure_times, _time_stamp, amount))| {
-                    amount.as_atto() > 100000
+                    amount.as_nano() > 100000
                 });
 
         let total_big_utxo_amount = big_utxos
             .iter()
-            .map(|(_addr, (_failure_times, _time, amount))| amount.as_atto())
+            .map(|(_addr, (_failure_times, _time, amount))| amount.as_nano())
             .sum::<u64>();
         tracking_performance =
             format!("{tracking_performance}\ntotal_big_utxo_amount: {total_big_utxo_amount}");
 
         let total_small_utxo_amount = small_utxos
             .iter()
-            .map(|(_addr, (_failure_times, _time, amount))| amount.as_atto())
+            .map(|(_addr, (_failure_times, _time, amount))| amount.as_nano())
             .sum::<u64>();
         tracking_performance =
             format!("{tracking_performance}\ntotal_small_utxo_amount: {total_small_utxo_amount}");
 
         for (addr, (_failure_times, _time, amount)) in big_utxos.iter() {
             tracking_performance =
-                format!("{tracking_performance}\n{addr:?}, {}", amount.as_atto());
+                format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
         }
         for (addr, (_failure_times, _time, amount)) in small_utxos.iter() {
             tracking_performance =
-                format!("{tracking_performance}\n{addr:?}, {}", amount.as_atto());
+                format!("{tracking_performance}\n{addr:?}, {}", amount.as_nano());
         }
 
         Ok((json, tracking_performance))

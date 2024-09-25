@@ -233,10 +233,15 @@ impl NetworkMetricsRecorder {
                 quoting_metrics,
             } => {
                 let _ = self.store_cost.set(cost.try_into().unwrap_or(i64::MAX));
+                let _ = self.relevant_records.set(
+                    quoting_metrics
+                        .close_records_stored
+                        .try_into()
+                        .unwrap_or(i64::MAX),
+                );
                 let _ = self
-                    .relevant_records
-                    .set(quoting_metrics.close_records_stored.try_into().unwrap_or(i64::MAX));
-                let _ = self.max_records.set(quoting_metrics.max_records.try_into().unwrap_or(i64::MAX));
+                    .max_records
+                    .set(quoting_metrics.max_records.try_into().unwrap_or(i64::MAX));
                 let _ = self
                     .received_payment_count
                     .set(quoting_metrics.received_payment_count as i64);

@@ -8,8 +8,7 @@
 
 use crate::add_services::config::PortRange;
 use crate::helpers::{
-    check_port_availability, get_bin_version, get_start_port_if_applicable, get_username,
-    increment_port_option,
+    check_port_availability, get_bin_version, get_start_port_if_applicable, increment_port_option,
 };
 use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};
@@ -18,12 +17,12 @@ use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
 
-use sn_evm::{get_faucet_data_dir, EvmNetwork, RewardsAddress};
+use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_service_management::{
     control::ServiceControl,
     rpc::{RpcActions, RpcClient},
-    FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
+    NodeRegistry, NodeServiceData, ServiceStatus,
 };
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -211,13 +210,21 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
         if !keep_directories {
             // At this point we don't allow path overrides, so deleting the data directory will clear
             // the log directory also.
-            std::fs::remove_dir_all(&node.data_dir_path)?;
-            debug!("Removed node data directory: {:?}", node.data_dir_path);
-            println!(
-                "  {} Removed {}",
-                "✓".green(),
-                node.data_dir_path.to_string_lossy()
-            );
+            if let Err(e) = std::fs::remove_dir_all(&node.data_dir_path) {
+                error!("Failed to remove node data directory: {:?}", e);
+                println!(
+                    "  {} Failed to remove {}: {e}",
+                    "✗".red(),
+                    node.data_dir_path.to_string_lossy()
+                );
+            } else {
+                debug!("Removed node data directory: {:?}", node.data_dir_path);
+                println!(
+                    "  {} Removed {}",
+                    "✓".green(),
+                    node.data_dir_path.to_string_lossy()
+                );
+            }
         }
     }
 

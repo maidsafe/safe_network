@@ -37,4 +37,3 @@ tracing-core = "0.1.30"
 tonic-build = { version = "~0.6.2" }
 
 [dev-dependencies]
-mockall = "0.11.3"
