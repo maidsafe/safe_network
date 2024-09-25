@@ -7,18 +7,18 @@ use bls::SecretKey;
 use bytes::Bytes;
 use evmlib::wallet::Wallet;
 use libp2p::kad::{Quorum, Record};
-use sn_client::networking::GetRecordCfg;
-use sn_client::networking::NetworkError;
-use sn_client::networking::PutRecordCfg;
-use sn_client::registers::EntryHash;
-use sn_client::registers::Permissions;
-use sn_client::registers::Register as ClientRegister;
-use sn_client::registers::SignedRegister;
+use sn_networking::GetRecordCfg;
+use sn_networking::NetworkError;
+use sn_networking::PutRecordCfg;
 use sn_protocol::storage::try_deserialize_record;
 use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
 use sn_protocol::storage::RegisterAddress;
 use sn_protocol::NetworkAddress;
+use sn_registers::EntryHash;
+use sn_registers::Permissions;
+use sn_registers::Register as ClientRegister;
+use sn_registers::SignedRegister;
 use xor_name::XorName;
 
 #[derive(Debug, thiserror::Error)]
