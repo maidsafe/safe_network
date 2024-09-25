@@ -7342,7 +7342,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sn_build_info",
- "sn_client",
  "sn_logging",
  "sn_networking",
  "sn_peers_acquisition",
