@@ -74,7 +74,7 @@ impl SwarmDriver {
                 }
                 event_string = "upnp_event";
                 info!(?upnp_event, "UPnP event");
-                if true {
+                if let libp2p::upnp::Event::GatewayNotFound = upnp_event {
                     warn!("UPnP is not enabled/supported on the gateway. Please rerun without the `--upnp` flag");
                     self.send_event(NetworkEvent::TerminateNode {
                         reason: crate::event::TerminateNodeReason::UpnpGatewayNotFound,
