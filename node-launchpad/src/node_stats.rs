@@ -117,15 +117,6 @@ impl NodeStats {
                     }
                     _ => {}
                 }
-            } else if sample.metric == "sn_node_total_forwarded_rewards" {
-                match sample.value {
-                    prometheus_parse::Value::Counter(val)
-                    | prometheus_parse::Value::Gauge(val)
-                    | prometheus_parse::Value::Untyped(val) => {
-                        stats.received_rewards = val as u64;
-                    }
-                    _ => {}
-                }
             }
         }
         trace!(

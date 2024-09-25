@@ -2,7 +2,6 @@ use crate::self_encryption::{encrypt, DataMapLevel};
 use crate::Client;
 use bytes::Bytes;
 use evmlib::common::{QuoteHash, QuotePayment, TxHash};
-use evmlib::contract::chunk_payments;
 use evmlib::wallet;
 use evmlib::wallet::Wallet;
 use libp2p::futures;

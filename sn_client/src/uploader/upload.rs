@@ -972,7 +972,7 @@ impl InnerUploader {
                 let filter_list = client
                     .cache_read_payment_for_addr(&xorname, root_dir)
                     .into_iter()
-                    .map(|(proof_of_payment, peerid)| {
+                    .map(|(proof_of_payment, _peerid)| {
                         let peer_id_bytes = proof_of_payment
                             .quote
                             .peer_id()
