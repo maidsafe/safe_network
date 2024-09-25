@@ -7,9 +7,9 @@ use evmlib::wallet::Wallet;
 use libp2p::futures;
 use libp2p::kad::{Quorum, Record};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_client::networking::{GetRecordCfg, PutRecordCfg};
-use sn_client::networking::{Network, NetworkError, PayeeQuote};
 use sn_evm::ProofOfPayment;
+use sn_networking::{GetRecordCfg, PutRecordCfg};
+use sn_networking::{Network, NetworkError, PayeeQuote};
 use sn_protocol::{
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind,
@@ -57,7 +57,7 @@ pub enum GetError {
     #[error("General networking error: {0:?}")]
     Network(#[from] NetworkError),
     #[error("General protocol error: {0:?}")]
-    Protocol(#[from] sn_client::protocol::Error),
+    Protocol(#[from] sn_protocol::Error),
 }
 
 impl Client {
