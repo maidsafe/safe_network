@@ -13,12 +13,13 @@ mod data;
 #[cfg(feature = "files")]
 #[cfg_attr(docsrs, doc(cfg(feature = "files")))]
 mod files;
+#[cfg(feature = "native-transfers")]
+#[cfg_attr(docsrs, doc(cfg(feature = "native-transfers")))]
+mod native_transfers;
+
 #[cfg(feature = "registers")]
 #[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
 mod registers;
-#[cfg(feature = "transfers")]
-#[cfg_attr(docsrs, doc(cfg(feature = "transfers")))]
-mod transfers;
 #[cfg(feature = "vault")]
 mod vault;
 

@@ -49,8 +49,8 @@ mod client;
 mod secrets;
 #[cfg(feature = "data")]
 mod self_encryption;
-#[cfg(feature = "transfers")]
+#[cfg(feature = "native-transfers")]
 mod wallet;
 
-#[cfg(feature = "transfers")]
+#[cfg(feature = "native-transfers")]
 const VERIFY_STORE: bool = true;

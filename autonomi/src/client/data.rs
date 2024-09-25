@@ -23,7 +23,7 @@ use sn_transfers::Payment;
 use tokio::task::{JoinError, JoinSet};
 use xor_name::XorName;
 
-use super::transfers::SendSpendsError;
+use super::native_transfers::SendSpendsError;
 
 /// Errors that can occur during the put operation.
 #[derive(Debug, thiserror::Error)]

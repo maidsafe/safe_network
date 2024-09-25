@@ -18,7 +18,8 @@ files = ["transfers", "data"]
 fs = []
 local = ["sn_client/local-discovery"]
 registers = ["transfers"]
-transfers = []
+transfers = ["native-transfers"]
+native-transfers = []
 
 [dependencies]
 bip39 = "2.0.0"
