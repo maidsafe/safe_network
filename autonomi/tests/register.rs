@@ -1,15 +1,14 @@
-use std::time::Duration;
-
-use autonomi::Client;
-use bytes::Bytes;
-use tokio::time::sleep;
-use xor_name::XorName;
-
 mod common;
 
 #[cfg(feature = "registers")]
 #[tokio::test]
 async fn register() {
+    use std::time::Duration;
+
+    use autonomi::Client;
+    use bytes::Bytes;
+    use tokio::time::sleep;
+    use xor_name::XorName;
     common::enable_logging();
 
     let mut client = Client::connect(&common::peers_from_env().unwrap())

@@ -23,7 +23,7 @@ pub enum TransferError {
     #[error("Wallet error: {0:?}")]
     WalletError(#[from] crate::wallet::error::WalletError),
     #[error("Network error: {0:?}")]
-    NetworkError(#[from] sn_client::networking::NetworkError),
+    NetworkError(#[from] sn_networking::NetworkError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -39,11 +39,9 @@ use libp2p::{
     kad::{Quorum, Record},
     PeerId,
 };
-use sn_client::{
-    networking::{
-        GetRecordCfg, GetRecordError, Network, NetworkError, PutRecordCfg, VerificationKind,
-    },
-    transfers::{HotWallet, SignedSpend},
+use sn_client::transfers::{HotWallet, SignedSpend};
+use sn_networking::{
+    GetRecordCfg, GetRecordError, Network, NetworkError, PutRecordCfg, VerificationKind,
 };
 use sn_protocol::{
     storage::{try_serialize_record, RecordKind, RetryStrategy, SpendAddress},
@@ -109,12 +107,12 @@ impl Client {
         let mut double_spent_keys = BTreeSet::new();
         for (spend_key, spend_attempt_result) in join_all(tasks).await {
             match spend_attempt_result {
-                Err(sn_client::networking::NetworkError::GetRecordError(
+                Err(sn_networking::NetworkError::GetRecordError(
                     GetRecordError::RecordDoesNotMatch(_),
                 ))
-                | Err(sn_client::networking::NetworkError::GetRecordError(
-                    GetRecordError::SplitRecord { .. },
-                )) => {
+                | Err(sn_networking::NetworkError::GetRecordError(GetRecordError::SplitRecord {
+                    ..
+                })) => {
                     tracing::warn!(
                         "Double spend detected while trying to spend: {:?}",
                         spend_key

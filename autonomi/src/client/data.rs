@@ -8,11 +8,12 @@ use libp2p::{
     PeerId,
 };
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
+#[cfg(feature = "transfers")]
 use sn_client::{
-    networking::{GetRecordCfg, NetworkError, PutRecordCfg},
     transfers::{HotWallet, MainPubkey, NanoTokens, PaymentQuote},
     StoragePaymentResult,
 };
+use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg};
 use sn_protocol::{
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind,
@@ -23,7 +24,8 @@ use sn_transfers::Payment;
 use tokio::task::{JoinError, JoinSet};
 use xor_name::XorName;
 
-use super::native_transfers::SendSpendsError;
+#[cfg(feature = "transfers")]
+use crate::client::native_transfers::SendSpendsError;
 
 /// Errors that can occur during the put operation.
 #[derive(Debug, thiserror::Error)]
@@ -46,11 +48,13 @@ pub enum PutError {
 #[derive(Debug, thiserror::Error)]
 pub enum PayError {
     #[error("Could not get store costs: {0:?}")]
-    CouldNotGetStoreCosts(sn_client::networking::NetworkError),
+    CouldNotGetStoreCosts(sn_networking::NetworkError),
     #[error("Could not simultaneously fetch store costs: {0:?}")]
     JoinError(JoinError),
+    #[cfg(feature = "transfers")]
     #[error("Hot wallet error")]
     WalletError(#[from] sn_transfers::WalletError),
+    #[cfg(feature = "transfers")]
     #[error("Failed to send spends")]
     SendSpendsError(#[from] SendSpendsError),
 }
@@ -63,9 +67,9 @@ pub enum GetError {
     #[error("Failed to decrypt data.")]
     Decryption(crate::self_encryption::Error),
     #[error("General networking error: {0:?}")]
-    Network(#[from] sn_client::networking::NetworkError),
+    Network(#[from] sn_networking::NetworkError),
     #[error("General protocol error: {0:?}")]
-    Protocol(#[from] sn_client::protocol::Error),
+    Protocol(#[from] sn_protocol::Error),
 }
 
 impl Client {

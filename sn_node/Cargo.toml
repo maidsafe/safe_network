@@ -95,8 +95,6 @@ tempfile = "3.6.0"
 # Do not specify the version field. Release process expects even the local dev deps to be published.
 # Removing the version field is a workaround.
 test_utils = { path = "../test_utils" }
-
-[dev_dependencies]
 sn_client = { path = "../sn_client", version = "0.110.1" }
 
 [lints]

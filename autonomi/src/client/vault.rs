@@ -4,10 +4,8 @@ use crate::Client;
 use bls::SecretKey;
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
-use sn_client::{
-    networking::{GetRecordCfg, NetworkError, PutRecordCfg, VerificationKind},
-    transfers::HotWallet,
-};
+use sn_client::transfers::HotWallet;
+use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg, VerificationKind};
 use sn_protocol::storage::{RetryStrategy, Scratchpad, ScratchpadAddress};
 use sn_protocol::{
     storage::{try_deserialize_record, try_serialize_record, RecordKind},
