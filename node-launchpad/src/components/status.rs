@@ -52,7 +52,7 @@ use super::super::node_mgmt::{maintain_n_running_nodes, reset_nodes, stop_nodes}
 
 use throbber_widgets_tui::{self, ThrobberState};
 
-const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
+pub const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 /// If nat detection fails for more than 3 times, we don't want to waste time running during every node start.
 const MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION: usize = 3;
 
@@ -656,7 +656,7 @@ impl Component for Status {
         const VERSION_WIDTH: usize = 7;
         const NANOS_WIDTH: usize = 5;
         const MEMORY_WIDTH: usize = 7;
-        const MBPS_WIDTH: usize = 15;
+        const MBPS_WIDTH: usize = 13;
         const RECORDS_WIDTH: usize = 4;
         const PEERS_WIDTH: usize = 5;
         const CONNS_WIDTH: usize = 5;
@@ -695,7 +695,7 @@ impl Component for Status {
                     nanos = stats.forwarded_rewards.to_string();
                     memory = stats.memory_usage_mb.to_string();
                     mbps = format!(
-                        "↓{:06.2} ↑{:06.2}",
+                        "↓{:05.2} ↑{:05.2}",
                         stats.bandwidth_inbound as f64 / (1024_f64 * 1024_f64),
                         stats.bandwidth_outbound as f64 / (1024_f64 * 1024_f64)
                     );

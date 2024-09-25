@@ -13,6 +13,8 @@ use sn_service_management::{NodeServiceData, ServiceStatus};
 use std::{path::PathBuf, time::Instant};
 use tokio::sync::mpsc::UnboundedSender;
 
+use super::components::status::NODE_STAT_UPDATE_INTERVAL;
+
 use crate::action::{Action, StatusActions};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -22,6 +24,10 @@ pub struct IndividualNodeStats {
     pub memory_usage_mb: usize,
     pub bandwidth_inbound: usize,
     pub bandwidth_outbound: usize,
+    pub prev_bandwidth_inbound: usize,
+    pub prev_bandwidth_outbound: usize,
+    pub bandwidth_inbound_rate: usize,
+    pub bandwidth_outbound_rate: usize,
     pub max_records: usize,
     pub peers: usize,
     pub connections: usize,
@@ -137,6 +143,10 @@ impl NodeStats {
                         max_records: stats.max_records,
                         peers: stats.peers,
                         connections: stats.connections,
+                        prev_bandwidth_inbound: stats.prev_bandwidth_inbound,
+                        prev_bandwidth_outbound: stats.prev_bandwidth_outbound,
+                        bandwidth_inbound_rate: stats.bandwidth_inbound_rate,
+                        bandwidth_outbound_rate: stats.bandwidth_outbound_rate,
                     };
                     all_node_stats.merge(&individual_stats);
                 }
@@ -169,7 +179,6 @@ impl NodeStats {
         let mut stats = IndividualNodeStats::default();
 
         for sample in all_metrics.samples.iter() {
-            debug!(sample.metric);
             if sample.metric == "sn_node_total_forwarded_rewards" {
                 // Nanos
                 match sample.value {
@@ -198,9 +207,22 @@ impl NodeStats {
                     | prometheus_parse::Value::Untyped(val) => {
                         if let Some(direction) = sample.labels.get("direction") {
                             if direction == "Inbound" {
-                                stats.bandwidth_inbound += val as usize;
+                                let current_inbound = val as usize;
+                                stats.bandwidth_inbound = current_inbound;
+                                let rate = (current_inbound as f64
+                                    - stats.prev_bandwidth_inbound as f64)
+                                    / NODE_STAT_UPDATE_INTERVAL.as_secs_f64();
+                                stats.bandwidth_inbound_rate = rate as usize;
+                                stats.prev_bandwidth_inbound = current_inbound;
                             } else if direction == "Outbound" {
-                                stats.bandwidth_outbound += val as usize;
+                                let current_outbound = val as usize;
+                                stats.bandwidth_outbound = current_outbound;
+                                let rate = (current_outbound as f64
+                                    - stats.prev_bandwidth_outbound as f64)
+                                    / NODE_STAT_UPDATE_INTERVAL.as_secs_f64();
+                                stats.bandwidth_outbound_rate = rate as usize;
+                                stats.prev_bandwidth_outbound = current_outbound;
+                                // Update previous value
                             }
                         }
                     }
