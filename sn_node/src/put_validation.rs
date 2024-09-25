@@ -118,7 +118,7 @@ impl Node {
                 // So that when the replicate target asking for the copy,
                 // the node can have a higher chance to respond.
                 let store_scratchpad_result = self
-                    .validate_and_store_scratchpad_record(record, true)
+                    .validate_and_store_scratchpad_record(scratchpad, record_key.clone(), true)
                     .await;
 
                 if store_scratchpad_result.is_ok() {
@@ -289,7 +289,9 @@ impl Node {
                 self.store_chunk(&chunk)
             }
             RecordKind::Scratchpad => {
-                self.validate_and_store_scratchpad_record(record, false)
+                let key = record.key.clone();
+                let scratchpad = try_deserialize_record::<Scratchpad>(&record)?;
+                self.validate_and_store_scratchpad_record(scratchpad, key, false)
                     .await
             }
             RecordKind::Spend => {
@@ -389,13 +391,10 @@ impl Node {
 
     pub(crate) async fn validate_and_store_scratchpad_record(
         &self,
-        record: Record,
+        scratchpad: Scratchpad,
+        record_key: RecordKey,
         is_client_put: bool,
     ) -> Result<()> {
-        let record_key = record.key.clone();
-
-        let scratchpad = try_deserialize_record::<Scratchpad>(&record)?;
-
         // owner PK is defined herein, so as long as record key and this match, we're good
         let addr = scratchpad.address();
         debug!("Validating and storing scratchpad {addr:?}");
@@ -426,14 +425,21 @@ impl Node {
             "Storing sratchpad {addr:?} with content of {:?} as Record locally",
             scratchpad.encrypted_data_hash()
         );
+
+        let record = Record {
+            key: scratchpad_key.clone(),
+            value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)?.to_vec(),
+            publisher: None,
+            expires: None,
+        };
         self.network().put_local_record(record);
 
-        let pretty_key = PrettyPrintRecordKey::from(&record_key);
+        let pretty_key = PrettyPrintRecordKey::from(&scratchpad_key);
 
         self.record_metrics(Marker::ValidScratchpadRecordPutFromNetwork(&pretty_key));
 
         if is_client_put {
-            self.replicate_valid_fresh_record(record_key, RecordType::Scratchpad);
+            self.replicate_valid_fresh_record(scratchpad_key, RecordType::Scratchpad);
         }
 
         Ok(())
