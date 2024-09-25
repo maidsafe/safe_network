@@ -140,4 +140,7 @@ pub enum Error {
     InvalidPeerIdForPayment(String),
     #[error("Evm wallet: {0}")]
     EvmWallet(String),
+
+    #[error("Failed to create payment dir for {0}: {1}")]
+    FailedToCreatePaymentDir(XorName, String),
 }

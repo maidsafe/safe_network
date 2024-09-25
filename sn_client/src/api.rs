@@ -1056,8 +1056,7 @@ impl Client {
         // Read all the payments made to the provided xorname
         let unique_file_name = format!("{}.payment", hex::encode(xorname));
 
-        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let payment_dir = wallet_dir.join(PAYMENTS_DIR_NAME);
+        let payment_dir = root_dir.join(PAYMENTS_DIR_NAME);
         let payment_file_path = payment_dir.join(unique_file_name);
 
         debug!("Getting payment from {payment_file_path:?}");
@@ -1089,24 +1088,26 @@ impl Client {
     /// Maybe then, this will be caching only
     pub fn cache_write_payment_for_addr(
         &self,
-        address: &XorName,
+        xorname: &XorName,
         payment: ProofOfPayment,
         root_dir: &Path,
     ) {
         // Write the payment to disk
-        let unique_file_name = format!("{}.payment", hex::encode(address));
+        let unique_file_name = format!("{}.payment", hex::encode(xorname));
 
-        let wallet_dir = root_dir.join(WALLET_DIR_NAME);
-        let payment_dir = wallet_dir.join(PAYMENTS_DIR_NAME);
+        let payment_dir = root_dir.join(PAYMENTS_DIR_NAME);
         let payment_file_path = payment_dir.join(unique_file_name);
 
         debug!("Writing payment to {payment_file_path:?}");
+        if let Err(e) = std::fs::create_dir_all(&payment_dir) {
+            warn!("{}", WalletError::FailedToCreatePaymentDir(*xorname, e.to_string()));
+        }
         if let Ok(mut file) = std::fs::File::create(&payment_file_path) {
             if let Err(e) = rmp_serde::encode::write(&mut file, &vec![payment]) {
-                warn!("Failed to write payment file for {address:?}: {e}");
+                warn!("Failed to write payment file for {xorname:?}: {e}");
             }
         } else {
-            warn!("Failed to create payment file for {address:?}");
+            warn!("Failed to create payment file for {xorname:?}");
         }
     }
 }

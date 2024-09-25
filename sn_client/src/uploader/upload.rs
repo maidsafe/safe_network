@@ -837,7 +837,6 @@ impl InnerUploader {
                     // using None to indicate as all paid.
                     let make_payments = !cost_map.is_empty();
                     trace!("Got a forced forced round of make payment.");
-                    break;
                     // Note: There can be a mismatch of ordering between the main loop and the make payment loop because
                     // the instructions are sent via a task(channel.send().await). And there is no guarantee for the
                     // order to come in the same order as they were sent.
