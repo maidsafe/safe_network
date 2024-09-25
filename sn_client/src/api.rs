@@ -1100,7 +1100,10 @@ impl Client {
 
         debug!("Writing payment to {payment_file_path:?}");
         if let Err(e) = std::fs::create_dir_all(&payment_dir) {
-            warn!("{}", WalletError::FailedToCreatePaymentDir(*xorname, e.to_string()));
+            warn!(
+                "{}",
+                WalletError::FailedToCreatePaymentDir(*xorname, e.to_string())
+            );
         }
         if let Ok(mut file) = std::fs::File::create(&payment_file_path) {
             if let Err(e) = rmp_serde::encode::write(&mut file, &vec![payment]) {
