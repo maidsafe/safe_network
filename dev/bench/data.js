@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727337565508,
+  "lastUpdate": 1727337567965,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20420,40 +20420,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "0d62745ea9dbab55abdcdd51f9bba23b729ce5b5",
-          "message": "fix(bump): always strip alpha status' if we're on stable",
-          "timestamp": "2024-05-08T13:51:23+09:00",
-          "tree_id": "693411b3800a4db8525584b9b79f5f850d57009e",
-          "url": "https://github.com/maidsafe/safe_network/commit/0d62745ea9dbab55abdcdd51f9bba23b729ce5b5"
-        },
-        "date": 1715144756799,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 209,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "1061c2fe9b640965e32149b79340a825b5842862",
           "message": "chore: dont release crates by default w/ release-plz\n\nyou now have to opt in with release = true",
           "timestamp": "2024-05-08T15:01:24+09:00",
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0ea3a7a45a03f3ba1c4c9fa3b60acaa0da7f11c2",
+          "message": "Merge pull request #2139 from b-zee/refactor-api-without-old-client\n\nfeat(autonomi): remove dep on sn_client",
+          "timestamp": "2024-09-26T07:05:54Z",
+          "tree_id": "b9b3eeea215a581b8ab9515be952a508eb302181",
+          "url": "https://github.com/maidsafe/safe_network/commit/0ea3a7a45a03f3ba1c4c9fa3b60acaa0da7f11c2"
+        },
+        "date": 1727337566916,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 186,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
