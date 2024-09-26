@@ -30,11 +30,11 @@ use prometheus_client::metrics::gauge::Gauge;
 use rand::RngCore;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
+use sn_evm::{AttoTokens, QuotingMetrics};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{NanoTokens, QuotingMetrics};
 use std::collections::VecDeque;
 use std::{
     borrow::Cow,
@@ -651,7 +651,7 @@ impl NodeRecordStore {
     }
 
     /// Calculate the cost to store data for our current store state
-    pub(crate) fn store_cost(&self, key: &Key) -> (NanoTokens, QuotingMetrics) {
+    pub(crate) fn store_cost(&self, key: &Key) -> (AttoTokens, QuotingMetrics) {
         let records_stored = self.records.len();
         let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
 
@@ -685,7 +685,7 @@ impl NodeRecordStore {
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
 
-        (NanoTokens::from(cost), quoting_metrics)
+        (AttoTokens::from_u64(cost), quoting_metrics)
     }
 
     /// Notify the node received a payment.
@@ -955,7 +955,6 @@ mod tests {
 
     use super::*;
     use bls::SecretKey;
-    use sn_protocol::storage::{try_deserialize_record, Scratchpad};
     use xor_name::XorName;
 
     use bytes::Bytes;
@@ -963,8 +962,9 @@ mod tests {
     use libp2p::kad::K_VALUE;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
-    use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress};
-    use sn_transfers::{MainPubkey, PaymentQuote};
+    use sn_evm::utils::dummy_address;
+    use sn_evm::{PaymentQuote, RewardsAddress};
+    use sn_protocol::storage::{try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, Scratchpad};
     use std::collections::BTreeMap;
     use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
     use tokio::runtime::Runtime;
@@ -1562,7 +1562,7 @@ mod tests {
 
     struct PeerStats {
         address: NetworkAddress,
-        pk: MainPubkey,
+        rewards_addr: RewardsAddress,
         records_stored: AtomicUsize,
         nanos_earned: AtomicU64,
         payments_received: AtomicUsize,
@@ -1590,7 +1590,7 @@ mod tests {
                 records_stored: AtomicUsize::new(0),
                 nanos_earned: AtomicU64::new(0),
                 payments_received: AtomicUsize::new(0),
-                pk: MainPubkey::new(SecretKey::random().public_key()),
+                rewards_addr: dummy_address(),
             })
             .collect();
 
@@ -1657,7 +1657,7 @@ mod tests {
 
                         if peer_index == payee_index {
                             peer.nanos_earned
-                                .fetch_add(cost.as_nano(), Ordering::Relaxed);
+                                .fetch_add(cost.as_atto().try_into().unwrap_or(u64::MAX), Ordering::Relaxed);
                             peer.payments_received.fetch_add(1, Ordering::Relaxed);
                         }
                     }
@@ -1758,7 +1758,7 @@ mod tests {
     fn pick_cheapest_payee(
         peers: &[PeerStats],
         close_group: &[usize],
-    ) -> eyre::Result<(usize, NanoTokens)> {
+    ) -> eyre::Result<(usize, AttoTokens)> {
         let mut costs_vec = Vec::with_capacity(close_group.len());
         let mut address_to_index = BTreeMap::new();
 
@@ -1767,7 +1767,7 @@ mod tests {
             address_to_index.insert(peer.address.clone(), i);
 
             let close_records_stored = peer.records_stored.load(Ordering::Relaxed);
-            let cost = NanoTokens::from(calculate_cost_for_records(close_records_stored));
+            let cost = AttoTokens::from(calculate_cost_for_records(close_records_stored));
 
             let quote = PaymentQuote {
                 content: XorName::default(), // unimportant for cost calc
@@ -1779,11 +1779,12 @@ mod tests {
                     received_payment_count: 1, // unimportant for cost calc
                     live_time: 0,              // unimportant for cost calc
                 },
-                pub_key: peer.pk.to_bytes().to_vec(),
-                signature: vec![], // unimportant for cost calc
+                pub_key: bls::SecretKey::random().public_key().to_bytes().to_vec(),
+                signature: vec![],
+                rewards_address: peer.rewards_addr, // unimportant for cost calc
             };
 
-            costs_vec.push((peer.address.clone(), peer.pk, quote));
+            costs_vec.push((peer.address.clone(), peer.rewards_addr, quote));
         }
 
         // sort by address first

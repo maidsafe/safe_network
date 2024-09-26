@@ -12,8 +12,8 @@ use libp2p::kad::{
     store::{RecordStore, Result},
     ProviderRecord, Record, RecordKey,
 };
+use sn_evm::{AttoTokens, QuotingMetrics};
 use sn_protocol::{storage::RecordType, NetworkAddress};
-use sn_transfers::{NanoTokens, QuotingMetrics};
 use std::{borrow::Cow, collections::HashMap};
 
 pub enum UnifiedRecordStore {
@@ -111,11 +111,11 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn store_cost(&self, key: &RecordKey) -> (NanoTokens, QuotingMetrics) {
+    pub(crate) fn store_cost(&self, key: &RecordKey) -> (AttoTokens, QuotingMetrics) {
         match self {
             Self::Client(_) => {
                 warn!("Calling store cost calculation at Client. This should not happen");
-                (NanoTokens::zero(), Default::default())
+                (AttoTokens::zero(), Default::default())
             }
             Self::Node(store) => store.store_cost(key),
         }

@@ -23,7 +23,7 @@ sn_logging = { path = "../sn_logging", version = "0.2.34" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.9", features = [
     "rpc",
 ] }
-sn_transfers = { path = "../sn_transfers", version = "0.19.1" }
+sn_evm = { path = "../sn_evm", version = "0.1.0" }
 sysinfo = "0.30.12"
 thiserror = "1.0.23"
 tokio = { version = "1.32.0", features = ["time"] }

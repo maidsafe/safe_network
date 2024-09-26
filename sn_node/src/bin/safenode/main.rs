@@ -10,10 +10,14 @@
 extern crate tracing;
 
 mod rpc_service;
+mod subcommands;
 
 use clap::{command, Parser};
 use color_eyre::{eyre::eyre, Result};
+use crate::subcommands::EvmNetworkCommand;
+use const_hex::traits::FromHex;
 use libp2p::{identity::Keypair, PeerId};
+use sn_evm::{EvmNetwork, RewardsAddress};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
@@ -68,6 +72,7 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDestArg> {
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
 #[command(disable_version_flag = true)]
+#[clap(name = "safenode cli", version = env!("CARGO_PKG_VERSION"))]
 struct Opt {
     /// Specify whether the node is operating from a home network and situated behind a NAT without port forwarding
     /// capabilities. Setting this to true, activates hole-punching to facilitate direct connections from other nodes.
@@ -119,6 +124,19 @@ struct Opt {
     /// After reaching this limit, the older archived files are deleted.
     #[clap(long = "max_archived_log_files", verbatim_doc_comment)]
     max_compressed_log_files: Option<usize>,
+
+    /// Specify the rewards address.
+    /// The rewards address is the address that will receive the rewards for the node.
+    /// It should be a valid EVM address.
+    #[clap(long)]
+    rewards_address: String,
+
+    /// Specify the EVM network to use.
+    /// The network can either be a pre-configured one or a custom network.
+    /// When setting a custom network, you must specify the RPC URL to a fully synced node and
+    /// the addresses of the network token and chunk payments contracts.
+    #[command(subcommand)]
+    evm_network: Option<EvmNetworkCommand>,
 
     /// Specify the node's data directory.
     ///
@@ -213,6 +231,8 @@ fn main() -> Result<()> {
         );
         return Ok(());
     }
+    // evm config
+    let rewards_address = RewardsAddress::from_hex(&opt.rewards_address)?;
 
     if opt.crate_version {
         println!("Crate version: {}", env!("CARGO_PKG_VERSION"));
@@ -229,6 +249,12 @@ fn main() -> Result<()> {
         println!("Package version: {}", sn_build_info::package_version());
         return Ok(());
     }
+    let evm_network: EvmNetwork = opt
+        .evm_network
+        .as_ref()
+        .cloned()
+        .map(|v| v.into())
+        .unwrap_or_default();
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
@@ -246,6 +272,10 @@ fn main() -> Result<()> {
     info!("\n{}\n{}", msg, "=".repeat(msg.len()));
 
     sn_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR);
+    debug!(
+        "safenode built with git version: {}",
+        sn_build_info::git_info()
+    );
 
     info!("Node started with initial_peers {bootstrap_peers:?}");
 
@@ -258,12 +288,12 @@ fn main() -> Result<()> {
     let restart_options = rt.block_on(async move {
         let mut node_builder = NodeBuilder::new(
             keypair,
+            rewards_address,
+            evm_network,
             node_socket_addr,
             bootstrap_peers,
             opt.local,
             root_dir,
-            opt.owner.clone(),
-            #[cfg(feature = "upnp")]
             opt.upnp,
         );
         node_builder.is_behind_home_network = opt.home_network;
@@ -462,6 +492,7 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, ReloadHandle, Opt
         ("sn_protocol".to_string(), Level::DEBUG),
         ("sn_registers".to_string(), Level::DEBUG),
         ("sn_transfers".to_string(), Level::DEBUG),
+        ("sn_evm".to_string(), Level::DEBUG),
     ];
 
     let output_dest = match &opt.log_output_dest {

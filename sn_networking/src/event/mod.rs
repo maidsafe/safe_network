@@ -21,11 +21,11 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 
+use sn_evm::PaymentQuote;
 use sn_protocol::{
     messages::{Query, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::PaymentQuote;
 use std::{
     collections::BTreeSet,
     fmt::{Debug, Formatter},
