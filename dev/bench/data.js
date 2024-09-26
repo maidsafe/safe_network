@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727346290829,
+  "lastUpdate": 1727346293131,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "7511b0c33d0456f89c155ccc4840013dc41b9faa",
-          "message": "feat(release): upload node-launchpad bins to github",
-          "timestamp": "2024-05-09T09:16:34+09:00",
-          "tree_id": "58b8dc6be919e816ae55ee2c38d8204b2a21897a",
-          "url": "https://github.com/maidsafe/safe_network/commit/7511b0c33d0456f89c155ccc4840013dc41b9faa"
-        },
-        "date": 1715214681929,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 200,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dd640b66f6f19002c63808dc402b860209739254",
+          "message": "Merge pull request #2143 from mazzi/fix_nat_only_in_auto\n\nfix(launchpad): nat mode only when first time automatic",
+          "timestamp": "2024-09-26T09:33:05Z",
+          "tree_id": "72c51f312be8c8ecfa61863da004ebfc2b466bc3",
+          "url": "https://github.com/maidsafe/safe_network/commit/dd640b66f6f19002c63808dc402b860209739254"
+        },
+        "date": 1727346292371,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 192,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
