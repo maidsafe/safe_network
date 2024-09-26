@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727344049462,
+  "lastUpdate": 1727345927421,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "555b02015c98e87d04c42701ce1b4560a9c903ff",
-          "message": "fix(relay_manager): filter out bad nodes",
-          "timestamp": "2024-05-08T15:05:35Z",
-          "tree_id": "4fe1f84526be67054e7b8d6e5f6e9a3251346d74",
-          "url": "https://github.com/maidsafe/safe_network/commit/555b02015c98e87d04c42701ce1b4560a9c903ff"
-        },
-        "date": 1715183825518,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2339751949935422,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6722315211894225,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.734671328480786,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 62.00243768030732,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cd1b0a06fdd3bc8a1066b105c010bca47b0d59c3",
+          "message": "Merge pull request #2141 from maqi/undertake_active_peer_storage_check\n\nfeat(node): carry out peer storage check actively",
+          "timestamp": "2024-09-26T09:15:06Z",
+          "tree_id": "89f4c5d3c6091cac5ceb558e220b0d6b58d71a76",
+          "url": "https://github.com/maidsafe/safe_network/commit/cd1b0a06fdd3bc8a1066b105c010bca47b0d59c3"
+        },
+        "date": 1727345921024,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2357997128997398,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6620286036343612,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 62.21577085332965,
             "unit": "MiB/s"
           }
         ]
