@@ -52,6 +52,7 @@ async fn setup() -> (
 
 #[allow(clippy::unwrap_used)]
 #[allow(clippy::type_complexity)]
+#[allow(dead_code)]
 async fn provider_with_gas_funded_wallet(
     anvil: &AnvilInstance,
 ) -> FillProvider<
