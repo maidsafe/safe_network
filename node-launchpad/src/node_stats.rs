@@ -24,8 +24,6 @@ pub struct IndividualNodeStats {
     pub memory_usage_mb: usize,
     pub bandwidth_inbound: usize,
     pub bandwidth_outbound: usize,
-    pub prev_bandwidth_inbound: usize,
-    pub prev_bandwidth_outbound: usize,
     pub bandwidth_inbound_rate: usize,
     pub bandwidth_outbound_rate: usize,
     pub max_records: usize,
@@ -143,8 +141,6 @@ impl NodeStats {
                         max_records: stats.max_records,
                         peers: stats.peers,
                         connections: stats.connections,
-                        prev_bandwidth_inbound: stats.prev_bandwidth_inbound,
-                        prev_bandwidth_outbound: stats.prev_bandwidth_outbound,
                         bandwidth_inbound_rate: stats.bandwidth_inbound_rate,
                         bandwidth_outbound_rate: stats.bandwidth_outbound_rate,
                     };
@@ -208,21 +204,18 @@ impl NodeStats {
                         if let Some(direction) = sample.labels.get("direction") {
                             if direction == "Inbound" {
                                 let current_inbound = val as usize;
-                                stats.bandwidth_inbound = current_inbound;
                                 let rate = (current_inbound as f64
-                                    - stats.prev_bandwidth_inbound as f64)
+                                    - stats.bandwidth_inbound as f64)
                                     / NODE_STAT_UPDATE_INTERVAL.as_secs_f64();
                                 stats.bandwidth_inbound_rate = rate as usize;
-                                stats.prev_bandwidth_inbound = current_inbound;
+                                stats.bandwidth_inbound = current_inbound;
                             } else if direction == "Outbound" {
                                 let current_outbound = val as usize;
-                                stats.bandwidth_outbound = current_outbound;
                                 let rate = (current_outbound as f64
-                                    - stats.prev_bandwidth_outbound as f64)
+                                    - stats.bandwidth_outbound as f64)
                                     / NODE_STAT_UPDATE_INTERVAL.as_secs_f64();
                                 stats.bandwidth_outbound_rate = rate as usize;
-                                stats.prev_bandwidth_outbound = current_outbound;
-                                // Update previous value
+                                stats.bandwidth_outbound = current_outbound;
                             }
                         }
                     }
