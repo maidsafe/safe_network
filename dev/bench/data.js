@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727353149181,
+  "lastUpdate": 1727353150582,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d841f32f7f99aa13df434e0ef46436be9e789752",
-          "message": "chore: use consistent border styles",
-          "timestamp": "2024-05-09T14:50:34+09:00",
-          "tree_id": "b1eb2f9c85f8e9e558145cc899a29010848a6456",
-          "url": "https://github.com/maidsafe/safe_network/commit/d841f32f7f99aa13df434e0ef46436be9e789752"
-        },
-        "date": 1715234680849,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7516,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 34703,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 68324,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d2a1dca828643b27e6be86a1684e2e48999839cf",
+          "message": "Merge pull request #2135 from mazzi/feat_status_new_metrics\n\nfeat(launchpad): new stats with layout and interaction",
+          "timestamp": "2024-09-26T11:28:24Z",
+          "tree_id": "9ed43f606511fc92208648c03f34dd0b1a06315a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d2a1dca828643b27e6be86a1684e2e48999839cf"
+        },
+        "date": 1727353150324,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 17576,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 58503,
             "unit": "ms"
           },
           {
