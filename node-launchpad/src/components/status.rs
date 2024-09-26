@@ -189,7 +189,8 @@ impl Status {
 
     /// Only run NAT detection if we haven't determined the status yet and we haven't failed more than 3 times.
     fn should_we_run_nat_detection(&self) -> bool {
-        !self.is_nat_status_determined
+        self.connection_mode == ConnectionMode::Automatic
+            && !self.is_nat_status_determined
             && self.error_while_running_nat_detection < MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION
     }
 
