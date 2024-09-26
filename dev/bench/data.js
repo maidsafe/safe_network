@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727353147595,
+  "lastUpdate": 1727353149181,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "d841f32f7f99aa13df434e0ef46436be9e789752",
-          "message": "chore: use consistent border styles",
-          "timestamp": "2024-05-09T14:50:34+09:00",
-          "tree_id": "b1eb2f9c85f8e9e558145cc899a29010848a6456",
-          "url": "https://github.com/maidsafe/safe_network/commit/d841f32f7f99aa13df434e0ef46436be9e789752"
-        },
-        "date": 1715234679114,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 190,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d2a1dca828643b27e6be86a1684e2e48999839cf",
+          "message": "Merge pull request #2135 from mazzi/feat_status_new_metrics\n\nfeat(launchpad): new stats with layout and interaction",
+          "timestamp": "2024-09-26T11:28:24Z",
+          "tree_id": "9ed43f606511fc92208648c03f34dd0b1a06315a",
+          "url": "https://github.com/maidsafe/safe_network/commit/d2a1dca828643b27e6be86a1684e2e48999839cf"
+        },
+        "date": 1727353148850,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 176,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
