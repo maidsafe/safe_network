@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727344047977,
+  "lastUpdate": 1727344049462,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "1061c2fe9b640965e32149b79340a825b5842862",
-          "message": "chore: dont release crates by default w/ release-plz\n\nyou now have to opt in with release = true",
-          "timestamp": "2024-05-08T15:01:24+09:00",
-          "tree_id": "995c45a83fbb7d95694ac2c961d48ad92a3410b6",
-          "url": "https://github.com/maidsafe/safe_network/commit/1061c2fe9b640965e32149b79340a825b5842862"
-        },
-        "date": 1715148949905,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 7664,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 35689,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 4,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 64693,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e5d0c9e8f676eb35e6b2aaf77915e7b176f54266",
+          "message": "Merge pull request #2142 from grumbach/evm_integration_step_1\n\nfeat: evmlib evm_testnet sn_evm",
+          "timestamp": "2024-09-26T08:58:38Z",
+          "tree_id": "4476e03751c557feb809d17a89cdc50a09be0267",
+          "url": "https://github.com/maidsafe/safe_network/commit/e5d0c9e8f676eb35e6b2aaf77915e7b176f54266"
+        },
+        "date": 1727344049155,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 17560,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 60185,
             "unit": "ms"
           },
           {
