@@ -56,12 +56,12 @@ fn pack_data_map(data_map: DataMap) -> Result<(Chunk, Vec<Chunk>), Error> {
     let (data_map_chunk, additional_chunks) = loop {
         let chunk = Chunk::new(chunk_content);
         // If datamap chunk is less than `MAX_CHUNK_SIZE` return it so it can be directly sent to the network.
-        if MAX_CHUNK_SIZE >= chunk.serialised_size() {
+        if *MAX_CHUNK_SIZE >= chunk.serialised_size() {
             chunks.reverse();
             // Returns the last datamap, and all the chunks produced.
             break (chunk, chunks);
         } else {
-            let mut bytes = BytesMut::with_capacity(MAX_CHUNK_SIZE).writer();
+            let mut bytes = BytesMut::with_capacity(*MAX_CHUNK_SIZE).writer();
             let mut serialiser = rmp_serde::Serializer::new(&mut bytes);
             chunk.serialize(&mut serialiser)?;
             let serialized_chunk = bytes.into_inner().freeze();

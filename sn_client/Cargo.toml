@@ -47,7 +47,7 @@ prometheus-client = { version = "0.22", optional = true }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
 rmp-serde = "1.1.1"
-self_encryption = "~0.29.0"
+self_encryption = "~0.30.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
 sn_networking = { path = "../sn_networking", version = "0.18.2" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.9" }
