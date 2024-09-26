@@ -148,7 +148,7 @@ mod tests {
     async fn test_get_transaction_receipt_by_hash() {
         let network = Network::ArbitrumOne;
 
-        let tx_hash = b256!("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066");
+        let tx_hash = b256!("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066"); // DevSkim: ignore DS173237
 
         assert!(get_transaction_receipt_by_hash(&network, tx_hash)
             .await
@@ -161,9 +161,9 @@ mod tests {
         let network = Network::ArbitrumOne;
 
         let block_number: u64 = 250043261;
-        let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap();
+        let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap(); // DevSkim: ignore DS173237
         let amount = U256::from(200);
-        let quote_hash = b256!("477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c");
+        let quote_hash = b256!("477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c"); // DevSkim: ignore DS173237
 
         let logs =
             get_chunk_payment_event(&network, block_number, quote_hash, reward_address, amount)
@@ -177,9 +177,9 @@ mod tests {
     async fn test_verify_chunk_payment() {
         let network = Network::ArbitrumOne;
 
-        let tx_hash = b256!("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066");
-        let quote_hash = b256!("477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c");
-        let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap();
+        let tx_hash = b256!("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066"); // DevSkim: ignore DS173237
+        let quote_hash = b256!("477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c"); // DevSkim: ignore DS173237
+        let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap(); // DevSkim: ignore DS173237
         let amount = U256::from(200);
 
         let result = verify_chunk_payment(

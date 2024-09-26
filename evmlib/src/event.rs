@@ -4,7 +4,7 @@ use alloy::rpc::types::Log;
 
 // Should be updated when the smart contract changes!
 pub(crate) const CHUNK_PAYMENT_EVENT_SIGNATURE: FixedBytes<32> =
-    b256!("a6df5ca64d2adbcdd26949b97238efc4e97dc7e5d23012ea53f92a24f005f958");
+    b256!("a6df5ca64d2adbcdd26949b97238efc4e97dc7e5d23012ea53f92a24f005f958"); // DevSkim: ignore DS173237
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
