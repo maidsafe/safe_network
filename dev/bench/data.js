@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727359415434,
+  "lastUpdate": 1727359417093,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "e3c8e0d1b7faffd0cb595c17c6c42ecb1bfa01c1",
-          "message": "chore: add consts",
-          "timestamp": "2024-05-09T16:17:07Z",
-          "tree_id": "27a42416a0ae551862dfefbda9c4cad8698d7bc5",
-          "url": "https://github.com/maidsafe/safe_network/commit/e3c8e0d1b7faffd0cb595c17c6c42ecb1bfa01c1"
-        },
-        "date": 1715274668306,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 184,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 83,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9802dfcc556611e89ad326310986ec35c7b11b90",
+          "message": "Merge pull request #2145 from b-zee/chore-remove-openssl-in-alloy-reqwest\n\nchore(evmlib): use alloy without openssl",
+          "timestamp": "2024-09-26T13:14:49Z",
+          "tree_id": "92a772cb1fff1a909a1fa43ce9bcd4dc9e1d697f",
+          "url": "https://github.com/maidsafe/safe_network/commit/9802dfcc556611e89ad326310986ec35c7b11b90"
+        },
+        "date": 1727359416564,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 179,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
