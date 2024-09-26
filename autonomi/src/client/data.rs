@@ -8,11 +8,7 @@ use libp2p::{
     PeerId,
 };
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_client::{
-    networking::{GetRecordCfg, NetworkError, PutRecordCfg},
-    transfers::{HotWallet, MainPubkey, NanoTokens, PaymentQuote},
-    StoragePaymentResult,
-};
+use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg};
 use sn_protocol::{
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind,
@@ -20,6 +16,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_transfers::Payment;
+use sn_transfers::{HotWallet, MainPubkey, NanoTokens, PaymentQuote};
 use tokio::task::{JoinError, JoinSet};
 use xor_name::XorName;
 
@@ -46,7 +43,7 @@ pub enum PutError {
 #[derive(Debug, thiserror::Error)]
 pub enum PayError {
     #[error("Could not get store costs: {0:?}")]
-    CouldNotGetStoreCosts(sn_client::networking::NetworkError),
+    CouldNotGetStoreCosts(sn_networking::NetworkError),
     #[error("Could not simultaneously fetch store costs: {0:?}")]
     JoinError(JoinError),
     #[error("Hot wallet error")]
@@ -63,9 +60,9 @@ pub enum GetError {
     #[error("Failed to decrypt data.")]
     Decryption(crate::self_encryption::Error),
     #[error("General networking error: {0:?}")]
-    Network(#[from] sn_client::networking::NetworkError),
+    Network(#[from] sn_networking::NetworkError),
     #[error("General protocol error: {0:?}")]
-    Protocol(#[from] sn_client::protocol::Error),
+    Protocol(#[from] sn_protocol::Error),
 }
 
 impl Client {
@@ -117,8 +114,7 @@ impl Client {
             xor_names.push(*chunk.name());
         }
 
-        let StoragePaymentResult { skipped_chunks, .. } =
-            self.pay(xor_names.into_iter(), wallet).await?;
+        let (.., skipped_chunks) = self.pay(xor_names.into_iter(), wallet).await?;
 
         // TODO: Upload in parallel
         if !skipped_chunks.contains(map.name()) {
@@ -176,11 +172,12 @@ impl Client {
         }
     }
 
+    /// Returns the storage cost, royalty fees, and skipped chunks. In that order as tuple.
     pub(crate) async fn pay(
         &mut self,
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &mut HotWallet,
-    ) -> Result<StoragePaymentResult, PayError> {
+    ) -> Result<(NanoTokens, NanoTokens, Vec<XorName>), PayError> {
         let mut tasks = JoinSet::new();
         for content_addr in content_addrs {
             let network = self.network.clone();
@@ -229,12 +226,7 @@ impl Client {
         } else {
             self.pay_for_records(&cost_map, wallet).await?
         };
-        let res = StoragePaymentResult {
-            storage_cost,
-            royalty_fees,
-            skipped_chunks,
-        };
-        Ok(res)
+        Ok((storage_cost, royalty_fees, skipped_chunks))
     }
 
     async fn pay_for_records(

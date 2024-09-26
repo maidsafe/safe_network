@@ -46,7 +46,6 @@ pub use libp2p::Multiaddr;
 pub use client::{Client, ConnectError, CONNECT_TIMEOUT_SECS};
 
 mod client;
-mod secrets;
 #[cfg(feature = "data")]
 mod self_encryption;
 #[cfg(feature = "transfers")]
