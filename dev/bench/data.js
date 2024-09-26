@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727346050022,
+  "lastUpdate": 1727346051176,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "555b02015c98e87d04c42701ce1b4560a9c903ff",
-          "message": "fix(relay_manager): filter out bad nodes",
-          "timestamp": "2024-05-08T15:05:35Z",
-          "tree_id": "4fe1f84526be67054e7b8d6e5f6e9a3251346d74",
-          "url": "https://github.com/maidsafe/safe_network/commit/555b02015c98e87d04c42701ce1b4560a9c903ff"
-        },
-        "date": 1715183947312,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 191,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 80,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cd1b0a06fdd3bc8a1066b105c010bca47b0d59c3",
+          "message": "Merge pull request #2141 from maqi/undertake_active_peer_storage_check\n\nfeat(node): carry out peer storage check actively",
+          "timestamp": "2024-09-26T09:15:06Z",
+          "tree_id": "89f4c5d3c6091cac5ceb558e220b0d6b58d71a76",
+          "url": "https://github.com/maidsafe/safe_network/commit/cd1b0a06fdd3bc8a1066b105c010bca47b0d59c3"
+        },
+        "date": 1727346050949,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 185,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
