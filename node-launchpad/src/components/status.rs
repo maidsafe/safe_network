@@ -175,7 +175,8 @@ impl Status {
         );
 
         if !self.node_services.is_empty() && self.node_table_state.selected().is_none() {
-            self.node_table_state.select(Some(0));
+            // self.node_table_state.select(Some(0));
+            self.node_table_state.select(None);
         }
 
         Ok(())
@@ -200,7 +201,7 @@ impl Status {
             .collect()
     }
 
-    fn select_next_table_item(&mut self) {
+    fn _select_next_table_item(&mut self) {
         let i = match self.node_table_state.selected() {
             Some(i) => {
                 if i >= self.node_services.len() - 1 {
@@ -214,7 +215,7 @@ impl Status {
         self.node_table_state.select(Some(i));
     }
 
-    fn select_previous_table_item(&mut self) {
+    fn _select_previous_table_item(&mut self) {
         let i = match self.node_table_state.selected() {
             Some(i) => {
                 if i == 0 {
@@ -417,10 +418,10 @@ impl Component for Status {
                     return Ok(Some(Action::SwitchScene(Scene::ManageNodesPopUp)));
                 }
                 StatusActions::PreviousTableItem => {
-                    self.select_previous_table_item();
+                    // self.select_previous_table_item();
                 }
                 StatusActions::NextTableItem => {
-                    self.select_next_table_item();
+                    // self.select_next_table_item();
                 }
                 StatusActions::StartNodes => {
                     debug!("Got action to start nodes");
