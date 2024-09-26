@@ -9,7 +9,7 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.1.0"
 
 [dependencies]
-alloy = { version = "0.2", features = ["full", "provider-anvil-node"] }
+alloy = { version = "0.2", default-features = false, features = ["std", "full", "provider-anvil-node", "reqwest-rustls-tls"] }
 serde = "1.0"
 thiserror = "1.0"
 tokio = "1.38.0"
