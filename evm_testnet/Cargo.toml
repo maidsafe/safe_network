@@ -1,0 +1,17 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Safe Network EVM"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "evm_testnet"
+repository = "https://github.com/maidsafe/safe_network"
+version = "0.1.0"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+evmlib = { path = "../evmlib" }
+tokio = { version = "1.40", features = ["rt-multi-thread", "signal"] }
+
+[lints]
+workspace = true
