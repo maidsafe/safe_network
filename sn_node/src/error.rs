@@ -6,14 +6,16 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use sn_evm::AttoTokens;
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
-use sn_transfers::{NanoTokens, WalletError};
+use sn_transfers::WalletError;
 use thiserror::Error;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Internal error.
 #[derive(Debug, Error)]
+#[allow(missing_docs)]
 pub enum Error {
     #[error("Network error {0}")]
     Network(#[from] sn_networking::NetworkError),
@@ -28,7 +30,7 @@ pub enum Error {
     Wallet(#[from] WalletError),
 
     #[error("Transfers Error {0}")]
-    Transfers(#[from] sn_transfers::TransferError),
+    Transfers(#[from] sn_evm::EvmError),
 
     #[error("Failed to parse NodeEvent")]
     NodeEventParsingFailed,
@@ -74,8 +76,8 @@ pub enum Error {
     /// The amount paid by payment proof is not the required for the received content
     #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
     PaymentProofInsufficientAmount {
-        paid: NanoTokens,
-        expected: NanoTokens,
+        paid: AttoTokens,
+        expected: AttoTokens,
     },
     #[error("A payment we received contains cash notes already confirmed to be spent")]
     ReusedPayment,
@@ -93,4 +95,9 @@ pub enum Error {
     /// Error occurred in an async thread
     #[error("Error occured in async thread: {0}")]
     JoinErrorInAsyncThread(String),
+
+    #[error("EVM Network error: {0}")]
+    EvmNetwork(String),
+    #[error("Invalid quote timestamp: {0}")]
+    InvalidQuoteTimestamp(String),
 }

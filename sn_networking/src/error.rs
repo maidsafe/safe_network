@@ -105,6 +105,8 @@ pub enum NetworkError {
     Wallet(#[from] sn_transfers::WalletError),
     #[error("Transfer Error {0}")]
     Transfer(#[from] sn_transfers::TransferError),
+    #[error("Evm payment Error {0}")]
+    EvmPaymemt(#[from] sn_evm::EvmError),
 
     #[error("Failed to sign the message with the PeerId keypair")]
     SigningFailed(#[from] libp2p::identity::SigningError),
