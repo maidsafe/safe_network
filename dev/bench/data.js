@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727353150582,
+  "lastUpdate": 1727359291802,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": false,
-          "id": "e3c8e0d1b7faffd0cb595c17c6c42ecb1bfa01c1",
-          "message": "chore: add consts",
-          "timestamp": "2024-05-09T16:17:07Z",
-          "tree_id": "27a42416a0ae551862dfefbda9c4cad8698d7bc5",
-          "url": "https://github.com/maidsafe/safe_network/commit/e3c8e0d1b7faffd0cb595c17c6c42ecb1bfa01c1"
-        },
-        "date": 1715274543923,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.21943504503573,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.5948723934287534,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 55.85640611290369,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 62.16474463151983,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bzeeman+github@proton.me",
+            "name": "Benno",
+            "username": "b-zee"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9802dfcc556611e89ad326310986ec35c7b11b90",
+          "message": "Merge pull request #2145 from b-zee/chore-remove-openssl-in-alloy-reqwest\n\nchore(evmlib): use alloy without openssl",
+          "timestamp": "2024-09-26T13:14:49Z",
+          "tree_id": "92a772cb1fff1a909a1fa43ce9bcd4dc9e1d697f",
+          "url": "https://github.com/maidsafe/safe_network/commit/9802dfcc556611e89ad326310986ec35c7b11b90"
+        },
+        "date": 1727359284995,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.1809785948575646,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.671879427530922,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 61.21446931096793,
             "unit": "MiB/s"
           }
         ]
