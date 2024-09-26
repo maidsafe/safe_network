@@ -5984,6 +5984,7 @@ dependencies = [
  "strum",
  "sysinfo",
  "tempfile",
+ "throbber-widgets-tui",
  "tokio",
  "tokio-util 0.7.12",
  "tracing",
@@ -9393,6 +9394,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
 dependencies = [
  "num_cpus",
+]
+
+[[package]]
+name = "throbber-widgets-tui"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fad9e055cadd9da8b4a67662b962e3e67e96af491ae9cec7e88aaff92e7c3666"
+dependencies = [
+ "rand 0.8.5",
+ "ratatui",
 ]
 
 [[package]]
