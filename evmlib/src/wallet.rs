@@ -278,7 +278,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_from_private_key() {
-        let private_key = "bf210844fa5463e373974f3d6fbedf451350c3e72b81b3c5b1718cb91f49c33d";
+        let private_key = "bf210844fa5463e373974f3d6fbedf451350c3e72b81b3c5b1718cb91f49c33d"; // DevSkim: ignore DS117838
         let wallet = from_private_key(private_key).unwrap();
         let account = <EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(&wallet);
 
