@@ -955,20 +955,19 @@ mod tests {
 
     use super::*;
     use bls::SecretKey;
-    use sn_protocol::storage::{try_deserialize_record, Scratchpad};
-    use xor_name::XorName;
-
     use bytes::Bytes;
     use eyre::{bail, ContextCompat};
     use libp2p::kad::K_VALUE;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
+    use sn_protocol::storage::{try_deserialize_record, Scratchpad};
     use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress};
     use sn_transfers::{MainPubkey, PaymentQuote};
     use std::collections::BTreeMap;
     use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
     use tokio::runtime::Runtime;
     use tokio::time::{sleep, Duration};
+    use xor_name::XorName;
 
     const MULITHASH_CODE: u64 = 0x12;
 
@@ -1757,13 +1756,13 @@ mod tests {
     }
 
     #[test]
-    fn prod_80k_node_distribution_sim() {
+    fn prod_80k_node_distribution_sim() -> eyre::Result<()> {
         use rayon::prelude::*;
 
         // as network saturates, we can see that peers all eventually earn similarly
         let num_of_peers = 80_000;
         let num_of_chunks_per_hour = 500;
-        let max_payments_made = 50_000;
+        let max_payments_made = 60_000;
 
         let mut hour = 0;
         let k = K_VALUE.get();
@@ -1916,6 +1915,7 @@ mod tests {
 
             // Check termination condition
             if total_received_payment_count >= max_payments_made {
+                write_peers_data_to_file(&peers)?;
                 // Check if any node has 1200 payments
                 if let Some(peer) = peers.iter().max_by(|peer1, peer2| {
                     peer1
@@ -1923,11 +1923,8 @@ mod tests {
                         .load(Ordering::Relaxed)
                         .cmp(&peer2.payments_received.load(Ordering::Relaxed))
                 }) {
-                    // if peer.payments_received.load(Ordering::Relaxed) >= 1200 {
                     println!("Largest payee {peer:?}.");
                     println!("We breached the max payments received");
-                    // break;
-                    // }
                 }
 
                 println!("total_received_payment_count: {total_received_payment_count}");
@@ -1941,8 +1938,8 @@ mod tests {
                     (num_of_peers as f64 * acceptable_percentage).ceil() as usize;
 
                 // Assert conditions for termination
-                println!(
-                    // empty_earned_nodes <= acceptable_empty_nodes,
+                assert!(
+                    empty_earned_nodes <= acceptable_empty_nodes,
                     "More than {acceptable_percentage}% of nodes ({acceptable_empty_nodes}) still not earning: {empty_earned_nodes}"
                 );
                 assert!(
@@ -1955,9 +1952,86 @@ mod tests {
                     "earning distribution is not balanced, expected to be < 1500, but was {}",
                     max_earned / min_earned
                 );
-                break;
+                break Ok(());
             }
         }
+    }
+
+    /// Write peers data as space separated values to a temp file, and then print the file location
+    /// sort the peers by max earned
+    fn write_peers_data_to_file(peers: &[PeerStats]) -> eyre::Result<()> {
+        use std::fs::OpenOptions;
+        use std::io::BufWriter;
+        use std::io::Write;
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        println!("Writing peers data to a file");
+        let temp_dir = std::env::temp_dir();
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+        let datetime = UNIX_EPOCH + std::time::Duration::from_secs(now);
+
+        // Use chrono for efficient time formatting
+        let datetime: chrono::DateTime<chrono::Utc> = datetime.into();
+        let formatted_time = datetime.format("%Y-%m-%d_%H-%M").to_string();
+
+        let file_name = format!("peers_data_{}.txt", formatted_time);
+        let file_path = temp_dir.join(file_name);
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&file_path)?;
+        let mut writer = BufWriter::with_capacity(16 * 1024, file);
+
+        // Preload peer data to minimize atomic loads during sorting and writing
+        let mut peers_data: Vec<_> = peers
+            .iter()
+            .map(|peer| {
+                (
+                    peer.nanos_earned.load(Ordering::Relaxed),
+                    peer.records_stored.load(Ordering::Relaxed),
+                    peer.payments_received.load(Ordering::Relaxed),
+                    peer.address.clone(),
+                )
+            })
+            .collect();
+
+        // Sort peers by nanos_earned in descending order for better cache locality
+        peers_data.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+
+        // Write header
+        writeln!(
+            writer,
+            "{:<50} {:<20} {:<20} {:<20} {:<20}",
+            "PeerId", "Records_Stored", "Nanos_Earned", "Payments_Received", "Distance",
+        )?;
+
+        let default_chunk_address =
+            NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::default()));
+        for (nanos_earned, records_stored, payments_received, address) in peers_data {
+            let distance_to_default = address
+                .distance(&default_chunk_address)
+                .ilog2()
+                .unwrap_or(0);
+            // It's safe to unwrap here because PeerId should be present
+            let peer_id = address.as_peer_id().unwrap();
+
+            // Use write_all with preformatted string to reduce the number of write calls
+            let line = format!(
+                "{:<50} {:<20} {:<20} {:<20} {:<10} \n",
+                peer_id, records_stored, nanos_earned, payments_received, distance_to_default,
+            );
+            writer.write_all(line.as_bytes())?;
+        }
+
+        writer.flush()?;
+
+        let output = format!("Peers data written to {:?}", file_path);
+        let dashes = "-".repeat(output.len());
+        println!("{}", dashes);
+        println!("{}", output);
+        println!("{}", dashes);
+        Ok(())
     }
 
     fn pick_cheapest_payee(
