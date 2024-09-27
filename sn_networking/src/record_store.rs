@@ -2002,8 +2002,13 @@ mod tests {
         // Write header
         writeln!(
             writer,
-            "{:<50} {:<20} {:<20} {:<20} {:<20}",
-            "PeerId", "Records_Stored", "Nanos_Earned", "Payments_Received", "Distance",
+            "{:<50} {:<20} {:<20} {:<20} {:<20} {:<20}",
+            "PeerId",
+            "Records_Stored",
+            "MeanPaymentCount",
+            "Nanos_Earned",
+            "Payments_Received",
+            "Distance",
         )?;
 
         let default_chunk_address =
@@ -2016,10 +2021,17 @@ mod tests {
             // It's safe to unwrap here because PeerId should be present
             let peer_id = address.as_peer_id().unwrap();
 
+            // let maidsafe_node_count: f64 = 2000.0;
+            let mean_payment_count = nanos_earned as f64 / peers.len() as f64;
             // Use write_all with preformatted string to reduce the number of write calls
             let line = format!(
-                "{:<50} {:<20} {:<20} {:<20} {:<10} \n",
-                peer_id, records_stored, nanos_earned, payments_received, distance_to_default,
+                "{:<50} {:<20} {:<20} {:<20} {:<20} {:<10} \n",
+                peer_id,
+                records_stored,
+                mean_payment_count,
+                nanos_earned,
+                payments_received,
+                distance_to_default,
             );
             writer.write_all(line.as_bytes())?;
         }
