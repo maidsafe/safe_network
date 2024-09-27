@@ -4,11 +4,13 @@ use bytes::Bytes;
 use evmlib::wallet;
 use libp2p::kad::Quorum;
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_networking::{GetRecordCfg, NetworkError};
 use sn_protocol::storage::{try_deserialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind};
 use sn_protocol::NetworkAddress;
 use std::collections::HashSet;
-use tokio::task::JoinError;
+use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg};
+use sn_transfers::Payment;
+use sn_transfers::{HotWallet, MainPubkey, NanoTokens, PaymentQuote};
+use tokio::task::{JoinError, JoinSet};
 use xor_name::XorName;
 
 /// Errors that can occur during the put operation.

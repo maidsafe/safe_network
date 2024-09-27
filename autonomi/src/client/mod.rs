@@ -12,7 +12,7 @@ use std::{collections::HashSet, time::Duration};
 #[cfg(feature = "vault")]
 use bls::SecretKey;
 use libp2p::{identity::Keypair, Multiaddr};
-use sn_client::networking::{multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
+use sn_networking::{multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use tokio::{sync::mpsc::Receiver, time::interval};
 

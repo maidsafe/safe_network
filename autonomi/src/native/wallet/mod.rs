@@ -1,11 +1,11 @@
 pub mod error;
 
 use crate::native::wallet::error::WalletError;
-use sn_client::transfers::{HotWallet, MainSecretKey};
 use sn_transfers::{
     CashNote, CashNoteRedemption, DerivationIndex, MainPubkey, NanoTokens, SignedSpend,
     SignedTransaction, SpendReason, Transfer, UniquePubkey, UnsignedTransaction,
 };
+use sn_transfers::{HotWallet, MainSecretKey};
 use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
 

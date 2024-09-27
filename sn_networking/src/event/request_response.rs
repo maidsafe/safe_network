@@ -238,22 +238,37 @@ impl SwarmDriver {
         let mut rng = thread_rng();
         // 5% probability
         if more_than_one_key && rng.gen_bool(0.05) {
-            let keys_to_verify = self.select_verification_data_candidates(sender);
+            self.verify_peer_storage(sender.clone());
 
-            if keys_to_verify.is_empty() {
-                debug!("No valid candidate to be checked against peer {holder:?}");
-            } else {
-                self.send_event(NetworkEvent::ChunkProofVerification {
-                    peer_id: holder,
-                    keys_to_verify,
-                });
+            // In additon to verify the sender, we also verify a random close node.
+            // This is to avoid malicious node escaping the check by never send a replication_list.
+            // With further reduced probability of 1% (5% * 20%)
+            if rng.gen_bool(0.2) {
+                let close_group_peers = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_local_peers(&self.self_peer_id.into())
+                    .map(|peer| peer.into_preimage())
+                    .take(CLOSE_GROUP_SIZE)
+                    .collect_vec();
+                if close_group_peers.len() == CLOSE_GROUP_SIZE {
+                    loop {
+                        let index: usize = OsRng.gen_range(0..close_group_peers.len());
+                        let candidate = NetworkAddress::from_peer(close_group_peers[index]);
+                        if sender != candidate {
+                            self.verify_peer_storage(candidate);
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
 
     /// Check among all chunk type records that we have, select those close to the peer,
     /// and randomly pick one as the verification candidate.
-    fn select_verification_data_candidates(&mut self, peer: NetworkAddress) -> Vec<NetworkAddress> {
+    fn verify_peer_storage(&mut self, peer: NetworkAddress) {
         let mut closest_peers = self
             .swarm
             .behaviour_mut()
@@ -268,7 +283,7 @@ impl SwarmDriver {
             peer_id
         } else {
             error!("Target {peer:?} is not a valid PeerId");
-            return vec![];
+            return;
         };
 
         let all_keys = self
@@ -309,9 +324,12 @@ impl SwarmDriver {
         // AND choose candidate from certain reduced range.
         if verify_candidates.len() > 50 {
             let index: usize = OsRng.gen_range(0..(verify_candidates.len() / 2));
-            vec![verify_candidates[index].clone()]
+            self.send_event(NetworkEvent::ChunkProofVerification {
+                peer_id: target_peer,
+                keys_to_verify: vec![verify_candidates[index].clone()],
+            });
         } else {
-            vec![]
+            debug!("No valid candidate to be checked against peer {peer:?}");
         }
     }
 }

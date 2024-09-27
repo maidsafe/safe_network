@@ -19,6 +19,7 @@ use crate::connection_mode::ConnectionMode;
 use crate::error::ErrorPopup;
 use crate::node_mgmt::MaintainNodesArgs;
 use crate::node_mgmt::{PORT_MAX, PORT_MIN};
+use crate::style::{COOL_GREY, INDIGO};
 use crate::tui::Event;
 use crate::{
     action::{Action, StatusActions},
@@ -39,6 +40,7 @@ use sn_peers_acquisition::PeersArgs;
 use sn_service_management::{
     control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
 };
+use std::collections::HashMap;
 use std::{
     path::PathBuf,
     time::{Duration, Instant},
@@ -48,7 +50,9 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use super::super::node_mgmt::{maintain_n_running_nodes, reset_nodes, stop_nodes};
 
-const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
+use throbber_widgets_tui::{self, ThrobberState};
+
+pub const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 /// If nat detection fails for more than 3 times, we don't want to waste time running during every node start.
 const MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION: usize = 3;
 
@@ -60,6 +64,7 @@ pub struct Status {
     config: Config,
     // state
     node_services: Vec<NodeServiceData>,
+    node_services_throttle_state: HashMap<String, ThrobberState>,
     is_nat_status_determined: bool,
     error_while_running_nat_detection: usize,
     node_stats: NodeStats,
@@ -111,6 +116,7 @@ impl Status {
             config: Default::default(),
             active: true,
             node_services: Default::default(),
+            node_services_throttle_state: HashMap::new(),
             is_nat_status_determined: false,
             error_while_running_nat_detection: 0,
             node_stats: NodeStats::default(),
@@ -183,7 +189,8 @@ impl Status {
 
     /// Only run NAT detection if we haven't determined the status yet and we haven't failed more than 3 times.
     fn should_we_run_nat_detection(&self) -> bool {
-        !self.is_nat_status_determined
+        self.connection_mode == ConnectionMode::Automatic
+            && !self.is_nat_status_determined
             && self.error_while_running_nat_detection < MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION
     }
 
@@ -256,6 +263,9 @@ impl Component for Status {
         match action {
             Action::Tick => {
                 self.try_update_node_stats(false)?;
+                for (_spinner_key, spinner_state) in self.node_services_throttle_state.iter_mut() {
+                    spinner_state.calc_next(); // Assuming calc_next() is a method of ThrobberState
+                }
             }
             Action::SwitchScene(scene) => match scene {
                 Scene::Status | Scene::StatusBetaProgrammePopUp => {
@@ -528,13 +538,13 @@ impl Component for Status {
             Cell::new("Storage Allocated".to_string()).fg(GHOST_WHITE),
             Cell::new(format!("{} GB", self.nodes_to_start * GB_PER_NODE)).fg(GHOST_WHITE),
         ]);
-        let memory_use_val = if self.node_stats.memory_usage_mb as f64 / 1024_f64 > 1.0 {
+        let memory_use_val = if self.node_stats.total_memory_usage_mb as f64 / 1024_f64 > 1.0 {
             format!(
                 "{:.2} GB",
-                self.node_stats.memory_usage_mb as f64 / 1024_f64
+                self.node_stats.total_memory_usage_mb as f64 / 1024_f64
             )
         } else {
-            format!("{} MB", self.node_stats.memory_usage_mb)
+            format!("{} MB", self.node_stats.total_memory_usage_mb)
         };
 
         let memory_use_row = Row::new(vec![
@@ -586,7 +596,7 @@ impl Component for Status {
 
         let total_nanos_earned_and_discord_row = Row::new(vec![
             Cell::new("Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
-            Cell::new(self.node_stats.forwarded_rewards.to_string())
+            Cell::new(self.node_stats.total_forwarded_rewards.to_string())
                 .fg(VIVID_SKY_BLUE)
                 .bold(),
             Cell::new(
@@ -625,24 +635,98 @@ impl Component for Status {
 
         // ==== Node Status =====
 
+        // Widths
+        const NODE_WIDTH: usize = 10;
+        const VERSION_WIDTH: usize = 7;
+        const NANOS_WIDTH: usize = 5;
+        const MEMORY_WIDTH: usize = 7;
+        const MBPS_WIDTH: usize = 13;
+        const RECORDS_WIDTH: usize = 4;
+        const PEERS_WIDTH: usize = 5;
+        const CONNS_WIDTH: usize = 5;
+        const STATUS_WIDTH: usize = 8;
+        const SPINNER_WIDTH: usize = 1;
+
         let node_rows: Vec<_> = self
             .node_services
             .iter()
             .filter_map(|n| {
-                let peer_id = n.peer_id;
                 if n.status == ServiceStatus::Removed {
                     return None;
                 }
-                let peer_id = peer_id.map(|p| p.to_string()).unwrap_or("-".to_string());
-                let status = format!("{:?}", n.status);
-                let version = format!("v{}", n.version);
 
-                let row = vec![n.service_name.clone(), peer_id, version, status];
+                let mut status = format!("{:?}", n.status);
+                if let Some(LockRegistryState::StartingNodes) = self.lock_registry {
+                    status = "Starting".to_string();
+                }
+                let connected_peers = match n.connected_peers {
+                    Some(ref peers) => format!("{:?}", peers.len()),
+                    None => "0".to_string(),
+                };
+
+                let mut nanos = "-".to_string();
+                let mut memory = "-".to_string();
+                let mut mbps = "        -".to_string();
+                let mut records = "-".to_string();
+                let mut connections = "-".to_string();
+
+                let individual_stats = self
+                    .node_stats
+                    .individual_stats
+                    .iter()
+                    .find(|s| s.service_name == n.service_name);
+                if let Some(stats) = individual_stats {
+                    nanos = stats.forwarded_rewards.to_string();
+                    memory = stats.memory_usage_mb.to_string();
+                    mbps = format!(
+                        "↓{:05.2} ↑{:05.2}",
+                        stats.bandwidth_inbound as f64 / (1024_f64 * 1024_f64),
+                        stats.bandwidth_outbound as f64 / (1024_f64 * 1024_f64)
+                    );
+                    records = stats.max_records.to_string();
+                    connections = stats.connections.to_string();
+                }
+
+                // Create a row vector
+                let row = vec![
+                    n.service_name.clone().to_string(),
+                    n.version.to_string(),
+                    format!(
+                        "{}{}",
+                        " ".repeat(NANOS_WIDTH.saturating_sub(nanos.len())),
+                        nanos.to_string()
+                    ),
+                    format!(
+                        "{}{} MB",
+                        " ".repeat(MEMORY_WIDTH.saturating_sub(memory.len() + 4)),
+                        memory.to_string()
+                    ),
+                    mbps.to_string(),
+                    format!(
+                        "{}{}",
+                        " ".repeat(RECORDS_WIDTH.saturating_sub(records.len())),
+                        records.to_string()
+                    ),
+                    format!(
+                        "{}{}",
+                        " ".repeat(PEERS_WIDTH.saturating_sub(connected_peers.len())),
+                        connected_peers.to_string()
+                    ),
+                    format!(
+                        "{}{}",
+                        " ".repeat(CONNS_WIDTH.saturating_sub(connections.len())),
+                        connections.to_string()
+                    ),
+                    status.to_string(),
+                ];
+
+                // Create a styled row
                 let row_style = if n.status == ServiceStatus::Running {
                     Style::default().fg(EUCALYPTUS)
                 } else {
                     Style::default().fg(GHOST_WHITE)
                 };
+
                 Some(Row::new(row).style(row_style))
             })
             .collect();
@@ -681,31 +765,112 @@ impl Component for Status {
                 layout[2],
             );
         } else {
+            // Node/s block
+            let block_nodes = Block::default()
+                .title(Line::from(vec![
+                    Span::styled(" Nodes", Style::default().fg(GHOST_WHITE).bold()),
+                    Span::styled(
+                        format!(" ({}) ", self.nodes_to_start),
+                        Style::default().fg(LIGHT_PERIWINKLE),
+                    ),
+                ]))
+                .padding(Padding::new(1, 1, 0, 0))
+                .title_style(Style::default().fg(GHOST_WHITE))
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(EUCALYPTUS));
+
+            // Create a layout to arrange the header and table vertically
+            let inner_layout = Layout::new(
+                Direction::Vertical,
+                vec![Constraint::Length(1), Constraint::Min(0)],
+            );
+
+            // Split the inner area of the combined block
+            let inner_area = block_nodes.inner(layout[2]);
+            let inner_chunks = inner_layout.split(inner_area);
+
+            // Column Widths
             let node_widths = [
-                Constraint::Length(11),
-                Constraint::Fill(1),
-                Constraint::Length(9),
-                Constraint::Length(8),
+                Constraint::Min(NODE_WIDTH as u16),
+                Constraint::Min(VERSION_WIDTH as u16),
+                Constraint::Min(NANOS_WIDTH as u16),
+                Constraint::Min(MEMORY_WIDTH as u16),
+                Constraint::Min(MBPS_WIDTH as u16),
+                Constraint::Min(RECORDS_WIDTH as u16),
+                Constraint::Min(PEERS_WIDTH as u16),
+                Constraint::Min(CONNS_WIDTH as u16),
+                Constraint::Min(STATUS_WIDTH as u16),
+                Constraint::Max(SPINNER_WIDTH as u16),
             ];
+
+            // Header
+            let header_row = Row::new(vec![
+                Cell::new("Node").fg(COOL_GREY),
+                Cell::new("Version").fg(COOL_GREY),
+                Cell::new("Nanos").fg(COOL_GREY),
+                Cell::new("Memory").fg(COOL_GREY),
+                Cell::new(
+                    format!("{}{}", " ".repeat(MBPS_WIDTH - "Mbps".len()), "Mbps").fg(COOL_GREY),
+                ),
+                Cell::new("Recs").fg(COOL_GREY),
+                Cell::new("Peers").fg(COOL_GREY),
+                Cell::new("Conns").fg(COOL_GREY),
+                Cell::new("Status").fg(COOL_GREY),
+                Cell::new(" ").fg(COOL_GREY), // Spinner
+            ]);
+
+            let header = Table::new(vec![header_row.clone()], node_widths)
+                .style(Style::default().add_modifier(Modifier::BOLD));
+
+            // Table items
             let table = Table::new(node_rows.clone(), node_widths)
-                .column_spacing(2)
-                .highlight_style(Style::new().reversed())
-                .block(
-                    Block::default()
-                        .title(Line::from(vec![
-                            Span::styled(" Nodes", Style::default().fg(GHOST_WHITE).bold()),
-                            Span::styled(
-                                format!(" ({}) ", self.nodes_to_start),
-                                Style::default().fg(LIGHT_PERIWINKLE),
-                            ),
-                        ]))
-                        .padding(Padding::new(2, 2, 1, 1))
-                        .title_style(Style::default().fg(GHOST_WHITE))
-                        .borders(Borders::ALL)
-                        .border_style(Style::default().fg(EUCALYPTUS)),
-                )
-                .highlight_symbol("*");
-            f.render_stateful_widget(table, layout[2], &mut self.node_table_state);
+                .column_spacing(1)
+                .highlight_style(Style::default().bg(INDIGO))
+                .highlight_spacing(HighlightSpacing::Always);
+
+            f.render_stateful_widget(header, inner_chunks[0], &mut self.node_table_state);
+            f.render_stateful_widget(table, inner_chunks[1], &mut self.node_table_state);
+
+            // Render the throbber in the last column for running nodes
+            for (i, node) in self.node_services.iter().enumerate() {
+                let mut throbber = throbber_widgets_tui::Throbber::default()
+                    .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE);
+                match node.status {
+                    ServiceStatus::Running => {
+                        throbber = throbber
+                            .throbber_style(
+                                Style::default().fg(EUCALYPTUS).add_modifier(Modifier::BOLD),
+                            )
+                            .use_type(throbber_widgets_tui::WhichUse::Spin);
+                    }
+                    ServiceStatus::Stopped => {
+                        throbber = throbber
+                            .throbber_style(
+                                Style::default()
+                                    .fg(GHOST_WHITE)
+                                    .add_modifier(Modifier::BOLD),
+                            )
+                            .use_type(throbber_widgets_tui::WhichUse::Full);
+                    }
+                    _ => {}
+                }
+                if let Some(LockRegistryState::StartingNodes) = self.lock_registry {
+                    throbber = throbber
+                        .throbber_style(
+                            Style::default().fg(EUCALYPTUS).add_modifier(Modifier::BOLD),
+                        )
+                        .throbber_set(throbber_widgets_tui::BOX_DRAWING)
+                        .use_type(throbber_widgets_tui::WhichUse::Spin);
+                }
+                let throbber_area =
+                    Rect::new(inner_chunks[1].width, inner_chunks[1].y + i as u16, 1, 1);
+                let throttle_state = self
+                    .node_services_throttle_state
+                    .entry(node.service_name.clone())
+                    .or_default();
+                f.render_stateful_widget(throbber, throbber_area, throttle_state);
+            }
+            f.render_widget(block_nodes, layout[2]);
         }
 
         // ==== Footer =====
@@ -735,19 +900,6 @@ impl Component for Status {
 
         // Status Popup
         if let Some(registry_state) = &self.lock_registry {
-            let popup_area = centered_rect_fixed(50, 12, area);
-            clear_area(f, popup_area);
-
-            let popup_border = Paragraph::new("").block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(" Manage Nodes ")
-                    .bold()
-                    .title_style(Style::new().fg(VIVID_SKY_BLUE))
-                    .padding(Padding::uniform(2))
-                    .border_style(Style::new().fg(GHOST_WHITE)),
-            );
-
             let popup_text = match registry_state {
                 LockRegistryState::StartingNodes => {
                     if self.should_we_run_nat_detection() {
@@ -759,12 +911,8 @@ impl Component for Status {
                             Line::raw("This may take a couple minutes."),
                         ]
                     } else {
-                        vec![
-                            Line::raw(""),
-                            Line::raw(""),
-                            Line::raw(""),
-                            Line::raw("Starting nodes..."),
-                        ]
+                        // We avoid rendering the popup as we have status lines now
+                        return Ok(());
                     }
                 }
                 LockRegistryState::StoppingNodes => {
@@ -784,26 +932,41 @@ impl Component for Status {
                     ]
                 }
             };
-            let centred_area = Layout::new(
-                Direction::Vertical,
-                vec![
-                    // border
-                    Constraint::Length(2),
-                    // our text goes here
-                    Constraint::Min(5),
-                    // border
-                    Constraint::Length(1),
-                ],
-            )
-            .split(popup_area);
-            let text = Paragraph::new(popup_text)
-                .block(Block::default().padding(Padding::horizontal(2)))
-                .wrap(Wrap { trim: false })
-                .alignment(Alignment::Center)
-                .fg(EUCALYPTUS);
-            f.render_widget(text, centred_area[1]);
+            if !popup_text.is_empty() {
+                let popup_area = centered_rect_fixed(50, 12, area);
+                clear_area(f, popup_area);
 
-            f.render_widget(popup_border, popup_area);
+                let popup_border = Paragraph::new("").block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(" Manage Nodes ")
+                        .bold()
+                        .title_style(Style::new().fg(VIVID_SKY_BLUE))
+                        .padding(Padding::uniform(2))
+                        .border_style(Style::new().fg(GHOST_WHITE)),
+                );
+
+                let centred_area = Layout::new(
+                    Direction::Vertical,
+                    vec![
+                        // border
+                        Constraint::Length(2),
+                        // our text goes here
+                        Constraint::Min(5),
+                        // border
+                        Constraint::Length(1),
+                    ],
+                )
+                .split(popup_area);
+                let text = Paragraph::new(popup_text)
+                    .block(Block::default().padding(Padding::horizontal(2)))
+                    .wrap(Wrap { trim: false })
+                    .alignment(Alignment::Center)
+                    .fg(EUCALYPTUS);
+                f.render_widget(text, centred_area[1]);
+
+                f.render_widget(popup_border, popup_area);
+            }
         }
 
         Ok(())

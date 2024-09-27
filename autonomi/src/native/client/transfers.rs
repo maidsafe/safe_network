@@ -1,4 +1,6 @@
-use sn_client::transfers::{MainPubkey, NanoTokens};
+use crate::wallet::MemWallet;
+use crate::Client;
+use sn_transfers::{MainPubkey, NanoTokens};
 use sn_transfers::{SpendReason, Transfer};
 
 use sn_transfers::UniquePubkey;
@@ -21,7 +23,7 @@ pub enum TransferError {
     #[error("Wallet error: {0:?}")]
     WalletError(#[from] wallet::error::WalletError),
     #[error("Network error: {0:?}")]
-    NetworkError(#[from] sn_client::networking::NetworkError),
+    NetworkError(#[from] sn_networking::NetworkError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -37,19 +39,16 @@ use libp2p::{
     kad::{Quorum, Record},
     PeerId,
 };
-use sn_client::{
-    networking::{
-        GetRecordCfg, GetRecordError, Network, NetworkError, PutRecordCfg, VerificationKind,
-    },
-    transfers::{HotWallet, SignedSpend},
+use sn_networking::{
+    GetRecordCfg, GetRecordError, Network, NetworkError, PutRecordCfg, VerificationKind,
 };
 use sn_protocol::{
     storage::{try_serialize_record, RecordKind, RetryStrategy, SpendAddress},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_transfers::Payment;
+use sn_transfers::{HotWallet, SignedSpend};
 use xor_name::XorName;
-
 use crate::client::ClientWrapper;
 use crate::native::client::NativeClient;
 use crate::native::wallet::MemWallet;
@@ -111,12 +110,12 @@ impl NativeClient {
         let mut double_spent_keys = BTreeSet::new();
         for (spend_key, spend_attempt_result) in join_all(tasks).await {
             match spend_attempt_result {
-                Err(sn_client::networking::NetworkError::GetRecordError(
+                Err(sn_networking::NetworkError::GetRecordError(
                     GetRecordError::RecordDoesNotMatch(_),
                 ))
-                | Err(sn_client::networking::NetworkError::GetRecordError(
-                    GetRecordError::SplitRecord { .. },
-                )) => {
+                | Err(sn_networking::NetworkError::GetRecordError(GetRecordError::SplitRecord {
+                    ..
+                })) => {
                     tracing::warn!(
                         "Double spend detected while trying to spend: {:?}",
                         spend_key
