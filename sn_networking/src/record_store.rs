@@ -2052,6 +2052,7 @@ mod tests {
 
     fn generate_graph(peers: &[PeerStats]) -> eyre::Result<()> {
         use plotters::prelude::*;
+        use std::collections::BTreeMap;
 
         let temp_dir = std::env::temp_dir();
         let file_name = "node_count_vs_mean_payment.png";
@@ -2059,25 +2060,18 @@ mod tests {
         let root = BitMapBackend::new(file_path.to_str().unwrap(), (800, 600)).into_drawing_area();
         root.fill(&WHITE)?;
 
-        // Calculate mean payment counts
-        let mean_payment_counts: Vec<f64> = peers
-            .iter()
-            .map(|peer| peer.nanos_earned.load(Ordering::Relaxed) as f64 / peers.len() as f64)
-            .collect();
+        // Calculate mean payment counts and count occurrences
+        let mut mean_payment_counts = BTreeMap::new();
+        for peer in peers {
+            let mean_payment = (peer.nanos_earned.load(Ordering::Relaxed) as f64
+                / peers.len() as f64)
+                .round() as u64;
+            *mean_payment_counts.entry(mean_payment).or_insert(0) += 1;
+        }
 
-        // Start of Selection
-        // Determine the range for the Y-axis based on actual data
-        let max_mean_payment = mean_payment_counts
-            .iter()
-            .copied()
-            .fold(f64::NEG_INFINITY, f64::max)
-            .ceil();
-        let min_mean_payment = mean_payment_counts
-            .iter()
-            .copied()
-            .fold(f64::INFINITY, f64::min)
-            .floor();
- 
+        let max_mean_payment = *mean_payment_counts.keys().max().unwrap_or(&0);
+        let max_count = *mean_payment_counts.values().max().unwrap_or(&0);
+
         let mut chart = ChartBuilder::on(&root)
             .caption(
                 "Node Count vs Mean Payment Count",
@@ -2086,30 +2080,21 @@ mod tests {
             .margin(10)
             .x_label_area_size(40)
             .y_label_area_size(60)
-            .build_cartesian_2d(0..peers.len(), min_mean_payment..max_mean_payment)?;
+            .build_cartesian_2d(0..max_mean_payment + 1, 0..max_count + 1)?;
 
         chart
             .configure_mesh()
-            .x_desc("Node Index")
-            .y_desc("Mean Payment Count")
+            .x_desc("Mean Payment Count")
+            .y_desc("Number of Nodes")
             .draw()?;
 
-        chart
-            .draw_series(LineSeries::new(
+        chart.draw_series(
+            Histogram::vertical(&chart).style(RED.filled()).data(
                 mean_payment_counts
                     .iter()
-                    .enumerate()
-                    .map(|(i, &mean)| (i, mean)),
-                &RED,
-            ))?
-            .label("Mean Payment Count")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-
-        chart
-            .configure_series_labels()
-            .background_style(&WHITE.mix(0.8))
-            .border_style(&BLACK)
-            .draw()?;
+                    .map(|(&count, &number)| (count, number)),
+            ),
+        )?;
 
         root.present()?;
 
