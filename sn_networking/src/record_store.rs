@@ -63,7 +63,7 @@ const MAX_RECORDS_CACHE_SIZE: usize = 100;
 const HISTORICAL_QUOTING_METRICS_FILENAME: &str = "historic_quoting_metrics";
 
 /// Max store cost for a chunk.
-const MAX_STORE_COST: u64 = 1_000_000;
+pub(crate) const MAX_STORE_COST: u64 = 100_000_000;
 
 // Min store cost for a chunk.
 const MIN_STORE_COST: u64 = 1;
@@ -949,20 +949,23 @@ mod tests {
 
     use super::*;
     use bls::SecretKey;
-    use sn_protocol::storage::{try_deserialize_record, Scratchpad};
-    use xor_name::XorName;
-
     use bytes::Bytes;
     use eyre::{bail, ContextCompat};
     use libp2p::kad::K_VALUE;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
+    use sn_protocol::storage::{try_deserialize_record, Scratchpad};
     use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress};
     use sn_transfers::{MainPubkey, PaymentQuote};
     use std::collections::BTreeMap;
+    use std::fs::OpenOptions;
+    use std::io::BufWriter;
+    use std::io::Write;
     use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
     use tokio::runtime::Runtime;
     use tokio::time::{sleep, Duration};
+    use xor_name::XorName;
 
     const MULITHASH_CODE: u64 = 0x12;
 
@@ -1551,6 +1554,7 @@ mod tests {
         Ok(())
     }
 
+    #[derive(Debug)]
     struct PeerStats {
         address: NetworkAddress,
         pk: MainPubkey,
@@ -1638,7 +1642,7 @@ mod tests {
                     close_group.truncate(replication_group_size);
 
                     // Find the cheapest payee among the close group
-                    let Ok((payee_index, cost)) = pick_cheapest_payee(&peers, &close_group) else {
+                    let Ok((payee_index, cost)) = pick_the_payee(&peers, &close_group) else {
                         bail!("Failed to find a payee");
                     };
 
@@ -1746,7 +1750,373 @@ mod tests {
         }
     }
 
-    fn pick_cheapest_payee(
+    #[test]
+    fn prod_80k_node_distribution_sim() -> eyre::Result<()> {
+        use rayon::prelude::*;
+
+        // as network saturates, we can see that peers all eventually earn similarly
+        let num_of_peers = 2_000;
+        let num_of_chunks_per_hour = 50_000;
+        let max_payments_made = 25_000_000;
+
+        let mut hour = 0;
+        let k = K_VALUE.get();
+
+        let replication_group_size = k / 3;
+
+        // Initialize peers with random addresses
+        let mut peers: Vec<PeerStats> = (0..num_of_peers)
+            .into_par_iter()
+            .map(|_| PeerStats {
+                address: NetworkAddress::from_peer(PeerId::random()),
+                records_stored: AtomicUsize::new(0),
+                nanos_earned: AtomicU64::new(0),
+                payments_received: AtomicUsize::new(0),
+                pk: MainPubkey::new(SecretKey::random().public_key()),
+            })
+            .collect();
+
+        let mut total_received_payment_count = 0;
+
+        let peers_len = peers.len();
+
+        // Generate a random sorting target address
+        let sorting_target_address =
+            NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::default()));
+
+        // Sort all peers based on their distance to the sorting target
+        peers.par_sort_by(|a, b| {
+            sorting_target_address
+                .distance(&a.address)
+                .cmp(&sorting_target_address.distance(&b.address))
+        });
+
+        loop {
+            // Parallel processing of chunks
+            let _chunk_results: Vec<_> = (0..num_of_chunks_per_hour)
+                .into_par_iter()
+                .map(|_| {
+                    // Generate a random chunk address
+                    let name = xor_name::rand::random();
+                    let chunk_address = NetworkAddress::from_chunk_address(ChunkAddress::new(name));
+
+                    let chunk_distance_to_sorting = sorting_target_address.distance(&chunk_address);
+                    // Binary search to find the insertion point for the chunk
+                    let partition_point = peers.partition_point(|peer| {
+                        sorting_target_address.distance(&peer.address) < chunk_distance_to_sorting
+                    });
+
+                    // Collect close_group_size closest peers
+                    let mut close_group = Vec::with_capacity(replication_group_size);
+                    let mut left = partition_point;
+                    let mut right = partition_point;
+
+                    while close_group.len() < replication_group_size
+                        && (left > 0 || right < peers_len)
+                    {
+                        if left > 0 {
+                            left -= 1;
+                            close_group.push(left);
+                        }
+                        if close_group.len() < replication_group_size && right < peers_len {
+                            close_group.push(right);
+                            right += 1;
+                        }
+                    }
+
+                    // Truncate to ensure we have exactly close_group_size peers
+                    close_group.truncate(replication_group_size);
+
+                    // Find the cheapest payee among the close group
+                    let Ok((payee_index, cost)) = pick_the_payee(&peers, &close_group) else {
+                        bail!("Failed to find a payee");
+                    };
+
+                    for &peer_index in &close_group {
+                        let peer = &peers[peer_index];
+                        peer.records_stored.fetch_add(1, Ordering::Relaxed);
+
+                        if peer_index == payee_index {
+                            peer.nanos_earned
+                                .fetch_add(cost.as_nano(), Ordering::Relaxed);
+                            peer.payments_received.fetch_add(1, Ordering::Relaxed);
+                        }
+                    }
+
+                    Ok(())
+                })
+                .collect();
+
+            // Parallel reduction to calculate statistics
+            let (
+                received_payment_count,
+                empty_earned_nodes,
+                min_earned,
+                max_earned,
+                min_store_cost,
+                max_store_cost,
+            ) = peers
+                .par_iter()
+                .map(|peer| {
+                    let cost =
+                        calculate_cost_for_records(peer.records_stored.load(Ordering::Relaxed));
+                    let earned = peer.nanos_earned.load(Ordering::Relaxed);
+                    (
+                        peer.payments_received.load(Ordering::Relaxed),
+                        if earned == 0 { 1 } else { 0 },
+                        earned,
+                        earned,
+                        cost,
+                        cost,
+                    )
+                })
+                .reduce(
+                    || (0, 0, u64::MAX, 0, u64::MAX, 0),
+                    |a, b| {
+                        let (
+                            a_received_payment_count,
+                            a_empty_earned_nodes,
+                            a_min_earned,
+                            a_max_earned,
+                            a_min_store_cost,
+                            a_max_store_cost,
+                        ) = a;
+                        let (
+                            b_received_payment_count,
+                            b_empty_earned_nodes,
+                            b_min_earned,
+                            b_max_earned,
+                            b_min_store_cost,
+                            b_max_store_cost,
+                        ) = b;
+                        (
+                            a_received_payment_count + b_received_payment_count,
+                            a_empty_earned_nodes + b_empty_earned_nodes,
+                            a_min_earned.min(b_min_earned),
+                            a_max_earned.max(b_max_earned),
+                            a_min_store_cost.min(b_min_store_cost),
+                            a_max_store_cost.max(b_max_store_cost),
+                        )
+                    },
+                );
+
+            total_received_payment_count += num_of_chunks_per_hour;
+            assert_eq!(total_received_payment_count, received_payment_count);
+
+            println!("After the completion of hour {hour} with {num_of_chunks_per_hour} chunks put, there are {empty_earned_nodes} nodes which earned nothing");
+            println!("\t\t with storecost variation of (min {min_store_cost} - max {max_store_cost}), and earned variation of (min {min_earned} - max {max_earned})");
+
+            hour += 1;
+
+            // Check termination condition
+            if total_received_payment_count >= max_payments_made {
+                write_peers_data_to_file(&peers)?;
+                // Check if any node has 1200 payments
+                if let Some(peer) = peers.iter().max_by(|peer1, peer2| {
+                    peer1
+                        .nanos_earned
+                        .load(Ordering::Relaxed)
+                        .cmp(&peer2.nanos_earned.load(Ordering::Relaxed))
+                }) {
+                    println!("Largest payee {peer:?}.");
+                }
+                if let Some(peer) = peers.iter().min_by(|peer1, peer2| {
+                    peer1
+                        .nanos_earned
+                        .load(Ordering::Relaxed)
+                        .cmp(&peer2.nanos_earned.load(Ordering::Relaxed))
+                }) {
+                    println!("Smallest payee {peer:?}.");
+                }
+
+                println!("total_received_payment_count: {total_received_payment_count}");
+                let acceptable_percentage = 0.01; //%
+
+                // make min earned at least 1
+                let min_earned = min_earned.max(1);
+
+                // Calculate acceptable empty nodes based on % of total nodes
+                let acceptable_empty_nodes =
+                    (num_of_peers as f64 * acceptable_percentage).ceil() as usize;
+
+                // Assert conditions for termination
+                assert!(
+                    empty_earned_nodes <= acceptable_empty_nodes,
+                    "More than {acceptable_percentage}% of nodes ({acceptable_empty_nodes}) still not earning: {empty_earned_nodes}"
+                );
+                assert!(
+                    (max_store_cost / min_store_cost) < 100,
+                    "store cost is not 'balanced', expected ratio max/min to be < 100, but was {}",
+                    max_store_cost / min_store_cost
+                );
+                assert!(
+                    (max_earned / min_earned) < 1500,
+                    "earning distribution is not balanced, expected to be < 1500, but was {}",
+                    max_earned / min_earned
+                );
+                break Ok(());
+            }
+        }
+    }
+
+    /// Write peers data as space separated values to a temp file, and then print the file location
+    /// sort the peers by max earned
+    fn write_peers_data_to_file(peers: &[PeerStats]) -> eyre::Result<()> {
+        println!("Writing peers data to a file");
+        let temp_dir = std::env::temp_dir();
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+        let datetime = UNIX_EPOCH + std::time::Duration::from_secs(now);
+
+        // Use chrono for efficient time formatting
+        let datetime: chrono::DateTime<chrono::Utc> = datetime.into();
+        let formatted_time = datetime.format("%Y-%m-%d_%H-%M").to_string();
+
+        let file_name = format!("peers_data_{}.txt", formatted_time);
+        let file_path = temp_dir.join(file_name);
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&file_path)?;
+        let mut writer = BufWriter::with_capacity(16 * 1024, file);
+
+        // Preload peer data to minimize atomic loads during sorting and writing
+        let mut peers_data: Vec<_> = peers
+            .iter()
+            .map(|peer| {
+                (
+                    peer.nanos_earned.load(Ordering::Relaxed),
+                    peer.records_stored.load(Ordering::Relaxed),
+                    peer.payments_received.load(Ordering::Relaxed),
+                    peer.address.clone(),
+                )
+            })
+            .collect();
+
+        // Sort peers by nanos_earned in descending order for better cache locality
+        peers_data.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+
+        // Write header
+        writeln!(
+            writer,
+            "{:<50} {:<20} {:<20} {:<20} {:<20} {:<20}",
+            "PeerId",
+            "Records_Stored",
+            "MeanPaymentCount",
+            "Nanos_Earned",
+            "Payments_Received",
+            "Distance",
+        )?;
+
+        let default_chunk_address =
+            NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::default()));
+        for (nanos_earned, records_stored, payments_received, address) in peers_data {
+            let distance_to_default = address
+                .distance(&default_chunk_address)
+                .ilog2()
+                .unwrap_or(0);
+            // It's safe to unwrap here because PeerId should be present
+            let peer_id = address.as_peer_id().unwrap();
+
+            // let maidsafe_node_count: f64 = 2000.0;
+            let mean_payment_count = nanos_earned as f64 / peers.len() as f64;
+            // Use write_all with preformatted string to reduce the number of write calls
+            let line = format!(
+                "{:<50} {:<20} {:<20} {:<20} {:<20} {:<10} \n",
+                peer_id,
+                records_stored,
+                mean_payment_count,
+                nanos_earned,
+                payments_received,
+                distance_to_default,
+            );
+            writer.write_all(line.as_bytes())?;
+        }
+
+        writer.flush()?;
+
+        let output = format!("Peers data written to {:?}", file_path);
+        let dashes = "-".repeat(output.len());
+        println!("{}", dashes);
+        println!("{}", output);
+        println!("{}", dashes);
+
+        // Generate graph
+        generate_graph(peers)?;
+
+        Ok(())
+    }
+
+    fn generate_graph(peers: &[PeerStats]) -> eyre::Result<()> {
+        use plotters::prelude::*;
+
+        let temp_dir = std::env::temp_dir();
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+        let datetime = UNIX_EPOCH + std::time::Duration::from_secs(now);
+
+        // Use chrono for efficient time formatting
+        let datetime: chrono::DateTime<chrono::Utc> = datetime.into();
+        let formatted_time = datetime.format("%Y-%m-%d_%H-%M").to_string();
+
+        let file_name = format!("node_count_vs_nanos_earned{}.png", formatted_time);
+
+        let file_path = temp_dir.join(file_name);
+        let root = BitMapBackend::new(file_path.to_str().unwrap(), (1200, 800)).into_drawing_area();
+        root.fill(&WHITE)?;
+
+        // Calculate nanos earned for each peer
+        let nanos_earned: Vec<u64> = peers
+            .iter()
+            .map(|peer| peer.nanos_earned.load(Ordering::Relaxed))
+            .collect();
+
+        let min_nanos = *nanos_earned.iter().min().unwrap_or(&0);
+        let max_nanos = *nanos_earned.iter().max().unwrap_or(&1);
+
+        // Create 100 buckets for nanos earned
+        let bucket_size = (max_nanos - min_nanos + 99) / 100; // Ensure at least 1
+        let mut histogram = vec![0_u64; 100];
+        for &nanos in &nanos_earned {
+            let bucket = ((nanos - min_nanos) / bucket_size).min(99) as usize;
+            histogram[bucket] += 1;
+        }
+
+        let max_count = *histogram.iter().max().unwrap_or(&0);
+
+        let mut chart = ChartBuilder::on(&root)
+            .caption("Node Count vs Nanos Earned", ("sans-serif", 40).into_font())
+            .margin(50)
+            .x_label_area_size(60)
+            .y_label_area_size(80)
+            .build_cartesian_2d(0..100, 0..max_count)?;
+
+        chart
+            .configure_mesh()
+            .x_desc("Nanos Earned Bucket")
+            .y_desc("Number of Nodes")
+            .x_labels(10)
+            .y_labels(10)
+            .x_label_formatter(&|&v| format!("{}", min_nanos + v as u64 * bucket_size))
+            .y_label_formatter(&|v| format!("{}", v))
+            .draw()?;
+
+        chart.draw_series(
+            Histogram::vertical(&chart)
+                .style(RED.filled())
+                .data(histogram.iter().enumerate().map(|(i, &c)| (i as i32, c))),
+        )?;
+
+        // Add grid lines for better readability
+        chart.configure_mesh().draw()?;
+
+        root.present()?;
+
+        println!("Graph generated: {:?}", file_path);
+
+        Ok(())
+    }
+
+    fn pick_the_payee(
         peers: &[PeerStats],
         close_group: &[usize],
     ) -> eyre::Result<(usize, NanoTokens)> {

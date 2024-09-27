@@ -143,6 +143,9 @@ pub enum NetworkError {
     #[error("No Store Cost Responses")]
     NoStoreCostResponses,
 
+    #[error("Lowest cost is max")]
+    LowestCostIsMax,
+
     #[error("Could not create storage dir: {path:?}, error: {source}")]
     FailedToCreateRecordStoreDir {
         path: PathBuf,

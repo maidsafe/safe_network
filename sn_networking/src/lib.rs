@@ -1165,9 +1165,15 @@ impl Network {
 fn get_fees_from_store_cost_responses(
     all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
 ) -> Result<PayeeQuote> {
+    // TODO:
+    // We need to exclude MAX PAYMENT SIZE.
+    // also in sims, exclude peers with max records really....
+    // or do we limit the price... hmmm
+
     // Find the minimum cost using a linear scan with random tie break
     let mut rng = rand::thread_rng();
     let payee = all_costs
+        .clone()
         .into_iter()
         .min_by(
             |(_address_a, _main_key_a, cost_a), (_address_b, _main_key_b, cost_b)| {
@@ -1186,6 +1192,13 @@ fn get_fees_from_store_cost_responses(
         .ok_or(NetworkError::NoStoreCostResponses)?;
 
     info!("Final fees calculated as: {payee:?}");
+    if payee.2.cost.as_nano() == record_store::MAX_STORE_COST {
+        warn!("The cost of the record is zero, this should not happen");
+        eprintln!("Costs are all max! {all_costs:?}");
+
+        return Err(NetworkError::LowestCostIsMax);
+    }
+
     // we dont need to have the address outside of here for now
     let payee_id = if let Some(peer_id) = payee.0.as_peer_id() {
         peer_id
