@@ -742,9 +742,12 @@ impl Component for Status {
             ]);
 
             let line2 = Line::from(vec![Span::styled(
-                "Each node will use 5GB of storage and a small amount of memory, \
+                format!(
+                    "Each node will use {}GB of storage and a small amount of memory, \
                 CPU, and Network bandwidth. Most computers can run many nodes at once, \
                 but we recommend you add them gradually",
+                    GB_PER_NODE
+                ),
                 Style::default().fg(LIGHT_PERIWINKLE),
             )]);
 
