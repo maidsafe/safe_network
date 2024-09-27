@@ -61,6 +61,8 @@ pub async fn join(
     let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+
+    #[cfg(feature = "faucet")]
     let faucet_bin_path = get_bin_path(
         build,
         faucet_path,
@@ -70,6 +72,7 @@ pub async fn join(
         verbosity,
     )
     .await?;
+
     let safenode_bin_path = get_bin_path(
         build,
         node_path,
@@ -97,6 +100,7 @@ pub async fn join(
     };
     let options = LocalNetworkOptions {
         enable_metrics_server,
+        #[cfg(feature = "faucet")]
         faucet_bin_path,
         interval,
         join: true,
@@ -192,6 +196,8 @@ pub async fn run(
     info!("Launching local network");
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+
+    #[cfg(feature = "faucet")]
     let faucet_bin_path = get_bin_path(
         build,
         faucet_path,
@@ -201,6 +207,7 @@ pub async fn run(
         verbosity,
     )
     .await?;
+
     let safenode_bin_path = get_bin_path(
         build,
         node_path,
@@ -213,6 +220,7 @@ pub async fn run(
 
     let options = LocalNetworkOptions {
         enable_metrics_server,
+        #[cfg(feature = "faucet")]
         faucet_bin_path,
         join: false,
         interval,
