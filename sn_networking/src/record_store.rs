@@ -2052,49 +2052,106 @@ mod tests {
 
     fn generate_graph(peers: &[PeerStats]) -> eyre::Result<()> {
         use plotters::prelude::*;
-        use std::collections::BTreeMap;
 
         let temp_dir = std::env::temp_dir();
         let file_name = "node_count_vs_mean_payment.png";
         let file_path = temp_dir.join(file_name);
-        let root = BitMapBackend::new(file_path.to_str().unwrap(), (800, 600)).into_drawing_area();
+        let root = BitMapBackend::new(file_path.to_str().unwrap(), (1200, 800)).into_drawing_area();
         root.fill(&WHITE)?;
 
-        // Calculate mean payment counts and count occurrences
-        let mut mean_payment_counts = BTreeMap::new();
-        for peer in peers {
-            let mean_payment = (peer.nanos_earned.load(Ordering::Relaxed) as f64
-                / peers.len() as f64)
-                .round() as u64;
-            *mean_payment_counts.entry(mean_payment).or_insert(0) += 1;
+        // Define the number of bins
+        let number_of_bins = 50;
+
+        // Calculate mean payment counts
+        let mean_payment_counts: Vec<f64> = peers
+            .iter()
+            .map(|peer| {
+                if peers.len() > 0 {
+                    peer.payments_received.load(Ordering::Relaxed) as f64 / peers.len() as f64
+                } else {
+                    0.0
+                }
+            })
+            .collect();
+
+        let min_mean_payment = mean_payment_counts
+            .iter()
+            .cloned()
+            .fold(f64::INFINITY, f64::min);
+        let max_mean_payment = mean_payment_counts
+            .iter()
+            .cloned()
+            .fold(f64::NEG_INFINITY, f64::max);
+
+        // Calculate bin width
+        let bin_width = if max_mean_payment > min_mean_payment {
+            (max_mean_payment - min_mean_payment) / number_of_bins as f64
+        } else {
+            1.0
+        };
+
+        // Initialize bins
+        let mut bins = vec![0usize; number_of_bins];
+
+        // Populate bins
+        for &mean_payment in &mean_payment_counts {
+            let bin_index = if bin_width > 0.0 {
+                ((mean_payment - min_mean_payment) / bin_width).floor() as usize
+            } else {
+                0
+            };
+            let bin = if bin_index < number_of_bins {
+                bin_index
+            } else {
+                number_of_bins - 1
+            };
+            bins[bin] += 1;
         }
 
-        let max_mean_payment = *mean_payment_counts.keys().max().unwrap_or(&0);
-        let max_count = *mean_payment_counts.values().max().unwrap_or(&0);
+        // Prepare data for plotting
+        let bar_data: Vec<(String, usize)> = (0..number_of_bins)
+            .map(|i| {
+                let bin_start = min_mean_payment + i as f64 * bin_width;
+                (format!("{:.4}", bin_start), bins[i])
+            })
+            .collect();
+
+        let max_count = *bins.iter().max().unwrap_or(&0);
 
         let mut chart = ChartBuilder::on(&root)
             .caption(
                 "Node Count vs Mean Payment Count",
                 ("sans-serif", 40).into_font(),
             )
-            .margin(10)
-            .x_label_area_size(40)
-            .y_label_area_size(60)
-            .build_cartesian_2d(0..max_mean_payment + 1, 0..max_count + 1)?;
+            .margin(50)
+            .x_label_area_size(60)
+            .y_label_area_size(80)
+            .build_cartesian_2d((0..number_of_bins).into_segmented(), 0..max_count + 10)?;
 
         chart
             .configure_mesh()
             .x_desc("Mean Payment Count")
             .y_desc("Number of Nodes")
+            .x_labels(10)
+            .y_labels(10)
+            .x_label_formatter(&|v| {
+                // let bin_start = min_mean_payment + (*v * bin_width);
+                // let bin_start = min_mean_payment + (*v * bin_width);
+                format!("{:.4?}", v)
+            })
+            .y_label_formatter(&|v| format!("{}", v))
             .draw()?;
 
-        chart.draw_series(
-            Histogram::vertical(&chart).style(RED.filled()).data(
-                mean_payment_counts
-                    .iter()
-                    .map(|(&count, &number)| (count, number)),
-            ),
-        )?;
+        chart.draw_series(bar_data.iter().enumerate().map(|(i, (_, count))| {
+            let x0 = SegmentValue::Exact(i);
+            let x1 = SegmentValue::Exact(i + 1);
+            let mut bar = Rectangle::new([(x0, 0), (x1, *count)], RED.mix(0.5).filled());
+            bar.set_margin(0, 0, 5, 5);
+            bar
+        }))?;
+
+        // Add grid lines for better readability
+        chart.configure_mesh().draw()?;
 
         root.present()?;
 
