@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727431774656,
+  "lastUpdate": 1727431777559,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "dfa136d8bdfbbe98aa4267a00474b33188c97260",
-          "message": "chore(node): use proper SpendReason enum",
-          "timestamp": "2024-05-10T09:55:58Z",
-          "tree_id": "0afdc5f3d42379cce3de9b98fd1e62bb4dcb9c19",
-          "url": "https://github.com/maidsafe/safe_network/commit/dfa136d8bdfbbe98aa4267a00474b33188c97260"
-        },
-        "date": 1715338403400,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 196,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 84,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "anselmega@gmail.com",
             "name": "Anselme",
             "username": "grumbach"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c5ff07bd0b26a7b1e2dfc8025cbc97d216d8531a",
+          "message": "Merge pull request #2147 from mazzi/feat_35_gb_nodes\n\nfeat(launchpad): 35gb nodes",
+          "timestamp": "2024-09-27T09:12:23Z",
+          "tree_id": "cc6fc289dcef5f5c986768f102f5906e37ff2b9a",
+          "url": "https://github.com/maidsafe/safe_network/commit/c5ff07bd0b26a7b1e2dfc8025cbc97d216d8531a"
+        },
+        "date": 1727431777244,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 179,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 82,
             "unit": "MB"
           }
         ]
