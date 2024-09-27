@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use super::data::PayError;
+use crate::client::data::PayError;
 use crate::client::{Client, ClientWrapper};
 use bls::SecretKey;
 use bytes::Bytes;
@@ -14,13 +14,7 @@ use sn_protocol::storage::RecordKind;
 use sn_protocol::storage::RegisterAddress;
 use sn_protocol::NetworkAddress;
 use sn_registers::EntryHash;
-use sn_registers::Permissions;
-use sn_registers::Register as ClientRegister;
 use sn_registers::SignedRegister;
-use sn_transfers::HotWallet;
-use xor_name::XorName;
-
-use super::data::PayError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RegisterError {
@@ -46,7 +40,7 @@ pub enum RegisterError {
 
 #[derive(Clone, Debug)]
 pub struct Register {
-    inner: SignedRegister,
+    pub(crate) inner: SignedRegister,
 }
 
 impl Register {

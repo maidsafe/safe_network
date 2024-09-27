@@ -1155,7 +1155,6 @@ dependencies = [
  "serde",
  "sn_bls_ckd",
  "sn_curv",
- "sn_networking",
  "sn_evm",
  "sn_networking",
  "sn_peers_acquisition",
@@ -2902,6 +2901,15 @@ checksum = "0f214dc438f977e6d4e3500aaa277f5ad94ca83fbbd9b1a15713ce2344ccc5a1"
 dependencies = [
  "event-listener",
  "pin-project-lite",
+]
+
+[[package]]
+name = "evm_testnet"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "evmlib",
+ "tokio",
 ]
 
 [[package]]

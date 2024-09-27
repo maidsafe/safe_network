@@ -6,14 +6,13 @@ use bip39::Mnemonic;
 use bls::SecretKey;
 use bytes::Bytes;
 use const_hex::ToHexExt;
-use evmlib::CustomNetwork;
 use curv::elliptic::curves::ECScalar as _;
+use evmlib::CustomNetwork;
 use libp2p::Multiaddr;
-use rand::Rng;
+use rand::{Rng, RngCore};
 use sn_peers_acquisition::parse_peer_addr;
-use sn_transfers::{get_faucet_data_dir, HotWallet};
-use std::env;
 use sn_transfers::{get_faucet_data_dir, HotWallet, MainSecretKey};
+use std::env;
 
 const MNEMONIC_FILENAME: &str = "account_secret";
 const ACCOUNT_ROOT_XORNAME_DERIVATION: &str = "m/1/0";
@@ -110,7 +109,7 @@ fn create_faucet_account_and_wallet() -> HotWallet {
 
 pub fn write_mnemonic_to_disk(
     files_dir: &Path,
-    mnemonic: &bip39::Mnemonic,
+    mnemonic: &Mnemonic,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let filename = files_dir.join(MNEMONIC_FILENAME);
     let content = mnemonic.to_string();
@@ -120,18 +119,18 @@ pub fn write_mnemonic_to_disk(
 
 pub(super) fn read_mnemonic_from_disk(
     files_dir: &Path,
-) -> Result<bip39::Mnemonic, Box<dyn std::error::Error>> {
+) -> Result<Mnemonic, Box<dyn std::error::Error>> {
     let filename = files_dir.join(MNEMONIC_FILENAME);
     let content = std::fs::read_to_string(filename)?;
-    let mnemonic = bip39::Mnemonic::parse_normalized(&content)?;
+    let mnemonic = Mnemonic::parse_normalized(&content)?;
     Ok(mnemonic)
 }
 
-fn random_eip2333_mnemonic() -> Result<bip39::Mnemonic, Box<dyn std::error::Error>> {
+fn random_eip2333_mnemonic() -> Result<Mnemonic, Box<dyn std::error::Error>> {
     let mut entropy = [1u8; 32];
     let rng = &mut rand::rngs::OsRng;
     rng.fill_bytes(&mut entropy);
-    let mnemonic = bip39::Mnemonic::from_entropy(&entropy)?;
+    let mnemonic = Mnemonic::from_entropy(&entropy)?;
     Ok(mnemonic)
 }
 

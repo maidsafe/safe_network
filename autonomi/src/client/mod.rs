@@ -38,7 +38,7 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 pub struct Client {
     pub(crate) network: Network,
     #[cfg(feature = "vault")]
-    vault_secret_key: Option<SecretKey>,
+    pub(crate) vault_secret_key: Option<SecretKey>,
 }
 
 /// Error returned by [`Client::connect`].
@@ -183,7 +183,10 @@ pub trait ClientWrapper {
         &self.client().network
     }
 
-    async fn connect(peers: &[Multiaddr]) -> Result<Self, ConnectError> {
+    async fn connect(peers: &[Multiaddr]) -> Result<Self, ConnectError>
+    where
+        Self: Sized,
+    {
         let client = Client::connect(peers).await?;
         Ok(Self::from_client(client))
     }

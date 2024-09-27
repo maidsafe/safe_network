@@ -1,25 +1,20 @@
-use crate::client::data::{Data, GetError, PayError, PutError};
+use crate::client::data::{Data, PayError, PutError};
 use crate::client::ClientWrapper;
 use crate::evm::client::EvmClient;
-use crate::evm::Client;
-use crate::self_encryption::{encrypt, DataMapLevel};
+use crate::self_encryption::encrypt;
 use bytes::Bytes;
 use evmlib::common::{QuoteHash, QuotePayment, TxHash};
-use evmlib::wallet;
 use evmlib::wallet::Wallet;
 use libp2p::futures;
 use libp2p::kad::{Quorum, Record};
-use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
 use sn_evm::ProofOfPayment;
-use sn_networking::{GetRecordCfg, PutRecordCfg};
+use sn_networking::PutRecordCfg;
 use sn_networking::{Network, NetworkError, PayeeQuote};
 use sn_protocol::{
-    storage::{
-        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind,
-    },
+    storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind},
     NetworkAddress,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
 use xor_name::XorName;
 
 impl Data for EvmClient {}

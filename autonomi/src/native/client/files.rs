@@ -2,9 +2,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use crate::client::files::{FilePointer, Files, Root, UploadError};
 use crate::native::client::NativeClient;
-use crate::native::Client;
 use bytes::Bytes;
-use serde::{Deserialize, Serialize};
 use sn_transfers::HotWallet;
 use walkdir::WalkDir;
 use xor_name::XorName;

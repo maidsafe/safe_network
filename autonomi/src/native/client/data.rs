@@ -1,30 +1,22 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 
 use super::transfers::SendSpendsError;
 use crate::client::data::{Data, PayError, PutError};
 use crate::client::ClientWrapper;
 use crate::native::client::NativeClient;
-use crate::native::Client;
-use crate::self_encryption::{encrypt, DataMapLevel};
+use crate::self_encryption::encrypt;
 use bytes::Bytes;
 use libp2p::{
     kad::{Quorum, Record},
     PeerId,
 };
-use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_client::{
-    networking::{GetRecordCfg, NetworkError, PutRecordCfg},
-    transfers::{HotWallet, MainPubkey, NanoTokens, PaymentQuote},
-    StoragePaymentResult,
-};
+use sn_networking::PutRecordCfg;
 use sn_protocol::{
-    storage::{
-        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind,
-    },
+    storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind},
     NetworkAddress,
 };
-use sn_transfers::Payment;
-use tokio::task::{JoinError, JoinSet};
+use sn_transfers::{HotWallet, MainPubkey, NanoTokens, Payment, PaymentQuote};
+use tokio::task::JoinSet;
 use xor_name::XorName;
 
 impl Data for NativeClient {}
@@ -46,8 +38,7 @@ impl NativeClient {
             xor_names.push(*chunk.name());
         }
 
-        let StoragePaymentResult { skipped_chunks, .. } =
-            self.pay(xor_names.into_iter(), wallet).await?;
+        let (_, skipped_chunks) = self.pay(xor_names.into_iter(), wallet).await?;
 
         // TODO: Upload in parallel
         if !skipped_chunks.contains(map.name()) {
@@ -68,7 +59,7 @@ impl NativeClient {
         &mut self,
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &mut HotWallet,
-    ) -> Result<StoragePaymentResult, PayError> {
+    ) -> Result<(NanoTokens, Vec<XorName>), PayError> {
         let mut tasks = JoinSet::new();
 
         for content_addr in content_addrs {
@@ -117,26 +108,20 @@ impl NativeClient {
             }
         }
 
-        let (storage_cost, royalty_fees) = if cost_map.is_empty() {
-            (NanoTokens::zero(), NanoTokens::zero())
+        let storage_cost = if cost_map.is_empty() {
+            NanoTokens::zero()
         } else {
             self.pay_for_records(&cost_map, wallet).await?
         };
 
-        let res = StoragePaymentResult {
-            storage_cost,
-            royalty_fees,
-            skipped_chunks,
-        };
-
-        Ok(res)
+        Ok((storage_cost, skipped_chunks))
     }
 
     async fn pay_for_records(
         &mut self,
         cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote, Vec<u8>)>,
         wallet: &mut HotWallet,
-    ) -> Result<(NanoTokens, NanoTokens), PayError> {
+    ) -> Result<NanoTokens, PayError> {
         // Before wallet progress, there shall be no `unconfirmed_spend_requests`
         self.resend_pending_transactions(wallet).await;
 
@@ -177,7 +162,7 @@ impl NativeClient {
 
         tracing::trace!("clear up spends of {} chunks completed", cost_map.len(),);
 
-        Ok(total_cost)
+        Ok(total_cost.0)
     }
 
     /// Directly writes Chunks to the network in the form of immutable self encrypted chunks.

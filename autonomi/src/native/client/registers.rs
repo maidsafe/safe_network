@@ -4,13 +4,13 @@ use crate::native::client::NativeClient;
 use bls::SecretKey;
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
-use sn_client::networking::PutRecordCfg;
-use sn_client::registers::Permissions;
-use sn_client::registers::Register as ClientRegister;
-use sn_client::transfers::HotWallet;
+use sn_networking::PutRecordCfg;
 use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
 use sn_protocol::NetworkAddress;
+use sn_registers::Permissions;
+use sn_registers::Register as ClientRegister;
+use sn_transfers::HotWallet;
 use xor_name::XorName;
 
 impl Registers for NativeClient {}

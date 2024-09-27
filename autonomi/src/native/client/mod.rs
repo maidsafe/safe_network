@@ -1,5 +1,4 @@
-use crate::client::{Client, ClientWrapper, ConnectError};
-use crate::Multiaddr;
+use crate::client::{Client, ClientWrapper};
 
 #[cfg(feature = "data")]
 pub mod data;

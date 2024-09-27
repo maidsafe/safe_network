@@ -1,11 +1,8 @@
-use std::{collections::HashMap, path::PathBuf};
-
-use super::data::{GetError, PutError};
 use crate::client::files::{FilePointer, Files, Root, UploadError};
 use crate::evm::client::EvmClient;
 use bytes::{BufMut, Bytes};
 use evmlib::wallet::Wallet;
-use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, path::PathBuf};
 use walkdir::WalkDir;
 use xor_name::XorName;
 
@@ -23,12 +20,15 @@ impl EvmClient {
 
         for entry in WalkDir::new(path) {
             let entry = entry?;
+
             if !entry.file_type().is_file() {
                 continue;
             }
+
             let path = entry.path().to_path_buf();
             tracing::info!("Uploading file: {path:?}");
             let file = upload_from_file(self, path.clone(), wallet).await?;
+
             map.insert(path, file);
         }
 
