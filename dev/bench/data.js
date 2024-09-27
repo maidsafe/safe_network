@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727359418820,
+  "lastUpdate": 1727425444760,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "94591d75c59d56e57439843af2c8ab1ada37fc71",
-          "message": "chore: change terminal launch behaviour\n\nOn Linux, the `TERM` variable is not really appropriate for selecting which terminal is in use, so\nthis has been removed. It can be set to a completely different value, like `xterm-256color`, which\ndoes not necessarily correspond to the running terminal. The `sudo` was also removed from the\nterminal launch mechanism.\n\nOn the Windows front, I updated Windows Terminal to not use the `/c` argument. It simply just passes\nthe command to the terminal.\n\nAlso fixed another couple of issues:\n* Compile the node manager correctly on Windows.\n* The use of `<service>` in doc comments was being flagged as an unclosed HTML tag.",
-          "timestamp": "2024-05-10T00:28:04Z",
-          "tree_id": "d6a3d6be5293fc30f98e6feb7f796aa5bd4e7531",
-          "url": "https://github.com/maidsafe/safe_network/commit/94591d75c59d56e57439843af2c8ab1ada37fc71"
-        },
-        "date": 1715305685367,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2239661300278621,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.6499565480040936,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 56.929467035634055,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.21446931096793,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "93e2ee479ef97aacb0292c45f2245c696ab7b5df",
+          "message": "Merge pull request #2148 from mazzi/fix_disable_node_selection\n\nfix(launchpad): disable node selection",
+          "timestamp": "2024-09-27T07:37:14Z",
+          "tree_id": "58a505b563b7eb8ddf5c2694609742329782a5d8",
+          "url": "https://github.com/maidsafe/safe_network/commit/93e2ee479ef97aacb0292c45f2245c696ab7b5df"
+        },
+        "date": 1727425438247,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2727302076547018,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7225410633151086,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 62.62254069656758,
             "unit": "MiB/s"
           }
         ]
