@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
-use crate::Client;
+use super::data::PutError;
+use crate::client::{Client, ClientWrapper};
 use bls::SecretKey;
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
@@ -14,8 +15,6 @@ use sn_protocol::{
     NetworkAddress,
 };
 use tracing::info;
-
-use super::data::PutError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum VaultError {
@@ -32,7 +31,7 @@ pub enum VaultError {
 }
 
 impl Client {
-    /// Add an vault secret key to the client
+    /// Add a vault secret key to the client
     ///
     /// The secret key is derived from the supplied entropy bytes.
     pub fn with_vault_entropy(mut self, bytes: Bytes) -> Result<Self, VaultError> {
@@ -177,5 +176,30 @@ impl Client {
         self.network.put_record(record, &put_cfg).await?;
 
         Ok(Some(next_count))
+    }
+}
+
+pub trait Vault: ClientWrapper {
+    fn with_vault_entropy(mut self, bytes: Bytes) -> Result<Self, VaultError> {
+        let client = self.into_client().with_vault_entropy(bytes)?;
+        Ok(Self::from_client(client))
+    }
+
+    async fn fetch_and_decrypt_vault(&self) -> Result<Option<Bytes>, VaultError> {
+        self.client().fetch_and_decrypt_vault().await
+    }
+
+    async fn get_vault_from_network(&self) -> Result<Scratchpad, VaultError> {
+        self.client().get_vault_from_network().await
+    }
+
+    async fn write_bytes_to_vault_if_defined(
+        &mut self,
+        data: Bytes,
+        wallet: &mut HotWallet,
+    ) -> Result<Option<u64>, PutError> {
+        self.client_mut()
+            .write_bytes_to_vault_if_defined(data, wallet)
+            .await
     }
 }

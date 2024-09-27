@@ -1,26 +1,20 @@
 use std::collections::BTreeSet;
 
-use crate::Client;
-
+use super::data::PayError;
+use crate::client::{Client, ClientWrapper};
 use bls::SecretKey;
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
-use sn_client::networking::GetRecordCfg;
-use sn_client::networking::NetworkError;
-use sn_client::networking::PutRecordCfg;
-use sn_client::registers::EntryHash;
-use sn_client::registers::Permissions;
-use sn_client::registers::Register as ClientRegister;
-use sn_client::registers::SignedRegister;
-use sn_client::transfers::HotWallet;
+use sn_networking::GetRecordCfg;
+use sn_networking::NetworkError;
+use sn_networking::PutRecordCfg;
 use sn_protocol::storage::try_deserialize_record;
 use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
 use sn_protocol::storage::RegisterAddress;
 use sn_protocol::NetworkAddress;
-use xor_name::XorName;
-
-use super::data::PayError;
+use sn_registers::EntryHash;
+use sn_registers::SignedRegister;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RegisterError {
@@ -32,8 +26,12 @@ pub enum RegisterError {
     FailedVerification,
     #[error("Payment failure occurred during register creation.")]
     Pay(#[from] PayError),
+    #[cfg(feature = "native-payments")]
     #[error("Failed to retrieve wallet payment")]
     Wallet(#[from] sn_transfers::WalletError),
+    #[cfg(feature = "evm-payments")]
+    #[error("Failed to retrieve wallet payment")]
+    EvmWallet(#[from] evmlib::wallet::Error),
     #[error("Failed to write to low-level register")]
     Write(#[source] sn_registers::Error),
     #[error("Failed to sign register")]
@@ -42,7 +40,7 @@ pub enum RegisterError {
 
 #[derive(Clone, Debug)]
 pub struct Register {
-    inner: SignedRegister,
+    pub(crate) inner: SignedRegister,
 }
 
 impl Register {
@@ -66,68 +64,6 @@ impl Register {
 }
 
 impl Client {
-    /// Creates a new Register with an initial value and uploads it to the network.
-    pub async fn create_register(
-        &mut self,
-        value: Bytes,
-        name: XorName,
-        owner: SecretKey,
-        wallet: &mut HotWallet,
-    ) -> Result<Register, RegisterError> {
-        let pk = owner.public_key();
-
-        // Owner can write to the register.
-        let permissions = Permissions::new_with([pk]);
-        let mut register = ClientRegister::new(pk, name, permissions);
-        let address = NetworkAddress::from_register_address(*register.address());
-
-        let entries = register
-            .read()
-            .into_iter()
-            .map(|(entry_hash, _value)| entry_hash)
-            .collect();
-        register
-            .write(value.into(), &entries, &owner)
-            .map_err(RegisterError::Write)?;
-
-        let _payment_result = self
-            .pay(std::iter::once(register.address().xorname()), wallet)
-            .await?;
-
-        let (payment, payee) =
-            self.get_recent_payment_for_addr(&register.address().xorname(), wallet)?;
-
-        let signed_register = register
-            .clone()
-            .into_signed(&owner)
-            .map_err(RegisterError::CouldNotSign)?;
-
-        let record = Record {
-            key: address.to_record_key(),
-            value: try_serialize_record(
-                &(payment, &signed_register),
-                RecordKind::RegisterWithPayment,
-            )
-            .map_err(|_| RegisterError::Serialization)?
-            .to_vec(),
-            publisher: None,
-            expires: None,
-        };
-
-        let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::All,
-            retry_strategy: None,
-            use_put_record_to: Some(vec![payee]),
-            verification: None,
-        };
-
-        self.network.put_record(record, &put_cfg).await?;
-
-        Ok(Register {
-            inner: signed_register,
-        })
-    }
-
     /// Fetches a Register from the network.
     pub async fn fetch_register(
         &self,
@@ -206,5 +142,22 @@ impl Client {
         self.network.put_record(record, &put_cfg).await?;
 
         Ok(())
+    }
+}
+
+pub trait Registers: ClientWrapper {
+    async fn fetch_register(&self, address: RegisterAddress) -> Result<Register, RegisterError> {
+        self.client().fetch_register(address).await
+    }
+
+    async fn update_register(
+        &self,
+        register: Register,
+        new_value: Bytes,
+        owner: SecretKey,
+    ) -> Result<(), RegisterError> {
+        self.client()
+            .update_register(register, new_value, owner)
+            .await
     }
 }

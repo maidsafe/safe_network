@@ -1,3 +1,12 @@
+#[cfg(feature = "data")]
+pub mod data;
+#[cfg(feature = "files")]
+pub mod files;
+#[cfg(feature = "registers")]
+pub mod registers;
+#[cfg(feature = "vault")]
+pub mod vault;
+
 use std::{collections::HashSet, time::Duration};
 
 #[cfg(feature = "vault")]
@@ -6,21 +15,6 @@ use libp2p::{identity::Keypair, Multiaddr};
 use sn_client::networking::{multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use tokio::{sync::mpsc::Receiver, time::interval};
-
-#[cfg(feature = "data")]
-#[cfg_attr(docsrs, doc(cfg(feature = "data")))]
-mod data;
-#[cfg(feature = "files")]
-#[cfg_attr(docsrs, doc(cfg(feature = "files")))]
-mod files;
-#[cfg(feature = "registers")]
-#[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
-mod registers;
-#[cfg(feature = "transfers")]
-#[cfg_attr(docsrs, doc(cfg(feature = "transfers")))]
-mod transfers;
-#[cfg(feature = "vault")]
-mod vault;
 
 /// Time before considering the connection timed out.
 pub const CONNECT_TIMEOUT_SECS: u64 = 20;
@@ -174,4 +168,23 @@ async fn handle_event_receiver(
     }
 
     // TODO: Handle closing of network events sender
+}
+
+pub trait ClientWrapper {
+    fn from_client(client: Client) -> Self;
+
+    fn client(&self) -> &Client;
+
+    fn client_mut(&mut self) -> &mut Client;
+
+    fn into_client(self) -> Client;
+
+    fn network(&self) -> &Network {
+        &self.client().network
+    }
+
+    async fn connect(peers: &[Multiaddr]) -> Result<Self, ConnectError> {
+        let client = Client::connect(peers).await?;
+        Ok(Self::from_client(client))
+    }
 }

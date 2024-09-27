@@ -43,14 +43,18 @@ pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use libp2p::Multiaddr;
 
-pub use client::{Client, ConnectError, CONNECT_TIMEOUT_SECS};
-
-mod client;
-mod secrets;
-#[cfg(feature = "data")]
+pub(crate) mod client;
+#[cfg(feature = "evm-payments")]
+pub mod evm;
+#[cfg(feature = "native-payments")]
+pub mod native;
 mod self_encryption;
-#[cfg(feature = "transfers")]
-mod wallet;
 
 #[cfg(feature = "transfers")]
 const VERIFY_STORE: bool = true;
+
+#[cfg(all(feature = "native-payments", not(feature = "evm-payments")))]
+pub type Client = native::Client;
+
+#[cfg(all(feature = "evm-payments", not(feature = "native-payments")))]
+pub type Client = evm::Client;

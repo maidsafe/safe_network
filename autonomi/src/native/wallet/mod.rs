@@ -1,6 +1,6 @@
 pub mod error;
 
-use crate::wallet::error::WalletError;
+use crate::native::wallet::error::WalletError;
 use sn_client::transfers::{HotWallet, MainSecretKey};
 use sn_transfers::{
     CashNote, CashNoteRedemption, DerivationIndex, MainPubkey, NanoTokens, SignedSpend,
