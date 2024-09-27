@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727431777559,
+  "lastUpdate": 1727431779275,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "maqi"
           },
           "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "dfa136d8bdfbbe98aa4267a00474b33188c97260",
-          "message": "chore(node): use proper SpendReason enum",
-          "timestamp": "2024-05-10T09:55:58Z",
-          "tree_id": "0afdc5f3d42379cce3de9b98fd1e62bb4dcb9c19",
-          "url": "https://github.com/maidsafe/safe_network/commit/dfa136d8bdfbbe98aa4267a00474b33188c97260"
-        },
-        "date": 1715338405487,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 13200,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 71894,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
             "email": "anselmega@gmail.com",
             "name": "Anselme",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 53744,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c5ff07bd0b26a7b1e2dfc8025cbc97d216d8531a",
+          "message": "Merge pull request #2147 from mazzi/feat_35_gb_nodes\n\nfeat(launchpad): 35gb nodes",
+          "timestamp": "2024-09-27T09:12:23Z",
+          "tree_id": "cc6fc289dcef5f5c986768f102f5906e37ff2b9a",
+          "url": "https://github.com/maidsafe/safe_network/commit/c5ff07bd0b26a7b1e2dfc8025cbc97d216d8531a"
+        },
+        "date": 1727431778924,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 19988,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 69150,
             "unit": "ms"
           },
           {
