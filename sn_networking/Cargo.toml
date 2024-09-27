@@ -83,6 +83,7 @@ quickcheck = "1.0.3"
 eyre = "0.6.8"
 uuid = { version = "1.5.0", features = ["v4"] }
 chrono = "0.4.19"
+plotters = "0.3"
 
 [lints]
 workspace = true
