@@ -12,9 +12,9 @@ extern crate tracing;
 mod rpc_service;
 mod subcommands;
 
+use crate::subcommands::EvmNetworkCommand;
 use clap::{command, Parser};
 use color_eyre::{eyre::eyre, Result};
-use crate::subcommands::EvmNetworkCommand;
 use const_hex::traits::FromHex;
 use libp2p::{identity::Keypair, PeerId};
 use sn_evm::{EvmNetwork, RewardsAddress};
@@ -129,7 +129,7 @@ struct Opt {
     /// The rewards address is the address that will receive the rewards for the node.
     /// It should be a valid EVM address.
     #[clap(long)]
-    rewards_address: String,
+    rewards_address: Option<String>,
 
     /// Specify the EVM network to use.
     /// The network can either be a pre-configured one or a custom network.
@@ -231,8 +231,11 @@ fn main() -> Result<()> {
         );
         return Ok(());
     }
+
     // evm config
-    let rewards_address = RewardsAddress::from_hex(&opt.rewards_address)?;
+    let rewards_address = RewardsAddress::from_hex(opt.rewards_address.as_ref().expect(
+        "the following required arguments were not provided: --rewards-address <REWARDS_ADDRESS>",
+    ))?;
 
     if opt.crate_version {
         println!("Crate version: {}", env!("CARGO_PKG_VERSION"));
