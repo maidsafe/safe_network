@@ -99,6 +99,7 @@ pub(crate) fn to_chunk(chunk_content: Bytes) -> Chunk {
 fn pack_data_map(data_map: DataMap) -> Result<(Chunk, Vec<Chunk>)> {
     let mut chunks = vec![];
     let mut chunk_content = wrap_data_map(&DataMapLevel::First(data_map))?;
+    debug!("Max chunk size: {} bytes", *MAX_CHUNK_SIZE);
 
     let (data_map_chunk, additional_chunks) = loop {
         let chunk = to_chunk(chunk_content);
