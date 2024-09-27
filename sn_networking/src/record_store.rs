@@ -2056,28 +2056,50 @@ mod tests {
         let temp_dir = std::env::temp_dir();
         let file_name = "node_count_vs_mean_payment.png";
         let file_path = temp_dir.join(file_name);
-        let root = BitMapBackend::new(file_path.to_str().unwrap(), (640, 480)).into_drawing_area();
+        let root = BitMapBackend::new(file_path.to_str().unwrap(), (800, 600)).into_drawing_area();
         root.fill(&WHITE)?;
 
+        // Calculate mean payment counts
+        let mean_payment_counts: Vec<f64> = peers
+            .iter()
+            .map(|peer| peer.nanos_earned.load(Ordering::Relaxed) as f64 / peers.len() as f64)
+            .collect();
+
+        // Start of Selection
+        // Determine the range for the Y-axis based on actual data
+        let max_mean_payment = mean_payment_counts
+            .iter()
+            .copied()
+            .fold(f64::NEG_INFINITY, f64::max)
+            .ceil();
+        let min_mean_payment = mean_payment_counts
+            .iter()
+            .copied()
+            .fold(f64::INFINITY, f64::min)
+            .floor();
+ 
         let mut chart = ChartBuilder::on(&root)
             .caption(
                 "Node Count vs Mean Payment Count",
-                ("sans-serif", 50).into_font(),
+                ("sans-serif", 40).into_font(),
             )
-            .margin(5)
-            .x_label_area_size(30)
-            .y_label_area_size(30)
-            .build_cartesian_2d(0..peers.len(), 0f64..1000f64)?;
+            .margin(10)
+            .x_label_area_size(40)
+            .y_label_area_size(60)
+            .build_cartesian_2d(0..peers.len(), min_mean_payment..max_mean_payment)?;
 
-        chart.configure_mesh().draw()?;
+        chart
+            .configure_mesh()
+            .x_desc("Node Index")
+            .y_desc("Mean Payment Count")
+            .draw()?;
 
         chart
             .draw_series(LineSeries::new(
-                peers.iter().enumerate().map(|(i, peer)| {
-                    let nanos_earned = peer.nanos_earned.load(Ordering::Relaxed) as f64;
-                    let mean_payment_count = nanos_earned / peers.len() as f64;
-                    (i, mean_payment_count)
-                }),
+                mean_payment_counts
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &mean)| (i, mean)),
                 &RED,
             ))?
             .label("Mean Payment Count")
