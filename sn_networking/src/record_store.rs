@@ -2060,7 +2060,7 @@ mod tests {
         root.fill(&WHITE)?;
 
         // Define the number of bins
-        let number_of_bins = 50;
+        let number_of_bins = 20;
 
         // Calculate mean payment counts
         let mean_payment_counts: Vec<f64> = peers
@@ -2135,9 +2135,9 @@ mod tests {
             .x_labels(10)
             .y_labels(10)
             .x_label_formatter(&|v| {
+                let bin_start = min_mean_payment + bin_width;
                 // let bin_start = min_mean_payment + (*v * bin_width);
-                // let bin_start = min_mean_payment + (*v * bin_width);
-                format!("{:.4?}", v)
+                format!("{:.6}", bin_start)
             })
             .y_label_formatter(&|v| format!("{}", v))
             .draw()?;
