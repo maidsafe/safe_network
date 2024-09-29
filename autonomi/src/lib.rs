@@ -14,23 +14,6 @@
 //! and the history is kept. Multiple values can exist side by side in case of
 //! concurrency, but should converge to a single value eventually.
 //!
-//! # Example
-//!
-//! ```no_run
-//! # use autonomi::{Client, Bytes};
-//! # #[tokio::main]
-//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
-//! let client = Client::connect(&peers).await?;
-//!
-//! # let mut wallet = todo!();
-//! let addr = client.put(Bytes::from("Hello, World"), &mut wallet).await?;
-//! let data = client.get(addr).await?;
-//! assert_eq!(data, Bytes::from("Hello, World"));
-//! # Ok(())
-//! # }
-//! ```
-//!
 //! # Features
 //!
 //! - `local`: Discover local peers using mDNS. Useful for development.
@@ -43,7 +26,7 @@ pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use libp2p::Multiaddr;
 
-pub(crate) mod client;
+pub mod client;
 #[cfg(feature = "evm-payments")]
 pub mod evm;
 #[cfg(feature = "native-payments")]

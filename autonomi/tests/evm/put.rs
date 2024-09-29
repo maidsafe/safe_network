@@ -3,6 +3,8 @@ use std::time::Duration;
 use crate::common;
 use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
 use crate::evm::Client;
+use autonomi::client::data::Data;
+use autonomi::client::ClientWrapper;
 use tokio::time::sleep;
 
 #[tokio::test]

@@ -6,7 +6,8 @@ pub mod data;
 pub mod files;
 #[cfg(feature = "registers")]
 pub mod registers;
-mod vault;
+#[cfg(feature = "vault")]
+pub mod vault;
 
 #[derive(Clone)]
 pub struct EvmClient {

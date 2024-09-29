@@ -8,7 +8,8 @@ pub mod files;
 pub mod registers;
 #[cfg(feature = "transfers")]
 pub mod transfers;
-mod vault;
+#[cfg(feature = "vault")]
+pub mod vault;
 
 #[derive(Clone)]
 pub struct NativeClient {
