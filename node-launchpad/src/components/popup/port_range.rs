@@ -297,31 +297,40 @@ impl Component for PortRangePopUp {
                     }
                     KeyCode::Esc => {
                         debug!("Got Esc, restoring the old values and switching to actual screen");
-                        // if the old values are 0 means that is the first time the user opens the app,
-                        // so we should set the connection mode to automatic.
-                        if self.port_from_old_value.to_string() == "0"
-                            && self.port_to_old_value.to_string() == "0"
-                        {
-                            self.connection_mode = self
-                                .connection_mode_old_value
-                                .unwrap_or(ConnectionMode::Automatic);
-                            return Ok(vec![
-                                Action::StoreConnectionMode(self.connection_mode),
+                        if let Some(connection_mode_old_value) = self.connection_mode_old_value {
+                            vec![
                                 Action::OptionsActions(OptionsActions::UpdateConnectionMode(
-                                    self.connection_mode,
+                                    connection_mode_old_value,
                                 )),
                                 Action::SwitchScene(Scene::Options),
-                            ]);
+                            ]
+                        } else {
+                            // if the old values are 0 means that is the first time the user opens the app,
+                            // so we should set the connection mode to automatic.
+                            if self.port_from_old_value.to_string() == "0"
+                                && self.port_to_old_value.to_string() == "0"
+                            {
+                                self.connection_mode = self
+                                    .connection_mode_old_value
+                                    .unwrap_or(ConnectionMode::Automatic);
+                                return Ok(vec![
+                                    Action::StoreConnectionMode(self.connection_mode),
+                                    Action::OptionsActions(OptionsActions::UpdateConnectionMode(
+                                        self.connection_mode,
+                                    )),
+                                    Action::SwitchScene(Scene::Options),
+                                ]);
+                            }
+                            self.port_from = self
+                                .port_from
+                                .clone()
+                                .with_value(self.port_from_old_value.to_string());
+                            self.port_to = self
+                                .port_to
+                                .clone()
+                                .with_value(self.port_to_old_value.to_string());
+                            vec![Action::SwitchScene(Scene::Options)]
                         }
-                        self.port_from = self
-                            .port_from
-                            .clone()
-                            .with_value(self.port_from_old_value.to_string());
-                        self.port_to = self
-                            .port_to
-                            .clone()
-                            .with_value(self.port_to_old_value.to_string());
-                        vec![Action::SwitchScene(Scene::Options)]
                     }
                     KeyCode::Char(c) if !c.is_numeric() => vec![],
                     KeyCode::Up => {
