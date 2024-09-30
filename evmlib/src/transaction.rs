@@ -121,7 +121,6 @@ pub async fn verify_chunk_payment(
 
         if let Ok(event) = ChunkPaymentEvent::try_from(log) {
             // Check if the event matches what we expect.
-            // The smart contract handles royalties, so we don't have to check that.
             if event.quote_hash == quote_hash
                 && event.reward_address == reward_addr
                 && event.amount >= amount

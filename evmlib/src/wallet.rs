@@ -4,7 +4,6 @@ use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
 use crate::contract::chunk_payments::{ChunkPayments, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
 use crate::contract::{chunk_payments, network_token};
-use crate::utils::calculate_royalties_from_amount;
 use crate::Network;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
 use alloy::providers::fillers::{
@@ -228,10 +227,6 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 ) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
     let payments: Vec<_> = payments.into_iter().collect();
     let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
-    let royalties = calculate_royalties_from_amount(total_amount);
-
-    // 2 * royalties to have a small buffer for different rounding in the smart contract.
-    let total_amount_with_royalties = total_amount + (U256::from(2) * royalties);
 
     let mut tx_hashes_by_quote = BTreeMap::new();
 
@@ -240,7 +235,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
         wallet.clone(),
         network,
         *network.chunk_payments_address(),
-        total_amount_with_royalties,
+        total_amount,
     )
     .await
     .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
@@ -291,7 +286,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_transfer_gas_tokens() {
-        let testnet = Testnet::new(dummy_address()).await;
+        let testnet = Testnet::new().await;
         let network = testnet.to_network();
         let wallet =
             Wallet::new_from_private_key(network.clone(), &testnet.default_wallet_private_key())

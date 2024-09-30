@@ -37,15 +37,10 @@ where
 
     /// Deploys the ChunkPayments smart contract to the network of the provider.
     /// ONLY DO THIS IF YOU KNOW WHAT YOU ARE DOING!
-    pub async fn deploy(
-        provider: P,
-        payment_token_address: Address,
-        royalties_wallet: Address,
-    ) -> Self {
-        let contract =
-            ChunkPaymentsContract::deploy(provider, payment_token_address, royalties_wallet)
-                .await
-                .expect("Could not deploy contract");
+    pub async fn deploy(provider: P, payment_token_address: Address) -> Self {
+        let contract = ChunkPaymentsContract::deploy(provider, payment_token_address)
+            .await
+            .expect("Could not deploy contract");
 
         ChunkPayments { contract }
     }

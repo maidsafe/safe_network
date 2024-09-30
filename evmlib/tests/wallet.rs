@@ -1,7 +1,6 @@
 mod common;
 
 use crate::common::quote::random_quote_payment;
-use crate::common::ROYALTIES_WALLET;
 use alloy::network::EthereumWallet;
 use alloy::node_bindings::AnvilInstance;
 use alloy::primitives::utils::parse_ether;
@@ -22,8 +21,7 @@ async fn local_testnet() -> (AnvilInstance, Network, EthereumWallet) {
     let rpc_url = anvil.endpoint().parse().unwrap();
     let network_token = deploy_network_token_contract(&anvil).await;
     let payment_token_address = *network_token.contract.address();
-    let chunk_payments =
-        deploy_chunk_payments_contract(&anvil, payment_token_address, ROYALTIES_WALLET).await;
+    let chunk_payments = deploy_chunk_payments_contract(&anvil, payment_token_address).await;
 
     (
         anvil,
