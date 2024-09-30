@@ -1651,7 +1651,7 @@ mod tests {
                     close_group.truncate(replication_group_size);
 
                     // Find the cheapest payee among the close group
-                    let Ok((payee_index, cost)) = pick_cheapest_payee(&peers, &close_group) else {
+                    let Ok((payee_index, cost)) = pick_the_payee(&peers, &close_group) else {
                         bail!("Failed to find a payee");
                     };
 
@@ -1764,9 +1764,9 @@ mod tests {
         use rayon::prelude::*;
 
         // as network saturates, we can see that peers all eventually earn similarly
-        let num_of_peers = 80_000;
-        let num_of_chunks_per_hour = 500;
-        let max_payments_made = 6_000_000;
+        let num_of_peers = 5_000;
+        let num_of_chunks_per_hour = 5000;
+        let max_payments_made = 5_000_000;
 
         let mut hour = 0;
         let k = K_VALUE.get();
@@ -1837,7 +1837,7 @@ mod tests {
                     close_group.truncate(replication_group_size);
 
                     // Find the cheapest payee among the close group
-                    let Ok((payee_index, cost)) = pick_cheapest_payee(&peers, &close_group) else {
+                    let Ok((payee_index, cost)) = pick_the_payee(&peers, &close_group) else {
                         bail!("Failed to find a payee");
                     };
 
@@ -1928,7 +1928,14 @@ mod tests {
                         .cmp(&peer2.payments_received.load(Ordering::Relaxed))
                 }) {
                     println!("Largest payee {peer:?}.");
-                    println!("We breached the max payments received");
+                }
+                if let Some(peer) = peers.iter().min_by(|peer1, peer2| {
+                    peer1
+                        .payments_received
+                        .load(Ordering::Relaxed)
+                        .cmp(&peer2.payments_received.load(Ordering::Relaxed))
+                }) {
+                    println!("Smallest payee {peer:?}.");
                 }
 
                 println!("total_received_payment_count: {total_received_payment_count}");
@@ -2171,7 +2178,7 @@ mod tests {
         Ok(())
     }
 
-    fn pick_cheapest_payee(
+    fn pick_the_payee(
         peers: &[PeerStats],
         close_group: &[usize],
     ) -> eyre::Result<(usize, NanoTokens)> {
