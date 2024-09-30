@@ -94,7 +94,7 @@ impl ShunnedCountAcrossTimeFrames {
             loop {
                 tokio::select! {
                     _ = rx.recv() => {
-                        shunned_metrics.record_shunned();
+                        shunned_metrics.record_shunned_metric();
 
                     }
                     _ = update_interval.tick() => {
@@ -106,7 +106,7 @@ impl ShunnedCountAcrossTimeFrames {
         tx
     }
 
-    pub fn record_shunned(&mut self) {
+    pub fn record_shunned_metric(&mut self) {
         let now = Instant::now();
         self.tracked_values.push(TrackedValue {
             time: now,
@@ -160,7 +160,7 @@ mod tests {
             metric: Family::default(),
             tracked_values: Vec::new(),
         };
-        shunned_metrics.record_shunned();
+        shunned_metrics.record_shunned_metric();
 
         let current_state = shunned_metrics.tracked_values[0].least_bucket_it_fits_in;
         assert!(matches!(current_state, TimeFrameType::LastTenMinutes));

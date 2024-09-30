@@ -257,9 +257,12 @@ impl NetworkMetricsRecorder {
             }
             Marker::FlaggedAsBadNode { .. } => {
                 let _ = self.shunned_count.inc();
-                if let Err(err) = self.shunned_report_notifier.try_send(()) {
-                    debug!("Failed to send shunned report via notifier: {err:?}");
-                }
+                let shunned_report_notifier = self.shunned_report_notifier.clone();
+                crate::target_arch::spawn(async move {
+                    if let Err(err) = shunned_report_notifier.send(()).await {
+                        error!("Failed to send shunned report via notifier: {err:?}");
+                    }
+                });
             }
             Marker::StoreCost {
                 cost,

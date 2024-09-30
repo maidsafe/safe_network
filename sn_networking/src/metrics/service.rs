@@ -105,6 +105,16 @@ impl MetricService {
             error!("Failed to encode the standard metrics Registry {err:?}");
             NetworkError::NetworkMetricError
         })?;
+
+        // remove the EOF line from the response
+        let mut buffer = response.body().split("\n").collect::<Vec<&str>>();
+        let _ = buffer.pop();
+        let _ = buffer.pop();
+        buffer.push("\n");
+        let mut buffer = buffer.join("\n");
+        let _ = buffer.pop();
+        *response.body_mut() = buffer;
+
         let extended_registry = self.get_extended_metrics_registry();
         let extended_registry = extended_registry
             .lock()
