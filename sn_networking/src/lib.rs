@@ -958,30 +958,20 @@ impl Network {
     }
 }
 
-/// Given `all_costs` it will return the closest / lowest cost
-/// Closest requiring it to be within CLOSE_GROUP nodes
+/// Given `all_costs` it will return the median cost
 fn get_fees_from_store_cost_responses(
-    all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
+    mut all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
 ) -> Result<PayeeQuote> {
-    // Find the minimum cost using a linear scan with random tie break
-    let mut rng = rand::thread_rng();
-    let payee = all_costs
-        .into_iter()
-        .min_by(
-            |(_address_a, _main_key_a, cost_a), (_address_b, _main_key_b, cost_b)| {
-                let cmp = cost_a.cost.cmp(&cost_b.cost);
-                if cmp == std::cmp::Ordering::Equal {
-                    if rng.gen() {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    }
-                } else {
-                    cmp
-                }
-            },
-        )
-        .ok_or(NetworkError::NoStoreCostResponses)?;
+    if all_costs.is_empty() {
+        return Err(NetworkError::NoStoreCostResponses);
+    }
+
+    // Sort the costs
+    all_costs.sort_by(|a, b| a.2.cost.cmp(&b.2.cost));
+
+    // Get the median cost
+    let median_index = all_costs.len() / 2;
+    let payee = all_costs.remove(median_index);
 
     info!("Final fees calculated as: {payee:?}");
     // we dont need to have the address outside of here for now

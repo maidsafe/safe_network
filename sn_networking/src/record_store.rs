@@ -1766,7 +1766,7 @@ mod tests {
         // as network saturates, we can see that peers all eventually earn similarly
         let num_of_peers = 5_000;
         let num_of_chunks_per_hour = 5000;
-        let max_payments_made = 5_000_000;
+        let max_payments_made = 25_000_000;
 
         let mut hour = 0;
         let k = K_VALUE.get();
