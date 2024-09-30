@@ -693,8 +693,8 @@ impl Node {
         );
 
         #[cfg(feature = "open-metrics")]
-        if let Some(node_metrics) = self.node_metrics() {
-            let _ = node_metrics
+        if let Some(metrics_recorder) = self.metrics_recorder() {
+            let _ = metrics_recorder
                 .current_reward_wallet_balance
                 .set(new_balance as i64);
         }

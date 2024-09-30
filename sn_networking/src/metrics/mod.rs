@@ -8,16 +8,18 @@
 
 // Implementation to record `libp2p::upnp::Event` metrics
 mod bad_node;
+pub mod service;
 #[cfg(feature = "upnp")]
 mod upnp;
 
+#[cfg(feature = "open-metrics")]
+use crate::MetricsRegistries;
 use crate::{log_markers::Marker, target_arch::sleep};
 use bad_node::{ShunnedCountAcrossTimeFrames, TimeFrame};
 use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
 use prometheus_client::{
     metrics::family::Family,
     metrics::{counter::Counter, gauge::Gauge},
-    registry::Registry,
 };
 use sysinfo::{Pid, ProcessRefreshKind, System};
 use tokio::time::Duration;
@@ -63,9 +65,13 @@ pub(crate) struct NetworkMetricsRecorder {
 }
 
 impl NetworkMetricsRecorder {
-    pub fn new(registry: &mut Registry) -> Self {
-        let libp2p_metrics = Libp2pMetrics::new(registry);
-        let sub_registry = registry.sub_registry_with_prefix("sn_networking");
+    pub fn new(registries: &mut MetricsRegistries) -> Self {
+        // ==== Standard metrics =====
+
+        let libp2p_metrics = Libp2pMetrics::new(&mut registries.standard_metrics);
+        let sub_registry = registries
+            .standard_metrics
+            .sub_registry_with_prefix("sn_networking");
 
         let records_stored = Gauge::default();
         sub_registry.register(
@@ -98,16 +104,6 @@ impl NetworkMetricsRecorder {
             "peers_in_routing_table",
             "The total number of peers in our routing table",
             peers_in_routing_table.clone(),
-        );
-
-        let shunned_count_across_time_frames = Family::default();
-        let shunned_report_notifier = ShunnedCountAcrossTimeFrames::spawn_background_task(
-            shunned_count_across_time_frames.clone(),
-        );
-        sub_registry.register(
-            "shunned_count_across_time_frames",
-            "The number of peers that have been shunned across different time frames",
-            shunned_count_across_time_frames.clone(),
         );
 
         let shunned_count = Counter::default();
@@ -177,6 +173,21 @@ impl NetworkMetricsRecorder {
             "live_time",
             "The time for which the node has been alive. This is used to calculate the store cost",
             live_time.clone(),
+        );
+
+        // ==== Extended metrics =====
+
+        let extended_metrics_sub_registry = registries
+            .extended_metrics
+            .sub_registry_with_prefix("sn_networking");
+        let shunned_count_across_time_frames = Family::default();
+        let shunned_report_notifier = ShunnedCountAcrossTimeFrames::spawn_background_task(
+            shunned_count_across_time_frames.clone(),
+        );
+        extended_metrics_sub_registry.register(
+            "shunned_count_across_time_frames",
+            "The number of peers that have been shunned across different time frames",
+            shunned_count_across_time_frames.clone(),
         );
 
         let network_metrics = Self {
