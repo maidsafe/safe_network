@@ -86,8 +86,6 @@ When you start a network there are a few scripts to aid with basic processes:
   registers structures available on the network.
 - [Node Manager](https://github.com/maidsafe/safe_network/blob/main/sn_node_manager/README.md) Use
   to create a local network for development and testing.
-- [Faucet](https://github.com/maidsafe/safe_network/blob/main/sn_faucet/README.md) The local faucet
-  server, used to claim genesis and request tokens from the network.
 - [Node RPC](https://github.com/maidsafe/safe_network/blob/main/sn_node_rpc_client/README.md) The
   RPC server used by the nodes to expose API calls to the outside world.
 
@@ -157,16 +155,6 @@ cargo run --bin safenode-manager --features local-discovery -- local run --build
 ```bash
 cargo run --bin safenode-manager --features local-discovery -- status
 ```
-
-3. Build a tokenized wallet: <br>
-
-```bash
-cargo run --bin safe --features local-discovery -- wallet get-faucet 127.0.0.1:8000
-```
-
-The node manager's `run` command starts the node processes and a faucet process, the latter of
-which will dispense tokens for use with the network. The `status` command should show twenty-five
-running nodes. The `wallet` command retrieves some tokens, which enables file uploads.
 
 ### Files
 

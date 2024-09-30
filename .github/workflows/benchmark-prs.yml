@@ -46,10 +46,6 @@ jobs:
         run: cargo build --release --bin safe --bin safenode --features local-discovery
         timeout-minutes: 30
 
-      - name: Build faucet bin
-        run: cargo build --release --bin faucet --features local-discovery --features gifting --no-default-features
-        timeout-minutes: 30
-
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
         env:
@@ -58,7 +54,6 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
-          faucet-path: target/release/faucet
           platform: ubuntu-latest
           build: true
 
@@ -69,12 +64,6 @@ jobs:
       #########################
       ### Upload large file ###
       #########################
-
-      - name: Fund cli wallet
-        shell: bash
-        run: target/release/safe --log-output-dest=data-dir wallet get-faucet 127.0.0.1:8000
-        env:
-          SN_LOG: "all"
 
       - name: Start a client instance to compare memory usage
         shell: bash
@@ -213,7 +202,7 @@ jobs:
         shell: bash
         run: |
           ls -l target/release
-          target/release/safe --log-output-dest=data-dir files upload target/release/faucet --retry-strategy quick
+          target/release/safe --log-output-dest=data-dir files upload target/release/safe --retry-strategy quick
 
       #########################
       ### Stop Network      ###
@@ -227,14 +216,6 @@ jobs:
           log_file_prefix: safe_test_logs_benchmark
           platform: ubuntu-latest
           build: true
-
-      - name: Upload Faucet folder
-        uses: actions/upload-artifact@main
-        with:
-          name: faucet_folder
-          path: /home/runner/.local/share/safe/test_faucet
-        continue-on-error: true
-        if: always()
 
       #########################
       ### Node Mem Analysis ###

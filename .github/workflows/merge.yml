@@ -174,17 +174,12 @@ jobs:
         run: cargo build --release --bin safenode --bin safe
         timeout-minutes: 30
 
-      - name: Build faucet binary
-        run: cargo build --release --bin faucet --features gifting
-        timeout-minutes: 30
-
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           interval: 2000
           node-path: target/release/safenode
-          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
           build: true
 
@@ -211,7 +206,6 @@ jobs:
       - name: Create and fund a wallet to pay for files storage
         run: |
           ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-          ./target/release/faucet --log-output-dest=data-dir send 1000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
         env:
           SN_LOG: "all"
@@ -358,10 +352,6 @@ jobs:
         run: cargo build --release --features=local-discovery --bin safenode
         timeout-minutes: 30
 
-      - name: Build faucet binary
-        run: cargo build --release --bin faucet --features="local-discovery,gifting"
-        timeout-minutes: 30
-
       - name: Build testing executable
         run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --no-run
         env:
@@ -376,7 +366,6 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
-          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
           build: true
 
@@ -438,10 +427,6 @@ jobs:
   #       run: cargo build --release --features=local-discovery --bin safenode
   #       timeout-minutes: 30
 
-  #     - name: Build faucet binary
-  #       run: cargo build --release --bin faucet --features="local-discovery,gifting"
-  #       timeout-minutes: 30
-
   #     - name: Build testing executable
   #       run: cargo test --release -p sn_node --features=local-discovery --test spend_simulation --no-run
   #       env:
@@ -457,7 +442,6 @@ jobs:
   #         interval: 2000
   #         node-count: 50
   #         node-path: target/release/safenode
-  #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
 
@@ -503,11 +487,7 @@ jobs:
       - name: Build binaries
         run: cargo build --release --features=local-discovery,distribution --bin safenode
         timeout-minutes: 35
-
-      - name: Build faucet binary
-        run: cargo build --release --features=local-discovery,distribution,gifting --bin faucet
-        timeout-minutes: 35
-
+  
       - name: Build testing executable
         run: cargo test --release --features=local-discovery,distribution --no-run
         env:

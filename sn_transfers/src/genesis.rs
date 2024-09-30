@@ -224,17 +224,6 @@ pub fn create_first_cash_note_from_key(
     Ok(genesis_cash_note)
 }
 
-// We need deterministic and fix path for the faucet wallet.
-// Otherwise the test instances will not be able to find the same faucet instance.
-pub fn get_faucet_data_dir() -> PathBuf {
-    let mut data_dirs = dirs_next::data_dir().expect("A homedir to exist.");
-    data_dirs.push("safe");
-    data_dirs.push("test_faucet");
-    std::fs::create_dir_all(data_dirs.as_path())
-        .expect("Faucet test path to be successfully created.");
-    data_dirs
-}
-
 // We need deterministic and fix path for the genesis wallet.
 // Otherwise the test instances will not be able to find the same genesis instance.
 fn get_genesis_dir() -> PathBuf {

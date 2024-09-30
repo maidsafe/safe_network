@@ -28,8 +28,6 @@ pub async fn join(
     build: bool,
     count: u16,
     enable_metrics_server: bool,
-    faucet_path: Option<PathBuf>,
-    faucet_version: Option<String>,
     interval: u64,
     metrics_port: Option<PortRange>,
     node_path: Option<PathBuf>,
@@ -62,17 +60,6 @@ pub async fn join(
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
-    #[cfg(feature = "faucet")]
-    let faucet_bin_path = get_bin_path(
-        build,
-        faucet_path,
-        ReleaseType::Faucet,
-        faucet_version,
-        &*release_repo,
-        verbosity,
-    )
-    .await?;
-
     let safenode_bin_path = get_bin_path(
         build,
         node_path,
@@ -100,8 +87,6 @@ pub async fn join(
     };
     let options = LocalNetworkOptions {
         enable_metrics_server,
-        #[cfg(feature = "faucet")]
-        faucet_bin_path,
         interval,
         join: true,
         metrics_port,
@@ -143,8 +128,6 @@ pub async fn run(
     clean: bool,
     count: u16,
     enable_metrics_server: bool,
-    faucet_path: Option<PathBuf>,
-    faucet_version: Option<String>,
     interval: u64,
     metrics_port: Option<PortRange>,
     node_path: Option<PathBuf>,
@@ -197,17 +180,6 @@ pub async fn run(
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
-    #[cfg(feature = "faucet")]
-    let faucet_bin_path = get_bin_path(
-        build,
-        faucet_path,
-        ReleaseType::Faucet,
-        faucet_version,
-        &*release_repo,
-        verbosity,
-    )
-    .await?;
-
     let safenode_bin_path = get_bin_path(
         build,
         node_path,
@@ -220,8 +192,6 @@ pub async fn run(
 
     let options = LocalNetworkOptions {
         enable_metrics_server,
-        #[cfg(feature = "faucet")]
-        faucet_bin_path,
         join: false,
         interval,
         metrics_port,

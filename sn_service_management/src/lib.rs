@@ -6,11 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub mod auditor;
 pub mod control;
 pub mod daemon;
 pub mod error;
-pub mod faucet;
 pub mod node;
 pub mod rpc;
 
@@ -22,7 +20,6 @@ pub mod safenode_manager_proto {
 }
 
 use async_trait::async_trait;
-use auditor::AuditorServiceData;
 use libp2p::Multiaddr;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -34,7 +31,6 @@ use std::{
 
 pub use daemon::{DaemonService, DaemonServiceData};
 pub use error::{Error, Result};
-pub use faucet::{FaucetService, FaucetServiceData};
 pub use node::{NodeService, NodeServiceData};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -97,16 +93,13 @@ pub trait ServiceStateActions {
 pub struct StatusSummary {
     pub nodes: Vec<NodeServiceData>,
     pub daemon: Option<DaemonServiceData>,
-    pub faucet: Option<FaucetServiceData>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeRegistry {
-    pub auditor: Option<AuditorServiceData>,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub daemon: Option<DaemonServiceData>,
     pub environment_variables: Option<Vec<(String, String)>>,
-    pub faucet: Option<FaucetServiceData>,
     pub nat_status: Option<NatDetectionStatus>,
     pub nodes: Vec<NodeServiceData>,
     pub save_path: PathBuf,
@@ -138,11 +131,9 @@ impl NodeRegistry {
         if !path.exists() {
             debug!("Loading default node registry as {path:?} does not exist");
             return Ok(NodeRegistry {
-                auditor: None,
                 bootstrap_peers: vec![],
                 daemon: None,
                 environment_variables: None,
-                faucet: None,
                 nat_status: None,
                 nodes: vec![],
                 save_path: path.to_path_buf(),
@@ -161,11 +152,9 @@ impl NodeRegistry {
         // services were added.
         if contents.is_empty() {
             return Ok(NodeRegistry {
-                auditor: None,
                 bootstrap_peers: vec![],
                 daemon: None,
                 environment_variables: None,
-                faucet: None,
                 nat_status: None,
                 nodes: vec![],
                 save_path: path.to_path_buf(),
@@ -185,7 +174,6 @@ impl NodeRegistry {
         StatusSummary {
             nodes: self.nodes.clone(),
             daemon: self.daemon.clone(),
-            faucet: self.faucet.clone(),
         }
     }
 }

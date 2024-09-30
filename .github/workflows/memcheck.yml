@@ -15,7 +15,6 @@ env:
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
   BOOTSTRAP_NODE_DATA_PATH: /home/runner/.local/share/safe/bootstrap_node
   RESTART_TEST_NODE_DATA_PATH: /home/runner/.local/share/safe/restart_node
-  FAUCET_LOG_PATH: /home/runner/.local/share/safe/test_faucet/logs
 
 jobs:
   memory-check:
@@ -39,10 +38,6 @@ jobs:
 
       - name: Build binaries
         run: cargo build --release --bin safe --bin safenode
-        timeout-minutes: 30
-
-      - name: Build faucet binary with gifting
-        run: cargo build --release --bin faucet --features gifting
         timeout-minutes: 30
 
       - name: Build tests
@@ -84,7 +79,6 @@ jobs:
         with:
           action: start
           build: true
-          faucet-path: target/release/faucet
           interval: 2000
           join: true
           node-path: target/release/safenode
@@ -96,34 +90,6 @@ jobs:
       - name: Check SAFE_PEERS was not changed
         shell: bash
         run: echo "The SAFE_PEERS variable has been set to ${SAFE_PEERS}"
-
-      - name: Create and fund a wallet to pay for files storage
-        run: |
-          echo "Obtaining address for use with the faucet..."
-          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-          address=$(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1)
-          echo "Sending tokens to the faucet at $address"
-          ./target/release/faucet --log-output-dest=data-dir send 5000000 $address > initial_balance_from_faucet.txt
-          cat initial_balance_from_faucet.txt
-          cat initial_balance_from_faucet.txt | tail -n 1 > transfer_hex
-          cat transfer_hex
-          ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 15
-
-      - name: Move faucet log to the working folder
-        run: |
-          echo "SAFE_DATA_PATH has: "
-          ls -l $SAFE_DATA_PATH
-          echo "test_faucet foder has: "
-          ls -l $SAFE_DATA_PATH/test_faucet
-          echo "logs folder has: "
-          ls -l $SAFE_DATA_PATH/test_faucet/logs
-          mv $FAUCET_LOG_PATH/faucet.log ./faucet_log.log
-        continue-on-error: true
-        if: always()
-        timeout-minutes: 1
 
       - name: Download 95mb file to be uploaded with the safe client
         shell: bash
@@ -173,9 +139,6 @@ jobs:
           ls -l $CLIENT_DATA_PATH
           cp ./the-test-data.zip ./the-test-data_1.zip
           ./target/release/safe --log-output-dest=data-dir wallet create --no-replace --no-password
-          ./target/release/faucet --log-output-dest=data-dir send 5000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet_1.txt
-          cat initial_balance_from_faucet_1.txt
-          cat initial_balance_from_faucet_1.txt | tail -n 1 > transfer_hex
           cat transfer_hex
           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
           ./target/release/safe --log-output-dest=data-dir files upload "./the-test-data_1.zip" --retry-strategy quick -p > second_upload.txt
@@ -463,31 +426,6 @@ jobs:
           fi
         if: always()
 
-      - name: Upload payment wallet initialization log
-        uses: actions/upload-artifact@main
-        with:
-          name: payment_wallet_initialization_log
-          path: initial_balance_from_faucet.txt
-        continue-on-error: true
-        if: always()
-
-      - name: Move faucet log to the working folder
-        run: |
-          echo "current folder is:"
-          pwd
-          echo "SAFE_DATA_PATH has: "
-          ls -l $SAFE_DATA_PATH
-          echo "test_faucet foder has: "
-          ls -l $SAFE_DATA_PATH/test_faucet
-          echo "logs folder has: "
-          ls -l $SAFE_DATA_PATH/test_faucet/logs
-          mv $FAUCET_LOG_PATH/*.log ./faucet_log.log
-        env:
-          SN_LOG: "all"
-        continue-on-error: true
-        if: always()
-        timeout-minutes: 1
-
       - name: Move bootstrap_node log to the working directory
         run: |
           ls -l $BOOTSTRAP_NODE_DATA_PATH
@@ -495,14 +433,6 @@ jobs:
         continue-on-error: true
         if: always()
         timeout-minutes: 1
-
-      - name: Upload faucet log
-        uses: actions/upload-artifact@main
-        with:
-          name: memory_check_faucet_log
-          path: faucet_log.log
-        continue-on-error: true
-        if: always()
 
       - name: Upload bootstrap_node log
         uses: actions/upload-artifact@main

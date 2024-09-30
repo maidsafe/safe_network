@@ -49,10 +49,6 @@ jobs:
         run: cargo build --release --features local-discovery --bin safenode --bin safe
         timeout-minutes: 30
 
-      - name: Build faucet bin
-        run: cargo build --release --bin faucet --features local-discovery --features gifting
-        timeout-minutes: 30
-
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
         env:
@@ -61,17 +57,8 @@ jobs:
           action: start
           interval: 2000
           node-path: target/release/safenode
-          faucet-path: target/release/faucet
           platform: ubuntu-latest
           build: true
-
-      - name: Create and fund a wallet to pay for files storage
-        run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          cargo run --bin safe --release -- wallet receive --file transfer_hex
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
 
       ########################
       ### Benchmark        ###

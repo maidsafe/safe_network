@@ -29,7 +29,6 @@ quic = []
 statemap = []
 tcp = []
 websockets = []
-faucet = []
 
 [dependencies]
 chrono = "~0.4.19"

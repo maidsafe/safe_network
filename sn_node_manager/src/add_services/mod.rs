@@ -9,11 +9,7 @@ pub mod config;
 #[cfg(test)]
 mod tests;
 
-use self::config::{
-    AddAuditorServiceOptions, AddDaemonServiceOptions, AddFaucetServiceOptions,
-    AddNodeServiceOptions, InstallAuditorServiceCtxBuilder, InstallFaucetServiceCtxBuilder,
-    InstallNodeServiceCtxBuilder,
-};
+use self::config::{AddDaemonServiceOptions, AddNodeServiceOptions, InstallNodeServiceCtxBuilder};
 use crate::{
     config::{create_owned_dir, get_user_safenode_data_dir},
     helpers::{check_port_availability, get_start_port_if_applicable, increment_port_option},
@@ -26,8 +22,8 @@ use color_eyre::{
 use colored::Colorize;
 use service_manager::ServiceInstallCtx;
 use sn_service_management::{
-    auditor::AuditorServiceData, control::ServiceControl, DaemonServiceData, FaucetServiceData,
-    NatDetectionStatus, NodeRegistry, NodeServiceData, ServiceStatus,
+    control::ServiceControl, DaemonServiceData, NatDetectionStatus, NodeRegistry, NodeServiceData,
+    ServiceStatus,
 };
 use std::{
     ffi::OsString,
@@ -325,89 +321,6 @@ pub async fn add_node(
     Ok(added_services_names)
 }
 
-/// Install the auditor as a service.
-///
-/// This only defines the service; it does not start it.
-///
-/// There are several arguments that probably seem like they could be handled within the function,
-/// but they enable more controlled unit testing.
-pub fn add_auditor(
-    install_options: AddAuditorServiceOptions,
-    node_registry: &mut NodeRegistry,
-    service_control: &dyn ServiceControl,
-    verbosity: VerbosityLevel,
-) -> Result<()> {
-    if node_registry.auditor.is_some() {
-        error!("An Auditor service has already been created");
-        return Err(eyre!("An Auditor service has already been created"));
-    }
-
-    debug!(
-        "Creating log directory at {:?} as user {:?}",
-        install_options.service_log_dir_path, install_options.user
-    );
-    create_owned_dir(
-        install_options.service_log_dir_path.clone(),
-        &install_options.user,
-    )?;
-
-    debug!(
-        "Copying auditor binary file to {:?}",
-        install_options.auditor_install_bin_path
-    );
-    std::fs::copy(
-        install_options.auditor_src_bin_path.clone(),
-        install_options.auditor_install_bin_path.clone(),
-    )?;
-
-    let install_ctx = InstallAuditorServiceCtxBuilder {
-        auditor_path: install_options.auditor_install_bin_path.clone(),
-        beta_encryption_key: install_options.beta_encryption_key.clone(),
-        bootstrap_peers: install_options.bootstrap_peers.clone(),
-        env_variables: install_options.env_variables.clone(),
-        log_dir_path: install_options.service_log_dir_path.clone(),
-        name: "auditor".to_string(),
-        service_user: install_options.user.clone(),
-    }
-    .build()?;
-
-    match service_control.install(install_ctx, false) {
-        Ok(()) => {
-            node_registry.auditor = Some(AuditorServiceData {
-                auditor_path: install_options.auditor_install_bin_path.clone(),
-                log_dir_path: install_options.service_log_dir_path.clone(),
-                pid: None,
-                service_name: "auditor".to_string(),
-                status: ServiceStatus::Added,
-                user: install_options.user.clone(),
-                version: install_options.version,
-            });
-            info!("Auditor service has been added successfully");
-            println!("Auditor service added {}", "✓".green());
-            if verbosity != VerbosityLevel::Minimal {
-                println!(
-                    "  - Bin path: {}",
-                    install_options.auditor_install_bin_path.to_string_lossy()
-                );
-                println!(
-                    "  - Log path: {}",
-                    install_options.service_log_dir_path.to_string_lossy()
-                );
-            }
-            println!("[!] Note: the service has not been started");
-            debug!("Removing auditor binary file");
-            std::fs::remove_file(install_options.auditor_src_bin_path)?;
-            node_registry.save()?;
-            Ok(())
-        }
-        Err(e) => {
-            error!("Failed to add auditor service: {e}");
-            println!("Failed to add auditor service: {e}");
-            Err(e.into())
-        }
-    }
-}
-
 /// Install the daemon as a service.
 ///
 /// This only defines the service; it does not start it.
@@ -467,92 +380,6 @@ pub fn add_daemon(
         Err(e) => {
             error!("Failed to add daemon service: {e}");
             println!("Failed to add daemon service: {e}");
-            Err(e.into())
-        }
-    }
-}
-
-/// Install the faucet as a service.
-///
-/// This only defines the service; it does not start it.
-///
-/// There are several arguments that probably seem like they could be handled within the function,
-/// but they enable more controlled unit testing.
-pub fn add_faucet(
-    install_options: AddFaucetServiceOptions,
-    node_registry: &mut NodeRegistry,
-    service_control: &dyn ServiceControl,
-    verbosity: VerbosityLevel,
-) -> Result<()> {
-    if node_registry.faucet.is_some() {
-        error!("A faucet service has already been created");
-        return Err(eyre!("A faucet service has already been created"));
-    }
-
-    debug!(
-        "Creating log directory at {:?} as user {:?}",
-        install_options.service_log_dir_path, install_options.user
-    );
-    create_owned_dir(
-        install_options.service_log_dir_path.clone(),
-        &install_options.user,
-    )?;
-    debug!(
-        "Copying faucet binary file to {:?}",
-        install_options.faucet_install_bin_path
-    );
-    std::fs::copy(
-        install_options.faucet_src_bin_path.clone(),
-        install_options.faucet_install_bin_path.clone(),
-    )?;
-
-    let install_ctx = InstallFaucetServiceCtxBuilder {
-        bootstrap_peers: install_options.bootstrap_peers.clone(),
-        env_variables: install_options.env_variables.clone(),
-        faucet_path: install_options.faucet_install_bin_path.clone(),
-        local: install_options.local,
-        log_dir_path: install_options.service_log_dir_path.clone(),
-        name: "faucet".to_string(),
-        service_user: install_options.user.clone(),
-    }
-    .build()?;
-
-    match service_control.install(install_ctx, false) {
-        Ok(()) => {
-            node_registry.faucet = Some(FaucetServiceData {
-                faucet_path: install_options.faucet_install_bin_path.clone(),
-                local: false,
-                log_dir_path: install_options.service_log_dir_path.clone(),
-                pid: None,
-                service_name: "faucet".to_string(),
-                status: ServiceStatus::Added,
-                user: install_options.user.clone(),
-                version: install_options.version,
-            });
-            info!("Faucet service has been added successfully");
-            println!("Faucet service added {}", "✓".green());
-            if verbosity != VerbosityLevel::Minimal {
-                println!(
-                    "  - Bin path: {}",
-                    install_options.faucet_install_bin_path.to_string_lossy()
-                );
-                println!(
-                    "  - Data path: {}",
-                    install_options.service_data_dir_path.to_string_lossy()
-                );
-                println!(
-                    "  - Log path: {}",
-                    install_options.service_log_dir_path.to_string_lossy()
-                );
-            }
-            println!("[!] Note: the service has not been started");
-            std::fs::remove_file(install_options.faucet_src_bin_path)?;
-            node_registry.save()?;
-            Ok(())
-        }
-        Err(e) => {
-            error!("Failed to add faucet service: {e}");
-            println!("Failed to add faucet service: {e}");
             Err(e.into())
         }
     }

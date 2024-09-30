@@ -49,7 +49,6 @@ pub struct DeploymentInventory {
     pub ssh_user: String,
     pub genesis_multiaddr: String,
     pub peers: Vec<String>,
-    pub faucet_address: String,
     pub uploaded_files: Vec<(String, String)>,
 }
 

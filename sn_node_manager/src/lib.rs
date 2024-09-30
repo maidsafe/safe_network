@@ -442,17 +442,6 @@ pub async fn status_report(
             println!("Version: {}", daemon.version);
             println!("Bin path: {}", daemon.daemon_path.to_string_lossy());
         }
-
-        if let Some(faucet) = &node_registry.faucet {
-            print_banner(&format!(
-                "{} - {}",
-                &faucet.service_name,
-                format_status(&faucet.status)
-            ));
-            println!("Version: {}", faucet.version);
-            println!("Bin path: {}", faucet.faucet_path.to_string_lossy());
-            println!("Log path: {}", faucet.log_dir_path.to_string_lossy());
-        }
     } else {
         println!(
             "{:<18} {:<52} {:<7} {:>15}",
@@ -483,15 +472,6 @@ pub async fn status_report(
                 daemon.service_name,
                 "-",
                 format_status(&daemon.status),
-                "-"
-            );
-        }
-        if let Some(faucet) = &node_registry.faucet {
-            println!(
-                "{:<18} {:<52} {:<7} {:>15}",
-                faucet.service_name,
-                "-",
-                format_status(&faucet.status),
                 "-"
             );
         }

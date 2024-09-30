@@ -20,4 +20,3 @@ genesis_multiaddr="/ip4/127.0.0.1/tcp/${port}/p2p/${peer_id}"
 
 sudo safenode-manager add --local --count "$count" --peer "$genesis_multiaddr"
 sudo safenode-manager start
-safenode-manager faucet --peer "$genesis_multiaddr"
