@@ -1,19 +1,18 @@
-use std::time::Duration;
-
-use autonomi::Client;
+use crate::common;
+use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
+use crate::evm::Client;
 use bytes::Bytes;
-use eyre::{bail, Result};
+use eyre::bail;
+use std::time::Duration;
 use tokio::time::sleep;
 
-mod common;
-
-#[cfg(feature = "files")]
 #[tokio::test]
 async fn file() -> Result<(), Box<dyn std::error::Error>> {
     common::enable_logging();
 
-    let mut client = Client::connect(&common::peers_from_env()?).await?;
-    let mut wallet = common::load_hot_wallet_from_faucet();
+    let network = evm_network_from_env();
+    let mut client = Client::connect(&[]).await.unwrap();
+    let mut wallet = evm_wallet_from_env_or_default(network);
 
     // let data = common::gen_random_data(1024 * 1024 * 1000);
     // let user_key = common::gen_random_data(32);
@@ -21,6 +20,7 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
     let (root, addr) = client
         .upload_from_dir("tests/file/test_dir".into(), &mut wallet)
         .await?;
+
     sleep(Duration::from_secs(10)).await;
 
     let root_fetched = client.fetch_root(addr).await?;
@@ -33,16 +33,18 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// files and vault feats
-#[cfg(all(feature = "files", feature = "vault"))]
+#[cfg(feature = "vault")]
 #[tokio::test]
-async fn file_into_vault() -> Result<()> {
+async fn file_into_vault() -> eyre::Result<()> {
     common::enable_logging();
+
+    let network = evm_network_from_env();
 
     let mut client = Client::connect(&[])
         .await?
         .with_vault_entropy(Bytes::from("at least 32 bytes of entropy here"))?;
-    let mut wallet = common::load_hot_wallet_from_faucet();
+
+    let mut wallet = evm_wallet_from_env_or_default(network);
 
     let (root, addr) = client
         .upload_from_dir("tests/file/test_dir".into(), &mut wallet)

@@ -1,10 +1,29 @@
-use crate::wallet::MemWallet;
-use crate::Client;
+use crate::client::ClientWrapper;
+use crate::native::client::NativeClient;
+use crate::native::wallet;
+use crate::native::wallet::MemWallet;
+use crate::VERIFY_STORE;
+use libp2p::{
+    futures::future::join_all,
+    kad::{Quorum, Record},
+    PeerId,
+};
+use sn_networking::{
+    GetRecordCfg, GetRecordError, Network, NetworkError, PutRecordCfg, VerificationKind,
+};
+use sn_protocol::{
+    storage::{try_serialize_record, RecordKind, RetryStrategy, SpendAddress},
+    NetworkAddress, PrettyPrintRecordKey,
+};
+use sn_transfers::CashNote;
+use sn_transfers::Payment;
+use sn_transfers::UniquePubkey;
+use sn_transfers::{HotWallet, SignedSpend};
 use sn_transfers::{MainPubkey, NanoTokens};
 use sn_transfers::{SpendReason, Transfer};
-
-use sn_transfers::UniquePubkey;
 use std::collections::BTreeSet;
+use std::collections::HashSet;
+use xor_name::XorName;
 
 #[derive(Debug, thiserror::Error)]
 pub enum SendSpendsError {
@@ -21,9 +40,9 @@ pub enum TransferError {
     #[error("Failed to send tokens due to {0}")]
     CouldNotSendMoney(String),
     #[error("Wallet error: {0:?}")]
-    WalletError(#[from] crate::wallet::error::WalletError),
+    WalletError(#[from] wallet::error::WalletError),
     #[error("Network error: {0:?}")]
-    NetworkError(#[from] sn_networking::NetworkError),
+    NetworkError(#[from] NetworkError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -34,26 +53,6 @@ pub enum CashNoteError {
     FailedToGetSpend(String),
 }
 
-use libp2p::{
-    futures::future::join_all,
-    kad::{Quorum, Record},
-    PeerId,
-};
-use sn_networking::{
-    GetRecordCfg, GetRecordError, Network, NetworkError, PutRecordCfg, VerificationKind,
-};
-use sn_protocol::{
-    storage::{try_serialize_record, RecordKind, RetryStrategy, SpendAddress},
-    NetworkAddress, PrettyPrintRecordKey,
-};
-use sn_transfers::Payment;
-use sn_transfers::{HotWallet, SignedSpend};
-use xor_name::XorName;
-
-use crate::VERIFY_STORE;
-use sn_transfers::CashNote;
-use std::collections::HashSet;
-
 #[derive(Debug, thiserror::Error)]
 pub enum SendError {
     #[error("CashNote amount unexpected: {0}")]
@@ -61,7 +60,7 @@ pub enum SendError {
     #[error("CashNote has no parent spends.")]
     CashNoteHasNoParentSpends,
     #[error("Wallet error occurred during sending of transfer.")]
-    WalletError(#[from] crate::wallet::error::WalletError),
+    WalletError(#[from] wallet::error::WalletError),
     #[error("Encountered transfer error during sending.")]
     TransferError(#[from] sn_transfers::TransferError),
     #[error("Spends error: {0:?}")]
@@ -78,7 +77,7 @@ pub enum ReceiveError {
 
 // Hide these from the docs.
 #[doc(hidden)]
-impl Client {
+impl NativeClient {
     /// Send spend requests to the network.
     pub async fn send_spends(
         &self,
@@ -95,7 +94,7 @@ impl Client {
 
             let the_task = async move {
                 let cash_note_key = spend_request.unique_pubkey();
-                let result = store_spend(self.network.clone(), spend_request.clone()).await;
+                let result = store_spend(self.network().clone(), spend_request.clone()).await;
 
                 (cash_note_key, result)
             };
@@ -179,7 +178,7 @@ impl Client {
             .map_err(TransferError::WalletError)?;
 
         let cash_notes = self
-            .network
+            .network()
             .verify_cash_notes_redemptions(wallet.address(), &cash_note_redemptions)
             .await?;
 
@@ -203,7 +202,7 @@ impl Client {
         let pk = cash_note.unique_pubkey();
         let addr = SpendAddress::from_unique_pubkey(&pk);
 
-        match self.network.get_spend(addr).await {
+        match self.network().get_spend(addr).await {
             // if we get a RecordNotFound, it means the CashNote is not spent, which is good
             Err(NetworkError::GetRecordError(GetRecordError::RecordNotFound)) => Ok(()),
             // if we get a spend, it means the CashNote is already spent

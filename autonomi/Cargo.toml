@@ -11,7 +11,7 @@ repository = "https://github.com/maidsafe/safe_network"
 
 [features]
 default = ["data"]
-full = ["data", "files", "fs", "registers", "transfers", "vault"]
+full = ["data", "files", "fs", "registers", "transfers", "vault", "native-payments"]
 data = ["transfers"]
 vault = ["data"]
 files = ["transfers", "data"]
@@ -19,6 +19,8 @@ fs = []
 local = ["sn_networking/local-discovery"]
 registers = ["transfers"]
 transfers = []
+native-payments = []
+evm-payments = []
 
 [dependencies]
 bip39 = "2.0.0"
@@ -26,6 +28,8 @@ bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
 curv = { version = "0.10.1", package = "sn_curv", default-features = false, features = ["num-bigint"] }
 eip2333 = { version = "0.2.1", package = "sn_bls_ckd" }
+const-hex = "1.12.0"
+evmlib = { path = "../evmlib", version = "0.1" }
 libp2p = "0.54.1"
 rand = "0.8.5"
 rmp-serde = "1.1.1"
@@ -36,6 +40,7 @@ sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.1" }
 sn_protocol = { version = "0.17.9", path = "../sn_protocol" }
 sn_registers = { path = "../sn_registers", version = "0.3.19" }
 sn_transfers = { path = "../sn_transfers", version = "0.19.1" }
+sn_evm = { path = "../sn_evm" }
 thiserror = "1.0.23"
 tokio = { version = "1.35.0", features = ["sync", "fs"] }
 tracing = { version = "~0.1.26" }

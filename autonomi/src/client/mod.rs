@@ -1,3 +1,12 @@
+#[cfg(feature = "data")]
+pub mod data;
+#[cfg(feature = "files")]
+pub mod files;
+#[cfg(feature = "registers")]
+pub mod registers;
+#[cfg(feature = "vault")]
+pub mod vault;
+
 use std::{collections::HashSet, time::Duration};
 
 #[cfg(feature = "vault")]
@@ -6,21 +15,6 @@ use libp2p::{identity::Keypair, Multiaddr};
 use sn_networking::{multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use tokio::{sync::mpsc::Receiver, time::interval};
-
-#[cfg(feature = "data")]
-#[cfg_attr(docsrs, doc(cfg(feature = "data")))]
-mod data;
-#[cfg(feature = "files")]
-#[cfg_attr(docsrs, doc(cfg(feature = "files")))]
-mod files;
-#[cfg(feature = "registers")]
-#[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
-mod registers;
-#[cfg(feature = "transfers")]
-#[cfg_attr(docsrs, doc(cfg(feature = "transfers")))]
-mod transfers;
-#[cfg(feature = "vault")]
-mod vault;
 
 /// Time before considering the connection timed out.
 pub const CONNECT_TIMEOUT_SECS: u64 = 20;
@@ -32,7 +26,7 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 /// To connect to the network, use [`Client::connect`].
 ///
 /// ```no_run
-/// # use autonomi::Client;
+/// # use autonomi::client::Client;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
@@ -44,7 +38,7 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 pub struct Client {
     pub(crate) network: Network,
     #[cfg(feature = "vault")]
-    vault_secret_key: Option<SecretKey>,
+    pub(crate) vault_secret_key: Option<SecretKey>,
 }
 
 /// Error returned by [`Client::connect`].
@@ -64,7 +58,7 @@ impl Client {
     /// This will timeout after 20 seconds. (See [`CONNECT_TIMEOUT_SECS`].)
     ///
     /// ```no_run
-    /// # use autonomi::Client;
+    /// # use autonomi::client::Client;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
@@ -174,4 +168,26 @@ async fn handle_event_receiver(
     }
 
     // TODO: Handle closing of network events sender
+}
+
+pub trait ClientWrapper {
+    fn from_client(client: Client) -> Self;
+
+    fn client(&self) -> &Client;
+
+    fn client_mut(&mut self) -> &mut Client;
+
+    fn into_client(self) -> Client;
+
+    fn network(&self) -> &Network {
+        &self.client().network
+    }
+
+    async fn connect(peers: &[Multiaddr]) -> Result<Self, ConnectError>
+    where
+        Self: Sized,
+    {
+        let client = Client::connect(peers).await?;
+        Ok(Self::from_client(client))
+    }
 }

@@ -1,14 +1,10 @@
-use std::{collections::HashMap, path::PathBuf};
-
+use crate::client::data::{GetError, PutError};
+use crate::client::{Client, ClientWrapper};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_transfers::HotWallet;
-use walkdir::WalkDir;
+use std::collections::HashMap;
+use std::path::PathBuf;
 use xor_name::XorName;
-
-use crate::Client;
-
-use super::data::{GetError, PutError};
 
 /// Directory-like structure that containing file paths and their metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,9 +18,9 @@ pub struct Root {
 /// This is similar to ['inodes'](https://en.wikipedia.org/wiki/Inode) in Unix-like filesystems.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FilePointer {
-    data_map: XorName,
-    created_at: u64,
-    modified_at: u64,
+    pub(crate) data_map: XorName,
+    pub(crate) created_at: u64,
+    pub(crate) modified_at: u64,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -44,45 +40,9 @@ pub enum UploadError {
 }
 
 impl Client {
-    /// Upload a directory to the network. The directory is recursively walked.
-    #[cfg(feature = "fs")]
-    pub async fn upload_from_dir(
-        &mut self,
-        path: PathBuf,
-        wallet: &mut HotWallet,
-    ) -> Result<(Root, XorName), UploadError> {
-        let mut map = HashMap::new();
-        for entry in WalkDir::new(path) {
-            let entry = entry?;
-            if !entry.file_type().is_file() {
-                continue;
-            }
-            let path = entry.path().to_path_buf();
-            tracing::info!("Uploading file: {path:?}");
-            let file = upload_from_file(self, path.clone(), wallet).await?;
-            map.insert(path, file);
-        }
-
-        let root = Root { map };
-        let root_serialized = Bytes::from(rmp_serde::to_vec(&root)?);
-
-        #[cfg(feature = "vault")]
-        self.write_bytes_to_vault_if_defined(root_serialized.clone(), wallet)
-            .await?;
-
-        let xor_name = self.put(root_serialized, wallet).await?;
-
-        Ok((root, xor_name))
-    }
-
     /// Fetch a directory from the network.
     pub async fn fetch_root(&mut self, address: XorName) -> Result<Root, UploadError> {
         let data = self.get(address).await?;
-
-        Self::deserialise_root(data)
-    }
-
-    pub fn deserialise_root(data: Bytes) -> Result<Root, UploadError> {
         let root: Root = rmp_serde::from_slice(&data[..]).expect("TODO");
 
         Ok(root)
@@ -95,20 +55,12 @@ impl Client {
     }
 }
 
-async fn upload_from_file(
-    client: &mut Client,
-    path: PathBuf,
-    wallet: &mut HotWallet,
-) -> Result<FilePointer, UploadError> {
-    let data = tokio::fs::read(path).await?;
-    let data = Bytes::from(data);
+pub trait Files: ClientWrapper {
+    async fn fetch_root(&mut self, address: XorName) -> Result<Root, UploadError> {
+        self.client_mut().fetch_root(address).await
+    }
 
-    let addr = client.put(data, wallet).await?;
-
-    // TODO: Set created_at and modified_at
-    Ok(FilePointer {
-        data_map: addr,
-        created_at: 0,
-        modified_at: 0,
-    })
+    async fn fetch_file(&mut self, file: &FilePointer) -> Result<Bytes, UploadError> {
+        self.client_mut().fetch_file(file).await
+    }
 }
