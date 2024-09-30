@@ -964,7 +964,11 @@ mod tests {
     use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress};
     use sn_transfers::{MainPubkey, PaymentQuote};
     use std::collections::BTreeMap;
+    use std::fs::OpenOptions;
+    use std::io::BufWriter;
+    use std::io::Write;
     use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
     use tokio::runtime::Runtime;
     use tokio::time::{sleep, Duration};
     use xor_name::XorName;
@@ -1960,11 +1964,6 @@ mod tests {
     /// Write peers data as space separated values to a temp file, and then print the file location
     /// sort the peers by max earned
     fn write_peers_data_to_file(peers: &[PeerStats]) -> eyre::Result<()> {
-        use std::fs::OpenOptions;
-        use std::io::BufWriter;
-        use std::io::Write;
-        use std::time::{SystemTime, UNIX_EPOCH};
-
         println!("Writing peers data to a file");
         let temp_dir = std::env::temp_dir();
         let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
@@ -2054,7 +2053,15 @@ mod tests {
         use plotters::prelude::*;
 
         let temp_dir = std::env::temp_dir();
-        let file_name = "node_count_vs_mean_payment.png";
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+        let datetime = UNIX_EPOCH + std::time::Duration::from_secs(now);
+
+        // Use chrono for efficient time formatting
+        let datetime: chrono::DateTime<chrono::Utc> = datetime.into();
+        let formatted_time = datetime.format("%Y-%m-%d_%H-%M").to_string();
+
+        let file_name = format!("node_count_vs_mean_payment{}.png", formatted_time);
+
         let file_path = temp_dir.join(file_name);
         let root = BitMapBackend::new(file_path.to_str().unwrap(), (1200, 800)).into_drawing_area();
         root.fill(&WHITE)?;
@@ -2112,7 +2119,9 @@ mod tests {
         let bar_data: Vec<(String, usize)> = (0..number_of_bins)
             .map(|i| {
                 let bin_start = min_mean_payment + i as f64 * bin_width;
-                (format!("{:.4}", bin_start), bins[i])
+                let formatted_bin_start = format!("{}", bin_start);
+                let trimmed_bin_start = formatted_bin_start.trim_start_matches('0');
+                (format!("0.{}", trimmed_bin_start), bins[i])
             })
             .collect();
 
@@ -2135,9 +2144,11 @@ mod tests {
             .x_labels(10)
             .y_labels(10)
             .x_label_formatter(&|v| {
-                let bin_start = min_mean_payment + bin_width;
-                // let bin_start = min_mean_payment + (*v * bin_width);
-                format!("{:.6}", bin_start)
+                let bin_start = v;
+                // let bin_start = min_mean_payment + *v as f64 * bin_width;
+                let formatted_bin_start = format!("{:?}", bin_start);
+                let trimmed_bin_start = formatted_bin_start.trim_start_matches('0');
+                format!("0.{}", trimmed_bin_start)
             })
             .y_label_formatter(&|v| format!("{}", v))
             .draw()?;
