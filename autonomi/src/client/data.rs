@@ -263,7 +263,7 @@ impl Client {
             };
 
             let stored_on_node = try_serialize_record(&chunk, RecordKind::Chunk)
-                .expect("TODO")
+                .map_err(|_| PutError::Serialization)?
                 .to_vec();
             let random_nonce = thread_rng().gen::<u64>();
             let expected_proof = ChunkProof::new(&stored_on_node, random_nonce);
@@ -279,7 +279,7 @@ impl Client {
 
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
-            retry_strategy: None,
+            retry_strategy: Some(RetryStrategy::Balanced),
             use_put_record_to: Some(vec![storing_node]),
             verification,
         };
