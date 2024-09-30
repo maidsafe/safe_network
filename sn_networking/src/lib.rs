@@ -59,13 +59,13 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use rand::Rng;
+use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
     storage::{RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
-use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     net::IpAddr,
@@ -79,7 +79,7 @@ use tokio::sync::{
 use tokio::time::Duration;
 
 /// The type of quote for a selected payee.
-pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
+pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
 
 /// The count of peers that will be considered as close to a record target,
 /// that a replication of the record shall be sent/accepted to/by the peer.
@@ -378,8 +378,8 @@ impl Network {
                     peer_address,
                 }) => {
                     // Check the quote itself is valid.
-                    if quote.cost.as_nano()
-                        != calculate_cost_for_records(quote.quoting_metrics.close_records_stored)
+                    if quote.cost
+                        != AttoTokens::from_u64(calculate_cost_for_records(quote.quoting_metrics.close_records_stored))
                     {
                         warn!("Received invalid quote from {peer_address:?}, {quote:?}");
                         continue;
@@ -589,7 +589,7 @@ impl Network {
     pub async fn get_local_storecost(
         &self,
         key: RecordKey,
-    ) -> Result<(NanoTokens, QuotingMetrics)> {
+    ) -> Result<(AttoTokens, QuotingMetrics)> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetLocalStoreCost { key, sender });
 
@@ -751,7 +751,7 @@ impl Network {
             PrettyPrintRecordKey::from(&record.key),
             record.value.len()
         );
-        self.send_local_swarm_cmd(LocalSwarmCmd::PutVerifiedLocalRecord { record })
+        self.send_local_swarm_cmd(LocalSwarmCmd::PutLocalRecord { record })
     }
 
     /// Returns true if a RecordKey is present locally in the RecordStore
@@ -961,7 +961,7 @@ impl Network {
 /// Given `all_costs` it will return the closest / lowest cost
 /// Closest requiring it to be within CLOSE_GROUP nodes
 fn get_fees_from_store_cost_responses(
-    all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
+    all_costs: Vec<(NetworkAddress, RewardsAddress, PaymentQuote)>,
 ) -> Result<PayeeQuote> {
     // Find the minimum cost using a linear scan with random tie break
     let mut rng = rand::thread_rng();
@@ -1114,7 +1114,7 @@ mod tests {
     use eyre::bail;
 
     use super::*;
-    use sn_transfers::PaymentQuote;
+    use sn_evm::PaymentQuote;
 
     #[test]
     fn test_get_fee_from_store_cost_responses() -> Result<()> {
@@ -1122,18 +1122,18 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 1..CLOSE_GROUP_SIZE {
-            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
+            let addr = sn_evm::utils::dummy_address();
             costs.push((
                 NetworkAddress::from_peer(PeerId::random()),
                 addr,
-                PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i as u64)),
+                PaymentQuote::test_dummy(Default::default(), AttoTokens::from_u64(i as u64)),
             ));
         }
-        let expected_price = costs[0].2.cost.as_nano();
+        let expected_price = costs[0].2.cost.as_atto();
         let (_peer_id, _key, price) = get_fees_from_store_cost_responses(costs)?;
 
         assert_eq!(
-            price.cost.as_nano(),
+            price.cost.as_atto(),
             expected_price,
             "price should be {expected_price}"
         );
@@ -1148,18 +1148,18 @@ mod tests {
         let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
         for i in 1..responses_count {
-            // push random MainPubkey and Nano
-            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
+            // push random addr and Nano
+            let addr = sn_evm::utils::dummy_address();
             costs.push((
                 NetworkAddress::from_peer(PeerId::random()),
                 addr,
-                PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i)),
+                PaymentQuote::test_dummy(Default::default(), AttoTokens::from_u64(i)),
             ));
             println!("price added {i}");
         }
 
         // this should be the lowest price
-        let expected_price = costs[0].2.cost.as_nano();
+        let expected_price = costs[0].2.cost.as_atto();
 
         let (_peer_id, _key, price) = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
@@ -1167,7 +1167,7 @@ mod tests {
         };
 
         assert_eq!(
-            price.cost.as_nano(),
+            price.cost.as_atto(),
             expected_price,
             "price should be {expected_price}"
         );

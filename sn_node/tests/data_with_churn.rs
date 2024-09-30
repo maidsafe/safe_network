@@ -23,8 +23,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 use sn_registers::Permissions;
-use sn_transfers::HotWallet;
-use sn_transfers::{CashNote, MainSecretKey, NanoTokens};
+use sn_transfers::{CashNote, HotWallet, MainSecretKey, NanoTokens};
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,

@@ -9,8 +9,7 @@
 
 use crate::{storage::RecordType, NetworkAddress};
 use serde::{Deserialize, Serialize};
-// TODO: remove this dependency and define these types herein.
-pub use sn_transfers::{Hash, PaymentQuote};
+pub use sn_evm::PaymentQuote;
 
 /// Data and CashNote cmds - recording spends or creating, updating, and removing data.
 ///

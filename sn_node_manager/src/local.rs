@@ -18,6 +18,7 @@ use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
 
+use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_service_management::{
     control::ServiceControl,
@@ -36,7 +37,9 @@ use sysinfo::{Pid, System};
 #[cfg_attr(test, automock)]
 pub trait Launcher {
     fn get_safenode_path(&self) -> PathBuf;
+    #[cfg(feature = "faucet")]
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
+    #[allow(clippy::too_many_arguments)]
     fn launch_node(
         &self,
         bootstrap_peers: Vec<Multiaddr>,
@@ -45,12 +48,15 @@ pub trait Launcher {
         node_port: Option<u16>,
         owner: Option<String>,
         rpc_socket_addr: SocketAddr,
+        rewards_address: RewardsAddress,
+        evm_network: Option<EvmNetwork>,
     ) -> Result<()>;
     fn wait(&self, delay: u64);
 }
 
 #[derive(Default)]
 pub struct LocalSafeLauncher {
+    #[cfg(feature = "faucet")]
     pub faucet_bin_path: PathBuf,
     pub safenode_bin_path: PathBuf,
 }
@@ -60,6 +66,7 @@ impl Launcher for LocalSafeLauncher {
         self.safenode_bin_path.clone()
     }
 
+    #[cfg(feature = "faucet")]
     fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32> {
         info!("Launching the faucet server...");
         debug!("Using genesis_multiaddr: {}", genesis_multiaddr.to_string());
@@ -69,11 +76,14 @@ impl Launcher for LocalSafeLauncher {
             "server".to_string(),
         ];
 
+        #[cfg(feature = "faucet")]
         debug!(
             "Using faucet binary: {}",
             self.faucet_bin_path.to_string_lossy()
         );
+
         debug!("Using args: {}", args.join(" "));
+
         let child = Command::new(self.faucet_bin_path.clone())
             .args(args)
             .stdout(Stdio::inherit())
@@ -90,6 +100,8 @@ impl Launcher for LocalSafeLauncher {
         node_port: Option<u16>,
         owner: Option<String>,
         rpc_socket_addr: SocketAddr,
+        rewards_address: RewardsAddress,
+        evm_network: Option<EvmNetwork>,
     ) -> Result<()> {
         let mut args = Vec::new();
 
@@ -125,6 +137,22 @@ impl Launcher for LocalSafeLauncher {
         args.push("--local".to_string());
         args.push("--rpc".to_string());
         args.push(rpc_socket_addr.to_string());
+
+        args.push("--rewards-address".to_string());
+        args.push(rewards_address.to_string());
+
+        if let Some(network) = evm_network {
+            args.push(format!("evm-{}", network.identifier()));
+
+            if let EvmNetwork::Custom(custom) = network {
+                args.push("--rpc-url".to_string());
+                args.push(custom.rpc_url_http.to_string());
+                args.push("--payment-token-address".to_string());
+                args.push(custom.payment_token_address.to_string());
+                args.push("--chunk-payments-address".to_string());
+                args.push(custom.chunk_payments_address.to_string());
+            }
+        }
 
         Command::new(self.safenode_bin_path.clone())
             .args(args)
@@ -197,13 +225,21 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
         if !keep_directories {
             // At this point we don't allow path overrides, so deleting the data directory will clear
             // the log directory also.
-            std::fs::remove_dir_all(&node.data_dir_path)?;
-            debug!("Removed node data directory: {:?}", node.data_dir_path);
-            println!(
-                "  {} Removed {}",
-                "✓".green(),
-                node.data_dir_path.to_string_lossy()
-            );
+            if let Err(e) = std::fs::remove_dir_all(&node.data_dir_path) {
+                error!("Failed to remove node data directory: {:?}", e);
+                println!(
+                    "  {} Failed to remove {}: {e}",
+                    "✗".red(),
+                    node.data_dir_path.to_string_lossy()
+                );
+            } else {
+                debug!("Removed node data directory: {:?}", node.data_dir_path);
+                println!(
+                    "  {} Removed {}",
+                    "✓".green(),
+                    node.data_dir_path.to_string_lossy()
+                );
+            }
         }
     }
 
@@ -212,6 +248,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
 
 pub struct LocalNetworkOptions {
     pub enable_metrics_server: bool,
+    #[cfg(feature = "faucet")]
     pub faucet_bin_path: PathBuf,
     pub join: bool,
     pub interval: u64,
@@ -225,6 +262,8 @@ pub struct LocalNetworkOptions {
     pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
     pub log_format: Option<LogFormat>,
+    pub rewards_address: RewardsAddress,
+    pub evm_network: Option<EvmNetwork>,
 }
 
 pub async fn run_network(
@@ -252,6 +291,7 @@ pub async fn run_network(
 
     let launcher = LocalSafeLauncher {
         safenode_bin_path: options.safenode_bin_path.to_path_buf(),
+        #[cfg(feature = "faucet")]
         faucet_bin_path: options.faucet_bin_path.to_path_buf(),
     };
 
@@ -301,6 +341,8 @@ pub async fn run_network(
                 number,
                 owner,
                 rpc_socket_addr,
+                rewards_address: options.rewards_address,
+                evm_network: options.evm_network.clone(),
                 version: get_bin_version(&launcher.get_safenode_path())?,
             },
             &launcher,
@@ -348,6 +390,8 @@ pub async fn run_network(
                 number,
                 owner,
                 rpc_socket_addr,
+                rewards_address: options.rewards_address,
+                evm_network: options.evm_network.clone(),
                 version: get_bin_version(&launcher.get_safenode_path())?,
             },
             &launcher,
@@ -374,10 +418,11 @@ pub async fn run_network(
         validate_network(node_registry, bootstrap_peers.clone()).await?;
     }
 
+    #[cfg(feature = "faucet")]
     if !options.join {
         println!("Launching the faucet server...");
-        let version = get_bin_version(&options.faucet_bin_path)?;
         let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
+        let version = get_bin_version(&options.faucet_bin_path)?;
         let faucet = FaucetServiceData {
             faucet_path: options.faucet_bin_path,
             local: true,
@@ -404,6 +449,8 @@ pub struct RunNodeOptions {
     pub number: u16,
     pub owner: Option<String>,
     pub rpc_socket_addr: SocketAddr,
+    pub rewards_address: RewardsAddress,
+    pub evm_network: Option<EvmNetwork>,
     pub version: String,
 }
 
@@ -421,6 +468,8 @@ pub async fn run_node(
         run_options.node_port,
         run_options.owner.clone(),
         run_options.rpc_socket_addr,
+        run_options.rewards_address,
+        run_options.evm_network,
     )?;
     launcher.wait(run_options.interval);
 
@@ -532,6 +581,7 @@ mod tests {
     use libp2p_identity::PeerId;
     use mockall::mock;
     use mockall::predicate::*;
+    use sn_evm::utils::dummy_address;
     use sn_service_management::{
         error::Result as RpcResult,
         rpc::{NetworkInfo, NodeInfo, RecordAddress, RpcActions},
@@ -557,6 +607,7 @@ mod tests {
     async fn run_node_should_launch_the_genesis_node() -> Result<()> {
         let mut mock_launcher = MockLauncher::new();
         let mut mock_rpc_client = MockRpcClient::new();
+        let rewards_address = dummy_address();
 
         let peer_id = PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?;
         let rpc_socket_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 13000);
@@ -569,9 +620,11 @@ mod tests {
                 eq(None),
                 eq(None),
                 eq(rpc_socket_addr),
+                eq(rewards_address),
+                eq(None),
             )
             .times(1)
-            .returning(|_, _, _, _, _, _| Ok(()));
+            .returning(|_, _, _, _, _, _, _, _| Ok(()));
         mock_launcher
             .expect_wait()
             .with(eq(100))
@@ -617,6 +670,8 @@ mod tests {
                 number: 1,
                 owner: None,
                 rpc_socket_addr,
+                rewards_address,
+                evm_network: None,
                 version: "0.100.12".to_string(),
             },
             &mock_launcher,

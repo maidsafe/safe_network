@@ -15,6 +15,7 @@ use crate::{
     print_banner, status_report, VerbosityLevel,
 };
 use color_eyre::{eyre::eyre, Help, Report, Result};
+use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
@@ -39,6 +40,8 @@ pub async fn join(
     owner_prefix: Option<String>,
     peers_args: PeersArgs,
     rpc_port: Option<PortRange>,
+    rewards_address: RewardsAddress,
+    evm_network: Option<EvmNetwork>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
 ) -> Result<(), Report> {
@@ -58,6 +61,8 @@ pub async fn join(
     let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+
+    #[cfg(feature = "faucet")]
     let faucet_bin_path = get_bin_path(
         build,
         faucet_path,
@@ -67,6 +72,7 @@ pub async fn join(
         verbosity,
     )
     .await?;
+
     let safenode_bin_path = get_bin_path(
         build,
         node_path,
@@ -94,6 +100,7 @@ pub async fn join(
     };
     let options = LocalNetworkOptions {
         enable_metrics_server,
+        #[cfg(feature = "faucet")]
         faucet_bin_path,
         interval,
         join: true,
@@ -107,6 +114,8 @@ pub async fn join(
         safenode_bin_path,
         skip_validation,
         log_format,
+        rewards_address,
+        evm_network,
     };
     run_network(options, &mut local_node_registry, &ServiceController {}).await?;
     Ok(())
@@ -145,6 +154,8 @@ pub async fn run(
     owner: Option<String>,
     owner_prefix: Option<String>,
     rpc_port: Option<PortRange>,
+    rewards_address: RewardsAddress,
+    evm_network: Option<EvmNetwork>,
     skip_validation: bool,
     verbosity: VerbosityLevel,
 ) -> Result<(), Report> {
@@ -185,6 +196,8 @@ pub async fn run(
     info!("Launching local network");
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+
+    #[cfg(feature = "faucet")]
     let faucet_bin_path = get_bin_path(
         build,
         faucet_path,
@@ -194,6 +207,7 @@ pub async fn run(
         verbosity,
     )
     .await?;
+
     let safenode_bin_path = get_bin_path(
         build,
         node_path,
@@ -206,6 +220,7 @@ pub async fn run(
 
     let options = LocalNetworkOptions {
         enable_metrics_server,
+        #[cfg(feature = "faucet")]
         faucet_bin_path,
         join: false,
         interval,
@@ -219,6 +234,8 @@ pub async fn run(
         safenode_bin_path,
         skip_validation,
         log_format,
+        rewards_address,
+        evm_network,
     };
     run_network(options, &mut local_node_registry, &ServiceController {}).await?;
 

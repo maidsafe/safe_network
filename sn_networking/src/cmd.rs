@@ -21,12 +21,12 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
+use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics};
 use sn_protocol::{
     messages::{Cmd, Request, Response},
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Debug,
@@ -91,12 +91,12 @@ pub enum LocalSwarmCmd {
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
         key: RecordKey,
-        sender: oneshot::Sender<(NanoTokens, QuotingMetrics)>,
+        sender: oneshot::Sender<(AttoTokens, QuotingMetrics)>,
     },
     /// Notify the node received a payment.
     PaymentReceived,
     /// Put record to the local RecordStore
-    PutVerifiedLocalRecord {
+    PutLocalRecord {
         record: Record,
     },
     /// Remove a local record from the RecordStore
@@ -194,7 +194,7 @@ pub enum NetworkSwarmCmd {
 impl Debug for LocalSwarmCmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LocalSwarmCmd::PutVerifiedLocalRecord { record } => {
+            LocalSwarmCmd::PutLocalRecord { record } => {
                 write!(
                     f,
                     "LocalSwarmCmd::PutLocalRecord {{ key: {:?} }}",
@@ -561,7 +561,7 @@ impl SwarmDriver {
                     .store_cost(&key);
 
                 self.record_metrics(Marker::StoreCost {
-                    cost: cost.as_nano(),
+                    cost: cost.as_atto(),
                     quoting_metrics: &quoting_metrics,
                 });
 
@@ -587,8 +587,8 @@ impl SwarmDriver {
                 let _ = sender.send(record);
             }
 
-            LocalSwarmCmd::PutVerifiedLocalRecord { record } => {
-                cmd_string = "PutVerifiedLocalRecord";
+            LocalSwarmCmd::PutLocalRecord { record } => {
+                cmd_string = "PutLocalRecord";
                 let key = record.key.clone();
                 let record_key = PrettyPrintRecordKey::from(&key);
 
@@ -719,6 +719,7 @@ impl SwarmDriver {
             }
             LocalSwarmCmd::GetAllLocalRecordAddresses { sender } => {
                 cmd_string = "GetAllLocalRecordAddresses";
+                #[allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
                 let addresses = self
                     .swarm
                     .behaviour_mut()
@@ -735,7 +736,7 @@ impl SwarmDriver {
                     if let Some(distance) = range.0.ilog2() {
                         let peers_in_kbucket = kbucket
                             .iter()
-                            .map(|peer_entry| (*peer_entry.node.key).into_preimage())
+                            .map(|peer_entry| peer_entry.node.key.into_preimage())
                             .collect::<Vec<PeerId>>();
                         let _ = ilog2_kbuckets.insert(distance, peers_in_kbucket);
                     } else {

@@ -48,7 +48,6 @@ use crate::error::{Error, Result};
 use libp2p::PeerId;
 use sn_networking::{Network, SwarmLocalState};
 use sn_protocol::{get_port_from_multiaddr, NetworkAddress};
-use sn_transfers::{HotWallet, NanoTokens};
 use std::{
     collections::{BTreeMap, HashSet},
     path::PathBuf,
@@ -80,12 +79,6 @@ impl RunningNode {
         self.network.root_dir_path().clone()
     }
 
-    /// Returns the wallet balance of the node
-    pub fn get_node_wallet_balance(&self) -> Result<NanoTokens> {
-        let wallet = HotWallet::load_from(self.network.root_dir_path())?;
-        Ok(wallet.balance())
-    }
-
     /// Returns a `SwarmLocalState` with some information obtained from swarm's local state.
     pub async fn get_swarm_local_state(&self) -> Result<SwarmLocalState> {
         let state = self.network.get_swarm_local_state().await?;
@@ -110,6 +103,7 @@ impl RunningNode {
 
     /// Returns the list of all the RecordKeys held by the node
     pub async fn get_all_record_addresses(&self) -> Result<HashSet<NetworkAddress>> {
+        #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
         let addresses: HashSet<_> = self
             .network
             .get_all_local_record_addresses()
