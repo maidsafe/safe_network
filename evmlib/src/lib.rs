@@ -25,7 +25,7 @@ const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
 
 // Should be updated when the smart contract changes!
 const ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS: Address =
-    address!("F15BfEA73b6a551C5c2e66026e4eB3b69c1F602c");
+    address!("708353783756C62818aCdbce914d90E0245F7319");
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CustomNetwork {

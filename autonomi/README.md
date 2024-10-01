@@ -23,7 +23,7 @@ autonomi = { path = "../autonomi", version = "0.1.0" }
 2. Run a local EVM node:
 
 ```sh
-cargo run --bin evm_testnet -- --royalties-wallet <ETHEREUM_ADDRESS>
+cargo run --bin evm_testnet
 ```
 
 Take note of the console output for the next step (`RPC URL`, `Payment token address` & `Chunk payments address`).
@@ -57,9 +57,9 @@ cargo run --bin=safenode-manager --features=local-discovery -- local run --build
    payment tokens on the network (in this case Arbitrum One):
 
 ```sh
-$ EVM_NETWORK=arbitrum-one PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
+$ EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
 # Or with logs
-$ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local -- --nocapture
+$ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local -- --nocapture
 ```
 
 ## Faucet (local)
@@ -92,7 +92,7 @@ Alternatively, you can provide the wallet address that should own all the gas an
 startup command using the `--genesis-wallet` flag:
 
 ```sh
-cargo run --bin evm_testnet -- --royalties-wallet <ETHEREUM_ADDRESS> --genesis-wallet <ETHEREUM_ADDRESS>
+cargo run --bin evm_testnet -- --genesis-wallet <ETHEREUM_ADDRESS>
 ```
 
 ```shell

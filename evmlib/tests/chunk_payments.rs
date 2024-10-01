@@ -1,7 +1,6 @@
 mod common;
 
 use crate::common::quote::random_quote_payment;
-use crate::common::ROYALTIES_WALLET;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::node_bindings::AnvilInstance;
 use alloy::primitives::utils::parse_ether;
@@ -44,8 +43,7 @@ async fn setup() -> (
     let network_token = deploy_network_token_contract(&anvil).await;
 
     let chunk_payments =
-        deploy_chunk_payments_contract(&anvil, *network_token.contract.address(), ROYALTIES_WALLET)
-            .await;
+        deploy_chunk_payments_contract(&anvil, *network_token.contract.address()).await;
 
     (anvil, network_token, chunk_payments)
 }

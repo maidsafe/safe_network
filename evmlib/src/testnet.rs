@@ -18,16 +18,12 @@ pub struct Testnet {
 
 impl Testnet {
     /// Starts an Anvil node and automatically deploys the network token and chunk payments smart contracts.
-    pub async fn new(royalties_wallet: Address) -> Self {
+    pub async fn new() -> Self {
         let anvil = start_node();
 
         let network_token = deploy_network_token_contract(&anvil).await;
-        let chunk_payments = deploy_chunk_payments_contract(
-            &anvil,
-            *network_token.contract.address(),
-            royalties_wallet,
-        )
-        .await;
+        let chunk_payments =
+            deploy_chunk_payments_contract(&anvil, *network_token.contract.address()).await;
 
         Testnet {
             anvil,
@@ -96,7 +92,6 @@ pub async fn deploy_network_token_contract(
 pub async fn deploy_chunk_payments_contract(
     anvil: &AnvilInstance,
     token_address: Address,
-    royalties_wallet: Address,
 ) -> ChunkPayments<
     Http<Client>,
     FillProvider<
@@ -119,5 +114,5 @@ pub async fn deploy_chunk_payments_contract(
         .on_http(rpc_url);
 
     // Deploy the contract.
-    ChunkPayments::deploy(provider, token_address, royalties_wallet).await
+    ChunkPayments::deploy(provider, token_address).await
 }

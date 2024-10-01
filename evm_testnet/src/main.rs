@@ -16,9 +16,6 @@ use std::str::FromStr;
 #[derive(Debug, Parser)]
 #[clap(version, author, verbatim_doc_comment)]
 struct Args {
-    /// Address that will receive the chunk payments royalties.
-    #[clap(long, short)]
-    royalties_wallet: Address,
     /// Wallet that will hold ~all gas funds and payment tokens.
     #[clap(long, short)]
     genesis_wallet: Option<Address>,
@@ -27,11 +24,11 @@ struct Args {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    start_node(args.genesis_wallet, args.royalties_wallet).await;
+    start_node(args.genesis_wallet).await;
 }
 
-async fn start_node(genesis_wallet: Option<Address>, royalties_wallet: Address) {
-    let testnet = Testnet::new(royalties_wallet).await;
+async fn start_node(genesis_wallet: Option<Address>) {
+    let testnet = Testnet::new().await;
 
     println!("*************************");
     println!("* Ethereum node started *");

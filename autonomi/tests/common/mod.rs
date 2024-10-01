@@ -182,7 +182,7 @@ pub fn evm_wallet_from_env_or_default(network: evmlib::Network) -> evmlib::walle
     const DEFAULT_WALLET_PRIVATE_KEY: &str =
         "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-    let private_key = env::var("PRIVATE_KEY").unwrap_or(DEFAULT_WALLET_PRIVATE_KEY.to_string());
+    let private_key = env::var("EVM_PRIVATE_KEY").unwrap_or(DEFAULT_WALLET_PRIVATE_KEY.to_string());
 
     evmlib::wallet::Wallet::new_from_private_key(network, &private_key)
         .expect("Invalid private key")
