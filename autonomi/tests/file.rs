@@ -1,3 +1,5 @@
+#![cfg(feature = "files")]
+
 mod common;
 
 use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
@@ -9,7 +11,6 @@ use eyre::bail;
 use std::time::Duration;
 use tokio::time::sleep;
 
-#[cfg(feature = "files")]
 #[tokio::test]
 async fn file() -> Result<(), Box<dyn std::error::Error>> {
     common::enable_logging();
@@ -17,9 +18,6 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
     let network = evm_network_from_env();
     let mut client = Client::connect(&[]).await.unwrap();
     let wallet = evm_wallet_from_env_or_default(network);
-
-    // let data = common::gen_random_data(1024 * 1024 * 1000);
-    // let user_key = common::gen_random_data(32);
 
     let (root, addr) = client
         .upload_from_dir("tests/file/test_dir".into(), &wallet)
@@ -37,7 +35,7 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(all(feature = "vault", feature = "files"))]
+#[cfg(feature = "vault")]
 #[tokio::test]
 async fn file_into_vault() -> eyre::Result<()> {
     common::enable_logging();
