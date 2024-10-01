@@ -2068,26 +2068,33 @@ mod tests {
         let datetime: chrono::DateTime<chrono::Utc> = datetime.into();
         let formatted_time = datetime.format("%Y-%m-%d_%H-%M").to_string();
 
-        let file_name = format!("node_count_vs_nanos_earned{}.png", formatted_time);
+        let file_name = format!("node_count_vs_avg_nanos_earned{}.png", formatted_time);
 
         let file_path = temp_dir.join(file_name);
         let root = BitMapBackend::new(file_path.to_str().unwrap(), (1200, 800)).into_drawing_area();
         root.fill(&WHITE)?;
 
-        // Calculate nanos earned for each peer
-        let nanos_earned: Vec<u64> = peers
+        // Calculate average nanos earned for each peer
+        let peers_len = peers.len() as f64;
+        let avg_nanos_earned: Vec<f64> = peers
             .iter()
-            .map(|peer| peer.nanos_earned.load(Ordering::Relaxed))
+            .map(|peer| peer.nanos_earned.load(Ordering::Relaxed) as f64 / peers_len)
             .collect();
 
-        let min_nanos = *nanos_earned.iter().min().unwrap_or(&0);
-        let max_nanos = *nanos_earned.iter().max().unwrap_or(&MAX_STORE_COST);
+        let min_avg_nanos = avg_nanos_earned
+            .iter()
+            .fold(f64::INFINITY, |a, &b| a.min(b));
+        let max_avg_nanos = avg_nanos_earned
+            .iter()
+            .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
 
-        // Create 20 buckets for nanos earned
-        let bucket_size = (max_nanos - min_nanos + 19) / 20; // Ensure at least 1
-        let mut histogram = vec![0_u64; 20];
-        for &nanos in &nanos_earned {
-            let bucket = ((nanos - min_nanos) / bucket_size).min(19) as usize;
+        // Create 50 buckets for average nanos earned
+        const NUM_BUCKETS: usize = 50;
+        let bucket_size = (max_avg_nanos - min_avg_nanos) / NUM_BUCKETS as f64;
+        let mut histogram = vec![0_u64; NUM_BUCKETS];
+        for &avg_nanos in &avg_nanos_earned {
+            let bucket =
+                ((avg_nanos - min_avg_nanos) / bucket_size).min((NUM_BUCKETS - 1) as f64) as usize;
             histogram[bucket] += 1;
         }
 
@@ -2103,26 +2110,30 @@ mod tests {
         };
 
         let mut chart = ChartBuilder::on(&root)
-            .caption("Node Count vs Nanos Earned", ("sans-serif", 40).into_font())
+            .caption(
+                "Node Count vs Average Nanos Earned",
+                ("sans-serif", 40).into_font(),
+            )
             .margin(50)
             .x_label_area_size(60)
             .y_label_area_size(80)
-            .build_cartesian_2d(0..100, 0..y_max)?;
+            .build_cartesian_2d(0..NUM_BUCKETS, 0..y_max)?;
 
         chart
             .configure_mesh()
-            .x_desc("Nanos Earned Bucket")
+            .x_desc("Average Nanos Earned Bucket")
             .y_desc("Number of Nodes")
             .x_labels(10)
             .y_labels(10)
-            .x_label_formatter(&|&v| format!("{}", min_nanos + v as u64 * bucket_size))
+            .x_label_formatter(&|&v| format!("{:.2}", min_avg_nanos + v as f64 * bucket_size))
             .y_label_formatter(&|v| format!("{}", v))
             .draw()?;
 
         chart.draw_series(
             Histogram::vertical(&chart)
-                .style(RED.filled())
-                .data(histogram.iter().enumerate().map(|(i, &c)| (i as i32, c))),
+                .style(BLUE.filled())
+                .margin(0)
+                .data(histogram.iter().enumerate().map(|(i, &c)| (i, c))),
         )?;
 
         // Add grid lines for better readability
