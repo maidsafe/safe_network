@@ -1,3 +1,5 @@
+mod common;
+
 use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
 use const_hex::traits::FromHex;
 use evmlib::common::{Address, Amount};

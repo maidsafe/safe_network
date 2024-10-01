@@ -1,19 +1,21 @@
+mod common;
+
 use std::time::Duration;
 
-use crate::common;
 use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
-use crate::evm::Client;
+use autonomi::Client;
 use bytes::Bytes;
 use tokio::time::sleep;
 use xor_name::XorName;
 
+#[cfg(feature = "registers")]
 #[tokio::test]
 async fn register() {
     common::enable_logging();
 
     let network = evm_network_from_env();
     let mut client = Client::connect(&[]).await.unwrap();
-    let mut wallet = evm_wallet_from_env_or_default(network);
+    let wallet = evm_wallet_from_env_or_default(network);
 
     // Owner key of the register.
     let key = bls::SecretKey::random();
@@ -24,7 +26,7 @@ async fn register() {
             vec![1, 2, 3, 4].into(),
             XorName::random(&mut rand::thread_rng()),
             key.clone(),
-            &mut wallet,
+            &wallet,
         )
         .await
         .unwrap();

@@ -1,9 +1,10 @@
 use std::collections::BTreeSet;
 
 use crate::client::data::PayError;
-use crate::client::{Client, ClientWrapper};
+use crate::client::Client;
 use bls::SecretKey;
 use bytes::Bytes;
+use evmlib::wallet::Wallet;
 use libp2p::kad::{Quorum, Record};
 use sn_networking::GetRecordCfg;
 use sn_networking::NetworkError;
@@ -13,8 +14,10 @@ use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
 use sn_protocol::storage::RegisterAddress;
 use sn_protocol::NetworkAddress;
-use sn_registers::EntryHash;
+use sn_registers::Register as ClientRegister;
 use sn_registers::SignedRegister;
+use sn_registers::{EntryHash, Permissions};
+use xor_name::XorName;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RegisterError {
@@ -26,12 +29,8 @@ pub enum RegisterError {
     FailedVerification,
     #[error("Payment failure occurred during register creation.")]
     Pay(#[from] PayError),
-    #[cfg(feature = "native-payments")]
     #[error("Failed to retrieve wallet payment")]
-    Wallet(#[from] sn_transfers::WalletError),
-    #[cfg(feature = "evm-payments")]
-    #[error("Failed to retrieve wallet payment")]
-    EvmWallet(#[from] evmlib::wallet::Error),
+    Wallet(#[from] evmlib::wallet::Error),
     #[error("Failed to write to low-level register")]
     Write(#[source] sn_registers::Error),
     #[error("Failed to sign register")]
@@ -193,82 +192,10 @@ impl Client {
             verification: None,
         };
 
-        self.network().put_record(record, &put_cfg).await?;
+        self.network.put_record(record, &put_cfg).await?;
 
         Ok(Register {
             inner: signed_register,
         })
-    }
-
-    /// Fetches a Register from the network.
-    pub async fn fetch_register(
-        &self,
-        address: RegisterAddress,
-    ) -> Result<Register, RegisterError> {
-        let network_address = NetworkAddress::from_register_address(address);
-        let key = network_address.to_record_key();
-
-        let get_cfg = GetRecordCfg {
-            get_quorum: Quorum::One,
-            retry_strategy: None,
-            target_record: None,
-            expected_holders: Default::default(),
-            is_register: true,
-        };
-
-        let record = self
-            .network()
-            .get_record_from_network(key, &get_cfg)
-            .await?;
-
-        let register: SignedRegister =
-            try_deserialize_record(&record).map_err(|_| RegisterError::Serialization)?;
-
-        Ok(Register { inner: register })
-    }
-
-    /// Updates a Register on the network with a new value. This will overwrite existing value(s).
-    pub async fn update_register(
-        &self,
-        register: Register,
-        new_value: Bytes,
-        owner: SecretKey,
-    ) -> Result<(), RegisterError> {
-        // Fetch the current register
-        let mut signed_register = register.inner;
-        let mut register = signed_register.clone().register().expect("TODO");
-
-        // Get all current branches
-        let children: BTreeSet<EntryHash> = register.read().into_iter().map(|(e, _)| e).collect();
-
-        // Write the new value to all branches
-        let (_, op) = register
-            .write(new_value.to_vec(), &children, &owner)
-            .expect("TODO");
-
-        // Apply the operation to the register
-        signed_register.add_op(op.clone()).expect("TODO");
-
-        // Prepare the record for network storage
-        let record = Record {
-            key: NetworkAddress::from_register_address(*register.address()).to_record_key(),
-            value: try_serialize_record(&signed_register, RecordKind::Register)
-                .map_err(|_| RegisterError::Serialization)?
-                .to_vec(),
-            publisher: None,
-            expires: None,
-        };
-
-        let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::All,
-            retry_strategy: None,
-            use_put_record_to: None,
-            verification: None,
-        };
-
-        // Store the updated register on the network
-        self.network().put_record(record, &put_cfg).await?;
-
-        Ok(())
     }
 }

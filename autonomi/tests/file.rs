@@ -1,24 +1,30 @@
-use std::time::Duration;
+mod common;
 
-use crate::common;
-use crate::native::Client;
+use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
+use autonomi::Client;
+#[cfg(feature = "vault")]
 use bytes::Bytes;
-use eyre::{bail, Result};
+#[cfg(feature = "vault")]
+use eyre::bail;
+use std::time::Duration;
 use tokio::time::sleep;
 
+#[cfg(feature = "files")]
 #[tokio::test]
 async fn file() -> Result<(), Box<dyn std::error::Error>> {
     common::enable_logging();
 
-    let mut client = Client::connect(&common::peers_from_env()?).await?;
-    let mut wallet = common::load_hot_wallet_from_faucet();
+    let network = evm_network_from_env();
+    let mut client = Client::connect(&[]).await.unwrap();
+    let wallet = evm_wallet_from_env_or_default(network);
 
     // let data = common::gen_random_data(1024 * 1024 * 1000);
     // let user_key = common::gen_random_data(32);
 
     let (root, addr) = client
-        .upload_from_dir("tests/file/test_dir".into(), &mut wallet)
+        .upload_from_dir("tests/file/test_dir".into(), &wallet)
         .await?;
+
     sleep(Duration::from_secs(10)).await;
 
     let root_fetched = client.fetch_root(addr).await?;
@@ -31,19 +37,21 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// files and vault feats
-#[cfg(feature = "vault")]
+#[cfg(all(feature = "vault", feature = "files"))]
 #[tokio::test]
-async fn file_into_vault() -> Result<()> {
+async fn file_into_vault() -> eyre::Result<()> {
     common::enable_logging();
+
+    let network = evm_network_from_env();
 
     let mut client = Client::connect(&[])
         .await?
         .with_vault_entropy(Bytes::from("at least 32 bytes of entropy here"))?;
-    let mut wallet = common::load_hot_wallet_from_faucet();
+
+    let wallet = evm_wallet_from_env_or_default(network);
 
     let (root, addr) = client
-        .upload_from_dir("tests/file/test_dir".into(), &mut wallet)
+        .upload_from_dir("tests/file/test_dir".into(), &wallet)
         .await?;
     sleep(Duration::from_secs(2)).await;
 
@@ -60,7 +68,7 @@ async fn file_into_vault() -> Result<()> {
         .with_vault_entropy(Bytes::from("at least 32 bytes of entropy here"))?;
 
     if let Some(ap) = new_client.fetch_and_decrypt_vault().await? {
-        let ap_root_fetched = Client::deserialise_root(ap)?;
+        let ap_root_fetched = Client::deserialize_root(ap)?;
 
         assert_eq!(
             root.map, ap_root_fetched.map,

@@ -36,14 +36,6 @@ pub enum PutError {
     Network(#[from] NetworkError),
     #[error("Error occurred during payment.")]
     PayError(#[from] PayError),
-
-    // native token
-    #[cfg(feature = "native-payments")]
-    #[error("A wallet error occurred.")]
-    Wallet(#[from] sn_transfers::WalletError),
-
-    // evm token
-    #[cfg(feature = "evm-payments")]
     #[error("A wallet error occurred.")]
     Wallet(#[from] sn_evm::EvmError),
 }
@@ -57,15 +49,8 @@ pub enum PayError {
     CouldNotGetStoreCosts(NetworkError),
     #[error("Could not simultaneously fetch store costs: {0:?}")]
     JoinError(JoinError),
-    #[cfg(feature = "native-payments")]
-    #[error("Hot wallet error")]
-    WalletError(#[from] sn_transfers::WalletError),
-    #[cfg(feature = "evm-payments")]
     #[error("Wallet error: {0:?}")]
-    EvmWalletError(#[from] wallet::Error),
-    #[cfg(feature = "native-payments")]
-    #[error("Failed to send spends")]
-    SendSpendsError(#[from] crate::native::client::transfers::SendSpendsError),
+    WalletError(#[from] wallet::Error),
 }
 
 /// Errors that can occur during the get operation.
