@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727789842158,
+  "lastUpdate": 1727796702404,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "f2fc4c4a4a4a6778643d0900fcf229baabf927aa",
-          "message": "feat(audit): intercept sender of the payment forward",
-          "timestamp": "2024-05-13T18:21:09Z",
-          "tree_id": "cbfef37ed430dcf8e609d8102e41fc149196e486",
-          "url": "https://github.com/maidsafe/safe_network/commit/f2fc4c4a4a4a6778643d0900fcf229baabf927aa"
-        },
-        "date": 1715626818001,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.229047734088477,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 0.9839260509552199,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 54.81663466812477,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 59.91017810187463,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "64e01c22df4f268848ebaeeef1bba4952e34c539",
+          "message": "Merge pull request #2159 from mazzi/feat_change_connection_confirmation\n\nFeat change connection confirmation",
+          "timestamp": "2024-10-01T14:44:21Z",
+          "tree_id": "9bcd5c4ea2b6a62edc685d10cbdefe72d58841a9",
+          "url": "https://github.com/maidsafe/safe_network/commit/64e01c22df4f268848ebaeeef1bba4952e34c539"
+        },
+        "date": 1727796695537,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2516208994425193,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6717129832306672,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.650679995944465,
             "unit": "MiB/s"
           }
         ]
