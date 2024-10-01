@@ -10,14 +10,14 @@ use autonomi::Multiaddr;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
 
-pub async fn cost(name: &str, peers: Vec<Multiaddr>) -> Result<()> {
+pub async fn cost(name: &str, _peers: Vec<Multiaddr>) -> Result<()> {
     let register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
     println!("Estimate cost to register name: {name} with register key: {register_key}");
     Ok(())
 }
 
-pub async fn create(name: &str, value: &str, peers: Vec<Multiaddr>) -> Result<()> {
+pub async fn create(name: &str, value: &str, _peers: Vec<Multiaddr>) -> Result<()> {
     let secret_key = crate::utils::get_secret_key()
         .wrap_err("The secret key is required to perform this action")?;
     let register_key = crate::utils::get_register_signing_key()
@@ -28,21 +28,21 @@ pub async fn create(name: &str, value: &str, peers: Vec<Multiaddr>) -> Result<()
     Ok(())
 }
 
-pub async fn edit(name: &str, value: &str, peers: Vec<Multiaddr>) -> Result<()> {
+pub async fn edit(name: &str, value: &str, _peers: Vec<Multiaddr>) -> Result<()> {
     let register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
     println!("Editing register: {name} with value: {value} using register key: {register_key}");
     Ok(())
 }
 
-pub async fn get(name: &str, peers: Vec<Multiaddr>) -> Result<()> {
+pub async fn get(name: &str, _peers: Vec<Multiaddr>) -> Result<()> {
     let register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
     println!("Getting value of register: {name} with register key: {register_key}");
     Ok(())
 }
 
-pub fn list(peers: Vec<Multiaddr>) -> Result<()> {
+pub fn list(_peers: Vec<Multiaddr>) -> Result<()> {
     println!("Listing previous registers...");
     Ok(())
 }

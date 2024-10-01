@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use autonomi::client::address::{str_to_xorname, xorname_to_str};
+use autonomi::client::address::xorname_to_str;
 use autonomi::Wallet;
 use autonomi::Multiaddr;
-use color_eyre::eyre::{eyre, Context};
+use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
 use std::path::PathBuf;
 
@@ -50,7 +50,7 @@ pub async fn download(addr: &str, dest_path: &str, peers: Vec<Multiaddr>) -> Res
     crate::actions::download(addr, dest_path, &mut client).await
 }
 
-pub fn list(peers: Vec<Multiaddr>) -> Result<()> {
+pub fn list(_peers: Vec<Multiaddr>) -> Result<()> {
     println!("Listing previous uploads...");
     Ok(())
 }
