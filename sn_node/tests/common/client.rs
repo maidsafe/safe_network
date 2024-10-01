@@ -8,10 +8,11 @@
 
 use eyre::{bail, OptionExt, Result};
 use libp2p::PeerId;
-use sn_client::{
-    acc_packet::{create_faucet_account_and_wallet, load_account_wallet_or_create_with_mnemonic},
-    send, Client,
-};
+/// TODO: Update to use autonomi API here
+// use sn_client::{
+//     acc_packet::{create_faucet_account_and_wallet, load_account_wallet_or_create_with_mnemonic},
+//     send, Client,
+// };
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
 use sn_service_management::{
