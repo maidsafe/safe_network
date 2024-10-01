@@ -33,6 +33,7 @@ enum PortRangeState {
     #[default]
     Selection,
     ConfirmChange,
+    PortForwardingInfo,
 }
 
 pub struct PortRangePopUp {
@@ -185,8 +186,100 @@ impl PortRangePopUp {
         pop_up_border
     }
 
-    // Draws the Confirmation screen
-    fn draw_confirm_change_state(
+    // Draws Confirmation screen
+    fn draw_confirm_and_reset(
+        &mut self,
+        f: &mut crate::tui::Frame<'_>,
+        layer_zero: Rect,
+        layer_one: Rc<[Rect]>,
+    ) -> Paragraph {
+        // layer zero
+        let pop_up_border = Paragraph::new("").block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Confirm & Reset ")
+                .bold()
+                .title_style(Style::new().fg(VIVID_SKY_BLUE))
+                .padding(Padding::uniform(2))
+                .border_style(Style::new().fg(VIVID_SKY_BLUE)),
+        );
+        clear_area(f, layer_zero);
+
+        // split into 3 parts, paragraph, dash, buttons
+        let layer_two = Layout::new(
+            Direction::Vertical,
+            [
+                // for the text
+                Constraint::Length(8),
+                // gap
+                Constraint::Length(3),
+                // for the buttons
+                Constraint::Length(1),
+            ],
+        )
+        .split(layer_one[1]);
+
+        let paragraph_text = Paragraph::new(vec![
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(vec![
+                Span::styled(
+                    "Changing connection mode will ",
+                    Style::default().fg(LIGHT_PERIWINKLE),
+                ),
+                Span::styled("reset all nodes.", Style::default().fg(GHOST_WHITE)),
+            ]),
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(vec![
+                Span::styled("You’ll need to ", Style::default().fg(LIGHT_PERIWINKLE)),
+                Span::styled("Add", Style::default().fg(GHOST_WHITE)),
+                Span::styled(" and ", Style::default().fg(LIGHT_PERIWINKLE)),
+                Span::styled("Start", Style::default().fg(GHOST_WHITE)),
+                Span::styled(
+                    " them again afterwards. Are you sure you want to continue?",
+                    Style::default().fg(LIGHT_PERIWINKLE),
+                ),
+            ]),
+        ])
+        .alignment(Alignment::Left)
+        .wrap(Wrap { trim: true })
+        .block(block::Block::default().padding(Padding::horizontal(2)));
+
+        f.render_widget(paragraph_text, layer_two[0]);
+
+        let dash = Block::new()
+            .borders(Borders::BOTTOM)
+            .border_style(Style::new().fg(GHOST_WHITE));
+        f.render_widget(dash, layer_two[1]);
+
+        let buttons_layer =
+            Layout::horizontal(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(layer_two[2]);
+
+        let button_no = Line::from(vec![Span::styled(
+            "  Cancel [Esc]",
+            Style::default().fg(LIGHT_PERIWINKLE),
+        )]);
+        let button_yes_style = if self.can_save {
+            Style::default().fg(EUCALYPTUS)
+        } else {
+            Style::default().fg(LIGHT_PERIWINKLE)
+        };
+        f.render_widget(button_no, buttons_layer[0]);
+
+        let button_yes = Line::from(vec![
+            Span::styled("Yes, Change Mode ", button_yes_style),
+            Span::styled("[Enter]", Style::default().fg(GHOST_WHITE)),
+        ]);
+        f.render_widget(button_yes, buttons_layer[1]);
+
+        pop_up_border
+    }
+
+    // Draws info regarding router and ports
+    fn draw_info_port_forwarding(
         &mut self,
         f: &mut crate::tui::Frame<'_>,
         layer_zero: Rect,
@@ -204,7 +297,7 @@ impl PortRangePopUp {
         );
         clear_area(f, layer_zero);
 
-        // split into 4 parts, for the prompt, input, text, dash , and buttons
+        // split into 3 parts, 1 paragraph, dash and buttons
         let layer_two = Layout::new(
             Direction::Vertical,
             [
@@ -270,10 +363,11 @@ impl Component for PortRangePopUp {
                             == self.port_from.value().parse::<u32>().unwrap_or_default()
                             && self.port_to_old_value
                                 == self.port_to.value().parse::<u32>().unwrap_or_default()
+                            && self.connection_mode_old_value != Some(ConnectionMode::CustomPorts)
                             && self.can_save
                         {
-                            debug!("Got Enter, but nothing changed, ignoring.");
-                            return Ok(vec![Action::SwitchScene(Scene::Options)]);
+                            self.state = PortRangeState::ConfirmChange;
+                            return Ok(vec![]);
                         }
                         let port_from = self.port_from.value();
                         let port_to = self.port_to.value();
@@ -284,44 +378,45 @@ impl Component for PortRangePopUp {
                         }
                         debug!("Got Enter, saving the ports and switching to Options Screen",);
                         self.state = PortRangeState::ConfirmChange;
-                        vec![
-                            Action::StorePortRange(
-                                self.port_from.value().parse().unwrap_or_default(),
-                                self.port_to.value().parse().unwrap_or_default(),
-                            ),
-                            Action::OptionsActions(OptionsActions::UpdatePortRange(
-                                self.port_from.value().parse().unwrap_or_default(),
-                                self.port_to.value().parse().unwrap_or_default(),
-                            )),
-                        ]
+                        vec![]
                     }
                     KeyCode::Esc => {
                         debug!("Got Esc, restoring the old values and switching to actual screen");
-                        // if the old values are 0 means that is the first time the user opens the app,
-                        // so we should set the connection mode to automatic.
-                        if self.port_from_old_value.to_string() == "0"
-                            && self.port_to_old_value.to_string() == "0"
-                        {
-                            self.connection_mode = self
-                                .connection_mode_old_value
-                                .unwrap_or(ConnectionMode::Automatic);
-                            return Ok(vec![
-                                Action::StoreConnectionMode(self.connection_mode),
+                        if let Some(connection_mode_old_value) = self.connection_mode_old_value {
+                            debug!("{:?}", connection_mode_old_value);
+                            vec![
                                 Action::OptionsActions(OptionsActions::UpdateConnectionMode(
-                                    self.connection_mode,
+                                    connection_mode_old_value,
                                 )),
                                 Action::SwitchScene(Scene::Options),
-                            ]);
+                            ]
+                        } else {
+                            // if the old values are 0 means that is the first time the user opens the app,
+                            // so we should set the connection mode to automatic.
+                            if self.port_from_old_value.to_string() == "0"
+                                && self.port_to_old_value.to_string() == "0"
+                            {
+                                self.connection_mode = self
+                                    .connection_mode_old_value
+                                    .unwrap_or(ConnectionMode::Automatic);
+                                return Ok(vec![
+                                    Action::StoreConnectionMode(self.connection_mode),
+                                    Action::OptionsActions(OptionsActions::UpdateConnectionMode(
+                                        self.connection_mode,
+                                    )),
+                                    Action::SwitchScene(Scene::Options),
+                                ]);
+                            }
+                            self.port_from = self
+                                .port_from
+                                .clone()
+                                .with_value(self.port_from_old_value.to_string());
+                            self.port_to = self
+                                .port_to
+                                .clone()
+                                .with_value(self.port_to_old_value.to_string());
+                            vec![Action::SwitchScene(Scene::Options)]
                         }
-                        self.port_from = self
-                            .port_from
-                            .clone()
-                            .with_value(self.port_from_old_value.to_string());
-                        self.port_to = self
-                            .port_to
-                            .clone()
-                            .with_value(self.port_to_old_value.to_string());
-                        vec![Action::SwitchScene(Scene::Options)]
                     }
                     KeyCode::Char(c) if !c.is_numeric() => vec![],
                     KeyCode::Up => {
@@ -393,6 +488,52 @@ impl Component for PortRangePopUp {
             }
             PortRangeState::ConfirmChange => match key.code {
                 KeyCode::Enter => {
+                    self.state = PortRangeState::PortForwardingInfo;
+                    vec![
+                        Action::StoreConnectionMode(ConnectionMode::CustomPorts),
+                        Action::OptionsActions(OptionsActions::UpdateConnectionMode(
+                            ConnectionMode::CustomPorts,
+                        )),
+                        Action::StorePortRange(
+                            self.port_from.value().parse().unwrap_or_default(),
+                            self.port_to.value().parse().unwrap_or_default(),
+                        ),
+                        Action::OptionsActions(OptionsActions::UpdatePortRange(
+                            self.port_from.value().parse().unwrap_or_default(),
+                            self.port_to.value().parse().unwrap_or_default(),
+                        )),
+                    ]
+                }
+                KeyCode::Esc => {
+                    self.state = PortRangeState::Selection;
+                    if let Some(connection_mode_old_value) = self.connection_mode_old_value {
+                        if self.port_from_old_value != 0 && self.port_to_old_value != 0 {
+                            vec![
+                                Action::OptionsActions(OptionsActions::UpdateConnectionMode(
+                                    connection_mode_old_value,
+                                )),
+                                Action::OptionsActions(OptionsActions::UpdatePortRange(
+                                    self.port_from_old_value,
+                                    self.port_to_old_value,
+                                )),
+                                Action::SwitchScene(Scene::Options),
+                            ]
+                        } else {
+                            vec![
+                                Action::OptionsActions(OptionsActions::UpdateConnectionMode(
+                                    connection_mode_old_value,
+                                )),
+                                Action::SwitchScene(Scene::Options),
+                            ]
+                        }
+                    } else {
+                        vec![Action::SwitchScene(Scene::Options)]
+                    }
+                }
+                _ => vec![],
+            },
+            PortRangeState::PortForwardingInfo => match key.code {
+                KeyCode::Enter => {
                     debug!("Got Enter, saving the ports and switching to Status Screen",);
                     self.state = PortRangeState::Selection;
                     vec![Action::SwitchScene(Scene::Status)]
@@ -462,8 +603,9 @@ impl Component for PortRangePopUp {
 
         let pop_up_border: Paragraph = match self.state {
             PortRangeState::Selection => self.draw_selection_state(f, layer_zero, layer_one),
-            PortRangeState::ConfirmChange => {
-                self.draw_confirm_change_state(f, layer_zero, layer_one)
+            PortRangeState::ConfirmChange => self.draw_confirm_and_reset(f, layer_zero, layer_one),
+            PortRangeState::PortForwardingInfo => {
+                self.draw_info_port_forwarding(f, layer_zero, layer_one)
             }
         };
         // We render now so the borders are on top of the other widgets

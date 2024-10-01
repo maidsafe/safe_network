@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::default::Default;
+use std::{default::Default, rc::Rc};
 
 use super::super::utils::centered_rect_fixed;
 
@@ -16,7 +16,9 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph},
+    widgets::{
+        Block, Borders, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph, Wrap,
+    },
 };
 use strum::IntoEnumIterator;
 
@@ -32,8 +34,16 @@ use crate::{
 };
 
 #[derive(Default)]
+enum ChangeConnectionModeState {
+    #[default]
+    Selection,
+    ConfirmChange,
+}
+
+#[derive(Default)]
 pub struct ChangeConnectionModePopUp {
     active: bool,
+    state: ChangeConnectionModeState,
     items: StatefulList<ConnectionModeItem>,
     connection_mode_selection: ConnectionModeItem,
     connection_mode_initial_state: ConnectionModeItem,
@@ -61,6 +71,7 @@ impl ChangeConnectionModePopUp {
         let items = StatefulList::with_items(connection_modes_items);
         Ok(Self {
             active: false,
+            state: ChangeConnectionModeState::Selection,
             items,
             connection_mode_selection: selected_connection_mode.clone(),
             connection_mode_initial_state: selected_connection_mode.clone(),
@@ -106,120 +117,15 @@ impl ChangeConnectionModePopUp {
         }
         ConnectionModeItem::default()
     }
-}
 
-impl Component for ChangeConnectionModePopUp {
-    fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
-        if !self.active {
-            return Ok(vec![]);
-        }
-        let send_back: Vec<Action> = match key.code {
-            KeyCode::Enter => {
-                // We allow action if we have more than one connection mode and the action is not
-                // over the connection mode already selected
-                let connection_mode = self.return_selection();
-                if connection_mode.connection_mode != self.connection_mode_selection.connection_mode
-                {
-                    debug!(
-                                "Got Enter and there's a new selection, storing value and switching to Options"
-                            );
-                    debug!("Connection Mode selected: {:?}", connection_mode);
-                    self.connection_mode_initial_state = self.connection_mode_selection.clone();
-                    self.assign_connection_mode_selection();
-                    vec![
-                        Action::StoreConnectionMode(self.connection_mode_selection.connection_mode),
-                        Action::OptionsActions(OptionsActions::UpdateConnectionMode(
-                            connection_mode.clone().connection_mode,
-                        )),
-                        if connection_mode.connection_mode == ConnectionMode::CustomPorts {
-                            Action::SwitchScene(Scene::ChangePortsPopUp {
-                                connection_mode_old_value: Some(
-                                    self.connection_mode_initial_state.connection_mode,
-                                ),
-                            })
-                        } else {
-                            Action::SwitchScene(Scene::Status)
-                        },
-                    ]
-                } else {
-                    debug!("Got Enter, but no new selection. We should not do anything");
-                    vec![Action::SwitchScene(Scene::ChangeConnectionModePopUp)]
-                }
-            }
-            KeyCode::Esc => {
-                debug!("Got Esc, switching to Options");
-                vec![Action::SwitchScene(Scene::Options)]
-            }
-            KeyCode::Up => {
-                if self.items.items.len() > 1 {
-                    self.items.previous();
-                    let connection_mode = self.return_selection();
-                    self.can_select = connection_mode.connection_mode
-                        != self.connection_mode_selection.connection_mode;
-                }
-                vec![]
-            }
-            KeyCode::Down => {
-                if self.items.items.len() > 1 {
-                    self.items.next();
-                    let connection_mode = self.return_selection();
-                    self.can_select = connection_mode.connection_mode
-                        != self.connection_mode_selection.connection_mode;
-                }
-                vec![]
-            }
-            _ => {
-                vec![]
-            }
-        };
-        Ok(send_back)
-    }
+    // Draw functions
 
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        let send_back = match action {
-            Action::SwitchScene(scene) => match scene {
-                Scene::ChangeConnectionModePopUp => {
-                    self.active = true;
-                    self.can_select = false;
-                    self.select_connection_mode();
-                    Some(Action::SwitchInputMode(InputMode::Entry))
-                }
-                _ => {
-                    self.active = false;
-                    None
-                }
-            },
-            // Useful when the user has selected a connection mode but didn't confirm it
-            Action::OptionsActions(OptionsActions::UpdateConnectionMode(connection_mode)) => {
-                self.connection_mode_selection.connection_mode = connection_mode;
-                self.select_connection_mode();
-                None
-            }
-            _ => None,
-        };
-        Ok(send_back)
-    }
-
-    fn draw(&mut self, f: &mut crate::tui::Frame<'_>, area: Rect) -> Result<()> {
-        if !self.active {
-            return Ok(());
-        }
-
-        let layer_zero = centered_rect_fixed(52, 15, area);
-
-        let layer_one = Layout::new(
-            Direction::Vertical,
-            [
-                // Padding from title to the table
-                Constraint::Length(1),
-                // Table
-                Constraint::Min(1),
-                // for the pop_up_border
-                Constraint::Length(1),
-            ],
-        )
-        .split(layer_zero);
-
+    fn draw_selection_state(
+        &mut self,
+        f: &mut crate::tui::Frame<'_>,
+        layer_zero: Rect,
+        layer_one: Rc<[Rect]>,
+    ) -> Paragraph {
         let pop_up_border: Paragraph = Paragraph::new("").block(
             Block::default()
                 .borders(Borders::ALL)
@@ -305,7 +211,248 @@ impl Component for ChangeConnectionModePopUp {
             buttons_layer[1],
         );
 
-        // We render now so the borders are on top of the other widgets
+        pop_up_border
+    }
+
+    fn draw_confirm_change(
+        &mut self,
+        f: &mut crate::tui::Frame<'_>,
+        layer_zero: Rect,
+        layer_one: Rc<[Rect]>,
+    ) -> Paragraph {
+        // layer zero
+        let pop_up_border = Paragraph::new("").block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Confirm & Reset ")
+                .bold()
+                .title_style(Style::new().fg(VIVID_SKY_BLUE))
+                .padding(Padding::uniform(2))
+                .border_style(Style::new().fg(VIVID_SKY_BLUE)),
+        );
+        clear_area(f, layer_zero);
+
+        // split into 3 parts, paragraph, dash, buttons
+        let layer_two = Layout::new(
+            Direction::Vertical,
+            [
+                // for the text
+                Constraint::Length(9),
+                // gap
+                Constraint::Length(3),
+                // for the buttons
+                Constraint::Length(1),
+            ],
+        )
+        .split(layer_one[1]);
+
+        let paragraph_text = Paragraph::new(vec![
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(vec![
+                Span::styled(
+                    "Changing connection mode will ",
+                    Style::default().fg(LIGHT_PERIWINKLE),
+                ),
+                Span::styled("reset all nodes.", Style::default().fg(GHOST_WHITE)),
+            ]),
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(vec![
+                Span::styled("You’ll need to ", Style::default().fg(LIGHT_PERIWINKLE)),
+                Span::styled("Add", Style::default().fg(GHOST_WHITE)),
+                Span::styled(" and ", Style::default().fg(LIGHT_PERIWINKLE)),
+                Span::styled("Start", Style::default().fg(GHOST_WHITE)),
+                Span::styled(
+                    " them again afterwards. Are you sure you want to continue?",
+                    Style::default().fg(LIGHT_PERIWINKLE),
+                ),
+            ]),
+        ])
+        .alignment(Alignment::Left)
+        .wrap(Wrap { trim: true })
+        .block(Block::default().padding(Padding::horizontal(2)));
+
+        f.render_widget(paragraph_text, layer_two[0]);
+
+        let dash = Block::new()
+            .borders(Borders::BOTTOM)
+            .border_style(Style::new().fg(GHOST_WHITE));
+        f.render_widget(dash, layer_two[1]);
+
+        let buttons_layer =
+            Layout::horizontal(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(layer_two[2]);
+
+        let button_no = Line::from(vec![Span::styled(
+            "  Cancel [Esc]",
+            Style::default().fg(LIGHT_PERIWINKLE),
+        )]);
+        let button_yes_style = if self.can_select {
+            Style::default().fg(EUCALYPTUS)
+        } else {
+            Style::default().fg(LIGHT_PERIWINKLE)
+        };
+        f.render_widget(button_no, buttons_layer[0]);
+
+        let button_yes = Line::from(vec![
+            Span::styled("Yes, Change Mode ", button_yes_style),
+            Span::styled("[Enter]", Style::default().fg(GHOST_WHITE)),
+        ]);
+        f.render_widget(button_yes, buttons_layer[1]);
+
+        pop_up_border
+    }
+}
+
+impl Component for ChangeConnectionModePopUp {
+    fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
+        if !self.active {
+            return Ok(vec![]);
+        }
+        let send_back: Vec<Action> = match &self.state {
+            ChangeConnectionModeState::Selection => match key.code {
+                KeyCode::Enter => {
+                    let connection_mode = self.return_selection();
+                    self.connection_mode_initial_state = self.connection_mode_selection.clone();
+                    if connection_mode.connection_mode == ConnectionMode::CustomPorts {
+                        vec![
+                            Action::OptionsActions(OptionsActions::UpdateConnectionMode(
+                                ConnectionMode::CustomPorts,
+                            )),
+                            Action::SwitchScene(Scene::ChangePortsPopUp {
+                                connection_mode_old_value: Some(
+                                    self.connection_mode_initial_state.connection_mode,
+                                ),
+                            }),
+                        ]
+                    } else {
+                        self.state = ChangeConnectionModeState::ConfirmChange;
+                        vec![]
+                    }
+                }
+                KeyCode::Esc => {
+                    debug!("Got Esc, switching to Options");
+                    vec![Action::SwitchScene(Scene::Options)]
+                }
+                KeyCode::Up => {
+                    if self.items.items.len() > 1 {
+                        self.items.previous();
+                        let connection_mode = self.return_selection();
+                        self.can_select = connection_mode.connection_mode
+                            != self.connection_mode_selection.connection_mode;
+                    }
+                    vec![]
+                }
+                KeyCode::Down => {
+                    if self.items.items.len() > 1 {
+                        self.items.next();
+                        let connection_mode = self.return_selection();
+                        self.can_select = connection_mode.connection_mode
+                            != self.connection_mode_selection.connection_mode;
+                    }
+                    vec![]
+                }
+                _ => {
+                    vec![]
+                }
+            },
+            ChangeConnectionModeState::ConfirmChange => match key.code {
+                KeyCode::Enter => {
+                    self.state = ChangeConnectionModeState::Selection;
+                    // We allow action if we have more than one connection mode and the action is not
+                    // over the connection mode already selected
+                    let connection_mode = self.return_selection();
+                    if connection_mode.connection_mode
+                        != self.connection_mode_selection.connection_mode
+                    {
+                        debug!(
+                                        "Got Enter and there's a new selection, storing value and switching to Options"
+                                    );
+                        debug!("Connection Mode selected: {:?}", connection_mode);
+                        self.connection_mode_initial_state = self.connection_mode_selection.clone();
+                        self.assign_connection_mode_selection();
+                        vec![
+                            Action::StoreConnectionMode(
+                                self.connection_mode_selection.connection_mode,
+                            ),
+                            Action::OptionsActions(OptionsActions::UpdateConnectionMode(
+                                connection_mode.clone().connection_mode,
+                            )),
+                            Action::SwitchScene(Scene::Status),
+                        ]
+                    } else {
+                        debug!("Got Enter, but no new selection. We should not do anything");
+                        vec![Action::SwitchScene(Scene::ChangeConnectionModePopUp)]
+                    }
+                }
+                KeyCode::Esc => {
+                    self.state = ChangeConnectionModeState::Selection;
+                    vec![Action::SwitchScene(Scene::Options)]
+                }
+                _ => {
+                    vec![]
+                }
+            },
+        };
+        Ok(send_back)
+    }
+
+    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+        let send_back = match action {
+            Action::SwitchScene(scene) => match scene {
+                Scene::ChangeConnectionModePopUp => {
+                    self.active = true;
+                    self.can_select = false;
+                    self.select_connection_mode();
+                    Some(Action::SwitchInputMode(InputMode::Entry))
+                }
+                _ => {
+                    self.active = false;
+                    None
+                }
+            },
+            // Useful when the user has selected a connection mode but didn't confirm it
+            Action::OptionsActions(OptionsActions::UpdateConnectionMode(connection_mode)) => {
+                self.connection_mode_selection.connection_mode = connection_mode;
+                self.select_connection_mode();
+                None
+            }
+            _ => None,
+        };
+        Ok(send_back)
+    }
+
+    fn draw(&mut self, f: &mut crate::tui::Frame<'_>, area: Rect) -> Result<()> {
+        if !self.active {
+            return Ok(());
+        }
+
+        let layer_zero = centered_rect_fixed(52, 15, area);
+
+        let layer_one = Layout::new(
+            Direction::Vertical,
+            [
+                // Padding from title to the table
+                Constraint::Length(1),
+                // Table
+                Constraint::Min(1),
+                // for the pop_up_border
+                Constraint::Length(1),
+            ],
+        )
+        .split(layer_zero);
+
+        let pop_up_border: Paragraph = match self.state {
+            ChangeConnectionModeState::Selection => {
+                self.draw_selection_state(f, layer_zero, layer_one)
+            }
+            ChangeConnectionModeState::ConfirmChange => {
+                self.draw_confirm_change(f, layer_zero, layer_one)
+            }
+        };
+
         f.render_widget(pop_up_border, layer_zero);
 
         Ok(())
