@@ -14,7 +14,6 @@ async fn put() {
     let network = evm_network_from_env();
     let mut client = Client::connect(&[]).await.unwrap();
     let wallet = evm_wallet_from_env_or_default(network);
-
     let data = common::gen_random_data(1024 * 1024 * 10);
 
     // let quote = client.quote(data.clone()).await.unwrap();

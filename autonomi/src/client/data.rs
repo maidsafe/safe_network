@@ -12,16 +12,20 @@ use crate::{self_encryption::encrypt, Client};
 use evmlib::common::{QuoteHash, QuotePayment, TxHash};
 use evmlib::wallet::Wallet;
 use libp2p::futures;
+use rand::{thread_rng, Rng};
 use sn_evm::ProofOfPayment;
 use sn_networking::PutRecordCfg;
-use sn_networking::{GetRecordCfg, Network, NetworkError, PayeeQuote};
+use sn_networking::{GetRecordCfg, Network, NetworkError, PayeeQuote, VerificationKind};
 use sn_protocol::{
+    messages::ChunkProof,
     storage::{
-        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind,
+        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
+        RecordKind, RetryStrategy,
     },
     NetworkAddress,
 };
 use std::collections::{BTreeMap, HashMap};
+use std::num::NonZero;
 
 /// Errors that can occur during the put operation.
 #[derive(Debug, thiserror::Error)]
@@ -249,11 +253,35 @@ impl Client {
             expires: None,
         };
 
+        let verification = {
+            let verification_cfg = GetRecordCfg {
+                get_quorum: Quorum::N(NonZero::new(2).expect("2 is non-zero")),
+                retry_strategy: Some(RetryStrategy::Quick),
+                target_record: None,
+                expected_holders: Default::default(),
+                is_register: false,
+            };
+
+            let stored_on_node = try_serialize_record(&chunk, RecordKind::Chunk)
+                .map_err(|_| PutError::Serialization)?
+                .to_vec();
+            let random_nonce = thread_rng().gen::<u64>();
+            let expected_proof = ChunkProof::new(&stored_on_node, random_nonce);
+
+            Some((
+                VerificationKind::ChunkProof {
+                    expected_proof,
+                    nonce: random_nonce,
+                },
+                verification_cfg,
+            ))
+        };
+
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
-            retry_strategy: None,
+            retry_strategy: Some(RetryStrategy::Balanced),
             use_put_record_to: Some(vec![storing_node]),
-            verification: None,
+            verification,
         };
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
