@@ -8,7 +8,7 @@
 
 use crate::add_services::config::PortRange;
 use crate::helpers::{
-    check_port_availability, get_bin_version, get_start_port_if_applicable, get_username,
+    check_port_availability, get_bin_version, get_start_port_if_applicable,
     increment_port_option,
 };
 use color_eyre::eyre::OptionExt;
@@ -22,10 +22,8 @@ use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_service_management::{
     control::ServiceControl,
-    rpc::{RpcActions, RpcClient},
-    FaucetServiceData, NodeRegistry, NodeServiceData, ServiceStatus,
+    rpc::{RpcActions, RpcClient}, NodeRegistry, NodeServiceData, ServiceStatus,
 };
-use sn_transfers::get_faucet_data_dir;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,

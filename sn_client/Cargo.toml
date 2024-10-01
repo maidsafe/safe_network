@@ -67,7 +67,7 @@ assert_matches = "1.5.0"
 dirs-next = "~2.0.0"
 # add rand to libp2p
 libp2p-identity = { version = "0.2.7", features = ["rand"] }
-sn_client = { path = "../sn_client", features = ["test-utils"] }
+# sn_client = { path = "../sn_client", features = ["test-utils"] }
 sn_logging = { path = "../sn_logging", version = "0.2.34" }
 sn_registers = { path = "../sn_registers", version = "0.3.19", features = [
     "test-utils",
