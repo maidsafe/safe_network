@@ -390,7 +390,7 @@ impl Component for Status {
                 }
                 StatusActions::ErrorScalingUpNodes { raw_error } => {
                     self.error_popup = Some(ErrorPopup::new(
-                        "Erro ".to_string(),
+                        "Error".to_string(),
                         "Error adding new nodes".to_string(),
                         raw_error,
                     ));
