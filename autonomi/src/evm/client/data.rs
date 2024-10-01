@@ -1,9 +1,10 @@
 use crate::client::data::{Data, PayError, PutError};
-use crate::client::ClientWrapper;
-use crate::evm::client::EvmClient;
+use crate::evm::client::Client;
 use crate::self_encryption::encrypt;
 use bytes::Bytes;
 use evmlib::common::{QuoteHash, QuotePayment, TxHash};
+
+#[cfg(feature = "evm-payments")]
 use evmlib::wallet::Wallet;
 use libp2p::futures;
 use libp2p::kad::{Quorum, Record};
@@ -17,9 +18,7 @@ use sn_protocol::{
 use std::collections::{BTreeMap, HashMap};
 use xor_name::XorName;
 
-impl Data for EvmClient {}
-
-impl EvmClient {
+impl Client {
     /// Upload a piece of data to the network. This data will be self-encrypted,
     /// and the data map XOR address will be returned.
     pub async fn put(&mut self, data: Bytes, wallet: &Wallet) -> Result<XorName, PutError> {
@@ -57,6 +56,7 @@ impl EvmClient {
     pub(crate) async fn pay(
         &mut self,
         content_addrs: impl Iterator<Item = XorName>,
+        [cfg::feature = "vault"]
         wallet: &Wallet,
     ) -> Result<(HashMap<XorName, ProofOfPayment>, Vec<XorName>), PayError> {
         let cost_map = self.get_store_quotes(content_addrs).await?;

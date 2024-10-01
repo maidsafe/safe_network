@@ -12,7 +12,8 @@ use sn_evm::ProofOfPayment;
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     storage::{
-        try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType, Scratchpad, SpendAddress
+        try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
+        Scratchpad, SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };

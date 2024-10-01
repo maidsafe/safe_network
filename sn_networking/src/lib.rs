@@ -379,7 +379,9 @@ impl Network {
                 }) => {
                     // Check the quote itself is valid.
                     if quote.cost
-                        != AttoTokens::from_u64(calculate_cost_for_records(quote.quoting_metrics.close_records_stored))
+                        != AttoTokens::from_u64(calculate_cost_for_records(
+                            quote.quoting_metrics.close_records_stored,
+                        ))
                     {
                         warn!("Received invalid quote from {peer_address:?}, {quote:?}");
                         continue;

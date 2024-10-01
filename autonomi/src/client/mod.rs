@@ -169,25 +169,3 @@ async fn handle_event_receiver(
 
     // TODO: Handle closing of network events sender
 }
-
-pub trait ClientWrapper {
-    fn from_client(client: Client) -> Self;
-
-    fn client(&self) -> &Client;
-
-    fn client_mut(&mut self) -> &mut Client;
-
-    fn into_client(self) -> Client;
-
-    fn network(&self) -> &Network {
-        &self.client().network
-    }
-
-    async fn connect(peers: &[Multiaddr]) -> Result<Self, ConnectError>
-    where
-        Self: Sized,
-    {
-        let client = Client::connect(peers).await?;
-        Ok(Self::from_client(client))
-    }
-}

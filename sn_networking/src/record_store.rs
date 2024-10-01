@@ -964,7 +964,9 @@ mod tests {
     use quickcheck::*;
     use sn_evm::utils::dummy_address;
     use sn_evm::{PaymentQuote, RewardsAddress};
-    use sn_protocol::storage::{try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, Scratchpad};
+    use sn_protocol::storage::{
+        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, Scratchpad,
+    };
     use std::collections::BTreeMap;
     use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
     use tokio::runtime::Runtime;
@@ -1656,8 +1658,10 @@ mod tests {
                         peer.records_stored.fetch_add(1, Ordering::Relaxed);
 
                         if peer_index == payee_index {
-                            peer.nanos_earned
-                                .fetch_add(cost.as_atto().try_into().unwrap_or(u64::MAX), Ordering::Relaxed);
+                            peer.nanos_earned.fetch_add(
+                                cost.as_atto().try_into().unwrap_or(u64::MAX),
+                                Ordering::Relaxed,
+                            );
                             peer.payments_received.fetch_add(1, Ordering::Relaxed);
                         }
                     }
