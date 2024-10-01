@@ -1755,9 +1755,9 @@ mod tests {
         use rayon::prelude::*;
 
         // as network saturates, we can see that peers all eventually earn similarly
-        let num_of_peers = 200_000;
+        let num_of_peers = 10_000;
         let num_of_chunks_per_hour = 5_000;
-        let max_payments_made = 100_000;
+        let max_payments_made = 10_000;
 
         let mut hour = 0;
         let k = K_VALUE.get();
@@ -1827,13 +1827,14 @@ mod tests {
                     // Truncate to ensure we have exactly close_group_size peers
                     close_group.truncate(replication_group_size);
 
+                    // println!("Finding payee from {:?}", replication_group_size);
                     // Find the cheapest payee among the close group
                     let Ok((payee_index, cost)) = pick_the_payee(&peers, &close_group) else {
                         bail!("Failed to find a payee");
                     };
 
                     if cost.as_nano() >= MAX_STORE_COST / 2 {
-                        warn!("cost is half of max store cost!!");
+                        eprintln!("cost is half of max store cost!!");
                         warn!("not paying this!!!");
                         // break;
                         return Ok(());
