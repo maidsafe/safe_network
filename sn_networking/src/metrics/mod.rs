@@ -12,11 +12,13 @@ pub mod service;
 #[cfg(feature = "upnp")]
 mod upnp;
 
-#[cfg(feature = "open-metrics")]
 use crate::MetricsRegistries;
 use crate::{log_markers::Marker, target_arch::sleep};
-use bad_node::{ShunnedCountAcrossTimeFrames, TimeFrame};
-use libp2p::metrics::{Metrics as Libp2pMetrics, Recorder};
+use bad_node::{BadNodeMetrics, BadNodeMetricsMsg, TimeFrame};
+use libp2p::{
+    metrics::{Metrics as Libp2pMetrics, Recorder},
+    PeerId,
+};
 use prometheus_client::{
     metrics::family::Family,
     metrics::{counter::Counter, gauge::Gauge},
@@ -52,16 +54,20 @@ pub(crate) struct NetworkMetricsRecorder {
 
     // bad node metrics
     bad_peers_count: Counter,
-    #[allow(dead_code)] // This is updated by the background task
-    shunned_across_time_frames: Family<TimeFrame, Gauge>,
     shunned_count: Counter,
+    #[allow(dead_code)] // updated by background task
+    shunned_count_across_time_frames: Family<TimeFrame, Gauge>,
+    #[allow(dead_code)]
+    shunned_by_close_group: Gauge,
+    #[allow(dead_code)]
+    shunned_by_old_close_group: Gauge,
 
     // system info
     process_memory_used_mb: Gauge,
     process_cpu_usage_percentage: Gauge,
 
     // helpers
-    shunned_report_notifier: tokio::sync::mpsc::Sender<()>,
+    bad_nodes_notifier: tokio::sync::mpsc::Sender<BadNodeMetricsMsg>,
 }
 
 impl NetworkMetricsRecorder {
@@ -181,13 +187,29 @@ impl NetworkMetricsRecorder {
             .extended_metrics
             .sub_registry_with_prefix("sn_networking");
         let shunned_count_across_time_frames = Family::default();
-        let shunned_report_notifier = ShunnedCountAcrossTimeFrames::spawn_background_task(
-            shunned_count_across_time_frames.clone(),
-        );
         extended_metrics_sub_registry.register(
             "shunned_count_across_time_frames",
-            "The number of peers that have been shunned across different time frames",
+            "The number of times our node has been shunned by other nodes across different time frames",
             shunned_count_across_time_frames.clone(),
+        );
+
+        let shunned_by_close_group = Gauge::default();
+        extended_metrics_sub_registry.register(
+            "shunned_by_close_group",
+            "The number of close group peers that have shunned our node",
+            shunned_by_close_group.clone(),
+        );
+
+        let shunned_by_old_close_group = Gauge::default();
+        extended_metrics_sub_registry.register(
+            "shunned_by_old_close_group",
+            "The number of close group peers that have shunned our node. This contains the peers that were once in our close group but have since been evicted.",
+            shunned_by_old_close_group.clone(),
+        );
+        let bad_nodes_notifier = BadNodeMetrics::spawn_background_task(
+            shunned_count_across_time_frames.clone(),
+            shunned_by_close_group.clone(),
+            shunned_by_old_close_group.clone(),
         );
 
         let network_metrics = Self {
@@ -207,13 +229,15 @@ impl NetworkMetricsRecorder {
             live_time,
 
             bad_peers_count,
-            shunned_across_time_frames: shunned_count_across_time_frames,
+            shunned_count_across_time_frames,
             shunned_count,
+            shunned_by_close_group,
+            shunned_by_old_close_group,
 
             process_memory_used_mb,
             process_cpu_usage_percentage,
 
-            shunned_report_notifier,
+            bad_nodes_notifier,
         };
 
         network_metrics.system_metrics_recorder_task();
@@ -255,11 +279,15 @@ impl NetworkMetricsRecorder {
             Marker::PeerConsideredAsBad { .. } => {
                 let _ = self.bad_peers_count.inc();
             }
-            Marker::FlaggedAsBadNode { .. } => {
+            Marker::FlaggedAsBadNode { flagged_by } => {
                 let _ = self.shunned_count.inc();
-                let shunned_report_notifier = self.shunned_report_notifier.clone();
+                let bad_nodes_notifier = self.bad_nodes_notifier.clone();
+                let flagged_by = *flagged_by;
                 crate::target_arch::spawn(async move {
-                    if let Err(err) = shunned_report_notifier.send(()).await {
+                    if let Err(err) = bad_nodes_notifier
+                        .send(BadNodeMetricsMsg::ShunnedByPeer(flagged_by))
+                        .await
+                    {
                         error!("Failed to send shunned report via notifier: {err:?}");
                     }
                 });
@@ -280,6 +308,18 @@ impl NetworkMetricsRecorder {
             }
             _ => {}
         }
+    }
+
+    pub(crate) fn record_change_in_close_group(&self, new_close_group: Vec<PeerId>) {
+        let bad_nodes_notifier = self.bad_nodes_notifier.clone();
+        crate::target_arch::spawn(async move {
+            if let Err(err) = bad_nodes_notifier
+                .send(BadNodeMetricsMsg::CloseGroupUpdated(new_close_group))
+                .await
+            {
+                error!("Failed to send shunned report via notifier: {err:?}");
+            }
+        });
     }
 }
 
