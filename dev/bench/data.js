@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727814055605,
+  "lastUpdate": 1727814057832,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "lmazzitelli@gmail.com",
-            "name": "Lautaro Mazzitelli",
-            "username": "mazzi"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "46e4b9881906eb538da600f2e589283a560ec77f",
-          "message": "refactor(launchpad): removing redudnat for loops",
-          "timestamp": "2024-05-14T12:02:37Z",
-          "tree_id": "65194ac51f04239cdfba602eb14c89efead92e99",
-          "url": "https://github.com/maidsafe/safe_network/commit/46e4b9881906eb538da600f2e589283a560ec77f"
-        },
-        "date": 1715691197854,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 14788,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 93703,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 6,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 56746,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "6c859ffe5ebd889a9366d31b1eb53f32cf55604e",
+          "message": "Merge branch 'hotfix-2024.10.1.2'",
+          "timestamp": "2024-10-01T21:05:28+01:00",
+          "tree_id": "ecd4259fd477c48c5645c5d9001db7a7873bd49c",
+          "url": "https://github.com/maidsafe/safe_network/commit/6c859ffe5ebd889a9366d31b1eb53f32cf55604e"
+        },
+        "date": 1727814057048,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 17813,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 59938,
             "unit": "ms"
           },
           {
