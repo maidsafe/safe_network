@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727789711230,
+  "lastUpdate": 1727789837749,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "grumbach"
           },
           "distinct": true,
-          "id": "16f4b607f11968e0780194d430206a8810d30dc9",
-          "message": "chore: resolve errors after reverts",
-          "timestamp": "2024-05-13T14:15:51Z",
-          "tree_id": "2f903e8686b1d92430d44bcb6c13f2e3c132394d",
-          "url": "https://github.com/maidsafe/safe_network/commit/16f4b607f11968e0780194d430206a8810d30dc9"
-        },
-        "date": 1715612954884,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 56,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
           "id": "f2fc4c4a4a4a6778643d0900fcf229baabf927aa",
           "message": "feat(audit): intercept sender of the payment forward",
           "timestamp": "2024-05-13T18:21:09Z",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 128,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "782b7352c3a494787414a360e33f1daeca6a1da9",
+          "message": "Merge pull request #2157 from RolandSherwin/metrics_shunned\n\nfeat(metrics): shunned count across time frames",
+          "timestamp": "2024-10-01T12:41:42Z",
+          "tree_id": "8a609f44a5c8efb0201974535151b98b2fb51a5e",
+          "url": "https://github.com/maidsafe/safe_network/commit/782b7352c3a494787414a360e33f1daeca6a1da9"
+        },
+        "date": 1727789836918,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 119,
             "unit": "MB"
           }
         ]
