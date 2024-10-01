@@ -10,6 +10,7 @@ use autonomi::Multiaddr;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
 
+#[expect(clippy::unused_async)]
 pub async fn cost(name: &str, _peers: Vec<Multiaddr>) -> Result<()> {
     let register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
@@ -17,6 +18,7 @@ pub async fn cost(name: &str, _peers: Vec<Multiaddr>) -> Result<()> {
     Ok(())
 }
 
+#[expect(clippy::unused_async)]
 pub async fn create(name: &str, value: &str, _peers: Vec<Multiaddr>) -> Result<()> {
     let secret_key = crate::utils::get_secret_key()
         .wrap_err("The secret key is required to perform this action")?;
@@ -28,6 +30,7 @@ pub async fn create(name: &str, value: &str, _peers: Vec<Multiaddr>) -> Result<(
     Ok(())
 }
 
+#[expect(clippy::unused_async)]
 pub async fn edit(name: &str, value: &str, _peers: Vec<Multiaddr>) -> Result<()> {
     let register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
@@ -35,6 +38,7 @@ pub async fn edit(name: &str, value: &str, _peers: Vec<Multiaddr>) -> Result<()>
     Ok(())
 }
 
+#[expect(clippy::unused_async)]
 pub async fn get(name: &str, _peers: Vec<Multiaddr>) -> Result<()> {
     let register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;

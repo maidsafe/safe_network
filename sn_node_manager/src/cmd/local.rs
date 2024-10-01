@@ -65,9 +65,9 @@ pub async fn join(
     #[cfg(feature = "faucet")]
     let faucet_bin_path = get_bin_path(
         build,
-        faucet_path,
+        _faucet_path,
         ReleaseType::Faucet,
-        faucet_version,
+        _faucet_version,
         &*release_repo,
         verbosity,
     )
@@ -200,9 +200,9 @@ pub async fn run(
     #[cfg(feature = "faucet")]
     let faucet_bin_path = get_bin_path(
         build,
-        faucet_path,
+        _faucet_path,
         ReleaseType::Faucet,
-        faucet_version,
+        _faucet_version,
         &*release_repo,
         verbosity,
     )

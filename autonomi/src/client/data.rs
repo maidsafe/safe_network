@@ -202,8 +202,8 @@ impl Client {
         let cost_map = self.get_store_quotes(content_addrs.into_iter()).await?;
         let total_cost = AttoTokens::from_atto(
             cost_map
-                .iter()
-                .map(|(_, quote)| quote.2.cost.as_atto())
+                .values()
+                .map(|quote| quote.2.cost.as_atto())
                 .sum::<Amount>(),
         );
         Ok(total_cost)
