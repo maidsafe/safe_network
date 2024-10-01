@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727805028084,
+  "lastUpdate": 1727805029506,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "cde4ca449b4e1ff4089db0ef43096d640d5ce2b2",
-          "message": "test(networking): update tests for pricing curve tweaks",
-          "timestamp": "2024-05-14T08:29:36Z",
-          "tree_id": "9047dee2d07b5ea3ac9cfa79e7e0c651cd4b7f01",
-          "url": "https://github.com/maidsafe/safe_network/commit/cde4ca449b4e1ff4089db0ef43096d640d5ce2b2"
-        },
-        "date": 1715678722082,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 13460,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 86802,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 6,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "lmazzitelli@gmail.com",
             "name": "Lautaro Mazzitelli",
             "username": "mazzi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 64680,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b1cdb5d983e03d460ccbd0d8da069ddef83d6b7c",
+          "message": "Merge pull request #2169 from RolandSherwin/manager_cargo_dir\n\nfix(manager): use the correct cargo target dir during local build",
+          "timestamp": "2024-10-01T17:01:24Z",
+          "tree_id": "95b59c4397e020e04725df9dbec9acdab3a24ddb",
+          "url": "https://github.com/maidsafe/safe_network/commit/b1cdb5d983e03d460ccbd0d8da069ddef83d6b7c"
+        },
+        "date": 1727805029207,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 17197,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 56746,
             "unit": "ms"
           },
           {
