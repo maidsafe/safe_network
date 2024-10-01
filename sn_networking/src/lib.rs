@@ -19,8 +19,6 @@ mod external_address;
 mod log_markers;
 #[cfg(feature = "open-metrics")]
 mod metrics;
-#[cfg(feature = "open-metrics")]
-mod metrics_service;
 mod network_discovery;
 mod record_store;
 mod record_store_api;
@@ -35,8 +33,6 @@ use cmd::LocalSwarmCmd;
 use xor_name::XorName;
 
 // re-export arch dependent deps for use in the crate, or above
-pub use target_arch::{interval, sleep, spawn, Instant, Interval};
-
 pub use self::{
     cmd::{NodeIssue, SwarmLocalState},
     driver::{
@@ -47,6 +43,9 @@ pub use self::{
     record_store::{calculate_cost_for_records, NodeRecordStore},
     transfers::{get_raw_signed_spends_from_record, get_signed_spend_from_record},
 };
+#[cfg(feature = "open-metrics")]
+pub use metrics::service::MetricsRegistries;
+pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 use self::{cmd::NetworkSwarmCmd, error::Result};
 use backoff::{Error as BackoffError, ExponentialBackoff};

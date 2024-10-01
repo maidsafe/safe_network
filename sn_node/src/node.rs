@@ -18,10 +18,10 @@ use crate::RunningNode;
 use bytes::Bytes;
 use libp2p::{identity::Keypair, Multiaddr, PeerId};
 #[cfg(feature = "open-metrics")]
-use prometheus_client::metrics::{gauge::Gauge, info::Info};
-#[cfg(feature = "open-metrics")]
-use prometheus_client::registry::Registry;
+use prometheus_client::metrics::gauge::Gauge;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
+#[cfg(feature = "open-metrics")]
+use sn_networking::MetricsRegistries;
 use sn_networking::{
     close_group_majority, Instant, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue,
     SwarmDriver,
@@ -161,26 +161,14 @@ impl NodeBuilder {
         let mut network_builder = NetworkBuilder::new(self.keypair, self.local, self.root_dir);
 
         #[cfg(feature = "open-metrics")]
-        let node_metrics = if self.metrics_server_port.is_some() {
+        let metrics_recorder = if self.metrics_server_port.is_some() {
             // metadata registry
-            let mut metadata_registry = Registry::default();
-            let node_metadata_sub_registry = metadata_registry.sub_registry_with_prefix("sn_node");
-            node_metadata_sub_registry.register(
-                "safenode_version",
-                "The version of the safe node",
-                Info::new(vec![(
-                    "safenode_version".to_string(),
-                    env!("CARGO_PKG_VERSION").to_string(),
-                )]),
-            );
-            network_builder.metrics_metadata_registry(metadata_registry);
+            let mut metrics_registries = MetricsRegistries::default();
+            let metrics_recorder = NodeMetricsRecorder::new(&mut metrics_registries);
 
-            // metrics registry
-            let mut metrics_registry = Registry::default();
-            let node_metrics = NodeMetricsRecorder::new(&mut metrics_registry);
-            network_builder.metrics_registry(metrics_registry);
+            network_builder.metrics_registries(metrics_registries);
 
-            Some(node_metrics)
+            Some(metrics_recorder)
         } else {
             None
         };
@@ -203,7 +191,7 @@ impl NodeBuilder {
             initial_peers: self.initial_peers,
             reward_address,
             #[cfg(feature = "open-metrics")]
-            node_metrics,
+            metrics_recorder,
             owner: self.owner,
         };
         let node = Node {
@@ -237,7 +225,7 @@ struct NodeInner {
     initial_peers: Vec<Multiaddr>,
     network: Network,
     #[cfg(feature = "open-metrics")]
-    node_metrics: Option<NodeMetricsRecorder>,
+    metrics_recorder: Option<NodeMetricsRecorder>,
     /// Node owner's discord username, in readable format
     /// If not set, there will be no payment forward to be undertaken
     owner: Option<String>,
@@ -261,9 +249,10 @@ impl Node {
     }
 
     #[cfg(feature = "open-metrics")]
-    /// Returns a reference to the NodeMetrics if the `open-metrics` feature flag is enabled
-    pub(crate) fn node_metrics(&self) -> Option<&NodeMetricsRecorder> {
-        self.inner.node_metrics.as_ref()
+    /// Returns a reference to the NodeMetricsRecorder if the `open-metrics` feature flag is enabled
+    /// This is used to record various metrics for the node.
+    pub(crate) fn metrics_recorder(&self) -> Option<&NodeMetricsRecorder> {
+        self.inner.metrics_recorder.as_ref()
     }
 
     /// Returns the owner of the node
@@ -292,8 +281,8 @@ impl Node {
             let balance_file_path = root_dir.join(FORWARDED_BALANCE_FILE_NAME);
             let balance = read_forwarded_balance_value(&balance_file_path);
 
-            if let Some(node_metrics) = node_copy.node_metrics() {
-                let _ = node_metrics.total_forwarded_rewards.set(balance as i64);
+            if let Some(metrics_recorder) = node_copy.metrics_recorder() {
+                let _ = metrics_recorder.total_forwarded_rewards.set(balance as i64);
             }
         });
 
@@ -405,9 +394,9 @@ impl Node {
                                 let forwarding_reason = owner.clone();
 
                                 #[cfg(feature = "open-metrics")]
-                                let total_forwarded_rewards = self.node_metrics().map(|metrics|metrics.total_forwarded_rewards.clone());
+                                let total_forwarded_rewards = self.metrics_recorder().map(|recorder|recorder.total_forwarded_rewards.clone());
                                 #[cfg(feature = "open-metrics")]
-                                let current_reward_wallet_balance = self.node_metrics().map(|metrics|metrics.current_reward_wallet_balance.clone());
+                                let current_reward_wallet_balance = self.metrics_recorder().map(|recorder|recorder.current_reward_wallet_balance.clone());
 
                                 let _handle = spawn(async move {
 
@@ -427,8 +416,8 @@ impl Node {
                     }
                     _ = uptime_metrics_update_interval.tick() => {
                         #[cfg(feature = "open-metrics")]
-                        if let Some(node_metrics) = self.node_metrics() {
-                            let _ = node_metrics.uptime.set(node_metrics.started_instant.elapsed().as_secs() as i64);
+                        if let Some(metrics_recorder) = self.metrics_recorder() {
+                            let _ = metrics_recorder.uptime.set(metrics_recorder.started_instant.elapsed().as_secs() as i64);
                         }
                     }
                     _ = unrelevant_records_cleanup_interval.tick() => {
@@ -448,8 +437,8 @@ impl Node {
     pub(crate) fn record_metrics(&self, marker: Marker) {
         marker.log();
         #[cfg(feature = "open-metrics")]
-        if let Some(node_metrics) = self.node_metrics() {
-            node_metrics.record(marker)
+        if let Some(metrics_recorder) = self.metrics_recorder() {
+            metrics_recorder.record(marker)
         }
     }
 
