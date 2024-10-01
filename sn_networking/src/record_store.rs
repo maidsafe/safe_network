@@ -957,7 +957,6 @@ mod tests {
     use sn_protocol::storage::{try_deserialize_record, Scratchpad};
     use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress};
     use sn_transfers::{MainPubkey, PaymentQuote};
-    use std::char::MAX;
     use std::collections::BTreeMap;
     use std::fs::OpenOptions;
     use std::io::BufWriter;
@@ -2082,24 +2081,33 @@ mod tests {
             .collect();
 
         let min_nanos = *nanos_earned.iter().min().unwrap_or(&0);
-        let max_nanos = *nanos_earned.iter().max().unwrap_or(&1);
+        let max_nanos = *nanos_earned.iter().max().unwrap_or(&MAX_STORE_COST);
 
-        // Create 100 buckets for nanos earned
-        let bucket_size = (max_nanos - min_nanos + 99) / 100; // Ensure at least 1
-        let mut histogram = vec![0_u64; 100];
+        // Create 20 buckets for nanos earned
+        let bucket_size = (max_nanos - min_nanos + 19) / 20; // Ensure at least 1
+        let mut histogram = vec![0_u64; 20];
         for &nanos in &nanos_earned {
-            let bucket = ((nanos - min_nanos) / bucket_size).min(99) as usize;
+            let bucket = ((nanos - min_nanos) / bucket_size).min(19) as usize;
             histogram[bucket] += 1;
         }
 
         let max_count = *histogram.iter().max().unwrap_or(&0);
+
+        // Determine appropriate y-axis range
+        let y_max = if max_count < 10 {
+            10
+        } else if max_count < 100 {
+            ((max_count + 9) / 10) * 10
+        } else {
+            ((max_count + 99) / 100) * 100
+        };
 
         let mut chart = ChartBuilder::on(&root)
             .caption("Node Count vs Nanos Earned", ("sans-serif", 40).into_font())
             .margin(50)
             .x_label_area_size(60)
             .y_label_area_size(80)
-            .build_cartesian_2d(0..100, 0..max_count)?;
+            .build_cartesian_2d(0..100, 0..y_max)?;
 
         chart
             .configure_mesh()
