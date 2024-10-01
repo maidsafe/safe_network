@@ -6,11 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-mod connect;
-mod download;
-mod progress_bar;
+use indicatif::{ProgressBar, ProgressStyle};
+use std::time::Duration;
+use color_eyre::eyre::Result;
 
-pub use connect::connect_to_network;
-pub use download::download;
-
-pub use progress_bar::get_progress_bar;
+pub fn get_progress_bar(length: u64) -> Result<ProgressBar> {
+    let progress_bar = ProgressBar::new(length);
+    progress_bar.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len}")?
+            .progress_chars("#>-"),
+    );
+    progress_bar.enable_steady_tick(Duration::from_millis(100));
+    Ok(progress_bar)
+}

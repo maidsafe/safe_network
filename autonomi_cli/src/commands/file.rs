@@ -47,41 +47,7 @@ pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
 
 pub async fn download(addr: &str, dest_path: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let mut client = crate::actions::connect_to_network(peers).await?;
-
-    println!("Downloading data from {addr} to {dest_path}");
-    let address = str_to_xorname(addr)
-        .wrap_err("Failed to parse data address")?;
-    let root = client.fetch_root(address).await
-        .wrap_err("Failed to fetch root")?;
-
-    let mut all_errs = vec![];
-    for (path, file) in root.map {
-        println!("Fetching file: {path:?}");
-        let bytes = match client.fetch_file(&file).await {
-            Ok(bytes) => bytes,
-            Err(e) => {
-                let err = format!("Failed to fetch file {path:?}: {e}");
-                all_errs.push(err);
-                continue;
-            }
-        };
-
-        let path = PathBuf::from(dest_path).join(path);
-        let here = PathBuf::from(".");
-        let parent = path.parent().unwrap_or_else(|| &here);
-        std::fs::create_dir_all(parent)?;
-        std::fs::write(path, bytes)?;
-    }
-
-    if all_errs.is_empty() {
-        println!("Successfully downloaded data at: {addr}");
-        Ok(())
-    } else {
-        let err_no = all_errs.len();
-        eprintln!("{err_no} errors while downloading data at: {addr}");
-        eprintln!("{all_errs:#?}");
-        Err(eyre!("Errors while downloading data"))
-    }
+    crate::actions::download(addr, dest_path, &mut client).await
 }
 
 pub fn list(peers: Vec<Multiaddr>) -> Result<()> {
