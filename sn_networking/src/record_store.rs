@@ -1762,7 +1762,7 @@ mod tests {
         let mut hour = 0;
         let k = K_VALUE.get();
 
-        let replication_group_size = k;
+        let replication_group_size = 100;
 
         // Initialize peers with random addresses
         let mut peers: Vec<PeerStats> = (0..num_of_peers)
