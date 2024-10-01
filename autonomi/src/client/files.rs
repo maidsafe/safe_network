@@ -1,8 +1,9 @@
 use crate::client::data::{GetError, PutError};
 use crate::client::Client;
+use crate::self_encryption::encrypt;
 use bytes::Bytes;
-use evmlib::wallet::Wallet;
 use serde::{Deserialize, Serialize};
+use sn_evm::{Amount, AttoTokens};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use walkdir::WalkDir;
@@ -72,12 +73,59 @@ impl Client {
         Ok(data)
     }
 
+    /// Get the cost to upload a file/dir to the network.
+    /// quick and dirty implementation, please refactor once files are cleanly implemented
+    pub async fn file_cost(
+        &mut self,
+        path: &PathBuf,
+    ) -> Result<AttoTokens, UploadError> {
+        let mut map = HashMap::new();
+        let mut total_cost = Amount::ZERO;
+
+        for entry in WalkDir::new(path) {
+            let entry = entry?;
+
+            if !entry.file_type().is_file() {
+                continue;
+            }
+
+            let path = entry.path().to_path_buf();
+            tracing::info!("Cost for file: {path:?}");
+
+            let data = tokio::fs::read(&path).await?;
+            let file_bytes = Bytes::from(data);
+            let file_cost = self.cost(file_bytes.clone()).await.expect("TODO");
+
+            total_cost += file_cost.as_atto();
+
+            // re-do encryption to get the correct map xorname here
+            // this code needs refactor
+            let now = std::time::Instant::now();
+            let (data_map_chunk, _) = encrypt(file_bytes).expect("TODO");
+            tracing::debug!("Encryption took: {:.2?}", now.elapsed());
+            let map_xor_name = *data_map_chunk.address().xorname();
+            let data_map_xorname = FilePointer {
+                data_map: map_xor_name,
+                created_at: 0,
+                modified_at: 0,
+            };
+
+            map.insert(path, data_map_xorname);
+        }
+
+        let root = Root { map };
+        let root_serialized = rmp_serde::to_vec(&root).expect("TODO");
+
+        let cost = self.cost(Bytes::from(root_serialized)).await.expect("TODO");
+        Ok(cost)
+    }
+
     /// Upload a directory to the network. The directory is recursively walked.
     #[cfg(feature = "fs")]
     pub async fn upload_from_dir(
         &mut self,
         path: PathBuf,
-        wallet: &Wallet,
+        wallet: &sn_evm::EvmWallet,
     ) -> Result<(Root, XorName), UploadError> {
         let mut map = HashMap::new();
 
@@ -90,6 +138,7 @@ impl Client {
 
             let path = entry.path().to_path_buf();
             tracing::info!("Uploading file: {path:?}");
+            println!("Uploading file: {path:?}");
             let file = upload_from_file(self, path.clone(), wallet).await?;
 
             map.insert(path, file);
@@ -107,7 +156,7 @@ impl Client {
 async fn upload_from_file(
     client: &mut Client,
     path: PathBuf,
-    wallet: &Wallet,
+    wallet: &sn_evm::EvmWallet,
 ) -> Result<FilePointer, UploadError> {
     let data = tokio::fs::read(path).await?;
     let data = Bytes::from(data);

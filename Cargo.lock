@@ -1130,6 +1130,7 @@ dependencies = [
  "const-hex",
  "evmlib",
  "eyre",
+ "hex 0.4.3",
  "libp2p 0.54.1",
  "rand 0.8.5",
  "rmp-serde",
@@ -1149,6 +1150,22 @@ dependencies = [
  "tracing-subscriber",
  "walkdir",
  "xor_name",
+]
+
+[[package]]
+name = "autonomi_cli"
+version = "0.1.0"
+dependencies = [
+ "autonomi",
+ "clap",
+ "color-eyre",
+ "dirs-next",
+ "indicatif",
+ "sn_build_info",
+ "sn_logging",
+ "sn_peers_acquisition",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

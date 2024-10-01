@@ -1,0 +1,33 @@
+[package]
+name = "autonomi_cli"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["metrics"]
+local-discovery = ["sn_peers_acquisition/local-discovery"]
+metrics = ["sn_logging/process-metrics"]
+network-contacts = ["sn_peers_acquisition/network-contacts"]
+
+[dependencies]
+autonomi = { path = "../autonomi", version = "0.1.0", features = ["data", "files"] }
+clap = { version = "4.2.1", features = ["derive"] }
+color-eyre = "~0.6"
+dirs-next = "~2.0.0"
+indicatif = { version = "0.17.5", features = ["tokio"] }
+tokio = { version = "1.32.0", features = [
+    "io-util",
+    "macros",
+    "parking_lot",
+    "rt",
+    "sync",
+    "time",
+    "fs",
+] }
+tracing = { version = "~0.1.26" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.0" }
+sn_build_info = { path = "../sn_build_info", version = "0.1.11" }
+sn_logging = { path = "../sn_logging", version = "0.2.33" }
+
+[lints]
+workspace = true

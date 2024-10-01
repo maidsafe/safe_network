@@ -1,3 +1,5 @@
+pub mod address;
+
 #[cfg(feature = "data")]
 pub mod data;
 #[cfg(feature = "files")]
