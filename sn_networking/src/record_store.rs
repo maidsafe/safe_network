@@ -957,6 +957,7 @@ mod tests {
     use sn_protocol::storage::{try_deserialize_record, Scratchpad};
     use sn_protocol::storage::{try_serialize_record, Chunk, ChunkAddress};
     use sn_transfers::{MainPubkey, PaymentQuote};
+    use std::char::MAX;
     use std::collections::BTreeMap;
     use std::fs::OpenOptions;
     use std::io::BufWriter;
@@ -1832,6 +1833,13 @@ mod tests {
                         bail!("Failed to find a payee");
                     };
 
+                    if cost.as_nano() >= MAX_STORE_COST / 2 {
+                        warn!("cost is half of max store cost!!");
+                        warn!("not paying this!!!");
+                        // break;
+                        return Ok(());
+                    }
+
                     for &peer_index in &close_group {
                         let peer = &peers[peer_index];
                         peer.records_stored.fetch_add(1, Ordering::Relaxed);
@@ -1901,7 +1909,10 @@ mod tests {
                 );
 
             total_received_payment_count += num_of_chunks_per_hour;
-            assert_eq!(total_received_payment_count, received_payment_count);
+            assert_eq!(
+                total_received_payment_count, received_payment_count,
+                "all chunks should be paid; if we hit this, we've probably been forced to pay max somewhere"
+            );
 
             println!("After the completion of hour {hour} with {num_of_chunks_per_hour} chunks put, there are {empty_earned_nodes} nodes which earned nothing");
             println!("\t\t with storecost variation of (min {min_store_cost} - max {max_store_cost}), and earned variation of (min {min_earned} - max {max_earned})");

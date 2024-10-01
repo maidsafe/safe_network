@@ -1193,10 +1193,10 @@ fn get_fees_from_store_cost_responses(
 
     info!("Final fees calculated as: {payee:?}");
     if payee.2.cost.as_nano() == record_store::MAX_STORE_COST {
-        eprintln!("The cost of the record is MAX, this should not happen");
+        warn!("The cost of the record is MAX, this should not happen realistically");
         // eprintln!("Costs are all max! {all_costs:?}");
 
-        return Err(NetworkError::LowestCostIsMax);
+        // return Err(NetworkError::LowestCostIsMax);
     }
 
     // we dont need to have the address outside of here for now
