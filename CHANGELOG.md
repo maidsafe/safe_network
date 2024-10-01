@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-10-01
+
+### Network
+
+#### Changed
+
+- Increase node storage size from 4GB to 32GB
+
 ## 2024-09-24
 
 ### Network

@@ -438,6 +438,7 @@ pub async fn run_node(
         log_dir_path: node_info.log_path,
         log_format: run_options.log_format,
         metrics_port: run_options.metrics_port,
+        node_ip: None,
         node_port: run_options.node_port,
         number: run_options.number,
         owner: run_options.owner,
