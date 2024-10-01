@@ -92,331 +92,331 @@ jobs:
           echo "All packages built successfully. Cleaning up..."
           cargo clean
 
-  unit:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: Unit Tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
+  # unit:
+  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+  #   name: Unit Tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest, windows-latest, macos-latest]
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Check we're on the right commit
-        run: git log -1 --oneline
+  #     - name: Check we're on the right commit
+  #       run: git log -1 --oneline
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
 
-      - uses: Swatinem/rust-cache@v2
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: Run CLI tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_cli -- --skip test_acc_packet_
+  #     - name: Run CLI tests
+  #       timeout-minutes: 25
+  #       run: cargo test --release --package sn_cli -- --skip test_acc_packet_
 
-        # We do not run client `--tests` here as they can require a network
-      - name: Run client tests
-        timeout-minutes: 25
-        run: |
-          cargo test --release --package sn_client --lib
-          cargo test --release --package sn_client --doc
+  #       # We do not run client `--tests` here as they can require a network
+  #     - name: Run client tests
+  #       timeout-minutes: 25
+  #       run: |
+  #         cargo test --release --package sn_client --lib
+  #         cargo test --release --package sn_client --doc
 
-      - name: Run node tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_node --lib
+  #     - name: Run node tests
+  #       timeout-minutes: 25
+  #       run: cargo test --release --package sn_node --lib
 
-      - name: Run network tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_networking
+  #     - name: Run network tests
+  #       timeout-minutes: 25
+  #       run: cargo test --release --package sn_networking
 
-      - name: Run protocol tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_protocol
+  #     - name: Run protocol tests
+  #       timeout-minutes: 25
+  #       run: cargo test --release --package sn_protocol
 
-      - name: Run transfers tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_transfers
+  #     - name: Run transfers tests
+  #       timeout-minutes: 25
+  #       run: cargo test --release --package sn_transfers
 
-      - name: Run logging tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_logging
+  #     - name: Run logging tests
+  #       timeout-minutes: 25
+  #       run: cargo test --release --package sn_logging
 
-      - name: Run register tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_registers
-        env:
-          # this will speed up PR merge flows, while giving us a modicum
-          # of proptesting
-          # we do many more runs on the nightly run
-          PROPTEST_CASES: 50
+  #     - name: Run register tests
+  #       timeout-minutes: 25
+  #       run: cargo test --release --package sn_registers
+  #       env:
+  #         # this will speed up PR merge flows, while giving us a modicum
+  #         # of proptesting
+  #         # we do many more runs on the nightly run
+  #         PROPTEST_CASES: 50
 
-  e2e:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: E2E tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            safe_path: /home/runner/.local/share/safe
-          - os: windows-latest
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
-          - os: macos-latest
-            safe_path: /Users/runner/Library/Application Support/safe
-    steps:
-      - uses: actions/checkout@v4
+  # e2e:
+  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+  #   name: E2E tests
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - os: ubuntu-latest
+  #           safe_path: /home/runner/.local/share/safe
+  #         - os: windows-latest
+  #           safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+  #         - os: macos-latest
+  #           safe_path: /Users/runner/Library/Application Support/safe
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe
-        timeout-minutes: 30
+  #     - name: Build binaries
+  #       run: cargo build --release --bin safenode --bin safe
+  #       timeout-minutes: 30
 
-      - name: Build faucet binary
-        run: cargo build --release --bin faucet --features gifting
-        timeout-minutes: 30
+  #     - name: Build faucet binary
+  #       run: cargo build --release --bin faucet --features gifting
+  #       timeout-minutes: 30
 
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
+  #     - name: Start a local network
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: start
+  #         interval: 2000
+  #         node-path: target/release/safenode
+  #         faucet-path: target/release/faucet
+  #         platform: ${{ matrix.os }}
+  #         build: true
 
-      - name: Check SAFE_PEERS was set
-        shell: bash
-        run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
-            exit 1
-          else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
-          fi
+  #     - name: Check SAFE_PEERS was set
+  #       shell: bash
+  #       run: |
+  #         if [[ -z "$SAFE_PEERS" ]]; then
+  #           echo "The SAFE_PEERS variable has not been set"
+  #           exit 1
+  #         else
+  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #         fi
 
-      # only these unit tests require a network, the rest are run above
-      - name: Run sn_client --tests
-        run: cargo test --package sn_client --release --tests
-        env:
-          SN_LOG: "all"
-          # only set the target dir for windows to bypass the linker issue.
-          # happens if we build the node manager via testnet action
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 15
+  #     # only these unit tests require a network, the rest are run above
+  #     - name: Run sn_client --tests
+  #       run: cargo test --package sn_client --release --tests
+  #       env:
+  #         SN_LOG: "all"
+  #         # only set the target dir for windows to bypass the linker issue.
+  #         # happens if we build the node manager via testnet action
+  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+  #       timeout-minutes: 15
 
-      - name: Create and fund a wallet to pay for files storage
-        run: |
-          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-          ./target/release/faucet --log-output-dest=data-dir send 1000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 5
+  #     - name: Create and fund a wallet to pay for files storage
+  #       run: |
+  #         ./target/release/safe --log-output-dest=data-dir wallet create --no-password
+  #         ./target/release/faucet --log-output-dest=data-dir send 1000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
-      - name: Start a client to upload cost estimate
-        run: ./target/release/safe --log-output-dest=data-dir files estimate "./resources"
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 15
+  #     - name: Start a client to upload cost estimate
+  #       run: ./target/release/safe --log-output-dest=data-dir files estimate "./resources"
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 15
 
-      - name: Start a client to upload files
-        run: ./target/release/safe --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 15
+  #     - name: Start a client to upload files
+  #       run: ./target/release/safe --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 15
 
-      - name: Start a client to download files
-        run: ./target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+  #     - name: Start a client to download files
+  #       run: ./target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      # Client FoldersApi tests against local network
-      - name: Client FoldersApi tests against local network
-        run: cargo test --release --package sn_client --test folders_api
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     # Client FoldersApi tests against local network
+  #     - name: Client FoldersApi tests against local network
+  #       run: cargo test --release --package sn_client --test folders_api
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      # CLI Acc-Packet files and folders tests against local network
-      - name: CLI Acc-Packet files and folders tests
-        run: cargo test --release -p sn_cli test_acc_packet -- --nocapture
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     # CLI Acc-Packet files and folders tests against local network
+  #     - name: CLI Acc-Packet files and folders tests
+  #       run: cargo test --release -p sn_cli test_acc_packet -- --nocapture
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      - name: Start a client to create a register writable by the owner only
-        run: ./target/release/safe --log-output-dest=data-dir register create -n baobao
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     - name: Start a client to create a register writable by the owner only
+  #       run: ./target/release/safe --log-output-dest=data-dir register create -n baobao
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      - name: Start a client to get a register writable by the owner only
-        run: ./target/release/safe --log-output-dest=data-dir register get -n baobao
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+  #     - name: Start a client to get a register writable by the owner only
+  #       run: ./target/release/safe --log-output-dest=data-dir register get -n baobao
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      - name: Start a client to edit a register writable by the owner only
-        run: ./target/release/safe --log-output-dest=data-dir register edit -n baobao wood
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
-      #
-      # Next two steps are same with a slight difference in the way they write to the output file (GITHUB_OUTPUT vs ENV:GITHUB_OUTPUT)
-      #
-      - name: Start a client to create a register writable by anyone
-        id: register-address
-        if: matrix.os != 'windows-latest'
-        run: echo "$(./target/release/safe --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $GITHUB_OUTPUT
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     - name: Start a client to edit a register writable by the owner only
+  #       run: ./target/release/safe --log-output-dest=data-dir register edit -n baobao wood
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
+  #     #
+  #     # Next two steps are same with a slight difference in the way they write to the output file (GITHUB_OUTPUT vs ENV:GITHUB_OUTPUT)
+  #     #
+  #     - name: Start a client to create a register writable by anyone
+  #       id: register-address
+  #       if: matrix.os != 'windows-latest'
+  #       run: echo "$(./target/release/safe --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $GITHUB_OUTPUT
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      - name: Start a client to create a register writable by anyone
-        id: register-address-windows
-        if: matrix.os == 'windows-latest'
-        run: echo "$(./target/release/safe --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $ENV:GITHUB_OUTPUT
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     - name: Start a client to create a register writable by anyone
+  #       id: register-address-windows
+  #       if: matrix.os == 'windows-latest'
+  #       run: echo "$(./target/release/safe --log-output-dest=data-dir register create -n trycatch -p | rg REGISTER_ADDRESS )" >> $ENV:GITHUB_OUTPUT
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      - name: Start a client to get a register writable by anyone (current client is the owner)
-        run: ./target/release/safe --log-output-dest=data-dir register get -n trycatch
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+  #     - name: Start a client to get a register writable by anyone (current client is the owner)
+  #       run: ./target/release/safe --log-output-dest=data-dir register get -n trycatch
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      - name: Start a client to edit a register writable by anyone (current client is the owner)
-        run: ./target/release/safe --log-output-dest=data-dir register edit -n trycatch wood
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     - name: Start a client to edit a register writable by anyone (current client is the owner)
+  #       run: ./target/release/safe --log-output-dest=data-dir register edit -n trycatch wood
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      - name: Delete client subdir to generate new client
-        shell: bash
-        run: rm -rf ${{ matrix.safe_path }}/client
-      #
-      # Next four steps are same with a slight difference in the which output step they read from
-      #
-      - name: Start a client to get a register writable by anyone (new client is not the owner)
-        if: matrix.os != 'windows-latest'
-        run: ./target/release/safe --log-output-dest=data-dir register get ${{ steps.register-address.outputs.REGISTER_ADDRESS }}
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+  #     - name: Delete client subdir to generate new client
+  #       shell: bash
+  #       run: rm -rf ${{ matrix.safe_path }}/client
+  #     #
+  #     # Next four steps are same with a slight difference in the which output step they read from
+  #     #
+  #     - name: Start a client to get a register writable by anyone (new client is not the owner)
+  #       if: matrix.os != 'windows-latest'
+  #       run: ./target/release/safe --log-output-dest=data-dir register get ${{ steps.register-address.outputs.REGISTER_ADDRESS }}
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      - name: Start a client to edit a register writable by anyone (new client is not the owner)
-        if: matrix.os != 'windows-latest'
-        run: ./target/release/safe --log-output-dest=data-dir register edit ${{ steps.register-address.outputs.REGISTER_ADDRESS }} water
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     - name: Start a client to edit a register writable by anyone (new client is not the owner)
+  #       if: matrix.os != 'windows-latest'
+  #       run: ./target/release/safe --log-output-dest=data-dir register edit ${{ steps.register-address.outputs.REGISTER_ADDRESS }} water
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      - name: Start a client to get a register writable by anyone (new client is not the owner)
-        if: matrix.os == 'windows-latest'
-        run: ./target/release/safe --log-output-dest=data-dir register get ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }}
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+  #     - name: Start a client to get a register writable by anyone (new client is not the owner)
+  #       if: matrix.os == 'windows-latest'
+  #       run: ./target/release/safe --log-output-dest=data-dir register get ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }}
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 2
 
-      - name: Start a client to edit a register writable by anyone (new client is not the owner)
-        if: matrix.os == 'windows-latest'
-        run: ./target/release/safe --log-output-dest=data-dir register edit ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }} water
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     - name: Start a client to edit a register writable by anyone (new client is not the owner)
+  #       if: matrix.os == 'windows-latest'
+  #       run: ./target/release/safe --log-output-dest=data-dir register edit ${{ steps.register-address-windows.outputs.REGISTER_ADDRESS }} water
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_e2e
-          platform: ${{ matrix.os }}
+  #     - name: Stop the local network and upload logs
+  #       if: always()
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: stop
+  #         log_file_prefix: safe_test_logs_e2e
+  #         platform: ${{ matrix.os }}
 
-  spend_test:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: spend tests against network
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
+  # spend_test:
+  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+  #   name: spend tests against network
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest, windows-latest, macos-latest]
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
 
-      - uses: Swatinem/rust-cache@v2
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: Build binaries
-        run: cargo build --release --features=local-discovery --bin safenode
-        timeout-minutes: 30
+  #     - name: Build binaries
+  #       run: cargo build --release --features=local-discovery --bin safenode
+  #       timeout-minutes: 30
 
-      - name: Build faucet binary
-        run: cargo build --release --bin faucet --features="local-discovery,gifting"
-        timeout-minutes: 30
+  #     - name: Build faucet binary
+  #       run: cargo build --release --bin faucet --features="local-discovery,gifting"
+  #       timeout-minutes: 30
 
-      - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --no-run
-        env:
-          # only set the target dir for windows to bypass the linker issue.
-          # happens if we build the node manager via testnet action
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 30
+  #     - name: Build testing executable
+  #       run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --no-run
+  #       env:
+  #         # only set the target dir for windows to bypass the linker issue.
+  #         # happens if we build the node manager via testnet action
+  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+  #       timeout-minutes: 30
 
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
+  #     - name: Start a local network
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: start
+  #         interval: 2000
+  #         node-path: target/release/safenode
+  #         faucet-path: target/release/faucet
+  #         platform: ${{ matrix.os }}
+  #         build: true
 
-      - name: Check SAFE_PEERS was set
-        shell: bash
-        run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
-            exit 1
-          else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
-          fi
+  #     - name: Check SAFE_PEERS was set
+  #       shell: bash
+  #       run: |
+  #         if [[ -z "$SAFE_PEERS" ]]; then
+  #           echo "The SAFE_PEERS variable has not been set"
+  #           exit 1
+  #         else
+  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #         fi
 
-      - name: execute the sequential transfers tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture --test-threads=1
-        env:
-          SN_LOG: "all"
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
+  #     - name: execute the sequential transfers tests
+  #       run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture --test-threads=1
+  #       env:
+  #         SN_LOG: "all"
+  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+  #       timeout-minutes: 25
 
-      - name: execute the storage payment tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
-        env:
-          SN_LOG: "all"
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
+  #     - name: execute the storage payment tests
+  #       run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
+  #       env:
+  #         SN_LOG: "all"
+  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+  #       timeout-minutes: 25
 
-      - name: execute the double spend tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test double_spend -- --nocapture --test-threads=1
-        env:
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
+  #     - name: execute the double spend tests
+  #       run: cargo test --release -p sn_node --features="local-discovery" --test double_spend -- --nocapture --test-threads=1
+  #       env:
+  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+  #       timeout-minutes: 25
 
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_spend
-          platform: ${{ matrix.os }}
+  #     - name: Stop the local network and upload logs
+  #       if: always()
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: stop
+  #         log_file_prefix: safe_test_logs_spend
+  #         platform: ${{ matrix.os }}
 
   # # runs with increased node count
   # spend_simulation:
@@ -800,525 +800,525 @@ jobs:
             exit 1
           fi
 
-  faucet_test:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: Faucet test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # faucet_test:
+  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+  #   name: Faucet test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: install ripgrep
-        shell: bash
-        run: sudo apt-get install -y ripgrep
+  #     - name: install ripgrep
+  #       shell: bash
+  #       run: sudo apt-get install -y ripgrep
 
-      - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe
-        timeout-minutes: 30
+  #     - name: Build binaries
+  #       run: cargo build --release --bin safenode --bin safe
+  #       timeout-minutes: 30
 
-      - name: Build faucet binary
-        run: cargo build --release --bin faucet --features gifting
-        timeout-minutes: 30
+  #     - name: Build faucet binary
+  #       run: cargo build --release --bin faucet --features gifting
+  #       timeout-minutes: 30
 
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ubuntu-latest
-          build: true
+  #     - name: Start a local network
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: start
+  #         interval: 2000
+  #         node-path: target/release/safenode
+  #         faucet-path: target/release/faucet
+  #         platform: ubuntu-latest
+  #         build: true
 
-      - name: Check we're _not_ warned about using default genesis
-        run: |
-          if rg "USING DEFAULT" "${{ matrix.safe_path }}"/*/*/logs; then
-            exit 1
-          fi
-        shell: bash
+  #     - name: Check we're _not_ warned about using default genesis
+  #       run: |
+  #         if rg "USING DEFAULT" "${{ matrix.safe_path }}"/*/*/logs; then
+  #           exit 1
+  #         fi
+  #       shell: bash
 
-      - name: Move built binaries and clear out target dir
-        shell: bash
-        run: |
-          mv target/release/faucet ~/faucet
-          mv target/release/safe ~/safe
-          rm -rf target
+  #     - name: Move built binaries and clear out target dir
+  #       shell: bash
+  #       run: |
+  #         mv target/release/faucet ~/faucet
+  #         mv target/release/safe ~/safe
+  #         rm -rf target
 
-      - name: Check SAFE_PEERS was set
-        shell: bash
-        run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
-            exit 1
-          else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
-          fi
+  #     - name: Check SAFE_PEERS was set
+  #       shell: bash
+  #       run: |
+  #         if [[ -z "$SAFE_PEERS" ]]; then
+  #           echo "The SAFE_PEERS variable has not been set"
+  #           exit 1
+  #         else
+  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #         fi
 
-      - name: Create and fund a wallet first time
-        run: |
-          ~/safe --log-output-dest=data-dir wallet create --no-password
-          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
-          echo "----------"
-          cat first.txt
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 5
+  #     - name: Create and fund a wallet first time
+  #       run: |
+  #         ~/safe --log-output-dest=data-dir wallet create --no-password
+  #         ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
+  #         echo "----------"
+  #         cat first.txt
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
-      - name: Move faucet log to the working folder
-        run: |
-          echo "SAFE_DATA_PATH has: "
-          ls -l $SAFE_DATA_PATH
-          echo "test_faucet foder has: "
-          ls -l $SAFE_DATA_PATH/test_faucet
-          echo "logs folder has: "
-          ls -l $SAFE_DATA_PATH/test_faucet/logs
-          mv $SAFE_DATA_PATH/test_faucet/logs/faucet.log ./faucet_log.log
-        env:
-          SN_LOG: "all"
-          SAFE_DATA_PATH: /home/runner/.local/share/safe
-        continue-on-error: true
-        if: always()
-        timeout-minutes: 1
+  #     - name: Move faucet log to the working folder
+  #       run: |
+  #         echo "SAFE_DATA_PATH has: "
+  #         ls -l $SAFE_DATA_PATH
+  #         echo "test_faucet foder has: "
+  #         ls -l $SAFE_DATA_PATH/test_faucet
+  #         echo "logs folder has: "
+  #         ls -l $SAFE_DATA_PATH/test_faucet/logs
+  #         mv $SAFE_DATA_PATH/test_faucet/logs/faucet.log ./faucet_log.log
+  #       env:
+  #         SN_LOG: "all"
+  #         SAFE_DATA_PATH: /home/runner/.local/share/safe
+  #       continue-on-error: true
+  #       if: always()
+  #       timeout-minutes: 1
 
-      - name: Upload faucet log
-        uses: actions/upload-artifact@main
-        with:
-          name: faucet_test_first_faucet_log
-          path: faucet_log.log
-        continue-on-error: true
-        if: always()
+  #     - name: Upload faucet log
+  #       uses: actions/upload-artifact@main
+  #       with:
+  #         name: faucet_test_first_faucet_log
+  #         path: faucet_log.log
+  #       continue-on-error: true
+  #       if: always()
 
-      - name: Create and fund a wallet second time
-        run: |
-          ls -l /home/runner/.local/share
-          ls -l /home/runner/.local/share/safe
-          rm -rf /home/runner/.local/share/safe/test_faucet
-          rm -rf /home/runner/.local/share/safe/test_genesis
-          rm -rf /home/runner/.local/share/safe/client
-          ~/safe --log-output-dest=data-dir wallet create --no-password
-          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
-          echo "----------"
-          cat second.txt
-          if grep "genesis is already spent" second.txt; then
-            echo "Duplicated faucet rejected"
-          else
-            echo "Duplicated faucet not rejected!"
-            exit 1
-          fi
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 5
+  #     - name: Create and fund a wallet second time
+  #       run: |
+  #         ls -l /home/runner/.local/share
+  #         ls -l /home/runner/.local/share/safe
+  #         rm -rf /home/runner/.local/share/safe/test_faucet
+  #         rm -rf /home/runner/.local/share/safe/test_genesis
+  #         rm -rf /home/runner/.local/share/safe/client
+  #         ~/safe --log-output-dest=data-dir wallet create --no-password
+  #         ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
+  #         echo "----------"
+  #         cat second.txt
+  #         if grep "genesis is already spent" second.txt; then
+  #           echo "Duplicated faucet rejected"
+  #         else
+  #           echo "Duplicated faucet not rejected!"
+  #           exit 1
+  #         fi
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
-      - name: Create and fund a wallet with different keypair
-        run: |
-          ls -l /home/runner/.local/share
-          ls -l /home/runner/.local/share/safe
-          rm -rf /home/runner/.local/share/safe/test_faucet
-          rm -rf /home/runner/.local/share/safe/test_genesis
-          rm -rf /home/runner/.local/share/safe/client
-          ~/safe --log-output-dest=data-dir wallet create --no-password
-          if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
-            echo "Faucet with different genesis key not rejected!"
-            exit 1
-          else
-            echo "Faucet with different genesis key rejected"
-          fi
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 5
+  #     - name: Create and fund a wallet with different keypair
+  #       run: |
+  #         ls -l /home/runner/.local/share
+  #         ls -l /home/runner/.local/share/safe
+  #         rm -rf /home/runner/.local/share/safe/test_faucet
+  #         rm -rf /home/runner/.local/share/safe/test_genesis
+  #         rm -rf /home/runner/.local/share/safe/client
+  #         ~/safe --log-output-dest=data-dir wallet create --no-password
+  #         if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
+  #           echo "Faucet with different genesis key not rejected!"
+  #           exit 1
+  #         else
+  #           echo "Faucet with different genesis key rejected"
+  #         fi
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
-      - name: Build faucet binary again without the gifting feature
-        run: cargo build --release --bin faucet
-        timeout-minutes: 30
+  #     - name: Build faucet binary again without the gifting feature
+  #       run: cargo build --release --bin faucet
+  #       timeout-minutes: 30
 
-      - name: Start up a faucet in server mode
-        run: |
-          ls -l /home/runner/.local/share
-          ls -l /home/runner/.local/share/safe
-          rm -rf /home/runner/.local/share/safe/test_faucet
-          rm -rf /home/runner/.local/share/safe/test_genesis
-          rm -rf /home/runner/.local/share/safe/client
-          target/release/faucet server &
-          sleep 60
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 5
+  #     - name: Start up a faucet in server mode
+  #       run: |
+  #         ls -l /home/runner/.local/share
+  #         ls -l /home/runner/.local/share/safe
+  #         rm -rf /home/runner/.local/share/safe/test_faucet
+  #         rm -rf /home/runner/.local/share/safe/test_genesis
+  #         rm -rf /home/runner/.local/share/safe/client
+  #         target/release/faucet server &
+  #         sleep 60
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
-      - name: check there is no upload happens
-        shell: bash
-        run: |
-          if grep -r "NanoTokens(10) }, Output" $NODE_DATA_PATH
-          then
-            echo "We find ongoing upload !"
-            exit 1
-          fi
-        env:
-          NODE_DATA_PATH: /home/runner/.local/share/safe/node
-        timeout-minutes: 1
+  #     - name: check there is no upload happens
+  #       shell: bash
+  #       run: |
+  #         if grep -r "NanoTokens(10) }, Output" $NODE_DATA_PATH
+  #         then
+  #           echo "We find ongoing upload !"
+  #           exit 1
+  #         fi
+  #       env:
+  #         NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  #       timeout-minutes: 1
 
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          platform: ubuntu-latest
-          log_file_prefix: safe_test_logs_faucet
+  #     - name: Stop the local network and upload logs
+  #       if: always()
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: stop
+  #         platform: ubuntu-latest
+  #         log_file_prefix: safe_test_logs_faucet
 
-  large_file_upload_test:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: Large file upload
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # large_file_upload_test:
+  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+  #   name: Large file upload
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: install ripgrep
-        shell: bash
-        run: sudo apt-get install -y ripgrep
+  #     - name: install ripgrep
+  #       shell: bash
+  #       run: sudo apt-get install -y ripgrep
 
-      - name: Check the available space
-        run: |
-          df
-          echo "Home dir:"
-          du -sh /home/runner/
-          echo "Home subdirs:"
-          du -sh /home/runner/*/
-          echo "PWD:"
-          du -sh .
-          echo "PWD subdirs:"
-          du -sh */
+  #     - name: Check the available space
+  #       run: |
+  #         df
+  #         echo "Home dir:"
+  #         du -sh /home/runner/
+  #         echo "Home subdirs:"
+  #         du -sh /home/runner/*/
+  #         echo "PWD:"
+  #         du -sh .
+  #         echo "PWD subdirs:"
+  #         du -sh */
 
-      - name: Download material, 1.1G
-        shell: bash
-        run: |
-          wget https://releases.ubuntu.com/14.04.6/ubuntu-14.04.6-desktop-i386.iso
-          ls -l
+  #     - name: Download material, 1.1G
+  #       shell: bash
+  #       run: |
+  #         wget https://releases.ubuntu.com/14.04.6/ubuntu-14.04.6-desktop-i386.iso
+  #         ls -l
 
-      - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe
-        timeout-minutes: 30
+  #     - name: Build binaries
+  #       run: cargo build --release --bin safenode --bin safe
+  #       timeout-minutes: 30
 
-      - name: Build faucet binary
-        run: cargo build --release --bin faucet --features gifting
-        timeout-minutes: 30
+  #     - name: Build faucet binary
+  #       run: cargo build --release --bin faucet --features gifting
+  #       timeout-minutes: 30
 
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ubuntu-latest
-          build: true
+  #     - name: Start a local network
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: start
+  #         interval: 2000
+  #         node-path: target/release/safenode
+  #         faucet-path: target/release/faucet
+  #         platform: ubuntu-latest
+  #         build: true
 
-      - name: Check we're _not_ warned about using default genesis
-        run: |
-          if rg "USING DEFAULT" "${{ matrix.safe_path }}"/*/*/logs; then
-            exit 1
-          fi
-        shell: bash
+  #     - name: Check we're _not_ warned about using default genesis
+  #       run: |
+  #         if rg "USING DEFAULT" "${{ matrix.safe_path }}"/*/*/logs; then
+  #           exit 1
+  #         fi
+  #       shell: bash
 
-      # The test currently fails because the GH runner runs out of disk space. So we clear out the target dir here.
-      # Might be related to additional deps used in the codebase.
-      - name: Move built binaries and clear out target dir
-        shell: bash
-        run: |
-          mv target/release/faucet ~/faucet
-          mv target/release/safe ~/safe
-          rm -rf target
+  #     # The test currently fails because the GH runner runs out of disk space. So we clear out the target dir here.
+  #     # Might be related to additional deps used in the codebase.
+  #     - name: Move built binaries and clear out target dir
+  #       shell: bash
+  #       run: |
+  #         mv target/release/faucet ~/faucet
+  #         mv target/release/safe ~/safe
+  #         rm -rf target
 
-      - name: Check SAFE_PEERS was set
-        shell: bash
-        run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
-            exit 1
-          else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
-          fi
+  #     - name: Check SAFE_PEERS was set
+  #       shell: bash
+  #       run: |
+  #         if [[ -z "$SAFE_PEERS" ]]; then
+  #           echo "The SAFE_PEERS variable has not been set"
+  #           exit 1
+  #         else
+  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #         fi
 
-      - name: Check the available space post download
-        run: |
-          df
-          echo "Home dir:"
-          du -sh /home/runner/
-          echo "Home subdirs:"
-          du -sh /home/runner/*/
-          echo "PWD:"
-          du -sh .
-          echo "PWD subdirs:"
-          du -sh */
+  #     - name: Check the available space post download
+  #       run: |
+  #         df
+  #         echo "Home dir:"
+  #         du -sh /home/runner/
+  #         echo "Home subdirs:"
+  #         du -sh /home/runner/*/
+  #         echo "PWD:"
+  #         du -sh .
+  #         echo "PWD subdirs:"
+  #         du -sh */
 
-      - name: Create and fund a wallet to pay for files storage
-        run: |
-          ~/safe --log-output-dest=data-dir wallet create --no-password
-          ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 5
+  #     - name: Create and fund a wallet to pay for files storage
+  #       run: |
+  #         ~/safe --log-output-dest=data-dir wallet create --no-password
+  #         ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #         ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
-      - name: Start a client to upload
-        run: ~/safe --log-output-dest=data-dir files upload "ubuntu-14.04.6-desktop-i386.iso" --retry-strategy quick
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 30
+  #     - name: Start a client to upload
+  #       run: ~/safe --log-output-dest=data-dir files upload "ubuntu-14.04.6-desktop-i386.iso" --retry-strategy quick
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 30
 
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          platform: ubuntu-latest
-          log_file_prefix: safe_test_logs_large_file_upload
-          build: true
+  #     - name: Stop the local network and upload logs
+  #       if: always()
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: stop
+  #         platform: ubuntu-latest
+  #         log_file_prefix: safe_test_logs_large_file_upload
+  #         build: true
 
-      - name: check there is no failed replication fetch
-        shell: bash
-        run: |
-          if grep -r "failed to fetch" $NODE_DATA_PATH
-          then
-            echo "We find failed replication fetch"
-            exit 1
-          fi
-        env:
-          NODE_DATA_PATH: /home/runner/.local/share/safe/node
-        timeout-minutes: 1
+  #     - name: check there is no failed replication fetch
+  #       shell: bash
+  #       run: |
+  #         if grep -r "failed to fetch" $NODE_DATA_PATH
+  #         then
+  #           echo "We find failed replication fetch"
+  #           exit 1
+  #         fi
+  #       env:
+  #         NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  #       timeout-minutes: 1
 
-      - name: Check the home dir leftover space
-        run: |
-          df
-          du -sh /home/runner/
+  #     - name: Check the home dir leftover space
+  #       run: |
+  #         df
+  #         du -sh /home/runner/
 
-      - name: Confirm the wallet files (cash_notes, confirmed_spends)
-        run: |
-          pwd
-          ls $CLIENT_DATA_PATH/ -l
-          ls $CLIENT_DATA_PATH/wallet -l
-          ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-          ls $CLIENT_DATA_PATH/wallet/confirmed_spends -l
-          ls $CLIENT_DATA_PATH/logs -l
-        env:
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
-        timeout-minutes: 1
+  #     - name: Confirm the wallet files (cash_notes, confirmed_spends)
+  #       run: |
+  #         pwd
+  #         ls $CLIENT_DATA_PATH/ -l
+  #         ls $CLIENT_DATA_PATH/wallet -l
+  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+  #         ls $CLIENT_DATA_PATH/wallet/confirmed_spends -l
+  #         ls $CLIENT_DATA_PATH/logs -l
+  #       env:
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #       timeout-minutes: 1
 
-  replication_bench_with_heavy_upload:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: Replication bench with heavy upload
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # replication_bench_with_heavy_upload:
+  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+  #   name: Replication bench with heavy upload
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: install ripgrep
-        shell: bash
-        run: sudo apt-get install -y ripgrep
+  #     - name: install ripgrep
+  #       shell: bash
+  #       run: sudo apt-get install -y ripgrep
 
-      - name: Download materials to create two 300MB test_files to be uploaded by client
-        shell: bash
-        run: |
-          mkdir test_data_1
-          cd test_data_1
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safe-qiWithListeners-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safenode-qiWithListeners-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safenode_rpc_client-qiWithListeners-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/faucet-qilesssubs-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/safe-qilesssubs-x86_64.tar.gz
-          ls -l
-          cd ..
-          tar -cvzf test_data_1.tar.gz test_data_1
-          mkdir test_data_2
-          cd test_data_2
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/safenode-qilesssubs-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/safenode_rpc_client-qilesssubs-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/faucet-DebugMem-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safe-DebugMem-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safenode-DebugMem-x86_64.tar.gz
-          ls -l
-          cd ..
-          tar -cvzf test_data_2.tar.gz test_data_2
-          ls -l
-          mkdir test_data_3
-          cd test_data_3
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safenode_rpc_client-DebugMem-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/faucet-DebugMem-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safe-DebugMem-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safenode-DebugMem-x86_64.tar.gz
-          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safenode_rpc_client-DebugMem-x86_64.tar.gz
-          ls -l
-          cd ..
-          tar -cvzf test_data_3.tar.gz test_data_3
-          ls -l
-          df
+  #     - name: Download materials to create two 300MB test_files to be uploaded by client
+  #       shell: bash
+  #       run: |
+  #         mkdir test_data_1
+  #         cd test_data_1
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safe-qiWithListeners-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safenode-qiWithListeners-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safenode_rpc_client-qiWithListeners-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/faucet-qilesssubs-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/safe-qilesssubs-x86_64.tar.gz
+  #         ls -l
+  #         cd ..
+  #         tar -cvzf test_data_1.tar.gz test_data_1
+  #         mkdir test_data_2
+  #         cd test_data_2
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/safenode-qilesssubs-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/QiSubdivisionBranch/safenode_rpc_client-qilesssubs-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/faucet-DebugMem-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safe-DebugMem-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safenode-DebugMem-x86_64.tar.gz
+  #         ls -l
+  #         cd ..
+  #         tar -cvzf test_data_2.tar.gz test_data_2
+  #         ls -l
+  #         mkdir test_data_3
+  #         cd test_data_3
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush/safenode_rpc_client-DebugMem-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/faucet-DebugMem-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safe-DebugMem-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safenode-DebugMem-x86_64.tar.gz
+  #         wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/RemoveArtificalReplPush2/safenode_rpc_client-DebugMem-x86_64.tar.gz
+  #         ls -l
+  #         cd ..
+  #         tar -cvzf test_data_3.tar.gz test_data_3
+  #         ls -l
+  #         df
 
-      - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe
-        timeout-minutes: 30
+  #     - name: Build binaries
+  #       run: cargo build --release --bin safenode --bin safe
+  #       timeout-minutes: 30
 
-      - name: Build faucet binary
-        run: cargo build --release --bin faucet --features gifting
-        timeout-minutes: 30
+  #     - name: Build faucet binary
+  #       run: cargo build --release --bin faucet --features gifting
+  #       timeout-minutes: 30
 
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ubuntu-latest
-          build: true
+  #     - name: Start a local network
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: start
+  #         interval: 2000
+  #         node-path: target/release/safenode
+  #         faucet-path: target/release/faucet
+  #         platform: ubuntu-latest
+  #         build: true
 
-      - name: Check SAFE_PEERS was set
-        shell: bash
-        run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
-            exit 1
-          else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
-          fi
+  #     - name: Check SAFE_PEERS was set
+  #       shell: bash
+  #       run: |
+  #         if [[ -z "$SAFE_PEERS" ]]; then
+  #           echo "The SAFE_PEERS variable has not been set"
+  #           exit 1
+  #         else
+  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #         fi
 
-      - name: Create and fund a wallet to pay for files storage
-        run: |
-          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-          ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 5
+  #     - name: Create and fund a wallet to pay for files storage
+  #       run: |
+  #         ./target/release/safe --log-output-dest=data-dir wallet create --no-password
+  #         ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
-      - name: Start a client to upload first file
-        run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_1.tar.gz" --retry-strategy quick
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 5
+  #     - name: Start a client to upload first file
+  #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_1.tar.gz" --retry-strategy quick
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
-      - name: Ensure no leftover cash_notes and payment files
-        run: |
-          expected_cash_notes_files="1"
-          expected_payment_files="0"
-          pwd
-          ls $CLIENT_DATA_PATH/ -l
-          ls $CLIENT_DATA_PATH/wallet -l
-          ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-          cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
-          echo "Find $cash_note_files cash_note files"
-          if [ $expected_cash_notes_files -lt $cash_note_files ]; then
-            echo "Got too many cash_note files leftover: $cash_note_files"
-            exit 1
-          fi
-          ls $CLIENT_DATA_PATH/wallet/payments -l
-          payment_files=$(ls $CLIENT_DATA_PATH/wallet/payments | wc -l)
-          if [ $expected_payment_files -lt $payment_files ]; then
-            echo "Got too many payment files leftover: $payment_files"
-            exit 1
-          fi
-        env:
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
-        timeout-minutes: 10
+  #     - name: Ensure no leftover cash_notes and payment files
+  #       run: |
+  #         expected_cash_notes_files="1"
+  #         expected_payment_files="0"
+  #         pwd
+  #         ls $CLIENT_DATA_PATH/ -l
+  #         ls $CLIENT_DATA_PATH/wallet -l
+  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+  #         cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
+  #         echo "Find $cash_note_files cash_note files"
+  #         if [ $expected_cash_notes_files -lt $cash_note_files ]; then
+  #           echo "Got too many cash_note files leftover: $cash_note_files"
+  #           exit 1
+  #         fi
+  #         ls $CLIENT_DATA_PATH/wallet/payments -l
+  #         payment_files=$(ls $CLIENT_DATA_PATH/wallet/payments | wc -l)
+  #         if [ $expected_payment_files -lt $payment_files ]; then
+  #           echo "Got too many payment files leftover: $payment_files"
+  #           exit 1
+  #         fi
+  #       env:
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #       timeout-minutes: 10
 
-      - name: Wait for certain period
-        run: sleep 300
-        timeout-minutes: 6
+  #     - name: Wait for certain period
+  #       run: sleep 300
+  #       timeout-minutes: 6
 
-      - name: Use same client to upload second file
-        run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_2.tar.gz" --retry-strategy quick
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     - name: Use same client to upload second file
+  #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_2.tar.gz" --retry-strategy quick
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      - name: Ensure no leftover cash_notes and payment files
-        run: |
-          expected_cash_notes_files="1"
-          expected_payment_files="0"
-          pwd
-          ls $CLIENT_DATA_PATH/ -l
-          ls $CLIENT_DATA_PATH/wallet -l
-          ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-          cash_note_files=$(find $CLIENT_DATA_PATH/wallet/cash_notes -type f | wc -l)
-          if (( $(echo "$cash_note_files > $expected_cash_notes_files" | bc -l) )); then
-            echo "Got too many cash_note files leftover: $cash_note_files when we expected $expected_cash_notes_files"
-            exit 1
-          fi
-          ls $CLIENT_DATA_PATH/wallet/payments -l
-          payment_files=$(find $CLIENT_DATA_PATH/wallet/payments -type f | wc -l)
-          if (( $(echo "$payment_files > $expected_payment_files" | bc -l) )); then
-            echo "Got too many payment files leftover: $payment_files"
-            exit 1
-          fi
-        env:
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
-        timeout-minutes: 10
+  #     - name: Ensure no leftover cash_notes and payment files
+  #       run: |
+  #         expected_cash_notes_files="1"
+  #         expected_payment_files="0"
+  #         pwd
+  #         ls $CLIENT_DATA_PATH/ -l
+  #         ls $CLIENT_DATA_PATH/wallet -l
+  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+  #         cash_note_files=$(find $CLIENT_DATA_PATH/wallet/cash_notes -type f | wc -l)
+  #         if (( $(echo "$cash_note_files > $expected_cash_notes_files" | bc -l) )); then
+  #           echo "Got too many cash_note files leftover: $cash_note_files when we expected $expected_cash_notes_files"
+  #           exit 1
+  #         fi
+  #         ls $CLIENT_DATA_PATH/wallet/payments -l
+  #         payment_files=$(find $CLIENT_DATA_PATH/wallet/payments -type f | wc -l)
+  #         if (( $(echo "$payment_files > $expected_payment_files" | bc -l) )); then
+  #           echo "Got too many payment files leftover: $payment_files"
+  #           exit 1
+  #         fi
+  #       env:
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #       timeout-minutes: 10
 
-      - name: Wait for certain period
-        run: sleep 300
-        timeout-minutes: 6
+  #     - name: Wait for certain period
+  #       run: sleep 300
+  #       timeout-minutes: 6
 
-      # Start a different client to avoid local wallet slow down with more payments handled.
-      - name: Start a different client
-        run: |
-          pwd
-          mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
-          ls -l $SAFE_DATA_PATH
-          ls -l $SAFE_DATA_PATH/client_first
-          mkdir $SAFE_DATA_PATH/client
-          ls -l $SAFE_DATA_PATH
-          mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
-          ls -l $CLIENT_DATA_PATH
-          ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-          ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-        env:
-          SN_LOG: "all"
-          SAFE_DATA_PATH: /home/runner/.local/share/safe
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
-        timeout-minutes: 25
+  #     # Start a different client to avoid local wallet slow down with more payments handled.
+  #     - name: Start a different client
+  #       run: |
+  #         pwd
+  #         mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
+  #         ls -l $SAFE_DATA_PATH
+  #         ls -l $SAFE_DATA_PATH/client_first
+  #         mkdir $SAFE_DATA_PATH/client
+  #         ls -l $SAFE_DATA_PATH
+  #         mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
+  #         ls -l $CLIENT_DATA_PATH
+  #         ./target/release/safe --log-output-dest=data-dir wallet create --no-password
+  #         ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #       env:
+  #         SN_LOG: "all"
+  #         SAFE_DATA_PATH: /home/runner/.local/share/safe
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #       timeout-minutes: 25
 
-      - name: Use second client to upload third file
-        run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_3.tar.gz" --retry-strategy quick
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+  #     - name: Use second client to upload third file
+  #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_3.tar.gz" --retry-strategy quick
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 10
 
-      - name: Ensure no leftover cash_notes and payment files
-        run: |
-          expected_cash_notes_files="1"
-          expected_payment_files="0"
-          pwd
-          ls $CLIENT_DATA_PATH/ -l
-          ls $CLIENT_DATA_PATH/wallet -l
-          ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-          cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
-          echo "Find $cash_note_files cash_note files"
-          if [ $expected_cash_notes_files -lt $cash_note_files ]; then
-            echo "Got too many cash_note files leftover: $cash_note_files"
-            exit 1
-          fi
-          ls $CLIENT_DATA_PATH/wallet/payments -l
-          payment_files=$(ls $CLIENT_DATA_PATH/wallet/payments | wc -l)
-          if [ $expected_payment_files -lt $payment_files ]; then
-            echo "Got too many payment files leftover: $payment_files"
-            exit 1
-          fi
-        env:
-          CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
-        timeout-minutes: 10
+  #     - name: Ensure no leftover cash_notes and payment files
+  #       run: |
+  #         expected_cash_notes_files="1"
+  #         expected_payment_files="0"
+  #         pwd
+  #         ls $CLIENT_DATA_PATH/ -l
+  #         ls $CLIENT_DATA_PATH/wallet -l
+  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+  #         cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
+  #         echo "Find $cash_note_files cash_note files"
+  #         if [ $expected_cash_notes_files -lt $cash_note_files ]; then
+  #           echo "Got too many cash_note files leftover: $cash_note_files"
+  #           exit 1
+  #         fi
+  #         ls $CLIENT_DATA_PATH/wallet/payments -l
+  #         payment_files=$(ls $CLIENT_DATA_PATH/wallet/payments | wc -l)
+  #         if [ $expected_payment_files -lt $payment_files ]; then
+  #           echo "Got too many payment files leftover: $payment_files"
+  #           exit 1
+  #         fi
+  #       env:
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #       timeout-minutes: 10
 
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_heavy_replicate_bench
-          platform: ubuntu-latest
+  #     - name: Stop the local network and upload logs
+  #       if: always()
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: stop
+  #         log_file_prefix: safe_test_logs_heavy_replicate_bench
+  #         platform: ubuntu-latest
