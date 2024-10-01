@@ -21,23 +21,19 @@
 // docs.rs generation will enable unstable `doc_cfg` feature
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod client;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use libp2p::Multiaddr;
 
-pub mod client;
-#[cfg(feature = "evm-payments")]
-pub mod evm;
+pub use client::Client;
+
 #[cfg(feature = "native-payments")]
 pub mod native;
+
+#[cfg(feature = "data")]
 mod self_encryption;
 
 #[cfg(feature = "transfers")]
 const VERIFY_STORE: bool = true;
-
-#[cfg(all(feature = "native-payments", not(feature = "evm-payments")))]
-pub type Client = native::Client;
-
-#[cfg(all(feature = "evm-payments", not(feature = "native-payments")))]
-pub type Client = evm::Client;
