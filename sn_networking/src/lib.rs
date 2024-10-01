@@ -1193,8 +1193,8 @@ fn get_fees_from_store_cost_responses(
 
     info!("Final fees calculated as: {payee:?}");
     if payee.2.cost.as_nano() == record_store::MAX_STORE_COST {
-        warn!("The cost of the record is zero, this should not happen");
-        eprintln!("Costs are all max! {all_costs:?}");
+        eprintln!("The cost of the record is MAX, this should not happen");
+        // eprintln!("Costs are all max! {all_costs:?}");
 
         return Err(NetworkError::LowestCostIsMax);
     }
