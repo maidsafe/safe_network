@@ -14,6 +14,23 @@ pub struct Root {
     pub map: HashMap<PathBuf, FilePointer>,
 }
 
+impl Root {
+    /// Deserialize from bytes.
+    pub fn from_bytes(data: Bytes) -> Result<Root, rmp_serde::decode::Error> {
+        let root: Root = rmp_serde::from_slice(&data[..])?;
+
+        Ok(root)
+    }
+
+    /// Serialize to bytes.
+    pub fn into_bytes(&self) -> Result<Bytes, rmp_serde::encode::Error> {
+        let root_serialized = rmp_serde::to_vec(&self)?;
+        let root_serialized = Bytes::from(root_serialized);
+
+        Ok(root_serialized)
+    }
+}
+
 /// Structure that describes a file on the network. The actual data is stored in
 /// chunks, to be constructed with the address pointing to the data map.
 ///
@@ -46,13 +63,7 @@ impl Client {
     pub async fn fetch_root(&mut self, address: XorName) -> Result<Root, UploadError> {
         let data = self.get(address).await?;
 
-        Self::deserialize_root(data)
-    }
-
-    pub fn deserialize_root(data: Bytes) -> Result<Root, UploadError> {
-        let root: Root = rmp_serde::from_slice(&data[..]).expect("TODO");
-
-        Ok(root)
+        Ok(Root::from_bytes(data)?)
     }
 
     /// Fetch the file pointed to by the given pointer.
@@ -85,9 +96,9 @@ impl Client {
         }
 
         let root = Root { map };
-        let root_serialized = rmp_serde::to_vec(&root).expect("TODO");
+        let root_serialized = root.into_bytes()?;
 
-        let xor_name = self.put(Bytes::from(root_serialized), wallet).await?;
+        let xor_name = self.put(root_serialized, wallet).await?;
 
         Ok((root, xor_name))
     }

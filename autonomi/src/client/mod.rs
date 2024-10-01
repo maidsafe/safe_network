@@ -9,8 +9,6 @@ pub mod vault;
 
 use std::{collections::HashSet, time::Duration};
 
-#[cfg(feature = "vault")]
-use bls::SecretKey;
 use libp2p::{identity::Keypair, Multiaddr};
 use sn_networking::{multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
@@ -37,8 +35,6 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 #[derive(Clone)]
 pub struct Client {
     pub(crate) network: Network,
-    #[cfg(feature = "vault")]
-    pub(crate) vault_secret_key: Option<SecretKey>,
 }
 
 /// Error returned by [`Client::connect`].
@@ -88,11 +84,7 @@ impl Client {
 
         receiver.await.expect("sender should not close")?;
 
-        Ok(Self {
-            network,
-            #[cfg(feature = "vault")]
-            vault_secret_key: None,
-        })
+        Ok(Self { network })
     }
 }
 

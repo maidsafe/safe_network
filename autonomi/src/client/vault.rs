@@ -17,8 +17,6 @@ use tracing::info;
 pub enum VaultError {
     #[error("Could not generate Vault secret key from entropy: {0:?}")]
     Bls(#[from] bls::Error),
-    #[error("No Vault has been defined. Use `client.with_vault_entropy` to define one.")]
-    NoVaultPacketDefined,
     #[error("Scratchpad found at {0:?} was not a valid record.")]
     CouldNotDeserializeVaultScratchPad(ScratchpadAddress),
     #[error("Protocol: {0}")]
@@ -28,37 +26,22 @@ pub enum VaultError {
 }
 
 impl Client {
-    /// Add a vault secret key to the client
-    ///
-    /// The secret key is derived from the supplied entropy bytes.
-    pub fn with_vault_entropy(mut self, bytes: Bytes) -> Result<Self, VaultError> {
-        // simple hash as XORNAME_LEN == SK_LENs
-        let xorname = xor_name::XorName::from_content(&bytes);
-        // before generating the sk from these bytes.
-        self.vault_secret_key = Some(SecretKey::from_bytes(xorname.0)?);
-
-        Ok(self)
-    }
-
     /// Retrieves and returns a decrypted vault if one exists.
-    pub async fn fetch_and_decrypt_vault(&self) -> Result<Option<Bytes>, VaultError> {
-        let Some(vault_secret_key) = self.vault_secret_key.as_ref() else {
-            return Err(VaultError::NoVaultPacketDefined);
-        };
+    pub async fn fetch_and_decrypt_vault(
+        &self,
+        secret_key: &SecretKey,
+    ) -> Result<Option<Bytes>, VaultError> {
+        let pad = self.get_vault_from_network(secret_key).await?;
 
-        let pad = self.get_vault_from_network().await?;
-
-        Ok(pad.decrypt_data(vault_secret_key)?)
+        Ok(pad.decrypt_data(secret_key)?)
     }
 
     /// Gets the vault Scratchpad from a provided client public key
-    async fn get_vault_from_network(&self) -> Result<Scratchpad, VaultError> {
-        // let vault = self.vault.as_ref()?;
-        let Some(vault_secret_key) = self.vault_secret_key.as_ref() else {
-            return Err(VaultError::NoVaultPacketDefined);
-        };
-
-        let client_pk = vault_secret_key.public_key();
+    async fn get_vault_from_network(
+        &self,
+        secret_key: &SecretKey,
+    ) -> Result<Scratchpad, VaultError> {
+        let client_pk = secret_key.public_key();
 
         let scratch_address = ScratchpadAddress::new(client_pk);
         let network_address = NetworkAddress::from_scratchpad_address(scratch_address);
@@ -85,23 +68,17 @@ impl Client {
 
     /// Put data into the client's VaultPacket
     ///
-    /// Returns Ok(None) early if no vault packet is defined.
-    ///
     /// Pays for a new VaultPacket if none yet created for the client. Returns the current version
     /// of the data on success.
-    pub async fn write_bytes_to_vault_if_defined(
+    pub async fn write_bytes_to_vault(
         &mut self,
         data: Bytes,
         wallet: &mut Wallet,
-    ) -> Result<Option<u64>, PutError> {
-        // Exit early if no vault packet defined
-        let Some(client_sk) = self.vault_secret_key.as_ref() else {
-            return Ok(None);
-        };
+        secret_key: &SecretKey,
+    ) -> Result<u64, PutError> {
+        let client_pk = secret_key.public_key();
 
-        let client_pk = client_sk.public_key();
-
-        let pad_res = self.get_vault_from_network().await;
+        let pad_res = self.get_vault_from_network(secret_key).await;
         let mut is_new = true;
 
         let mut scratch = if let Ok(existing_data) = pad_res {
@@ -119,7 +96,7 @@ impl Client {
             Scratchpad::new(client_pk)
         };
 
-        let next_count = scratch.update_and_sign(data, client_sk);
+        let next_count = scratch.update_and_sign(data, secret_key);
         let scratch_address = scratch.network_address();
         let scratch_key = scratch_address.to_record_key();
 
@@ -172,6 +149,6 @@ impl Client {
 
         self.network.put_record(record, &put_cfg).await?;
 
-        Ok(Some(next_count))
+        Ok(next_count)
     }
 }
