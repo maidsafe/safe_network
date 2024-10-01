@@ -9,11 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2024-10-01
 
+### Launchpad
+
+#### Changed
+
+- Disable node selection on status screen
+- We change node size from 5GB to 35GB
+
+## 2024-10-01
+
 ### Network
 
 #### Changed
 
-- Increase node storage size from 4GB to 32GB
+- Increase node storage size from 2GB to 32GB
 
 ## 2024-09-24
 
