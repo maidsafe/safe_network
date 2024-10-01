@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727796828426,
+  "lastUpdate": 1727796830076,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "f2fc4c4a4a4a6778643d0900fcf229baabf927aa",
-          "message": "feat(audit): intercept sender of the payment forward",
-          "timestamp": "2024-05-13T18:21:09Z",
-          "tree_id": "cbfef37ed430dcf8e609d8102e41fc149196e486",
-          "url": "https://github.com/maidsafe/safe_network/commit/f2fc4c4a4a4a6778643d0900fcf229baabf927aa"
-        },
-        "date": 1715626945151,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 194,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30598,6 +30564,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory usage w/ upload",
             "value": 196,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "64e01c22df4f268848ebaeeef1bba4952e34c539",
+          "message": "Merge pull request #2159 from mazzi/feat_change_connection_confirmation\n\nFeat change connection confirmation",
+          "timestamp": "2024-10-01T14:44:21Z",
+          "tree_id": "9bcd5c4ea2b6a62edc685d10cbdefe72d58841a9",
+          "url": "https://github.com/maidsafe/safe_network/commit/64e01c22df4f268848ebaeeef1bba4952e34c539"
+        },
+        "date": 1727796829606,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 176,
             "unit": "MB"
           },
           {
