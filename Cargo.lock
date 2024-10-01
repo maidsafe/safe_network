@@ -1152,6 +1152,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "autonomi_cli"
+version = "0.1.0"
+dependencies = [
+ "autonomi",
+ "clap",
+ "color-eyre",
+ "dirs-next",
+ "indicatif",
+ "sn_build_info",
+ "sn_logging",
+ "sn_peers_acquisition",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "axum"
 version = "0.6.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"

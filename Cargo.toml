@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "autonomi",
+    "autonomi_cli",
     "evmlib",
     "evm_testnet",
     # "sn_auditor",
