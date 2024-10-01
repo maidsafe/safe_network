@@ -108,22 +108,22 @@ pub enum VaultCmd {
     Sync,
 }
 
-pub fn handle_subcommand(opt: Opt) -> Result<()> {
-    let peers = crate::utils::get_peers(opt.peers)?;
+pub async fn handle_subcommand(opt: Opt) -> Result<()> {
+    let peers = crate::utils::get_peers(opt.peers).await?;
     let cmd = opt.command;
 
     match cmd {
         SubCmd::File { command } => match command {
-            FileCmd::Cost { file } => file::cost(&file, peers),
-            FileCmd::Upload { file } => file::upload(&file, peers),
-            FileCmd::Download { addr, dest_file } => file::download(&addr, &dest_file, peers),
+            FileCmd::Cost { file } => file::cost(&file, peers).await,
+            FileCmd::Upload { file } => file::upload(&file, peers).await,
+            FileCmd::Download { addr, dest_file } => file::download(&addr, &dest_file, peers).await,
             FileCmd::List => file::list(peers),
         },
         SubCmd::Register { command } => match command {
-            RegisterCmd::Cost { name } => register::cost(&name, peers),
-            RegisterCmd::Create { name, value } => register::create(&name, &value, peers),
-            RegisterCmd::Edit { name, value } => register::edit(&name, &value, peers),
-            RegisterCmd::Get { name } => register::get(&name, peers),
+            RegisterCmd::Cost { name } => register::cost(&name, peers).await,
+            RegisterCmd::Create { name, value } => register::create(&name, &value, peers).await,
+            RegisterCmd::Edit { name, value } => register::edit(&name, &value, peers).await,
+            RegisterCmd::Get { name } => register::get(&name, peers).await,
             RegisterCmd::List => register::list(peers),
         },
         SubCmd::Vault { command } => match command {

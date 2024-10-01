@@ -13,7 +13,7 @@ use evmlib::common::{QuoteHash, QuotePayment, TxHash};
 use evmlib::wallet::Wallet;
 use libp2p::futures;
 use rand::{thread_rng, Rng};
-use sn_evm::ProofOfPayment;
+use sn_evm::{Amount, AttoTokens, ProofOfPayment};
 use sn_networking::PutRecordCfg;
 use sn_networking::{GetRecordCfg, Network, NetworkError, PayeeQuote, VerificationKind};
 use sn_protocol::{
@@ -54,7 +54,9 @@ pub enum PayError {
     #[error("Could not simultaneously fetch store costs: {0:?}")]
     JoinError(JoinError),
     #[error("Wallet error: {0:?}")]
-    WalletError(#[from] wallet::Error),
+    EvmWalletError(#[from] wallet::Error),
+    #[error("Failed to self-encrypt data.")]
+    SelfEncryption(#[from] crate::self_encryption::Error),
 }
 
 /// Errors that can occur during the get operation.
@@ -182,6 +184,27 @@ impl Client {
         }
 
         Ok(map_xor_name)
+    }
+
+    pub(crate) async fn cost(
+        &mut self,
+        data: Bytes,
+    ) -> Result<AttoTokens, PayError> {
+        let now = std::time::Instant::now();
+        let (data_map_chunk, chunks) = encrypt(data)?;
+
+        tracing::debug!("Encryption took: {:.2?}", now.elapsed());
+
+        let map_xor_name = *data_map_chunk.address().xorname();
+        let mut content_addrs = vec![map_xor_name];
+
+        for chunk in &chunks {
+            content_addrs.push(*chunk.name());
+        }
+
+        let cost_map = self.get_store_quotes(content_addrs.into_iter()).await?;
+        let total_cost = AttoTokens::from_atto(cost_map.iter().map(|(_, quote)| quote.2.cost.as_atto()).sum::<Amount>());
+        Ok(total_cost)
     }
 
     pub(crate) async fn pay(

@@ -13,6 +13,7 @@ mod commands;
 mod log_metrics;
 mod opt;
 mod utils;
+mod actions;
 
 use clap::Parser;
 use color_eyre::Result;
@@ -30,5 +31,6 @@ fn main() -> Result<()> {
     info!("autonomi client built with git version: {version}");
     println!("autonomi client built with git version: {version}");
 
-    commands::handle_subcommand(opt)
+    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+    rt.block_on(commands::handle_subcommand(opt))
 }

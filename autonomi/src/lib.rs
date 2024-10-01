@@ -25,6 +25,9 @@ pub mod client;
 #[cfg(feature = "data")]
 mod self_encryption;
 
+pub use sn_evm::EvmWallet as Wallet;
+pub use sn_evm::EvmNetwork as Network;
+
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.

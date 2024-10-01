@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use autonomi::Multiaddr;
+use autonomi::Network;
 use color_eyre::eyre::eyre;
 use color_eyre::eyre::Context;
 use color_eyre::Result;
@@ -76,10 +77,15 @@ pub fn get_client_data_dir_path() -> Result<PathBuf> {
     Ok(home_dirs)
 }
 
-pub fn get_peers(peers: PeersArgs) -> Result<Vec<Multiaddr>> {
-    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime to spawn peers acquisition thread");
-    rt.block_on(peers.get_peers())
+pub async fn get_peers(peers: PeersArgs) -> Result<Vec<Multiaddr>> {
+    peers.get_peers().await
         .wrap_err(format!("Please provide valid Network peers to connect to"))
         .with_suggestion(|| format!("make sure you've provided network peers using the --peers option or the {SAFE_PEERS_ENV} env var"))
         .with_suggestion(|| format!("a peer address looks like this: /ip4/42.42.42.42/udp/4242/quic-v1/p2p/B64nodePeerIDvdjb3FAJF4ks3moreBase64CharsHere"))
+}
+
+pub(crate) fn get_evm_network() -> Result<Network> {
+    // NB TODO load custom network from config file/env/cmd line
+    let network = Network::ArbitrumOne;
+    Ok(network)
 }
