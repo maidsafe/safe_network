@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use autonomi::client::address::xorname_to_str;
-use autonomi::Wallet;
 use autonomi::Multiaddr;
+use autonomi::Wallet;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
 use std::path::PathBuf;
@@ -17,7 +17,9 @@ pub async fn cost(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let mut client = crate::actions::connect_to_network(peers).await?;
 
     println!("Getting upload cost...");
-    let cost = client.file_cost(&PathBuf::from(file)).await
+    let cost = client
+        .file_cost(&PathBuf::from(file))
+        .await
         .wrap_err("Failed to calculate cost for file")?;
 
     println!("Estimate cost to upload file: {file}");
@@ -28,15 +30,16 @@ pub async fn cost(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
 pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let secret_key = crate::utils::get_secret_key()
         .wrap_err("The secret key is required to perform this action")?;
-    let network = crate::utils::get_evm_network()
-        .wrap_err("Failed to get evm network")?;
-    let wallet = Wallet::new_from_private_key(network, &secret_key)
-        .wrap_err("Failed to load wallet")?;
+    let network = crate::utils::get_evm_network().wrap_err("Failed to get evm network")?;
+    let wallet =
+        Wallet::new_from_private_key(network, &secret_key).wrap_err("Failed to load wallet")?;
 
     let mut client = crate::actions::connect_to_network(peers).await?;
 
     println!("Uploading data to network...");
-    let (_, xor_name) = client.upload_from_dir(PathBuf::from(file), &wallet).await
+    let (_, xor_name) = client
+        .upload_from_dir(PathBuf::from(file), &wallet)
+        .await
         .wrap_err("Failed to upload file")?;
     let addr = xorname_to_str(xor_name);
 

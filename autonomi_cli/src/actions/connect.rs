@@ -9,8 +9,8 @@
 use autonomi::Client;
 use autonomi::Multiaddr;
 use color_eyre::eyre::bail;
-use indicatif::ProgressBar;
 use color_eyre::eyre::Result;
+use indicatif::ProgressBar;
 use std::time::Duration;
 
 pub async fn connect_to_network(peers: Vec<Multiaddr>) -> Result<Client> {

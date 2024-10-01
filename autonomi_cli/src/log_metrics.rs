@@ -30,7 +30,8 @@ pub fn init_logging_and_metrics(opt: &Opt) -> Result<()> {
 
     #[cfg(feature = "metrics")]
     std::thread::spawn(|| {
-        let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime to spawn metrics thread");
+        let rt = tokio::runtime::Runtime::new()
+            .expect("Failed to create tokio runtime to spawn metrics thread");
         rt.spawn(async {
             init_metrics(std::process::id()).await;
         });

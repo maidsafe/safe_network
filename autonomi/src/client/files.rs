@@ -75,10 +75,7 @@ impl Client {
 
     /// Get the cost to upload a file/dir to the network.
     /// quick and dirty implementation, please refactor once files are cleanly implemented
-    pub async fn file_cost(
-        &mut self,
-        path: &PathBuf,
-    ) -> Result<AttoTokens, UploadError> {
+    pub async fn file_cost(&mut self, path: &PathBuf) -> Result<AttoTokens, UploadError> {
         let mut map = HashMap::new();
         let mut total_cost = Amount::ZERO;
 

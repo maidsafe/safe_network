@@ -9,11 +9,11 @@
 #[macro_use]
 extern crate tracing;
 
+mod actions;
 mod commands;
 mod log_metrics;
 mod opt;
 mod utils;
-mod actions;
 
 use clap::Parser;
 use color_eyre::Result;
