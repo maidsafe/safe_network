@@ -28,6 +28,7 @@ If you wish to build a version of `safenode` from source, some special considera
 if you want it to connect to the current beta network.
 
 You should build from the `stable` branch, as follows:
+
 ```
 git checkout stable
 export GENESIS_PK=806b5c2eba70354ea92ba142c57587c9c5467ff69f0d43c482cda2313f9351e40c6120d76a2495cb3ca8367eee0a676f
@@ -50,6 +51,7 @@ royalties are collected. They are also used as part of the node version string, 
 a connecting node is compatible.
 
 For a client to connect to the current beta network, these keys must be set at build time:
+
 ```
 GENESIS_PK=8829ca178d6022de16fb8d3498411dd8a674a69c5f12e04d8b794a52ab056f1d419d12f690df1082dfa7efbbb10f62fa
 FOUNDATION_PK=84418659a8581b510c40b12e57da239787fd0d3b323f102f09fae9daf2ac96907e0045b1653c301de45117d393d92678
@@ -60,11 +62,13 @@ PAYMENT_FORWARD_PK=8c2f406a52d48d48505e1a3fdbb0c19ab42cc7c4807e9ea19c1fff3e5148f
 ##### Features
 
 You should also build `safe` with the `network-contacts` and `distribution` features enabled:
+
 ```
 cargo build --release --features="network-contacts,distribution" --bin safe
 ```
 
 For `safenode`, only the `network-contacts` feature should be required:
+
 ```
 cargo build --release --features=network-contacts --bin safenode
 ```
@@ -135,7 +139,8 @@ YMMV until stabilised.
 
 ## Using a Local Network
 
-We can explore the network's features by using multiple node processes to form a local network.
+We can explore the network's features by using multiple node processes to form a local network. e also need to run a
+local EVM network for our nodes and client to connect to.
 
 The latest version of [Rust](https://www.rust-lang.org/learn/get-started) should be installed. If
 you already have an installation, use `rustup update` to get the latest version.
@@ -146,27 +151,31 @@ Run all the commands from the root of this repository.
 
 Follow these steps to create a local network:
 
-1. Create the test network: <br>
+1. If you haven't already, install Foundry. We need to have access to Anvil, which is packaged with Foundry, to run an
+   EVM node: https://book.getfoundry.sh/getting-started/installation <br>
+2. Run a local EVM node: <br>
 
-```bash
-cargo run --bin safenode-manager --features local-discovery -- local run --build
+```sh
+cargo run --bin evm_testnet
 ```
 
-2. Verify node status: <br>
+Take note of the console output for the next step (`RPC URL`, `Payment token address` & `Chunk payments address`).
+
+3. Create the test network and pass the EVM params: <br>
+   `--rewards-address` _is the address where you will receive your node earnings on._
+
+```bash
+cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean --rewards-address <YOUR_ETHEREUM_ADDRESS> evm-custom --rpc-url <RPC_URL> --payment-token-address <TOKEN_ADDRESS> --chunk-payments-address <CONTRACT_ADDRESS>
+```
+
+4. Verify node status: <br>
 
 ```bash
 cargo run --bin safenode-manager --features local-discovery -- status
 ```
 
-3. Build a tokenized wallet: <br>
-
-```bash
-cargo run --bin safe --features local-discovery -- wallet get-faucet 127.0.0.1:8000
-```
-
-The node manager's `run` command starts the node processes and a faucet process, the latter of
-which will dispense tokens for use with the network. The `status` command should show twenty-five
-running nodes. The `wallet` command retrieves some tokens, which enables file uploads.
+The node manager's `run` command starts the node processes. The `status` command should show twenty-five
+running nodes.
 
 ### Files
 
@@ -256,7 +265,7 @@ cargo run --bin safe --features local-discovery -- wallet send 2 [address]
 ```
 
 This will output a transfer as a hex string, which should be sent to the recipient.
-This transfer is encrypted to the recipient so only the recipient can read and redeem it. 
+This transfer is encrypted to the recipient so only the recipient can read and redeem it.
 To receive a transfer, simply paste it after the wallet receive command:
 
 ```
