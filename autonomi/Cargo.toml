@@ -10,17 +10,14 @@ readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
 
 [features]
-default = ["evm-payments", "data"]
-full = ["data", "registers", "vault", "evm-payments"]
+default = ["data"]
+full = ["data", "registers", "vault"]
 data = []
 vault = ["data"]
 files = ["fs", "data"]
 fs = []
 local = ["sn_networking/local-discovery"]
 registers = []
-transfers = []
-native-payments = []
-evm-payments = []
 
 [dependencies]
 bip39 = "2.0.0"

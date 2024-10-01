@@ -1,12 +1,17 @@
 use std::collections::HashSet;
 
-use crate::client::{Client, ClientWrapper};
+use crate::client::data::PutError;
+use crate::client::Client;
 use bls::SecretKey;
 use bytes::Bytes;
-use libp2p::kad::Quorum;
-use sn_networking::{GetRecordCfg, NetworkError};
-use sn_protocol::storage::{Scratchpad, ScratchpadAddress};
+use evmlib::wallet::Wallet;
+use libp2p::kad::{Quorum, Record};
+use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg, VerificationKind};
+use sn_protocol::storage::{
+    try_serialize_record, RecordKind, RetryStrategy, Scratchpad, ScratchpadAddress,
+};
 use sn_protocol::{storage::try_deserialize_record, NetworkAddress};
+use tracing::info;
 
 #[derive(Debug, thiserror::Error)]
 pub enum VaultError {
@@ -90,7 +95,7 @@ impl Client {
         wallet: &mut Wallet,
     ) -> Result<Option<u64>, PutError> {
         // Exit early if no vault packet defined
-        let Some(client_sk) = self.client().vault_secret_key.as_ref() else {
+        let Some(client_sk) = self.vault_secret_key.as_ref() else {
             return Ok(None);
         };
 
@@ -100,7 +105,7 @@ impl Client {
         let mut is_new = true;
 
         let mut scratch = if let Ok(existing_data) = pad_res {
-            tracing::info!("Scratchpad already exists, returning existing data");
+            info!("Scratchpad already exists, returning existing data");
 
             info!(
                 "scratch already exists, is version {:?}",
@@ -165,7 +170,7 @@ impl Client {
             )),
         };
 
-        self.network().put_record(record, &put_cfg).await?;
+        self.network.put_record(record, &put_cfg).await?;
 
         Ok(Some(next_count))
     }

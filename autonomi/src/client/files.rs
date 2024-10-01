@@ -1,9 +1,11 @@
 use crate::client::data::{GetError, PutError};
-use crate::client::{Client, ClientWrapper};
+use crate::client::Client;
 use bytes::Bytes;
+use evmlib::wallet::Wallet;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use walkdir::WalkDir;
 use xor_name::XorName;
 
 /// Directory-like structure that containing file paths and their metadata.
@@ -43,6 +45,11 @@ impl Client {
     /// Fetch a directory from the network.
     pub async fn fetch_root(&mut self, address: XorName) -> Result<Root, UploadError> {
         let data = self.get(address).await?;
+
+        Self::deserialize_root(data)
+    }
+
+    pub fn deserialize_root(data: Bytes) -> Result<Root, UploadError> {
         let root: Root = rmp_serde::from_slice(&data[..]).expect("TODO");
 
         Ok(root)

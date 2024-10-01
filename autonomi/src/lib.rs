@@ -22,18 +22,12 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod client;
+#[cfg(feature = "data")]
+mod self_encryption;
+
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use libp2p::Multiaddr;
 
 pub use client::Client;
-
-#[cfg(feature = "native-payments")]
-pub mod native;
-
-#[cfg(feature = "data")]
-mod self_encryption;
-
-#[cfg(feature = "transfers")]
-const VERIFY_STORE: bool = true;
