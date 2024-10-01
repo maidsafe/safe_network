@@ -2089,7 +2089,7 @@ mod tests {
             .fold(f64::NEG_INFINITY, |a, &b| a.max(b));
 
         // Create 50 buckets for average nanos earned
-        const NUM_BUCKETS: usize = 50;
+        const NUM_BUCKETS: usize = 25;
         let bucket_size = (max_avg_nanos - min_avg_nanos) / NUM_BUCKETS as f64;
         let mut histogram = vec![0_u64; NUM_BUCKETS];
         for &avg_nanos in &avg_nanos_earned {
@@ -2123,7 +2123,7 @@ mod tests {
             .configure_mesh()
             .x_desc("Average Nanos Earned Bucket")
             .y_desc("Number of Nodes")
-            .x_labels(10)
+            .x_labels(NUM_BUCKETS)
             .y_labels(10)
             .x_label_formatter(&|&v| format!("{:.2}", min_avg_nanos + v as f64 * bucket_size))
             .y_label_formatter(&|v| format!("{}", v))
