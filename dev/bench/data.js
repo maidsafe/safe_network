@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727789839859,
+  "lastUpdate": 1727789842158,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30622,45 +30622,6 @@ window.BENCHMARK_DATA = {
             "username": "grumbach"
           },
           "distinct": true,
-          "id": "16f4b607f11968e0780194d430206a8810d30dc9",
-          "message": "chore: resolve errors after reverts",
-          "timestamp": "2024-05-13T14:15:51Z",
-          "tree_id": "2f903e8686b1d92430d44bcb6c13f2e3c132394d",
-          "url": "https://github.com/maidsafe/safe_network/commit/16f4b607f11968e0780194d430206a8810d30dc9"
-        },
-        "date": 1715612959730,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 15510,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 93948,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 6,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
           "id": "f2fc4c4a4a4a6778643d0900fcf229baabf927aa",
           "message": "feat(audit): intercept sender of the payment forward",
           "timestamp": "2024-05-13T18:21:09Z",
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 69150,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "782b7352c3a494787414a360e33f1daeca6a1da9",
+          "message": "Merge pull request #2157 from RolandSherwin/metrics_shunned\n\nfeat(metrics): shunned count across time frames",
+          "timestamp": "2024-10-01T12:41:42Z",
+          "tree_id": "8a609f44a5c8efb0201974535151b98b2fb51a5e",
+          "url": "https://github.com/maidsafe/safe_network/commit/782b7352c3a494787414a360e33f1daeca6a1da9"
+        },
+        "date": 1727789841363,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 18960,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 63962,
             "unit": "ms"
           },
           {
