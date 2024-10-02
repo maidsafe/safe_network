@@ -1,3 +1,5 @@
+#![cfg(feature = "files")]
+
 mod common;
 
 use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
@@ -5,7 +7,6 @@ use autonomi::Client;
 use std::time::Duration;
 use tokio::time::sleep;
 
-#[cfg(feature = "files")]
 #[tokio::test]
 async fn file() -> Result<(), Box<dyn std::error::Error>> {
     common::enable_logging();
@@ -30,7 +31,7 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(all(feature = "vault", feature = "files"))]
+#[cfg(feature = "vault")]
 #[tokio::test]
 async fn file_into_vault() -> eyre::Result<()> {
     common::enable_logging();

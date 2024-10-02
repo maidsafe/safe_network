@@ -1,3 +1,5 @@
+#![cfg(feature = "registers")]
+
 mod common;
 
 use std::time::Duration;
@@ -8,7 +10,6 @@ use bytes::Bytes;
 use tokio::time::sleep;
 use xor_name::XorName;
 
-#[cfg(feature = "registers")]
 #[tokio::test]
 async fn register() {
     common::enable_logging();
