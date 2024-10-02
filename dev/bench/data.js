@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727879064338,
+  "lastUpdate": 1727879066051,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "ddca19415067d59e8b8bfab533c2337010c5daf9",
-          "message": "fix: beta rewards participants overwriting and renamings",
-          "timestamp": "2024-05-14T21:52:40Z",
-          "tree_id": "abbf6c66a3433790fba0bafa13acf40ce24d3962",
-          "url": "https://github.com/maidsafe/safe_network/commit/ddca19415067d59e8b8bfab533c2337010c5daf9"
-        },
-        "date": 1715726490192,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 203,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 89,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 80,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b2dba94d4032538e621f56ddc7e8809bb6fb4901",
+          "message": "Merge pull request #2180 from mazzi/fix_discord_lowercase_username\n\nfix(launchpad): storing Discord lowercase username",
+          "timestamp": "2024-10-02T13:27:50Z",
+          "tree_id": "9407b605688d271f837c8f25ae7a1182c30db45c",
+          "url": "https://github.com/maidsafe/safe_network/commit/b2dba94d4032538e621f56ddc7e8809bb6fb4901"
+        },
+        "date": 1727879065517,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 208,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
