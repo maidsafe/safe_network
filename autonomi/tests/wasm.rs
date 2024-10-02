@@ -24,6 +24,7 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
     init_logging();
     log::info!("Helloworld");
 
+    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
     let peers = vec![
         "/ip4/127.0.0.1/tcp/35499/ws/p2p/12D3KooWGN5RqREZ4RYtsUc3DNCkrNSVXEzTYEbMb1AZx2rNddoW"
             .try_into()
