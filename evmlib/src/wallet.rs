@@ -266,7 +266,6 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 mod tests {
     use crate::common::Amount;
     use crate::testnet::Testnet;
-    use crate::utils::dummy_address;
     use crate::wallet::{from_private_key, Wallet};
     use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
     use alloy::primitives::address;

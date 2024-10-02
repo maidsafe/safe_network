@@ -8091,6 +8091,7 @@ dependencies = [
  "tracing",
  "users",
  "uuid",
+ "which 6.0.3",
 ]
 
 [[package]]

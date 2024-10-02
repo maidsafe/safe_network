@@ -186,10 +186,7 @@ impl Client {
         Ok(map_xor_name)
     }
 
-    pub(crate) async fn cost(
-        &mut self,
-        data: Bytes,
-    ) -> Result<AttoTokens, PayError> {
+    pub(crate) async fn cost(&mut self, data: Bytes) -> Result<AttoTokens, PayError> {
         let now = std::time::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
 
@@ -203,7 +200,12 @@ impl Client {
         }
 
         let cost_map = self.get_store_quotes(content_addrs.into_iter()).await?;
-        let total_cost = AttoTokens::from_atto(cost_map.iter().map(|(_, quote)| quote.2.cost.as_atto()).sum::<Amount>());
+        let total_cost = AttoTokens::from_atto(
+            cost_map
+                .values()
+                .map(|quote| quote.2.cost.as_atto())
+                .sum::<Amount>(),
+        );
         Ok(total_cost)
     }
 
