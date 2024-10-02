@@ -2,18 +2,17 @@
 
 mod common;
 
-use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
 use autonomi::Client;
 use std::time::Duration;
+use test_utils::evm::get_funded_wallet;
 use tokio::time::sleep;
 
 #[tokio::test]
 async fn file() -> Result<(), Box<dyn std::error::Error>> {
     common::enable_logging();
 
-    let network = evm_network_from_env();
     let mut client = Client::connect(&[]).await.unwrap();
-    let wallet = evm_wallet_from_env_or_default(network);
+    let wallet = get_funded_wallet();
 
     let (root, addr) = client
         .upload_from_dir("tests/file/test_dir".into(), &wallet)
@@ -36,10 +35,8 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
 async fn file_into_vault() -> eyre::Result<()> {
     common::enable_logging();
 
-    let network = evm_network_from_env();
-
     let mut client = Client::connect(&[]).await?;
-    let mut wallet = evm_wallet_from_env_or_default(network);
+    let mut wallet = get_funded_wallet();
     let client_sk = bls::SecretKey::random();
 
     let (root, addr) = client

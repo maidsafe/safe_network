@@ -81,6 +81,10 @@ strum = { version = "0.26.2", features = ["derive"] }
 color-eyre = "0.6.2"
 
 [dev-dependencies]
+evmlib = { path = "../evmlib", version = "0.1" }
+autonomi = { path = "../autonomi", version = "0.1.0", features = [
+    "registers",
+] }
 reqwest = { version = "0.12.2", default-features = false, features = [
     "rustls-tls-manual-roots",
 ] }

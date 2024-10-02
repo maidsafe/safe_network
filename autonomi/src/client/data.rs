@@ -154,7 +154,7 @@ impl Client {
 
     /// Upload a piece of data to the network. This data will be self-encrypted,
     /// and the data map XOR address will be returned.
-    pub async fn put(&mut self, data: Bytes, wallet: &Wallet) -> Result<XorName, PutError> {
+    pub async fn put(&self, data: Bytes, wallet: &Wallet) -> Result<XorName, PutError> {
         let now = std::time::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
 
@@ -186,7 +186,7 @@ impl Client {
         Ok(map_xor_name)
     }
 
-    pub(crate) async fn cost(&mut self, data: Bytes) -> Result<AttoTokens, PayError> {
+    pub(crate) async fn cost(&self, data: Bytes) -> Result<AttoTokens, PayError> {
         let now = std::time::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
 
@@ -210,7 +210,7 @@ impl Client {
     }
 
     pub(crate) async fn pay(
-        &mut self,
+        &self,
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &Wallet,
     ) -> Result<(HashMap<XorName, ProofOfPayment>, Vec<XorName>), PayError> {
@@ -237,7 +237,7 @@ impl Client {
     }
 
     async fn get_store_quotes(
-        &mut self,
+        &self,
         content_addrs: impl Iterator<Item = XorName>,
     ) -> Result<HashMap<XorName, PayeeQuote>, PayError> {
         let futures: Vec<_> = content_addrs
