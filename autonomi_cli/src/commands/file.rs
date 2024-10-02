@@ -30,7 +30,7 @@ pub async fn cost(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
 pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let secret_key = crate::utils::get_secret_key()
         .wrap_err("The secret key is required to perform this action")?;
-    let network = crate::utils::get_evm_network().wrap_err("Failed to get evm network")?;
+    let network = crate::utils::get_evm_network_from_environment()?;
     let wallet =
         Wallet::new_from_private_key(network, &secret_key).wrap_err("Failed to load wallet")?;
 
