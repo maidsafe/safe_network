@@ -1,3 +1,11 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
 #[cfg(feature = "evm-payments")]
 mod test {
     use autonomi::Client;
@@ -9,7 +17,8 @@ mod test {
 
     #[tokio::test]
     async fn file() -> Result<(), Box<dyn std::error::Error>> {
-        common::enable_logging();
+        let _log_appender_guard =
+            sn_logging::LogBuilder::init_single_threaded_tokio_test("file", false);
 
         let mut client = Client::connect(&[]).await.unwrap();
         let mut wallet = get_funded_wallet();

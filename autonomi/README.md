@@ -37,7 +37,7 @@ cargo run --bin=safenode-manager --features=local-discovery -- local run --build
 ```sh
 $ EVM_NETWORK=local cargo test --package=autonomi --features=local
 # Or with logs
-$ RUST_LOG=autonomi EVM_NETWORK=local cargo test --package=autonomi --features=local -- --nocapture
+$ RUST_LOG=autonomi EVM_NETWORK=local cargo test --package=autonomi --features=local-discovery -- --nocapture
 ```
 
 ### Using a live testnet or mainnet
@@ -57,7 +57,7 @@ cargo run --bin=safenode-manager --features=local-discovery -- local run --build
 ```sh
 $ EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
 # Or with logs
-$ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local -- --nocapture
+$ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local-discovery -- --nocapture
 ```
 
 ## Faucet (local)

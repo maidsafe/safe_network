@@ -150,104 +150,89 @@ jobs:
   #         # we do many more runs on the nightly run
   #         PROPTEST_CASES: 50
 
-  # e2e:
-  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-  #   name: E2E tests
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - os: ubuntu-latest
-  #           safe_path: /home/runner/.local/share/safe
-  #         - os: windows-latest
-  #           safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
-  #         - os: macos-latest
-  #           safe_path: /Users/runner/Library/Application Support/safe
-  #   steps:
-  #     - uses: actions/checkout@v4
+  e2e:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: E2E tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            safe_path: /home/runner/.local/share/safe
+          - os: windows-latest
+            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+          - os: macos-latest
+            safe_path: /Users/runner/Library/Application Support/safe
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - name: Install Rust
-  #       uses: dtolnay/rust-toolchain@stable
-  #     - uses: Swatinem/rust-cache@v2
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
 
-  #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin safe
-  #       timeout-minutes: 30
+      - name: Build binaries
+        run: cargo build --release --bin safenode --bin autonomi_cli
+        timeout-minutes: 30
 
-  #     - name: Build faucet binary
-  #       run: cargo build --release --bin faucet --features gifting
-  #       timeout-minutes: 30
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@evm-dev
+        with:
+          action: start
+          enable-evm-testnet: true
+          node-path: target/release/safenode
+          platform: ${{ matrix.os }}
+          build: true
 
-  #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
-  #       with:
-  #         action: start
-  #         interval: 2000
-  #         node-path: target/release/safenode
-  #         faucet-path: target/release/faucet
-  #         platform: ${{ matrix.os }}
-  #         build: true
+      - name: Check if SAFE_PEERS and EVM_NETWORK are set
+        shell: bash
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          elif [[ -z "$EVM_NETWORK" ]]; then
+            echo "The EVM_NETWORK variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+            echo "EVM_NETWORK has been set to $EVM_NETWORK"
+          fi
 
-  #     - name: Check SAFE_PEERS was set
-  #       shell: bash
-  #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
-  #           exit 1
-  #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
-  #         fi
+      # only these unit tests require a network, the rest are run above
+      - name: Run autonomi --tests
+        run: cargo test --package autonomi --tests -- --nocapture
+        env:
+          SN_LOG: "v"
+          # only set the target dir for windows to bypass the linker issue.
+          # happens if we build the node manager via testnet action
+          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
+        timeout-minutes: 15
 
-  #     # only these unit tests require a network, the rest are run above
-  #     - name: Run sn_client --tests
-  #       run: cargo test --package sn_client --release --tests
-  #       env:
-  #         SN_LOG: "all"
-  #         # only set the target dir for windows to bypass the linker issue.
-  #         # happens if we build the node manager via testnet action
-  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-  #       timeout-minutes: 15
+      # FIXME: do this in a generic way for localtestnets
+      - name: export default secret key
+        run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" >> $GITHUB_ENV
 
-  #     - name: Create and fund a wallet to pay for files storage
-  #       run: |
-  #         ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-  #         ./target/release/faucet --log-output-dest=data-dir send 1000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-  #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 5
+      - name: Start a client to upload cost estimate
+        run: ./target/release/autonomi_cli --log-output-dest=data-dir file cost "./resources"
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 15
 
-  #     - name: Start a client to upload cost estimate
-  #       run: ./target/release/safe --log-output-dest=data-dir files estimate "./resources"
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 15
+      - name: Start a client to upload files
+        run: ./target/release/autonomi_cli --log-output-dest=data-dir file upload "./resources" > ./upload_output 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 15
 
-  #     - name: Start a client to upload files
-  #       run: ./target/release/safe --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 15
+      - name: Get address from stdout
+        run: |
+          ADDRESS=$(rg "At address: ([0-9a-f]{64})" -o -r '$1' ./upload_output)
+          echo "UPLOAD_ADDRESS=$ADDRESS" >> $GITHUB_ENV
 
-  #     - name: Start a client to download files
-  #       run: ./target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 2
-
-  #     # Client FoldersApi tests against local network
-  #     - name: Client FoldersApi tests against local network
-  #       run: cargo test --release --package sn_client --test folders_api
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 10
-
-  #     # CLI Acc-Packet files and folders tests against local network
-  #     - name: CLI Acc-Packet files and folders tests
-  #       run: cargo test --release -p sn_cli test_acc_packet -- --nocapture
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 10
+      - name: Start a client to download files
+        run: ./target/release/autonomi_cli --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
 
   #     - name: Start a client to create a register writable by the owner only
   #       run: ./target/release/safe --log-output-dest=data-dir register create -n baobao
@@ -331,13 +316,13 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 10
 
-  #     - name: Stop the local network and upload logs
-  #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
-  #       with:
-  #         action: stop
-  #         log_file_prefix: safe_test_logs_e2e
-  #         platform: ${{ matrix.os }}
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@evm-dev
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_e2e
+          platform: ${{ matrix.os }}
 
   # spend_test:
   #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
