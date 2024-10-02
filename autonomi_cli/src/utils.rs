@@ -79,9 +79,9 @@ pub fn get_client_data_dir_path() -> Result<PathBuf> {
 
 pub async fn get_peers(peers: PeersArgs) -> Result<Vec<Multiaddr>> {
     peers.get_peers().await
-        .wrap_err(format!("Please provide valid Network peers to connect to"))
+        .wrap_err("Please provide valid Network peers to connect to".to_string())
         .with_suggestion(|| format!("make sure you've provided network peers using the --peers option or the {SAFE_PEERS_ENV} env var"))
-        .with_suggestion(|| format!("a peer address looks like this: /ip4/42.42.42.42/udp/4242/quic-v1/p2p/B64nodePeerIDvdjb3FAJF4ks3moreBase64CharsHere"))
+        .with_suggestion(|| "a peer address looks like this: /ip4/42.42.42.42/udp/4242/quic-v1/p2p/B64nodePeerIDvdjb3FAJF4ks3moreBase64CharsHere".to_string())
 }
 
 pub(crate) fn get_evm_network() -> Result<Network> {

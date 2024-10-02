@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use color_eyre::eyre::Result;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
-use color_eyre::eyre::Result;
 
 pub fn get_progress_bar(length: u64) -> Result<ProgressBar> {
     let progress_bar = ProgressBar::new(length);

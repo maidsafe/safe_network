@@ -65,6 +65,9 @@ uuid = { version = "1.5.0", features = ["v4"] }
 nix = { version = "0.27.1", features = ["fs", "user"] }
 users = "0.11"
 
+[target.'cfg(target_os = "windows")'.dependencies]
+which = "6.0.1"
+
 [dev-dependencies]
 assert_cmd = "2.0.12"
 assert_fs = "1.0.13"

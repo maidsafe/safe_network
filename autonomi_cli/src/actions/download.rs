@@ -6,15 +6,16 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::get_progress_bar;
 use autonomi::{client::address::str_to_xorname, Client};
 use color_eyre::eyre::{eyre, Context, Result};
 use std::path::PathBuf;
-use super::get_progress_bar;
 
 pub async fn download(addr: &str, dest_path: &str, client: &mut Client) -> Result<()> {
-    let address = str_to_xorname(addr)
-        .wrap_err("Failed to parse data address")?;
-    let root = client.fetch_root(address).await
+    let address = str_to_xorname(addr).wrap_err("Failed to parse data address")?;
+    let root = client
+        .fetch_root(address)
+        .await
         .wrap_err("Failed to fetch data from address")?;
 
     let progress_bar = get_progress_bar(root.map.len() as u64)?;
