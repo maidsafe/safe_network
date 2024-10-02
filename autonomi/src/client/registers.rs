@@ -145,7 +145,7 @@ impl Client {
 
     /// Creates a new Register with an initial value and uploads it to the network.
     pub async fn create_register(
-        &mut self,
+        &self,
         value: Bytes,
         name: XorName,
         owner: SecretKey,

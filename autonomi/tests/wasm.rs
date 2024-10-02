@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
 use autonomi::Client;
+use test_utils::evm::get_funded_wallet;
 use tokio::time::sleep;
 use wasm_bindgen_test::*;
 
@@ -20,9 +20,8 @@ async fn file() -> Result<(), Box<dyn std::error::Error>> {
             .expect("str to be valid multiaddr"),
     ];
 
-    let network = evm_network_from_env();
-    let mut client = Client::connect(&peers).await.unwrap();
-    let wallet = evm_wallet_from_env_or_default(network);
+    let client = Client::connect(&peers).await.unwrap();
+    let wallet = get_funded_wallet();
 
     let data = common::gen_random_data(1024 * 1024 * 10);
 

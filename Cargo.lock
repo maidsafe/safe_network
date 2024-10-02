@@ -1046,6 +1046,7 @@ dependencies = [
  "sn_protocol",
  "sn_registers",
  "sn_transfers",
+ "test_utils",
  "thiserror",
  "tokio",
  "tracing",
@@ -8136,6 +8137,7 @@ version = "0.111.3"
 dependencies = [
  "assert_fs",
  "async-trait",
+ "autonomi",
  "blsttc",
  "bytes",
  "chrono",
@@ -8145,6 +8147,7 @@ dependencies = [
  "crdts",
  "custom_debug",
  "dirs-next",
+ "evmlib",
  "eyre",
  "file-rotate",
  "futures",
@@ -8649,8 +8652,11 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 name = "test_utils"
 version = "0.4.6"
 dependencies = [
+ "autonomi",
  "color-eyre",
+ "const-hex",
  "dirs-next",
+ "evmlib",
  "libp2p 0.54.1",
  "serde",
  "serde_json",

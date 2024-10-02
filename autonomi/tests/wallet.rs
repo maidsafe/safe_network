@@ -1,9 +1,9 @@
 mod common;
 
-use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
 use const_hex::traits::FromHex;
 use evmlib::common::{Address, Amount};
 use evmlib::wallet::Wallet;
+use test_utils::evm::{evm_network_from_env, get_funded_wallet};
 
 #[tokio::test]
 async fn from_private_key() {
@@ -20,7 +20,7 @@ async fn from_private_key() {
 #[tokio::test]
 async fn send_tokens() {
     let network = evm_network_from_env();
-    let wallet = evm_wallet_from_env_or_default(network.clone());
+    let wallet = get_funded_wallet();
 
     let receiving_wallet = Wallet::new_with_random_wallet(network);
 

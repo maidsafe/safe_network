@@ -1,21 +1,18 @@
 #[cfg(feature = "evm-payments")]
 mod test {
-
-    use crate::common;
-    use crate::common::{evm_network_from_env, evm_wallet_from_env_or_default};
     use autonomi::Client;
     use bytes::Bytes;
     use eyre::bail;
     use std::time::Duration;
+    use test_utils::evm::get_funded_wallet;
     use tokio::time::sleep;
 
     #[tokio::test]
     async fn file() -> Result<(), Box<dyn std::error::Error>> {
         common::enable_logging();
 
-        let network = evm_network_from_env();
         let mut client = Client::connect(&[]).await.unwrap();
-        let mut wallet = evm_wallet_from_env_or_default(network);
+        let mut wallet = get_funded_wallet();
 
         // let data = common::gen_random_data(1024 * 1024 * 1000);
         // let user_key = common::gen_random_data(32);
@@ -41,13 +38,11 @@ mod test {
     async fn file_into_vault() -> eyre::Result<()> {
         common::enable_logging();
 
-        let network = evm_network_from_env();
-
         let mut client = Client::connect(&[])
             .await?
             .with_vault_entropy(Bytes::from("at least 32 bytes of entropy here"))?;
 
-        let mut wallet = evm_wallet_from_env_or_default(network);
+        let mut wallet = get_funded_wallet();
 
         let (root, addr) = client
             .upload_from_dir("tests/file/test_dir".into(), &mut wallet)
