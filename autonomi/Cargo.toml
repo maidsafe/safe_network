@@ -50,6 +50,10 @@ eyre = "0.6.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wasm-bindgen-test = "0.3.43"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# See https://github.com/sebcrozet/instant/blob/7bd13f51f5c930239fddc0476a837870fb239ed7/README.md#using-instant-for-a-wasm-platform-where-performancenow-is-not-available
+instant = { version = "0.1", features = [ "wasm-bindgen", "inaccurate" ] }
+
 [lints]
 workspace = true
 
