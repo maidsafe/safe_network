@@ -10,9 +10,7 @@ use const_hex::ToHexExt;
 use evmlib::CustomNetwork;
 use std::env;
 
-fn get_var_or_panic(var: &str) -> String {
-    env::var(var).unwrap_or_else(|_| panic!("{var} environment variable needs to be set"))
-}
+use crate::env_from_runtime_or_compiletime;
 
 pub fn evm_network_from_env() -> evmlib::Network {
     let evm_network = env::var("EVM_NETWORK").ok();
@@ -30,9 +28,11 @@ pub fn evm_network_from_env() -> evmlib::Network {
         )
     } else {
         (
-            get_var_or_panic("RPC_URL"),
-            get_var_or_panic("PAYMENT_TOKEN_ADDRESS"),
-            get_var_or_panic("CHUNK_PAYMENTS_ADDRESS"),
+            env_from_runtime_or_compiletime!("RPC_URL").expect("`RPC_URL` not set"),
+            env_from_runtime_or_compiletime!("PAYMENT_TOKEN_ADDRESS")
+                .expect("`PAYMENT_TOKEN_ADDRESS` not set"),
+            env_from_runtime_or_compiletime!("CHUNK_PAYMENTS_ADDRESS")
+                .expect("`CHUNK_PAYMENTS_ADDRESS` not set"),
         )
     };
 
@@ -45,11 +45,10 @@ pub fn evm_network_from_env() -> evmlib::Network {
 
 pub fn get_funded_wallet() -> evmlib::wallet::Wallet {
     let network = evm_network_from_env();
-    // Default deployer wallet of the testnet.
-    const DEFAULT_WALLET_PRIVATE_KEY: &str =
-        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-    let private_key = env::var("EVM_PRIVATE_KEY").unwrap_or(DEFAULT_WALLET_PRIVATE_KEY.to_string());
+    let private_key = env_from_runtime_or_compiletime!("EVM_PRIVATE_KEY").unwrap_or_else(|| {
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80".to_string()
+    });
 
     evmlib::wallet::Wallet::new_from_private_key(network, &private_key)
         .expect("Invalid private key")

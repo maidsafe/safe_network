@@ -134,8 +134,12 @@ impl ContinuousBootstrap {
                     "It has been {LAST_PEER_ADDED_TIME_LIMIT:?} since we last added a peer to RT. Slowing down the continuous bootstrapping process. Old interval: {current_interval:?}, New interval: {no_peer_added_slowdown_interval_duration:?}"
                 );
 
+            // `Interval` ticks immediately for Tokio, but not for `wasmtimer`, which is used for wasm32.
+            #[cfg_attr(target_arch = "wasm32", allow(unused_mut))]
             let mut new_interval = interval(no_peer_added_slowdown_interval_duration);
-            new_interval.tick().await; // the first tick completes immediately
+            #[cfg(not(target_arch = "wasm32"))]
+            new_interval.tick().await;
+
             return (should_bootstrap, Some(new_interval));
         }
 
@@ -145,8 +149,13 @@ impl ContinuousBootstrap {
         let new_interval = BOOTSTRAP_INTERVAL * step;
         let new_interval = if new_interval > current_interval {
             info!("More peers have been added to our RT!. Slowing down the continuous bootstrapping process. Old interval: {current_interval:?}, New interval: {new_interval:?}");
+
+            // `Interval` ticks immediately for Tokio, but not for `wasmtimer`, which is used for wasm32.
+            #[cfg_attr(target_arch = "wasm32", allow(unused_mut))]
             let mut interval = interval(new_interval);
-            interval.tick().await; // the first tick completes immediately
+            #[cfg(not(target_arch = "wasm32"))]
+            interval.tick().await;
+
             Some(interval)
         } else {
             None

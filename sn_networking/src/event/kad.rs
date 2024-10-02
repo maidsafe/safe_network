@@ -8,7 +8,8 @@
 
 use crate::{
     driver::PendingGetClosestType, get_quorum_value, get_raw_signed_spends_from_record,
-    GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    target_arch::Instant, GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver,
+    CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::kad::{
@@ -20,10 +21,7 @@ use sn_protocol::{
     PrettyPrintRecordKey,
 };
 use sn_transfers::SignedSpend;
-use std::{
-    collections::{hash_map::Entry, BTreeSet, HashSet},
-    time::Instant,
-};
+use std::collections::{hash_map::Entry, BTreeSet, HashSet};
 use tokio::sync::oneshot;
 use xor_name::XorName;
 

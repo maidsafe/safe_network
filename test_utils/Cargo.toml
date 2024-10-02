@@ -19,3 +19,4 @@ evmlib = { path = "../evmlib", version = "0.1" }
 libp2p = { version = "0.54.1", features = ["identify", "kad"] }
 serde = { version = "1.0.133", features = [ "derive"]}
 serde_json = "1.0"
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.2" }

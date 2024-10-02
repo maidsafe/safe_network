@@ -1,8 +1,5 @@
 use bytes::Bytes;
-use libp2p::Multiaddr;
 use rand::Rng;
-use sn_peers_acquisition::parse_peer_addr;
-use std::env;
 
 #[allow(dead_code)]
 pub fn gen_random_data(len: usize) -> Bytes {
@@ -19,14 +16,19 @@ pub fn enable_logging() {
         .try_init();
 }
 
+#[cfg(target_arch = "wasm32")]
 #[allow(dead_code)]
-/// Parse the `SAFE_PEERS` env var into a list of Multiaddrs.
-///
-/// An empty `Vec` will be returned if the env var is not set.
-pub fn peers_from_env() -> Result<Vec<Multiaddr>, libp2p::multiaddr::Error> {
-    let Ok(peers_str) = env::var("SAFE_PEERS") else {
-        return Ok(vec![]);
-    };
+pub fn enable_logging_wasm(directive: impl AsRef<str>) {
+    use tracing_subscriber::prelude::*;
 
-    peers_str.split(',').map(parse_peer_addr).collect()
+    console_error_panic_hook::set_once();
+
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_ansi(false) // Only partially supported across browsers
+        .without_time() // std::time is not available in browsers
+        .with_writer(tracing_web::MakeWebConsoleWriter::new()); // write events to the console
+    tracing_subscriber::registry()
+        .with(fmt_layer)
+        .with(tracing_subscriber::EnvFilter::new(directive))
+        .init();
 }

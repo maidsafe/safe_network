@@ -12,9 +12,9 @@ pub mod vault;
 use std::{collections::HashSet, time::Duration};
 
 use libp2p::{identity::Keypair, Multiaddr};
-use sn_networking::{multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
+use sn_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
-use tokio::{sync::mpsc::Receiver, time::interval};
+use tokio::sync::mpsc::Receiver;
 
 /// Time before considering the connection timed out.
 pub const CONNECT_TIMEOUT_SECS: u64 = 20;
@@ -73,7 +73,7 @@ impl Client {
         // Spawn task to dial to the given peers
         let network_clone = network.clone();
         let peers = peers.to_vec();
-        let _handle = tokio::spawn(async move {
+        let _handle = sn_networking::target_arch::spawn(async move {
             for addr in peers {
                 if let Err(err) = network_clone.dial(addr.clone()).await {
                     eprintln!("addr={addr} Failed to dial: {err:?}");
@@ -81,8 +81,8 @@ impl Client {
             }
         });
 
-        let (sender, receiver) = tokio::sync::oneshot::channel();
-        tokio::spawn(handle_event_receiver(event_receiver, sender));
+        let (sender, receiver) = futures::channel::oneshot::channel();
+        sn_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
 
         receiver.await.expect("sender should not close")?;
 
@@ -98,20 +98,22 @@ fn build_client_and_run_swarm(local: bool) -> (Network, Receiver<NetworkEvent>) 
     let (network, event_receiver, swarm_driver) =
         network_builder.build_client().expect("mdns to succeed");
 
-    let _swarm_driver = tokio::spawn(swarm_driver.run());
+    let _swarm_driver = sn_networking::target_arch::spawn(swarm_driver.run());
 
     (network, event_receiver)
 }
 
 async fn handle_event_receiver(
     mut event_receiver: Receiver<NetworkEvent>,
-    sender: tokio::sync::oneshot::Sender<Result<(), ConnectError>>,
+    sender: futures::channel::oneshot::Sender<Result<(), ConnectError>>,
 ) {
     // We switch this to `None` when we've sent the oneshot 'connect' result.
     let mut sender = Some(sender);
     let mut unsupported_protocols = vec![];
 
     let mut timeout_timer = interval(Duration::from_secs(CONNECT_TIMEOUT_SECS));
+
+    #[cfg(not(target_arch = "wasm32"))]
     timeout_timer.tick().await;
 
     loop {

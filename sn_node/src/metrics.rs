@@ -17,7 +17,7 @@ use prometheus_client::{
         info::Info,
     },
 };
-use sn_networking::Instant;
+use sn_networking::target_arch::Instant;
 #[cfg(feature = "open-metrics")]
 use sn_networking::MetricsRegistries;
 

@@ -1,4 +1,4 @@
-#![cfg(feature = "files")]
+#![cfg(all(feature = "files", feature = "fs"))]
 
 mod common;
 
