@@ -120,10 +120,10 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
             FileCmd::List => file::list(peers),
         },
         SubCmd::Register { command } => match command {
-            RegisterCmd::Cost { name } => register::cost(&name, peers).await,
-            RegisterCmd::Create { name, value } => register::create(&name, &value, peers).await,
-            RegisterCmd::Edit { name, value } => register::edit(&name, &value, peers).await,
-            RegisterCmd::Get { name } => register::get(&name, peers).await,
+            RegisterCmd::Cost { name } => register::cost(&name, peers),
+            RegisterCmd::Create { name, value } => register::create(&name, &value, peers),
+            RegisterCmd::Edit { name, value } => register::edit(&name, &value, peers),
+            RegisterCmd::Get { name } => register::get(&name, peers),
             RegisterCmd::List => register::list(peers),
         },
         SubCmd::Vault { command } => match command {

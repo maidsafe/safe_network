@@ -54,6 +54,6 @@ pub async fn download(addr: &str, dest_path: &str, peers: Vec<Multiaddr>) -> Res
 }
 
 pub fn list(_peers: Vec<Multiaddr>) -> Result<()> {
-    println!("Listing previous uploads...");
+    println!("The file list feature is coming soon!");
     Ok(())
 }
