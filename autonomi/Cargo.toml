@@ -15,7 +15,7 @@ full = ["data", "registers", "vault"]
 data = []
 vault = ["data"]
 files = ["fs", "data"]
-fs = []
+fs = ["tokio/fs"]
 local = ["sn_networking/local-discovery"]
 registers = []
 
@@ -40,7 +40,7 @@ sn_registers = { path = "../sn_registers", version = "0.3.19" }
 sn_transfers = { path = "../sn_transfers", version = "0.19.1" }
 sn_evm = { path = "../sn_evm" }
 thiserror = "1.0.23"
-tokio = { version = "1.35.0", features = ["sync", "fs"] }
+tokio = { version = "1.35.0", features = ["sync"] }
 tracing = { version = "~0.1.26" }
 walkdir = "2.5.0"
 xor_name = "5.0.0"
@@ -48,6 +48,7 @@ xor_name = "5.0.0"
 [dev-dependencies]
 eyre = "0.6.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+wasm-bindgen-test = "0.3.43"
 
 [lints]
 workspace = true

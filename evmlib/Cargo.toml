@@ -9,11 +9,14 @@ repository = "https://github.com/maidsafe/safe_network"
 version = "0.1.0"
 
 [dependencies]
-alloy = { version = "0.2", default-features = false, features = ["std", "full", "provider-anvil-node", "reqwest-rustls-tls"] }
+alloy = { version = "0.2", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
 serde = "1.0"
 thiserror = "1.0"
 tokio = "1.38.0"
 rand = "0.8.5"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2.12", features = ["js"] }
 
 [lints]
 workspace = true
