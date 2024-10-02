@@ -314,7 +314,7 @@ impl FoldersApi {
         children: &BTreeSet<EntryHash>,
         encryption_pk: Option<PublicKey>,
     ) -> Result<(EntryHash, XorName, Metadata)> {
-        let mut bytes = BytesMut::with_capacity(MAX_CHUNK_SIZE);
+        let mut bytes = BytesMut::with_capacity(*MAX_CHUNK_SIZE);
         let serialised_metadata = rmp_serde::to_vec(&metadata)?;
         if let Some(pk) = encryption_pk {
             bytes.put(

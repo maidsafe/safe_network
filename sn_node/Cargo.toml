@@ -48,7 +48,7 @@ tonic = { version = "0.6.2" }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 rayon = "1.8.0"
-self_encryption = "~0.29.0"
+self_encryption = "~0.30.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
 sn_build_info = { path = "../sn_build_info", version = "0.1.14" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.2" }
