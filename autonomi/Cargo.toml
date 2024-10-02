@@ -50,6 +50,7 @@ log = "0.4"
 web-sys = { version = "0.3", features = ["console"] }
 wasmtimer = "0.2.0"
 console_log = "0.2"
+futures-timer = "3.0"
 
 [dev-dependencies]
 eyre = "0.6.5"

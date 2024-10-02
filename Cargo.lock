@@ -1034,6 +1034,7 @@ dependencies = [
  "evmlib",
  "eyre",
  "futures",
+ "futures-timer",
  "hex 0.4.3",
  "instant",
  "libp2p 0.54.1",

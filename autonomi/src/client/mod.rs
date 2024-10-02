@@ -24,6 +24,8 @@ pub use wasmtimer::{
 };
 
 use sn_networking::target_arch::spawn;
+
+use futures::FutureExt;
 /// Time before considering the connection timed out.
 pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 
@@ -56,6 +58,10 @@ pub enum ConnectError {
     /// Same as [`ConnectError::TimedOut`] but with a list of incompatible protocols.
     #[error("Could not connect to peers due to incompatible protocol: {0:?}")]
     TimedOutWithIncompatibleProtocol(HashSet<String>, String),
+}
+use std::any::type_name;
+fn print_type_of<T>(_: &T) {
+    log::info!("The type is: {}", type_name::<T>());
 }
 
 impl Client {
@@ -90,10 +96,10 @@ impl Client {
         });
 
         let (sender, receiver) = oneshot::channel();
+        // print_type_of(&receiver);
         spawn(handle_event_receiver(event_receiver, sender));
 
         receiver.await.expect("sender should not close")?;
-
         Ok(Self { network })
     }
 }
@@ -121,12 +127,21 @@ async fn handle_event_receiver(
     let mut sender = Some(sender);
     let mut unsupported_protocols = vec![];
 
-    let mut timeout_timer = interval(Duration::from_secs(CONNECT_TIMEOUT_SECS));
-    timeout_timer.tick().await;
+    // let mut timeout_timer = futures::timer::interval(Duration::from_secs(CONNECT_TIMEOUT_SECS));
+    let mut timeout_timer = wasmtimer::tokio::interval(Duration::from_secs(CONNECT_TIMEOUT_SECS));
+    // timeout_timer.tick().await.fuse();
+    let mut fused_tick = timeout_timer.tick().fuse();
+    
+    // print_type_of(&timeout_timer.tick());
+    // timeout_timer.tick().await;
+    futures::pin_mut!(fused_tick);
+    let mut fevent_receiver = event_receiver.recv().fuse();
+    futures::pin_mut!(fevent_receiver);
 
     loop {
-        tokio::select! {
-            _ = timeout_timer.tick() =>  {
+        futures::select! {
+            _ = fused_tick =>  {
+ 
                 if let Some(sender) = sender.take() {
                     if unsupported_protocols.len() > 1 {
                         let protocols: HashSet<String> =
@@ -138,13 +153,14 @@ async fn handle_event_receiver(
                             )))
                             .expect("receiver should not close");
                     } else {
-                        sender
+                       sender
                             .send(Err(ConnectError::TimedOut))
                             .expect("receiver should not close");
                     }
                 }
             }
-            event = event_receiver.recv() => {
+            event = fevent_receiver => {
+
                 let event = event.expect("receiver should not close");
                 match event {
                     NetworkEvent::PeerAdded(_peer_id, peers_len) => {
@@ -168,6 +184,8 @@ async fn handle_event_receiver(
             }
         }
     }
+
+
 
     // TODO: Handle closing of network events sender
 }
