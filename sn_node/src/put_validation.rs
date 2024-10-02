@@ -623,8 +623,8 @@ impl Node {
         self.network().notify_payment_received();
 
         #[cfg(feature = "open-metrics")]
-        if let Some(node_metrics) = self.node_metrics() {
-            let _prev = node_metrics
+        if let Some(metrics_recorder) = self.metrics_recorder() {
+            let _ = metrics_recorder
                 .current_reward_wallet_balance
                 .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX)); // TODO maybe metrics should be in u256 too?
         }

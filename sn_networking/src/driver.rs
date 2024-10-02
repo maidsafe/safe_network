@@ -6,10 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-#[cfg(feature = "open-metrics")]
-use crate::metrics::NetworkMetricsRecorder;
-#[cfg(feature = "open-metrics")]
-use crate::metrics_service::run_metrics_server;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -26,6 +22,10 @@ use crate::{
     replication_fetcher::ReplicationFetcher,
     target_arch::{interval, spawn, Instant},
     GetRecordError, Network, CLOSE_GROUP_SIZE,
+};
+#[cfg(feature = "open-metrics")]
+use crate::{
+    metrics::service::run_metrics_server, metrics::NetworkMetricsRecorder, MetricsRegistries,
 };
 use crate::{transport, NodeIssue};
 use futures::future::Either;
@@ -46,7 +46,7 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 #[cfg(feature = "open-metrics")]
-use prometheus_client::{metrics::info::Info, registry::Registry};
+use prometheus_client::metrics::info::Info;
 use sn_evm::PaymentQuote;
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
@@ -257,9 +257,7 @@ pub struct NetworkBuilder {
     concurrency_limit: Option<usize>,
     initial_peers: Vec<Multiaddr>,
     #[cfg(feature = "open-metrics")]
-    metrics_metadata_registry: Option<Registry>,
-    #[cfg(feature = "open-metrics")]
-    metrics_registry: Option<Registry>,
+    metrics_registries: Option<MetricsRegistries>,
     #[cfg(feature = "open-metrics")]
     metrics_server_port: Option<u16>,
     #[cfg(feature = "upnp")]
@@ -278,9 +276,7 @@ impl NetworkBuilder {
             concurrency_limit: None,
             initial_peers: Default::default(),
             #[cfg(feature = "open-metrics")]
-            metrics_metadata_registry: None,
-            #[cfg(feature = "open-metrics")]
-            metrics_registry: None,
+            metrics_registries: None,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: None,
             #[cfg(feature = "upnp")]
@@ -308,18 +304,11 @@ impl NetworkBuilder {
         self.initial_peers = initial_peers;
     }
 
-    /// Set the Registry that will be served at the `/metadata` endpoint. This Registry should contain only the static
-    /// info about the peer. Configure the `metrics_server_port` to enable the metrics server.
-    #[cfg(feature = "open-metrics")]
-    pub fn metrics_metadata_registry(&mut self, metrics_metadata_registry: Registry) {
-        self.metrics_metadata_registry = Some(metrics_metadata_registry);
-    }
-
-    /// Set the Registry that will be served at the `/metrics` endpoint.
+    /// Set the registries used inside the metrics server.
     /// Configure the `metrics_server_port` to enable the metrics server.
     #[cfg(feature = "open-metrics")]
-    pub fn metrics_registry(&mut self, metrics_registry: Registry) {
-        self.metrics_registry = Some(metrics_registry);
+    pub fn metrics_registries(&mut self, registries: MetricsRegistries) {
+        self.metrics_registries = Some(registries);
     }
 
     #[cfg(feature = "open-metrics")]
@@ -479,11 +468,11 @@ impl NetworkBuilder {
         );
 
         #[cfg(feature = "open-metrics")]
-        let mut metrics_registry = self.metrics_registry.unwrap_or_default();
+        let mut metrics_registries = self.metrics_registries.unwrap_or_default();
 
         // ==== Transport ====
         #[cfg(feature = "open-metrics")]
-        let main_transport = transport::build_transport(&self.keypair, &mut metrics_registry);
+        let main_transport = transport::build_transport(&self.keypair, &mut metrics_registries);
         #[cfg(not(feature = "open-metrics"))]
         let main_transport = transport::build_transport(&self.keypair);
         let transport = if !self.local {
@@ -513,18 +502,18 @@ impl NetworkBuilder {
             .boxed();
 
         #[cfg(feature = "open-metrics")]
-        let network_metrics = if let Some(port) = self.metrics_server_port {
-            let network_metrics = NetworkMetricsRecorder::new(&mut metrics_registry);
-            let mut metadata_registry = self.metrics_metadata_registry.unwrap_or_default();
-            let network_metadata_sub_registry =
-                metadata_registry.sub_registry_with_prefix("sn_networking");
+        let metrics_recorder = if let Some(port) = self.metrics_server_port {
+            let metrics_recorder = NetworkMetricsRecorder::new(&mut metrics_registries);
+            let metadata_sub_reg = metrics_registries
+                .metadata
+                .sub_registry_with_prefix("sn_networking");
 
-            network_metadata_sub_registry.register(
+            metadata_sub_reg.register(
                 "peer_id",
                 "Identifier of a peer of the network",
                 Info::new(vec![("peer_id".to_string(), peer_id.to_string())]),
             );
-            network_metadata_sub_registry.register(
+            metadata_sub_reg.register(
                 "identify_protocol_str",
                 "The protocol version string that is used to connect to the correct network",
                 Info::new(vec![(
@@ -533,8 +522,8 @@ impl NetworkBuilder {
                 )]),
             );
 
-            run_metrics_server(metrics_registry, metadata_registry, port);
-            Some(network_metrics)
+            run_metrics_server(metrics_registries, port);
+            Some(metrics_recorder)
         } else {
             None
         };
@@ -576,9 +565,9 @@ impl NetworkBuilder {
                     #[cfg(feature = "open-metrics")]
                     let mut node_record_store = node_record_store;
                     #[cfg(feature = "open-metrics")]
-                    if let Some(metrics) = &network_metrics {
+                    if let Some(metrics_recorder) = &metrics_recorder {
                         node_record_store = node_record_store
-                            .set_record_count_metric(metrics.records_stored.clone());
+                            .set_record_count_metric(metrics_recorder.records_stored.clone());
                     }
 
                     let store = UnifiedRecordStore::Node(node_record_store);
@@ -682,7 +671,7 @@ impl NetworkBuilder {
             external_address_manager,
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
-            network_metrics,
+            metrics_recorder,
             // kept here to ensure we can push messages to the channel
             // and not block the processing thread unintentionally
             network_cmd_sender: network_swarm_cmd_sender.clone(),
@@ -733,7 +722,7 @@ pub struct SwarmDriver {
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
-    pub(crate) network_metrics: Option<NetworkMetricsRecorder>,
+    pub(crate) metrics_recorder: Option<NetworkMetricsRecorder>,
 
     network_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
     pub(crate) local_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
@@ -998,8 +987,8 @@ impl SwarmDriver {
     pub(crate) fn record_metrics(&self, marker: Marker) {
         marker.log();
         #[cfg(feature = "open-metrics")]
-        if let Some(network_metrics) = self.network_metrics.as_ref() {
-            network_metrics.record_from_marker(marker)
+        if let Some(metrics_recorder) = self.metrics_recorder.as_ref() {
+            metrics_recorder.record_from_marker(marker)
         }
     }
 

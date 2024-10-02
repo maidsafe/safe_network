@@ -33,8 +33,8 @@ impl SwarmDriver {
         // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
         // called individually on each behaviour.
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
-            metrics.record(&event);
+        if let Some(metrics_recorder) = &self.metrics_recorder {
+            metrics_recorder.record(&event);
         }
         let start = Instant::now();
         let event_string;
@@ -47,8 +47,8 @@ impl SwarmDriver {
             }
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
                 #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics.record(&kad_event);
+                if let Some(metrics_recorder) = &self.metrics_recorder {
+                    metrics_recorder.record(&kad_event);
                 }
                 event_string = "kad_event";
                 self.handle_kad_event(kad_event)?;
@@ -69,8 +69,8 @@ impl SwarmDriver {
             #[cfg(feature = "upnp")]
             SwarmEvent::Behaviour(NodeEvent::Upnp(upnp_event)) => {
                 #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics.record(&upnp_event);
+                if let Some(metrics_recorder) = &self.metrics_recorder {
+                    metrics_recorder.record(&upnp_event);
                 }
                 event_string = "upnp_event";
                 info!(?upnp_event, "UPnP event");
@@ -84,8 +84,8 @@ impl SwarmDriver {
 
             SwarmEvent::Behaviour(NodeEvent::RelayServer(event)) => {
                 #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics.record(&(*event));
+                if let Some(metrics_recorder) = &self.metrics_recorder {
+                    metrics_recorder.record(&(*event));
                 }
 
                 event_string = "relay_server_event";
@@ -109,8 +109,8 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 // Record the Identify event for metrics if the feature is enabled.
                 #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics.record(&(*iden));
+                if let Some(metrics_recorder) = &self.metrics_recorder {
+                    metrics_recorder.record(&(*iden));
                 }
                 event_string = "identify";
 
@@ -644,7 +644,7 @@ impl SwarmDriver {
     /// Record the metrics on update of connection state.
     fn record_connection_metrics(&self) {
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
+        if let Some(metrics) = &self.metrics_recorder {
             metrics
                 .open_connections
                 .set(self.live_connected_peers.len() as i64);

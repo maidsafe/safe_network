@@ -227,8 +227,10 @@ impl SwarmDriver {
         self.send_event(NetworkEvent::PeerAdded(added_peer, self.peers_in_rt));
 
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
-            metrics.peers_in_routing_table.set(self.peers_in_rt as i64);
+        if let Some(metrics_recorder) = &self.metrics_recorder {
+            metrics_recorder
+                .peers_in_routing_table
+                .set(self.peers_in_rt as i64);
         }
     }
 
@@ -243,8 +245,10 @@ impl SwarmDriver {
         self.send_event(NetworkEvent::PeerRemoved(removed_peer, self.peers_in_rt));
 
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
-            metrics.peers_in_routing_table.set(self.peers_in_rt as i64);
+        if let Some(metrics_recorder) = &self.metrics_recorder {
+            metrics_recorder
+                .peers_in_routing_table
+                .set(self.peers_in_rt as i64);
         }
     }
 
@@ -284,8 +288,8 @@ impl SwarmDriver {
         let estimated_network_size =
             Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
-            let _ = metrics
+        if let Some(metrics_recorder) = &self.metrics_recorder {
+            let _ = metrics_recorder
                 .estimated_network_size
                 .set(estimated_network_size as i64);
         }

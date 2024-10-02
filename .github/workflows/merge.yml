@@ -127,7 +127,7 @@ jobs:
 
   #     - name: Run network tests
   #       timeout-minutes: 25
-  #       run: cargo test --release --package sn_networking
+  #       run: cargo test --release --package sn_networking --features="open-metrics"
 
   #     - name: Run protocol tests
   #       timeout-minutes: 25

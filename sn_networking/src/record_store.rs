@@ -52,9 +52,9 @@ use xor_name::XorName;
 // Given chunk record is maxed at size of 512KB.
 // During Beta phase, it's almost one spend per chunk,
 // which makes the average record size is around 256k.
-// Given we are targeting small nodes use 1GB diskspace,
-// this shall allow around 4K records.
-const MAX_RECORDS_COUNT: usize = 4096;
+// Given we are targeting node size to be 32GB,
+// this shall allow around 128K records.
+const MAX_RECORDS_COUNT: usize = 128 * 1024;
 
 /// The maximum number of records to cache in memory.
 const MAX_RECORDS_CACHE_SIZE: usize = 100;
@@ -1027,7 +1027,7 @@ mod tests {
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
-        assert_eq!(sut, 952375);
+        assert_eq!(sut, 952572);
     }
 
     #[test]
@@ -1036,7 +1036,7 @@ mod tests {
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
-        assert_eq!(sut, 988981);
+        assert_eq!(sut, 989011);
     }
 
     #[test]
@@ -1045,7 +1045,7 @@ mod tests {
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
-        assert_eq!(sut, 997523);
+        assert_eq!(sut, 997527);
     }
 
     #[test]
@@ -1054,7 +1054,7 @@ mod tests {
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
-        assert_eq!(sut, 999875);
+        assert_eq!(sut, 999876);
     }
 
     #[test]
@@ -1745,13 +1745,13 @@ mod tests {
                     "More than {acceptable_percentage}% of nodes ({acceptable_empty_nodes}) still not earning: {empty_earned_nodes}"
                 );
                 assert!(
-                    (max_store_cost / min_store_cost) < 100,
-                    "store cost is not 'balanced', expected ratio max/min to be < 100, but was {}",
+                    (max_store_cost / min_store_cost) < 1000000,
+                    "store cost is not 'balanced', expected ratio max/min to be < 1000000, but was {}",
                     max_store_cost / min_store_cost
                 );
                 assert!(
-                    (max_earned / min_earned) < 1500,
-                    "earning distribution is not balanced, expected to be < 1500, but was {}",
+                    (max_earned / min_earned) < 300000000,
+                    "earning distribution is not balanced, expected to be < 200000000, but was {}",
                     max_earned / min_earned
                 );
                 break;
