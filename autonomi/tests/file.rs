@@ -2,13 +2,9 @@
 
 mod common;
 
-#[cfg(feature = "files")]
 use autonomi::Client;
-#[cfg(feature = "files")]
 use std::time::Duration;
-#[cfg(feature = "files")]
 use test_utils::evm::get_funded_wallet;
-#[cfg(feature = "files")]
 use tokio::time::sleep;
 
 #[tokio::test]

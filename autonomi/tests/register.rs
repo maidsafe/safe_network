@@ -2,17 +2,11 @@
 
 mod common;
 
-#[cfg(feature = "registers")]
 use autonomi::Client;
-#[cfg(feature = "registers")]
 use bytes::Bytes;
-#[cfg(feature = "registers")]
 use std::time::Duration;
-#[cfg(feature = "registers")]
 use test_utils::evm::get_funded_wallet;
-#[cfg(feature = "registers")]
 use tokio::time::sleep;
-#[cfg(feature = "registers")]
 use xor_name::XorName;
 
 #[tokio::test]
