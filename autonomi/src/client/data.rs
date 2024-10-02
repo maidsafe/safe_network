@@ -24,6 +24,7 @@ use sn_protocol::{
     },
     NetworkAddress,
 };
+use crate::client::NetworkClient;
 use std::collections::{BTreeMap, HashMap};
 use std::num::NonZero;
 
@@ -314,7 +315,7 @@ impl Client {
 
 /// Fetch a store quote for a content address with a retry strategy.
 async fn fetch_store_quote_with_retries(
-    network: &Network,
+    network: &NetworkClient,
     content_addr: XorName,
 ) -> Result<(XorName, PayeeQuote), PayError> {
     let mut retries = 0;
@@ -340,7 +341,7 @@ async fn fetch_store_quote_with_retries(
 
 /// Fetch a store quote for a content address.
 async fn fetch_store_quote(
-    network: &Network,
+    network: &NetworkClient,
     content_addr: XorName,
 ) -> Result<PayeeQuote, NetworkError> {
     network

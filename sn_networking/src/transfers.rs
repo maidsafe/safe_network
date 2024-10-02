@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    close_group_majority, driver::GetRecordCfg, GetRecordError, Network, NetworkError, Result,
+    close_group_majority, driver::GetRecordCfg, GetRecordError, Network, NetworkError,NetworkClient, Result,
 };
 use libp2p::kad::{Quorum, Record};
 use sn_protocol::{

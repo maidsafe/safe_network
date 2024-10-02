@@ -12,9 +12,10 @@ pub mod vault;
 use std::{collections::HashSet, time::Duration};
 
 use libp2p::{identity::Keypair, Multiaddr};
-use sn_networking::{multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
+use sn_networking::{multiaddr_is_global, Network,NetworkClient, NetworkBuilder, NetworkEvent};
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use tokio::{sync::mpsc::Receiver, time::interval};
+use sn_networking::NetworkBuilderClient;
 
 /// Time before considering the connection timed out.
 pub const CONNECT_TIMEOUT_SECS: u64 = 20;
@@ -36,7 +37,7 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 /// ```
 #[derive(Clone)]
 pub struct Client {
-    pub(crate) network: Network,
+    pub(crate) network: NetworkClient,
 }
 
 /// Error returned by [`Client::connect`].
@@ -90,10 +91,10 @@ impl Client {
     }
 }
 
-fn build_client_and_run_swarm(local: bool) -> (Network, Receiver<NetworkEvent>) {
+fn build_client_and_run_swarm(local: bool) -> (NetworkClient, Receiver<NetworkEvent>) {
     // TODO: `root_dir` is only used for nodes. `NetworkBuilder` should not require it.
-    let root_dir = std::env::temp_dir();
-    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
+    // let root_dir = std::env::temp_dir();
+    let network_builder = NetworkBuilderClient::new(Keypair::generate_ed25519(), local);
 
     // TODO: Re-export `Receiver<T>` from `sn_networking`. Else users need to keep their `tokio` dependency in sync.
     // TODO: Think about handling the mDNS error here.
