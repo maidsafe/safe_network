@@ -671,7 +671,10 @@ impl SpendDagDb {
             let mut beta_participants = self.beta_participants.write().await;
             beta_participants.extend(participants.iter().map(|p| {
                 let hash: Hash = Hash::hash(p.as_bytes());
-                new_participants.push((hash, p.clone()));
+                let lower_case_participant = p.to_lowercase();
+                // The hash shall be from the original,
+                // meanwhile the readable name to be lowercase only.
+                new_participants.push((hash, lower_case_participant));
                 (hash, p.clone())
             }));
         }
