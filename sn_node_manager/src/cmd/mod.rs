@@ -137,10 +137,8 @@ pub async fn get_bin_path(
 ) -> Result<PathBuf> {
     if build {
         debug!("Obtaining bin path for {release_type:?} by building");
-        build_binary(&release_type)?;
-        Ok(PathBuf::from("target")
-            .join("release")
-            .join(release_type.to_string()))
+        let target_dir = build_binary(&release_type)?;
+        Ok(target_dir.join(release_type.to_string()))
     } else if let Some(path) = path {
         debug!("Using the supplied custom binary for {release_type:?}: {path:?}");
         Ok(path)
@@ -159,7 +157,8 @@ pub async fn get_bin_path(
     }
 }
 
-fn build_binary(bin_type: &ReleaseType) -> Result<()> {
+// Returns the target dir after building the binary
+fn build_binary(bin_type: &ReleaseType) -> Result<PathBuf> {
     debug!("Building {bin_type} binary");
     let mut args = vec!["build", "--release"];
     let bin_name = bin_type.to_string();
@@ -193,12 +192,17 @@ fn build_binary(bin_type: &ReleaseType) -> Result<()> {
 
     print_banner(&format!("Building {} binary", bin_name));
 
+    let mut target_dir = PathBuf::new();
     let mut build_result = Command::new("cargo");
     let _ = build_result.args(args.clone());
 
     if let Ok(val) = std::env::var("CARGO_TARGET_DIR") {
-        let _ = build_result.env("CARGO_TARGET_DIR", val);
+        let _ = build_result.env("CARGO_TARGET_DIR", val.clone());
+        target_dir.push(val);
+    } else {
+        target_dir.push("target");
     }
+    let target_dir = target_dir.join("release");
 
     let build_result = build_result
         .stdout(Stdio::inherit())
@@ -210,5 +214,5 @@ fn build_binary(bin_type: &ReleaseType) -> Result<()> {
         return Err(eyre!("Failed to build binaries"));
     }
 
-    Ok(())
+    Ok(target_dir)
 }
