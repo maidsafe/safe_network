@@ -10,43 +10,37 @@ use autonomi::Multiaddr;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
 
-#[expect(clippy::unused_async)]
-pub async fn cost(name: &str, _peers: Vec<Multiaddr>) -> Result<()> {
-    let register_key = crate::utils::get_register_signing_key()
+pub fn cost(_name: &str, _peers: Vec<Multiaddr>) -> Result<()> {
+    let _register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
-    println!("Estimate cost to register name: {name} with register key: {register_key}");
+    println!("The register feature is coming soon!");
     Ok(())
 }
 
-#[expect(clippy::unused_async)]
-pub async fn create(name: &str, value: &str, _peers: Vec<Multiaddr>) -> Result<()> {
-    let secret_key = crate::utils::get_secret_key()
+pub fn create(_name: &str, _value: &str, _peers: Vec<Multiaddr>) -> Result<()> {
+    let _secret_key = crate::utils::get_secret_key()
         .wrap_err("The secret key is required to perform this action")?;
-    let register_key = crate::utils::get_register_signing_key()
+    let _register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
-    println!(
-        "Creating register: {name} with value: {value} using secret key: {secret_key} and register key: {register_key}"
-    );
+    println!("The register feature is coming soon!");
     Ok(())
 }
 
-#[expect(clippy::unused_async)]
-pub async fn edit(name: &str, value: &str, _peers: Vec<Multiaddr>) -> Result<()> {
-    let register_key = crate::utils::get_register_signing_key()
+pub fn edit(_name: &str, _value: &str, _peers: Vec<Multiaddr>) -> Result<()> {
+    let _register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
-    println!("Editing register: {name} with value: {value} using register key: {register_key}");
+    println!("The register feature is coming soon!");
     Ok(())
 }
 
-#[expect(clippy::unused_async)]
-pub async fn get(name: &str, _peers: Vec<Multiaddr>) -> Result<()> {
-    let register_key = crate::utils::get_register_signing_key()
+pub fn get(_name: &str, _peers: Vec<Multiaddr>) -> Result<()> {
+    let _register_key = crate::utils::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
-    println!("Getting value of register: {name} with register key: {register_key}");
+    println!("The register feature is coming soon!");
     Ok(())
 }
 
 pub fn list(_peers: Vec<Multiaddr>) -> Result<()> {
-    println!("Listing previous registers...");
+    println!("The register feature is coming soon!");
     Ok(())
 }

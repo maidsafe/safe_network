@@ -44,7 +44,7 @@ pub fn get_secret_key() -> Result<String> {
     // load the key from file
     let key_path = dir.join(SECRET_KEY_FILE);
     fs::read_to_string(&key_path)
-        .wrap_err("Failed to read secret key from file".to_string())
+        .wrap_err("Failed to read secret key from file")
         .with_suggestion(|| format!("make sure you've provided the {SECRET_KEY} env var or have the key in a file at {key_path:?}"))
 }
 
@@ -63,7 +63,7 @@ pub fn get_register_signing_key() -> Result<String> {
     // load the key from file
     let key_path = dir.join(REGISTER_SIGNING_KEY_FILE);
     fs::read_to_string(&key_path)
-        .wrap_err("Failed to read secret key from file".to_string())
+        .wrap_err("Failed to read secret key from file")
         .with_suggestion(|| format!("make sure you've provided the {REGISTER_SIGNING_KEY} env var or have the key in a file at {key_path:?}"))
 }
 
@@ -72,16 +72,15 @@ pub fn get_client_data_dir_path() -> Result<PathBuf> {
         .ok_or_else(|| eyre!("Failed to obtain data dir, your OS might not be supported."))?;
     home_dirs.push("safe");
     home_dirs.push("client");
-    std::fs::create_dir_all(home_dirs.as_path())
-        .wrap_err("Failed to create data dir".to_string())?;
+    std::fs::create_dir_all(home_dirs.as_path()).wrap_err("Failed to create data dir")?;
     Ok(home_dirs)
 }
 
 pub async fn get_peers(peers: PeersArgs) -> Result<Vec<Multiaddr>> {
     peers.get_peers().await
-        .wrap_err("Please provide valid Network peers to connect to".to_string())
+        .wrap_err("Please provide valid Network peers to connect to")
         .with_suggestion(|| format!("make sure you've provided network peers using the --peers option or the {SAFE_PEERS_ENV} env var"))
-        .with_suggestion(|| "a peer address looks like this: /ip4/42.42.42.42/udp/4242/quic-v1/p2p/B64nodePeerIDvdjb3FAJF4ks3moreBase64CharsHere".to_string())
+        .with_suggestion(|| "a peer address looks like this: /ip4/42.42.42.42/udp/4242/quic-v1/p2p/B64nodePeerIDvdjb3FAJF4ks3moreBase64CharsHere")
 }
 
 pub(crate) fn get_evm_network_from_environment() -> Result<Network> {
