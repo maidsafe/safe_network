@@ -49,12 +49,12 @@ use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
 // A spend record is at the size of 4KB roughly.
-// Given chunk record is maxed at size of 512KB.
+// Given chunk record is maxed at size of 4MB.
 // During Beta phase, it's almost one spend per chunk,
-// which makes the average record size is around 256k.
+// which makes the average record size is around 2MB.
 // Given we are targeting node size to be 32GB,
-// this shall allow around 128K records.
-const MAX_RECORDS_COUNT: usize = 128 * 1024;
+// this shall allow around 16K records.
+const MAX_RECORDS_COUNT: usize = 16 * 1024;
 
 /// The maximum number of records to cache in memory.
 const MAX_RECORDS_CACHE_SIZE: usize = 100;
@@ -1023,7 +1023,7 @@ mod tests {
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
-        assert_eq!(sut, 952572);
+        assert_eq!(sut, 952541);
     }
 
     #[test]
@@ -1032,7 +1032,7 @@ mod tests {
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
-        assert_eq!(sut, 989011);
+        assert_eq!(sut, 989001);
     }
 
     #[test]
@@ -1041,7 +1041,7 @@ mod tests {
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
-        assert_eq!(sut, 997527);
+        assert_eq!(sut, 997523);
     }
 
     #[test]
