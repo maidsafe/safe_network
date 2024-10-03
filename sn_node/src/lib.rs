@@ -59,6 +59,7 @@ use std::{
 pub struct RunningNode {
     network: Network,
     node_events_channel: NodeEventsChannel,
+    root_dir_path: PathBuf,
 }
 
 impl RunningNode {
@@ -76,7 +77,7 @@ impl RunningNode {
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>
     #[expect(rustdoc::invalid_html_tags)]
     pub fn root_dir_path(&self) -> PathBuf {
-        self.network.root_dir_path().clone()
+        self.root_dir_path.clone()
     }
 
     /// Returns a `SwarmLocalState` with some information obtained from swarm's local state.

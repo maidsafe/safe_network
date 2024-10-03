@@ -251,7 +251,6 @@ pub struct NetworkBuilder {
     is_behind_home_network: bool,
     keypair: Keypair,
     local: bool,
-    root_dir: PathBuf,
     listen_addr: Option<SocketAddr>,
     request_timeout: Option<Duration>,
     concurrency_limit: Option<usize>,
@@ -265,12 +264,11 @@ pub struct NetworkBuilder {
 }
 
 impl NetworkBuilder {
-    pub fn new(keypair: Keypair, local: bool, root_dir: PathBuf) -> Self {
+    pub fn new(keypair: Keypair, local: bool) -> Self {
         Self {
             is_behind_home_network: false,
             keypair,
             local,
-            root_dir,
             listen_addr: None,
             request_timeout: None,
             concurrency_limit: None,
@@ -335,7 +333,10 @@ impl NetworkBuilder {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
-    pub fn build_node(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    pub fn build_node(
+        self,
+        root_dir: PathBuf,
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut kad_cfg = kad::Config::new(KAD_STREAM_PROTOCOL_ID);
         let _ = kad_cfg
             .set_kbucket_inserts(libp2p::kad::BucketInserts::Manual)
@@ -363,7 +364,7 @@ impl NetworkBuilder {
 
         let store_cfg = {
             // Configures the disk_store to store records under the provided path and increase the max record size
-            let storage_dir_path = self.root_dir.join("record_store");
+            let storage_dir_path = root_dir.join("record_store");
             if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
                 return Err(NetworkError::FailedToCreateRecordStoreDir {
                     path: storage_dir_path,
@@ -373,7 +374,7 @@ impl NetworkBuilder {
             NodeRecordStoreConfig {
                 max_value_bytes: MAX_PACKET_SIZE, // TODO, does this need to be _less_ than MAX_PACKET_SIZE
                 storage_dir: storage_dir_path,
-                historic_quote_dir: self.root_dir.clone(),
+                historic_quote_dir: root_dir.clone(),
                 ..Default::default()
             }
         };
@@ -700,7 +701,6 @@ impl NetworkBuilder {
             network_swarm_cmd_sender,
             local_swarm_cmd_sender,
             peer_id,
-            self.root_dir,
             self.keypair,
         );
 

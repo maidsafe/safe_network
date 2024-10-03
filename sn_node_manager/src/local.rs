@@ -8,8 +8,7 @@
 
 use crate::add_services::config::PortRange;
 use crate::helpers::{
-    check_port_availability, get_bin_version, get_start_port_if_applicable, get_username,
-    increment_port_option,
+    check_port_availability, get_bin_version, get_start_port_if_applicable, increment_port_option,
 };
 use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};
@@ -20,13 +19,19 @@ use mockall::automock;
 
 use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
-use sn_service_management::FaucetServiceData;
 use sn_service_management::{
     control::ServiceControl,
     rpc::{RpcActions, RpcClient},
     NodeRegistry, NodeServiceData, ServiceStatus,
 };
+
+#[cfg(feature = "faucet")]
+use crate::helpers::get_username;
+#[cfg(feature = "faucet")]
+use sn_service_management::FaucetServiceData;
+#[cfg(feature = "faucet")]
 use sn_transfers::get_faucet_data_dir;
+
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,

@@ -130,8 +130,7 @@ impl NodeBuilder {
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
     pub fn build_and_run(self) -> Result<RunningNode> {
-        let mut network_builder =
-            NetworkBuilder::new(self.identity_keypair, self.local, self.root_dir);
+        let mut network_builder = NetworkBuilder::new(self.identity_keypair, self.local);
 
         #[cfg(feature = "open-metrics")]
         let metrics_recorder = if self.metrics_server_port.is_some() {
@@ -155,7 +154,8 @@ impl NodeBuilder {
         #[cfg(feature = "upnp")]
         network_builder.upnp(self.upnp);
 
-        let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
+        let (network, network_event_receiver, swarm_driver) =
+            network_builder.build_node(self.root_dir.clone())?;
         let node_events_channel = NodeEventsChannel::default();
 
         let node = NodeInner {
@@ -173,6 +173,7 @@ impl NodeBuilder {
         let running_node = RunningNode {
             network,
             node_events_channel,
+            root_dir_path: self.root_dir,
         };
 
         // Run the node
