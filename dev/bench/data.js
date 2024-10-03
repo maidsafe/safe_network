@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727974821336,
+  "lastUpdate": 1727974944334,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "joshuef"
           },
           "distinct": true,
-          "id": "a783e11f0f5288c3c28f706f8280a68e96aa931f",
-          "message": "ci: ensure release-plz releases nodeman",
-          "timestamp": "2024-05-15T11:56:31+09:00",
-          "tree_id": "800387a579c0cbf928e89c762e5b0ac00bda8a31",
-          "url": "https://github.com/maidsafe/safe_network/commit/a783e11f0f5288c3c28f706f8280a68e96aa931f"
-        },
-        "date": 1715742747758,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 57,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
           "id": "bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21",
           "message": "chore(faucet): devskim ignore",
           "timestamp": "2024-05-15T04:26:48Z",
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 150,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2cd16112361233b93b967e59c24c5d275aeae736",
+          "message": "Merge pull request #2190 from maqi/fix_peerID_parse_error\n\nfix(CI): fix bootstrap peer parsing error",
+          "timestamp": "2024-10-03T16:13:24Z",
+          "tree_id": "e591c1cf899ca37349204e321549ed1a30f1a068",
+          "url": "https://github.com/maidsafe/safe_network/commit/2cd16112361233b93b967e59c24c5d275aeae736"
+        },
+        "date": 1727974943321,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 136,
             "unit": "MB"
           }
         ]
