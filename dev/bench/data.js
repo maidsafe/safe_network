@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727981478967,
+  "lastUpdate": 1727981595627,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21",
-          "message": "chore(faucet): devskim ignore",
-          "timestamp": "2024-05-15T04:26:48Z",
-          "tree_id": "e9b084627c96af1c0ec0c589c2e947e07c12ba70",
-          "url": "https://github.com/maidsafe/safe_network/commit/bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21"
-        },
-        "date": 1715749835501,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 55,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/2cd16112361233b93b967e59c24c5d275aeae736"
         },
         "date": 1727974943321,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 136,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d3ed939bf7450e609cef9bfe54792758be44f4aa",
+          "message": "Merge pull request #2153 from omahs/patch-1\n\nchore: fix typos",
+          "timestamp": "2024-10-03T18:04:06Z",
+          "tree_id": "e7eda916ee160f6235dd57b33305e90032dd2f41",
+          "url": "https://github.com/maidsafe/safe_network/commit/d3ed939bf7450e609cef9bfe54792758be44f4aa"
+        },
+        "date": 1727981594773,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
