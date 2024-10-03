@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "ChunkPayments",
-  "sourceName": "contracts/ChunkPayments.sol",
+  "contractName": "DataPayments",
+  "sourceName": "contracts/DataPayments.sol",
   "abi": [
     {
       "inputs": [
@@ -36,7 +36,7 @@
           "type": "bytes32"
         }
       ],
-      "name": "ChunkPaymentMade",
+      "name": "DataPaymentMade",
       "type": "event"
     },
     {
@@ -72,12 +72,12 @@
               "type": "bytes32"
             }
           ],
-          "internalType": "struct ChunkPayments.ChunkPayment[]",
-          "name": "chunkPayments",
+          "internalType": "struct DataPayments.DataPayment[]",
+          "name": "dataPayments",
           "type": "tuple[]"
         }
       ],
-      "name": "submitChunkPayments",
+      "name": "submitDataPayments",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

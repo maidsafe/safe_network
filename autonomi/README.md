@@ -31,15 +31,15 @@ Take note of the console output for the next step (`RPC URL`, `Payment token add
 3. Run a local network with the `local-discovery` feature and pass the EVM params:
 
 ```sh
-cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-custom --rpc-url <RPC_URL> --payment-token-address <TOKEN_ADDRESS> --chunk-payments-address <CONTRACT_ADDRESS>
+cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-custom --rpc-url <RPC_URL> --payment-token-address <TOKEN_ADDRESS> --data-payments-address <CONTRACT_ADDRESS>
 ```
 
 4. Then run the tests with the `local` feature and pass the EVM params again:
 
 ```sh
-$ RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> CHUNK_PAYMENTS_ADDRESS=<CONTRACT_ADDRESS> cargo test --package=autonomi --features=local
+$ RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> DATA_PAYMENTS_ADDRESS=<CONTRACT_ADDRESS> cargo test --package=autonomi --features=local
 # Or with logs
-$ RUST_LOG=autonomi RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> CHUNK_PAYMENTS_ADDRESS=<CONTRACT_ADDRESS> cargo test --package=autonomi --features=local -- --nocapture
+$ RUST_LOG=autonomi RPC_URL=<RPC_URL> PAYMENT_TOKEN_ADDRESS=<TOKEN_ADDRESS> DATA_PAYMENTS_ADDRESS=<CONTRACT_ADDRESS> cargo test --package=autonomi --features=local -- --nocapture
 ```
 
 ### Using a live testnet or mainnet
@@ -70,13 +70,13 @@ initialise a wallet from with almost infinite gas and payment tokens. Example:
 ```rust
 let rpc_url = "http://localhost:54370/";
 let payment_token_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-let chunk_payments_address = "0x8464135c8F25Da09e49BC8782676a84730C318bC";
+let data_payments_address = "0x8464135c8F25Da09e49BC8782676a84730C318bC";
 let private_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 let network = Network::Custom(CustomNetwork::new(
 rpc_url,
 payment_token_address,
-chunk_payments_address,
+data_payments_address,
 ));
 
 let deployer_wallet = Wallet::new_from_private_key(network, private_key).unwrap();

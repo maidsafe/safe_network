@@ -1,5 +1,5 @@
 use crate::common::{Address, QuoteHash, TxHash, U256};
-use crate::event::{ChunkPaymentEvent, CHUNK_PAYMENT_EVENT_SIGNATURE};
+use crate::event::{DataPaymentEvent, DATA_PAYMENT_EVENT_SIGNATURE};
 use crate::Network;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::FixedBytes;
@@ -57,9 +57,9 @@ async fn get_transaction_logs(network: &Network, filter: Filter) -> Result<Vec<L
     Ok(logs)
 }
 
-/// Get a ChunkPaymentMade event, filtered by a hashed chunk address and a node address.
-/// Useful for a node if it wants to check if payment for a certain chunk has been made.
-async fn get_chunk_payment_event(
+/// Get a DataPaymentMade event, filtered by a hashed data address and a node address.
+/// Useful for a node if it wants to check if payment for a certain data has been made.
+async fn get_data_payment_event(
     network: &Network,
     block_number: u64,
     quote_hash: QuoteHash,
@@ -69,7 +69,7 @@ async fn get_chunk_payment_event(
     let topic1: FixedBytes<32> = FixedBytes::left_padding_from(reward_addr.as_slice());
 
     let filter = Filter::new()
-        .event_signature(CHUNK_PAYMENT_EVENT_SIGNATURE)
+        .event_signature(DATA_PAYMENT_EVENT_SIGNATURE)
         .topic1(topic1)
         .topic2(amount)
         .topic3(quote_hash)
@@ -79,8 +79,8 @@ async fn get_chunk_payment_event(
     get_transaction_logs(network, filter).await
 }
 
-/// Verify if a chunk payment is confirmed.
-pub async fn verify_chunk_payment(
+/// Verify if a data payment is confirmed.
+pub async fn verify_data_payment(
     network: &Network,
     tx_hash: TxHash,
     quote_hash: QuoteHash,
@@ -111,7 +111,7 @@ pub async fn verify_chunk_payment(
     }
 
     let logs =
-        get_chunk_payment_event(network, block_number, quote_hash, reward_addr, amount).await?;
+        get_data_payment_event(network, block_number, quote_hash, reward_addr, amount).await?;
 
     for log in logs {
         if log.transaction_hash != Some(tx_hash) {
@@ -119,7 +119,7 @@ pub async fn verify_chunk_payment(
             continue;
         }
 
-        if let Ok(event) = ChunkPaymentEvent::try_from(log) {
+        if let Ok(event) = DataPaymentEvent::try_from(log) {
             // Check if the event matches what we expect.
             if event.quote_hash == quote_hash
                 && event.reward_address == reward_addr
@@ -137,7 +137,7 @@ pub async fn verify_chunk_payment(
 mod tests {
     use crate::common::{Address, U256};
     use crate::transaction::{
-        get_chunk_payment_event, get_transaction_receipt_by_hash, verify_chunk_payment,
+        get_data_payment_event, get_transaction_receipt_by_hash, verify_data_payment,
     };
     use crate::Network;
     use alloy::hex::FromHex;
@@ -156,7 +156,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_chunk_payment_event() {
+    async fn test_get_data_payment_event() {
         let network = Network::ArbitrumOne;
 
         let block_number: u64 = 250043261;
@@ -165,7 +165,7 @@ mod tests {
         let quote_hash = b256!("477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c"); // DevSkim: ignore DS173237
 
         let logs =
-            get_chunk_payment_event(&network, block_number, quote_hash, reward_address, amount)
+            get_data_payment_event(&network, block_number, quote_hash, reward_address, amount)
                 .await
                 .unwrap();
 
@@ -173,7 +173,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_verify_chunk_payment() {
+    async fn test_verify_data_payment() {
         let network = Network::ArbitrumOne;
 
         let tx_hash = b256!("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066"); // DevSkim: ignore DS173237
@@ -181,7 +181,7 @@ mod tests {
         let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap(); // DevSkim: ignore DS173237
         let amount = U256::from(200);
 
-        let result = verify_chunk_payment(
+        let result = verify_data_payment(
             &network,
             tx_hash,
             quote_hash,

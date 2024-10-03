@@ -76,10 +76,7 @@ async fn print_testnet_details(testnet: &Testnet, genesis_wallet: Option<Address
 
     println!("RPC URL: {}", network.rpc_url());
     println!("Payment token address: {}", network.payment_token_address());
-    println!(
-        "Chunk payments address: {}",
-        network.chunk_payments_address()
-    );
+    println!("Data payments address: {}", network.data_payments_address());
     println!(
         "Deployer wallet private key: {}",
         testnet.default_wallet_private_key()

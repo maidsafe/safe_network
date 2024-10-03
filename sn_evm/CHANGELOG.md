@@ -266,7 +266,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14.35](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.34...sn_transfers-v0.14.35) - 2024-01-09
 
 ### Added
-- *(client)* extra sleep between chunk verification
+- *(client)* extra sleep between data verification
 
 ## [0.14.34](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.14.33...sn_transfers-v0.14.34) - 2024-01-09
 
@@ -637,7 +637,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - add tx and parent spends verification
-- chunk payments using UTXOs instead of DBCs
+- data payments using UTXOs instead of DBCs
 
 ### Other
 - use updated sn_dbc
@@ -650,7 +650,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.11.8](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.7...sn_transfers-v0.11.8) - 2023-09-08
 
 ### Added
-- *(client)* repay for chunks if they cannot be validated
+- *(client)* repay for datas if they cannot be validated
 
 ## [0.11.7](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.11.6...sn_transfers-v0.11.7) - 2023-09-05
 
@@ -698,10 +698,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - one transfer per data set, mapped dbcs to content addrs
-- [**breaking**] pay each chunk holder direct
+- [**breaking**] pay each data holder direct
 - feat!(protocol): gets keys with GetStoreCost
-- feat!(protocol): get price and pay for each chunk individually
-- feat!(protocol): remove chunk merkletree to simplify payment
+- feat!(protocol): get price and pay for each data individually
+- feat!(protocol): remove data merkletree to simplify payment
 
 ### Fixed
 - *(tokio)* remove tokio fs
@@ -904,7 +904,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.3](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.9.2...sn_transfers-v0.9.3) - 2023-06-14
 
 ### Added
-- include output DBC within payment proof for Chunks storage
+- include output DBC within payment proof for Datas storage
 
 ## [0.9.2](https://github.com/maidsafe/safe_network/compare/sn_transfers-v0.9.1...sn_transfers-v0.9.2) - 2023-06-12
 

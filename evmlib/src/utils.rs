@@ -16,7 +16,7 @@ pub fn dummy_hash() -> Hash {
 
 /// Get the `Network` from environment variables
 pub fn evm_network_from_env() -> Result<Network, VarError> {
-    const EVM_VARS: [&str; 3] = ["RPC_URL", "PAYMENT_TOKEN_ADDRESS", "CHUNK_PAYMENTS_ADDRESS"];
+    const EVM_VARS: [&str; 3] = ["RPC_URL", "PAYMENT_TOKEN_ADDRESS", "DATA_PAYMENTS_ADDRESS"];
     let custom_vars_exist = EVM_VARS.iter().all(|var| env::var(var).is_ok());
 
     if custom_vars_exist {

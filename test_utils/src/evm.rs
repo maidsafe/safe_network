@@ -18,28 +18,28 @@ pub fn evm_network_from_env() -> evmlib::Network {
     let evm_network = env::var("EVM_NETWORK").ok();
     let arbitrum_flag = evm_network.as_deref() == Some("arbitrum-one");
 
-    let (rpc_url, payment_token_address, chunk_payments_address) = if arbitrum_flag {
+    let (rpc_url, payment_token_address, data_payments_address) = if arbitrum_flag {
         (
             evmlib::Network::ArbitrumOne.rpc_url().to_string(),
             evmlib::Network::ArbitrumOne
                 .payment_token_address()
                 .encode_hex_with_prefix(),
             evmlib::Network::ArbitrumOne
-                .chunk_payments_address()
+                .data_payments_address()
                 .encode_hex_with_prefix(),
         )
     } else {
         (
             get_var_or_panic("RPC_URL"),
             get_var_or_panic("PAYMENT_TOKEN_ADDRESS"),
-            get_var_or_panic("CHUNK_PAYMENTS_ADDRESS"),
+            get_var_or_panic("DATA_PAYMENTS_ADDRESS"),
         )
     };
 
     evmlib::Network::Custom(CustomNetwork::new(
         &rpc_url,
         &payment_token_address,
-        &chunk_payments_address,
+        &data_payments_address,
     ))
 }
 

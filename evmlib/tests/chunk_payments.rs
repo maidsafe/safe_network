@@ -10,9 +10,9 @@ use alloy::providers::{ProviderBuilder, ReqwestProvider, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{Client, Http};
 use evmlib::common::U256;
-use evmlib::contract::chunk_payments::{ChunkPayments, MAX_TRANSFERS_PER_TRANSACTION};
+use evmlib::contract::data_payments::{DataPayments, MAX_TRANSFERS_PER_TRANSACTION};
 use evmlib::contract::network_token::NetworkToken;
-use evmlib::testnet::{deploy_chunk_payments_contract, deploy_network_token_contract, start_node};
+use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
 use evmlib::wallet::wallet_address;
 
 async fn setup() -> (
@@ -27,7 +27,7 @@ async fn setup() -> (
         >,
         Ethereum,
     >,
-    ChunkPayments<
+    DataPayments<
         Http<Client>,
         FillProvider<
             JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
@@ -42,10 +42,10 @@ async fn setup() -> (
 
     let network_token = deploy_network_token_contract(&anvil).await;
 
-    let chunk_payments =
-        deploy_chunk_payments_contract(&anvil, *network_token.contract.address()).await;
+    let data_payments =
+        deploy_data_payments_contract(&anvil, *network_token.contract.address()).await;
 
-    (anvil, network_token, chunk_payments)
+    (anvil, network_token, data_payments)
 }
 
 #[allow(clippy::unwrap_used)]
@@ -87,7 +87,7 @@ async fn test_deploy() {
 
 #[tokio::test]
 async fn test_pay_for_quotes() {
-    let (_anvil, network_token, mut chunk_payments) = setup().await;
+    let (_anvil, network_token, mut data_payments) = setup().await;
 
     let mut quote_payments = vec![];
 
@@ -97,15 +97,15 @@ async fn test_pay_for_quotes() {
     }
 
     let _ = network_token
-        .approve(*chunk_payments.contract.address(), U256::MAX)
+        .approve(*data_payments.contract.address(), U256::MAX)
         .await
         .unwrap();
 
     // Contract provider has a different account coupled to it,
     // so we set it to the same as the network token contract
-    chunk_payments.set_provider(network_token.contract.provider().clone());
+    data_payments.set_provider(network_token.contract.provider().clone());
 
-    let result = chunk_payments.pay_for_quotes(quote_payments).await;
+    let result = data_payments.pay_for_quotes(quote_payments).await;
 
     assert!(result.is_ok(), "Failed with error: {:?}", result.err());
 }

@@ -3,7 +3,7 @@ use alloy::primitives::{b256, FixedBytes};
 use alloy::rpc::types::Log;
 
 // Should be updated when the smart contract changes!
-pub(crate) const CHUNK_PAYMENT_EVENT_SIGNATURE: FixedBytes<32> =
+pub(crate) const DATA_PAYMENT_EVENT_SIGNATURE: FixedBytes<32> =
     b256!("a6df5ca64d2adbcdd26949b97238efc4e97dc7e5d23012ea53f92a24f005f958"); // DevSkim: ignore DS173237
 
 #[derive(thiserror::Error, Debug)]
@@ -16,15 +16,15 @@ pub enum Error {
     EventSignatureDoesNotMatch,
 }
 
-/// Struct for the ChunkPaymentEvent emitted by the ChunkPayments smart contract.
+/// Struct for the DataPaymentEvent emitted by the DataPayments smart contract.
 #[derive(Debug)]
-pub(crate) struct ChunkPaymentEvent {
+pub(crate) struct DataPaymentEvent {
     pub reward_address: Address,
     pub amount: U256,
     pub quote_hash: Hash,
 }
 
-impl TryFrom<Log> for ChunkPaymentEvent {
+impl TryFrom<Log> for DataPaymentEvent {
     type Error = Error;
 
     fn try_from(log: Log) -> Result<Self, Self::Error> {
@@ -36,7 +36,7 @@ impl TryFrom<Log> for ChunkPaymentEvent {
         let topic0 = log.topics().first().ok_or(Error::EventSignatureMissing)?;
 
         // Verify the event signature
-        if topic0 != &CHUNK_PAYMENT_EVENT_SIGNATURE {
+        if topic0 != &DATA_PAYMENT_EVENT_SIGNATURE {
             return Err(Error::EventSignatureDoesNotMatch);
         }
 
