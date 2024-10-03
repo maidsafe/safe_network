@@ -8,9 +8,9 @@ use alloy::providers::ext::AnvilApi;
 use alloy::providers::{ProviderBuilder, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use evmlib::common::{Amount, TxHash};
-use evmlib::contract::chunk_payments::MAX_TRANSFERS_PER_TRANSACTION;
-use evmlib::testnet::{deploy_chunk_payments_contract, deploy_network_token_contract, start_node};
-use evmlib::transaction::verify_chunk_payment;
+use evmlib::contract::data_payments::MAX_TRANSFERS_PER_TRANSACTION;
+use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
+use evmlib::transaction::verify_data_payment;
 use evmlib::wallet::{transfer_tokens, wallet_address, Wallet};
 use evmlib::{CustomNetwork, Network};
 use std::collections::HashSet;
@@ -21,14 +21,14 @@ async fn local_testnet() -> (AnvilInstance, Network, EthereumWallet) {
     let rpc_url = anvil.endpoint().parse().unwrap();
     let network_token = deploy_network_token_contract(&anvil).await;
     let payment_token_address = *network_token.contract.address();
-    let chunk_payments = deploy_chunk_payments_contract(&anvil, payment_token_address).await;
+    let data_payments = deploy_data_payments_contract(&anvil, payment_token_address).await;
 
     (
         anvil,
         Network::Custom(CustomNetwork {
             rpc_url_http: rpc_url,
             payment_token_address,
-            chunk_payments_address: *chunk_payments.contract.address(),
+            data_payments_address: *data_payments.contract.address(),
         }),
         network_token.contract.provider().wallet().clone(),
     )
@@ -65,7 +65,7 @@ async fn funded_wallet(network: &Network, genesis_wallet: EthereumWallet) -> Wal
 }
 
 #[tokio::test]
-async fn test_pay_for_quotes_and_chunk_payment_verification() {
+async fn test_pay_for_quotes_and_data_payment_verification() {
     const TRANSFERS: usize = 600;
     const EXPIRATION_TIMESTAMP_IN_SECS: u64 = 4102441200; // The year 2100
 
@@ -91,7 +91,7 @@ async fn test_pay_for_quotes_and_chunk_payment_verification() {
     for quote_payment in quote_payments.iter() {
         let tx_hash = *tx_hashes.get(&quote_payment.0).unwrap();
 
-        let result = verify_chunk_payment(
+        let result = verify_data_payment(
             &network,
             tx_hash,
             quote_payment.0,
