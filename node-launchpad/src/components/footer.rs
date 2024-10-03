@@ -6,12 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::style::{EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE};
+use crate::style::{COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE};
 use ratatui::{prelude::*, widgets::*};
 
 pub enum NodesToStart {
     Configured,
     NotConfigured,
+    Running,
 }
 
 #[derive(Default)]
@@ -28,28 +29,31 @@ impl StatefulWidget for Footer {
             )
         } else {
             (
-                Style::default().fg(LIGHT_PERIWINKLE),
+                Style::default().fg(COOL_GREY),
                 Style::default().fg(LIGHT_PERIWINKLE),
             )
         };
 
-        let command1 = vec![
+        let commands = vec![
             Span::styled("[Ctrl+G] ", Style::default().fg(GHOST_WHITE)),
             Span::styled("Manage Nodes", Style::default().fg(EUCALYPTUS)),
-        ];
-        let command2 = vec![
+            Span::styled("  ", Style::default()),
             Span::styled("[Ctrl+S] ", command_style),
             Span::styled("Start Nodes", text_style),
-        ];
-        let command3 = vec![
+            Span::styled("  ", Style::default()),
             Span::styled("[Ctrl+X] ", command_style),
-            Span::styled("Stop Nodes", text_style),
+            Span::styled(
+                "Stop Nodes",
+                if matches!(state, NodesToStart::Running) {
+                    Style::default().fg(EUCALYPTUS)
+                } else {
+                    Style::default().fg(COOL_GREY)
+                },
+            ),
         ];
 
-        let cell1 = Cell::from(Line::from(command1));
-        let cell2 = Cell::from(Line::from(command2));
-        let cell3 = Cell::from(Line::from(command3));
-        let row = Row::new(vec![cell1, cell2, cell3]);
+        let cell1 = Cell::from(Line::from(commands));
+        let row = Row::new(vec![cell1]);
 
         let table = Table::new(vec![row], vec![Constraint::Max(1)])
             .block(
@@ -58,12 +62,7 @@ impl StatefulWidget for Footer {
                     .border_style(Style::default().fg(EUCALYPTUS))
                     .padding(Padding::horizontal(1)),
             )
-            .widths(vec![
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-            ]);
+            .widths(vec![Constraint::Fill(1)]);
 
         StatefulWidget::render(table, area, buf, &mut TableState::default());
     }

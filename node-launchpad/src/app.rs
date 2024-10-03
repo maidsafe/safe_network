@@ -115,7 +115,8 @@ impl App {
         // Popups
         let reset_nodes = ResetNodesPopup::default();
         let manage_nodes = ManageNodes::new(app_data.nodes_to_start, storage_mountpoint.clone())?;
-        let change_drive = ChangeDrivePopup::new(storage_mountpoint.clone())?;
+        let change_drive =
+            ChangeDrivePopup::new(storage_mountpoint.clone(), app_data.nodes_to_start)?;
         let change_connection_mode = ChangeConnectionModePopUp::new(connection_mode)?;
         let port_range = PortRangePopUp::new(connection_mode, port_from, port_to);
         let beta_programme = BetaProgramme::new(app_data.discord_username.clone());
@@ -166,7 +167,9 @@ impl App {
         for component in self.components.iter_mut() {
             component.register_action_handler(action_tx.clone())?;
             component.register_config_handler(self.config.clone())?;
-            component.init(tui.size()?)?;
+            let size = tui.size()?;
+            let rect = Rect::new(0, 0, size.width, size.height);
+            component.init(rect)?;
         }
 
         loop {
@@ -222,7 +225,7 @@ impl App {
                         tui.resize(Rect::new(0, 0, w, h))?;
                         tui.draw(|f| {
                             for component in self.components.iter_mut() {
-                                let r = component.draw(f, f.size());
+                                let r = component.draw(f, f.area());
                                 if let Err(e) = r {
                                     action_tx
                                         .send(Action::Error(format!("Failed to draw: {:?}", e)))
@@ -235,10 +238,10 @@ impl App {
                         tui.draw(|f| {
                             f.render_widget(
                                 Block::new().style(Style::new().bg(SPACE_CADET)),
-                                f.size(),
+                                f.area(),
                             );
                             for component in self.components.iter_mut() {
-                                let r = component.draw(f, f.size());
+                                let r = component.draw(f, f.area());
                                 if let Err(e) = r {
                                     action_tx
                                         .send(Action::Error(format!("Failed to draw: {:?}", e)))

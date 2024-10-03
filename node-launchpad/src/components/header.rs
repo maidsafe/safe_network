@@ -74,7 +74,13 @@ impl StatefulWidget for Header {
         let help = Span::styled("[H]elp", Style::default().fg(help_color));
 
         // Combine the menu parts with separators
-        let menu = vec![status, Span::raw(" | "), options, Span::raw(" | "), help];
+        let menu = vec![
+            status,
+            Span::raw(" | ").fg(VIVID_SKY_BLUE),
+            options,
+            Span::raw(" | ").fg(VIVID_SKY_BLUE),
+            help,
+        ];
 
         // Calculate spacing between title and menu items
         let total_width = (layout[0].width - 1) as usize;

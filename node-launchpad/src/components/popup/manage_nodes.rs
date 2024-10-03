@@ -219,6 +219,7 @@ impl Component for ManageNodes {
             Block::default()
                 .borders(Borders::ALL)
                 .title(" Manage Nodes ")
+                .bold()
                 .title_style(Style::new().fg(GHOST_WHITE))
                 .title_style(Style::new().fg(EUCALYPTUS))
                 .padding(Padding::uniform(2))

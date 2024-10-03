@@ -21,7 +21,8 @@ pub enum Scene {
     ChangePortsPopUp {
         connection_mode_old_value: Option<ConnectionMode>,
     },
-    BetaProgrammePopUp,
+    StatusBetaProgrammePopUp,
+    OptionsBetaProgrammePopUp,
     ManageNodesPopUp,
     ResetNodesPopUp,
 }

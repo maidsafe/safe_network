@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Node Launchpad"
 name = "node-launchpad"
-version = "0.3.17"
+version = "0.3.18"
 edition = "2021"
 license = "GPL-3.0"
 homepage = "https://maidsafe.net"
@@ -41,7 +41,7 @@ libc = "0.2.148"
 log = "0.4.20"
 pretty_assertions = "1.4.0"
 prometheus-parse = "0.2.5"
-ratatui = { version = "0.26.0", features = ["serde", "macros", "unstable-widget-ref"] }
+ratatui = { version = "0.28.1", features = ["serde", "macros", "unstable-widget-ref"] }
 reqwest = { version = "0.12.2", default-features = false, features = [
     "rustls-tls-manual-roots",
 ] }
@@ -62,8 +62,8 @@ tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "serde"] }
 tui-input = "0.8.0"
 which = "6.0.1"
-ansi-to-tui = "4.1.0"
 faccess = "0.2.4"
+throbber-widgets-tui = "0.7.0"
 
 [build-dependencies]
 vergen = { version = "8.2.6", features = ["build", "git", "gitoxide", "cargo"] }

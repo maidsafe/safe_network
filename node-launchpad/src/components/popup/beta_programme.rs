@@ -29,6 +29,7 @@ pub struct BetaProgramme {
     discord_input_filed: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
+    back_to: Scene,
 }
 
 enum BetaProgrammeState {
@@ -50,26 +51,24 @@ impl BetaProgramme {
             state,
             discord_input_filed: Input::default().with_value(username),
             old_value: Default::default(),
+            back_to: Scene::Status,
         }
     }
 
     fn capture_inputs(&mut self, key: KeyEvent) -> Vec<Action> {
         let send_back = match key.code {
             KeyCode::Enter => {
-                let username = self.discord_input_filed.value().to_string();
+                let username = self.discord_input_filed.value().to_string().to_lowercase();
+                self.discord_input_filed = username.clone().into();
 
-                if username.is_empty() {
-                    debug!("Got Enter, but username is empty, ignoring.");
-                    return vec![];
-                }
                 debug!(
                     "Got Enter, saving the discord username {username:?}  and switching to DiscordIdAlreadySet, and Home Scene",
                 );
                 self.state = BetaProgrammeState::DiscordIdAlreadySet;
                 vec![
-                    Action::StoreDiscordUserName(self.discord_input_filed.value().to_string()),
+                    Action::StoreDiscordUserName(username.clone()),
                     Action::OptionsActions(OptionsActions::UpdateBetaProgrammeUsername(username)),
-                    Action::SwitchScene(Scene::Options),
+                    Action::SwitchScene(Scene::Status),
                 ]
             }
             KeyCode::Esc => {
@@ -82,7 +81,7 @@ impl BetaProgramme {
                     .discord_input_filed
                     .clone()
                     .with_value(self.old_value.clone());
-                vec![Action::SwitchScene(Scene::Options)]
+                vec![Action::SwitchScene(self.back_to)]
             }
             KeyCode::Char(' ') => vec![],
             KeyCode::Backspace => {
@@ -135,7 +134,7 @@ impl Component for BetaProgramme {
                     debug!("RejectTCs msg closed. Switching to Status scene.");
                     self.state = BetaProgrammeState::ShowTCs;
                 }
-                vec![Action::SwitchScene(Scene::Status)]
+                vec![Action::SwitchScene(self.back_to)]
             }
             BetaProgrammeState::AcceptTCsAndEnterDiscordId => self.capture_inputs(key),
         };
@@ -145,9 +144,14 @@ impl Component for BetaProgramme {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::BetaProgrammePopUp => {
+                Scene::StatusBetaProgrammePopUp | Scene::OptionsBetaProgrammePopUp => {
                     self.active = true;
                     self.old_value = self.discord_input_filed.value().to_string();
+                    if scene == Scene::StatusBetaProgrammePopUp {
+                        self.back_to = Scene::Status;
+                    } else if scene == Scene::OptionsBetaProgrammePopUp {
+                        self.back_to = Scene::Options;
+                    }
                     // Set to InputMode::Entry as we want to handle everything within our handle_key_events
                     // so by default if this scene is active, we capture inputs.
                     Some(Action::SwitchInputMode(InputMode::Entry))
@@ -187,6 +191,7 @@ impl Component for BetaProgramme {
             Block::default()
                 .borders(Borders::ALL)
                 .title(" Beta Rewards Program ")
+                .bold()
                 .title_style(Style::new().fg(VIVID_SKY_BLUE))
                 .padding(Padding::uniform(2))
                 .border_style(Style::new().fg(VIVID_SKY_BLUE)),
@@ -225,11 +230,7 @@ impl Component for BetaProgramme {
                 );
                 let input = Paragraph::new(Span::styled(
                     format!("{}{} ", spaces, self.discord_input_filed.value()),
-                    Style::default()
-                        .fg(VIVID_SKY_BLUE)
-                        .bg(INDIGO)
-                        .underlined()
-                        .underline_color(VIVID_SKY_BLUE),
+                    Style::default().fg(VIVID_SKY_BLUE).bg(INDIGO).underlined(),
                 ))
                 .alignment(Alignment::Center);
                 f.render_widget(input, layer_two[1]);
@@ -264,14 +265,10 @@ impl Component for BetaProgramme {
                 )]);
 
                 f.render_widget(button_no, buttons_layer[0]);
-                let button_yes_style = if self.discord_input_filed.value().is_empty() {
-                    Style::default().fg(LIGHT_PERIWINKLE)
-                } else {
-                    Style::default().fg(EUCALYPTUS)
-                };
+
                 let button_yes = Line::from(vec![Span::styled(
                     "Save Username [Enter]",
-                    button_yes_style,
+                    Style::default().fg(EUCALYPTUS),
                 )]);
                 f.render_widget(button_yes, buttons_layer[1]);
             }
@@ -403,11 +400,7 @@ impl Component for BetaProgramme {
                 );
                 let input = Paragraph::new(Span::styled(
                     format!("{}{} ", spaces, self.discord_input_filed.value()),
-                    Style::default()
-                        .fg(VIVID_SKY_BLUE)
-                        .bg(INDIGO)
-                        .underlined()
-                        .underline_color(VIVID_SKY_BLUE),
+                    Style::default().fg(VIVID_SKY_BLUE).bg(INDIGO).underlined(),
                 ))
                 .alignment(Alignment::Center);
                 f.render_widget(input, layer_two[1]);
@@ -443,15 +436,10 @@ impl Component for BetaProgramme {
                     "  No, Cancel [Esc]",
                     Style::default().fg(LIGHT_PERIWINKLE),
                 )]);
-                let button_yes_style = if self.discord_input_filed.value().is_empty() {
-                    Style::default().fg(LIGHT_PERIWINKLE)
-                } else {
-                    Style::default().fg(EUCALYPTUS)
-                };
                 f.render_widget(button_no, buttons_layer[0]);
                 let button_yes = Line::from(vec![Span::styled(
                     "Submit Username [Enter]",
-                    button_yes_style,
+                    Style::default().fg(EUCALYPTUS),
                 )]);
                 f.render_widget(button_yes, buttons_layer[1]);
             }

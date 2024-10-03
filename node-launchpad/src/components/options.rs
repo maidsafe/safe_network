@@ -71,10 +71,11 @@ impl Component for Options {
             .constraints(
                 [
                     Constraint::Length(1),
-                    Constraint::Length(9),
-                    Constraint::Length(5),
-                    Constraint::Length(5),
-                    Constraint::Length(5),
+                    Constraint::Length(7),
+                    Constraint::Length(3),
+                    Constraint::Length(3),
+                    Constraint::Length(3),
+                    Constraint::Length(3),
                 ]
                 .as_ref(),
             )
@@ -85,19 +86,17 @@ impl Component for Options {
         f.render_stateful_widget(header, layout[0], &mut SelectedMenuItem::Options);
 
         // Storage Drive
+        let port_legend = " Edit Port Range ";
+        let port_key = " [Ctrl+P] ";
         let block1 = Block::default()
             .title(" Device Options ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(VIVID_SKY_BLUE));
+            .border_style(Style::default().fg(VERY_LIGHT_AZURE));
         let storage_drivename = Table::new(
             vec![
-                Row::new(vec![
-                    Cell::from(Span::raw(" ")), // Empty row for padding
-                    Cell::from(Span::raw(" ")),
-                    Cell::from(Span::raw(" ")),
-                ]),
+                Row::new(vec![Line::from(vec![])]),
                 Row::new(vec![
                     Cell::from(
                         Line::from(vec![Span::styled(
@@ -122,11 +121,6 @@ impl Component for Options {
                     ),
                 ]),
                 Row::new(vec![
-                    Cell::from(Span::raw(" ")), // Empty row for padding
-                    Cell::from(Span::raw(" ")),
-                    Cell::from(Span::raw(" ")),
-                ]),
-                Row::new(vec![
                     Cell::from(
                         Line::from(vec![Span::styled(
                             " Connection Mode: ",
@@ -148,11 +142,6 @@ impl Component for Options {
                         ])
                         .alignment(Alignment::Right),
                     ),
-                ]),
-                Row::new(vec![
-                    Cell::from(Span::raw(" ")), // Empty row for padding
-                    Cell::from(Span::raw(" ")),
-                    Cell::from(Span::raw(" ")),
                 ]),
                 Row::new(vec![
                     Cell::from(
@@ -180,125 +169,107 @@ impl Component for Options {
                         .alignment(Alignment::Left),
                     ),
                     Cell::from(
-                        Line::from(vec![
-                            Span::styled(
-                                " Edit Port Range ",
-                                if self.connection_mode == ConnectionMode::CustomPorts {
-                                    Style::default().fg(VERY_LIGHT_AZURE)
-                                } else {
-                                    Style::default().fg(COOL_GREY)
-                                },
-                            ),
-                            Span::styled(
-                                " [Ctrl+P] ",
-                                if self.connection_mode == ConnectionMode::CustomPorts {
-                                    Style::default().fg(GHOST_WHITE)
-                                } else {
-                                    Style::default().fg(COOL_GREY)
-                                },
-                            ),
-                        ])
+                        Line::from(if self.connection_mode == ConnectionMode::CustomPorts {
+                            vec![
+                                Span::styled(port_legend, Style::default().fg(VERY_LIGHT_AZURE)),
+                                Span::styled(port_key, Style::default().fg(GHOST_WHITE)),
+                            ]
+                        } else {
+                            vec![]
+                        })
                         .alignment(Alignment::Right),
                     ),
                 ]),
+                Row::new(vec![Line::from(vec![])]),
             ],
             &[
                 Constraint::Length(18),
-                Constraint::Percentage(25),
                 Constraint::Fill(1),
+                Constraint::Length((port_legend.len() + port_key.len()) as u16),
             ],
         )
         .block(block1)
         .style(Style::default().fg(GHOST_WHITE));
 
         // Beta Rewards Program
+        let beta_legend = " Edit Discord Username ";
+        let beta_key = " [Ctrl+B] ";
         let block2 = Block::default()
             .title(" Beta Rewards Program ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(VIVID_SKY_BLUE));
+            .border_style(Style::default().fg(VERY_LIGHT_AZURE));
         let beta_rewards = Table::new(
-            vec![
-                Row::new(vec![
-                    // Empty row for padding
-                    Cell::from(Span::raw(" ")),
-                    Cell::from(Span::raw(" ")),
-                    Cell::from(Span::raw(" ")),
-                ]),
-                Row::new(vec![
-                    Cell::from(
-                        Line::from(vec![Span::styled(
-                            " Discord Username: ",
-                            Style::default().fg(LIGHT_PERIWINKLE),
-                        )])
-                        .alignment(Alignment::Left),
-                    ),
-                    Cell::from(
-                        Line::from(vec![Span::styled(
-                            format!(" {} ", self.discord_username),
-                            Style::default().fg(VIVID_SKY_BLUE),
-                        )])
-                        .alignment(Alignment::Left),
-                    ),
-                    Cell::from(
-                        Line::from(vec![
-                            Span::styled(
-                                " Edit Discord Username ",
-                                Style::default().fg(VERY_LIGHT_AZURE),
-                            ),
-                            Span::styled(" [Ctrl+B] ", Style::default().fg(GHOST_WHITE)),
-                        ])
-                        .alignment(Alignment::Right),
-                    ),
-                ]),
-            ],
+            vec![Row::new(vec![
+                Cell::from(
+                    Line::from(vec![Span::styled(
+                        " Discord Username: ",
+                        Style::default().fg(LIGHT_PERIWINKLE),
+                    )])
+                    .alignment(Alignment::Left),
+                ),
+                Cell::from(
+                    Line::from(vec![Span::styled(
+                        format!(" {} ", self.discord_username),
+                        Style::default().fg(VIVID_SKY_BLUE),
+                    )])
+                    .alignment(Alignment::Left),
+                ),
+                Cell::from(
+                    Line::from(vec![
+                        Span::styled(beta_legend, Style::default().fg(VERY_LIGHT_AZURE)),
+                        Span::styled(beta_key, Style::default().fg(GHOST_WHITE)),
+                    ])
+                    .alignment(Alignment::Right),
+                ),
+            ])],
             &[
                 Constraint::Length(18),
-                Constraint::Percentage(25),
                 Constraint::Fill(1),
+                Constraint::Length((beta_legend.len() + beta_key.len()) as u16),
             ],
         )
         .block(block2)
         .style(Style::default().fg(GHOST_WHITE));
 
         // Access Logs
+        let logs_legend = " Access Logs ";
+        let logs_key = " [Ctrl+L] ";
         let block3 = Block::default()
             .title(" Access Logs ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(VIVID_SKY_BLUE));
+            .border_style(Style::default().fg(VERY_LIGHT_AZURE));
         let logs_folder = Table::new(
-            vec![
-                Row::new(vec![
-                    // Empty row for padding
-                    Cell::from(Span::raw(" ")),
-                    Cell::from(Span::raw(" ")),
-                ]),
-                Row::new(vec![
-                    Cell::from(
-                        Line::from(vec![Span::styled(
-                            " Open the Logs folder on this device ",
-                            Style::default().fg(LIGHT_PERIWINKLE),
-                        )])
-                        .alignment(Alignment::Left),
-                    ),
-                    Cell::from(
-                        Line::from(vec![
-                            Span::styled(" Access Logs ", Style::default().fg(VERY_LIGHT_AZURE)),
-                            Span::styled(" [Ctrl+L] ", Style::default().fg(GHOST_WHITE)),
-                        ])
-                        .alignment(Alignment::Right),
-                    ),
-                ]),
+            vec![Row::new(vec![
+                Cell::from(
+                    Line::from(vec![Span::styled(
+                        " Open the Logs folder on this device ",
+                        Style::default().fg(LIGHT_PERIWINKLE),
+                    )])
+                    .alignment(Alignment::Left),
+                ),
+                Cell::from(
+                    Line::from(vec![
+                        Span::styled(logs_legend, Style::default().fg(VERY_LIGHT_AZURE)),
+                        Span::styled(logs_key, Style::default().fg(GHOST_WHITE)),
+                    ])
+                    .alignment(Alignment::Right),
+                ),
+            ])],
+            &[
+                Constraint::Fill(1),
+                Constraint::Length((logs_legend.len() + logs_key.len()) as u16),
             ],
-            &[Constraint::Percentage(50), Constraint::Percentage(50)],
         )
         .block(block3)
         .style(Style::default().fg(GHOST_WHITE));
 
         // Reset All Nodes
+        let reset_legend = " Begin Reset ";
+        let reset_key = " [Ctrl+R] ";
         let block4 = Block::default()
             .title(" Reset All Nodes ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
@@ -306,31 +277,60 @@ impl Component for Options {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(EUCALYPTUS));
         let reset_nodes = Table::new(
-            vec![
-                Row::new(vec![
-                    Cell::from(Span::raw(" ")), // Empty row for padding
-                    Cell::from(Span::raw(" ")),
-                ]),
-                Row::new(vec![
-                    Cell::from(
-                        Line::from(vec![Span::styled(
-                            " Remove and Reset all Nodes on this device ",
-                            Style::default().fg(LIGHT_PERIWINKLE),
-                        )])
-                        .alignment(Alignment::Left),
-                    ),
-                    Cell::from(
-                        Line::from(vec![
-                            Span::styled(" Begin Reset ", Style::default().fg(EUCALYPTUS)),
-                            Span::styled(" [Ctrl+R] ", Style::default().fg(GHOST_WHITE)),
-                        ])
-                        .alignment(Alignment::Right),
-                    ),
-                ]),
+            vec![Row::new(vec![
+                Cell::from(
+                    Line::from(vec![Span::styled(
+                        " Remove and Reset all Nodes on this device ",
+                        Style::default().fg(LIGHT_PERIWINKLE),
+                    )])
+                    .alignment(Alignment::Left),
+                ),
+                Cell::from(
+                    Line::from(vec![
+                        Span::styled(reset_legend, Style::default().fg(EUCALYPTUS)),
+                        Span::styled(reset_key, Style::default().fg(GHOST_WHITE)),
+                    ])
+                    .alignment(Alignment::Right),
+                ),
+            ])],
+            &[
+                Constraint::Fill(1),
+                Constraint::Length((reset_legend.len() + reset_key.len()) as u16),
             ],
-            &[Constraint::Percentage(50), Constraint::Percentage(50)],
         )
         .block(block4)
+        .style(Style::default().fg(GHOST_WHITE));
+
+        // Quit
+        let quit_legend = "Quit ";
+        let quit_key = "[Q] ";
+        let block5 = Block::default()
+            .style(Style::default().fg(GHOST_WHITE))
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(VIVID_SKY_BLUE));
+        let quit = Table::new(
+            vec![Row::new(vec![
+                Cell::from(
+                    Line::from(vec![Span::styled(
+                        " Close Launchpad (your nodes will keep running in the background) ",
+                        Style::default().fg(LIGHT_PERIWINKLE),
+                    )])
+                    .alignment(Alignment::Left),
+                ),
+                Cell::from(
+                    Line::from(vec![
+                        Span::styled(quit_legend, Style::default().fg(VIVID_SKY_BLUE)),
+                        Span::styled(quit_key, Style::default().fg(GHOST_WHITE)),
+                    ])
+                    .alignment(Alignment::Right),
+                ),
+            ])],
+            &[
+                Constraint::Fill(1),
+                Constraint::Length((quit_legend.len() + quit_key.len()) as u16),
+            ],
+        )
+        .block(block5)
         .style(Style::default().fg(GHOST_WHITE));
 
         // Render the tables in their respective sections
@@ -338,6 +338,7 @@ impl Component for Options {
         f.render_widget(beta_rewards, layout[2]);
         f.render_widget(logs_folder, layout[3]);
         f.render_widget(reset_nodes, layout[4]);
+        f.render_widget(quit, layout[5]);
 
         Ok(())
     }
@@ -349,7 +350,7 @@ impl Component for Options {
                 | Scene::ChangeDrivePopUp
                 | Scene::ChangeConnectionModePopUp
                 | Scene::ChangePortsPopUp { .. }
-                | Scene::BetaProgrammePopUp
+                | Scene::OptionsBetaProgrammePopUp
                 | Scene::ResetNodesPopUp => {
                     self.active = true;
                     // make sure we're in navigation mode
@@ -381,7 +382,7 @@ impl Component for Options {
                     self.port_to = Some(to);
                 }
                 OptionsActions::TriggerBetaProgramme => {
-                    return Ok(Some(Action::SwitchScene(Scene::BetaProgrammePopUp)));
+                    return Ok(Some(Action::SwitchScene(Scene::OptionsBetaProgrammePopUp)));
                 }
                 OptionsActions::UpdateBetaProgrammeUsername(username) => {
                     self.discord_username = username;

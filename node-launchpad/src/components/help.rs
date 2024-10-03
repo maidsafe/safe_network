@@ -3,8 +3,8 @@ use color_eyre::eyre::Result;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Style, Stylize},
-    text::{Line, Span},
-    widgets::{Block, Borders, Cell, Padding, Row, Table},
+    text::Span,
+    widgets::{Block, Borders, Padding},
     Frame,
 };
 use tokio::sync::mpsc::UnboundedSender;
@@ -14,10 +14,9 @@ use crate::{
     action::Action,
     components::header::Header,
     mode::{InputMode, Scene},
-    style::{EUCALYPTUS, GHOST_WHITE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE},
+    style::{COOL_GREY, GHOST_WHITE, VIVID_SKY_BLUE},
     widgets::hyperlink::Hyperlink,
 };
-use ansi_to_tui::IntoText;
 
 #[derive(Clone)]
 pub struct Help {
@@ -46,11 +45,7 @@ impl Component for Help {
         // We define a layout, top and down box.
         let layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Length(1),
-                Constraint::Min(7),
-                Constraint::Max(13),
-            ])
+            .constraints(vec![Constraint::Length(1), Constraint::Length(9)])
             .split(area);
 
         // ==== Header =====
@@ -60,222 +55,114 @@ impl Component for Help {
         // ---- Get Help & Support ----
         // Links
 
+        // Create a new layout as a table, so we can render hyperlinks
+        let columns_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+            .split(layout[1]);
+
+        let padded_area_left = Rect {
+            x: columns_layout[0].x + 2,
+            y: columns_layout[0].y + 2,
+            width: columns_layout[0].width - 2,
+            height: columns_layout[0].height - 2,
+        };
+
+        let left_column = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Max(1),
+                Constraint::Max(2),
+                Constraint::Max(1),
+                Constraint::Max(2),
+            ])
+            .split(padded_area_left);
+
+        let padded_area_right = Rect {
+            x: columns_layout[1].x + 2,
+            y: columns_layout[1].y + 2,
+            width: columns_layout[1].width - 2,
+            height: columns_layout[1].height - 2,
+        };
+        let right_column = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Max(1),
+                Constraint::Max(2),
+                Constraint::Max(1),
+                Constraint::Max(2),
+            ])
+            .split(padded_area_right);
+
         let quickstart_guide_link = Hyperlink::new(
-            "docs.autonomi.com/getstarted",
+            Span::styled(
+                "docs.autonomi.com/getstarted",
+                Style::default().fg(VIVID_SKY_BLUE).underlined(),
+            ),
             "https://docs.autonomi.com/getstarted",
         );
-        let beta_rewards_link = Hyperlink::new("autonomi.com/beta", "https://autonomi.com/beta");
-        let get_direct_support_link =
-            Hyperlink::new("autonomi.com/support", "https://autonomi.com/support");
-        let download_latest_link =
-            Hyperlink::new("autonomi.com/downloads", "https://autonomi.com/downloads");
-
-        // Content
-        let rows_help_and_support = vec![
-            Row::new(vec![
-                Cell::from(Line::from(vec![Span::styled(
-                    "See the quick start guides:",
-                    Style::default().fg(GHOST_WHITE),
-                )])),
-                Cell::from(Line::from(vec![Span::styled(
-                    "To join the Beta Rewards Program:",
-                    Style::default().fg(GHOST_WHITE),
-                )])),
-            ]),
-            Row::new(vec![
-                Cell::from(
-                    quickstart_guide_link
-                        .to_string()
-                        .into_text()
-                        .unwrap()
-                        .clone(),
-                ),
-                Cell::from(beta_rewards_link.to_string().into_text().unwrap().clone()),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                Cell::from(Line::from(vec![Span::styled(
-                    "Get Direct Support:",
-                    Style::default().fg(GHOST_WHITE),
-                )])),
-                Cell::from(Line::from(vec![Span::styled(
-                    "Download the latest launchpad:",
-                    Style::default().fg(GHOST_WHITE),
-                )])),
-            ]),
-            Row::new(vec![
-                Cell::from(
-                    get_direct_support_link
-                        .to_string()
-                        .into_text()
-                        .unwrap()
-                        .clone(),
-                ),
-                Cell::from(
-                    download_latest_link
-                        .to_string()
-                        .into_text()
-                        .unwrap()
-                        .clone(),
-                ),
-            ]),
-        ];
-
-        let table_help_and_support = Table::new(
-            rows_help_and_support,
-            vec![Constraint::Percentage(50), Constraint::Percentage(50)],
-        )
-        .block(
-            Block::new()
-                .borders(Borders::ALL)
-                .padding(Padding::uniform(1))
-                .title(" Get Help & Support ")
-                .title_style(Style::default().bold()),
+        let beta_rewards_link = Hyperlink::new(
+            Span::styled(
+                "autonomi.com/beta",
+                Style::default().fg(VIVID_SKY_BLUE).underlined(),
+            ),
+            "https://autonomi.com/beta",
+        );
+        let get_direct_support_link = Hyperlink::new(
+            Span::styled(
+                "autonomi.com/support",
+                Style::default().fg(VIVID_SKY_BLUE).underlined(),
+            ),
+            "https://autonomi.com/support",
+        );
+        let download_latest_link = Hyperlink::new(
+            Span::styled(
+                "autonomi.com/downloads",
+                Style::default().fg(VIVID_SKY_BLUE).underlined(),
+            ),
+            "https://autonomi.com/downloads",
         );
 
-        f.render_widget(table_help_and_support, layout[1]);
+        let block = Block::new()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(COOL_GREY))
+            .padding(Padding::uniform(1))
+            .title(" Get Help & Support ")
+            .bold()
+            .title_style(Style::default().bold().fg(GHOST_WHITE));
 
-        // ---- Keyboard shortcuts ----
-        let rows_keyboard_shortcuts = vec![
-            Row::new(vec![
-                Cell::from(Line::from(vec![
-                    Span::styled("[S] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Status", Style::default().fg(VIVID_SKY_BLUE)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+G] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Manage Nodes", Style::default().fg(EUCALYPTUS)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+D] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled(
-                        "Change Storage Drive",
-                        Style::default().fg(VERY_LIGHT_AZURE),
-                    ),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                Cell::from(Line::from(vec![
-                    Span::styled("[O] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Options", Style::default().fg(VIVID_SKY_BLUE)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+S] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Start All Nodes", Style::default().fg(EUCALYPTUS)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+K] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled(
-                        "Switch Connection Mode",
-                        Style::default().fg(VERY_LIGHT_AZURE),
-                    ),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                Cell::from(Line::from(vec![
-                    Span::styled("[H] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Help", Style::default().fg(VIVID_SKY_BLUE)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+X] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Stop All Nodes", Style::default().fg(EUCALYPTUS)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+P] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled(
-                        "Edit Custom Port Range",
-                        Style::default().fg(VERY_LIGHT_AZURE),
-                    ),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                Cell::from(Line::from(vec![
-                    Span::styled("[Q] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Quit", Style::default().fg(VIVID_SKY_BLUE)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+R] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Reset All Nodes", Style::default().fg(EUCALYPTUS)),
-                ])),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+B] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled(
-                        "Edit Discord Username",
-                        Style::default().fg(VERY_LIGHT_AZURE),
-                    ),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+L] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Open Logs Folder", Style::default().fg(VERY_LIGHT_AZURE)),
-                ])),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-            ]),
-            Row::new(vec![
-                // Empty row for padding
-                Cell::from(Span::raw(" ")),
-                Cell::from(Span::raw(" ")),
-                Cell::from(Line::from(vec![
-                    Span::styled("[Ctrl+L] ", Style::default().fg(GHOST_WHITE)),
-                    Span::styled("Open Logs Folder", Style::default().fg(VERY_LIGHT_AZURE)),
-                ])),
-            ]),
-        ];
-
-        let table_keyboard_shortcuts = Table::new(
-            rows_keyboard_shortcuts,
-            vec![
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-            ],
-        )
-        .block(
-            Block::new()
-                .borders(Borders::ALL)
-                .padding(Padding::uniform(1))
-                .title(" Keyboard Shortcuts ")
-                .title_style(Style::default().bold()),
+        // Render hyperlinks in the new area
+        f.render_widget(
+            Span::styled(
+                "See the quick start guides:",
+                Style::default().fg(GHOST_WHITE),
+            ),
+            left_column[0],
         );
+        f.render_widget_ref(quickstart_guide_link, left_column[1]);
+        f.render_widget(
+            Span::styled("Get Direct Support:", Style::default().fg(GHOST_WHITE)),
+            left_column[2],
+        );
+        f.render_widget_ref(get_direct_support_link, left_column[3]);
+        f.render_widget(
+            Span::styled(
+                "To join the Beta Rewards Program:",
+                Style::default().fg(GHOST_WHITE),
+            ),
+            right_column[0],
+        );
+        f.render_widget_ref(beta_rewards_link, right_column[1]);
+        f.render_widget(
+            Span::styled(
+                "Download the latest launchpad:",
+                Style::default().fg(GHOST_WHITE),
+            ),
+            right_column[2],
+        );
+        f.render_widget_ref(download_latest_link, right_column[3]);
 
-        f.render_widget(table_keyboard_shortcuts, layout[2]);
+        f.render_widget(block, layout[1]);
 
         Ok(())
     }

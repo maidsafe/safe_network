@@ -58,6 +58,7 @@ pub enum StatusActions {
     NodesStatsObtained(NodeStats),
 
     TriggerManageNodes,
+    TriggerBetaProgramme,
 
     PreviousTableItem,
     NextTableItem,
