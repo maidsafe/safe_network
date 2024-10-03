@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727974949560,
+  "lastUpdate": 1727981478967,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21",
-          "message": "chore(faucet): devskim ignore",
-          "timestamp": "2024-05-15T04:26:48Z",
-          "tree_id": "e9b084627c96af1c0ec0c589c2e947e07c12ba70",
-          "url": "https://github.com/maidsafe/safe_network/commit/bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21"
-        },
-        "date": 1715749686522,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1914410266533235,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.299901184298308,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 49.006540587791335,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 61.880932013731275,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d3ed939bf7450e609cef9bfe54792758be44f4aa",
+          "message": "Merge pull request #2153 from omahs/patch-1\n\nchore: fix typos",
+          "timestamp": "2024-10-03T18:04:06Z",
+          "tree_id": "e7eda916ee160f6235dd57b33305e90032dd2f41",
+          "url": "https://github.com/maidsafe/safe_network/commit/d3ed939bf7450e609cef9bfe54792758be44f4aa"
+        },
+        "date": 1727981471812,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.3165946363545105,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.7369852289039773,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 63.57393369864566,
             "unit": "MiB/s"
           }
         ]
