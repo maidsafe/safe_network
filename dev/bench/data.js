@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727963390984,
+  "lastUpdate": 1727963392605,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "01edbadbdcbd63e8ce0d73f835f83eeea40a6383",
-          "message": "chore: clippy fixes for open metrics feature",
-          "timestamp": "2024-05-15T00:14:59Z",
-          "tree_id": "f63e87c5899c69b237cb9f48de0de0fceab002fa",
-          "url": "https://github.com/maidsafe/safe_network/commit/01edbadbdcbd63e8ce0d73f835f83eeea40a6383"
-        },
-        "date": 1715736583288,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 200,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 85,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "joshuef@gmail.com",
             "name": "Josh Wilson",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 83,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "f3ce1074db222d9871e18a9b1da5e34d9f9823d4",
+          "message": "Merge branch 'hotfix-2024.10.1.3'",
+          "timestamp": "2024-10-03T14:28:10+01:00",
+          "tree_id": "c49d492cba08b44e912067aaf6f27498d8945822",
+          "url": "https://github.com/maidsafe/safe_network/commit/f3ce1074db222d9871e18a9b1da5e34d9f9823d4"
+        },
+        "date": 1727963392142,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 195,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 81,
             "unit": "MB"
           }
         ]
