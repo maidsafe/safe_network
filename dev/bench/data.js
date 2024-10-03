@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727981597713,
+  "lastUpdate": 1727981599826,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "joshuef@gmail.com",
-            "name": "Josh Wilson",
-            "username": "joshuef"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": true,
-          "id": "bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21",
-          "message": "chore(faucet): devskim ignore",
-          "timestamp": "2024-05-15T04:26:48Z",
-          "tree_id": "e9b084627c96af1c0ec0c589c2e947e07c12ba70",
-          "url": "https://github.com/maidsafe/safe_network/commit/bbb2033029360b8fc4caa7d5d4abc3d6c34b8d21"
-        },
-        "date": 1715749838702,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 15727,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 119426,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 7,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "bzeeman@live.nl",
             "name": "Benno Zeeman",
             "username": "b-zee"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 58733,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d3ed939bf7450e609cef9bfe54792758be44f4aa",
+          "message": "Merge pull request #2153 from omahs/patch-1\n\nchore: fix typos",
+          "timestamp": "2024-10-03T18:04:06Z",
+          "tree_id": "e7eda916ee160f6235dd57b33305e90032dd2f41",
+          "url": "https://github.com/maidsafe/safe_network/commit/d3ed939bf7450e609cef9bfe54792758be44f4aa"
+        },
+        "date": 1727981599074,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 16449,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 55384,
             "unit": "ms"
           },
           {
