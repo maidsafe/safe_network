@@ -91,9 +91,7 @@ impl Client {
 }
 
 fn build_client_and_run_swarm(local: bool) -> (Network, Receiver<NetworkEvent>) {
-    // TODO: `root_dir` is only used for nodes. `NetworkBuilder` should not require it.
-    let root_dir = std::env::temp_dir();
-    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
+    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
 
     // TODO: Re-export `Receiver<T>` from `sn_networking`. Else users need to keep their `tokio` dependency in sync.
     // TODO: Think about handling the mDNS error here.

@@ -68,7 +68,6 @@ use sn_protocol::{
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     net::IpAddr,
-    path::PathBuf,
     sync::Arc,
 };
 use tokio::sync::{
@@ -160,7 +159,6 @@ struct NetworkInner {
     network_swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
     local_swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     peer_id: PeerId,
-    root_dir_path: PathBuf,
     keypair: Keypair,
 }
 
@@ -169,7 +167,6 @@ impl Network {
         network_swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
         local_swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
         peer_id: PeerId,
-        root_dir_path: PathBuf,
         keypair: Keypair,
     ) -> Self {
         Self {
@@ -177,7 +174,6 @@ impl Network {
                 network_swarm_cmd_sender,
                 local_swarm_cmd_sender,
                 peer_id,
-                root_dir_path,
                 keypair,
             }),
         }
@@ -191,11 +187,6 @@ impl Network {
     /// Returns the `Keypair` of the instance.
     pub fn keypair(&self) -> &Keypair {
         &self.inner.keypair
-    }
-
-    /// Returns the root directory path of the instance.
-    pub fn root_dir_path(&self) -> &PathBuf {
-        &self.inner.root_dir_path
     }
 
     /// Get the sender to send a `NetworkSwarmCmd` to the underlying `Swarm`.
@@ -1179,8 +1170,7 @@ mod tests {
     #[test]
     fn test_network_sign_verify() -> eyre::Result<()> {
         let (network, _, _) =
-            NetworkBuilder::new(Keypair::generate_ed25519(), false, std::env::temp_dir())
-                .build_client()?;
+            NetworkBuilder::new(Keypair::generate_ed25519(), false).build_client()?;
         let msg = b"test message";
         let sig = network.sign(msg)?;
         assert!(network.verify(msg, &sig));
