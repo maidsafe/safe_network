@@ -4066,7 +4066,7 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
 }
 
 #[tokio::test]
-async fn add_node_should_assign_an_owner() -> Result<()> {
+async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
     let tmp_data_dir = assert_fs::TempDir::new()?;
     let node_reg_path = tmp_data_dir.child("node_reg.json");
 
@@ -4155,7 +4155,7 @@ async fn add_node_should_assign_an_owner() -> Result<()> {
             local: false,
             log_format: None,
             metrics_port: None,
-            owner: Some("discord_username".to_string()),
+            owner: Some("Discord_Username".to_string()),
             node_ip: None,
             node_port: None,
             rpc_address: None,
