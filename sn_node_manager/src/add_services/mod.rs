@@ -79,7 +79,12 @@ pub async fn add_node(
     }
 
     let owner = match &options.owner {
-        Some(owner) => Some(owner.to_lowercase()),
+        Some(owner) => {
+            if owner.chars().any(|c| c.is_uppercase()) {
+                warn!("Owner name ({owner}) contains uppercase characters and will be converted to lowercase");
+            }
+            Some(owner.to_lowercase())
+        }
         None => None,
     };
 
