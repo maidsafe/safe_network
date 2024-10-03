@@ -3,8 +3,10 @@ mod common;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
 use alloy::node_bindings::AnvilInstance;
 use alloy::primitives::U256;
-use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
-use alloy::providers::{ReqwestProvider, WalletProvider};
+use alloy::providers::fillers::{
+    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+};
+use alloy::providers::{Identity, ReqwestProvider, WalletProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::{Client, Http};
 use evmlib::contract::network_token::NetworkToken;
@@ -17,7 +19,16 @@ async fn setup() -> (
     NetworkToken<
         Http<Client>,
         FillProvider<
-            JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+            JoinFill<
+                JoinFill<
+                    Identity,
+                    JoinFill<
+                        GasFiller,
+                        JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>,
+                    >,
+                >,
+                WalletFiller<EthereumWallet>,
+            >,
             ReqwestProvider,
             Http<Client>,
             Ethereum,

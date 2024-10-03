@@ -18,6 +18,8 @@ pub enum Error {
     ContractError(#[from] alloy::contract::Error),
     #[error(transparent)]
     RpcError(#[from] RpcError<TransportErrorKind>),
+    #[error(transparent)]
+    PendingTransactionError(#[from] alloy::providers::PendingTransactionError),
 }
 
 pub struct NetworkToken<T: Transport + Clone, P: Provider<T, N>, N: Network> {
