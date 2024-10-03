@@ -53,7 +53,7 @@ use xor_name::XorName;
 // During Beta phase, it's almost one spend per chunk,
 // which makes the average record size is around 2MB.
 // Given we are targeting node size to be 32GB,
-// this shall allow around 16K records.
+// this shall allow around 16k records.
 const MAX_RECORDS_COUNT: usize = 16 * 1024;
 
 /// The maximum number of records to cache in memory.
