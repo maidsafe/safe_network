@@ -60,8 +60,9 @@ jobs:
 
       - name: Set SAFE_PEERS
         run: |
-          safe_peers=$(rg "Local node is listening .+ on \".+\"" $BOOTSTRAP_NODE_DATA_PATH -u | \
-            rg '/ip4.*$' -m1 -o | rg '"' -r '')
+          safe_peers=$(rg "Local node is listening .+ on .+" $BOOTSTRAP_NODE_DATA_PATH -u | \
+            rg '/ip4.*$' -m1 -o)
+          echo $safe_peers
           echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
 
       - name: Check SAFE_PEERS was set
