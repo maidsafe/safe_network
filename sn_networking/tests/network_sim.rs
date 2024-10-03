@@ -18,12 +18,13 @@ use libp2p::{
     identity::PeerId,
     kad::{store::RecordStore, K_VALUE},
 };
+use rand::Rng;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use sn_networking::{MAX_RECORDS_COUNT, MAX_STORE_COST};
 use sn_protocol::{storage::ChunkAddress, NetworkAddress};
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fs,
     sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
     time::{SystemTime, UNIX_EPOCH},
@@ -32,6 +33,14 @@ use std::{
 use xor_name::XorName;
 
 use sn_networking::{calculate_cost_for_records, get_fees_from_store_cost_responses};
+
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
+use std::cell::RefCell;
+
+thread_local! {
+    static THREAD_RNG: RefCell<SmallRng> = RefCell::new(SmallRng::from_entropy());
+}
 
 #[derive(Debug)]
 struct PeerStats {
@@ -46,6 +55,13 @@ struct PeerStats {
 fn network_payment_sim() -> eyre::Result<()> {
     use rayon::prelude::*;
 
+    let num_threads = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build_global()?;
+
     // Create a directory for this run
     let run_dir: std::path::PathBuf = create_run_directory()?;
     let graphs_dir = run_dir.join("graphs");
@@ -53,11 +69,13 @@ fn network_payment_sim() -> eyre::Result<()> {
 
     // Define the matrix of parameters to test
     let peer_counts = vec![5_000, 50_000, 200_000];
-    let max_payments = vec![50_000, 100_000, 500_000];
+    let max_payments = vec![50_000, 100_000, 1_500_000];
     let replication_group_sizes = vec![3, 5, 7];
 
     fs::create_dir_all(&graphs_dir)?;
     fs::create_dir_all(&peer_data_dir)?;
+
+    let pay_the_whole_group = true;
 
     for &num_of_peers in &peer_counts {
         for &max_payments_attempts_made in &max_payments {
@@ -68,7 +86,7 @@ fn network_payment_sim() -> eyre::Result<()> {
                 );
 
                 // as network saturates, we can see that peers all eventually earn similarly
-                let num_of_chunks_per_hour = 400;
+                let num_of_chunks_per_hour = 5000;
 
                 let mut hour = 0;
                 let k = K_VALUE.get();
@@ -76,7 +94,7 @@ fn network_payment_sim() -> eyre::Result<()> {
                 let failed_payee_finding = AtomicBool::new(false);
 
                 // Initialize peers with random addresses
-                let mut peers: Vec<PeerStats> = (0..num_of_peers)
+                let peers: Vec<PeerStats> = (0..num_of_peers)
                     .into_par_iter()
                     .map(|_| PeerStats {
                         address: NetworkAddress::from_peer(PeerId::random()),
@@ -91,107 +109,60 @@ fn network_payment_sim() -> eyre::Result<()> {
 
                 let peers_len = peers.len();
 
-                // Generate a random sorting target address
-                let sorting_target_address =
-                    NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::default()));
-
-                // Sort all peers based on their distance to the sorting target
-                peers.par_sort_by(|a, b| {
-                    sorting_target_address
-                        .distance(&a.address)
-                        .cmp(&sorting_target_address.distance(&b.address))
-                });
-
                 loop {
                     // Parallel processing of chunks
-                    let _chunk_results: Vec<_> = (0..num_of_chunks_per_hour)
+                    (0..num_of_chunks_per_hour)
                         .into_par_iter()
-                        .map(|_| {
-                            // Generate a random chunk address
-                            let name = xor_name::rand::random();
-                            let chunk_address =
-                                NetworkAddress::from_chunk_address(ChunkAddress::new(name));
+                        .try_for_each(|_| {
+                            let random_index =
+                                THREAD_RNG.with(|rng| rng.borrow_mut().gen_range(0..peers_len));
 
-                            let chunk_distance_to_sorting =
-                                sorting_target_address.distance(&chunk_address);
-                            // Binary search to find the insertion point for the chunk
-                            let partition_point = peers.partition_point(|peer| {
-                                sorting_target_address.distance(&peer.address)
-                                    < chunk_distance_to_sorting
-                            });
-
-                            // Collect close_group_size closest peers
+                            // Create a close group of surrounding peers
                             let mut close_group = Vec::with_capacity(replication_group_size);
-                            let mut left = partition_point;
-                            let mut right = partition_point;
+                            let half_group_size = replication_group_size / 2;
 
-                            // search extended to find only nodes with less than MAX_RECORDS_COUNT
-                            while close_group.len() < replication_group_size
-                                && (left > 0 || right < peers_len)
-                            {
-                                let mut added = false;
+                            for i in 0..replication_group_size {
+                                let mut index =
+                                    (random_index + i - half_group_size + peers_len) % peers_len;
+                                let mut attempts = 0;
 
-                                // Try to add a peer from the right side
-                                if right < peers_len {
-                                    let peer = &peers[right];
-                                    if peer.records_stored.load(Ordering::Relaxed)
+                                while attempts < peers_len {
+                                    if peers[index].records_stored.load(Ordering::Relaxed)
                                         < MAX_RECORDS_COUNT
                                     {
-                                        close_group.push(right);
-                                        added = true;
-                                    }
-                                    right += 1;
-                                }
-
-                                // Try to add a peer from the left side
-                                if close_group.len() < replication_group_size && left > 0 {
-                                    left -= 1;
-                                    let peer = &peers[left];
-                                    if peer.records_stored.load(Ordering::Relaxed)
-                                        < MAX_RECORDS_COUNT
-                                    {
-                                        close_group.push(left);
-                                        added = true;
-                                    }
-                                }
-
-                                // If we couldn't add from either side, expand the search range
-                                if !added {
-                                    if right >= peers_len && left == 0 {
-                                        println!("Failed to find a closer");
-                                        failed_payee_finding.store(true, Ordering::Relaxed);
-
-                                        // bail!("Failed to find a payee");
-
-                                        // We've exhausted all possibilities
+                                        close_group.push(index);
                                         break;
                                     }
-                                    continue;
+                                    index = (index + 1) % peers_len;
+                                    attempts += 1;
                                 }
+
+                                if attempts == peers_len {
+                                    eprint!("NO SPACCCCEEEEE");
+                                    // We've checked all peers and couldn't find one with space
+                                    break;
+                                }
+                            }
+
+                            if close_group.is_empty() {
+                                println!("Failed to find a closer peer");
+                                failed_payee_finding.store(true, Ordering::Relaxed);
                             }
 
                             if close_group.len() < 2 {
                                 println!("waning group size: {:?}", close_group.len());
                             }
-                            if close_group.len() == 0 {
+                            if close_group.is_empty() {
                                 failed_payee_finding.store(true, Ordering::Relaxed);
                                 println!("No nodes close_group.len() {:?}!", close_group.len());
-                                bail!("No nodes close_group.len() {:?}!", close_group.len());
+                                return Err(eyre::eyre!(
+                                    "No nodes close_group.len() {:?}!",
+                                    close_group.len()
+                                ));
                             }
-                            // Truncate to ensure we have exactly close_group_size peers
-                            close_group.sort_by_key(|&index| {
-                                sorting_target_address.distance(&peers[index].address)
-                            });
-                            close_group.truncate(replication_group_size);
 
                             // Find the cheapest payee among the close group
-                            let Ok((payee_index, cost)) = pick_the_payee(&peers, &close_group)
-                            else {
-                                println!("Failed to find a payee");
-                                failed_payee_finding.store(true, Ordering::Relaxed);
-
-                                bail!("Failed to find a payee");
-                            };
+                            let (payee_index, cost) = pick_the_payee(&peers, &close_group)?;
 
                             if cost.as_nano() >= MAX_STORE_COST {
                                 total_failed_payments.fetch_add(1, Ordering::Relaxed);
@@ -202,16 +173,15 @@ fn network_payment_sim() -> eyre::Result<()> {
                                 let peer = &peers[peer_index];
                                 peer.records_stored.fetch_add(1, Ordering::Relaxed);
 
-                                if peer_index == payee_index {
-                                    peer.nanos_earned
-                                        .fetch_add(cost.as_nano(), Ordering::Relaxed);
-                                    peer.payments_received.fetch_add(1, Ordering::Relaxed);
-                                }
+                                // if peer_index == payee_index {
+                                peer.nanos_earned
+                                    .fetch_add(cost.as_nano(), Ordering::Relaxed);
+                                peer.payments_received.fetch_add(1, Ordering::Relaxed);
+                                // }
                             }
 
                             Ok(())
-                        })
-                        .collect();
+                        })?;
 
                     // Parallel reduction to calculate statistics
                     let (
@@ -240,29 +210,13 @@ fn network_payment_sim() -> eyre::Result<()> {
                         .reduce(
                             || (0, 0, u64::MAX, 0, u64::MAX, 0),
                             |a, b| {
-                                let (
-                                    a_received_payment_count,
-                                    a_empty_earned_nodes,
-                                    a_min_earned,
-                                    a_max_earned,
-                                    a_min_store_cost,
-                                    a_max_store_cost,
-                                ) = a;
-                                let (
-                                    b_received_payment_count,
-                                    b_empty_earned_nodes,
-                                    b_min_earned,
-                                    b_max_earned,
-                                    b_min_store_cost,
-                                    b_max_store_cost,
-                                ) = b;
                                 (
-                                    a_received_payment_count + b_received_payment_count,
-                                    a_empty_earned_nodes + b_empty_earned_nodes,
-                                    a_min_earned.min(b_min_earned),
-                                    a_max_earned.max(b_max_earned),
-                                    a_min_store_cost.min(b_min_store_cost),
-                                    a_max_store_cost.max(b_max_store_cost),
+                                    a.0 + b.0,
+                                    a.1 + b.1,
+                                    a.2.min(b.2),
+                                    a.3.max(b.3),
+                                    a.4.min(b.4),
+                                    a.5.max(b.5),
                                 )
                             },
                         );
@@ -294,14 +248,14 @@ fn network_payment_sim() -> eyre::Result<()> {
                         }
 
                         println!("received_payment_count: {received_payment_count}");
-                        let acceptable_percentage = 0.01; //%
+                        // let acceptable_percentage = 0.01; //%
 
-                        // make min earned at least 1
-                        let min_earned = min_earned.max(1);
+                        // // make min earned at least 1
+                        // let min_earned = min_earned.max(1);
 
-                        // Calculate acceptable empty nodes based on % of total nodes
-                        let acceptable_empty_nodes =
-                            (num_of_peers as f64 * acceptable_percentage).ceil() as usize;
+                        // // Calculate acceptable empty nodes based on % of total nodes
+                        // let acceptable_empty_nodes =
+                        //     (num_of_peers as f64 * acceptable_percentage).ceil() as usize;
 
                         // // Assert conditions for termination
                         // assert!(
@@ -446,13 +400,13 @@ fn write_peers_data_to_file(peers: &[PeerStats], sim_dir: &std::path::Path) -> e
         "Distance",
     )?;
 
-    let default_chunk_address =
-        NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::default()));
+    // let default_chunk_address =
+    //     NetworkAddress::from_chunk_address(ChunkAddress::new(XorName::default()));
     for (nanos_earned, records_stored, payments_received, address) in peers_data {
-        let distance_to_default = address
-            .distance(&default_chunk_address)
-            .ilog2()
-            .unwrap_or(0);
+        // let distance_to_default = address
+        //     .distance(&default_chunk_address)
+        //     .ilog2()
+        //     .unwrap_or(0);
         // It's safe to unwrap here because PeerId should be present
         let peer_id = address.as_peer_id().unwrap();
 
@@ -460,13 +414,13 @@ fn write_peers_data_to_file(peers: &[PeerStats], sim_dir: &std::path::Path) -> e
         // Use writeln! macro to write formatted line and add newline
         writeln!(
             writer,
-            "{:<50} {:<20} {:<20} {:<20} {:<20} {:<10}",
+            "{:<50} {:<20} {:<20} {:<20} {:<20}",
             peer_id,
             records_stored,
             mean_payment_count,
             nanos_earned,
             payments_received,
-            distance_to_default,
+            // distance_to_default,
         )?;
     }
 
@@ -563,45 +517,39 @@ fn generate_graph(
 
 fn pick_the_payee(peers: &[PeerStats], close_group: &[usize]) -> eyre::Result<(usize, NanoTokens)> {
     let mut costs_vec = Vec::with_capacity(close_group.len());
-    let mut address_to_index = BTreeMap::new();
+    let mut address_to_index = HashMap::with_capacity(close_group.len());
 
     for &i in close_group {
         let peer = &peers[i];
-        address_to_index.insert(peer.address.clone(), i);
+        address_to_index.insert(peer.address.as_peer_id().unwrap(), i);
 
         let close_records_stored = peer.records_stored.load(Ordering::Relaxed);
         let cost: NanoTokens = NanoTokens::from(calculate_cost_for_records(close_records_stored));
 
         let quote = PaymentQuote {
-            content: XorName::default(), // unimportant for cost calc
+            content: XorName::default(),
             cost,
             timestamp: std::time::SystemTime::now(),
             quoting_metrics: QuotingMetrics {
-                close_records_stored: peer.records_stored.load(Ordering::Relaxed),
+                close_records_stored,
                 max_records: MAX_RECORDS_COUNT,
-                received_payment_count: 1, // unimportant for cost calc
-                live_time: 0,              // unimportant for cost calc
+                received_payment_count: 1,
+                live_time: 0,
             },
             pub_key: peer.pk.to_bytes().to_vec(),
-            signature: vec![], // unimportant for cost calc
+            signature: vec![],
         };
 
         costs_vec.push((peer.address.clone(), peer.pk, quote));
     }
 
-    // sort by address first
-    costs_vec.sort_by(|(a_addr, _, _), (b_addr, _, _)| a_addr.cmp(b_addr));
+    costs_vec.sort_unstable_by(|(a_addr, _, _), (b_addr, _, _)| a_addr.cmp(b_addr));
 
-    let Ok((recip_id, _pk, q)) = get_fees_from_store_cost_responses(costs_vec) else {
-        bail!("Failed to get fees from store cost responses")
-    };
+    let (recip_id, _pk, q) = get_fees_from_store_cost_responses(costs_vec)?;
 
-    let Some(index) = address_to_index
-        .get(&NetworkAddress::from_peer(recip_id))
-        .copied()
-    else {
-        bail!("Cannot find the index for the cheapest payee");
-    };
+    let index = *address_to_index
+        .get(&recip_id)
+        .ok_or_else(|| eyre::eyre!("Cannot find the index for the cheapest payee"))?;
 
     Ok((index, q.cost))
 }
