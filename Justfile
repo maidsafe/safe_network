@@ -107,9 +107,13 @@ build-release-artifacts arch:
   mkdir artifacts
   cargo clean
 
-  echo "==============="
-  echo "= Public Keys ="
-  echo "==============="
+  if [ -n "$MAX_CHUNK_SIZE" ]; then
+    echo "Overriding chunk size to $MAX_CHUNK_SIZE bytes"
+  fi
+
+  echo "================"
+  echo "  Network Keys  "
+  echo "================"
   echo "FOUNDATION_PK: $FOUNDATION_PK"
   echo "GENESIS_PK: $GENESIS_PK"
   echo "NETWORK_ROYALTIES_PK: $NETWORK_ROYALTIES_PK"

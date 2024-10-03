@@ -2,6 +2,11 @@ name: release
 
 on:
   workflow_dispatch:
+    inputs:
+      chunk-size:
+        description: Specify the chunk size in bytes. If not used, the current default is 1048576.
+        type: number
+        required: false
 
 # The key variables also need to be passed to `cross`, which runs in a container and does not
 # inherit variables from the parent environment. The `cross` tool is used in the `build`
@@ -48,6 +53,12 @@ jobs:
       - uses: cargo-bins/cargo-binstall@main
       - shell: bash
         run: cargo binstall --no-confirm just
+
+      - name: Set chunk size if applicable
+        if: ${{ inputs.chunk-size != '' }}
+        shell: bash
+        run: |
+          echo "MAX_CHUNK_SIZE=${{ inputs.chunk-size }}" >> $GITHUB_ENV
 
       - name: build release artifacts
         shell: bash
