@@ -2,13 +2,15 @@ mod common;
 
 use const_hex::traits::FromHex;
 use evmlib::common::{Address, Amount};
+use evmlib::utils::evm_network_from_env;
 use evmlib::wallet::Wallet;
-use test_utils::evm::{evm_network_from_env, get_funded_wallet};
+use test_utils::evm::get_funded_wallet;
 
 #[tokio::test]
 async fn from_private_key() {
     let private_key = "0xdb1049e76a813c94be0df47ec3e20533ca676b1b9fef2ddbce9daa117e4da4aa";
-    let network = evm_network_from_env();
+    let network =
+        evm_network_from_env().expect("Could not get EVM network from environment variables");
     let wallet = Wallet::new_from_private_key(network, private_key).unwrap();
 
     assert_eq!(
@@ -19,7 +21,8 @@ async fn from_private_key() {
 
 #[tokio::test]
 async fn send_tokens() {
-    let network = evm_network_from_env();
+    let network =
+        evm_network_from_env().expect("Could not get EVM network from environment variables");
     let wallet = get_funded_wallet();
 
     let receiving_wallet = Wallet::new_with_random_wallet(network);

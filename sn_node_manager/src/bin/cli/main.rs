@@ -1223,6 +1223,11 @@ async fn main() -> Result<()> {
                 evm_network,
                 skip_validation: _,
             } => {
+                let evm_network = if let Some(evm_network) = evm_network {
+                    Some(evm_network.try_into()?)
+                } else {
+                    None
+                };
                 cmd::local::join(
                     build,
                     count,
@@ -1240,7 +1245,7 @@ async fn main() -> Result<()> {
                     peers,
                     rpc_port,
                     rewards_address,
-                    evm_network.map(|v| v.into()),
+                    evm_network,
                     true,
                     verbosity,
                 )
@@ -1267,6 +1272,11 @@ async fn main() -> Result<()> {
                 evm_network,
                 skip_validation: _,
             } => {
+                let evm_network = if let Some(evm_network) = evm_network {
+                    Some(evm_network.try_into()?)
+                } else {
+                    None
+                };
                 cmd::local::run(
                     build,
                     clean,
@@ -1284,7 +1294,7 @@ async fn main() -> Result<()> {
                     owner_prefix,
                     rpc_port,
                     rewards_address,
-                    evm_network.map(|v| v.into()),
+                    evm_network,
                     true,
                     verbosity,
                 )
@@ -1368,6 +1378,8 @@ async fn main() -> Result<()> {
 
 fn get_log_builder(level: Level) -> Result<LogBuilder> {
     let logging_targets = vec![
+        ("evmlib".to_string(), level),
+        ("evm_testnet".to_string(), level),
         ("sn_peers_acquisition".to_string(), level),
         ("sn_node_manager".to_string(), level),
         ("safenode_manager".to_string(), level),

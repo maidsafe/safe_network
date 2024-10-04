@@ -5,6 +5,9 @@ use alloy::transports::http::reqwest;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+#[macro_use]
+extern crate tracing;
+
 pub mod common;
 pub mod contract;
 pub mod cryptography;
