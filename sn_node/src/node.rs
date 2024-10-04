@@ -607,7 +607,7 @@ impl Node {
                 let store_cost = network.get_local_storecost(record_key.clone()).await;
 
                 match store_cost {
-                    Ok((cost, quoting_metrics)) => {
+                    Ok((cost, quoting_metrics, bad_nodes)) => {
                         if cost == AttoTokens::zero() {
                             QueryResponse::GetStoreCost {
                                 quote: Err(ProtocolError::RecordExists(
@@ -623,6 +623,7 @@ impl Node {
                                     cost,
                                     &address,
                                     &quoting_metrics,
+                                    bad_nodes,
                                     &payment_address,
                                 ),
                                 payment_address,

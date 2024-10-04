@@ -19,15 +19,18 @@ impl Node {
         cost: AttoTokens,
         address: &NetworkAddress,
         quoting_metrics: &QuotingMetrics,
+        bad_nodes: Vec<NetworkAddress>,
         payment_address: &RewardsAddress,
     ) -> Result<PaymentQuote, ProtocolError> {
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
+        let serialised_bad_nodes = rmp_serde::to_vec(&bad_nodes).unwrap_or_default();
         let bytes = PaymentQuote::bytes_for_signing(
             content,
             cost,
             timestamp,
             quoting_metrics,
+            &serialised_bad_nodes,
             payment_address,
         );
 
@@ -40,6 +43,7 @@ impl Node {
             cost,
             timestamp,
             quoting_metrics: quoting_metrics.clone(),
+            bad_nodes: serialised_bad_nodes,
             pub_key: network.get_pub_key(),
             rewards_address: *payment_address,
             signature,

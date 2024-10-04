@@ -1783,6 +1783,7 @@ mod tests {
                     received_payment_count: 1, // unimportant for cost calc
                     live_time: 0,              // unimportant for cost calc
                 },
+                bad_nodes: vec![],
                 pub_key: bls::SecretKey::random().public_key().to_bytes().to_vec(),
                 signature: vec![],
                 rewards_address: peer.rewards_addr, // unimportant for cost calc
