@@ -1,8 +1,16 @@
 use crate::common::{Address, Hash};
 use crate::{CustomNetwork, Network};
+use dirs_next::data_dir;
 use rand::Rng;
 use std::env;
-use std::env::VarError;
+
+pub const EVM_TESTNET_CSV_FILENAME: &str = "evm_testnet_data.csv";
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Failed to get EVM network")]
+    FailedToGetEvmNetwork,
+}
 
 /// Generate a random Address.
 pub fn dummy_address() -> Address {
@@ -15,17 +23,59 @@ pub fn dummy_hash() -> Hash {
 }
 
 /// Get the `Network` from environment variables
-pub fn evm_network_from_env() -> Result<Network, VarError> {
-    const EVM_VARS: [&str; 3] = ["RPC_URL", "PAYMENT_TOKEN_ADDRESS", "DATA_PAYMENTS_ADDRESS"];
-    let custom_vars_exist = EVM_VARS.iter().all(|var| env::var(var).is_ok());
+pub fn evm_network_from_env() -> Result<Network, Error> {
+    let evm_vars = ["RPC_URL", "PAYMENT_TOKEN_ADDRESS", "DATA_PAYMENTS_ADDRESS"]
+        .iter()
+        .map(|var| env::var(var).map_err(|_| Error::FailedToGetEvmNetwork))
+        .collect::<Result<Vec<String>, Error>>();
 
-    if custom_vars_exist {
+    let use_local_evm = std::env::var("EVM_NETWORK")
+        .map(|v| v == "local")
+        .unwrap_or(false);
+    let use_arbitrum_one = std::env::var("EVM_NETWORK")
+        .map(|v| v == "arbitrum-one")
+        .unwrap_or(false);
+
+    if use_arbitrum_one {
+        Ok(Network::ArbitrumOne)
+    } else if use_local_evm {
+        local_evm_network_from_csv()
+    } else if let Ok(evm_vars) = evm_vars {
         Ok(Network::Custom(CustomNetwork::new(
-            &env::var(EVM_VARS[0])?,
-            &env::var(EVM_VARS[1])?,
-            &env::var(EVM_VARS[2])?,
+            &evm_vars[0],
+            &evm_vars[1],
+            &evm_vars[2],
         )))
     } else {
         Ok(Network::ArbitrumOne)
+    }
+}
+
+/// Get the `Network::Custom` from the local EVM testnet CSV file
+pub fn local_evm_network_from_csv() -> Result<Network, Error> {
+    // load the csv
+    let csv_path = data_dir()
+        .ok_or(Error::FailedToGetEvmNetwork)
+        .inspect_err(|_| error!("Failed to get data dir when fetching evm testnet CSV file"))?
+        .join("safe")
+        .join(EVM_TESTNET_CSV_FILENAME);
+
+    if !csv_path.exists() {
+        error!("evm data csv path does not exist {:?}", csv_path);
+        return Err(Error::FailedToGetEvmNetwork);
+    }
+
+    let csv = std::fs::read_to_string(&csv_path)
+        .map_err(|_| Error::FailedToGetEvmNetwork)
+        .inspect_err(|_| error!("Failed to read evm testnet CSV file"))?;
+    let parts: Vec<&str> = csv.split(',').collect();
+    match parts.as_slice() {
+        [rpc_url, payment_token_address, chunk_payments_address] => Ok(Network::Custom(
+            CustomNetwork::new(rpc_url, payment_token_address, chunk_payments_address),
+        )),
+        _ => {
+            error!("Invalid data in evm testnet CSV file");
+            Err(Error::FailedToGetEvmNetwork)
+        }
     }
 }

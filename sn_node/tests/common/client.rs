@@ -11,9 +11,9 @@ use eyre::Result;
 use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
 use sn_service_management::{get_local_node_registry_path, NodeRegistry};
-use std::env;
 use std::{net::SocketAddr, path::Path};
-use test_utils::{evm::evm_network_from_env, testnet::DeploymentInventory};
+use test_utils::evm::get_funded_wallet;
+use test_utils::testnet::DeploymentInventory;
 use tokio::sync::Mutex;
 use tonic::Request;
 use tracing::{debug, info};
@@ -147,16 +147,7 @@ impl LocalNetwork {
     }
 
     fn get_funded_wallet() -> evmlib::wallet::Wallet {
-        let network = evm_network_from_env();
-        // Default deployer wallet of the testnet.
-        const DEFAULT_WALLET_PRIVATE_KEY: &str =
-            "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-
-        let private_key =
-            env::var("EVM_PRIVATE_KEY").unwrap_or(DEFAULT_WALLET_PRIVATE_KEY.to_string());
-
-        evmlib::wallet::Wallet::new_from_private_key(network, &private_key)
-            .expect("Invalid private key")
+        get_funded_wallet()
     }
 
     // Restart a local node by sending in the SafenodeRpcCmd::Restart to the node's RPC endpoint.

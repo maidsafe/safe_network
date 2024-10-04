@@ -266,6 +266,8 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
         if contains_keyword_all_sn_logs || contains_keyword_verbose_sn_logs {
             let mut t = BTreeMap::from_iter(vec![
                 // bins
+                ("autonomi_cli".to_string(), Level::TRACE),
+                ("evm_testnet".to_string(), Level::TRACE),
                 ("faucet".to_string(), Level::TRACE),
                 ("safenode".to_string(), Level::TRACE),
                 ("safenode_rpc_client".to_string(), Level::TRACE),
@@ -273,8 +275,10 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
                 ("safenode_manager".to_string(), Level::TRACE),
                 ("safenodemand".to_string(), Level::TRACE),
                 // libs
-                ("sn_build_info".to_string(), Level::TRACE),
                 ("autonomi".to_string(), Level::TRACE),
+                ("evmlib".to_string(), Level::TRACE),
+                ("sn_evm".to_string(), Level::TRACE),
+                ("sn_build_info".to_string(), Level::TRACE),
                 ("sn_client".to_string(), Level::TRACE),
                 ("sn_faucet".to_string(), Level::TRACE),
                 ("sn_logging".to_string(), Level::TRACE),

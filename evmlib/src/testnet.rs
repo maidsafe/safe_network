@@ -60,6 +60,7 @@ pub fn start_node() -> AnvilInstance {
     // Spin up a local Anvil node.
     // Requires you to have Foundry installed: https://book.getfoundry.sh/getting-started/installation
     Anvil::new()
+        .port(4343_u16)
         .try_spawn()
         .expect("Could not spawn Anvil node")
 }
