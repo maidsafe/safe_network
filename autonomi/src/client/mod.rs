@@ -17,9 +17,13 @@ pub mod registers;
 #[cfg(feature = "vault")]
 pub mod vault;
 
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
+
 use std::{collections::HashSet, time::Duration};
 
 use libp2p::{identity::Keypair, Multiaddr};
+use serde::{Deserialize, Serialize};
 use sn_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use tokio::sync::mpsc::Receiver;
@@ -48,7 +52,7 @@ pub struct Client {
 }
 
 /// Error returned by [`Client::connect`].
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize, Deserialize)]
 pub enum ConnectError {
     /// Did not manage to connect to enough peers in time.
     #[error("Could not connect to enough peers in time.")]

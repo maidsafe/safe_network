@@ -12,6 +12,7 @@ use evmlib::wallet;
 use libp2p::kad::{Quorum, Record};
 
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use tokio::task::JoinError;
 use xor_name::XorName;
@@ -36,34 +37,41 @@ use std::collections::{BTreeMap, HashMap};
 use std::num::NonZero;
 
 /// Errors that can occur during the put operation.
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize, Deserialize)]
 pub enum PutError {
     #[error("Failed to self-encrypt data.")]
+    #[serde(skip)]
     SelfEncryption(#[from] crate::self_encryption::Error),
     #[error("Error serializing data.")]
     Serialization,
     #[error("Error getting Vault XorName data.")]
     VaultXorName,
     #[error("A network error occurred.")]
+    #[serde(skip)]
     Network(#[from] NetworkError),
     #[error("Error occurred during payment.")]
     PayError(#[from] PayError),
     #[error("A wallet error occurred.")]
+    #[serde(skip)]
     Wallet(#[from] sn_evm::EvmError),
 }
 
 /// Errors that can occur during the pay operation.
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize, Deserialize)]
 pub enum PayError {
     #[error("Could not get store quote for: {0:?} after several retries")]
     CouldNotGetStoreQuote(XorName),
     #[error("Could not get store costs: {0:?}")]
+    #[serde(skip)]
     CouldNotGetStoreCosts(NetworkError),
     #[error("Could not simultaneously fetch store costs: {0:?}")]
+    #[serde(skip)]
     JoinError(JoinError),
     #[error("Wallet error: {0:?}")]
+    #[serde(skip)]
     EvmWalletError(#[from] wallet::Error),
     #[error("Failed to self-encrypt data.")]
+    #[serde(skip)]
     SelfEncryption(#[from] crate::self_encryption::Error),
 }
 
