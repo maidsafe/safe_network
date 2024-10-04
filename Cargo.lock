@@ -7320,6 +7320,7 @@ dependencies = [
  "sn_service_management",
  "sn_transfers",
  "strum",
+ "sysinfo",
  "tempfile",
  "test_utils",
  "thiserror",

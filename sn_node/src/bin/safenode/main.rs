@@ -14,9 +14,11 @@ mod rpc_service;
 use clap::Parser;
 use eyre::{eyre, Result};
 use libp2p::{identity::Keypair, PeerId};
+use self_encryption::MAX_CHUNK_SIZE;
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
+use sn_networking::MAX_RECORDS_COUNT;
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::PeersArgs;
 use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl};
@@ -28,6 +30,7 @@ use std::{
     process::Command,
     time::Duration,
 };
+use sysinfo::Disks;
 use tokio::{
     runtime::Runtime,
     sync::{broadcast::error::RecvError, mpsc},
@@ -263,6 +266,7 @@ async fn run_node(
     let started_instant = std::time::Instant::now();
 
     info!("Starting node ...");
+    check_node_disk_space(&node_builder.root_dir)?;
     let running_node = node_builder.build_and_run()?;
 
     println!(
@@ -358,6 +362,41 @@ You can check your reward balance by running:
             }
         }
     }
+}
+
+fn check_node_disk_space(root_dir: &Path) -> Result<()> {
+    let disks = Disks::new_with_refreshed_list();
+    let disks = disks.list();
+    let required_space_bytes = (MAX_RECORDS_COUNT * *MAX_CHUNK_SIZE) as u64;
+    debug!(
+        "Node required space: {} GB",
+        required_space_bytes / 1_000_000_000
+    );
+
+    let mut current = Some(root_dir);
+    while let Some(dir) = current {
+        for disk in disks {
+            if disk.mount_point() == dir {
+                debug!(
+                    "Root dir: {dir:?} belongs to mount: {:?}",
+                    disk.mount_point()
+                );
+                if disk.available_space() < required_space_bytes {
+                    return Err(eyre!(
+                        "Node's data directory does not have enough space. Available space: {} GB. Required space: {} GB",
+                        disk.available_space() / 1_000_000_000, required_space_bytes / 1_000_000_000
+                    ));
+                } else {
+                    return Ok(());
+                }
+            }
+        }
+        current = dir.parent();
+    }
+
+    Err(eyre!(
+        "Cannot find the default mount point for root dir: {root_dir:?}"
+    ))
 }
 
 fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Sender<NodeCtrl>) {
