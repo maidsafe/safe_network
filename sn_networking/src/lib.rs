@@ -1167,48 +1167,33 @@ impl Network {
 pub fn get_fees_from_store_cost_responses(
     all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
 ) -> Result<PayeeQuote> {
-    // TODO:
-    // We need to exclude MAX PAYMENT SIZE.
-    // also in sims, exclude peers with max records really....
-    // or do we limit the price... hmmm
-
-    // Find the minimum cost using a linear scan with random tie break
-    let mut rng = rand::thread_rng();
-    let payee = all_costs
-        .clone()
-        .into_iter()
-        .min_by(
-            |(_address_a, _main_key_a, cost_a), (_address_b, _main_key_b, cost_b)| {
-                let cmp = cost_a.cost.cmp(&cost_b.cost);
-                if cmp == std::cmp::Ordering::Equal {
-                    if rng.gen() {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    }
-                } else {
-                    cmp
-                }
-            },
-        )
-        .ok_or(NetworkError::NoStoreCostResponses)?;
-
-    info!("Final fees calculated as: {payee:?}");
-    if payee.2.cost.as_nano() == record_store::MAX_STORE_COST {
-        warn!("The cost of the record is MAX, this should not happen realistically");
-        // eprintln!("Costs are all max! {all_costs:?}");
-
-        // return Err(NetworkError::LowestCostIsMax);
+    if all_costs.is_empty() {
+        return Err(NetworkError::NoStoreCostResponses);
     }
 
-    // we dont need to have the address outside of here for now
-    let payee_id = if let Some(peer_id) = payee.0.as_peer_id() {
-        peer_id
-    } else {
-        error!("Can't get PeerId from payee {:?}", payee.0);
-        return Err(NetworkError::NoStoreCostResponses);
-    };
-    Ok((payee_id, payee.1, payee.2))
+    // Sort the costs by the PaymentQuote cost
+    let mut sorted_costs = all_costs;
+    sorted_costs.sort_by(|a, b| a.2.cost.cmp(&b.2.cost));
+
+    // Get the median cost
+    let median_index = sorted_costs.len() / 2;
+    let (address, main_key, quote) = sorted_costs.into_iter().nth(median_index).unwrap();
+
+    info!(
+        "Final fees calculated as: {:?}",
+        (&address, &main_key, &quote)
+    );
+    if quote.cost.as_nano() == record_store::MAX_STORE_COST {
+        warn!("The cost of the record is MAX, this should not happen realistically");
+    }
+
+    // Get the PeerId from the address
+    let payee_id = address.as_peer_id().ok_or_else(|| {
+        error!("Can't get PeerId from payee {:?}", address);
+        NetworkError::NoStoreCostResponses
+    })?;
+
+    Ok((payee_id, main_key, quote))
 }
 
 /// Get the value of the provided Quorum

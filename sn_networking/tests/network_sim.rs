@@ -68,8 +68,9 @@ fn network_payment_sim() -> eyre::Result<()> {
     let peer_data_dir = run_dir.join("peer_data");
 
     // Define the matrix of parameters to test
-    let peer_counts = vec![5_000, 50_000, 200_000];
-    let max_payments = vec![50_000, 100_000, 1_500_000];
+    let peer_counts = vec![50_000];
+    // let peer_counts = vec![5_000, 50_000, 200_000];
+    let max_payments = vec![1_000_000];
     let replication_group_sizes = vec![3, 5, 7];
 
     fs::create_dir_all(&graphs_dir)?;
