@@ -608,7 +608,7 @@ impl Node {
         // check if payment is valid on chain
         debug!("Verifying payment for record {pretty_key}");
         self.evm_network()
-            .verify_chunk_payment(
+            .verify_data_payment(
                 payment.tx_hash,
                 payment.quote.hash(),
                 *self.reward_address(),

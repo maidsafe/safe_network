@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
 use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
-use crate::contract::chunk_payments::{DataPayments, MAX_TRANSFERS_PER_TRANSACTION};
+use crate::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
-use crate::contract::{chunk_payments, network_token};
+use crate::contract::{data_payments, network_token};
 use crate::Network;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
 use alloy::providers::fillers::{
@@ -24,7 +24,7 @@ pub enum Error {
     #[error("Network token contract error: {0}")]
     NetworkTokenContract(#[from] network_token::Error),
     #[error("Chunk payments contract error: {0}")]
-    ChunkPaymentsContract(#[from] chunk_payments::error::Error),
+    ChunkPaymentsContract(#[from] data_payments::error::Error),
 }
 
 pub struct Wallet {
@@ -99,9 +99,9 @@ impl Wallet {
     /// transaction hashes of the payments by quotes.
     pub async fn pay_for_quotes<I: IntoIterator<Item = QuotePayment>>(
         &self,
-        chunk_payments: I,
+        data_payments: I,
     ) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
-        pay_for_quotes(self.wallet.clone(), &self.network, chunk_payments).await
+        pay_for_quotes(self.wallet.clone(), &self.network, data_payments).await
     }
 }
 
@@ -244,14 +244,14 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     approve_to_spend_tokens(
         wallet.clone(),
         network,
-        *network.chunk_payments_address(),
+        *network.data_payments_address(),
         total_amount,
     )
     .await
     .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
 
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
-    let chunk_payments = DataPayments::new(*network.chunk_payments_address(), provider);
+    let data_payments = DataPaymentsHandler::new(*network.data_payments_address(), provider);
 
     // Divide transfers over multiple transactions if they exceed the max per transaction.
     let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);
@@ -259,7 +259,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     for batch in chunks {
         let batch: Vec<QuotePayment> = batch.to_vec();
 
-        let tx_hash = chunk_payments
+        let tx_hash = data_payments
             .pay_for_quotes(batch.clone())
             .await
             .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;

@@ -2,13 +2,13 @@ pub mod error;
 
 use crate::common;
 use crate::common::{Address, TxHash};
-use crate::contract::chunk_payments::error::Error;
-use crate::contract::chunk_payments::DataPaymentsContract::DataPaymentsContractInstance;
+use crate::contract::data_payments::error::Error;
+use crate::contract::data_payments::DataPaymentsContract::DataPaymentsContractInstance;
 use alloy::providers::{Network, Provider};
 use alloy::sol;
 use alloy::transports::Transport;
 
-/// The max amount of transfers within one chunk payments transaction.
+/// The max amount of transfers within one data payments transaction.
 pub const MAX_TRANSFERS_PER_TRANSACTION: usize = 512;
 
 sol!(
@@ -16,14 +16,14 @@ sol!(
     #[allow(missing_docs)]
     #[sol(rpc)]
     DataPaymentsContract,
-    "artifacts/ChunkPayments.json"
+    "artifacts/DataPayments.json"
 );
 
-pub struct DataPayments<T: Transport + Clone, P: Provider<T, N>, N: Network> {
+pub struct DataPaymentsHandler<T: Transport + Clone, P: Provider<T, N>, N: Network> {
     pub contract: DataPaymentsContractInstance<T, P, N>,
 }
 
-impl<T, P, N> DataPayments<T, P, N>
+impl<T, P, N> DataPaymentsHandler<T, P, N>
 where
     T: Transport + Clone,
     P: Provider<T, N>,
@@ -32,7 +32,7 @@ where
     /// Create a new ChunkPayments contract instance.
     pub fn new(contract_address: Address, provider: P) -> Self {
         let contract = DataPaymentsContract::new(contract_address, provider);
-        DataPayments { contract }
+        DataPaymentsHandler { contract }
     }
 
     /// Deploys the ChunkPayments smart contract to the network of the provider.
@@ -42,7 +42,7 @@ where
             .await
             .expect("Could not deploy contract");
 
-        DataPayments { contract }
+        DataPaymentsHandler { contract }
     }
 
     pub fn set_provider(&mut self, provider: P) {
@@ -54,24 +54,24 @@ where
     /// Input: (quote_id, reward_address, amount).
     pub async fn pay_for_quotes<I: IntoIterator<Item = common::QuotePayment>>(
         &self,
-        chunk_payments: I,
+        data_payments: I,
     ) -> Result<TxHash, Error> {
-        let chunk_payments: Vec<ChunkPayments::ChunkPayment> = chunk_payments
+        let data_payments: Vec<DataPayments::DataPayment> = data_payments
             .into_iter()
-            .map(|(hash, addr, amount)| ChunkPayments::ChunkPayment {
-                rewardAddress: addr,
+            .map(|(hash, addr, amount)| DataPayments::DataPayment {
+                rewardsAddress: addr,
                 amount,
                 quoteHash: hash,
             })
             .collect();
 
-        if chunk_payments.len() > MAX_TRANSFERS_PER_TRANSACTION {
+        if data_payments.len() > MAX_TRANSFERS_PER_TRANSACTION {
             return Err(Error::TransferLimitExceeded);
         }
 
         let tx_hash = self
             .contract
-            .submitChunkPayments(chunk_payments)
+            .submitDataPayments(data_payments)
             .send()
             .await?
             .watch()

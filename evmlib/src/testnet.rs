@@ -1,5 +1,5 @@
 use crate::common::Address;
-use crate::contract::chunk_payments::DataPayments;
+use crate::contract::data_payments::DataPaymentsHandler;
 use crate::contract::network_token::NetworkToken;
 use crate::{CustomNetwork, Network};
 use alloy::hex::ToHexExt;
@@ -15,7 +15,7 @@ use alloy::transports::http::{Client, Http};
 pub struct Testnet {
     anvil: AnvilInstance,
     network_token_address: Address,
-    chunk_payments_address: Address,
+    data_payments_address: Address,
 }
 
 impl Testnet {
@@ -24,13 +24,13 @@ impl Testnet {
         let anvil = start_node();
 
         let network_token = deploy_network_token_contract(&anvil).await;
-        let chunk_payments =
-            deploy_chunk_payments_contract(&anvil, *network_token.contract.address()).await;
+        let data_payments =
+            deploy_data_payments_contract(&anvil, *network_token.contract.address()).await;
 
         Testnet {
             anvil,
             network_token_address: *network_token.contract.address(),
-            chunk_payments_address: *chunk_payments.contract.address(),
+            data_payments_address: *data_payments.contract.address(),
         }
     }
 
@@ -44,7 +44,7 @@ impl Testnet {
         Network::Custom(CustomNetwork {
             rpc_url_http: rpc_url,
             payment_token_address: self.network_token_address,
-            chunk_payments_address: self.chunk_payments_address,
+            data_payments_address: self.data_payments_address,
         })
     }
 
@@ -97,10 +97,10 @@ pub async fn deploy_network_token_contract(
     NetworkToken::deploy(provider).await
 }
 
-pub async fn deploy_chunk_payments_contract(
+pub async fn deploy_data_payments_contract(
     anvil: &AnvilInstance,
     token_address: Address,
-) -> DataPayments<
+) -> DataPaymentsHandler<
     Http<Client>,
     FillProvider<
         JoinFill<
@@ -128,5 +128,5 @@ pub async fn deploy_chunk_payments_contract(
         .on_http(rpc_url);
 
     // Deploy the contract.
-    DataPayments::deploy(provider, token_address).await
+    DataPaymentsHandler::deploy(provider, token_address).await
 }
