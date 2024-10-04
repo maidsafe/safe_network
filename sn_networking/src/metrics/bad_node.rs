@@ -14,7 +14,7 @@ use prometheus_client::{
 };
 use sn_protocol::CLOSE_GROUP_SIZE;
 use std::{
-    collections::HashSet,
+    collections::{HashSet, VecDeque},
     time::{Duration, Instant},
 };
 use strum::IntoEnumIterator;
@@ -42,7 +42,7 @@ struct ShunnedByCloseGroup {
 
     // trackers
     close_group_peers: Vec<PeerId>,
-    old_close_group_peers: Vec<(PeerId, Instant)>,
+    old_close_group_peers: VecDeque<PeerId>,
     // The close group peer that shunned us
     close_group_peers_that_have_shunned_us: HashSet<PeerId>,
     old_close_group_peers_that_have_shunned_us: HashSet<PeerId>,
@@ -127,7 +127,7 @@ impl BadNodeMetrics {
                 metric_old_group: shunned_by_old_close_group,
 
                 close_group_peers: Vec::new(),
-                old_close_group_peers: Vec::new(),
+                old_close_group_peers: VecDeque::new(),
                 old_close_group_peers_that_have_shunned_us: HashSet::new(),
                 close_group_peers_that_have_shunned_us: HashSet::new(),
             },
@@ -173,7 +173,7 @@ impl ShunnedByCloseGroup {
                 self.metric_current_group.inc();
                 self.close_group_peers_that_have_shunned_us.insert(peer);
             }
-        } else if self.old_close_group_peers.iter().any(|(p, _)| p == &peer)
+        } else if self.old_close_group_peers.contains(&peer)
             && !self
                 .old_close_group_peers_that_have_shunned_us
                 .contains(&peer)
@@ -212,8 +212,7 @@ impl ShunnedByCloseGroup {
         }
 
         for evicted_member in &evicted_members {
-            self.old_close_group_peers
-                .push((*evicted_member, Instant::now()));
+            self.old_close_group_peers.push_back(*evicted_member);
 
             // if it has shunned us before, update the metrics.
             if self
@@ -234,23 +233,18 @@ impl ShunnedByCloseGroup {
             debug!("The close group has been updated. The new members are {new_members:?}. The evicted members are {evicted_members:?}");
             self.close_group_peers = new_closest_peers;
 
-            if self.old_close_group_peers.len() > MAX_EVICTED_CLOSE_GROUP_PEERS {
-                // clean the oldest Instant ones
-                self.old_close_group_peers
-                    .sort_by_key(|(_, instant)| std::cmp::Reverse(*instant));
-                // get the list of the peers that are about to be truncated
-                let truncated_peers = self
-                    .old_close_group_peers
-                    .split_off(MAX_EVICTED_CLOSE_GROUP_PEERS);
-                // remove tracking for the truncated peers
-                for (peer, _) in truncated_peers {
+            while self.old_close_group_peers.len() > MAX_EVICTED_CLOSE_GROUP_PEERS {
+                if let Some(removed_peer) = self.old_close_group_peers.pop_front() {
                     if self
                         .old_close_group_peers_that_have_shunned_us
-                        .remove(&peer)
+                        .remove(&removed_peer)
                     {
                         self.metric_old_group.dec();
                     }
-                    if self.close_group_peers_that_have_shunned_us.remove(&peer) {
+                    if self
+                        .close_group_peers_that_have_shunned_us
+                        .remove(&removed_peer)
+                    {
                         self.metric_current_group.dec();
                     }
                 }
@@ -453,7 +447,7 @@ mod tests {
             metric_old_group: Gauge::default(),
 
             close_group_peers: Vec::new(),
-            old_close_group_peers: Vec::new(),
+            old_close_group_peers: VecDeque::new(),
             close_group_peers_that_have_shunned_us: HashSet::new(),
             old_close_group_peers_that_have_shunned_us: HashSet::new(),
         };
@@ -472,7 +466,7 @@ mod tests {
             metric_old_group: Gauge::default(),
 
             close_group_peers: Vec::new(),
-            old_close_group_peers: Vec::new(),
+            old_close_group_peers: VecDeque::new(),
             close_group_peers_that_have_shunned_us: HashSet::new(),
             old_close_group_peers_that_have_shunned_us: HashSet::new(),
         };
@@ -513,7 +507,7 @@ mod tests {
             metric_old_group: Gauge::default(),
 
             close_group_peers: Vec::new(),
-            old_close_group_peers: Vec::new(),
+            old_close_group_peers: VecDeque::new(),
             close_group_peers_that_have_shunned_us: HashSet::new(),
             old_close_group_peers_that_have_shunned_us: HashSet::new(),
         };
@@ -570,7 +564,7 @@ mod tests {
             metric_old_group: Gauge::default(),
 
             close_group_peers: Vec::new(),
-            old_close_group_peers: Vec::new(),
+            old_close_group_peers: VecDeque::new(),
             close_group_peers_that_have_shunned_us: HashSet::new(),
             old_close_group_peers_that_have_shunned_us: HashSet::new(),
         };
@@ -637,12 +631,10 @@ mod tests {
         assert_eq!(close_group_shunned.metric_old_group.get(), 1);
         assert!(!close_group_shunned
             .old_close_group_peers
-            .iter()
-            .any(|(p, _)| p == &old_member_1));
+            .contains(&old_member_1));
         assert!(close_group_shunned
             .old_close_group_peers
-            .iter()
-            .any(|(p, _)| p == &old_member_2));
+            .contains(&old_member_2));
 
         // evict 1 more member
         close_group_shunned.update_close_group_peers(vec![
@@ -658,8 +650,7 @@ mod tests {
         assert_eq!(close_group_shunned.metric_old_group.get(), 0);
         assert!(!close_group_shunned
             .old_close_group_peers
-            .iter()
-            .any(|(p, _)| p == &old_member_1));
+            .contains(&old_member_1));
 
         Ok(())
     }
