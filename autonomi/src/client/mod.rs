@@ -19,6 +19,9 @@ pub mod registers;
 #[cfg(feature = "vault")]
 pub mod vault;
 
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
+
 // private module with utility functions
 mod utils;
 
