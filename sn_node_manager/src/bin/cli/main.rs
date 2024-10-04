@@ -133,6 +133,17 @@ pub enum SubCmd {
         /// If the argument is not used, the default format will be applied.
         #[clap(long, value_parser = LogFormat::parse_from_str, verbatim_doc_comment)]
         log_format: Option<LogFormat>,
+        /// Specify the maximum number of uncompressed log files to store.
+        ///
+        /// After reaching this limit, the older files are archived to save space.
+        /// You can also specify the maximum number of archived log files to keep.
+        #[clap(long, verbatim_doc_comment)]
+        max_log_files: Option<usize>,
+        /// Specify the maximum number of archived log files to store.
+        ///
+        /// After reaching this limit, the older archived files are deleted.
+        #[clap(long, verbatim_doc_comment)]
+        max_archived_log_files: Option<usize>,
         /// Specify a port for the open metrics server.
         ///
         /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature
@@ -1026,6 +1037,8 @@ async fn main() -> Result<()> {
             local,
             log_dir_path,
             log_format,
+            max_archived_log_files,
+            max_log_files,
             metrics_port,
             node_ip,
             node_port,
@@ -1050,6 +1063,8 @@ async fn main() -> Result<()> {
                 local,
                 log_dir_path,
                 log_format,
+                max_archived_log_files,
+                max_log_files,
                 metrics_port,
                 node_ip,
                 node_port,

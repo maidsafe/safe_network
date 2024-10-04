@@ -78,6 +78,8 @@ pub struct InstallNodeServiceCtxBuilder {
     pub log_dir_path: PathBuf,
     pub log_format: Option<LogFormat>,
     pub name: String,
+    pub max_archived_log_files: Option<usize>,
+    pub max_log_files: Option<usize>,
     pub metrics_port: Option<u16>,
     pub node_ip: Option<Ipv4Addr>,
     pub node_port: Option<u16>,
@@ -132,6 +134,14 @@ impl InstallNodeServiceCtxBuilder {
             args.push(OsString::from("--owner"));
             args.push(OsString::from(owner));
         }
+        if let Some(log_files) = self.max_archived_log_files {
+            args.push(OsString::from("--max-archived-log-files"));
+            args.push(OsString::from(log_files.to_string()));
+        }
+        if let Some(log_files) = self.max_log_files {
+            args.push(OsString::from("--max-log-files"));
+            args.push(OsString::from(log_files.to_string()));
+        }
 
         if !self.bootstrap_peers.is_empty() {
             let peers_str = self
@@ -169,10 +179,12 @@ pub struct AddNodeServiceOptions {
     pub home_network: bool,
     pub local: bool,
     pub log_format: Option<LogFormat>,
+    pub max_archived_log_files: Option<usize>,
+    pub max_log_files: Option<usize>,
     pub metrics_port: Option<PortRange>,
-    pub owner: Option<String>,
     pub node_ip: Option<Ipv4Addr>,
     pub node_port: Option<PortRange>,
+    pub owner: Option<String>,
     pub rpc_address: Option<Ipv4Addr>,
     pub rpc_port: Option<PortRange>,
     pub safenode_src_path: PathBuf,
