@@ -43,9 +43,7 @@ struct ShunnedByCloseGroup {
     // trackers
     close_group_peers: Vec<PeerId>,
     old_close_group_peers: VecDeque<PeerId>,
-    // The close group peer that shunned us
-    close_group_peers_that_have_shunned_us: HashSet<PeerId>,
-    old_close_group_peers_that_have_shunned_us: HashSet<PeerId>,
+    old_new_group_shunned_list: HashSet<PeerId>,
 }
 
 /// A struct to record the the number of reports against our node across different time frames.
@@ -128,8 +126,8 @@ impl BadNodeMetrics {
 
                 close_group_peers: Vec::new(),
                 old_close_group_peers: VecDeque::new(),
-                old_close_group_peers_that_have_shunned_us: HashSet::new(),
-                close_group_peers_that_have_shunned_us: HashSet::new(),
+                // Shunned by old or new close group
+                old_new_group_shunned_list: HashSet::new(),
             },
         };
 
@@ -168,18 +166,14 @@ impl BadNodeMetrics {
 impl ShunnedByCloseGroup {
     pub(crate) fn record_shunned_metric(&mut self, peer: PeerId) {
         // increment the metric if the peer is in the close group (new or old) and hasn't shunned us before
-        if self.close_group_peers.contains(&peer) {
-            if !self.close_group_peers_that_have_shunned_us.contains(&peer) {
+        if !self.old_new_group_shunned_list.contains(&peer) {
+            if self.close_group_peers.contains(&peer) {
                 self.metric_current_group.inc();
-                self.close_group_peers_that_have_shunned_us.insert(peer);
+                self.old_new_group_shunned_list.insert(peer);
+            } else if self.old_close_group_peers.contains(&peer) {
+                self.metric_old_group.inc();
+                self.old_new_group_shunned_list.insert(peer);
             }
-        } else if self.old_close_group_peers.contains(&peer)
-            && !self
-                .old_close_group_peers_that_have_shunned_us
-                .contains(&peer)
-        {
-            self.metric_old_group.inc();
-            self.old_close_group_peers_that_have_shunned_us.insert(peer);
         }
     }
 
@@ -197,35 +191,18 @@ impl ShunnedByCloseGroup {
             .collect();
         for new_member in &new_members {
             // if it has shunned us before, update the metrics.
-            if self
-                .old_close_group_peers_that_have_shunned_us
-                .contains(new_member)
-            {
+            if self.old_new_group_shunned_list.contains(new_member) {
                 self.metric_old_group.dec();
-                self.old_close_group_peers_that_have_shunned_us
-                    .remove(new_member);
-
                 self.metric_current_group.inc();
-                self.close_group_peers_that_have_shunned_us
-                    .insert(*new_member);
             }
         }
 
         for evicted_member in &evicted_members {
             self.old_close_group_peers.push_back(*evicted_member);
-
             // if it has shunned us before, update the metrics.
-            if self
-                .close_group_peers_that_have_shunned_us
-                .contains(evicted_member)
-            {
+            if self.old_new_group_shunned_list.contains(evicted_member) {
                 self.metric_current_group.dec();
-                self.close_group_peers_that_have_shunned_us
-                    .remove(evicted_member);
-
                 self.metric_old_group.inc();
-                self.old_close_group_peers_that_have_shunned_us
-                    .insert(*evicted_member);
             }
         }
 
@@ -235,17 +212,8 @@ impl ShunnedByCloseGroup {
 
             while self.old_close_group_peers.len() > MAX_EVICTED_CLOSE_GROUP_PEERS {
                 if let Some(removed_peer) = self.old_close_group_peers.pop_front() {
-                    if self
-                        .old_close_group_peers_that_have_shunned_us
-                        .remove(&removed_peer)
-                    {
+                    if self.old_new_group_shunned_list.remove(&removed_peer) {
                         self.metric_old_group.dec();
-                    }
-                    if self
-                        .close_group_peers_that_have_shunned_us
-                        .remove(&removed_peer)
-                    {
-                        self.metric_current_group.dec();
                     }
                 }
             }
@@ -448,8 +416,7 @@ mod tests {
 
             close_group_peers: Vec::new(),
             old_close_group_peers: VecDeque::new(),
-            close_group_peers_that_have_shunned_us: HashSet::new(),
-            old_close_group_peers_that_have_shunned_us: HashSet::new(),
+            old_new_group_shunned_list: HashSet::new(),
         };
 
         close_group_shunned.record_shunned_metric(PeerId::random());
@@ -467,8 +434,7 @@ mod tests {
 
             close_group_peers: Vec::new(),
             old_close_group_peers: VecDeque::new(),
-            close_group_peers_that_have_shunned_us: HashSet::new(),
-            old_close_group_peers_that_have_shunned_us: HashSet::new(),
+            old_new_group_shunned_list: HashSet::new(),
         };
         close_group_shunned.update_close_group_peers(vec![
             PeerId::random(),
@@ -508,8 +474,7 @@ mod tests {
 
             close_group_peers: Vec::new(),
             old_close_group_peers: VecDeque::new(),
-            close_group_peers_that_have_shunned_us: HashSet::new(),
-            old_close_group_peers_that_have_shunned_us: HashSet::new(),
+            old_new_group_shunned_list: HashSet::new(),
         };
         close_group_shunned.update_close_group_peers(vec![
             PeerId::random(),
@@ -565,8 +530,7 @@ mod tests {
 
             close_group_peers: Vec::new(),
             old_close_group_peers: VecDeque::new(),
-            close_group_peers_that_have_shunned_us: HashSet::new(),
-            old_close_group_peers_that_have_shunned_us: HashSet::new(),
+            old_new_group_shunned_list: HashSet::new(),
         };
         close_group_shunned.update_close_group_peers(vec![
             PeerId::random(),
