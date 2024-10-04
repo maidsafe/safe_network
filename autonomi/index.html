@@ -1,0 +1,33 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+  </head>
+  <body>
+    <!-- credits: https://rustwasm.github.io/docs/wasm-bindgen/examples/without-a-bundler.html -->
+    <script type="module">
+      import init, { Client, getFundedWallet, log_init } from './pkg/autonomi.js';
+
+      async function run() {
+        await init();
+
+        log_init("trace");
+
+        console.log("connecting...");
+        let client = await new Client(["/ip4/127.0.0.1/tcp/36075/ws/p2p/12D3KooWALbWYwtNPiVvGzXr3CwXUa9JsRwZfgndNACPFBhDAfJY"]);
+        console.log("connected");
+
+        console.log("getting wallet...");
+        let wallet = getFundedWallet();
+        console.log("wallet retrieved");
+
+        console.log("putting...");
+        let result = await client.put(new Uint8Array([1, 2, 3]), wallet);
+        console.log("put done!");
+
+        console.log(result);
+      }
+
+      run();
+    </script>
+  </body>
+</html>
