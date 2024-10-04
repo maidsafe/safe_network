@@ -101,6 +101,14 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             args.push(OsString::from("--metrics-server-port"));
             args.push(OsString::from(metrics_port.to_string()));
         }
+        if let Some(max_archived_log_files) = self.service_data.max_archived_log_files {
+            args.push(OsString::from("--max-archived-log-files"));
+            args.push(OsString::from(max_archived_log_files.to_string()));
+        }
+        if let Some(max_log_files) = self.service_data.max_log_files {
+            args.push(OsString::from("--max-log-files"));
+            args.push(OsString::from(max_log_files.to_string()));
+        }
 
         if let Some(owner) = &self.service_data.owner {
             args.push(OsString::from("--owner"));
@@ -267,6 +275,8 @@ pub struct NodeServiceData {
     pub local: bool,
     pub log_dir_path: PathBuf,
     pub log_format: Option<LogFormat>,
+    pub max_archived_log_files: Option<usize>,
+    pub max_log_files: Option<usize>,
     #[serde(default)]
     pub metrics_port: Option<u16>,
     #[serde(default)]
