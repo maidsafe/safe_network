@@ -88,7 +88,8 @@ pub struct NodeBuilder {
     addr: SocketAddr,
     initial_peers: Vec<Multiaddr>,
     local: bool,
-    root_dir: PathBuf,
+    /// The root directory path for the node
+    pub root_dir: PathBuf,
     #[cfg(feature = "open-metrics")]
     /// Set to Some to enable the metrics server
     metrics_server_port: Option<u16>,

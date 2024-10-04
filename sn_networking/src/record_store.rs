@@ -54,7 +54,7 @@ use xor_name::XorName;
 // which makes the average record size is around 2MB.
 // Given we are targeting node size to be 32GB,
 // this shall allow around 16K records.
-const MAX_RECORDS_COUNT: usize = 16 * 1024;
+pub const MAX_RECORDS_COUNT: usize = 16 * 1024;
 
 /// The maximum number of records to cache in memory.
 const MAX_RECORDS_CACHE_SIZE: usize = 100;

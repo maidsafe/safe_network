@@ -1055,7 +1055,7 @@ async fn main() -> Result<()> {
             let _ = cmd::node::add(
                 auto_restart,
                 auto_set_nat_flags,
-                count,
+                count.unwrap_or(1),
                 data_dir_path,
                 enable_metrics_server,
                 env_variables,
