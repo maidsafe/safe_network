@@ -1779,6 +1779,7 @@ mod tests {
                     received_payment_count: 1, // unimportant for cost calc
                     live_time: 0,              // unimportant for cost calc
                 },
+                bad_nodes: vec![],
                 pub_key: peer.pk.to_bytes().to_vec(),
                 signature: vec![], // unimportant for cost calc
             };

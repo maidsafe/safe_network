@@ -19,10 +19,18 @@ impl Node {
         cost: NanoTokens,
         address: &NetworkAddress,
         quoting_metrics: &QuotingMetrics,
+        bad_nodes: Vec<NetworkAddress>,
     ) -> Result<PaymentQuote, ProtocolError> {
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
-        let bytes = PaymentQuote::bytes_for_signing(content, cost, timestamp, quoting_metrics);
+        let serialised_bad_nodes = rmp_serde::to_vec(&bad_nodes).unwrap_or_default();
+        let bytes = PaymentQuote::bytes_for_signing(
+            content,
+            cost,
+            timestamp,
+            quoting_metrics,
+            &serialised_bad_nodes,
+        );
 
         let Ok(signature) = network.sign(&bytes) else {
             return Err(ProtocolError::QuoteGenerationFailed);
@@ -33,6 +41,7 @@ impl Node {
             cost,
             timestamp,
             quoting_metrics: quoting_metrics.clone(),
+            bad_nodes: serialised_bad_nodes,
             pub_key: network.get_pub_key(),
             signature,
         };
@@ -65,6 +74,7 @@ pub(crate) fn verify_quote_for_storecost(
         quote.cost,
         quote.timestamp,
         &quote.quoting_metrics,
+        &quote.bad_nodes,
     );
     let signature = quote.signature;
     if !network.verify(&bytes, &signature) {

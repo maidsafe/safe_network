@@ -91,7 +91,7 @@ pub enum LocalSwarmCmd {
     /// GetLocalStoreCost for this node
     GetLocalStoreCost {
         key: RecordKey,
-        sender: oneshot::Sender<(NanoTokens, QuotingMetrics)>,
+        sender: oneshot::Sender<(NanoTokens, QuotingMetrics, Vec<NetworkAddress>)>,
     },
     /// Notify the node received a payment.
     PaymentReceived,
@@ -565,7 +565,41 @@ impl SwarmDriver {
                     quoting_metrics: &quoting_metrics,
                 });
 
-                let _res = sender.send((cost, quoting_metrics));
+                // To avoid sending entire list to client, sending those that:
+                //     closer than the CLOSE_GROUP_SIZEth closest node to the target
+                let mut bad_nodes: Vec<_> = self
+                    .bad_nodes
+                    .iter()
+                    .filter_map(|(peer_id, (_issue_list, is_bad))| {
+                        if *is_bad {
+                            Some(NetworkAddress::from_peer(*peer_id))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                // List is ordered already, hence the last one is always the one wanted
+                let kbucket_key = NetworkAddress::from_record_key(&key).as_kbucket_key();
+                let closest_peers: Vec<_> = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_local_peers(&kbucket_key)
+                    .map(|peer| peer.into_preimage())
+                    .take(CLOSE_GROUP_SIZE)
+                    .collect();
+                // In case of not enough clsest_peers, send the entire list
+                if closest_peers.len() >= CLOSE_GROUP_SIZE {
+                    let boundary_peer = closest_peers[CLOSE_GROUP_SIZE - 1];
+                    let key_address = NetworkAddress::from_record_key(&key);
+                    let boundary_distance =
+                        key_address.distance(&NetworkAddress::from_peer(boundary_peer));
+                    bad_nodes
+                        .retain(|peer_addr| key_address.distance(peer_addr) < boundary_distance);
+                }
+
+                let _res = sender.send((cost, quoting_metrics, bad_nodes));
             }
             LocalSwarmCmd::PaymentReceived => {
                 cmd_string = "PaymentReceived";

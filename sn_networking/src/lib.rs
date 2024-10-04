@@ -66,7 +66,7 @@ use sn_protocol::{
 };
 use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, HashMap},
     net::IpAddr,
     path::PathBuf,
     sync::Arc,
@@ -346,8 +346,8 @@ impl Network {
     /// Get the store costs from the majority of the closest peers to the provided RecordKey.
     /// Record already exists will have a cost of zero to be returned.
     ///
-    /// Ignore the quote from any peers from `ignore_peers`. This is useful if we want to repay a different PeerId
-    /// on failure.
+    /// Ignore the quote from any peers from `ignore_peers`.
+    /// This is useful if we want to repay a different PeerId on failure.
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
@@ -355,7 +355,14 @@ impl Network {
     ) -> Result<PayeeQuote> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
-        let close_nodes = self.get_closest_peers(&record_address, true).await?;
+        let mut close_nodes = self.get_closest_peers(&record_address, true).await?;
+        // Filter out results from the ignored peers.
+        close_nodes.retain(|peer_id| !ignore_peers.contains(peer_id));
+
+        if close_nodes.is_empty() {
+            error!("Cann't get store_cost of {record_address:?}, as all close_nodes are ignored");
+            return Err(NetworkError::NoStoreCostResponses);
+        }
 
         let request = Request::Query(Query::GetStoreCost(record_address.clone()));
         let responses = self
@@ -409,27 +416,7 @@ impl Network {
             self.send_req_ignore_reply(request, *peer_id);
         }
 
-        // Sort all_costs by the NetworkAddress proximity to record_address
-        all_costs.sort_by(|(peer_address_a, _, _), (peer_address_b, _, _)| {
-            record_address
-                .distance(peer_address_a)
-                .cmp(&record_address.distance(peer_address_b))
-        });
-        let ignore_peers = ignore_peers
-            .into_iter()
-            .map(NetworkAddress::from_peer)
-            .collect::<BTreeSet<_>>();
-
-        // Ensure we dont have any further out nodes than `close_group_majority()`
-        // This should ensure that if we didnt get all responses from close nodes,
-        // we're less likely to be paying a node that is not in the CLOSE_GROUP
-        //
-        // Also filter out the peers.
-        let all_costs = all_costs
-            .into_iter()
-            .filter(|(peer_address, ..)| !ignore_peers.contains(peer_address))
-            .take(close_group_majority())
-            .collect();
+        filter_out_bad_nodes(&mut all_costs, record_address);
 
         get_fees_from_store_cost_responses(all_costs)
     }
@@ -588,7 +575,7 @@ impl Network {
     pub async fn get_local_storecost(
         &self,
         key: RecordKey,
-    ) -> Result<(NanoTokens, QuotingMetrics)> {
+    ) -> Result<(NanoTokens, QuotingMetrics, Vec<NetworkAddress>)> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetLocalStoreCost { key, sender });
 
@@ -991,6 +978,32 @@ fn get_fees_from_store_cost_responses(
         return Err(NetworkError::NoStoreCostResponses);
     };
     Ok((payee_id, payee.1, payee.2))
+}
+
+/// According to the bad_nodes list collected via quotes,
+/// candidate that received majority votes from others shall be ignored.
+fn filter_out_bad_nodes(
+    all_costs: &mut Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
+    record_address: NetworkAddress,
+) {
+    let mut bad_node_votes: BTreeMap<NetworkAddress, usize> = BTreeMap::new();
+    for (peer_addr, _pub_key, quote) in all_costs.iter() {
+        let bad_nodes: Vec<NetworkAddress> = match rmp_serde::from_slice(&quote.bad_nodes) {
+            Ok(bad_nodes) => bad_nodes,
+            Err(err) => {
+                error!("For record {record_address:?}, failed to recover bad_nodes from quote of {peer_addr:?} with error {err:?}");
+                continue;
+            }
+        };
+        for bad_node in bad_nodes {
+            let entry = bad_node_votes.entry(bad_node).or_default();
+            *entry += 1;
+        }
+    }
+    all_costs.retain(|(peer_addr, _, _)| {
+        let entry = bad_node_votes.entry(peer_addr.clone()).or_default();
+        *entry < close_group_majority()
+    });
 }
 
 /// Get the value of the provided Quorum
