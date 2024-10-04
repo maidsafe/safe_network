@@ -12,7 +12,7 @@ version = "0.1.0"
 wasm-bindgen = ["alloy/wasm-bindgen"]
 
 [dependencies]
-alloy = { version = "0.2", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
+alloy = { version = "0.4.2", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
 serde = "1.0"
 thiserror = "1.0"
 tokio = "1.38.0"

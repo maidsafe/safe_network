@@ -9,6 +9,8 @@ pub enum Error {
     RpcError(#[from] RpcError<TransportErrorKind>),
     #[error(transparent)]
     NetworkTokenError(#[from] network_token::Error),
+    #[error(transparent)]
+    PendingTransactionError(#[from] alloy::providers::PendingTransactionError),
     #[error("The transfer limit of 256 has been exceeded")]
     TransferLimitExceeded,
 }
