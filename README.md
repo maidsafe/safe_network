@@ -218,7 +218,7 @@ cargo run --bin safe --features local-discovery -- folders status <dir-path>
 ```
 
 We can now push all local changes made to files and directories to the network, as well as pull any
-changes that could have been made to the version stored on the network since last time we synced
+changes that could have been made to the version stored on the network since the last time we synced
 with it:
 
 ```bash
@@ -257,7 +257,7 @@ cargo run --bin safe --features local-discovery -- wallet send 2 [address]
 
 This will output a transfer as a hex string, which should be sent to the recipient.
 This transfer is encrypted to the recipient so only the recipient can read and redeem it. 
-To receive a transfer, simply paste it after the wallet receive command:
+To receive a transfer, simply paste it after the wallet receives command:
 
 ```
 cargo run --bin safe --features local-discovery -- wallet receive [transfer]
@@ -318,7 +318,7 @@ We can verify a spend, optionally going back to the genesis transaction:
 cargo run --bin safe --features local-discovery -- wallet verify [--genesis] [spend address]
 ```
 
-All spends from genesis can be audited:
+All spending from genesis can be audited:
 
 ```
 cargo run --bin safe --features local-discovery -- wallet audit
@@ -336,7 +336,7 @@ cargo run --example registers --features=local-discovery -- --user alice --reg-n
 ```
 
 Alice can now write a message to the register and see anything written by anyone else. For example
-she might enter the text "hello, who's there?" which is written to the register and then shown as
+she might enter the text "Hello, who's there?" which is written to the register and then shown as
 the "Latest value", in her terminal:
 
 ```
@@ -351,14 +351,14 @@ Latest value (more than one if concurrent writes were made):
 
 Enter a blank line to receive updates, or some text to be written.
 hello, who's there?
-Writing msg (offline) to Register: 'hello, who's there?'
+Writing msg (offline) to Register: 'Hello, who's there?'
 Syncing with SAFE in 2s...
 synced!
 
 Current total number of items in Register: 1
 Latest value (more than one if concurrent writes were made):
 --------------
-[alice]: hello, who's there?
+[Alice]: Hello, who's there?
 --------------
 
 Enter a blank line to receive updates, or some text to be written.
@@ -367,7 +367,7 @@ Enter a blank line to receive updates, or some text to be written.
 
 For anyone else to write to the same register they need to know its xor address, so to communicate
 with her friend Bob, Alice needs to find a way to send it to Bob. In her terminal, this is the
-value starting "50f4..." in the output above. This value it will be different each time you run the
+value starting "50f4..." in the output above. This value will be different each time you run the
 example to create a register.
 
 Having received the xor address, in another terminal Bob can access the same register to see the
@@ -387,7 +387,7 @@ Here's Bob writing from his terminal:
 ```
 Latest value (more than one if concurrent writes were made):
 --------------
-[alice]: hello, who's there?
+[Alice]: Hello, who's there?
 --------------
 
 Enter a blank line to receive updates, or some text to be written.
@@ -522,7 +522,7 @@ Listening to royalty payment events:
 
 ```
 $ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 transfers
-Listening to transfers notifications... (press Ctrl+C to exit)
+Listening to transfer notifications... (press Ctrl+C to exit)
 
 New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
 CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
@@ -535,7 +535,7 @@ The `transfers` command can provide a path for royalty payment cash notes:
 
 ```
 $ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:34416 transfers ./royalties-cash-notes
-Listening to transfers notifications... (press Ctrl+C to exit)
+Listening to transfer notifications... (press Ctrl+C to exit)
 Writing cash notes to: ./royalties-cash-notes
 ```
 
