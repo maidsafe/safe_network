@@ -1,12 +1,14 @@
 use crate::common::Address;
-use crate::contract::chunk_payments::ChunkPayments;
+use crate::contract::chunk_payments::DataPayments;
 use crate::contract::network_token::NetworkToken;
 use crate::{CustomNetwork, Network};
 use alloy::hex::ToHexExt;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::node_bindings::{Anvil, AnvilInstance};
-use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
-use alloy::providers::{ProviderBuilder, ReqwestProvider};
+use alloy::providers::fillers::{
+    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+};
+use alloy::providers::{Identity, ProviderBuilder, ReqwestProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::{Client, Http};
 
@@ -67,7 +69,13 @@ pub async fn deploy_network_token_contract(
 ) -> NetworkToken<
     Http<Client>,
     FillProvider<
-        JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+        JoinFill<
+            JoinFill<
+                Identity,
+                JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+            >,
+            WalletFiller<EthereumWallet>,
+        >,
         ReqwestProvider,
         Http<Client>,
         Ethereum,
@@ -92,10 +100,16 @@ pub async fn deploy_network_token_contract(
 pub async fn deploy_chunk_payments_contract(
     anvil: &AnvilInstance,
     token_address: Address,
-) -> ChunkPayments<
+) -> DataPayments<
     Http<Client>,
     FillProvider<
-        JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+        JoinFill<
+            JoinFill<
+                Identity,
+                JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+            >,
+            WalletFiller<EthereumWallet>,
+        >,
         ReqwestProvider,
         Http<Client>,
         Ethereum,
@@ -114,5 +128,5 @@ pub async fn deploy_chunk_payments_contract(
         .on_http(rpc_url);
 
     // Deploy the contract.
-    ChunkPayments::deploy(provider, token_address).await
+    DataPayments::deploy(provider, token_address).await
 }

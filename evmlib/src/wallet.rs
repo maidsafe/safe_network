@@ -1,13 +1,13 @@
 use std::collections::BTreeMap;
 
 use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
-use crate::contract::chunk_payments::{ChunkPayments, MAX_TRANSFERS_PER_TRANSACTION};
+use crate::contract::chunk_payments::{DataPayments, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
 use crate::contract::{chunk_payments, network_token};
 use crate::Network;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
 use alloy::providers::fillers::{
-    ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, RecommendedFiller, WalletFiller,
+    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
 };
 use alloy::providers::{Identity, Provider, ProviderBuilder, ReqwestProvider};
 use alloy::rpc::types::TransactionRequest;
@@ -123,7 +123,10 @@ fn from_private_key(private_key: &str) -> Result<EthereumWallet, Error> {
 fn http_provider(
     rpc_url: reqwest::Url,
 ) -> FillProvider<
-    JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
+    JoinFill<
+        Identity,
+        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+    >,
     ReqwestProvider,
     Http<Client>,
     Ethereum,
@@ -133,11 +136,18 @@ fn http_provider(
         .on_http(rpc_url)
 }
 
+#[allow(clippy::type_complexity)]
 fn http_provider_with_wallet(
     rpc_url: reqwest::Url,
     wallet: EthereumWallet,
 ) -> FillProvider<
-    JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+    JoinFill<
+        JoinFill<
+            Identity,
+            JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+        >,
+        WalletFiller<EthereumWallet>,
+    >,
     ReqwestProvider,
     Http<Client>,
     Ethereum,
@@ -241,7 +251,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
 
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
-    let chunk_payments = ChunkPayments::new(*network.chunk_payments_address(), provider);
+    let chunk_payments = DataPayments::new(*network.chunk_payments_address(), provider);
 
     // Divide transfers over multiple transactions if they exceed the max per transaction.
     let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);

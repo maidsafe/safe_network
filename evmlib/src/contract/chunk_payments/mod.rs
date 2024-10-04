@@ -3,7 +3,7 @@ pub mod error;
 use crate::common;
 use crate::common::{Address, TxHash};
 use crate::contract::chunk_payments::error::Error;
-use crate::contract::chunk_payments::ChunkPaymentsContract::ChunkPaymentsContractInstance;
+use crate::contract::chunk_payments::DataPaymentsContract::DataPaymentsContractInstance;
 use alloy::providers::{Network, Provider};
 use alloy::sol;
 use alloy::transports::Transport;
@@ -15,15 +15,15 @@ sol!(
     #[allow(clippy::too_many_arguments)]
     #[allow(missing_docs)]
     #[sol(rpc)]
-    ChunkPaymentsContract,
+    DataPaymentsContract,
     "artifacts/ChunkPayments.json"
 );
 
-pub struct ChunkPayments<T: Transport + Clone, P: Provider<T, N>, N: Network> {
-    pub contract: ChunkPaymentsContractInstance<T, P, N>,
+pub struct DataPayments<T: Transport + Clone, P: Provider<T, N>, N: Network> {
+    pub contract: DataPaymentsContractInstance<T, P, N>,
 }
 
-impl<T, P, N> ChunkPayments<T, P, N>
+impl<T, P, N> DataPayments<T, P, N>
 where
     T: Transport + Clone,
     P: Provider<T, N>,
@@ -31,23 +31,23 @@ where
 {
     /// Create a new ChunkPayments contract instance.
     pub fn new(contract_address: Address, provider: P) -> Self {
-        let contract = ChunkPaymentsContract::new(contract_address, provider);
-        ChunkPayments { contract }
+        let contract = DataPaymentsContract::new(contract_address, provider);
+        DataPayments { contract }
     }
 
     /// Deploys the ChunkPayments smart contract to the network of the provider.
     /// ONLY DO THIS IF YOU KNOW WHAT YOU ARE DOING!
     pub async fn deploy(provider: P, payment_token_address: Address) -> Self {
-        let contract = ChunkPaymentsContract::deploy(provider, payment_token_address)
+        let contract = DataPaymentsContract::deploy(provider, payment_token_address)
             .await
             .expect("Could not deploy contract");
 
-        ChunkPayments { contract }
+        DataPayments { contract }
     }
 
     pub fn set_provider(&mut self, provider: P) {
         let address = *self.contract.address();
-        self.contract = ChunkPaymentsContract::new(address, provider);
+        self.contract = DataPaymentsContract::new(address, provider);
     }
 
     /// Pay for quotes.
@@ -56,9 +56,9 @@ where
         &self,
         chunk_payments: I,
     ) -> Result<TxHash, Error> {
-        let chunk_payments: Vec<ChunkPaymentsContract::ChunkPayment> = chunk_payments
+        let chunk_payments: Vec<ChunkPayments::ChunkPayment> = chunk_payments
             .into_iter()
-            .map(|(hash, addr, amount)| ChunkPaymentsContract::ChunkPayment {
+            .map(|(hash, addr, amount)| ChunkPayments::ChunkPayment {
                 rewardAddress: addr,
                 amount,
                 quoteHash: hash,
