@@ -137,11 +137,15 @@ impl AppData {
             return Ok(Self::default());
         }
 
-        let data = std::fs::read_to_string(&config_path)
-            .map_err(|_| color_eyre::eyre::eyre!("Failed to read app data file"))?;
+        let data = std::fs::read_to_string(&config_path).map_err(|e| {
+            error!("Failed to read app data file: {}", e);
+            color_eyre::eyre::eyre!("Failed to read app data file: {}", e)
+        })?;
 
-        let app_data: AppData = serde_json::from_str(&data)
-            .map_err(|_| color_eyre::eyre::eyre!("Failed to parse app data"))?;
+        let app_data: AppData = serde_json::from_str(&data).map_err(|e| {
+            error!("Failed to parse app data: {}", e);
+            color_eyre::eyre::eyre!("Failed to parse app data: {}", e)
+        })?;
 
         Ok(app_data)
     }
