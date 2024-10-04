@@ -54,7 +54,7 @@ use xor_name::XorName;
 // which makes the average record size is around 256k.
 // Given we are targeting small nodes use 1GB diskspace,
 // this shall allow around 4K records.
-pub const MAX_RECORDS_COUNT: usize = 32_768;
+pub const MAX_RECORDS_COUNT: usize = 4096;
 
 /// The maximum number of records to cache in memory.
 const MAX_RECORDS_CACHE_SIZE: usize = 100;
@@ -928,6 +928,8 @@ pub fn calculate_cost_for_records(payments_received: usize) -> u64 {
 
     let ori_cost = positive_input_0_1_sigmoid(payments_received as f64 / MAX_RECORDS_COUNT as f64)
         * MAX_STORE_COST as f64;
+
+    // println!("cost w/ payments_received: {payments_received}, ori_cost: {ori_cost}");
 
     // Deploy a lower cap safe_guard to the store_cost
     let charge = max(MIN_STORE_COST, ori_cost as u64);

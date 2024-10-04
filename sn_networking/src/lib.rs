@@ -1176,7 +1176,8 @@ pub fn get_fees_from_store_cost_responses(
     sorted_costs.sort_by(|a, b| a.2.cost.cmp(&b.2.cost));
 
     // Get the median cost
-    let median_index = sorted_costs.len() / 2;
+    // let median_index = sorted_costs.len() / 2;
+    let median_index = 0;
     let (address, main_key, quote) = sorted_costs.into_iter().nth(median_index).unwrap();
 
     info!(
