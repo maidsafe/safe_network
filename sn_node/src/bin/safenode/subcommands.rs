@@ -18,7 +18,7 @@ pub(crate) enum EvmNetworkCommand {
 
         /// The chunk payments contract address
         #[arg(long, short)]
-        chunk_payments_address: String,
+        data_payments_address: String,
     },
 }
 
@@ -30,11 +30,11 @@ impl Into<EvmNetwork> for EvmNetworkCommand {
             Self::EvmCustom {
                 rpc_url,
                 payment_token_address,
-                chunk_payments_address,
+                data_payments_address,
             } => EvmNetwork::Custom(EvmNetworkCustom::new(
                 &rpc_url,
                 &payment_token_address,
-                &chunk_payments_address,
+                &data_payments_address,
             )),
         }
     }

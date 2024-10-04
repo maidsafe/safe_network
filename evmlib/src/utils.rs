@@ -24,7 +24,7 @@ pub fn dummy_hash() -> Hash {
 
 /// Get the `Network` from environment variables
 pub fn evm_network_from_env() -> Result<Network, Error> {
-    let evm_vars = ["RPC_URL", "PAYMENT_TOKEN_ADDRESS", "CHUNK_PAYMENTS_ADDRESS"]
+    let evm_vars = ["RPC_URL", "PAYMENT_TOKEN_ADDRESS", "DATA_PAYMENTS_ADDRESS"]
         .iter()
         .map(|var| env::var(var).map_err(|_| Error::FailedToGetEvmNetwork))
         .collect::<Result<Vec<String>, Error>>();

@@ -153,8 +153,8 @@ impl Launcher for LocalSafeLauncher {
                 args.push(custom.rpc_url_http.to_string());
                 args.push("--payment-token-address".to_string());
                 args.push(custom.payment_token_address.to_string());
-                args.push("--chunk-payments-address".to_string());
-                args.push(custom.chunk_payments_address.to_string());
+                args.push("--data-payments-address".to_string());
+                args.push(custom.data_payments_address.to_string());
             }
         }
 

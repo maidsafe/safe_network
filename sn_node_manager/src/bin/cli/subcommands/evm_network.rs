@@ -28,7 +28,7 @@ pub enum EvmNetworkCommand {
 
         /// The chunk payments contract address
         #[arg(long, short)]
-        chunk_payments_address: String,
+        data_payments_address: String,
     },
 
     /// Use the local EVM testnet, loaded from a CSV file.
@@ -48,11 +48,11 @@ impl TryInto<EvmNetwork> for EvmNetworkCommand {
             Self::EvmCustom {
                 rpc_url,
                 payment_token_address,
-                chunk_payments_address,
+                data_payments_address,
             } => Ok(EvmNetwork::Custom(EvmNetworkCustom::new(
                 &rpc_url,
                 &payment_token_address,
-                &chunk_payments_address,
+                &data_payments_address,
             ))),
         }
     }

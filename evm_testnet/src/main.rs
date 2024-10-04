@@ -84,7 +84,7 @@ async fn keep_alive<T>(variable: T) {
 struct TestnetData {
     rpc_url: String,
     payment_token_address: String,
-    chunk_payments_address: String,
+    data_payments_address: String,
     deployer_wallet_private_key: String,
     tokens_and_gas: Option<(Amount, Amount)>,
 }
@@ -108,7 +108,7 @@ impl TestnetData {
         Self {
             rpc_url: network.rpc_url().to_string(),
             payment_token_address: network.payment_token_address().to_string(),
-            chunk_payments_address: network.chunk_payments_address().to_string(),
+            data_payments_address: network.data_payments_address().to_string(),
             deployer_wallet_private_key: testnet.default_wallet_private_key(),
             tokens_and_gas,
         }
@@ -117,7 +117,7 @@ impl TestnetData {
     fn print(&self) {
         println!("RPC URL: {}", self.rpc_url);
         println!("Payment token address: {}", self.payment_token_address);
-        println!("Chunk payments address: {}", self.chunk_payments_address);
+        println!("Data payments address: {}", self.data_payments_address);
         println!(
             "Deployer wallet private key: {}",
             self.deployer_wallet_private_key
@@ -138,7 +138,7 @@ impl TestnetData {
 
         let csv = format!(
             "{},{},{}",
-            self.rpc_url, self.payment_token_address, self.chunk_payments_address
+            self.rpc_url, self.payment_token_address, self.data_payments_address
         );
         std::fs::write(&path, csv).expect("Could not write to evm_testnet_data.csv file");
         println!("EVM testnet data saved to: {path:?}");
