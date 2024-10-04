@@ -171,7 +171,7 @@ pub struct AddNodeServiceOptions {
     pub auto_restart: bool,
     pub auto_set_nat_flags: bool,
     pub bootstrap_peers: Vec<Multiaddr>,
-    pub count: Option<u16>,
+    pub count: u16,
     pub delete_safenode_src: bool,
     pub enable_metrics_server: bool,
     pub env_variables: Option<Vec<(String, String)>>,

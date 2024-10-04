@@ -21,8 +21,10 @@ use crate::{
 use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p_identity::PeerId;
+use self_encryption::MAX_CHUNK_SIZE;
 use semver::Version;
 use sn_logging::LogFormat;
+use sn_networking::MAX_RECORDS_COUNT;
 use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::{
@@ -31,14 +33,22 @@ use sn_service_management::{
     NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
 use sn_transfers::HotWallet;
-use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr, time::Duration};
+use std::{
+    cmp::Ordering,
+    io::Write,
+    net::Ipv4Addr,
+    path::{Path, PathBuf},
+    str::FromStr,
+    time::Duration,
+};
+use sysinfo::{Disk, Disks};
 use tracing::debug;
 
 /// Returns the added service names
 pub async fn add(
     auto_restart: bool,
     auto_set_nat_flags: bool,
-    count: Option<u16>,
+    count: u16,
     data_dir_path: Option<PathBuf>,
     enable_metrics_server: bool,
     env_variables: Option<Vec<(String, String)>>,
@@ -66,7 +76,7 @@ pub async fn add(
 
     if verbosity != VerbosityLevel::Minimal {
         print_banner("Add Safenode Services");
-        println!("{} service(s) to be added", count.unwrap_or(1));
+        println!("{count} service(s) to be added");
     }
 
     let service_manager = ServiceController {};
@@ -87,6 +97,7 @@ pub async fn add(
     )?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
+    check_available_space(&node_registry, &service_data_dir_path, count)?;
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
     let (safenode_src_path, version) = if let Some(path) = src_path.clone() {
@@ -704,7 +715,7 @@ pub async fn maintain_n_running_nodes(
                     let added_service = add(
                         auto_restart,
                         auto_set_nat_flags,
-                        Some(1),
+                        1,
                         data_dir_path.clone(),
                         enable_metrics_server,
                         env_variables.clone(),
@@ -848,4 +859,111 @@ fn summarise_any_failed_ops(
         return Err(eyre!("Failed to {verb} one or more services"));
     }
     Ok(())
+}
+
+/// Check if the mount point has enough space to add the required number of nodes. It also factors in the space used
+/// by other nodes running on the same mount point.
+fn check_available_space(
+    node_registry: &NodeRegistry,
+    data_dir_path: &Path,
+    count: u16,
+) -> Result<()> {
+    let disks = Disks::new_with_refreshed_list();
+    let disks = disks.list();
+    let required_space_per_node_bytes = (MAX_RECORDS_COUNT * *MAX_CHUNK_SIZE) as u64;
+    debug!(
+        "Required space per node: {} GB",
+        to_gb(required_space_per_node_bytes)
+    );
+
+    let mount_point = get_mount_point(disks, data_dir_path)
+        .ok_or_else(|| eyre!("Failed to find mount point for data directory: {data_dir_path:?}"))?;
+
+    let mut nodes_running_on_same_mount = Vec::new();
+    for node in node_registry.nodes.iter() {
+        if let Some(node_mount_point) = get_mount_point(disks, &node.data_dir_path) {
+            if node_mount_point.mount_point() == mount_point.mount_point() {
+                debug!(
+                    "Node {} is running on the same mount point as the potential new node",
+                    node.service_name
+                );
+                nodes_running_on_same_mount.push(node);
+            }
+        }
+    }
+
+    let mut space_used_by_nodes = 0;
+    for node in nodes_running_on_same_mount.iter() {
+        let node_dir_path = node.data_dir_path.join(&node.service_name);
+        if !node_dir_path.exists() {
+            error!(
+                "Node data directory {node_dir_path:?} does not exist for node {}. 0 bytes used by this node.",
+                node.service_name
+            );
+            continue;
+        }
+        let size = fs_extra::dir::get_size(&node_dir_path).inspect_err(|err| {
+            error!("Failed to get size of node data dir {node_dir_path:?} with err: {err:?}")
+        })?;
+        debug!("Node {} uses {size} bytes", node.service_name);
+        space_used_by_nodes += size;
+    }
+    // Calculate the free space that might be used by the nodes in the future
+    let reserved_free_space_by_other_nodes = (nodes_running_on_same_mount.len() as u64
+        * required_space_per_node_bytes)
+        .saturating_sub(space_used_by_nodes);
+
+    let disk_available_space = mount_point.available_space();
+
+    let actual_available_space =
+        disk_available_space.saturating_sub(reserved_free_space_by_other_nodes);
+
+    let required_space = count as u64 * required_space_per_node_bytes;
+    debug!(
+        "\nMount point available space: {} GB\nReserved space by other nodes: {} GB\nActual available space: {} GB\nRequired space: {} GB",
+        to_gb(disk_available_space),
+        to_gb(reserved_free_space_by_other_nodes),
+        to_gb(actual_available_space),
+        to_gb(required_space)
+    );
+    if actual_available_space < required_space {
+        let err = format!(
+            "Not enough space on mount point {:?} to add {count} nodes. Available space: {:.2} GB, Space reserved by nodes: {:.2} GB, Required space: {:.2} GB ",
+            mount_point.mount_point(),
+            to_gb(disk_available_space),
+            to_gb(reserved_free_space_by_other_nodes),
+            to_gb(required_space)
+        );
+        error!("{err}");
+        return Err(eyre!(err));
+    }
+    debug!(
+        "Enough space available to add {count} nodes. Required: {}, available: {}",
+        to_gb(required_space),
+        to_gb(actual_available_space)
+    );
+
+    Ok(())
+}
+
+fn to_gb(bytes: u64) -> f64 {
+    bytes as f64 / 1_000_000_000.0
+}
+
+fn get_mount_point<'a>(disks_iter: &'a [Disk], data_dir_path: &Path) -> Option<&'a Disk> {
+    let mut current = Some(data_dir_path);
+    while let Some(dir) = current {
+        for disk in disks_iter {
+            if disk.mount_point() == dir {
+                debug!(
+                    "Found mount point: {:?} for data directory: {data_dir_path:?}",
+                    disk.mount_point()
+                );
+                return Some(disk);
+            }
+        }
+        current = dir.parent();
+    }
+
+    None
 }

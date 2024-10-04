@@ -49,11 +49,9 @@ pub async fn add_node(
     verbosity: VerbosityLevel,
 ) -> Result<Vec<String>> {
     if options.genesis {
-        if let Some(count) = options.count {
-            if count > 1 {
-                error!("A genesis node can only be added as a single node");
-                return Err(eyre!("A genesis node can only be added as a single node"));
-            }
+        if options.count > 1 {
+            error!("A genesis node can only be added as a single node");
+            return Err(eyre!("A genesis node can only be added as a single node"));
         }
 
         let genesis_node = node_registry.nodes.iter().find(|n| n.genesis);
@@ -64,17 +62,17 @@ pub async fn add_node(
     }
 
     if let Some(port_option) = &options.node_port {
-        port_option.validate(options.count.unwrap_or(1))?;
+        port_option.validate(options.count)?;
         check_port_availability(port_option, &node_registry.nodes)?;
     }
 
     if let Some(port_option) = &options.metrics_port {
-        port_option.validate(options.count.unwrap_or(1))?;
+        port_option.validate(options.count)?;
         check_port_availability(port_option, &node_registry.nodes)?;
     }
 
     if let Some(port_option) = &options.rpc_port {
-        port_option.validate(options.count.unwrap_or(1))?;
+        port_option.validate(options.count)?;
         check_port_availability(port_option, &node_registry.nodes)?;
     }
 
@@ -128,7 +126,7 @@ pub async fn add_node(
     let mut failed_service_data = vec![];
 
     let current_node_count = node_registry.nodes.len() as u16;
-    let target_node_count = current_node_count + options.count.unwrap_or(1);
+    let target_node_count = current_node_count + options.count;
 
     let mut node_number = current_node_count + 1;
     let mut node_port = get_start_port_if_applicable(options.node_port);
