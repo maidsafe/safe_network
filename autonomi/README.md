@@ -73,7 +73,7 @@ To run a WASM test
 
 Example:
 ````sh
-SAFE_PEERS=/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID> wasm-pack test --release --features=data,files --firefox autonomi --test wasm -- put
+SAFE_PEERS=/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID> wasm-pack test --release --firefox autonomi --features=data,files --test wasm -- put
 ```
 
 
