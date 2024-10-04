@@ -923,12 +923,10 @@ impl RecordStore for ClientRecordStore {
 // Using a linear growth function tweaked by `max_records`,
 // and gives an exponential pricing curve when storage reaches high.
 // and give extra reward (lower the quoting price to gain a better chance) to long lived nodes.
-pub fn calculate_cost_for_records(records_stored: usize) -> u64 {
+pub fn calculate_cost_for_records(payments_received: usize) -> u64 {
     use std::cmp::{max, min};
 
-    let max_records = MAX_RECORDS_COUNT;
-
-    let ori_cost = positive_input_0_1_sigmoid(records_stored as f64 / max_records as f64)
+    let ori_cost = positive_input_0_1_sigmoid(payments_received as f64 / MAX_RECORDS_COUNT as f64)
         * MAX_STORE_COST as f64;
 
     // Deploy a lower cap safe_guard to the store_cost

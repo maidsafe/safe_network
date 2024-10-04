@@ -70,7 +70,7 @@ fn network_payment_sim() -> eyre::Result<()> {
     // Define the matrix of parameters to test
     let peer_counts = vec![50_000];
     // let peer_counts = vec![5_000, 50_000, 200_000];
-    let max_payments = vec![1_000_000];
+    let max_payments = vec![10_000_000];
     let replication_group_sizes = vec![3, 5, 7];
 
     fs::create_dir_all(&graphs_dir)?;
@@ -174,11 +174,11 @@ fn network_payment_sim() -> eyre::Result<()> {
                                 let peer = &peers[peer_index];
                                 peer.records_stored.fetch_add(1, Ordering::Relaxed);
 
-                                // if peer_index == payee_index {
-                                peer.nanos_earned
-                                    .fetch_add(cost.as_nano(), Ordering::Relaxed);
-                                peer.payments_received.fetch_add(1, Ordering::Relaxed);
-                                // }
+                                if peer_index == payee_index {
+                                    peer.nanos_earned
+                                        .fetch_add(cost.as_nano(), Ordering::Relaxed);
+                                    peer.payments_received.fetch_add(1, Ordering::Relaxed);
+                                }
                             }
 
                             Ok(())
@@ -525,7 +525,17 @@ fn pick_the_payee(peers: &[PeerStats], close_group: &[usize]) -> eyre::Result<(u
         address_to_index.insert(peer.address.as_peer_id().unwrap(), i);
 
         let close_records_stored = peer.records_stored.load(Ordering::Relaxed);
-        let cost: NanoTokens = NanoTokens::from(calculate_cost_for_records(close_records_stored));
+
+        // can we assert that we have X received payments?
+        // can they be for data, which must exist...
+
+        // if we dont use relevant records
+        // if its just livetime (measured in payments)... but bad node detection boots bad nodes...
+
+        // what then?
+
+        let received_payment_count = peer.payments_received.load(Ordering::Relaxed);
+        let cost: NanoTokens = NanoTokens::from(calculate_cost_for_records(received_payment_count));
 
         let quote = PaymentQuote {
             content: XorName::default(),
@@ -534,7 +544,7 @@ fn pick_the_payee(peers: &[PeerStats], close_group: &[usize]) -> eyre::Result<(u
             quoting_metrics: QuotingMetrics {
                 close_records_stored,
                 max_records: MAX_RECORDS_COUNT,
-                received_payment_count: 1,
+                received_payment_count,
                 live_time: 0,
             },
             pub_key: peer.pk.to_bytes().to_vec(),
