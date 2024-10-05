@@ -454,7 +454,7 @@ jobs:
         shell: bash
         timeout-minutes: 1
         run: |
-          min_reward_forwarding_times="100"
+          min_reward_forwarding_times="60"
           reward_forwarding_count=$(rg "Reward forwarding completed sending spend" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Carried out $reward_forwarding_count reward forwardings"

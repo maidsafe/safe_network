@@ -7261,6 +7261,7 @@ dependencies = [
  "rand 0.8.5",
  "rayon",
  "rmp-serde",
+ "self_encryption",
  "serde",
  "sn_build_info",
  "sn_protocol",
