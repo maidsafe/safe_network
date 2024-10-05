@@ -1149,7 +1149,7 @@ dependencies = [
  "libp2p 0.54.1",
  "rand 0.8.5",
  "rmp-serde",
- "self_encryption",
+ "self_encryption 0.29.2",
  "serde",
  "sn_bls_ckd",
  "sn_curv",
@@ -8032,6 +8032,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "self_encryption"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9439a0cb3efb35e080a1576e3e00a804caab04010adc802aed88cf539b103ed"
+dependencies = [
+ "aes 0.8.4",
+ "bincode",
+ "brotli",
+ "bytes",
+ "cbc",
+ "hex 0.4.3",
+ "itertools 0.10.5",
+ "lazy_static",
+ "num_cpus",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "rayon",
+ "serde",
+ "tempfile",
+ "thiserror",
+ "tiny-keccak",
+ "tokio",
+ "xor_name",
+]
+
+[[package]]
 name = "semver"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8518,7 +8544,7 @@ dependencies = [
  "rand 0.8.5",
  "rayon",
  "rmp-serde",
- "self_encryption",
+ "self_encryption 0.29.2",
  "serde",
  "sn_bls_ckd",
  "sn_client",
@@ -8692,6 +8718,7 @@ dependencies = [
  "rand 0.8.5",
  "rayon",
  "rmp-serde",
+ "self_encryption 0.30.0",
  "serde",
  "sn_build_info",
  "sn_protocol",
@@ -8738,7 +8765,7 @@ dependencies = [
  "rayon",
  "reqwest 0.12.8",
  "rmp-serde",
- "self_encryption",
+ "self_encryption 0.29.2",
  "serde",
  "serde_json",
  "sn_build_info",

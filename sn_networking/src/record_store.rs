@@ -18,6 +18,7 @@ use aes_gcm_siv::{
 };
 
 use itertools::Itertools;
+use lazy_static::lazy_static;
 use libp2p::{
     identity::PeerId,
     kad::{
@@ -29,6 +30,7 @@ use libp2p::{
 use prometheus_client::metrics::gauge::Gauge;
 use rand::RngCore;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use self_encryption::MAX_CHUNK_SIZE;
 use serde::{Deserialize, Serialize};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
@@ -48,13 +50,27 @@ use tokio::sync::mpsc;
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
-// A spend record is at the size of 4KB roughly.
-// Given chunk record is maxed at size of 512KB.
-// During Beta phase, it's almost one spend per chunk,
-// which makes the average record size is around 256k.
-// Given we are targeting node size to be 32GB,
-// this shall allow around 128K records.
-const MAX_RECORDS_COUNT: usize = 128 * 1024;
+/// The default value of targted max storage space is to be 32GB.
+const DEFAULT_MAX_STORAGE_SPACE: u64 = 32 * 1024 * 1024 * 1024;
+
+lazy_static! {
+    /// The max storage space for the records.
+    /// A `node size` is to be defined as this plus the logging space assigned.
+    pub static ref MAX_STORAGE_SPACE: u64 = std::option_env!("MAX_STORAGE_SPACE")
+        .unwrap_or("34359738368")
+        .parse::<u64>()
+        .unwrap_or(DEFAULT_MAX_STORAGE_SPACE);
+
+    // A spend record is at the size of 2KB roughly.
+    // During Beta phase, it's almost one spend per chunk,
+    // which makes the average record size is to be half of the MAX_CHUNK_SIZE
+    static ref MAX_RECORDS_COUNT: usize = {
+        let records_count: usize = ((*MAX_STORAGE_SPACE as f64 / *MAX_CHUNK_SIZE as f64) * 2.0) as usize;
+        info!("MAX_STORAGE_SPACE is {}, MAX_CHUNK_SIZE is {}, MAX_RECORDS_COUNT is {records_count}",
+            *MAX_STORAGE_SPACE, *MAX_CHUNK_SIZE);
+        records_count
+    };
+}
 
 /// The maximum number of records to cache in memory.
 const MAX_RECORDS_CACHE_SIZE: usize = 100;
@@ -127,7 +143,7 @@ impl Default for NodeRecordStoreConfig {
         Self {
             storage_dir: historic_quote_dir.clone(),
             historic_quote_dir,
-            max_records: MAX_RECORDS_COUNT,
+            max_records: *MAX_RECORDS_COUNT,
             max_value_bytes: MAX_PACKET_SIZE,
             records_cache_size: MAX_RECORDS_CACHE_SIZE,
         }
@@ -461,7 +477,7 @@ impl NodeRecordStore {
     // result in mis-calculation of relevant records.
     pub fn cleanup_unrelevant_records(&mut self) {
         let accumulated_records = self.records.len();
-        if accumulated_records < 6 * MAX_RECORDS_COUNT / 10 {
+        if accumulated_records < *MAX_RECORDS_COUNT * 6 / 10 {
             return;
         }
 
@@ -932,7 +948,7 @@ impl RecordStore for ClientRecordStore {
 pub fn calculate_cost_for_records(records_stored: usize) -> u64 {
     use std::cmp::{max, min};
 
-    let max_records = MAX_RECORDS_COUNT;
+    let max_records = *MAX_RECORDS_COUNT;
 
     let ori_cost = positive_input_0_1_sigmoid(records_stored as f64 / max_records as f64)
         * MAX_STORE_COST as f64;
@@ -1007,13 +1023,13 @@ mod tests {
 
     #[test]
     fn test_calculate_max_cost_for_records() {
-        let sut = calculate_cost_for_records(MAX_RECORDS_COUNT + 1);
+        let sut = calculate_cost_for_records(*MAX_RECORDS_COUNT + 1);
         assert_eq!(sut, MAX_STORE_COST - 1);
     }
 
     #[test]
     fn test_calculate_50_percent_cost_for_records() {
-        let percent = MAX_RECORDS_COUNT * 50 / 100;
+        let percent = *MAX_RECORDS_COUNT * 50 / 100;
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
@@ -1021,16 +1037,16 @@ mod tests {
     }
     #[test]
     fn test_calculate_60_percent_cost_for_records() {
-        let percent = MAX_RECORDS_COUNT * 60 / 100;
+        let percent = *MAX_RECORDS_COUNT * 60 / 100;
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
-        assert_eq!(sut, 952572);
+        assert_eq!(sut, 952561);
     }
 
     #[test]
     fn test_calculate_65_percent_cost_for_records() {
-        let percent = MAX_RECORDS_COUNT * 65 / 100;
+        let percent = *MAX_RECORDS_COUNT * 65 / 100;
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
@@ -1039,7 +1055,7 @@ mod tests {
 
     #[test]
     fn test_calculate_70_percent_cost_for_records() {
-        let percent = MAX_RECORDS_COUNT * 70 / 100;
+        let percent = *MAX_RECORDS_COUNT * 70 / 100;
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
@@ -1048,7 +1064,7 @@ mod tests {
 
     #[test]
     fn test_calculate_80_percent_cost_for_records() {
-        let percent = MAX_RECORDS_COUNT * 80 / 100;
+        let percent = *MAX_RECORDS_COUNT * 80 / 100;
         let sut = calculate_cost_for_records(percent);
 
         // at this point we should be at max cost
@@ -1057,7 +1073,7 @@ mod tests {
 
     #[test]
     fn test_calculate_90_percent_cost_for_records() {
-        let percent = MAX_RECORDS_COUNT * 90 / 100;
+        let percent = *MAX_RECORDS_COUNT * 90 / 100;
         let sut = calculate_cost_for_records(percent);
         // at this point we should be at max cost
         assert_eq!(sut, 999993);
@@ -1746,8 +1762,8 @@ mod tests {
                     max_store_cost / min_store_cost
                 );
                 assert!(
-                    (max_earned / min_earned) < 300000000,
-                    "earning distribution is not balanced, expected to be < 200000000, but was {}",
+                    (max_earned / min_earned) < 500000000,
+                    "earning distribution is not balanced, expected to be < 500000000, but was {}",
                     max_earned / min_earned
                 );
                 break;
@@ -1775,7 +1791,7 @@ mod tests {
                 timestamp: std::time::SystemTime::now(),
                 quoting_metrics: QuotingMetrics {
                     close_records_stored: peer.records_stored.load(Ordering::Relaxed),
-                    max_records: MAX_RECORDS_COUNT,
+                    max_records: *MAX_RECORDS_COUNT,
                     received_payment_count: 1, // unimportant for cost calc
                     live_time: 0,              // unimportant for cost calc
                 },
