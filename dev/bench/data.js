@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1727981599826,
+  "lastUpdate": 1728223101463,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "09246c227e50bebe0c761a9ea753cf4a0d8cb71c",
-          "message": "feat(nat): use color-eyre and uniform error msg",
-          "timestamp": "2024-05-15T15:42:25Z",
-          "tree_id": "fc18714a33c2b8ec0b4ac386093af3f0c28496d7",
-          "url": "https://github.com/maidsafe/safe_network/commit/09246c227e50bebe0c761a9ea753cf4a0d8cb71c"
-        },
-        "date": 1715791108249,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2195081482139056,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.4812978138622976,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 48.71822865635939,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 63.57393369864566,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c7177136fbb499940ce323bf030802dc2331e841",
+          "message": "Merge pull request #2167 from RolandSherwin/metrics_shunned_close\n\nfeat(metrics):  add close group shunned metrics",
+          "timestamp": "2024-10-06T13:04:09Z",
+          "tree_id": "6e2b1055c25be6ebf39ea2dbdff3467aa27e2541",
+          "url": "https://github.com/maidsafe/safe_network/commit/c7177136fbb499940ce323bf030802dc2331e841"
+        },
+        "date": 1728223094962,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2480578889286582,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.70131908834785,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 60.523289517653865,
             "unit": "MiB/s"
           }
         ]
