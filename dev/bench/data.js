@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728223222442,
+  "lastUpdate": 1728223223588,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20410,40 +20410,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno Zeeman",
-            "username": "b-zee"
-          },
-          "committer": {
-            "email": "bzeeman@live.nl",
-            "name": "Benno",
-            "username": "b-zee"
-          },
-          "distinct": true,
-          "id": "09246c227e50bebe0c761a9ea753cf4a0d8cb71c",
-          "message": "feat(nat): use color-eyre and uniform error msg",
-          "timestamp": "2024-05-15T15:42:25Z",
-          "tree_id": "fc18714a33c2b8ec0b4ac386093af3f0c28496d7",
-          "url": "https://github.com/maidsafe/safe_network/commit/09246c227e50bebe0c761a9ea753cf4a0d8cb71c"
-        },
-        "date": 1715791288095,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 200,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 82,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "qi.ma@maidsafe.net",
             "name": "qima",
             "username": "maqi"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c7177136fbb499940ce323bf030802dc2331e841",
+          "message": "Merge pull request #2167 from RolandSherwin/metrics_shunned_close\n\nfeat(metrics):  add close group shunned metrics",
+          "timestamp": "2024-10-06T13:04:09Z",
+          "tree_id": "6e2b1055c25be6ebf39ea2dbdff3467aa27e2541",
+          "url": "https://github.com/maidsafe/safe_network/commit/c7177136fbb499940ce323bf030802dc2331e841"
+        },
+        "date": 1728223223341,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 187,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 83,
             "unit": "MB"
           }
         ]
