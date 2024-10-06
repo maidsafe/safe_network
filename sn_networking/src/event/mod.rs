@@ -23,11 +23,11 @@ use libp2p::{
 
 use sn_protocol::{
     messages::{Query, Request, Response},
-    NetworkAddress, PrettyPrintRecordKey,
+    NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use sn_transfers::PaymentQuote;
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeSet, HashSet},
     fmt::{Debug, Formatter},
 };
 use tokio::sync::oneshot;
@@ -216,6 +216,28 @@ impl Debug for NetworkEvent {
 }
 
 impl SwarmDriver {
+    /// Check for changes in our close group
+    #[cfg(feature = "open-metrics")]
+    pub(crate) fn check_for_change_in_our_close_group(&mut self) {
+        // this includes self
+        let closest_k_peers = self.get_closest_k_value_local_peers();
+
+        let new_closest_peers: Vec<_> =
+            closest_k_peers.into_iter().take(CLOSE_GROUP_SIZE).collect();
+
+        let old = self.close_group.iter().cloned().collect::<HashSet<_>>();
+        let new_members: Vec<_> = new_closest_peers
+            .iter()
+            .filter(|p| !old.contains(p))
+            .collect();
+        if !new_members.is_empty() {
+            debug!("The close group has been updated. The new members are {new_members:?}");
+            debug!("New close group: {new_closest_peers:?}");
+            self.close_group = new_closest_peers.clone();
+            self.record_change_in_close_group(new_closest_peers);
+        }
+    }
+
     /// Update state on addition of a peer to the routing table.
     pub(crate) fn update_on_peer_addition(&mut self, added_peer: PeerId) {
         self.peers_in_rt = self.peers_in_rt.saturating_add(1);
@@ -225,6 +247,11 @@ impl SwarmDriver {
         );
         self.log_kbuckets(&added_peer);
         self.send_event(NetworkEvent::PeerAdded(added_peer, self.peers_in_rt));
+
+        #[cfg(feature = "open-metrics")]
+        if self.metrics_recorder.is_some() {
+            self.check_for_change_in_our_close_group();
+        }
 
         #[cfg(feature = "open-metrics")]
         if let Some(metrics_recorder) = &self.metrics_recorder {
@@ -243,6 +270,11 @@ impl SwarmDriver {
         );
         self.log_kbuckets(&removed_peer);
         self.send_event(NetworkEvent::PeerRemoved(removed_peer, self.peers_in_rt));
+
+        #[cfg(feature = "open-metrics")]
+        if self.metrics_recorder.is_some() {
+            self.check_for_change_in_our_close_group();
+        }
 
         #[cfg(feature = "open-metrics")]
         if let Some(metrics_recorder) = &self.metrics_recorder {
