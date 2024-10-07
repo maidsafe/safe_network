@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use autonomi::Multiaddr;
-use autonomi::Network;
+use autonomi::EvmNetwork;
 use color_eyre::eyre::eyre;
 use color_eyre::eyre::Context;
 use color_eyre::Result;
@@ -23,7 +23,7 @@ pub async fn get_peers(peers: PeersArgs) -> Result<Vec<Multiaddr>> {
         .with_suggestion(|| "a peer address looks like this: /ip4/42.42.42.42/udp/4242/quic-v1/p2p/B64nodePeerIDvdjb3FAJF4ks3moreBase64CharsHere")
 }
 
-pub(crate) fn get_evm_network_from_environment() -> Result<Network> {
+pub(crate) fn get_evm_network_from_environment() -> Result<EvmNetwork> {
     evmlib::utils::evm_network_from_env()
         .map_err(|err| eyre!("Failed to get EVM network from environment: {err}"))
 }
