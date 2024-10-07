@@ -77,7 +77,8 @@ pub async fn edit(address: String, name: bool, value: &str, peers: Vec<Multiaddr
         client.register_address(&address, &register_key)
     } else {
         RegisterAddress::from_hex(&address)
-            .wrap_err(format!("Failed to parse register address: {address}"))?
+            .wrap_err(format!("Failed to parse register address: {address}"))
+            .with_suggestion(|| "if you want to use the name as the address, run the command with the --name flag")?
     };
 
     println!("Getting register at address: {address}");
@@ -108,7 +109,8 @@ pub async fn get(address: String, name: bool, peers: Vec<Multiaddr>) -> Result<(
         client.register_address(&address, &register_key)
     } else {
         RegisterAddress::from_hex(&address)
-            .wrap_err(format!("Failed to parse register address: {address}"))?
+            .wrap_err(format!("Failed to parse register address: {address}"))
+            .with_suggestion(|| "if you want to use the name as the address, run the command with the --name flag")?
     };
 
     println!("Getting register at address: {address}");
