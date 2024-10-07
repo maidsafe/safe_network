@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728326477244,
+  "lastUpdate": 1728327819115,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "ca75e52539db6385abbb329ae1463418ed7b950e",
-          "message": "fix: invalid spend reason in data payments",
-          "timestamp": "2024-05-15T22:09:57Z",
-          "tree_id": "8430414051190ccccc0a9b05d90c05a43195103c",
-          "url": "https://github.com/maidsafe/safe_network/commit/ca75e52539db6385abbb329ae1463418ed7b950e"
-        },
-        "date": 1715813866502,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1459503052139999,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.1103059805877868,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 51.8086502787351,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 58.94097206656937,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "c1a3b2219057781dfd3a5c28689c4b986efc5f32",
+          "message": "Merge branch 'fix-bump_release_cycle_increment'",
+          "timestamp": "2024-10-07T19:51:31+01:00",
+          "tree_id": "a4455fc0275621f66be3d74247a0a931247521b0",
+          "url": "https://github.com/maidsafe/safe_network/commit/c1a3b2219057781dfd3a5c28689c4b986efc5f32"
+        },
+        "date": 1728327812480,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2544589773358767,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.711317734349122,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.84944362437144,
             "unit": "MiB/s"
           }
         ]
