@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Changed
 
+- The auditor's webservice has new endpoints that allow it to be restarted or terminated
+
+## 2024-10-07
+
+### Network
+
+#### Changed
+
 - Increase chunk size to 4MB with node size remaining at 32GB
 - Bootstrap peer parsing in CI was changed to accommodate new log format in libp2p
 
@@ -20,7 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
-- The `add` command has new `--max-log-files` and `--max-archived-log-files` arguments to support capping node log output
+- The `add` command has new `--max-log-files` and `--max-archived-log-files` arguments to support
+  capping node log output
 
 #### Fixed
 
@@ -30,7 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Increased logging related to app configuration. This could help solving issues on launchpad start up.
+- Increased logging related to app configuration. This could help solving issues on launchpad start
+  up.
 
 ## 2024-10-03
 
