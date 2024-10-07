@@ -78,6 +78,16 @@ pub async fn add_node(
         check_port_availability(port_option, &node_registry.nodes)?;
     }
 
+    let owner = match &options.owner {
+        Some(owner) => {
+            if owner.chars().any(|c| c.is_uppercase()) {
+                warn!("Owner name ({owner}) contains uppercase characters and will be converted to lowercase");
+            }
+            Some(owner.to_lowercase())
+        }
+        None => None,
+    };
+
     let safenode_file_name = options
         .safenode_src_path
         .file_name()
@@ -217,11 +227,13 @@ pub async fn add_node(
             local: options.local,
             log_dir_path: service_log_dir_path.clone(),
             log_format: options.log_format,
+            max_archived_log_files: options.max_archived_log_files,
+            max_log_files: options.max_log_files,
             metrics_port: metrics_free_port,
             name: service_name.clone(),
             node_ip: options.node_ip,
             node_port,
-            owner: options.owner.clone(),
+            owner: owner.clone(),
             rpc_socket_addr,
             safenode_path: service_safenode_path.clone(),
             service_user: options.user.clone(),
@@ -250,13 +262,15 @@ pub async fn add_node(
                     local: options.local,
                     log_dir_path: service_log_dir_path.clone(),
                     log_format: options.log_format,
+                    max_archived_log_files: options.max_archived_log_files,
+                    max_log_files: options.max_log_files,
                     metrics_port: metrics_free_port,
                     node_ip: options.node_ip,
                     node_port,
                     number: node_number,
                     reward_balance: None,
                     rpc_socket_addr,
-                    owner: options.owner.clone(),
+                    owner: owner.clone(),
                     peer_id: None,
                     pid: None,
                     safenode_path: service_safenode_path,
