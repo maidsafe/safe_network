@@ -61,4 +61,4 @@ push = false
 tag = false
 
 [patch.crates-io]
-alloy = { git = 'https://github.com/alloy-rs/alloy.git', branch = "main" }
+alloy = { git = 'https://github.com/b-zee/alloy.git', branch = "fix-rpc-client-sleep-call" }
