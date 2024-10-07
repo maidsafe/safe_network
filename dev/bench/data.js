@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728305652328,
+  "lastUpdate": 1728326345258,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "6e872539cfdf0470c58d2bcfa7fe919a27b98a20",
-          "message": "feat: package and release auditor binary",
-          "timestamp": "2024-05-15T21:51:48Z",
-          "tree_id": "a0ecd883f1bea4320bec2a518153fbbf18b2214e",
-          "url": "https://github.com/maidsafe/safe_network/commit/6e872539cfdf0470c58d2bcfa7fe919a27b98a20"
-        },
-        "date": 1715812761372,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.0416216037290398,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.3709175123597293,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 37.45390788453376,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.43219168121008,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "b06927310115dcb82234446810d4ff5f3d99d482",
+          "message": "Merge branch 'restart_auditor_webservice_stable'",
+          "timestamp": "2024-10-07T19:26:29+01:00",
+          "tree_id": "be5dbe72ac361e00fcf615107795c3b92c616813",
+          "url": "https://github.com/maidsafe/safe_network/commit/b06927310115dcb82234446810d4ff5f3d99d482"
+        },
+        "date": 1728326337215,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2759782127901722,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.6984277100737157,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 58.94097206656937,
             "unit": "MiB/s"
           }
         ]
