@@ -9,11 +9,15 @@
 #[macro_use]
 extern crate tracing;
 
+mod access;
 mod actions;
 mod commands;
 mod log_metrics;
 mod opt;
-mod utils;
+
+pub use access::data_dir;
+pub use access::keys;
+pub use access::network;
 
 use clap::Parser;
 use color_eyre::Result;

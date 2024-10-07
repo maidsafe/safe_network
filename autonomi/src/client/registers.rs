@@ -1,8 +1,19 @@
-use std::collections::BTreeSet;
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+/// Register Secret Key
+pub use bls::SecretKey as RegisterSecretKey;
+use sn_evm::Amount;
+use sn_evm::AttoTokens;
+pub use sn_registers::RegisterAddress;
 
 use crate::client::data::PayError;
 use crate::client::Client;
-use bls::SecretKey;
 use bytes::Bytes;
 use evmlib::wallet::Wallet;
 use libp2p::kad::{Quorum, Record};
@@ -12,11 +23,11 @@ use sn_networking::PutRecordCfg;
 use sn_protocol::storage::try_deserialize_record;
 use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
-use sn_protocol::storage::RegisterAddress;
 use sn_protocol::NetworkAddress;
 use sn_registers::Register as ClientRegister;
 use sn_registers::SignedRegister;
 use sn_registers::{EntryHash, Permissions};
+use std::collections::BTreeSet;
 use xor_name::XorName;
 
 #[derive(Debug, thiserror::Error)]
@@ -63,11 +74,13 @@ impl Register {
 }
 
 impl Client {
+    /// Generate a new register key
+    pub fn register_generate_key(&self) -> RegisterSecretKey {
+        RegisterSecretKey::random()
+    }
+
     /// Fetches a Register from the network.
-    pub async fn fetch_register(
-        &self,
-        address: RegisterAddress,
-    ) -> Result<Register, RegisterError> {
+    pub async fn register_get(&self, address: RegisterAddress) -> Result<Register, RegisterError> {
         let network_address = NetworkAddress::from_register_address(address);
         let key = network_address.to_record_key();
 
@@ -93,11 +106,11 @@ impl Client {
     }
 
     /// Updates a Register on the network with a new value. This will overwrite existing value(s).
-    pub async fn update_register(
+    pub async fn register_update(
         &self,
         register: Register,
         new_value: Bytes,
-        owner: SecretKey,
+        owner: RegisterSecretKey,
     ) -> Result<(), RegisterError> {
         // Fetch the current register
         let mut signed_register = register.inner;
@@ -112,7 +125,7 @@ impl Client {
 
         // Write the new value to all branches
         let (_, op) = register
-            .write(new_value.to_vec(), &children, &owner)
+            .write(new_value.into(), &children, &owner)
             .map_err(RegisterError::Write)?;
 
         // Apply the operation to the register
@@ -143,15 +156,49 @@ impl Client {
         Ok(())
     }
 
-    /// Creates a new Register with an initial value and uploads it to the network.
-    pub async fn create_register(
+    /// Get the cost to create a register
+    pub async fn register_cost(
+        &self,
+        name: String,
+        owner: RegisterSecretKey,
+    ) -> Result<AttoTokens, RegisterError> {
+        // get register address
+        let pk = owner.public_key();
+        let name = XorName::from_content_parts(&[name.as_bytes()]);
+        let permissions = Permissions::new_with([pk]);
+        let register = ClientRegister::new(pk, name, permissions);
+        let reg_xor = register.address().xorname();
+
+        // get cost to store register
+        // NB TODO: register should be priced differently from other data
+        let cost_map = self.get_store_quotes(std::iter::once(reg_xor)).await?;
+        let total_cost = AttoTokens::from_atto(
+            cost_map
+                .values()
+                .map(|quote| quote.2.cost.as_atto())
+                .sum::<Amount>(),
+        );
+
+        Ok(total_cost)
+    }
+
+    /// Get the address of a register from its name and owner
+    pub fn register_address(&self, name: &str, owner: &RegisterSecretKey) -> RegisterAddress {
+        let pk = owner.public_key();
+        let name = XorName::from_content_parts(&[name.as_bytes()]);
+        RegisterAddress::new(name, pk)
+    }
+
+    /// Creates a new Register with a name and an initial value and uploads it to the network.
+    pub async fn register_create(
         &self,
         value: Bytes,
-        name: XorName,
-        owner: SecretKey,
+        name: &str,
+        owner: RegisterSecretKey,
         wallet: &Wallet,
     ) -> Result<Register, RegisterError> {
         let pk = owner.public_key();
+        let name = XorName::from_content_parts(&[name.as_bytes()]);
 
         // Owner can write to the register.
         let permissions = Permissions::new_with([pk]);

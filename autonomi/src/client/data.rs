@@ -236,7 +236,7 @@ impl Client {
         Ok((proofs, skipped_chunks))
     }
 
-    async fn get_store_quotes(
+    pub(crate) async fn get_store_quotes(
         &self,
         content_addrs: impl Iterator<Item = XorName>,
     ) -> Result<HashMap<XorName, PayeeQuote>, PayError> {

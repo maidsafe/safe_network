@@ -8,7 +8,6 @@
 
 use autonomi::client::address::xorname_to_str;
 use autonomi::Multiaddr;
-use autonomi::Wallet;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
 use std::path::PathBuf;
@@ -28,12 +27,7 @@ pub async fn cost(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
 }
 
 pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
-    let secret_key = crate::utils::get_secret_key()
-        .wrap_err("The secret key is required to perform this action")?;
-    let network = crate::utils::get_evm_network_from_environment()?;
-    let wallet =
-        Wallet::new_from_private_key(network, &secret_key).wrap_err("Failed to load wallet")?;
-
+    let wallet = crate::keys::load_evm_wallet()?;
     let mut client = crate::actions::connect_to_network(peers).await?;
 
     println!("Uploading data to network...");

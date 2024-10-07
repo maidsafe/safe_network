@@ -64,6 +64,14 @@ pub enum FileCmd {
 
 #[derive(Subcommand, Debug)]
 pub enum RegisterCmd {
+    /// Generate a new register key.
+    GenerateKey {
+        /// Overwrite existing key if it exists
+        /// Warning: overwriting the existing key will result in loss of access to any existing registers created using that key
+        #[arg(short, long)]
+        overwrite: bool,
+    },
+
     /// Estimate cost to register a name.
     Cost {
         /// The name to register.
@@ -80,16 +88,26 @@ pub enum RegisterCmd {
 
     /// Edit an existing register.
     Edit {
-        /// The name of the register.
-        name: String,
+        /// Use the name of the register instead of the address
+        /// Note that only the owner of the register can use this shorthand as the address can be generated from the name and register key.
+        #[arg(short, long)]
+        name: bool,
+        /// The address of the register
+        /// With the name option on the address will be used as a name
+        address: String,
         /// The new value to store in the register.
         value: String,
     },
 
     /// Get the value of a register.
     Get {
-        /// The name of the register.
-        name: String,
+        /// Use the name of the register instead of the address
+        /// Note that only the owner of the register can use this shorthand as the address can be generated from the name and register key.
+        #[arg(short, long)]
+        name: bool,
+        /// The address of the register
+        /// With the name option on the address will be used as a name
+        address: String,
     },
 
     /// List previous registers
@@ -109,27 +127,36 @@ pub enum VaultCmd {
 }
 
 pub async fn handle_subcommand(opt: Opt) -> Result<()> {
-    let peers = crate::utils::get_peers(opt.peers).await?;
+    let peers = crate::access::network::get_peers(opt.peers);
     let cmd = opt.command;
 
     match cmd {
         SubCmd::File { command } => match command {
-            FileCmd::Cost { file } => file::cost(&file, peers).await,
-            FileCmd::Upload { file } => file::upload(&file, peers).await,
-            FileCmd::Download { addr, dest_file } => file::download(&addr, &dest_file, peers).await,
-            FileCmd::List => file::list(peers),
+            FileCmd::Cost { file } => file::cost(&file, peers.await?).await,
+            FileCmd::Upload { file } => file::upload(&file, peers.await?).await,
+            FileCmd::Download { addr, dest_file } => {
+                file::download(&addr, &dest_file, peers.await?).await
+            }
+            FileCmd::List => file::list(peers.await?),
         },
         SubCmd::Register { command } => match command {
-            RegisterCmd::Cost { name } => register::cost(&name, peers),
-            RegisterCmd::Create { name, value } => register::create(&name, &value, peers),
-            RegisterCmd::Edit { name, value } => register::edit(&name, &value, peers),
-            RegisterCmd::Get { name } => register::get(&name, peers),
-            RegisterCmd::List => register::list(peers),
+            RegisterCmd::GenerateKey { overwrite } => register::generate_key(overwrite),
+            RegisterCmd::Cost { name } => register::cost(&name, peers.await?).await,
+            RegisterCmd::Create { name, value } => {
+                register::create(&name, &value, peers.await?).await
+            }
+            RegisterCmd::Edit {
+                address,
+                name,
+                value,
+            } => register::edit(address, name, &value, peers.await?).await,
+            RegisterCmd::Get { address, name } => register::get(address, name, peers.await?).await,
+            RegisterCmd::List => register::list(peers.await?),
         },
         SubCmd::Vault { command } => match command {
-            VaultCmd::Cost => vault::cost(peers),
-            VaultCmd::Create => vault::create(peers),
-            VaultCmd::Sync => vault::sync(peers),
+            VaultCmd::Cost => vault::cost(peers.await?),
+            VaultCmd::Create => vault::create(peers.await?),
+            VaultCmd::Sync => vault::sync(peers.await?),
         },
     }
 }
