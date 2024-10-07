@@ -2724,6 +2724,7 @@ name = "evm_testnet"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "dirs-next",
  "evmlib",
  "tokio",
 ]
@@ -2733,11 +2734,13 @@ name = "evmlib"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "dirs-next",
  "getrandom 0.2.15",
  "rand 0.8.5",
  "serde",
  "thiserror",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -8717,15 +8720,12 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 name = "test_utils"
 version = "0.4.6"
 dependencies = [
- "autonomi",
  "color-eyre",
- "const-hex",
  "dirs-next",
  "evmlib",
  "libp2p 0.54.1",
  "serde",
  "serde_json",
- "sn_peers_acquisition",
 ]
 
 [[package]]

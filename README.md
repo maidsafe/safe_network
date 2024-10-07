@@ -165,7 +165,7 @@ Take note of the console output for the next step (`RPC URL`, `Payment token add
    `--rewards-address` _is the address where you will receive your node earnings on._
 
 ```bash
-cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean --rewards-address <YOUR_ETHEREUM_ADDRESS> evm-custom --rpc-url <RPC_URL> --payment-token-address <TOKEN_ADDRESS> --chunk-payments-address <CONTRACT_ADDRESS>
+cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean --rewards-address <YOUR_ETHEREUM_ADDRESS> evm-custom --rpc-url <RPC_URL> --payment-token-address <TOKEN_ADDRESS> --data-payments-address <CONTRACT_ADDRESS>
 ```
 
 4. Verify node status: <br>

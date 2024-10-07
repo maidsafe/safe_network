@@ -11,12 +11,9 @@ version = "0.4.6"
 
 
 [dependencies]
-autonomi = { path ="../autonomi", version = "0.1" }
 color-eyre = "~0.6.2"
-const-hex = "1.12.0"
 dirs-next = "~2.0.0"
 evmlib = { path = "../evmlib", version = "0.1" }
 libp2p = { version = "0.54.1", features = ["identify", "kad"] }
 serde = { version = "1.0.133", features = [ "derive"]}
 serde_json = "1.0"
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.2" }

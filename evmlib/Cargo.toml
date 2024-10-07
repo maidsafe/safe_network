@@ -13,8 +13,10 @@ wasm-bindgen = ["alloy/wasm-bindgen"]
 
 [dependencies]
 alloy = { version = "0.4.2", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
+dirs-next = "~2.0.0"
 serde = "1.0"
 thiserror = "1.0"
+tracing = { version = "~0.1.26" }
 tokio = "1.38.0"
 rand = "0.8.5"
 

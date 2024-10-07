@@ -7,6 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::add_services::config::PortRange;
+#[cfg(feature = "faucet")]
+use crate::helpers::get_username;
 use crate::helpers::{
     check_port_availability, get_bin_version, get_start_port_if_applicable, increment_port_option,
 };
@@ -16,19 +18,15 @@ use colored::Colorize;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 #[cfg(test)]
 use mockall::automock;
-
 use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
+#[cfg(feature = "faucet")]
+use sn_service_management::FaucetServiceData;
 use sn_service_management::{
     control::ServiceControl,
     rpc::{RpcActions, RpcClient},
     NodeRegistry, NodeServiceData, ServiceStatus,
 };
-
-#[cfg(feature = "faucet")]
-use crate::helpers::get_username;
-#[cfg(feature = "faucet")]
-use sn_service_management::FaucetServiceData;
 #[cfg(feature = "faucet")]
 use sn_transfers::get_faucet_data_dir;
 
@@ -155,8 +153,8 @@ impl Launcher for LocalSafeLauncher {
                 args.push(custom.rpc_url_http.to_string());
                 args.push("--payment-token-address".to_string());
                 args.push(custom.payment_token_address.to_string());
-                args.push("--chunk-payments-address".to_string());
-                args.push(custom.chunk_payments_address.to_string());
+                args.push("--data-payments-address".to_string());
+                args.push(custom.data_payments_address.to_string());
             }
         }
 
