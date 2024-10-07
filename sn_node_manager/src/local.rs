@@ -444,6 +444,8 @@ pub async fn run_node(
         local: true,
         log_dir_path: node_info.log_path,
         log_format: run_options.log_format,
+        max_archived_log_files: None,
+        max_log_files: None,
         metrics_port: run_options.metrics_port,
         node_ip: None,
         node_port: run_options.node_port,

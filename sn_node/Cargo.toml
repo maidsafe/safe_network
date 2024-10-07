@@ -2,7 +2,7 @@
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 description = "Safe Node"
 name = "sn_node"
-version = "0.111.3"
+version = "0.111.4"
 edition = "2021"
 license = "GPL-3.0"
 homepage = "https://maidsafe.net"
@@ -49,16 +49,16 @@ tonic = { version = "0.6.2" }
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rmp-serde = "1.1.1"
 rayon = "1.8.0"
-self_encryption = "~0.29.0"
+self_encryption = "~0.30.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
-sn_build_info = { path = "../sn_build_info", version = "0.1.14" }
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.2" }
-sn_logging = { path = "../sn_logging", version = "0.2.35" }
-sn_networking = { path = "../sn_networking", version = "0.18.3" }
-sn_protocol = { path = "../sn_protocol", version = "0.17.10" }
-sn_registers = { path = "../sn_registers", version = "0.3.20" }
-sn_transfers = { path = "../sn_transfers", version = "0.19.2" }
-sn_service_management = { path = "../sn_service_management", version = "0.3.13" }
+sn_build_info = { path = "../sn_build_info", version = "0.1.15" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.3" }
+sn_logging = { path = "../sn_logging", version = "0.2.36" }
+sn_networking = { path = "../sn_networking", version = "0.18.4" }
+sn_protocol = { path = "../sn_protocol", version = "0.17.11" }
+sn_registers = { path = "../sn_registers", version = "0.3.21" }
+sn_transfers = { path = "../sn_transfers", version = "0.19.3" }
+sn_service_management = { path = "../sn_service_management", version = "0.3.14" }
 thiserror = "1.0.23"
 tokio = { version = "1.32.0", features = [
     "io-util",
@@ -85,11 +85,11 @@ reqwest = { version = "0.12.2", default-features = false, features = [
     "rustls-tls-manual-roots",
 ] }
 serde_json = "1.0"
-sn_client = { path = "../sn_client", version = "0.110.2" }
-sn_protocol = { path = "../sn_protocol", version = "0.17.10", features = [
+sn_client = { path = "../sn_client", version = "0.110.3" }
+sn_protocol = { path = "../sn_protocol", version = "0.17.11", features = [
     "rpc",
 ] }
-sn_transfers = { path = "../sn_transfers", version = "0.19.2", features = [
+sn_transfers = { path = "../sn_transfers", version = "0.19.3", features = [
     "test-utils",
 ] }
 tempfile = "3.6.0"
