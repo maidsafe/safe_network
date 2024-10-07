@@ -5,12 +5,12 @@
   <body>
     <!-- credits: https://rustwasm.github.io/docs/wasm-bindgen/examples/without-a-bundler.html -->
     <script type="module">
-      import init, { Client, getFundedWallet, log_init } from './pkg/autonomi.js';
+      import init, { Client, getFundedWallet, logInit } from './pkg/autonomi.js';
 
       async function run() {
         await init();
 
-        log_init("trace");
+        logInit("trace");
 
         console.log("connecting...");
         let client = await new Client(["/ip4/127.0.0.1/tcp/36075/ws/p2p/12D3KooWALbWYwtNPiVvGzXr3CwXUa9JsRwZfgndNACPFBhDAfJY"]);
