@@ -1,5 +1,6 @@
 use bytes::Bytes;
 use rand::Rng;
+use sn_peers_acquisition::parse_peer_addr;
 
 #[allow(dead_code)]
 pub fn gen_random_data(len: usize) -> Bytes {
@@ -31,4 +32,23 @@ pub fn enable_logging_wasm(directive: impl AsRef<str>) {
         .with(fmt_layer)
         .with(tracing_subscriber::EnvFilter::new(directive))
         .init();
+}
+
+/// Get peers from `SAFE_PEERS` environment variable, first from runtime, then compile-time.
+/// If no peers are found and `local` is not enabled, this will panic. Otherwise, it will return an empty list.
+#[allow(dead_code)]
+pub fn peers_from_run_or_compile_time_env(
+) -> Result<Vec<libp2p::Multiaddr>, libp2p::multiaddr::Error> {
+    let peers_str = std::env::var("SAFE_PEERS")
+        .ok()
+        .or_else(|| option_env!("SAFE_PEERS").map(|s| s.to_string()));
+
+    let Some(peers_str) = peers_str else {
+        #[cfg(not(feature = "local"))]
+        panic!("SAFE_PEERS environment variable not set and `local` feature is not enabled");
+        #[cfg(feature = "local")]
+        return Ok(vec![]);
+    };
+
+    peers_str.split(',').map(parse_peer_addr).collect()
 }

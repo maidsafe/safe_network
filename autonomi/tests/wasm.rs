@@ -14,7 +14,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 async fn put() -> Result<(), Box<dyn std::error::Error>> {
     common::enable_logging_wasm("sn_networking,autonomi,wasm");
 
-    let client = Client::connect(&test_utils::peers_from_env()?)
+    let client = Client::connect(&common::peers_from_run_or_compile_time_env()?)
         .await
         .unwrap();
     let wallet = test_utils::evm::get_funded_wallet();

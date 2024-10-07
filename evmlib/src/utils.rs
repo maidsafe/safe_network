@@ -4,6 +4,19 @@ use dirs_next::data_dir;
 use rand::Rng;
 use std::env;
 
+// Get environment variable from runtime or build time, in that order. Returns `None` if not set.
+macro_rules! env_from_runtime_or_compiletime {
+    ($var:literal) => {{
+        if let Ok(val) = env::var($var) {
+            Some(val)
+        } else if let Some(val) = option_env!($var) {
+            Some(val.to_string())
+        } else {
+            None
+        }
+    }};
+}
+
 pub const EVM_TESTNET_CSV_FILENAME: &str = "evm_testnet_data.csv";
 
 #[derive(thiserror::Error, Debug)]
@@ -24,10 +37,14 @@ pub fn dummy_hash() -> Hash {
 
 /// Get the `Network` from environment variables
 pub fn evm_network_from_env() -> Result<Network, Error> {
-    let evm_vars = ["RPC_URL", "PAYMENT_TOKEN_ADDRESS", "DATA_PAYMENTS_ADDRESS"]
-        .iter()
-        .map(|var| env::var(var).map_err(|_| Error::FailedToGetEvmNetwork))
-        .collect::<Result<Vec<String>, Error>>();
+    let evm_vars = [
+        env_from_runtime_or_compiletime!("RPC_URL"),
+        env_from_runtime_or_compiletime!("PAYMENT_TOKEN_ADDRESS"),
+        env_from_runtime_or_compiletime!("DATA_PAYMENTS_ADDRESS"),
+    ]
+    .into_iter()
+    .map(|var| var.ok_or(Error::FailedToGetEvmNetwork))
+    .collect::<Result<Vec<String>, Error>>();
 
     let use_local_evm = std::env::var("EVM_NETWORK")
         .map(|v| v == "local")

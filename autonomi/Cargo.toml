@@ -49,6 +49,7 @@ futures = "0.3.30"
 [dev-dependencies]
 eyre = "0.6.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.2" }
 # Do not specify the version field. Release process expects even the local dev deps to be published.
 # Removing the version field is a workaround.
 test_utils = { path = "../test_utils" }
