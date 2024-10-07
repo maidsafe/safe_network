@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728327936173,
+  "lastUpdate": 1728327937747,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30617,45 +30617,6 @@ window.BENCHMARK_DATA = {
             "username": "grumbach"
           },
           "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "ca75e52539db6385abbb329ae1463418ed7b950e",
-          "message": "fix: invalid spend reason in data payments",
-          "timestamp": "2024-05-15T22:09:57Z",
-          "tree_id": "8430414051190ccccc0a9b05d90c05a43195103c",
-          "url": "https://github.com/maidsafe/safe_network/commit/ca75e52539db6385abbb329ae1463418ed7b950e"
-        },
-        "date": 1715814006395,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 15376,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 104872,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 6,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -42305,6 +42266,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver average long handling time",
             "value": 7,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "c1a3b2219057781dfd3a5c28689c4b986efc5f32",
+          "message": "Merge branch 'fix-bump_release_cycle_increment'",
+          "timestamp": "2024-10-07T19:51:31+01:00",
+          "tree_id": "a4455fc0275621f66be3d74247a0a931247521b0",
+          "url": "https://github.com/maidsafe/safe_network/commit/c1a3b2219057781dfd3a5c28689c4b986efc5f32"
+        },
+        "date": 1728327937486,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 13960,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 51194,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
             "unit": "ms"
           }
         ]
