@@ -48,14 +48,6 @@ use tokio::sync::mpsc;
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
-// A spend record is at the size of 4KB roughly.
-// Given chunk record is maxed at size of 512KB.
-// During Beta phase, it's almost one spend per chunk,
-// which makes the average record size is around 256k.
-// Given we are targeting node size to be 32GB,
-// this shall allow around 128K records.
-const MAX_RECORDS_COUNT: usize = 128 * 1024;
-
 /// The maximum number of records to cache in memory.
 const MAX_RECORDS_CACHE_SIZE: usize = 100;
 
@@ -113,8 +105,6 @@ pub struct NodeRecordStoreConfig {
     /// The directory where the historic quote to be stored
     /// (normally to be the parent dir of the storage_dir)
     pub historic_quote_dir: PathBuf,
-    /// The maximum number of records.
-    pub max_records: usize,
     /// The maximum size of record values, in bytes.
     pub max_value_bytes: usize,
     /// The maximum number of records to cache in memory.
@@ -127,7 +117,6 @@ impl Default for NodeRecordStoreConfig {
         Self {
             storage_dir: historic_quote_dir.clone(),
             historic_quote_dir,
-            max_records: MAX_RECORDS_COUNT,
             max_value_bytes: MAX_PACKET_SIZE,
             records_cache_size: MAX_RECORDS_CACHE_SIZE,
         }
@@ -423,47 +412,12 @@ impl NodeRecordStore {
         }
     }
 
-    /// Prune the records in the store to ensure that we free up space
-    /// for the incoming record.
-    /// Returns Ok if the record can be stored because it is closer to the local peer
-    /// or we are not full.
-    ///
-    /// Err MaxRecords if we cannot store as it's farther than the farthest data we have
-    fn prune_records_if_needed(&mut self, incoming_record_key: &Key) -> Result<()> {
-        // we're not full, so we don't need to prune
-        if self.records.len() < self.config.max_records {
-            return Ok(());
-        }
-
-        if let Some((farthest_record, farthest_record_distance)) = self.farthest_record.clone() {
-            // if the incoming record is farther than the farthest record, we can't store it
-            if farthest_record_distance
-                < self
-                    .local_address
-                    .distance(&NetworkAddress::from_record_key(incoming_record_key))
-            {
-                return Err(Error::MaxRecords);
-            }
-
-            info!(
-                "Record {:?} will be pruned to free up space for new records",
-                PrettyPrintRecordKey::from(&farthest_record)
-            );
-            self.remove(&farthest_record);
-        }
-
-        Ok(())
-    }
-
     // When the accumulated record copies exceeds the `expotional pricing point` (max_records * 0.6)
     // those `out of range` records shall be cleaned up.
     // This is to avoid `over-quoting` during restart, when RT is not fully populated,
     // result in mis-calculation of relevant records.
     pub fn cleanup_unrelevant_records(&mut self) {
         let accumulated_records = self.records.len();
-        if accumulated_records < 6 * MAX_RECORDS_COUNT / 10 {
-            return;
-        }
 
         let responsible_range = if let Some(range) = self.responsible_distance_range {
             range
@@ -602,8 +556,6 @@ impl NodeRecordStore {
         self.records_cache_map
             .insert(key.clone(), self.records_cache.len() - 1);
 
-        self.prune_records_if_needed(key)?;
-
         let filename = Self::generate_filename(key);
         let file_path = self.config.storage_dir.join(&filename);
 
@@ -663,7 +615,6 @@ impl NodeRecordStore {
 
         let mut quoting_metrics = QuotingMetrics {
             close_records_stored: records_stored,
-            max_records: self.config.max_records,
             received_payment_count: self.received_payment_count,
             live_time,
         };
@@ -932,10 +883,7 @@ impl RecordStore for ClientRecordStore {
 pub fn calculate_cost_for_records(records_stored: usize) -> u64 {
     use std::cmp::{max, min};
 
-    let max_records = MAX_RECORDS_COUNT;
-
-    let ori_cost = positive_input_0_1_sigmoid(records_stored as f64 / max_records as f64)
-        * MAX_STORE_COST as f64;
+    let ori_cost = positive_input_0_1_sigmoid(records_stored as f64) * MAX_STORE_COST as f64;
 
     // Deploy a lower cap safe_guard to the store_cost
     let charge = max(MIN_STORE_COST, ori_cost as u64);

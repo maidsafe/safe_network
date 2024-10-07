@@ -46,7 +46,6 @@ pub(crate) struct NetworkMetricsRecorder {
     // store cost
     store_cost: Gauge,
     relevant_records: Gauge,
-    max_records: Gauge,
     received_payment_count: Gauge,
     live_time: Gauge,
 
@@ -156,12 +155,6 @@ impl NetworkMetricsRecorder {
             "The number of records that we're responsible for. This is used to calculate the store cost",
             relevant_records.clone(),
         );
-        let max_records = Gauge::default();
-        sub_registry.register(
-            "max_records",
-            "The maximum number of records that we can store. This is used to calculate the store cost",
-            max_records.clone(),
-        );
         let received_payment_count = Gauge::default();
         sub_registry.register(
             "received_payment_count",
@@ -202,7 +195,6 @@ impl NetworkMetricsRecorder {
             peers_in_routing_table,
             store_cost,
             relevant_records,
-            max_records,
             received_payment_count,
             live_time,
 
@@ -278,7 +270,6 @@ impl NetworkMetricsRecorder {
                 let _ = self
                     .relevant_records
                     .set(quoting_metrics.close_records_stored as i64);
-                let _ = self.max_records.set(quoting_metrics.max_records as i64);
                 let _ = self
                     .received_payment_count
                     .set(quoting_metrics.received_payment_count as i64);

@@ -29,8 +29,6 @@ const LIVE_TIME_MARGIN: u64 = 10;
 pub struct QuotingMetrics {
     /// the records stored
     pub close_records_stored: usize,
-    /// the max_records configured
-    pub max_records: usize,
     /// number of times that got paid
     pub received_payment_count: usize,
     /// the duration that node keeps connected to the network, measured in hours
@@ -43,7 +41,6 @@ impl QuotingMetrics {
     pub fn new() -> Self {
         Self {
             close_records_stored: 0,
-            max_records: 0,
             received_payment_count: 0,
             live_time: 0,
         }
