@@ -7,17 +7,13 @@ pub struct Client(super::Client);
 #[wasm_bindgen]
 impl Client {
     #[wasm_bindgen(constructor)]
-    pub async fn connect(peers: Vec<String>) -> Result<Client, JsValue> {
+    pub async fn connect(peers: Vec<String>) -> Result<Client, JsError> {
         let peers = peers
             .into_iter()
             .map(|peer| peer.parse())
-            .collect::<Result<Vec<Multiaddr>, _>>()
-            // .map_err(|err| serde_wasm_bindgen::to_value(&err).unwrap());
-            .map_err(|_err| JsValue::NULL)?;
+            .collect::<Result<Vec<Multiaddr>, _>>()?;
 
-        let client = super::Client::connect(&peers)
-            .await
-            .map_err(|err| serde_wasm_bindgen::to_value(&err).expect("serialization to succeed"))?;
+        let client = super::Client::connect(&peers).await?;
 
         Ok(Client(client))
     }
