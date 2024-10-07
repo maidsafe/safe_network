@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728327934953,
+  "lastUpdate": 1728327936173,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -20415,40 +20415,6 @@ window.BENCHMARK_DATA = {
             "username": "grumbach"
           },
           "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "ca75e52539db6385abbb329ae1463418ed7b950e",
-          "message": "fix: invalid spend reason in data payments",
-          "timestamp": "2024-05-15T22:09:57Z",
-          "tree_id": "8430414051190ccccc0a9b05d90c05a43195103c",
-          "url": "https://github.com/maidsafe/safe_network/commit/ca75e52539db6385abbb329ae1463418ed7b950e"
-        },
-        "date": 1715814004555,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory usage w/ upload",
-            "value": 198,
-            "unit": "MB"
-          },
-          {
-            "name": "Average memory usage w/ upload",
-            "value": 86,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
             "email": "joshuef@gmail.com",
             "name": "joshuef",
             "username": "joshuef"
@@ -30603,6 +30569,40 @@ window.BENCHMARK_DATA = {
           {
             "name": "Average memory usage w/ upload",
             "value": 82,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "c1a3b2219057781dfd3a5c28689c4b986efc5f32",
+          "message": "Merge branch 'fix-bump_release_cycle_increment'",
+          "timestamp": "2024-10-07T19:51:31+01:00",
+          "tree_id": "a4455fc0275621f66be3d74247a0a931247521b0",
+          "url": "https://github.com/maidsafe/safe_network/commit/c1a3b2219057781dfd3a5c28689c4b986efc5f32"
+        },
+        "date": 1728327935925,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory usage w/ upload",
+            "value": 264,
+            "unit": "MB"
+          },
+          {
+            "name": "Average memory usage w/ upload",
+            "value": 77,
             "unit": "MB"
           }
         ]
