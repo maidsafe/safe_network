@@ -84,6 +84,9 @@ pub enum RegisterCmd {
         name: String,
         /// The value to store in the register.
         value: String,
+        /// Create the register with public write access.
+        #[arg(long, default_value = "false")]
+        public: bool,
     },
 
     /// Edit an existing register.
@@ -142,9 +145,11 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
         SubCmd::Register { command } => match command {
             RegisterCmd::GenerateKey { overwrite } => register::generate_key(overwrite),
             RegisterCmd::Cost { name } => register::cost(&name, peers.await?).await,
-            RegisterCmd::Create { name, value } => {
-                register::create(&name, &value, peers.await?).await
-            }
+            RegisterCmd::Create {
+                name,
+                value,
+                public,
+            } => register::create(&name, &value, public, peers.await?).await,
             RegisterCmd::Edit {
                 address,
                 name,
