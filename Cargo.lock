@@ -1103,7 +1103,6 @@ dependencies = [
  "clap",
  "color-eyre",
  "dirs-next",
- "evmlib",
  "indicatif",
  "sn_build_info",
  "sn_logging",
@@ -2738,6 +2737,7 @@ dependencies = [
  "clap",
  "dirs-next",
  "evmlib",
+ "sn_evm",
  "tokio",
 ]
 

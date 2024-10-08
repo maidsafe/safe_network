@@ -1,5 +1,5 @@
 use clap::Subcommand;
-use sn_evm::{EvmNetwork, EvmNetworkCustom};
+use sn_evm::EvmNetwork;
 
 #[derive(Subcommand, Clone, Debug)]
 pub(crate) enum EvmNetworkCommand {
@@ -31,11 +31,7 @@ impl Into<EvmNetwork> for EvmNetworkCommand {
                 rpc_url,
                 payment_token_address,
                 data_payments_address,
-            } => EvmNetwork::Custom(EvmNetworkCustom::new(
-                &rpc_url,
-                &payment_token_address,
-                &data_payments_address,
-            )),
+            } => EvmNetwork::new_custom(&rpc_url, &payment_token_address, &data_payments_address),
         }
     }
 }
