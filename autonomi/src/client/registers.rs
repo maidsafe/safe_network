@@ -10,7 +10,11 @@
 pub use bls::SecretKey as RegisterSecretKey;
 use sn_evm::Amount;
 use sn_evm::AttoTokens;
+use sn_networking::GetRecordError;
+use sn_networking::VerificationKind;
+use sn_protocol::storage::RetryStrategy;
 pub use sn_registers::RegisterAddress;
+use tracing::warn;
 
 use crate::client::data::PayError;
 use crate::client::Client;
@@ -46,6 +50,8 @@ pub enum RegisterError {
     Write(#[source] sn_registers::Error),
     #[error("Failed to sign register")]
     CouldNotSign(#[source] sn_registers::Error),
+    #[error("Received invalid quote from node, this node is possibly malfunctioning, try another node by trying another register name")]
+    InvalidQuote,
 }
 
 #[derive(Clone, Debug)]
@@ -85,17 +91,36 @@ impl Client {
         let key = network_address.to_record_key();
 
         let get_cfg = GetRecordCfg {
-            get_quorum: Quorum::One,
+            get_quorum: Quorum::Majority,
             retry_strategy: None,
             target_record: None,
             expected_holders: Default::default(),
             is_register: true,
         };
 
-        let record = self.network.get_record_from_network(key, &get_cfg).await?;
-
-        let register: SignedRegister =
-            try_deserialize_record(&record).map_err(|_| RegisterError::Serialization)?;
+        let register = match self.network.get_record_from_network(key, &get_cfg).await {
+            Ok(record) => {
+                try_deserialize_record(&record).map_err(|_| RegisterError::Serialization)?
+            }
+            // manage forked register case
+            Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
+                let mut registers: Vec<SignedRegister> = vec![];
+                for (_, (record, _)) in result_map {
+                    registers.push(
+                        try_deserialize_record(&record)
+                            .map_err(|_| RegisterError::Serialization)?,
+                    );
+                }
+                let register = registers.iter().fold(registers[0].clone(), |mut acc, x| {
+                    if let Err(e) = acc.merge(x) {
+                        warn!("Ignoring forked register as we failed to merge conflicting registers at {}: {e}", x.address());
+                    }
+                    acc
+                });
+                register
+            }
+            Err(e) => Err(e)?,
+        };
 
         // Make sure the fetched record contains valid CRDT operations
         register
@@ -143,11 +168,18 @@ impl Client {
             expires: None,
         };
 
+        let get_cfg = GetRecordCfg {
+            get_quorum: Quorum::Majority,
+            retry_strategy: Some(RetryStrategy::default()),
+            target_record: None,
+            expected_holders: Default::default(),
+            is_register: true,
+        };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             retry_strategy: None,
             use_put_record_to: None,
-            verification: None,
+            verification: Some((VerificationKind::Network, get_cfg)),
         };
 
         // Store the updated register on the network
@@ -211,14 +243,23 @@ impl Client {
             .map(|(entry_hash, _value)| entry_hash)
             .collect();
 
-        // TODO: Handle error.
         let _ = register.write(value.into(), &entries, &owner);
         let reg_xor = register.address().xorname();
-        let (payment_proofs, _) = self.pay(std::iter::once(reg_xor), wallet).await?;
-        // Should always be there, else it would have failed on the payment step.
-        let proof = payment_proofs.get(&reg_xor).expect("Missing proof");
-        let payee = proof.to_peer_id_payee().expect("Missing payee Peer ID");
-        let signed_register = register.clone().into_signed(&owner).expect("TODO");
+        let (payment_proofs, _skipped) = self.pay(std::iter::once(reg_xor), wallet).await?;
+        let proof = if let Some(proof) = payment_proofs.get(&reg_xor) {
+            proof
+        } else {
+            // register was skipped, meaning it was already paid for
+            return Err(RegisterError::Network(NetworkError::RegisterAlreadyExists));
+        };
+
+        let payee = proof
+            .to_peer_id_payee()
+            .ok_or(RegisterError::InvalidQuote)?;
+        let signed_register = register
+            .clone()
+            .into_signed(&owner)
+            .map_err(RegisterError::CouldNotSign)?;
 
         let record = Record {
             key: address.to_record_key(),
@@ -232,11 +273,18 @@ impl Client {
             expires: None,
         };
 
+        let get_cfg = GetRecordCfg {
+            get_quorum: Quorum::Majority,
+            retry_strategy: Some(RetryStrategy::default()),
+            target_record: None,
+            expected_holders: Default::default(),
+            is_register: true,
+        };
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::All,
             retry_strategy: None,
             use_put_record_to: Some(vec![payee]),
-            verification: None,
+            verification: Some((VerificationKind::Network, get_cfg)),
         };
 
         self.network.put_record(record, &put_cfg).await?;

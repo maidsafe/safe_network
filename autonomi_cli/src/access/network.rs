@@ -6,8 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use autonomi::Multiaddr;
 use autonomi::EvmNetwork;
+use autonomi::Multiaddr;
 use color_eyre::eyre::eyre;
 use color_eyre::eyre::Context;
 use color_eyre::Result;
