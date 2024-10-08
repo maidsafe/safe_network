@@ -12,21 +12,11 @@ pub use evmlib::utils::{DATA_PAYMENTS_ADDRESS, PAYMENT_TOKEN_ADDRESS, RPC_URL};
 
 /// Load the evm network from env
 pub fn network_from_env() -> EvmNetwork {
-    let rpc_url = std::env::var(RPC_URL);
-    let payment_token_address = std::env::var(PAYMENT_TOKEN_ADDRESS);
-    let data_payments_address = std::env::var(DATA_PAYMENTS_ADDRESS);
-
-    match (rpc_url, payment_token_address, data_payments_address) {
-        // all parameters are custom
-        (Ok(url), Ok(tok), Ok(pay)) => EvmNetwork::new_custom(&url, &tok, &pay),
-        // only rpc url is custom
-        (Ok(url), _, _) => {
-            let defaults = EvmNetwork::ArbitrumOne;
-            let tok = defaults.payment_token_address().to_string();
-            let pay = defaults.data_payments_address().to_string();
-            EvmNetwork::new_custom(&url, &tok, &pay)
-        }
-        // default to arbitrum one
-        _ => EvmNetwork::ArbitrumOne,
+    match evmlib::utils::evm_network_from_env() {
+        Ok(network) => network,
+        Err(e) => {
+            warn!("Failed to get EVM network from environment variables, using default: {e}");
+            EvmNetwork::default()
+        },
     }
 }

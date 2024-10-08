@@ -67,7 +67,8 @@ pub fn local_evm_network_from_csv() -> Result<Network, Error> {
 
     if !csv_path.exists() {
         error!("evm data csv path does not exist {:?}", csv_path);
-        return Err(Error::FailedToGetEvmNetwork);
+        return Err(Error::FailedToGetEvmNetwork)
+            .inspect_err(|_| error!("Missing evm testnet CSV file"))?;
     }
 
     let csv = std::fs::read_to_string(&csv_path)
