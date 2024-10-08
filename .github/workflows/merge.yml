@@ -92,63 +92,52 @@ jobs:
           echo "All packages built successfully. Cleaning up..."
           cargo clean
 
-  # unit:
-  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-  #   name: Unit Tests
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-latest, windows-latest, macos-latest]
-  #   steps:
-  #     - uses: actions/checkout@v4
+  unit:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Unit Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - name: Check we're on the right commit
-  #       run: git log -1 --oneline
+      - name: Check we're on the right commit
+        run: git log -1 --oneline
 
-  #     - name: Install Rust
-  #       uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
-  #     - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2
 
-  #     - name: Run CLI tests
-  #       timeout-minutes: 25
-  #       run: cargo test --release --package sn_cli -- --skip test_acc_packet_
+      - name: Run node tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_node --lib
 
-  #       # We do not run client `--tests` here as they can require a network
-  #     - name: Run client tests
-  #       timeout-minutes: 25
-  #       run: |
-  #         cargo test --release --package sn_client --lib
-  #         cargo test --release --package sn_client --doc
+      - name: Run network tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_networking --features="open-metrics"
 
-  #     - name: Run node tests
-  #       timeout-minutes: 25
-  #       run: cargo test --release --package sn_node --lib
+      - name: Run protocol tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_protocol
 
-  #     - name: Run network tests
-  #       timeout-minutes: 25
-  #       run: cargo test --release --package sn_networking --features="open-metrics"
+      - name: Run transfers tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_transfers
 
-  #     - name: Run protocol tests
-  #       timeout-minutes: 25
-  #       run: cargo test --release --package sn_protocol
+      - name: Run logging tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_logging
 
-  #     - name: Run transfers tests
-  #       timeout-minutes: 25
-  #       run: cargo test --release --package sn_transfers
-
-  #     - name: Run logging tests
-  #       timeout-minutes: 25
-  #       run: cargo test --release --package sn_logging
-
-  #     - name: Run register tests
-  #       timeout-minutes: 25
-  #       run: cargo test --release --package sn_registers
-  #       env:
-  #         # this will speed up PR merge flows, while giving us a modicum
-  #         # of proptesting
-  #         # we do many more runs on the nightly run
-  #         PROPTEST_CASES: 50
+      - name: Run register tests
+        timeout-minutes: 25
+        run: cargo test --release --package sn_registers
+        env:
+          # this will speed up PR merge flows, while giving us a modicum
+          # of proptesting
+          # we do many more runs on the nightly run
+          PROPTEST_CASES: 50
 
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
