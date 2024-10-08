@@ -7016,7 +7016,7 @@ dependencies = [
 
 [[package]]
 name = "sn_auditor"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "blsttc",
  "clap",
@@ -7099,7 +7099,7 @@ dependencies = [
 
 [[package]]
 name = "sn_client"
-version = "0.110.3"
+version = "0.110.4"
 dependencies = [
  "assert_matches",
  "async-trait",
