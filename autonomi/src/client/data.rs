@@ -186,7 +186,8 @@ impl Client {
         Ok(map_xor_name)
     }
 
-    pub(crate) async fn cost(&self, data: Bytes) -> Result<AttoTokens, PayError> {
+    /// Get the cost of storing a piece of data.
+    pub async fn cost(&self, data: Bytes) -> Result<AttoTokens, PayError> {
         let now = std::time::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
 
@@ -209,6 +210,7 @@ impl Client {
         Ok(total_cost)
     }
 
+    /// Pay for the chunks and get the proof of payment.
     pub(crate) async fn pay(
         &self,
         content_addrs: impl Iterator<Item = XorName>,
@@ -236,7 +238,7 @@ impl Client {
         Ok((proofs, skipped_chunks))
     }
 
-    async fn get_store_quotes(
+    pub(crate) async fn get_store_quotes(
         &self,
         content_addrs: impl Iterator<Item = XorName>,
     ) -> Result<HashMap<XorName, PayeeQuote>, PayError> {

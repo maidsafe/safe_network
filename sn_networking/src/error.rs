@@ -183,6 +183,9 @@ pub enum NetworkError {
 
     #[error("Error setting up behaviour: {0}")]
     BahviourErr(String),
+
+    #[error("Register already exists at this address")]
+    RegisterAlreadyExists,
 }
 
 #[cfg(test)]
