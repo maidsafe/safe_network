@@ -12,7 +12,6 @@ extern crate tracing;
 mod access;
 mod actions;
 mod commands;
-mod log_metrics;
 mod opt;
 
 pub use access::data_dir;
@@ -23,11 +22,14 @@ use clap::Parser;
 use color_eyre::Result;
 
 use opt::Opt;
+use sn_logging::{LogBuilder, LogFormat, ReloadHandle, WorkerGuard};
+use tracing::Level;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     color_eyre::install().expect("Failed to initialise error handler");
     let opt = Opt::parse();
-    log_metrics::init_logging_and_metrics(&opt).expect("Failed to initialise logging and metrics");
+    let _log_guards = init_logging_and_metrics(&opt)?;
 
     // Log the full command that was run and the git version
     info!("\"{}\"", std::env::args().collect::<Vec<_>>().join(" "));
@@ -35,6 +37,25 @@ fn main() -> Result<()> {
     info!("autonomi client built with git version: {version}");
     println!("autonomi client built with git version: {version}");
 
-    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
-    rt.block_on(commands::handle_subcommand(opt))
+    commands::handle_subcommand(opt).await?;
+
+    Ok(())
+}
+
+fn init_logging_and_metrics(opt: &Opt) -> Result<(ReloadHandle, Option<WorkerGuard>)> {
+    let logging_targets = vec![
+        ("sn_networking".to_string(), Level::INFO),
+        ("sn_build_info".to_string(), Level::TRACE),
+        ("autonomi_cli".to_string(), Level::TRACE),
+        ("sn_logging".to_string(), Level::TRACE),
+        ("sn_peers_acquisition".to_string(), Level::TRACE),
+        ("sn_protocol".to_string(), Level::TRACE),
+        ("sn_registers".to_string(), Level::TRACE),
+        ("sn_evm".to_string(), Level::TRACE),
+    ];
+    let mut log_builder = LogBuilder::new(logging_targets);
+    log_builder.output_dest(opt.log_output_dest.clone());
+    log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
+    let guards = log_builder.initialize()?;
+    Ok(guards)
 }

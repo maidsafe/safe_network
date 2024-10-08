@@ -1,9 +1,18 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
 mod common;
 
 use const_hex::traits::FromHex;
 use evmlib::common::{Address, Amount};
 use evmlib::utils::evm_network_from_env;
 use evmlib::wallet::Wallet;
+use sn_logging::LogBuilder;
 use test_utils::evm::get_funded_wallet;
 
 #[tokio::test]
@@ -21,6 +30,8 @@ async fn from_private_key() {
 
 #[tokio::test]
 async fn send_tokens() {
+    let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("wallet", false);
+
     let network =
         evm_network_from_env().expect("Could not get EVM network from environment variables");
     let wallet = get_funded_wallet();
