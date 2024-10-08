@@ -73,7 +73,7 @@
 //         .join("client");
 
 //     let wallet = load_account_wallet_or_create_with_mnemonic(&root_dir, None)
-//         .wrap_err("Unable to read wallet file in {root_dir:?}")
+//         .wrap_err(format!"Unable to read wallet file in {root_dir:?}"))
 //         .suggestion(
 //             "If you have an old wallet file, it may no longer be compatible. Try removing it",
 //         )?;

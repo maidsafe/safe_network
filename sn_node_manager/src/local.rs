@@ -7,11 +7,17 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::add_services::config::PortRange;
-#[cfg(feature = "faucet")]
-use crate::helpers::get_username;
 use crate::helpers::{
     check_port_availability, get_bin_version, get_start_port_if_applicable, increment_port_option,
 };
+
+#[cfg(feature = "faucet")]
+use crate::helpers::get_username;
+#[cfg(feature = "faucet")]
+use sn_service_management::FaucetServiceData;
+#[cfg(feature = "faucet")]
+use sn_transfers::get_faucet_data_dir;
+
 use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -20,16 +26,11 @@ use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use mockall::automock;
 use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
-#[cfg(feature = "faucet")]
-use sn_service_management::FaucetServiceData;
 use sn_service_management::{
     control::ServiceControl,
     rpc::{RpcActions, RpcClient},
     NodeRegistry, NodeServiceData, ServiceStatus,
 };
-#[cfg(feature = "faucet")]
-use sn_transfers::get_faucet_data_dir;
-
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,

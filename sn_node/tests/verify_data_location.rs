@@ -34,7 +34,6 @@ use std::{
 };
 use tonic::Request;
 use tracing::{debug, error, info};
-use xor_name::XorName;
 
 const CHUNK_SIZE: usize = 1024;
 
@@ -374,13 +373,13 @@ async fn store_registers(
         let key = bls::SecretKey::random();
 
         // Create a register with the value [1, 2, 3, 4]
+        let rand_name: String = rand::thread_rng()
+            .sample_iter(&rand::distributions::Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
         let register = client
-            .create_register(
-                vec![1, 2, 3, 4].into(),
-                XorName::random(&mut rand::thread_rng()),
-                key.clone(),
-                wallet,
-            )
+            .register_create(vec![1, 2, 3, 4].into(), &rand_name, key.clone(), wallet)
             .await?;
 
         println!("Created Register at {:?}", register.address());
@@ -389,7 +388,7 @@ async fn store_registers(
 
         // Update the register with the value [5, 6, 7, 8]
         client
-            .update_register(register.clone(), vec![5, 6, 7, 8].into(), key)
+            .register_update(register.clone(), vec![5, 6, 7, 8].into(), key)
             .await?;
 
         println!("Updated Register at {:?}", register.address());

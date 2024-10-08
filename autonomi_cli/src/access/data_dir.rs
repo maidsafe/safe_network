@@ -6,17 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::EvmNetwork;
+use color_eyre::eyre::{eyre, Context, Result};
+use std::path::PathBuf;
 
-pub use evmlib::utils::{DATA_PAYMENTS_ADDRESS, PAYMENT_TOKEN_ADDRESS, RPC_URL};
-
-/// Load the evm network from env
-pub fn network_from_env() -> EvmNetwork {
-    match evmlib::utils::evm_network_from_env() {
-        Ok(network) => network,
-        Err(e) => {
-            warn!("Failed to get EVM network from environment variables, using default: {e}");
-            EvmNetwork::default()
-        }
-    }
+pub fn get_client_data_dir_path() -> Result<PathBuf> {
+    let mut home_dirs = dirs_next::data_dir()
+        .ok_or_else(|| eyre!("Failed to obtain data dir, your OS might not be supported."))?;
+    home_dirs.push("safe");
+    home_dirs.push("client");
+    std::fs::create_dir_all(home_dirs.as_path()).wrap_err("Failed to create data dir")?;
+    Ok(home_dirs)
 }

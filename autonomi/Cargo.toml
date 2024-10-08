@@ -16,7 +16,7 @@ data = []
 vault = ["data"]
 files = ["data"]
 fs = ["tokio/fs", "files"]
-local = ["sn_networking/local-discovery"]
+local-discovery = ["sn_networking/local-discovery"]
 registers = []
 
 [dependencies]
@@ -48,6 +48,7 @@ futures = "0.3.30"
 
 [dev-dependencies]
 eyre = "0.6.5"
+sn_logging = { path = "../sn_logging", version = "0.2.33" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.2" }
 # Do not specify the version field. Release process expects even the local dev deps to be published.

@@ -1,3 +1,11 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
 use crate::self_encryption::DataMapLevel;
 use bytes::Bytes;
 use evmlib::wallet;
@@ -186,9 +194,10 @@ impl Client {
         Ok(map_xor_name)
     }
 
+    /// Get the cost of storing a piece of data.
     #[cfg_attr(not(feature = "fs"), allow(dead_code, reason = "used only with `fs`"))]
-    pub(crate) async fn cost(&self, data: Bytes) -> Result<AttoTokens, PayError> {
-        let now = sn_networking::target_arch::Instant::now();
+    pub async fn cost(&self, data: Bytes) -> Result<AttoTokens, PayError> {
+        let now = std::time::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
 
         tracing::debug!("Encryption took: {:.2?}", now.elapsed());
@@ -210,6 +219,7 @@ impl Client {
         Ok(total_cost)
     }
 
+    /// Pay for the chunks and get the proof of payment.
     pub(crate) async fn pay(
         &self,
         content_addrs: impl Iterator<Item = XorName>,
@@ -237,7 +247,7 @@ impl Client {
         Ok((proofs, skipped_chunks))
     }
 
-    async fn get_store_quotes(
+    pub(crate) async fn get_store_quotes(
         &self,
         content_addrs: impl Iterator<Item = XorName>,
     ) -> Result<HashMap<XorName, PayeeQuote>, PayError> {

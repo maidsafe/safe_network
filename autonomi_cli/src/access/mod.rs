@@ -6,17 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::EvmNetwork;
-
-pub use evmlib::utils::{DATA_PAYMENTS_ADDRESS, PAYMENT_TOKEN_ADDRESS, RPC_URL};
-
-/// Load the evm network from env
-pub fn network_from_env() -> EvmNetwork {
-    match evmlib::utils::evm_network_from_env() {
-        Ok(network) => network,
-        Err(e) => {
-            warn!("Failed to get EVM network from environment variables, using default: {e}");
-            EvmNetwork::default()
-        }
-    }
-}
+pub mod data_dir;
+pub mod keys;
+pub mod network;

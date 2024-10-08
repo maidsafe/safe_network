@@ -13,16 +13,16 @@ pub use evmlib::common::Address as RewardsAddress;
 pub use evmlib::common::{QuoteHash, TxHash};
 pub use evmlib::utils;
 pub use evmlib::wallet::Wallet as EvmWallet;
-pub use evmlib::CustomNetwork as EvmNetworkCustom;
 pub use evmlib::Network as EvmNetwork;
 
 mod amount;
 mod data_payments;
 mod error;
-mod evm;
 
-pub use data_payments::{PaymentQuote, QuotingMetrics};
-pub use evm::ProofOfPayment;
+/// EVM network configuration
+pub mod evm;
+
+pub use data_payments::{PaymentQuote, ProofOfPayment, QuotingMetrics};
 
 /// Types used in the public API
 pub use amount::{Amount, AttoTokens};

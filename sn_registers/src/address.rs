@@ -26,8 +26,9 @@ pub struct RegisterAddress {
 }
 
 impl Display for RegisterAddress {
+    /// Display the register address in hex format that can be parsed by `RegisterAddress::from_hex`.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}({:?})", &self.to_hex()[0..6], self.xorname())
+        write!(f, "{}", &self.to_hex())
     }
 }
 

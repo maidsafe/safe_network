@@ -1,4 +1,16 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+use std::env;
+
 use bytes::Bytes;
+use eyre::Result;
+use libp2p::Multiaddr;
 use rand::Rng;
 use sn_peers_acquisition::parse_peer_addr;
 
@@ -39,16 +51,31 @@ pub fn enable_logging_wasm(directive: impl AsRef<str>) {
 #[allow(dead_code)]
 pub fn peers_from_run_or_compile_time_env(
 ) -> Result<Vec<libp2p::Multiaddr>, libp2p::multiaddr::Error> {
-    let peers_str = std::env::var("SAFE_PEERS")
+    let peers_str = env::var("SAFE_PEERS")
         .ok()
         .or_else(|| option_env!("SAFE_PEERS").map(|s| s.to_string()));
 
     let Some(peers_str) = peers_str else {
-        #[cfg(not(feature = "local"))]
+        #[cfg(not(feature = "local-discovery"))]
         panic!("SAFE_PEERS environment variable not set and `local` feature is not enabled");
-        #[cfg(feature = "local")]
+        #[cfg(feature = "local-discovery")]
         return Ok(vec![]);
     };
 
     peers_str.split(',').map(parse_peer_addr).collect()
+}
+
+/// Parse the `SAFE_PEERS` env var into a list of Multiaddrs.
+///
+/// An empty `Vec` will be returned if the env var is not set.
+#[allow(dead_code)]
+pub fn peers_from_env() -> Result<Vec<Multiaddr>> {
+    let bootstrap_peers = if cfg!(feature = "local-discovery") {
+        Ok(vec![])
+    } else if let Ok(peers_str) = env::var("SAFE_PEERS") {
+        peers_str.split(',').map(parse_peer_addr).collect()
+    } else {
+        Ok(vec![])
+    }?;
+    Ok(bootstrap_peers)
 }

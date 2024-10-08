@@ -38,7 +38,7 @@ pub struct CustomNetwork {
 }
 
 impl CustomNetwork {
-    pub fn new(rpc_url: &str, payment_token_addr: &str, data_payments_addr: &str) -> Self {
+    fn new(rpc_url: &str, payment_token_addr: &str, data_payments_addr: &str) -> Self {
         Self {
             rpc_url_http: reqwest::Url::parse(rpc_url).expect("Invalid RPC URL"),
             payment_token_address: Address::from_str(payment_token_addr)
@@ -56,6 +56,14 @@ pub enum Network {
 }
 
 impl Network {
+    pub fn new_custom(rpc_url: &str, payment_token_addr: &str, chunk_payments_addr: &str) -> Self {
+        Self::Custom(CustomNetwork::new(
+            rpc_url,
+            payment_token_addr,
+            chunk_payments_addr,
+        ))
+    }
+
     pub fn identifier(&self) -> &str {
         match self {
             Network::ArbitrumOne => "arbitrum-one",

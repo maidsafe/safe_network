@@ -8,7 +8,7 @@
 
 use clap::Subcommand;
 use color_eyre::eyre::Result;
-use sn_evm::{utils::local_evm_network_from_csv, EvmNetwork, EvmNetworkCustom};
+use sn_evm::{utils::local_evm_network_from_csv, EvmNetwork};
 
 #[derive(Subcommand, Clone, Debug)]
 #[allow(clippy::enum_variant_names)]
@@ -49,11 +49,11 @@ impl TryInto<EvmNetwork> for EvmNetworkCommand {
                 rpc_url,
                 payment_token_address,
                 data_payments_address,
-            } => Ok(EvmNetwork::Custom(EvmNetworkCustom::new(
+            } => Ok(EvmNetwork::new_custom(
                 &rpc_url,
                 &payment_token_address,
                 &data_payments_address,
-            ))),
+            )),
         }
     }
 }

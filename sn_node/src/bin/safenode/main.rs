@@ -257,7 +257,12 @@ fn main() -> Result<()> {
         .as_ref()
         .cloned()
         .map(|v| v.into())
-        .unwrap_or_default();
+        .unwrap_or_else(sn_evm::evm::network_from_env);
+    if matches!(evm_network, EvmNetwork::Custom(_)) {
+        println!("Using custom EVM network");
+        info!("Using custom EVM network {evm_network:?}");
+    }
+    println!("EVM network: {evm_network:?}");
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
