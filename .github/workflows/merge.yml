@@ -214,32 +214,64 @@ jobs:
 
       - name: Get address from stdout
         run: |
-          ADDRESS=$(rg "At address: ([0-9a-f]{64})" -o -r '$1' ./upload_output)
-          echo "UPLOAD_ADDRESS=$ADDRESS" >> $GITHUB_ENV
+          UPLOAD_ADDRESS=$(rg "At address: ([0-9a-f]*)" -o -r '$1' ./upload_output)
+          echo "UPLOAD_ADDRESS=$UPLOAD_ADDRESS" >> $GITHUB_ENV
 
       - name: Start a client to download files
         run: ./target/release/autonomi_cli --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
         env:
-          SN_LOG: "all"
+          SN_LOG: "v"
+        timeout-minutes: 5
+      
+      - name: Generate register signing mey
+        run: ./target/release/autonomi_cli --log-output-dest=data-dir register generate-key
+      
+      - name: Start a client to create a register writable by the owner only
+        run: ./target/release/autonomi_cli --log-output-dest=data-dir register create baobao 123 > ./register_create_output 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 10
+
+      - name: Get register address from stdout
+        run: |
+          REGISTER_ADDRESS=$(rg "Register created at address: ([0-9a-f]*)" -o -r '$1' ./register_create_output)
+          echo "REGISTER_ADDRESS=$REGISTER_ADDRESS" >> $GITHUB_ENV
+
+      - name: Start a client to get a register writable by the owner only
+        run: ./target/release/autonomi_cli --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }} > ./register_put_output 2>&1
+        env:
+          SN_LOG: "v"
         timeout-minutes: 5
 
-  #     - name: Start a client to create a register writable by the owner only
-  #       run: ./target/release/safe --log-output-dest=data-dir register create -n baobao
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 10
+      - name: verify value after put
+        run: |
+          if [[ $(rg "With value: \[\"123\"\]" ./register_put_output) ]]; then
+            echo "Register value verified after put"
+          else
+            echo "Register value not verified after put"
+            exit 1
+          fi
 
-  #     - name: Start a client to get a register writable by the owner only
-  #       run: ./target/release/safe --log-output-dest=data-dir register get -n baobao
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 2
+      - name: Start a client to edit a register writable by the owner only
+        run: ./target/release/autonomi_cli --log-output-dest=data-dir register edit ${{ env.REGISTER_ADDRESS }} 456
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 10
 
-  #     - name: Start a client to edit a register writable by the owner only
-  #       run: ./target/release/safe --log-output-dest=data-dir register edit -n baobao wood
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 10
+      - name: Start a client to get a register writable by the owner only
+        run: ./target/release/autonomi_cli --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }} > ./register_edit_output 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 5
+
+      - name: Verify value after edit
+        run: |
+          if [[ $(rg "With value: \[\"456\"\]" ./register_edit_output) ]]; then
+            echo "Register value verified after edit"
+          else
+            echo "Register value not verified after edit"
+            exit 1
+          fi
   #     #
   #     # Next two steps are same with a slight difference in the way they write to the output file (GITHUB_OUTPUT vs ENV:GITHUB_OUTPUT)
   #     #
@@ -304,6 +336,10 @@ jobs:
   #       env:
   #         SN_LOG: "all"
   #       timeout-minutes: 10
+
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
 
       - name: Stop the local network and upload logs
         if: always()
