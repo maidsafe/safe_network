@@ -6,6 +6,11 @@ use std::env;
 
 pub const EVM_TESTNET_CSV_FILENAME: &str = "evm_testnet_data.csv";
 
+/// environment variable to connect to a custom EVM network
+pub const RPC_URL: &str = "RPC_URL";
+pub const PAYMENT_TOKEN_ADDRESS: &str = "PAYMENT_TOKEN_ADDRESS";
+pub const DATA_PAYMENTS_ADDRESS: &str = "DATA_PAYMENTS_ADDRESS";
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Failed to get EVM network")]
@@ -24,7 +29,7 @@ pub fn dummy_hash() -> Hash {
 
 /// Get the `Network` from environment variables
 pub fn evm_network_from_env() -> Result<Network, Error> {
-    let evm_vars = ["RPC_URL", "PAYMENT_TOKEN_ADDRESS", "DATA_PAYMENTS_ADDRESS"]
+    let evm_vars = [RPC_URL, PAYMENT_TOKEN_ADDRESS, DATA_PAYMENTS_ADDRESS]
         .iter()
         .map(|var| env::var(var).map_err(|_| Error::FailedToGetEvmNetwork))
         .collect::<Result<Vec<String>, Error>>();

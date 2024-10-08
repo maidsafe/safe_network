@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{AttoTokens, EvmError};
+use evmlib::common::TxHash;
 use evmlib::{
     common::{Address as RewardsAddress, QuoteHash},
     utils::dummy_address,
@@ -21,6 +22,22 @@ pub const QUOTE_EXPIRATION_SECS: u64 = 3600;
 
 /// The margin allowed for live_time
 const LIVE_TIME_MARGIN: u64 = 10;
+
+/// The proof of payment for a data payment
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub struct ProofOfPayment {
+    /// The Quote we're paying for
+    pub quote: PaymentQuote,
+    /// The transaction hash
+    pub tx_hash: TxHash,
+}
+
+impl ProofOfPayment {
+    pub fn to_peer_id_payee(&self) -> Option<PeerId> {
+        let pub_key = PublicKey::try_decode_protobuf(&self.quote.pub_key).ok()?;
+        Some(PeerId::from_public_key(&pub_key))
+    }
+}
 
 /// Quoting metrics that got used to generate a quote, or to track peer's status.
 #[derive(

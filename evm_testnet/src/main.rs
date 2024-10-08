@@ -125,6 +125,21 @@ impl TestnetData {
         if let Some((tokens, gas)) = self.tokens_and_gas {
             println!("Genesis wallet balance (atto): (tokens: {tokens}, gas: {gas})");
         }
+
+        println!();
+        println!("--------------");
+        println!("Run the CLI or Node with the following env vars set to use this network:");
+        println!(
+            "{}=\"{}\" {}=\"{}\" {}=\"{}\"",
+            sn_evm::evm::RPC_URL,
+            self.rpc_url,
+            sn_evm::evm::PAYMENT_TOKEN_ADDRESS,
+            self.payment_token_address,
+            sn_evm::evm::DATA_PAYMENTS_ADDRESS,
+            self.data_payments_address
+        );
+        println!("--------------");
+        println!();
     }
 
     fn save_csv(&self) {

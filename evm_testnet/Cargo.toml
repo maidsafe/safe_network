@@ -12,6 +12,7 @@ version = "0.1.0"
 clap = { version = "4.5", features = ["derive"] }
 dirs-next = "~2.0.0"
 evmlib = { path = "../evmlib" }
+sn_evm = { path = "../sn_evm" }
 tokio = { version = "1.40", features = ["rt-multi-thread", "signal"] }
 
 [lints]

@@ -6,25 +6,27 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use evmlib::common::TxHash;
-use libp2p::identity::PublicKey;
-use libp2p::PeerId;
-use serde::{Deserialize, Serialize};
+use crate::EvmNetwork;
 
-use crate::PaymentQuote;
+pub use evmlib::utils::{DATA_PAYMENTS_ADDRESS, PAYMENT_TOKEN_ADDRESS, RPC_URL};
 
-/// The proof of payment for a data payment
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
-pub struct ProofOfPayment {
-    /// The Quote we're paying for
-    pub quote: PaymentQuote,
-    /// The transaction hash
-    pub tx_hash: TxHash,
-}
+/// Load the evm network from env
+pub fn network_from_env() -> EvmNetwork {
+    let rpc_url = std::env::var(RPC_URL);
+    let payment_token_address = std::env::var(PAYMENT_TOKEN_ADDRESS);
+    let data_payments_address = std::env::var(DATA_PAYMENTS_ADDRESS);
 
-impl ProofOfPayment {
-    pub fn to_peer_id_payee(&self) -> Option<PeerId> {
-        let pub_key = PublicKey::try_decode_protobuf(&self.quote.pub_key).ok()?;
-        Some(PeerId::from_public_key(&pub_key))
+    match (rpc_url, payment_token_address, data_payments_address) {
+        // all parameters are custom
+        (Ok(url), Ok(tok), Ok(pay)) => EvmNetwork::new_custom(&url, &tok, &pay),
+        // only rpc url is custom
+        (Ok(url), _, _) => {
+            let defaults = EvmNetwork::ArbitrumOne;
+            let tok = defaults.payment_token_address().to_string();
+            let pay = defaults.data_payments_address().to_string();
+            EvmNetwork::new_custom(&url, &tok, &pay)
+        }
+        // default to arbitrum one
+        _ => EvmNetwork::ArbitrumOne,
     }
 }

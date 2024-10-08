@@ -8,7 +8,6 @@
 
 use autonomi::EvmNetwork;
 use autonomi::Multiaddr;
-use color_eyre::eyre::eyre;
 use color_eyre::eyre::Context;
 use color_eyre::Result;
 use color_eyre::Section;
@@ -23,7 +22,11 @@ pub async fn get_peers(peers: PeersArgs) -> Result<Vec<Multiaddr>> {
         .with_suggestion(|| "a peer address looks like this: /ip4/42.42.42.42/udp/4242/quic-v1/p2p/B64nodePeerIDvdjb3FAJF4ks3moreBase64CharsHere")
 }
 
-pub(crate) fn get_evm_network_from_environment() -> Result<EvmNetwork> {
-    evmlib::utils::evm_network_from_env()
-        .map_err(|err| eyre!("Failed to get EVM network from environment: {err}"))
+pub fn get_evm_network_from_env() -> EvmNetwork {
+    let network = autonomi::evm::network_from_env();
+    if matches!(network, EvmNetwork::Custom(_)) {
+        println!("Using custom EVM network found from environment variables");
+        info!("Using custom EVM network found from environment variables {network:?}");
+    }
+    network
 }
