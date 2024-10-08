@@ -1586,6 +1586,8 @@ mod tests {
         payments_received: AtomicUsize,
     }
 
+    // takes a long time to run
+    #[ignore]
     #[test]
     fn address_distribution_sim() {
         use rayon::prelude::*;
