@@ -17,6 +17,6 @@ pub fn network_from_env() -> EvmNetwork {
         Err(e) => {
             warn!("Failed to get EVM network from environment variables, using default: {e}");
             EvmNetwork::default()
-        },
+        }
     }
 }
