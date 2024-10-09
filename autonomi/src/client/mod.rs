@@ -84,6 +84,7 @@ impl Client {
         let _handle = sn_networking::target_arch::spawn(async move {
             for addr in peers {
                 if let Err(err) = network_clone.dial(addr.clone()).await {
+                    error!("Failed to dial addr={addr} with err: {err:?}");
                     eprintln!("addr={addr} Failed to dial: {err:?}");
                 };
             }

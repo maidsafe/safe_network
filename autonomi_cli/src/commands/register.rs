@@ -9,6 +9,7 @@
 use autonomi::client::registers::RegisterAddress;
 use autonomi::client::registers::RegisterPermissions;
 use autonomi::client::registers::RegisterSecretKey;
+use autonomi::Client;
 use autonomi::Multiaddr;
 use color_eyre::eyre::eyre;
 use color_eyre::eyre::Context;
@@ -92,7 +93,7 @@ pub async fn edit(address: String, name: bool, value: &str, peers: Vec<Multiaddr
     let client = crate::actions::connect_to_network(peers).await?;
 
     let address = if name {
-        client.register_address(&address, &register_key)
+        Client::register_address(&address, &register_key)
     } else {
         RegisterAddress::from_hex(&address)
             .wrap_err(format!("Failed to parse register address: {address}"))
@@ -126,7 +127,7 @@ pub async fn get(address: String, name: bool, peers: Vec<Multiaddr>) -> Result<(
     let client = crate::actions::connect_to_network(peers).await?;
 
     let address = if name {
-        client.register_address(&address, &register_key)
+        Client::register_address(&address, &register_key)
     } else {
         RegisterAddress::from_hex(&address)
             .wrap_err(format!("Failed to parse register address: {address}"))

@@ -8,14 +8,11 @@
 
 #![cfg(feature = "data")]
 
-mod common;
-
 use autonomi::Client;
-use common::peers_from_env;
 use eyre::Result;
 use sn_logging::LogBuilder;
 use std::time::Duration;
-use test_utils::evm::get_funded_wallet;
+use test_utils::{evm::get_funded_wallet, gen_random_data, peers_from_env};
 use tokio::time::sleep;
 
 #[tokio::test]
@@ -24,7 +21,7 @@ async fn put() -> Result<()> {
 
     let client = Client::connect(&peers_from_env()?).await?;
     let wallet = get_funded_wallet();
-    let data = common::gen_random_data(1024 * 1024 * 10);
+    let data = gen_random_data(1024 * 1024 * 10);
 
     let addr = client.put(data.clone(), &wallet).await?;
 

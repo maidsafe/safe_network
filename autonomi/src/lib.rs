@@ -29,6 +29,9 @@
 // docs.rs generation will enable unstable `doc_cfg` feature
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[macro_use]
+extern crate tracing;
+
 pub mod client;
 #[cfg(feature = "data")]
 mod self_encryption;

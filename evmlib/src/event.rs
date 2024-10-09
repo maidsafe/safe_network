@@ -30,13 +30,22 @@ impl TryFrom<Log> for ChunkPaymentEvent {
     fn try_from(log: Log) -> Result<Self, Self::Error> {
         // Verify the amount of topics
         if log.topics().len() != 4 {
+            error!("Topics amount is unexpected. Was expecting 4");
             return Err(Error::TopicsAmountUnexpected);
         }
 
-        let topic0 = log.topics().first().ok_or(Error::EventSignatureMissing)?;
+        let topic0 = log
+            .topics()
+            .first()
+            .ok_or(Error::EventSignatureMissing)
+            .inspect_err(|_| error!("Event signature is missing"))?;
 
         // Verify the event signature
         if topic0 != &DATA_PAYMENT_EVENT_SIGNATURE {
+            error!(
+                "Event signature does not match. Expected: {:?}, got: {:?}",
+                DATA_PAYMENT_EVENT_SIGNATURE, topic0
+            );
             return Err(Error::EventSignatureDoesNotMatch);
         }
 

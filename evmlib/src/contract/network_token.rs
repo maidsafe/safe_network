@@ -54,7 +54,13 @@ where
 
     /// Get the raw token balance of an address.
     pub async fn balance_of(&self, account: Address) -> Result<U256, Error> {
-        let balance = self.contract.balanceOf(account).call().await?._0;
+        let balance = self
+            .contract
+            .balanceOf(account)
+            .call()
+            .await
+            .inspect_err(|err| error!("Error getting balance of account: {err:?}"))?
+            ._0;
         Ok(balance)
     }
 
@@ -64,9 +70,13 @@ where
             .contract
             .approve(spender, value)
             .send()
-            .await?
+            .await
+            .inspect_err(|err| {
+                error!("Error approving spender to spend raw amt of tokens: {err:?}")
+            })?
             .watch()
-            .await?;
+            .await
+            .inspect_err(|err| error!("Error watching approve tx: {err:?}"))?;
 
         Ok(tx_hash)
     }
@@ -77,9 +87,11 @@ where
             .contract
             .transfer(receiver, amount)
             .send()
-            .await?
+            .await
+            .inspect_err(|err| error!("Error transferring raw amt of tokens: {err:?}"))?
             .watch()
-            .await?;
+            .await
+            .inspect_err(|err| error!("Error watching transfer tx: {err:?}"))?;
 
         Ok(tx_hash)
     }

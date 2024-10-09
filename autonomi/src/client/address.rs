@@ -17,8 +17,14 @@ pub enum DataError {
 }
 
 pub fn str_to_xorname(addr: &str) -> Result<XorName, DataError> {
-    let bytes = hex::decode(addr).map_err(|_| DataError::InvalidHexString)?;
-    let xor = XorName(bytes.try_into().map_err(|_| DataError::InvalidXorName)?);
+    let bytes = hex::decode(addr).map_err(|err| {
+        error!("Failed to decode hex string: {err:?}");
+        DataError::InvalidHexString
+    })?;
+    let xor = XorName(bytes.try_into().map_err(|err| {
+        error!("Failed to convert bytes to XorName: {err:?}");
+        DataError::InvalidXorName
+    })?);
     Ok(xor)
 }
 

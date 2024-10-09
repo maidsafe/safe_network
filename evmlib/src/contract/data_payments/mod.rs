@@ -66,6 +66,11 @@ where
             .collect();
 
         if data_payments.len() > MAX_TRANSFERS_PER_TRANSACTION {
+            error!(
+                "Data payments limit exceeded: {} > {}",
+                data_payments.len(),
+                MAX_TRANSFERS_PER_TRANSACTION
+            );
             return Err(Error::TransferLimitExceeded);
         }
 
@@ -73,9 +78,13 @@ where
             .contract
             .submitDataPayments(data_payments)
             .send()
-            .await?
+            .await
+            .inspect_err(|e| error!("Failed to submit data payments during pay_for_quotes: {e:?}"))?
             .watch()
-            .await?;
+            .await
+            .inspect_err(|e| {
+                error!("Failed to watch data payments during pay_for_quotes: {e:?}")
+            })?;
 
         Ok(tx_hash)
     }
