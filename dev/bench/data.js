@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728327937747,
+  "lastUpdate": 1728469135064,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "bba9a50de4f4cd8a897c4821391e5417376d80ae",
-          "message": "perf: improve DAG verification redundancy",
-          "timestamp": "2024-05-16T04:36:56Z",
-          "tree_id": "2e83f4a5725967c36fb961ba6eb18a256069cb82",
-          "url": "https://github.com/maidsafe/safe_network/commit/bba9a50de4f4cd8a897c4821391e5417376d80ae"
-        },
-        "date": 1715836678764,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.2050548376710122,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.1228233814410216,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 48.287434760943256,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.84944362437144,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "d666619ec539309d61c7691fd096b9c848aa268f",
+          "message": "Merge branch 'pick_PR2088_stable'",
+          "timestamp": "2024-10-09T11:00:08+01:00",
+          "tree_id": "befe011ce16ac63cab7161d3c4b8ebf87c3789da",
+          "url": "https://github.com/maidsafe/safe_network/commit/d666619ec539309d61c7691fd096b9c848aa268f"
+        },
+        "date": 1728469128417,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "safe files upload 1mb",
+            "value": 1.2790222238136613,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files upload 10mb",
+            "value": 1.718714706458024,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "safe files download",
+            "value": 57.35494403415443,
             "unit": "MiB/s"
           }
         ]
