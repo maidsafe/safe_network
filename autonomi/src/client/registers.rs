@@ -13,7 +13,7 @@ use sn_evm::AttoTokens;
 use sn_networking::GetRecordError;
 use sn_networking::VerificationKind;
 use sn_protocol::storage::RetryStrategy;
-pub use sn_registers::RegisterAddress;
+pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
 use tracing::warn;
 
 use crate::client::data::PayError;
@@ -222,6 +222,8 @@ impl Client {
     }
 
     /// Creates a new Register with a name and an initial value and uploads it to the network.
+    ///
+    /// The Register is created with the owner as the only writer.
     pub async fn register_create(
         &self,
         value: Bytes,
@@ -230,10 +232,27 @@ impl Client {
         wallet: &Wallet,
     ) -> Result<Register, RegisterError> {
         let pk = owner.public_key();
+        let permissions = Permissions::new_with([pk]);
+
+        self.register_create_with_permissions(value, name, owner, permissions, wallet)
+            .await
+    }
+
+    /// Creates a new Register with a name and an initial value and uploads it to the network.
+    ///
+    /// Unlike `register_create`, this function allows you to specify the permissions for the register.
+    pub async fn register_create_with_permissions(
+        &self,
+        value: Bytes,
+        name: &str,
+        owner: RegisterSecretKey,
+        permissions: RegisterPermissions,
+        wallet: &Wallet,
+    ) -> Result<Register, RegisterError> {
+        let pk = owner.public_key();
         let name = XorName::from_content_parts(&[name.as_bytes()]);
 
         // Owner can write to the register.
-        let permissions = Permissions::new_with([pk]);
         let mut register = ClientRegister::new(pk, name, permissions);
         let address = NetworkAddress::from_register_address(*register.address());
 

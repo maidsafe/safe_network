@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use autonomi::client::registers::RegisterAddress;
+use autonomi::client::registers::RegisterPermissions;
 use autonomi::client::registers::RegisterSecretKey;
 use autonomi::Multiaddr;
 use color_eyre::eyre::eyre;
@@ -44,22 +45,39 @@ pub async fn cost(name: &str, peers: Vec<Multiaddr>) -> Result<()> {
     Ok(())
 }
 
-pub async fn create(name: &str, value: &str, peers: Vec<Multiaddr>) -> Result<()> {
+pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>) -> Result<()> {
     let wallet = crate::keys::load_evm_wallet()?;
     let register_key = crate::keys::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
     let client = crate::actions::connect_to_network(peers).await?;
 
     println!("Creating register with name: {name}");
-    let register = client
-        .register_create(
-            value.as_bytes().to_vec().into(),
-            name,
-            register_key,
-            &wallet,
-        )
-        .await
-        .wrap_err("Failed to create register")?;
+    let register = if public {
+        println!("With public write access");
+        let permissions = RegisterPermissions::new_anyone_can_write();
+        client
+            .register_create_with_permissions(
+                value.as_bytes().to_vec().into(),
+                name,
+                register_key,
+                permissions,
+                &wallet,
+            )
+            .await
+            .wrap_err("Failed to create register")?
+    } else {
+        println!("With private write access");
+        client
+            .register_create(
+                value.as_bytes().to_vec().into(),
+                name,
+                register_key,
+                &wallet,
+            )
+            .await
+            .wrap_err("Failed to create register")?
+    };
+
     let address = register.address();
 
     println!("✅ Register created at address: {address}");
