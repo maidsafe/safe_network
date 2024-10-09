@@ -8,12 +8,11 @@
 
 use autonomi::Client;
 use eyre::Result;
-use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
 use sn_service_management::{get_local_node_registry_path, NodeRegistry};
 use std::{net::SocketAddr, path::Path};
-use test_utils::evm::get_funded_wallet;
 use test_utils::testnet::DeploymentInventory;
+use test_utils::{evm::get_funded_wallet, peers_from_env};
 use tokio::sync::Mutex;
 use tonic::Request;
 use tracing::{debug, info};
@@ -127,17 +126,7 @@ pub struct LocalNetwork;
 impl LocalNetwork {
     ///  Get a new Client for testing
     pub async fn get_client() -> Client {
-        let bootstrap_peers = if !cfg!(feature = "local-discovery") {
-            match std::env::var("SAFE_PEERS") {
-                Ok(str) => match parse_peer_addr(&str) {
-                    Ok(peer) => vec![peer],
-                    Err(err) => panic!("Can't parse SAFE_PEERS {str:?} with error {err:?}"),
-                },
-                Err(err) => panic!("Can't get env var SAFE_PEERS with error {err:?}"),
-            }
-        } else {
-            vec![]
-        };
+        let bootstrap_peers = peers_from_env().expect("Failed to get bootstrap peers from env");
 
         println!("Client bootstrap with peer {bootstrap_peers:?}");
         info!("Client bootstrap with peer {bootstrap_peers:?}");

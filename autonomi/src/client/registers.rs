@@ -81,7 +81,7 @@ impl Register {
 
 impl Client {
     /// Generate a new register key
-    pub fn register_generate_key(&self) -> RegisterSecretKey {
+    pub fn register_generate_key() -> RegisterSecretKey {
         RegisterSecretKey::random()
     }
 
@@ -215,7 +215,7 @@ impl Client {
     }
 
     /// Get the address of a register from its name and owner
-    pub fn register_address(&self, name: &str, owner: &RegisterSecretKey) -> RegisterAddress {
+    pub fn register_address(name: &str, owner: &RegisterSecretKey) -> RegisterAddress {
         let pk = owner.public_key();
         let name = XorName::from_content_parts(&[name.as_bytes()]);
         RegisterAddress::new(name, pk)
