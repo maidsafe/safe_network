@@ -39,6 +39,7 @@ impl Client {
         &self,
         secret_key: &SecretKey,
     ) -> Result<Option<Bytes>, VaultError> {
+        info!("Fetching and decrypting vault");
         let pad = self.get_vault_from_network(secret_key).await?;
 
         Ok(pad.decrypt_data(secret_key)?)
@@ -53,6 +54,7 @@ impl Client {
 
         let scratch_address = ScratchpadAddress::new(client_pk);
         let network_address = NetworkAddress::from_scratchpad_address(scratch_address);
+        info!("Fetching vault from network at {network_address:?}",);
         let scratch_key = network_address.to_record_key();
 
         let get_cfg = GetRecordCfg {
@@ -66,7 +68,10 @@ impl Client {
         let record = self
             .network
             .get_record_from_network(scratch_key, &get_cfg)
-            .await?;
+            .await
+            .inspect_err(|err| {
+                error!("Failed to fetch vault {network_address:?} from network: {err}");
+            })?;
 
         let pad = try_deserialize_record::<Scratchpad>(&record)
             .map_err(|_| VaultError::CouldNotDeserializeVaultScratchPad(scratch_address))?;
@@ -100,7 +105,7 @@ impl Client {
             is_new = false;
             existing_data
         } else {
-            tracing::trace!("new scratchpad creation");
+            trace!("new scratchpad creation");
             Scratchpad::new(client_pk)
         };
 
@@ -108,12 +113,17 @@ impl Client {
         let scratch_address = scratch.network_address();
         let scratch_key = scratch_address.to_record_key();
 
+        info!("Writing to vault at {scratch_address:?}",);
+
         let record = if is_new {
             self.pay(
                 [&scratch_address].iter().filter_map(|f| f.as_xorname()),
                 wallet,
             )
-            .await?;
+            .await
+            .inspect_err(|err| {
+                error!("Failed to pay for new vault at addr: {scratch_address:?} : {err}");
+            })?;
 
             let scratch_xor = scratch_address.as_xorname().ok_or(PutError::VaultXorName)?;
             let (payment_proofs, _) = self.pay(std::iter::once(scratch_xor), wallet).await?;
@@ -155,7 +165,15 @@ impl Client {
             )),
         };
 
-        self.network.put_record(record, &put_cfg).await?;
+        debug!("Put record - scratchpad at {scratch_address:?} to the network");
+        self.network
+            .put_record(record, &put_cfg)
+            .await
+            .inspect_err(|err| {
+                error!(
+                    "Failed to put scratchpad {scratch_address:?} to the network with err: {err:?}"
+                )
+            })?;
 
         Ok(next_count)
     }

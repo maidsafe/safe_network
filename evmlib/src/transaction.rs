@@ -33,7 +33,10 @@ pub async fn get_transaction_receipt_by_hash(
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .on_http(network.rpc_url().clone());
-    let maybe_receipt = provider.get_transaction_receipt(transaction_hash).await?;
+    let maybe_receipt = provider
+        .get_transaction_receipt(transaction_hash)
+        .await
+        .inspect_err(|err| error!("Error getting transaction receipt for transaction_hash: {transaction_hash:?} : {err:?}", ))?;
     Ok(maybe_receipt)
 }
 
@@ -44,7 +47,8 @@ async fn get_block_by_number(network: &Network, block_number: u64) -> Result<Opt
         .on_http(network.rpc_url().clone());
     let block = provider
         .get_block_by_number(BlockNumberOrTag::Number(block_number), true)
-        .await?;
+        .await
+        .inspect_err(|err| error!("Error getting block by number for {block_number} : {err:?}",))?;
     Ok(block)
 }
 
@@ -53,7 +57,10 @@ async fn get_transaction_logs(network: &Network, filter: Filter) -> Result<Vec<L
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .on_http(network.rpc_url().clone());
-    let logs = provider.get_logs(&filter).await?;
+    let logs = provider
+        .get_logs(&filter)
+        .await
+        .inspect_err(|err| error!("Error getting logs for filter: {filter:?} : {err:?}"))?;
     Ok(logs)
 }
 
@@ -66,6 +73,9 @@ async fn get_data_payment_event(
     reward_addr: Address,
     amount: U256,
 ) -> Result<Vec<Log>, Error> {
+    debug!(
+        "Getting data payment event for quote_hash: {quote_hash:?}, reward_addr: {reward_addr:?}"
+    );
     let topic1: FixedBytes<32> = FixedBytes::left_padding_from(reward_addr.as_slice());
 
     let filter = Filter::new()
@@ -88,18 +98,21 @@ pub async fn verify_data_payment(
     amount: U256,
     quote_expiration_timestamp_in_secs: u64,
 ) -> Result<(), Error> {
+    debug!("Verifying data payment for tx_hash: {tx_hash:?}");
     let transaction = get_transaction_receipt_by_hash(network, tx_hash)
         .await?
         .ok_or(Error::TransactionNotFound)?;
 
     // If the status is True, it means the tx is confirmed.
     if !transaction.status() {
+        error!("Transaction {tx_hash:?} is not confirmed");
         return Err(Error::TransactionUnconfirmed);
     }
 
     let block_number = transaction
         .block_number
-        .ok_or(Error::TransactionNotInBlock)?;
+        .ok_or(Error::TransactionNotInBlock)
+        .inspect_err(|_| error!("Transaction {tx_hash:?} has not been included in a block yet"))?;
 
     let block = get_block_by_number(network, block_number)
         .await?
@@ -107,6 +120,7 @@ pub async fn verify_data_payment(
 
     // Check if payment was done within the quote expiration timeframe.
     if quote_expiration_timestamp_in_secs < block.header.timestamp {
+        error!("Payment for tx_hash: {tx_hash:?} was done after the quote expired");
         return Err(Error::QuoteExpired);
     }
 
@@ -129,6 +143,8 @@ pub async fn verify_data_payment(
             }
         }
     }
+
+    error!("No event proof found for tx_hash: {tx_hash:?}");
 
     Err(Error::EventProofNotFound)
 }

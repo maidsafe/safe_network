@@ -66,7 +66,8 @@ fn pack_data_map(data_map: DataMap) -> Result<(Chunk, Vec<Chunk>), Error> {
             chunk.serialize(&mut serialiser)?;
             let serialized_chunk = bytes.into_inner().freeze();
 
-            let (data_map, next_encrypted_chunks) = self_encryption::encrypt(serialized_chunk)?;
+            let (data_map, next_encrypted_chunks) = self_encryption::encrypt(serialized_chunk)
+                .inspect_err(|err| error!("Failed to encrypt chunks: {err:?}"))?;
             chunks = next_encrypted_chunks
                 .iter()
                 .map(|c| Chunk::new(c.content.clone())) // no need to encrypt what is self-encrypted
@@ -83,6 +84,8 @@ fn wrap_data_map(data_map: &DataMapLevel) -> Result<Bytes, rmp_serde::encode::Er
     // we use an initial/starting size of 300 bytes as that's roughly the current size of a DataMapLevel instance.
     let mut bytes = BytesMut::with_capacity(300).writer();
     let mut serialiser = rmp_serde::Serializer::new(&mut bytes);
-    data_map.serialize(&mut serialiser)?;
+    data_map
+        .serialize(&mut serialiser)
+        .inspect_err(|err| error!("Failed to serialize data map: {err:?}"))?;
     Ok(bytes.into_inner().freeze())
 }
