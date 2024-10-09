@@ -48,7 +48,6 @@ pub use metrics::service::MetricsRegistries;
 pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 use self::{cmd::NetworkSwarmCmd, error::Result};
-use backoff::{Error as BackoffError, ExponentialBackoff};
 use futures::future::select_all;
 use libp2p::{
     identity::Keypair,
@@ -501,7 +500,7 @@ impl Network {
     ) -> Result<Record> {
         let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
-            ExponentialBackoff {
+            backoff::ExponentialBackoff {
                 // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
                 // be disabled.
                 max_elapsed_time: retry_duration,
@@ -519,7 +518,7 @@ impl Network {
                 let result = receiver.await.map_err(|e| {
                 error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
                 NetworkError::InternalMsgChannelDropped
-            }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
+            }).map_err(|err| backoff::Error::Transient { err,  retry_after: None })?;
 
                 // log the results
                 match &result {
@@ -549,13 +548,13 @@ impl Network {
                 // if we don't want to retry, throw permanent error
                 if cfg.retry_strategy.is_none() {
                     if let Err(e) = result {
-                        return Err(BackoffError::Permanent(NetworkError::from(e)));
+                        return Err(backoff::Error::Permanent(NetworkError::from(e)));
                     }
                 }
                 if result.is_err() {
                     debug!("Getting record from network of {pretty_key:?} via backoff...");
                 }
-                result.map_err(|err| BackoffError::Transient {
+                result.map_err(|err| backoff::Error::Transient {
                     err: NetworkError::from(err),
                     retry_after: None,
                 })
@@ -608,6 +607,18 @@ impl Network {
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
     /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
+    #[cfg(target_arch = "wasm32")]
+    pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
+        let pretty_key = PrettyPrintRecordKey::from(&record.key);
+
+        info!("Attempting to PUT record with key: {pretty_key:?} to network, with cfg {cfg:?}");
+        self.put_record_once(record.clone(), cfg).await
+    }
+
+    /// Put `Record` to network
+    /// Optionally verify the record is stored after putting it to network
+    /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
 
@@ -615,7 +626,7 @@ impl Network {
         // So a long validation time will limit the number of PUT retries we attempt here.
         let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
-            ExponentialBackoff {
+            backoff::ExponentialBackoff {
                 // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
                 // be disabled.
             max_elapsed_time: retry_duration,
@@ -630,9 +641,9 @@ impl Network {
                 warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
                 if cfg.retry_strategy.is_some() {
-                    BackoffError::Transient { err, retry_after: None }
+                    backoff::Error::Transient { err, retry_after: None }
                 } else {
-                    BackoffError::Permanent(err)
+                    backoff::Error::Permanent(err)
                 }
 
             })

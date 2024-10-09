@@ -8,8 +8,11 @@ pub const EVM_TESTNET_CSV_FILENAME: &str = "evm_testnet_data.csv";
 
 /// environment variable to connect to a custom EVM network
 pub const RPC_URL: &str = "RPC_URL";
+const RPC_URL_BUILD_TIME_VAL: Option<&str> = option_env!("RPC_URL");
 pub const PAYMENT_TOKEN_ADDRESS: &str = "PAYMENT_TOKEN_ADDRESS";
+const PAYMENT_TOKEN_ADDRESS_BUILD_TIME_VAL: Option<&str> = option_env!("PAYMENT_TOKEN_ADDRESS");
 pub const DATA_PAYMENTS_ADDRESS: &str = "DATA_PAYMENTS_ADDRESS";
+const DATA_PAYMENTS_ADDRESS_BUILD_TIME_VAL: Option<&str> = option_env!("DATA_PAYMENTS_ADDRESS");
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -29,10 +32,20 @@ pub fn dummy_hash() -> Hash {
 
 /// Get the `Network` from environment variables
 pub fn evm_network_from_env() -> Result<Network, Error> {
-    let evm_vars = [RPC_URL, PAYMENT_TOKEN_ADDRESS, DATA_PAYMENTS_ADDRESS]
-        .iter()
-        .map(|var| env::var(var).map_err(|_| Error::FailedToGetEvmNetwork))
-        .collect::<Result<Vec<String>, Error>>();
+    let evm_vars = [
+        env::var(RPC_URL)
+            .ok()
+            .or_else(|| RPC_URL_BUILD_TIME_VAL.map(|s| s.to_string())),
+        env::var(PAYMENT_TOKEN_ADDRESS)
+            .ok()
+            .or_else(|| PAYMENT_TOKEN_ADDRESS_BUILD_TIME_VAL.map(|s| s.to_string())),
+        env::var(PAYMENT_TOKEN_ADDRESS)
+            .ok()
+            .or_else(|| DATA_PAYMENTS_ADDRESS_BUILD_TIME_VAL.map(|s| s.to_string())),
+    ]
+    .into_iter()
+    .map(|var| var.ok_or(Error::FailedToGetEvmNetwork))
+    .collect::<Result<Vec<String>, Error>>();
 
     let use_local_evm = std::env::var("EVM_NETWORK")
         .map(|v| v == "local")

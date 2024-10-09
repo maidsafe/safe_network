@@ -8,13 +8,10 @@
 
 use crate::client::data::{GetError, PutError};
 use crate::client::Client;
-use crate::self_encryption::encrypt;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::{Amount, AttoTokens};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use walkdir::WalkDir;
 use xor_name::XorName;
 
 /// Directory-like structure that containing file paths and their metadata.
@@ -69,25 +66,26 @@ pub enum UploadError {
 
 impl Client {
     /// Fetch a directory from the network.
-    pub async fn fetch_root(&mut self, address: XorName) -> Result<Root, UploadError> {
+    pub async fn fetch_root(&self, address: XorName) -> Result<Root, UploadError> {
         let data = self.get(address).await?;
 
         Ok(Root::from_bytes(data)?)
     }
 
     /// Fetch the file pointed to by the given pointer.
-    pub async fn fetch_file(&mut self, file: &FilePointer) -> Result<Bytes, UploadError> {
+    pub async fn fetch_file(&self, file: &FilePointer) -> Result<Bytes, UploadError> {
         let data = self.get(file.data_map).await?;
         Ok(data)
     }
 
     /// Get the cost to upload a file/dir to the network.
     /// quick and dirty implementation, please refactor once files are cleanly implemented
-    pub async fn file_cost(&mut self, path: &PathBuf) -> Result<AttoTokens, UploadError> {
+    #[cfg(feature = "fs")]
+    pub async fn file_cost(&self, path: &PathBuf) -> Result<sn_evm::AttoTokens, UploadError> {
         let mut map = HashMap::new();
-        let mut total_cost = Amount::ZERO;
+        let mut total_cost = sn_evm::Amount::ZERO;
 
-        for entry in WalkDir::new(path) {
+        for entry in walkdir::WalkDir::new(path) {
             let entry = entry?;
 
             if !entry.file_type().is_file() {
@@ -105,8 +103,8 @@ impl Client {
 
             // re-do encryption to get the correct map xorname here
             // this code needs refactor
-            let now = std::time::Instant::now();
-            let (data_map_chunk, _) = encrypt(file_bytes).expect("TODO");
+            let now = sn_networking::target_arch::Instant::now();
+            let (data_map_chunk, _) = crate::self_encryption::encrypt(file_bytes).expect("TODO");
             tracing::debug!("Encryption took: {:.2?}", now.elapsed());
             let map_xor_name = *data_map_chunk.address().xorname();
             let data_map_xorname = FilePointer {
@@ -134,7 +132,7 @@ impl Client {
     ) -> Result<(Root, XorName), UploadError> {
         let mut map = HashMap::new();
 
-        for entry in WalkDir::new(path) {
+        for entry in walkdir::WalkDir::new(path) {
             let entry = entry?;
 
             if !entry.file_type().is_file() {
@@ -158,6 +156,7 @@ impl Client {
     }
 }
 
+#[cfg(feature = "fs")]
 async fn upload_from_file(
     client: &mut Client,
     path: PathBuf,

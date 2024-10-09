@@ -13,7 +13,7 @@ use color_eyre::eyre::Result;
 use std::path::PathBuf;
 
 pub async fn cost(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
-    let mut client = crate::actions::connect_to_network(peers).await?;
+    let client = crate::actions::connect_to_network(peers).await?;
 
     println!("Getting upload cost...");
     let cost = client
