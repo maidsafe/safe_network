@@ -8764,12 +8764,15 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 name = "test_utils"
 version = "0.4.6"
 dependencies = [
+ "bytes",
  "color-eyre",
  "dirs-next",
  "evmlib",
  "libp2p 0.54.1",
+ "rand 0.8.5",
  "serde",
  "serde_json",
+ "sn_peers_acquisition",
 ]
 
 [[package]]
