@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-10-08
+
+### Network
+
+#### Changed
+
+- Optimize auditor tracking by not to re-attempt fetched spend.
+- Optimize auditor tracking function by using DashMap and stream.
+
 ## 2024-10-07
 
 ### Network
