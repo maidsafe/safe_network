@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728469250108,
+  "lastUpdate": 1728469251542,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -30612,45 +30612,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "joshuef@gmail.com",
-            "name": "joshuef",
-            "username": "joshuef"
-          },
-          "distinct": false,
-          "id": "bba9a50de4f4cd8a897c4821391e5417376d80ae",
-          "message": "perf: improve DAG verification redundancy",
-          "timestamp": "2024-05-16T04:36:56Z",
-          "tree_id": "2e83f4a5725967c36fb961ba6eb18a256069cb82",
-          "url": "https://github.com/maidsafe/safe_network/commit/bba9a50de4f4cd8a897c4821391e5417376d80ae"
-        },
-        "date": 1715836824447,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "swarm_driver long handling times",
-            "value": 15466,
-            "unit": "hits"
-          },
-          {
-            "name": "swarm_driver long handling total_time",
-            "value": 87282,
-            "unit": "ms"
-          },
-          {
-            "name": "swarm_driver average long handling time",
-            "value": 5,
-            "unit": "ms"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "lmazzitelli@gmail.com",
             "name": "Lautaro Mazzitelli",
             "username": "mazzi"
@@ -42300,6 +42261,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "swarm_driver long handling total_time",
             "value": 51194,
+            "unit": "ms"
+          },
+          {
+            "name": "swarm_driver average long handling time",
+            "value": 3,
+            "unit": "ms"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "chriso83@protonmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "distinct": true,
+          "id": "d666619ec539309d61c7691fd096b9c848aa268f",
+          "message": "Merge branch 'pick_PR2088_stable'",
+          "timestamp": "2024-10-09T11:00:08+01:00",
+          "tree_id": "befe011ce16ac63cab7161d3c4b8ebf87c3789da",
+          "url": "https://github.com/maidsafe/safe_network/commit/d666619ec539309d61c7691fd096b9c848aa268f"
+        },
+        "date": 1728469251254,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "swarm_driver long handling times",
+            "value": 14870,
+            "unit": "hits"
+          },
+          {
+            "name": "swarm_driver long handling total_time",
+            "value": 54537,
             "unit": "ms"
           },
           {
