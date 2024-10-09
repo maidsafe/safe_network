@@ -96,17 +96,8 @@ async fn verify_data_location() -> Result<()> {
 
     let (client, wallet) = get_client_and_funded_wallet().await;
 
-    let paying_wallet_dir = TempDir::new()?;
-
-    let (client, _paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
-
-    store_chunks(client.clone(), chunk_count, paying_wallet_dir.to_path_buf()).await?;
-    store_registers(
-        client.clone(),
-        register_count,
-        paying_wallet_dir.to_path_buf(),
-    )
-    .await?;
+    store_chunks(&client, chunk_count, &wallet).await?;
+    store_registers(&client, register_count, &wallet).await?;
 
     // Verify data location initially
     verify_location(&all_peers, &node_rpc_address).await?;

@@ -266,15 +266,12 @@ impl SwarmDriver {
                 // This is to avoid malicious node escaping the check by never send a replication_list.
                 // With further reduced probability of 1% (5% * 20%)
                 if rng.gen_bool(0.2) {
-                    let close_group_peers = if let Ok(peers) = sort_peers_by_address_and_limit(
+                    let close_group_peers = sort_peers_by_address_and_limit(
                         &peers,
                         &NetworkAddress::from_peer(our_peer_id),
                         CLOSE_GROUP_SIZE,
-                    ) {
-                        peers
-                    } else {
-                        vec![]
-                    };
+                    )
+                    .unwrap_or_default();
 
                     if close_group_peers.len() == CLOSE_GROUP_SIZE {
                         loop {
