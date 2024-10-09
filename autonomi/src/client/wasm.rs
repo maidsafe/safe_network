@@ -45,6 +45,10 @@ pub fn funded_wallet() -> Wallet {
     )
 }
 
+/// Enable tracing logging in the console.
+///
+/// A level could be passed like `trace` or `warn`. Or set for a specific module/crate
+/// with `sn_networking=trace,autonomi=info`.
 #[wasm_bindgen(js_name = logInit)]
 pub fn log_init(directive: String) {
     use tracing_subscriber::prelude::*;
