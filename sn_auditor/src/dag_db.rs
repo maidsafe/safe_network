@@ -303,6 +303,7 @@ impl SpendDagDb {
         };
 
         let mut addrs_to_get = BTreeMap::new();
+        let mut addrs_fetched = BTreeSet::new();
 
         loop {
             // get expired utxos for re-attempt fetch
@@ -350,15 +351,27 @@ impl SpendDagDb {
                     )
                 }));
             } else if let Some(sender) = spend_processing.clone() {
-                let (reattempt_addrs, fetched_addrs) = client
-                    .crawl_to_next_utxos(&mut addrs_to_get, sender.clone(), *UTXO_REATTEMPT_SECONDS)
+                let (reattempt_addrs, fetched_addrs, addrs_for_further_track) = client
+                    .crawl_to_next_utxos(
+                        addrs_to_get.clone(),
+                        sender.clone(),
+                        *UTXO_REATTEMPT_SECONDS,
+                    )
                     .await;
+
+                addrs_to_get.clear();
                 let mut utxo_addresses = self.utxo_addresses.write().await;
-                for addr in fetched_addrs.iter() {
-                    let _ = utxo_addresses.remove(addr);
+                for addr in fetched_addrs {
+                    let _ = utxo_addresses.remove(&addr);
+                    let _ = addrs_fetched.insert(addr);
                 }
                 for (addr, tuple) in reattempt_addrs {
                     let _ = utxo_addresses.insert(addr, tuple);
+                }
+                for (addr, amount) in addrs_for_further_track {
+                    if !addrs_fetched.contains(&addr) {
+                        let _ = addrs_to_get.entry(addr).or_insert((0, amount));
+                    }
                 }
             } else {
                 panic!("There is no point in running the auditor if we are not collecting the DAG or collecting data through crawling. Please enable the `dag-collection` feature or provide beta program related arguments.");

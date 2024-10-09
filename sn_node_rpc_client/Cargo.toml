@@ -23,7 +23,7 @@ color-eyre = "0.6.2"
 hex = "~0.4.3"
 libp2p = { version="0.53", features = ["kad"]}
 libp2p-identity = { version="0.2.7", features = ["rand"] }
-sn_client = { path = "../sn_client", version = "0.110.3" }
+sn_client = { path = "../sn_client", version = "0.110.4" }
 sn_logging = { path = "../sn_logging", version = "0.2.36" }
 sn_node = { path = "../sn_node", version = "0.111.4" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.3" }
