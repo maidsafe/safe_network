@@ -866,7 +866,7 @@ impl SwarmDriver {
         info!("Farthest peer we'll check: {:?}", farthest_peer_to_check);
 
         let yardstick = if sorted_distances.len() >= farthest_peer_to_check {
-            sorted_distances.get(farthest_peer_to_check - 1)
+            sorted_distances.get(farthest_peer_to_check.saturating_sub(1))
         } else {
             sorted_distances.last()
         };
