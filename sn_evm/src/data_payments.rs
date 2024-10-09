@@ -14,7 +14,10 @@ use evmlib::{
 };
 use libp2p::{identity::PublicKey, PeerId};
 use serde::{Deserialize, Serialize};
-use std::time::SystemTime;
+#[cfg(not(target_arch = "wasm32"))]
+pub use std::time::SystemTime;
+#[cfg(target_arch = "wasm32")]
+pub use wasmtimer::std::SystemTime;
 use xor_name::XorName;
 
 /// The time in seconds that a quote is valid for
@@ -24,7 +27,7 @@ pub const QUOTE_EXPIRATION_SECS: u64 = 3600;
 const LIVE_TIME_MARGIN: u64 = 10;
 
 /// The proof of payment for a data payment
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct ProofOfPayment {
     /// The Quote we're paying for
     pub quote: PaymentQuote,
@@ -76,9 +79,7 @@ impl Default for QuotingMetrics {
 /// A payment quote to store data given by a node to a client
 /// Note that the PaymentQuote is a contract between the node and itself to make sure the clients aren’t mispaying.
 /// It is NOT a contract between the client and the node.
-#[derive(
-    Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize, custom_debug::Debug,
-)]
+#[derive(Clone, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, custom_debug::Debug)]
 pub struct PaymentQuote {
     /// the content paid for
     pub content: XorName,
@@ -199,7 +200,7 @@ impl PaymentQuote {
 
     /// Returns true) if the quote has not yet expired
     pub fn has_expired(&self) -> bool {
-        let now = std::time::SystemTime::now();
+        let now = SystemTime::now();
 
         let dur_s = match now.duration_since(self.timestamp) {
             Ok(dur) => dur.as_secs(),
