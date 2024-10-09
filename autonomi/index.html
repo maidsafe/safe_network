@@ -8,26 +8,38 @@
       import init, { Client, getFundedWallet, logInit } from './pkg/autonomi.js';
 
       async function run() {
+        document.getElementById("btn-run").disabled = true;
+        const peer_addr = document.getElementById('peer_id').value;
+
         await init();
 
-        logInit("trace");
+        logInit("sn_networking=debug,autonomi=trace");
 
         console.log("connecting...");
-        let client = await new Client(["/ip4/127.0.0.1/tcp/36075/ws/p2p/12D3KooWALbWYwtNPiVvGzXr3CwXUa9JsRwZfgndNACPFBhDAfJY"]);
+        const client = await new Client([peer_addr]);
         console.log("connected");
 
         console.log("getting wallet...");
-        let wallet = getFundedWallet();
+        const wallet = getFundedWallet();
         console.log("wallet retrieved");
 
+        const data = new Uint8Array([1, 2, 3]);
+
+        console.log("calculating cost...");
+        let result = await client.cost(data, wallet);
+        console.log("calculated cost: ", result.toString());
+
         console.log("putting...");
-        let result = await client.put(new Uint8Array([1, 2, 3]), wallet);
+        const dataAddr = await client.putData(data, wallet);
         console.log("put done!");
 
-        console.log(result);
+        console.log("Uploaded data to: ", dataAddr.toString());
       }
 
-      run();
+      document.getElementById ("btn-run").addEventListener("click", run, false);
     </script>
+
+    <label for="peer_id">Peer ID: <input type="text" id="peer_id" /></label>
+    <button id="btn-run">Run</button>
   </body>
 </html>

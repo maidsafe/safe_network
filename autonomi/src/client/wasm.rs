@@ -5,6 +5,29 @@ use wasm_bindgen::prelude::*;
 pub struct Client(super::Client);
 
 #[wasm_bindgen]
+pub struct ChunkAddr(xor_name::XorName);
+
+#[wasm_bindgen]
+pub struct DataAddr(xor_name::XorName);
+#[wasm_bindgen]
+impl DataAddr {
+    #[wasm_bindgen(js_name = toString)]
+    pub fn to_string(&self) -> String {
+        crate::client::address::xorname_to_str(self.0)
+    }
+}
+
+#[wasm_bindgen]
+pub struct AttoTokens(sn_evm::AttoTokens);
+#[wasm_bindgen]
+impl AttoTokens {
+    #[wasm_bindgen(js_name = toString)]
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+#[wasm_bindgen]
 impl Client {
     #[wasm_bindgen(constructor)]
     pub async fn connect(peers: Vec<String>) -> Result<Client, JsError> {
@@ -18,20 +41,44 @@ impl Client {
         Ok(Client(client))
     }
 
-    #[wasm_bindgen]
-    pub async fn put(&self, data: Vec<u8>, wallet: Wallet) -> Result<Vec<u8>, JsValue> {
+    #[wasm_bindgen(js_name = putChunk)]
+    pub async fn put_chunk(&self, _data: Vec<u8>, _wallet: Wallet) -> Result<ChunkAddr, JsError> {
+        unimplemented!()
+    }
+
+    #[wasm_bindgen(js_name = getChunk)]
+    pub async fn get_chunk(&self, addr: ChunkAddr) -> Result<Vec<u8>, JsError> {
+        let chunk = self.0.fetch_chunk(addr.0).await?;
+        Ok(chunk.value().to_vec())
+    }
+
+    #[wasm_bindgen(js_name = putData)]
+    pub async fn put_data(&self, data: Vec<u8>, wallet: Wallet) -> Result<DataAddr, JsError> {
         let data = crate::Bytes::from(data);
-        self.0
-            .put(data, &wallet.0)
-            .await
-            .map_err(|err| serde_wasm_bindgen::to_value(&err).expect("serialization to succeed"))
-            .map(|xorname| xorname.to_vec())
+        let xorname = self.0.put(data, &wallet.0).await?;
+        Ok(DataAddr(xorname))
+    }
+
+    #[wasm_bindgen(js_name = getData)]
+    pub async fn get_data(&self, addr: DataAddr) -> Result<Vec<u8>, JsError> {
+        let data = self.0.get(addr.0).await?;
+        Ok(data.to_vec())
+    }
+
+    #[wasm_bindgen]
+    pub async fn cost(&self, data: Vec<u8>) -> Result<AttoTokens, JsValue> {
+        let data = crate::Bytes::from(data);
+        let cost = self.0.cost(data).await.map_err(|e| JsError::from(e))?;
+
+        Ok(AttoTokens(cost))
     }
 }
 
 #[wasm_bindgen]
 pub struct Wallet(evmlib::wallet::Wallet);
 
+/// Get a funded wallet for testing. This either uses a default private key or the `EVM_PRIVATE_KEY`
+/// environment variable that was used during the build process of this library.
 #[wasm_bindgen(js_name = getFundedWallet)]
 pub fn funded_wallet() -> Wallet {
     let network = evmlib::utils::evm_network_from_env().expect("network init from env");

@@ -68,6 +68,7 @@ console_error_panic_hook = "0.1.7"
 evmlib = { path = "../evmlib", version = "0.1", features = ["wasm-bindgen"] }
 # See https://github.com/sebcrozet/instant/blob/7bd13f51f5c930239fddc0476a837870fb239ed7/README.md#using-instant-for-a-wasm-platform-where-performancenow-is-not-available
 instant = { version = "0.1", features = [ "wasm-bindgen", "inaccurate" ] }
+js-sys = "0.3.70"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-web = "0.1.3"
 
