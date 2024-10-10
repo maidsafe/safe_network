@@ -1,4 +1,10 @@
-use std::collections::BTreeMap;
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
 use crate::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
@@ -14,6 +20,7 @@ use alloy::rpc::types::TransactionRequest;
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{reqwest, Client, Http};
 use alloy::transports::{RpcError, TransportErrorKind};
+use std::collections::BTreeMap;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -244,8 +251,9 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     network: &Network,
     payments: T,
 ) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
-    info!("Paying for quotes");
     let payments: Vec<_> = payments.into_iter().collect();
+    info!("Paying for quotes of len: {}", payments.len());
+
     let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
 
     let mut tx_hashes_by_quote = BTreeMap::new();
@@ -268,11 +276,16 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 
     for batch in chunks {
         let batch: Vec<QuotePayment> = batch.to_vec();
+        debug!(
+            "Paying for batch of quotes of len: {}, {batch:?}",
+            batch.len()
+        );
 
         let tx_hash = data_payments
             .pay_for_quotes(batch.clone())
             .await
             .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
+        info!("Paid for batch of quotes with final tx hash: {tx_hash}");
 
         for (quote_hash, _, _) in batch {
             tx_hashes_by_quote.insert(quote_hash, tx_hash);

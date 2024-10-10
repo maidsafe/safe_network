@@ -131,11 +131,11 @@ impl TestnetData {
         println!("Run the CLI or Node with the following env vars set to manually connect to this network:");
         println!(
             "{}=\"{}\" {}=\"{}\" {}=\"{}\"",
-            sn_evm::evm::RPC_URL,
+            sn_evm::RPC_URL,
             self.rpc_url,
-            sn_evm::evm::PAYMENT_TOKEN_ADDRESS,
+            sn_evm::PAYMENT_TOKEN_ADDRESS,
             self.payment_token_address,
-            sn_evm::evm::DATA_PAYMENTS_ADDRESS,
+            sn_evm::DATA_PAYMENTS_ADDRESS,
             self.data_payments_address
         );
         println!("--------------");

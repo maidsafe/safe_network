@@ -12,15 +12,14 @@ extern crate tracing;
 pub use evmlib::common::Address as RewardsAddress;
 pub use evmlib::common::{QuoteHash, TxHash};
 pub use evmlib::utils;
+pub use evmlib::utils::get_evm_network_from_env;
+pub use evmlib::utils::{DATA_PAYMENTS_ADDRESS, PAYMENT_TOKEN_ADDRESS, RPC_URL};
 pub use evmlib::wallet::Wallet as EvmWallet;
 pub use evmlib::Network as EvmNetwork;
 
 mod amount;
 mod data_payments;
 mod error;
-
-/// EVM network configuration
-pub mod evm;
 
 pub use data_payments::{PaymentQuote, ProofOfPayment, QuotingMetrics};
 
