@@ -33,5 +33,8 @@ tempfile = "3.10.1"
 [dev-dependencies]
 tokio = { version = "1.32.0", features = ["macros", "rt"] }
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasmtimer = { version = "0.2.0", features = ["serde"] }
+
 [lints]
 workspace = true
