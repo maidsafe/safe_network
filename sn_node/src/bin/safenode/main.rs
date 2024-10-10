@@ -114,16 +114,16 @@ struct Opt {
     ///
     /// After reaching this limit, the older files are archived to save space.
     /// You can also specify the maximum number of archived log files to keep.
-    #[clap(long = "max_log_files", verbatim_doc_comment)]
-    max_uncompressed_log_files: Option<usize>,
+    #[clap(long, verbatim_doc_comment)]
+    max_log_files: Option<usize>,
 
     /// Specify the maximum number of archived log files to store.
     ///
     /// This argument is ignored if `log_output_dest` is set to "stdout"
     ///
     /// After reaching this limit, the older archived files are deleted.
-    #[clap(long = "max_archived_log_files", verbatim_doc_comment)]
-    max_compressed_log_files: Option<usize>,
+    #[clap(long, verbatim_doc_comment)]
+    max_archived_log_files: Option<usize>,
 
     /// Specify the rewards address.
     /// The rewards address is the address that will receive the rewards for the node.
@@ -517,11 +517,11 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, ReloadHandle, Opt
         let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
         log_builder.output_dest(output_dest.clone());
         log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
-        if let Some(files) = opt.max_uncompressed_log_files {
-            log_builder.max_uncompressed_log_files(files);
+        if let Some(files) = opt.max_log_files {
+            log_builder.max_log_files(files);
         }
-        if let Some(files) = opt.max_compressed_log_files {
-            log_builder.max_compressed_log_files(files);
+        if let Some(files) = opt.max_archived_log_files {
+            log_builder.max_archived_log_files(files);
         }
 
         log_builder.initialize()?
@@ -535,11 +535,11 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, ReloadHandle, Opt
             let mut log_builder = sn_logging::LogBuilder::new(logging_targets);
             log_builder.output_dest(output_dest.clone());
             log_builder.format(opt.log_format.unwrap_or(LogFormat::Default));
-            if let Some(files) = opt.max_uncompressed_log_files {
-                log_builder.max_uncompressed_log_files(files);
+            if let Some(files) = opt.max_log_files {
+                log_builder.max_log_files(files);
             }
-            if let Some(files) = opt.max_compressed_log_files {
-                log_builder.max_compressed_log_files(files);
+            if let Some(files) = opt.max_archived_log_files {
+                log_builder.max_archived_log_files(files);
             }
             log_builder.initialize()
         })?;

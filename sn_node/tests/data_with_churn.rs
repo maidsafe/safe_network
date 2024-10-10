@@ -22,7 +22,7 @@ use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
     fs::create_dir_all,
-    sync::Arc,
+    sync::{Arc, LazyLock},
     time::{Duration, Instant},
 };
 use tempfile::tempdir;
@@ -36,7 +36,7 @@ const CHURN_CYCLES: u32 = 2;
 const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 15;
 const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 15;
 
-const DATA_SIZE: usize = MAX_CHUNK_SIZE / 3;
+static DATA_SIZE: LazyLock<usize> = LazyLock::new(|| *MAX_CHUNK_SIZE / 3);
 
 const CONTENT_QUERY_RATIO_TO_CHURN: u32 = 40;
 const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
@@ -273,7 +273,7 @@ fn create_registers_task(
         loop {
             let owner = Client::register_generate_key();
             let random_name = XorName(rand::random()).to_string();
-            let random_data = gen_random_data(DATA_SIZE);
+            let random_data = gen_random_data(*DATA_SIZE);
 
             sleep(delay).await;
 
@@ -313,7 +313,7 @@ fn store_chunks_task(
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
 
         loop {
-            let random_data = gen_random_data(DATA_SIZE);
+            let random_data = gen_random_data(*DATA_SIZE);
 
             let data_map = client.put(random_data, &wallet).await.inspect_err(|err| {
                 println!("Error to put chunk: {err:?}");

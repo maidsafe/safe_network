@@ -351,10 +351,7 @@ impl FilesDownload {
 
         let mut download_kind = {
             if let Some(path) = decrypted_file_path {
-                DownloadKind::FileSystem(StreamSelfDecryptor::decrypt_to_file(
-                    Box::new(path),
-                    &data_map,
-                )?)
+                DownloadKind::FileSystem(StreamSelfDecryptor::decrypt_to_file(path, &data_map)?)
             } else {
                 DownloadKind::Memory(Vec::new())
             }

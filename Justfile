@@ -108,8 +108,12 @@ build-release-artifacts arch nightly="false":
   mkdir artifacts
   cargo clean
 
+  if [ -n "$MAX_CHUNK_SIZE" ]; then
+    echo "Overriding chunk size to $MAX_CHUNK_SIZE bytes"
+  fi
+
   echo "================"
-  echo "= Network Keys ="
+  echo "  Network Keys  "
   echo "================"
   echo "FOUNDATION_PK: $FOUNDATION_PK"
   echo "GENESIS_PK: $GENESIS_PK"

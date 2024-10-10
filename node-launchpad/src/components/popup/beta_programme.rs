@@ -58,14 +58,15 @@ impl BetaProgramme {
     fn capture_inputs(&mut self, key: KeyEvent) -> Vec<Action> {
         let send_back = match key.code {
             KeyCode::Enter => {
-                let username = self.discord_input_filed.value().to_string();
+                let username = self.discord_input_filed.value().to_string().to_lowercase();
+                self.discord_input_filed = username.clone().into();
 
                 debug!(
                     "Got Enter, saving the discord username {username:?}  and switching to DiscordIdAlreadySet, and Home Scene",
                 );
                 self.state = BetaProgrammeState::DiscordIdAlreadySet;
                 vec![
-                    Action::StoreDiscordUserName(self.discord_input_filed.value().to_string()),
+                    Action::StoreDiscordUserName(username.clone()),
                     Action::OptionsActions(OptionsActions::UpdateBetaProgrammeUsername(username)),
                     Action::SwitchScene(Scene::Status),
                 ]

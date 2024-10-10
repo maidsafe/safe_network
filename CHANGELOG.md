@@ -7,6 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-10-08
+
+### Network
+
+#### Changed
+
+- Optimize auditor tracking by not to re-attempt fetched spend.
+- Optimize auditor tracking function by using DashMap and stream.
+
+## 2024-10-07
+
+### Network
+
+#### Changed
+
+- Increase chunk size to 4MB with node size remaining at 32GB
+- Bootstrap peer parsing in CI was changed to accommodate new log format in libp2p
+
+### Node Manager
+
+#### Added
+
+- The `add` command has new `--max-log-files` and `--max-archived-log-files` arguments to support
+  capping node log output
+
+#### Fixed
+
+- The Discord username on the `--owner` argument will always be converted to lower case
+
+#### Launchpad
+
+### Added
+
+- Increased logging related to app configuration. This could help solving issues on launchpad start
+  up.
+
+## 2024-10-03
+
+### Launchpad
+
+### Changed
+
+- Upgrade to `Ratatui` v0.28.1
+- Styling and layout fixes
+
+#### Added
+
+- Drives that don't have enough space are being shown and flagged
+- Error handling and generic error popup
+- New metrics in the `Status` section
+- Confirmation needed when changing connection mode
+
+### Fixed
+
+- NAT mode only on first start in `Automatic Connection Mode`
+- Force Discord username to be in lowercase
+
 ## 2024-10-01
 
 ### Launchpad

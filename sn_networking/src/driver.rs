@@ -666,6 +666,8 @@ impl NetworkBuilder {
             local: self.local,
             is_client,
             is_behind_home_network: self.is_behind_home_network,
+            #[cfg(feature = "open-metrics")]
+            close_group: Vec::with_capacity(CLOSE_GROUP_SIZE),
             peers_in_rt: 0,
             bootstrap,
             relay_manager,
@@ -715,6 +717,8 @@ pub struct SwarmDriver {
     pub(crate) local: bool,
     pub(crate) is_client: bool,
     pub(crate) is_behind_home_network: bool,
+    #[cfg(feature = "open-metrics")]
+    pub(crate) close_group: Vec<PeerId>,
     pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) external_address_manager: ExternalAddressManager,
@@ -989,6 +993,13 @@ impl SwarmDriver {
         #[cfg(feature = "open-metrics")]
         if let Some(metrics_recorder) = self.metrics_recorder.as_ref() {
             metrics_recorder.record_from_marker(marker)
+        }
+    }
+    #[cfg(feature = "open-metrics")]
+    /// Updates metrics that rely on our current close group.
+    pub(crate) fn record_change_in_close_group(&self, new_close_group: Vec<PeerId>) {
+        if let Some(metrics_recorder) = self.metrics_recorder.as_ref() {
+            metrics_recorder.record_change_in_close_group(new_close_group);
         }
     }
 

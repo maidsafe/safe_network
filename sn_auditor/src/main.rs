@@ -308,43 +308,59 @@ async fn initialize_background_spend_dag_collection(
 }
 
 async fn start_server(dag: SpendDagDb) -> Result<()> {
-    let server = Server::http("0.0.0.0:4242").expect("Failed to start server");
-    info!("Starting dag-query server listening on port 4242...");
-    for request in server.incoming_requests() {
-        info!(
-            "Received request! method: {:?}, url: {:?}",
-            request.method(),
-            request.url(),
-        );
+    loop {
+        let server = Server::http("0.0.0.0:4242").expect("Failed to start server");
+        info!("Starting dag-query server listening on port 4242...");
+        for request in server.incoming_requests() {
+            info!(
+                "Received request! method: {:?}, url: {:?}",
+                request.method(),
+                request.url(),
+            );
 
-        // Dispatch the request to the appropriate handler
-        let response = match request.url() {
-            "/" => routes::spend_dag_svg(&dag),
-            s if s.starts_with("/spend/") => routes::spend(&dag, &request).await,
-            s if s.starts_with("/add-participant/") => {
-                routes::add_participant(&dag, &request).await
-            }
-            "/beta-rewards" => routes::beta_rewards(&dag).await,
-            _ => routes::not_found(),
-        };
+            // Dispatch the request to the appropriate handler
+            let response = match request.url() {
+                "/" => routes::spend_dag_svg(&dag),
+                s if s.starts_with("/spend/") => routes::spend(&dag, &request).await,
+                s if s.starts_with("/add-participant/") => {
+                    routes::add_participant(&dag, &request).await
+                }
+                "/beta-rewards" => routes::beta_rewards(&dag).await,
+                "/restart" => {
+                    info!("Restart auditor web service as to client's request");
+                    break;
+                }
+                "/terminate" => {
+                    info!("Terminate auditor web service as to client's request");
+                    return Ok(());
+                }
+                _ => routes::not_found(),
+            };
 
-        // Send a response to the client
-        match response {
-            Ok(res) => {
-                let _ = request
-                    .respond(res)
-                    .map_err(|err| eprintln!("Failed to send response: {err}"));
-            }
-            Err(e) => {
-                eprint!("Sending error to client: {e}");
-                let res = Response::from_string(format!("Error: {e}")).with_status_code(500);
-                let _ = request
-                    .respond(res)
-                    .map_err(|err| eprintln!("Failed to send error response: {err}"));
+            // Send a response to the client
+            match response {
+                Ok(res) => {
+                    info!("Sending response to client");
+                    let _ = request.respond(res).map_err(|err| {
+                        warn!("Failed to send response: {err}");
+                        eprintln!("Failed to send response: {err}")
+                    });
+                }
+                Err(e) => {
+                    eprint!("Sending error to client: {e}");
+                    let res = Response::from_string(format!("Error: {e}")).with_status_code(500);
+                    let _ = request.respond(res).map_err(|err| {
+                        warn!("Failed to send error response: {err}");
+                        eprintln!("Failed to send error response: {err}")
+                    });
+                }
             }
         }
+        // Reaching this point indicates a restarting of auditor web service
+        // Sleep for a while to allowing OS cleanup and settlement.
+        drop(server);
+        std::thread::sleep(std::time::Duration::from_secs(10));
     }
-    Ok(())
 }
 
 // get the data dir path for auditor

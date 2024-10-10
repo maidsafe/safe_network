@@ -124,8 +124,8 @@ pub struct LogBuilder {
     default_logging_targets: Vec<(String, Level)>,
     output_dest: LogOutputDest,
     format: LogFormat,
-    max_uncompressed_log_files: Option<usize>,
-    max_compressed_log_files: Option<usize>,
+    max_log_files: Option<usize>,
+    max_archived_log_files: Option<usize>,
     /// Setting this would print the sn_logging related updates to stdout.
     print_updates_to_stdout: bool,
 }
@@ -140,8 +140,8 @@ impl LogBuilder {
             default_logging_targets,
             output_dest: LogOutputDest::Stderr,
             format: LogFormat::Default,
-            max_uncompressed_log_files: None,
-            max_compressed_log_files: None,
+            max_log_files: None,
+            max_archived_log_files: None,
             print_updates_to_stdout: true,
         }
     }
@@ -157,13 +157,13 @@ impl LogBuilder {
     }
 
     /// The max number of uncompressed log files to store
-    pub fn max_uncompressed_log_files(&mut self, files: usize) {
-        self.max_uncompressed_log_files = Some(files);
+    pub fn max_log_files(&mut self, files: usize) {
+        self.max_log_files = Some(files);
     }
 
     /// The max number of compressed files to store
-    pub fn max_compressed_log_files(&mut self, files: usize) {
-        self.max_compressed_log_files = Some(files);
+    pub fn max_archived_log_files(&mut self, files: usize) {
+        self.max_archived_log_files = Some(files);
     }
 
     /// Setting this to false would prevent sn_logging from printing things to stdout.
@@ -182,8 +182,8 @@ impl LogBuilder {
             self.default_logging_targets.clone(),
             &self.output_dest,
             self.format,
-            self.max_uncompressed_log_files,
-            self.max_compressed_log_files,
+            self.max_log_files,
+            self.max_archived_log_files,
             self.print_updates_to_stdout,
         )?;
 

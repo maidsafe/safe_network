@@ -299,7 +299,7 @@ impl Component for Status {
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
                     info!("Resetting safenode services because the Discord Username was reset.");
                     let action_sender = self.get_actions_sender()?;
-                    reset_nodes(action_sender, true);
+                    reset_nodes(action_sender, false);
                 }
             }
             Action::StoreStorageDrive(ref drive_mountpoint, ref _drive_name) => {
