@@ -8,7 +8,7 @@
 
 use clap::Subcommand;
 use color_eyre::eyre::Result;
-use sn_evm::{utils::local_evm_network_from_csv, EvmNetwork};
+use sn_evm::{utils::get_evm_network_from_env, EvmNetwork};
 
 #[derive(Subcommand, Clone, Debug)]
 #[allow(clippy::enum_variant_names)]
@@ -42,7 +42,7 @@ impl TryInto<EvmNetwork> for EvmNetworkCommand {
         match self {
             Self::EvmArbitrumOne => Ok(EvmNetwork::ArbitrumOne),
             Self::EvmLocal => {
-                let network = local_evm_network_from_csv()?;
+                let network = get_evm_network_from_env()?;
                 Ok(network)
             }
             Self::EvmCustom {

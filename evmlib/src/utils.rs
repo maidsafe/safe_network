@@ -1,3 +1,13 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+#![allow(dead_code)]
+
 use crate::common::{Address, Hash};
 use crate::{CustomNetwork, Network};
 use dirs_next::data_dir;
@@ -32,7 +42,37 @@ pub fn dummy_hash() -> Hash {
 }
 
 /// Get the `Network` from environment variables
-pub fn evm_network_from_env() -> Result<Network, Error> {
+/// If local feature is enabled, it will get the network from the local CSV file
+/// Otherwise, it will get the network from the environment variables
+pub fn get_evm_network_from_env() -> Result<Network, Error> {
+    #[cfg(feature = "local")]
+    {
+        debug!("Getting EVM network from local CSV as the local feature is enabled");
+        let network = local_evm_network_from_csv()?;
+        Ok(network)
+    }
+    #[cfg(not(feature = "local"))]
+    {
+        let network = evm_network_from_env()?;
+        if matches!(network, Network::Custom(_)) {
+            info!("Using custom EVM network found from environment variables {network:?}");
+        }
+        Ok(network)
+    }
+}
+
+pub fn get_evm_testnet_csv_path() -> Result<PathBuf, Error> {
+    let file = data_dir()
+        .ok_or(Error::FailedToGetEvmNetwork(
+            "failed to get data dir when fetching evm testnet CSV file".to_string(),
+        ))?
+        .join("safe")
+        .join(EVM_TESTNET_CSV_FILENAME);
+    Ok(file)
+}
+
+/// Get the `Network` from environment variables
+fn evm_network_from_env() -> Result<Network, Error> {
     let evm_vars = [
         env::var(RPC_URL)
             .ok()
@@ -74,18 +114,8 @@ pub fn evm_network_from_env() -> Result<Network, Error> {
     }
 }
 
-pub fn get_evm_testnet_csv_path() -> Result<PathBuf, Error> {
-    let file = data_dir()
-        .ok_or(Error::FailedToGetEvmNetwork(
-            "failed to get data dir when fetching evm testnet CSV file".to_string(),
-        ))?
-        .join("safe")
-        .join(EVM_TESTNET_CSV_FILENAME);
-    Ok(file)
-}
-
 /// Get the `Network::Custom` from the local EVM testnet CSV file
-pub fn local_evm_network_from_csv() -> Result<Network, Error> {
+fn local_evm_network_from_csv() -> Result<Network, Error> {
     // load the csv
     let csv_path = get_evm_testnet_csv_path()?;
 
