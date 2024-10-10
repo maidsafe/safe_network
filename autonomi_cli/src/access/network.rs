@@ -22,11 +22,22 @@ pub async fn get_peers(peers: PeersArgs) -> Result<Vec<Multiaddr>> {
         .with_suggestion(|| "a peer address looks like this: /ip4/42.42.42.42/udp/4242/quic-v1/p2p/B64nodePeerIDvdjb3FAJF4ks3moreBase64CharsHere")
 }
 
-pub fn get_evm_network_from_env() -> EvmNetwork {
-    let network = autonomi::evm::network_from_env();
-    if matches!(network, EvmNetwork::Custom(_)) {
-        println!("Using custom EVM network found from environment variables");
-        info!("Using custom EVM network found from environment variables {network:?}");
+pub fn get_evm_network_from_env() -> Result<EvmNetwork> {
+    #[cfg(feature = "local")]
+    {
+        println!("Getting EVM network from local CSV as the local feature is enabled");
+        let network = autonomi::evm::local_evm_network_from_csv()
+            .wrap_err("Failed to get EVM network from local CSV")
+            .with_suggestion(|| "make sure you've set up the local EVM network by running `cargo run --bin evm_testnet`")?;
+        Ok(network)
     }
-    network
+    #[cfg(not(feature = "local"))]
+    {
+        let network = autonomi::evm::network_from_env();
+        if matches!(network, EvmNetwork::Custom(_)) {
+            println!("Using custom EVM network found from environment variables");
+            info!("Using custom EVM network found from environment variables {network:?}");
+        }
+        Ok(network)
+    }
 }

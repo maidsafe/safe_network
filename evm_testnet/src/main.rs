@@ -44,8 +44,8 @@ async fn start_node(genesis_wallet: Option<Address>) {
     testnet_data.print();
     keep_alive(testnet).await;
 
-    TestnetData::remove_csv();
     println!("Ethereum node stopped.");
+    TestnetData::remove_csv();
 }
 
 async fn transfer_funds(testnet: &Testnet, genesis_wallet: Address) {
@@ -128,7 +128,7 @@ impl TestnetData {
 
         println!();
         println!("--------------");
-        println!("Run the CLI or Node with the following env vars set to use this network:");
+        println!("Run the CLI or Node with the following env vars set to manually connect to this network:");
         println!(
             "{}=\"{}\" {}=\"{}\" {}=\"{}\"",
             sn_evm::evm::RPC_URL,
@@ -139,33 +139,39 @@ impl TestnetData {
             self.data_payments_address
         );
         println!("--------------");
+        println!("For CLI operations that required a payment: use the deployer secret key by providing this env var:");
+        println!("SECRET_KEY=\"{}\"", self.deployer_wallet_private_key);
+        println!("--------------");
         println!();
     }
 
     fn save_csv(&self) {
-        let path = dirs_next::data_dir()
-            .expect("Could not get data_dir to save evm testnet data")
-            .join("safe");
+        let csv_path = evmlib::utils::get_evm_testnet_csv_path()
+            .expect("Could not get data_dir to save evm testnet data");
+        let path = csv_path
+            .parent()
+            .expect("Could not get parent dir of csv_path");
         if !path.exists() {
-            std::fs::create_dir_all(&path).expect("Could not create safe directory");
+            std::fs::create_dir_all(path).expect("Could not create safe directory");
         }
-        let path = path.join("evm_testnet_data.csv");
 
         let csv = format!(
             "{},{},{}",
             self.rpc_url, self.payment_token_address, self.data_payments_address
         );
-        std::fs::write(&path, csv).expect("Could not write to evm_testnet_data.csv file");
-        println!("EVM testnet data saved to: {path:?}");
+        std::fs::write(&csv_path, csv).expect("Could not write to evm_testnet_data.csv file");
+        println!("EVM testnet data saved to: {csv_path:?}");
+        println!("When running the Node or CLI with --feature=local, it will automatically use this network by loading the EVM Network's info from the CSV file.");
+        println!();
     }
 
     fn remove_csv() {
-        let path = dirs_next::data_dir()
-            .expect("Could not get data_dir to remove evm testnet data")
-            .join("safe")
-            .join("evm_testnet_data.csv");
-        if path.exists() {
-            std::fs::remove_file(&path).expect("Could not remove evm_testnet_data.csv file");
+        let csv_path = evmlib::utils::get_evm_testnet_csv_path()
+            .expect("Could not get data_dir to remove evm testnet data");
+        if csv_path.exists() {
+            std::fs::remove_file(&csv_path).expect("Could not remove evm_testnet_data.csv file");
+        } else {
+            eprintln!("No EVM testnet data CSV file found to remove");
         }
     }
 }

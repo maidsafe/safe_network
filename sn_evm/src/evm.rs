@@ -20,3 +20,6 @@ pub fn network_from_env() -> EvmNetwork {
         }
     }
 }
+
+/// Load the evm network from local CSV
+pub use evmlib::utils::local_evm_network_from_csv;

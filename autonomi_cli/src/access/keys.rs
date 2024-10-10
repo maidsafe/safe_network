@@ -24,7 +24,7 @@ const REGISTER_SIGNING_KEY_FILE: &str = "register_signing_key";
 pub fn load_evm_wallet() -> Result<Wallet> {
     let secret_key =
         get_secret_key().wrap_err("The secret key is required to perform this action")?;
-    let network = crate::network::get_evm_network_from_env();
+    let network = crate::network::get_evm_network_from_env()?;
     let wallet = Wallet::new_from_private_key(network, &secret_key)
         .wrap_err("Failed to load EVM wallet from key")?;
     Ok(wallet)

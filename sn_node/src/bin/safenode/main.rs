@@ -252,6 +252,10 @@ fn main() -> Result<()> {
         println!("Package version: {}", sn_build_info::package_version());
         return Ok(());
     }
+
+    #[cfg(feature = "local")]
+    let evm_network = sn_evm::utils::local_evm_network_from_csv()?;
+    #[cfg(not(feature = "local"))]
     let evm_network: EvmNetwork = opt
         .evm_network
         .as_ref()
@@ -302,6 +306,7 @@ fn main() -> Result<()> {
             bootstrap_peers,
             opt.local,
             root_dir,
+            #[cfg(feature = "upnp")]
             opt.upnp,
         );
         node_builder.is_behind_home_network = opt.home_network;
