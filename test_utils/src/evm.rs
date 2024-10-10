@@ -6,10 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use evmlib::{utils::network_from_env, Network};
+use color_eyre::{
+    eyre::{bail, Context},
+    Result,
+};
+use evmlib::{utils::network_from_env, wallet::Wallet, Network};
 use std::env;
 
-pub fn get_funded_wallet() -> evmlib::wallet::Wallet {
+pub fn get_funded_wallet() -> Wallet {
     let network = network_from_env().expect("Failed to get EVM network from environment variables");
     if matches!(network, Network::ArbitrumOne) {
         panic!("You're trying to use ArbitrumOne network. Use a custom network for testing.");
@@ -20,6 +24,15 @@ pub fn get_funded_wallet() -> evmlib::wallet::Wallet {
 
     let private_key = env::var("EVM_PRIVATE_KEY").unwrap_or(DEFAULT_WALLET_PRIVATE_KEY.to_string());
 
-    evmlib::wallet::Wallet::new_from_private_key(network, &private_key)
-        .expect("Invalid private key")
+    Wallet::new_from_private_key(network, &private_key).expect("Invalid private key")
+}
+
+pub fn get_new_wallet() -> Result<Wallet> {
+    let network =
+        network_from_env().wrap_err("Failed to get EVM network from environment variables")?;
+    if matches!(network, Network::ArbitrumOne) {
+        bail!("You're trying to use ArbitrumOne network. Use a custom network for testing.");
+    }
+
+    Ok(Wallet::new_with_random_wallet(network))
 }
