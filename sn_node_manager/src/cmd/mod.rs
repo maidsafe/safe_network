@@ -177,8 +177,8 @@ fn build_binary(bin_type: &ReleaseType) -> Result<PathBuf> {
     if cfg!(feature = "otlp") {
         args.extend(["--features", "otlp"]);
     }
-    if cfg!(feature = "local-discovery") {
-        args.extend(["--features", "local-discovery"]);
+    if cfg!(feature = "local") {
+        args.extend(["--features", "local"]);
     }
     if cfg!(feature = "network-contacts") {
         args.extend(["--features", "network-contacts"]);

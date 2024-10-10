@@ -401,7 +401,7 @@ impl Node {
             }
             NetworkEvent::NewListenAddr(_) => {
                 event_header = "NewListenAddr";
-                if !cfg!(feature = "local-discovery") {
+                if !cfg!(feature = "local") {
                     let network = self.network().clone();
                     let peers = self.initial_peers().clone();
                     let _handle = spawn(async move {

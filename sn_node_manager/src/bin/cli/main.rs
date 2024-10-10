@@ -829,7 +829,7 @@ pub enum LocalSubCmd {
         metrics_port: Option<PortRange>,
         /// Path to a safenode binary.
         ///
-        /// Make sure to enable the local-discovery feature flag on the safenode when compiling the binary.
+        /// Make sure to enable the local feature flag on the safenode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version")]
@@ -953,7 +953,7 @@ pub enum LocalSubCmd {
         metrics_port: Option<PortRange>,
         /// Path to a safenode binary
         ///
-        /// Make sure to enable the local-discovery feature flag on the safenode when compiling the binary.
+        /// Make sure to enable the local feature flag on the safenode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version", conflicts_with = "build")]

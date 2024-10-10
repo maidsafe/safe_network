@@ -52,13 +52,13 @@ use tokio::{fs, io::AsyncWriteExt};
 ///
 /// ```bash
 /// # run faucet server
-/// cargo run  --features="local-discovery" --bin faucet --release -- server
+/// cargo run  --features="local" --bin faucet --release -- server
 ///
 /// # query faucet server for money for our address `get local wallet address`
-/// curl "localhost:8000/`cargo run  --features="local-discovery"  --bin safe --release  wallet address | tail -n 1`" > transfer_hex
+/// curl "localhost:8000/`cargo run  --features="local"  --bin safe --release  wallet address | tail -n 1`" > transfer_hex
 ///
 /// # receive transfer with our wallet
-/// cargo run  --features="local-discovery" --bin safe --release  wallet receive --file transfer_hex
+/// cargo run  --features="local" --bin safe --release  wallet receive --file transfer_hex
 ///
 /// # balance should be updated
 /// ```

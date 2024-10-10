@@ -55,7 +55,7 @@ pub struct PeersArgs {
 
     /// Specify the URL to fetch the network contacts from.
     ///
-    /// This argument will be overridden if the "peers" argument is set or if the `local-discovery`
+    /// This argument will be overridden if the "peers" argument is set or if the `local`
     /// feature flag is enabled.
     #[cfg(feature = "network-contacts")]
     #[clap(long, conflicts_with = "first")]
@@ -70,7 +70,7 @@ impl PeersArgs {
     /// Otherwise, peers are obtained in the following order of precedence:
     /// * The `--peer` argument.
     /// * The `SAFE_PEERS` environment variable.
-    /// * Using the `local-discovery` feature, which will return an empty peer list.
+    /// * Using the `local` feature, which will return an empty peer list.
     /// * Using the `network-contacts` feature, which will download the peer list from a file on S3.
     ///
     /// Note: the current behaviour is that `--peer` and `SAFE_PEERS` will be combined. Some tests
@@ -86,7 +86,7 @@ impl PeersArgs {
     /// Otherwise, peers are obtained in the following order of precedence:
     /// * The `--peer` argument.
     /// * The `SAFE_PEERS` environment variable.
-    /// * Using the `local-discovery` feature, which will return an empty peer list.
+    /// * Using the `local` feature, which will return an empty peer list.
     ///
     /// This will not fetch the peers from network-contacts even if the `network-contacts` feature is enabled. Use
     /// get_peers() instead.
@@ -106,11 +106,9 @@ impl PeersArgs {
         let mut peers = if !self.peers.is_empty() {
             info!("Using peers supplied with the --peer argument(s) or SAFE_PEERS");
             self.peers
-        } else if cfg!(feature = "local-discovery") {
+        } else if cfg!(feature = "local") {
             info!("No peers given");
-            info!(
-            "The `local-discovery` feature is enabled, so peers will be discovered through mDNS."
-        );
+            info!("The `local` feature is enabled, so peers will be discovered through mDNS.");
             return Ok(vec![]);
         } else if skip_network_contacts {
             info!("Skipping network contacts");
