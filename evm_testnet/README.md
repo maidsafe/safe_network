@@ -9,7 +9,7 @@ Tool to run a local Ethereum node that automatically deploys all Autonomi smart 
 ### Usage
 
 ```bash
-cargo run --bin evm_testnet -- --royalties-wallet <ETHEREUM_ADDRESS> --genesis-wallet <ETHEREUM_ADDRESS>
+cargo run --bin evm_testnet -- --genesis-wallet <ETHEREUM_ADDRESS>
 ```
 
 Example output:

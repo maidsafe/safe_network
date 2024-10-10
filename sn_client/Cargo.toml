@@ -12,7 +12,7 @@ version = "0.110.4"
 
 [features]
 default = []
-local-discovery = ["sn_networking/local-discovery"]
+local = ["sn_networking/local"]
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 test-utils = ["sn_peers_acquisition", "eyre"]
 # required to pass on flag to node builds
@@ -67,7 +67,6 @@ assert_matches = "1.5.0"
 dirs-next = "~2.0.0"
 # add rand to libp2p
 libp2p-identity = { version = "0.2.7", features = ["rand"] }
-sn_client = { path = "../sn_client", features = ["test-utils"] }
 sn_logging = { path = "../sn_logging", version = "0.2.36" }
 sn_registers = { path = "../sn_registers", version = "0.3.21", features = [
     "test-utils",

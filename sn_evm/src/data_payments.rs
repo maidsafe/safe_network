@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{AttoTokens, EvmError};
+use evmlib::common::TxHash;
 use evmlib::{
     common::{Address as RewardsAddress, QuoteHash},
     utils::dummy_address,
@@ -21,6 +22,22 @@ pub const QUOTE_EXPIRATION_SECS: u64 = 3600;
 
 /// The margin allowed for live_time
 const LIVE_TIME_MARGIN: u64 = 10;
+
+/// The proof of payment for a data payment
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub struct ProofOfPayment {
+    /// The Quote we're paying for
+    pub quote: PaymentQuote,
+    /// The transaction hash
+    pub tx_hash: TxHash,
+}
+
+impl ProofOfPayment {
+    pub fn to_peer_id_payee(&self) -> Option<PeerId> {
+        let pub_key = PublicKey::try_decode_protobuf(&self.quote.pub_key).ok()?;
+        Some(PeerId::from_public_key(&pub_key))
+    }
+}
 
 /// Quoting metrics that got used to generate a quote, or to track peer's status.
 #[derive(
@@ -71,6 +88,10 @@ pub struct PaymentQuote {
     pub timestamp: SystemTime,
     /// quoting metrics being used to generate this quote
     pub quoting_metrics: QuotingMetrics,
+    /// list of bad_nodes that client shall not pick as a payee
+    /// in `serialised` format to avoid cyclic dependent on sn_protocol
+    #[debug(skip)]
+    pub bad_nodes: Vec<u8>,
     /// the node's wallet address
     pub rewards_address: RewardsAddress,
     /// the node's libp2p identity public key in bytes (PeerId)
@@ -89,6 +110,7 @@ impl PaymentQuote {
             cost: AttoTokens::zero(),
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
+            bad_nodes: vec![],
             rewards_address: dummy_address(),
             pub_key: vec![],
             signature: vec![],
@@ -108,6 +130,7 @@ impl PaymentQuote {
         cost: AttoTokens,
         timestamp: SystemTime,
         quoting_metrics: &QuotingMetrics,
+        serialised_bad_nodes: &[u8],
         rewards_address: &RewardsAddress,
     ) -> Vec<u8> {
         let mut bytes = xorname.to_vec();
@@ -121,6 +144,7 @@ impl PaymentQuote {
         );
         let serialised_quoting_metrics = rmp_serde::to_vec(quoting_metrics).unwrap_or_default();
         bytes.extend_from_slice(&serialised_quoting_metrics);
+        bytes.extend_from_slice(serialised_bad_nodes);
         bytes.extend_from_slice(rewards_address.as_slice());
         bytes
     }
@@ -132,6 +156,7 @@ impl PaymentQuote {
             self.cost,
             self.timestamp,
             &self.quoting_metrics,
+            &self.bad_nodes,
             &self.rewards_address,
         )
     }
@@ -190,6 +215,7 @@ impl PaymentQuote {
             cost,
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
+            bad_nodes: vec![],
             pub_key: vec![],
             signature: vec![],
             rewards_address: dummy_address(),

@@ -21,12 +21,12 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
+use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics};
 use sn_protocol::{
     messages::{Cmd, Request, Response},
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Debug,
@@ -88,15 +88,15 @@ pub enum LocalSwarmCmd {
         key: RecordKey,
         sender: oneshot::Sender<Option<Record>>,
     },
-    /// GetLocalStoreCost for this node
+    /// GetLocalStoreCost for this node, also with the bad_node list close to the target
     GetLocalStoreCost {
         key: RecordKey,
-        sender: oneshot::Sender<(NanoTokens, QuotingMetrics)>,
+        sender: oneshot::Sender<(AttoTokens, QuotingMetrics, Vec<NetworkAddress>)>,
     },
     /// Notify the node received a payment.
     PaymentReceived,
     /// Put record to the local RecordStore
-    PutVerifiedLocalRecord {
+    PutLocalRecord {
         record: Record,
     },
     /// Remove a local record from the RecordStore
@@ -194,7 +194,7 @@ pub enum NetworkSwarmCmd {
 impl Debug for LocalSwarmCmd {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LocalSwarmCmd::PutVerifiedLocalRecord { record } => {
+            LocalSwarmCmd::PutLocalRecord { record } => {
                 write!(
                     f,
                     "LocalSwarmCmd::PutLocalRecord {{ key: {:?} }}",
@@ -561,11 +561,45 @@ impl SwarmDriver {
                     .store_cost(&key);
 
                 self.record_metrics(Marker::StoreCost {
-                    cost: cost.as_nano(),
+                    cost: cost.as_atto(),
                     quoting_metrics: &quoting_metrics,
                 });
 
-                let _res = sender.send((cost, quoting_metrics));
+                // To avoid sending entire list to client, sending those that:
+                //     closer than the CLOSE_GROUP_SIZEth closest node to the target
+                let mut bad_nodes: Vec<_> = self
+                    .bad_nodes
+                    .iter()
+                    .filter_map(|(peer_id, (_issue_list, is_bad))| {
+                        if *is_bad {
+                            Some(NetworkAddress::from_peer(*peer_id))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                // List is ordered already, hence the last one is always the one wanted
+                let kbucket_key = NetworkAddress::from_record_key(&key).as_kbucket_key();
+                let closest_peers: Vec<_> = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .get_closest_local_peers(&kbucket_key)
+                    .map(|peer| peer.into_preimage())
+                    .take(CLOSE_GROUP_SIZE)
+                    .collect();
+                // In case of not enough clsest_peers, send the entire list
+                if closest_peers.len() >= CLOSE_GROUP_SIZE {
+                    let boundary_peer = closest_peers[CLOSE_GROUP_SIZE - 1];
+                    let key_address = NetworkAddress::from_record_key(&key);
+                    let boundary_distance =
+                        key_address.distance(&NetworkAddress::from_peer(boundary_peer));
+                    bad_nodes
+                        .retain(|peer_addr| key_address.distance(peer_addr) < boundary_distance);
+                }
+
+                let _res = sender.send((cost, quoting_metrics, bad_nodes));
             }
             LocalSwarmCmd::PaymentReceived => {
                 cmd_string = "PaymentReceived";
@@ -587,8 +621,8 @@ impl SwarmDriver {
                 let _ = sender.send(record);
             }
 
-            LocalSwarmCmd::PutVerifiedLocalRecord { record } => {
-                cmd_string = "PutVerifiedLocalRecord";
+            LocalSwarmCmd::PutLocalRecord { record } => {
+                cmd_string = "PutLocalRecord";
                 let key = record.key.clone();
                 let record_key = PrettyPrintRecordKey::from(&key);
 
@@ -719,6 +753,7 @@ impl SwarmDriver {
             }
             LocalSwarmCmd::GetAllLocalRecordAddresses { sender } => {
                 cmd_string = "GetAllLocalRecordAddresses";
+                #[allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
                 let addresses = self
                     .swarm
                     .behaviour_mut()
@@ -735,7 +770,7 @@ impl SwarmDriver {
                     if let Some(distance) = range.0.ilog2() {
                         let peers_in_kbucket = kbucket
                             .iter()
-                            .map(|peer_entry| (*peer_entry.node.key).into_preimage())
+                            .map(|peer_entry| peer_entry.node.key.into_preimage())
                             .collect::<Vec<PeerId>>();
                         let _ = ilog2_kbuckets.insert(distance, peers_in_kbucket);
                     } else {

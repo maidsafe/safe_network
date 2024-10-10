@@ -1,38 +1,36 @@
 use crate::common::Address;
-use crate::contract::chunk_payments::ChunkPayments;
+use crate::contract::data_payments::DataPaymentsHandler;
 use crate::contract::network_token::NetworkToken;
 use crate::{CustomNetwork, Network};
 use alloy::hex::ToHexExt;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::node_bindings::{Anvil, AnvilInstance};
-use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
-use alloy::providers::{ProviderBuilder, ReqwestProvider};
+use alloy::providers::fillers::{
+    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+};
+use alloy::providers::{Identity, ProviderBuilder, ReqwestProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::{Client, Http};
 
 pub struct Testnet {
     anvil: AnvilInstance,
     network_token_address: Address,
-    chunk_payments_address: Address,
+    data_payments_address: Address,
 }
 
 impl Testnet {
     /// Starts an Anvil node and automatically deploys the network token and chunk payments smart contracts.
-    pub async fn new(royalties_wallet: Address) -> Self {
+    pub async fn new() -> Self {
         let anvil = start_node();
 
         let network_token = deploy_network_token_contract(&anvil).await;
-        let chunk_payments = deploy_chunk_payments_contract(
-            &anvil,
-            *network_token.contract.address(),
-            royalties_wallet,
-        )
-        .await;
+        let data_payments =
+            deploy_data_payments_contract(&anvil, *network_token.contract.address()).await;
 
         Testnet {
             anvil,
             network_token_address: *network_token.contract.address(),
-            chunk_payments_address: *chunk_payments.contract.address(),
+            data_payments_address: *data_payments.contract.address(),
         }
     }
 
@@ -46,7 +44,7 @@ impl Testnet {
         Network::Custom(CustomNetwork {
             rpc_url_http: rpc_url,
             payment_token_address: self.network_token_address,
-            chunk_payments_address: self.chunk_payments_address,
+            data_payments_address: self.data_payments_address,
         })
     }
 
@@ -62,6 +60,7 @@ pub fn start_node() -> AnvilInstance {
     // Spin up a local Anvil node.
     // Requires you to have Foundry installed: https://book.getfoundry.sh/getting-started/installation
     Anvil::new()
+        .port(4343_u16)
         .try_spawn()
         .expect("Could not spawn Anvil node")
 }
@@ -71,7 +70,13 @@ pub async fn deploy_network_token_contract(
 ) -> NetworkToken<
     Http<Client>,
     FillProvider<
-        JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+        JoinFill<
+            JoinFill<
+                Identity,
+                JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+            >,
+            WalletFiller<EthereumWallet>,
+        >,
         ReqwestProvider,
         Http<Client>,
         Ethereum,
@@ -93,14 +98,19 @@ pub async fn deploy_network_token_contract(
     NetworkToken::deploy(provider).await
 }
 
-pub async fn deploy_chunk_payments_contract(
+pub async fn deploy_data_payments_contract(
     anvil: &AnvilInstance,
     token_address: Address,
-    royalties_wallet: Address,
-) -> ChunkPayments<
+) -> DataPaymentsHandler<
     Http<Client>,
     FillProvider<
-        JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+        JoinFill<
+            JoinFill<
+                Identity,
+                JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+            >,
+            WalletFiller<EthereumWallet>,
+        >,
         ReqwestProvider,
         Http<Client>,
         Ethereum,
@@ -119,5 +129,5 @@ pub async fn deploy_chunk_payments_contract(
         .on_http(rpc_url);
 
     // Deploy the contract.
-    ChunkPayments::deploy(provider, token_address, royalties_wallet).await
+    DataPaymentsHandler::deploy(provider, token_address).await
 }

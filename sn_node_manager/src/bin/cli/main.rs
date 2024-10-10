@@ -6,9 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod subcommands;
+
+use crate::subcommands::evm_network::EvmNetworkCommand;
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
 use libp2p::Multiaddr;
+use sn_evm::RewardsAddress;
 use sn_logging::{LogBuilder, LogFormat};
 use sn_node_manager::{
     add_services::config::PortRange,
@@ -836,7 +840,7 @@ pub enum LocalSubCmd {
         metrics_port: Option<PortRange>,
         /// Path to a safenode binary.
         ///
-        /// Make sure to enable the local-discovery feature flag on the safenode when compiling the binary.
+        /// Make sure to enable the local feature flag on the safenode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version")]
@@ -881,6 +885,12 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         rpc_port: Option<PortRange>,
+        /// Specify the wallet address that will receive the node's earnings.
+        #[clap(long)]
+        rewards_address: RewardsAddress,
+        /// Optionally specify what EVM network to use for payments.
+        #[command(subcommand)]
+        evm_network: Option<EvmNetworkCommand>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -954,7 +964,7 @@ pub enum LocalSubCmd {
         metrics_port: Option<PortRange>,
         /// Path to a safenode binary
         ///
-        /// Make sure to enable the local-discovery feature flag on the safenode when compiling the binary.
+        /// Make sure to enable the local feature flag on the safenode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version", conflicts_with = "build")]
@@ -998,6 +1008,12 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         rpc_port: Option<PortRange>,
+        /// Specify the wallet address that will receive the node's earnings.
+        #[clap(long)]
+        rewards_address: RewardsAddress,
+        /// Optionally specify what EVM network to use for payments.
+        #[command(subcommand)]
+        evm_network: Option<EvmNetworkCommand>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -1218,8 +1234,15 @@ async fn main() -> Result<()> {
                 owner_prefix,
                 peers,
                 rpc_port,
+                rewards_address,
+                evm_network,
                 skip_validation: _,
             } => {
+                let evm_network = if let Some(evm_network) = evm_network {
+                    Some(evm_network.try_into()?)
+                } else {
+                    None
+                };
                 cmd::local::join(
                     build,
                     count,
@@ -1236,6 +1259,8 @@ async fn main() -> Result<()> {
                     owner_prefix,
                     peers,
                     rpc_port,
+                    rewards_address,
+                    evm_network,
                     true,
                     verbosity,
                 )
@@ -1258,8 +1283,15 @@ async fn main() -> Result<()> {
                 owner,
                 owner_prefix,
                 rpc_port,
+                rewards_address,
+                evm_network,
                 skip_validation: _,
             } => {
+                let evm_network = if let Some(evm_network) = evm_network {
+                    Some(evm_network.try_into()?)
+                } else {
+                    None
+                };
                 cmd::local::run(
                     build,
                     clean,
@@ -1276,6 +1308,8 @@ async fn main() -> Result<()> {
                     owner,
                     owner_prefix,
                     rpc_port,
+                    rewards_address,
+                    evm_network,
                     true,
                     verbosity,
                 )
@@ -1359,6 +1393,8 @@ async fn main() -> Result<()> {
 
 fn get_log_builder(level: Level) -> Result<LogBuilder> {
     let logging_targets = vec![
+        ("evmlib".to_string(), level),
+        ("evm_testnet".to_string(), level),
         ("sn_peers_acquisition".to_string(), level),
         ("sn_node_manager".to_string(), level),
         ("safenode_manager".to_string(), level),

@@ -252,7 +252,7 @@ impl Client {
                 self.events_broadcaster.broadcast(ClientEvent::PeerAdded {
                     max_peers_to_connect: CLOSE_GROUP_SIZE,
                 });
-                // In case client running in non-local-discovery mode,
+                // In case client running in non-local mode,
                 // it may take some time to fill up the RT.
                 // To avoid such delay may fail the query with RecordNotFound,
                 // wait till certain amount of peers populated into RT

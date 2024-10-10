@@ -23,7 +23,7 @@ const SAMPLE_SIZE: usize = 20;
 // This procedure includes the client startup, which will be measured by criterion as well.
 // As normal user won't care much about initial client startup,
 // but be more alerted on communication speed during transmission.
-// It will be better to execute bench test with `local-discovery`,
+// It will be better to execute bench test with `local`,
 // to make the measurement results reflect speed improvement or regression more accurately.
 fn safe_files_upload(dir: &str) {
     let output = Command::new("./target/release/safe")

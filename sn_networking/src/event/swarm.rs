@@ -10,7 +10,7 @@ use crate::{
     cmd::LocalSwarmCmd, event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p,
     relay_manager::is_a_relayed_peer, target_arch::Instant, NetworkEvent, Result, SwarmDriver,
 };
-#[cfg(feature = "local-discovery")]
+#[cfg(feature = "local")]
 use libp2p::mdns;
 #[cfg(feature = "open-metrics")]
 use libp2p::metrics::Recorder;
@@ -277,7 +277,7 @@ impl SwarmDriver {
                     libp2p::identify::Event::Error { .. } => debug!("identify: {iden:?}"),
                 }
             }
-            #[cfg(feature = "local-discovery")]
+            #[cfg(feature = "local")]
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => {
                 event_string = "mdns";
                 match *mdns_event {
@@ -329,6 +329,7 @@ impl SwarmDriver {
                 self.send_event(NetworkEvent::NewListenAddr(address.clone()));
 
                 info!("Local node is listening {listener_id:?} on {address:?}");
+                println!("Local node is listening on {address:?}"); // TODO: make it print only once
             }
             SwarmEvent::ListenerClosed {
                 listener_id,

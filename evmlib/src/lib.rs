@@ -1,9 +1,12 @@
 use crate::common::{Address, QuoteHash, TxHash, U256};
-use crate::transaction::verify_chunk_payment;
+use crate::transaction::verify_data_payment;
 use alloy::primitives::address;
 use alloy::transports::http::reqwest;
 use std::str::FromStr;
 use std::sync::LazyLock;
+
+#[macro_use]
+extern crate tracing;
 
 pub mod common;
 pub mod contract;
@@ -24,23 +27,23 @@ const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
     address!("4bc1aCE0E66170375462cB4E6Af42Ad4D5EC689C");
 
 // Should be updated when the smart contract changes!
-const ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS: Address =
-    address!("F15BfEA73b6a551C5c2e66026e4eB3b69c1F602c");
+const ARBITRUM_ONE_DATA_PAYMENTS_ADDRESS: Address =
+    address!("887930F30EDEb1B255Cd2273C3F4400919df2EFe");
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CustomNetwork {
     pub rpc_url_http: reqwest::Url,
     pub payment_token_address: Address,
-    pub chunk_payments_address: Address,
+    pub data_payments_address: Address,
 }
 
 impl CustomNetwork {
-    pub fn new(rpc_url: &str, payment_token_addr: &str, chunk_payments_addr: &str) -> Self {
+    fn new(rpc_url: &str, payment_token_addr: &str, data_payments_addr: &str) -> Self {
         Self {
             rpc_url_http: reqwest::Url::parse(rpc_url).expect("Invalid RPC URL"),
             payment_token_address: Address::from_str(payment_token_addr)
                 .expect("Invalid payment token address"),
-            chunk_payments_address: Address::from_str(chunk_payments_addr)
+            data_payments_address: Address::from_str(data_payments_addr)
                 .expect("Invalid chunk payments address"),
         }
     }
@@ -53,6 +56,14 @@ pub enum Network {
 }
 
 impl Network {
+    pub fn new_custom(rpc_url: &str, payment_token_addr: &str, chunk_payments_addr: &str) -> Self {
+        Self::Custom(CustomNetwork::new(
+            rpc_url,
+            payment_token_addr,
+            chunk_payments_addr,
+        ))
+    }
+
     pub fn identifier(&self) -> &str {
         match self {
             Network::ArbitrumOne => "arbitrum-one",
@@ -74,14 +85,14 @@ impl Network {
         }
     }
 
-    pub fn chunk_payments_address(&self) -> &Address {
+    pub fn data_payments_address(&self) -> &Address {
         match self {
-            Network::ArbitrumOne => &ARBITRUM_ONE_CHUNK_PAYMENTS_ADDRESS,
-            Network::Custom(custom) => &custom.chunk_payments_address,
+            Network::ArbitrumOne => &ARBITRUM_ONE_DATA_PAYMENTS_ADDRESS,
+            Network::Custom(custom) => &custom.data_payments_address,
         }
     }
 
-    pub async fn verify_chunk_payment(
+    pub async fn verify_data_payment(
         &self,
         tx_hash: TxHash,
         quote_hash: QuoteHash,
@@ -89,7 +100,7 @@ impl Network {
         amount: U256,
         quote_expiration_timestamp_in_secs: u64,
     ) -> Result<(), transaction::Error> {
-        verify_chunk_payment(
+        verify_data_payment(
             self,
             tx_hash,
             quote_hash,

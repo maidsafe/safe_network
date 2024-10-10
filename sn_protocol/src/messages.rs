@@ -16,7 +16,7 @@ mod response;
 
 pub use self::{
     chunk_proof::{ChunkProof, Nonce},
-    cmd::{Cmd, Hash},
+    cmd::Cmd,
     node_id::NodeId,
     query::Query,
     register::RegisterCmd,

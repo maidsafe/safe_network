@@ -1,14 +1,13 @@
 use std::collections::BTreeMap;
 
 use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
-use crate::contract::chunk_payments::{ChunkPayments, MAX_TRANSFERS_PER_TRANSACTION};
+use crate::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
-use crate::contract::{chunk_payments, network_token};
-use crate::utils::calculate_royalties_from_amount;
+use crate::contract::{data_payments, network_token};
 use crate::Network;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
 use alloy::providers::fillers::{
-    ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, RecommendedFiller, WalletFiller,
+    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
 };
 use alloy::providers::{Identity, Provider, ProviderBuilder, ReqwestProvider};
 use alloy::rpc::types::TransactionRequest;
@@ -25,9 +24,10 @@ pub enum Error {
     #[error("Network token contract error: {0}")]
     NetworkTokenContract(#[from] network_token::Error),
     #[error("Chunk payments contract error: {0}")]
-    ChunkPaymentsContract(#[from] chunk_payments::error::Error),
+    ChunkPaymentsContract(#[from] data_payments::error::Error),
 }
 
+#[derive(Clone)]
 pub struct Wallet {
     wallet: EthereumWallet,
     network: Network,
@@ -100,9 +100,9 @@ impl Wallet {
     /// transaction hashes of the payments by quotes.
     pub async fn pay_for_quotes<I: IntoIterator<Item = QuotePayment>>(
         &self,
-        chunk_payments: I,
+        data_payments: I,
     ) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
-        pay_for_quotes(self.wallet.clone(), &self.network, chunk_payments).await
+        pay_for_quotes(self.wallet.clone(), &self.network, data_payments).await
     }
 }
 
@@ -114,7 +114,10 @@ fn random() -> EthereumWallet {
 
 /// Creates a wallet from a private key in HEX format.
 fn from_private_key(private_key: &str) -> Result<EthereumWallet, Error> {
-    let signer: PrivateKeySigner = private_key.parse().map_err(|_| Error::PrivateKeyInvalid)?;
+    let signer: PrivateKeySigner = private_key.parse().map_err(|err| {
+        error!("Error parsing private key: {err}");
+        Error::PrivateKeyInvalid
+    })?;
     Ok(EthereumWallet::from(signer))
 }
 
@@ -124,7 +127,10 @@ fn from_private_key(private_key: &str) -> Result<EthereumWallet, Error> {
 fn http_provider(
     rpc_url: reqwest::Url,
 ) -> FillProvider<
-    JoinFill<JoinFill<JoinFill<Identity, GasFiller>, NonceFiller>, ChainIdFiller>,
+    JoinFill<
+        Identity,
+        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+    >,
     ReqwestProvider,
     Http<Client>,
     Ethereum,
@@ -134,11 +140,18 @@ fn http_provider(
         .on_http(rpc_url)
 }
 
+#[allow(clippy::type_complexity)]
 fn http_provider_with_wallet(
     rpc_url: reqwest::Url,
     wallet: EthereumWallet,
 ) -> FillProvider<
-    JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+    JoinFill<
+        JoinFill<
+            Identity,
+            JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+        >,
+        WalletFiller<EthereumWallet>,
+    >,
     ReqwestProvider,
     Http<Client>,
     Ethereum,
@@ -159,6 +172,7 @@ pub async fn balance_of_tokens(
     account: Address,
     network: &Network,
 ) -> Result<U256, network_token::Error> {
+    info!("Getting balance of tokens for account: {account}");
     let provider = http_provider(network.rpc_url().clone());
     let network_token = NetworkToken::new(*network.payment_token_address(), provider);
     network_token.balance_of(account).await
@@ -169,6 +183,7 @@ pub async fn balance_of_gas_tokens(
     account: Address,
     network: &Network,
 ) -> Result<U256, network_token::Error> {
+    debug!("Getting balance of gas tokens for account: {account}");
     let provider = http_provider(network.rpc_url().clone());
     let balance = provider.get_balance(account).await?;
     Ok(balance)
@@ -181,6 +196,7 @@ async fn approve_to_spend_tokens(
     spender: Address,
     amount: U256,
 ) -> Result<TxHash, network_token::Error> {
+    debug!("Approving address/smart contract with {amount} tokens at address: {spender}",);
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
     let network_token = NetworkToken::new(*network.payment_token_address(), provider);
     network_token.approve(spender, amount).await
@@ -193,6 +209,7 @@ pub async fn transfer_tokens(
     receiver: Address,
     amount: U256,
 ) -> Result<TxHash, network_token::Error> {
+    debug!("Transferring {amount} tokens to {receiver}");
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
     let network_token = NetworkToken::new(*network.payment_token_address(), provider);
     network_token.transfer(receiver, amount).await
@@ -205,6 +222,7 @@ pub async fn transfer_gas_tokens(
     receiver: Address,
     amount: U256,
 ) -> Result<TxHash, network_token::Error> {
+    debug!("Transferring {amount} gas tokens to {receiver}");
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
     let tx = TransactionRequest::default()
         .with_to(receiver)
@@ -226,12 +244,9 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     network: &Network,
     payments: T,
 ) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
+    info!("Paying for quotes");
     let payments: Vec<_> = payments.into_iter().collect();
     let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
-    let royalties = calculate_royalties_from_amount(total_amount);
-
-    // 2 * royalties to have a small buffer for different rounding in the smart contract.
-    let total_amount_with_royalties = total_amount + (U256::from(2) * royalties);
 
     let mut tx_hashes_by_quote = BTreeMap::new();
 
@@ -239,14 +254,14 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     approve_to_spend_tokens(
         wallet.clone(),
         network,
-        *network.chunk_payments_address(),
-        total_amount_with_royalties,
+        *network.data_payments_address(),
+        total_amount,
     )
     .await
     .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
 
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
-    let chunk_payments = ChunkPayments::new(*network.chunk_payments_address(), provider);
+    let data_payments = DataPaymentsHandler::new(*network.data_payments_address(), provider);
 
     // Divide transfers over multiple transactions if they exceed the max per transaction.
     let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);
@@ -254,7 +269,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     for batch in chunks {
         let batch: Vec<QuotePayment> = batch.to_vec();
 
-        let tx_hash = chunk_payments
+        let tx_hash = data_payments
             .pay_for_quotes(batch.clone())
             .await
             .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
@@ -271,7 +286,6 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 mod tests {
     use crate::common::Amount;
     use crate::testnet::Testnet;
-    use crate::utils::dummy_address;
     use crate::wallet::{from_private_key, Wallet};
     use alloy::network::{Ethereum, EthereumWallet, NetworkWallet};
     use alloy::primitives::address;
@@ -291,7 +305,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_transfer_gas_tokens() {
-        let testnet = Testnet::new(dummy_address()).await;
+        let testnet = Testnet::new().await;
         let network = testnet.to_network();
         let wallet =
             Wallet::new_from_private_key(network.clone(), &testnet.default_wallet_private_key())

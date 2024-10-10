@@ -1,26 +1,39 @@
-use std::collections::{BTreeMap, HashSet};
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::self_encryption::{encrypt, DataMapLevel};
-use crate::Client;
+use crate::self_encryption::DataMapLevel;
 use bytes::Bytes;
-use libp2p::{
-    kad::{Quorum, Record},
-    PeerId,
-};
+use evmlib::wallet;
+use libp2p::kad::{Quorum, Record};
+
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg};
+use std::collections::HashSet;
+use tokio::task::JoinError;
+use xor_name::XorName;
+
+use crate::{self_encryption::encrypt, Client};
+use evmlib::common::{QuoteHash, QuotePayment, TxHash};
+use evmlib::wallet::Wallet;
+use libp2p::futures;
+use rand::{thread_rng, Rng};
+use sn_evm::{Amount, AttoTokens, ProofOfPayment};
+use sn_networking::PutRecordCfg;
+use sn_networking::{GetRecordCfg, Network, NetworkError, PayeeQuote, VerificationKind};
 use sn_protocol::{
+    messages::ChunkProof,
     storage::{
-        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind,
+        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, RecordHeader,
+        RecordKind, RetryStrategy,
     },
     NetworkAddress,
 };
-use sn_transfers::Payment;
-use sn_transfers::{HotWallet, MainPubkey, NanoTokens, PaymentQuote};
-use tokio::task::{JoinError, JoinSet};
-use xor_name::XorName;
-
-use super::transfers::SendSpendsError;
+use std::collections::{BTreeMap, HashMap};
+use std::num::NonZero;
 
 /// Errors that can occur during the put operation.
 #[derive(Debug, thiserror::Error)]
@@ -33,23 +46,25 @@ pub enum PutError {
     VaultXorName,
     #[error("A network error occurred.")]
     Network(#[from] NetworkError),
-    #[error("A wallet error occurred.")]
-    Wallet(#[from] sn_transfers::WalletError),
     #[error("Error occurred during payment.")]
     PayError(#[from] PayError),
+    #[error("A wallet error occurred.")]
+    Wallet(#[from] sn_evm::EvmError),
 }
 
 /// Errors that can occur during the pay operation.
 #[derive(Debug, thiserror::Error)]
 pub enum PayError {
+    #[error("Could not get store quote for: {0:?} after several retries")]
+    CouldNotGetStoreQuote(XorName),
     #[error("Could not get store costs: {0:?}")]
-    CouldNotGetStoreCosts(sn_networking::NetworkError),
+    CouldNotGetStoreCosts(NetworkError),
     #[error("Could not simultaneously fetch store costs: {0:?}")]
     JoinError(JoinError),
-    #[error("Hot wallet error")]
-    WalletError(#[from] sn_transfers::WalletError),
-    #[error("Failed to send spends")]
-    SendSpendsError(#[from] SendSpendsError),
+    #[error("Wallet error: {0:?}")]
+    EvmWalletError(#[from] wallet::Error),
+    #[error("Failed to self-encrypt data.")]
+    SelfEncryption(#[from] crate::self_encryption::Error),
 }
 
 /// Errors that can occur during the get operation.
@@ -60,7 +75,7 @@ pub enum GetError {
     #[error("Failed to decrypt data.")]
     Decryption(crate::self_encryption::Error),
     #[error("General networking error: {0:?}")]
-    Network(#[from] sn_networking::NetworkError),
+    Network(#[from] NetworkError),
     #[error("General protocol error: {0:?}")]
     Protocol(#[from] sn_protocol::Error),
 }
@@ -69,6 +84,7 @@ impl Client {
     /// Fetch a piece of self-encrypted data from the network, by its data map
     /// XOR address.
     pub async fn get(&self, data_map_addr: XorName) -> Result<Bytes, GetError> {
+        info!("Fetching file from data_map: {data_map_addr:?}");
         let data_map_chunk = self.fetch_chunk(data_map_addr).await?;
         let data = self
             .fetch_from_data_map_chunk(data_map_chunk.value())
@@ -79,7 +95,8 @@ impl Client {
 
     /// Get a raw chunk from the network.
     pub async fn fetch_chunk(&self, addr: XorName) -> Result<Chunk, GetError> {
-        tracing::info!("Getting chunk: {addr:?}");
+        info!("Getting chunk: {addr:?}");
+
         let key = NetworkAddress::from_chunk_address(ChunkAddress::new(addr)).to_record_key();
 
         let get_cfg = GetRecordCfg {
@@ -89,8 +106,14 @@ impl Client {
             expected_holders: HashSet::new(),
             is_register: false,
         };
-        let record = self.network.get_record_from_network(key, &get_cfg).await?;
+
+        let record = self
+            .network
+            .get_record_from_network(key, &get_cfg)
+            .await
+            .inspect_err(|err| error!("Error fetching chunk: {err:?}"))?;
         let header = RecordHeader::from_record(&record)?;
+
         if let RecordKind::Chunk = header.kind {
             let chunk: Chunk = try_deserialize_record(&record)?;
             Ok(chunk)
@@ -99,42 +122,15 @@ impl Client {
         }
     }
 
-    /// Upload a piece of data to the network. This data will be self-encrypted,
-    /// and the data map XOR address will be returned.
-    pub async fn put(&mut self, data: Bytes, wallet: &mut HotWallet) -> Result<XorName, PutError> {
-        let now = std::time::Instant::now();
-        let (map, chunks) = encrypt(data)?;
-        tracing::debug!("Encryption took: {:.2?}", now.elapsed());
-
-        let map_xor_name = *map.address().xorname();
-
-        let mut xor_names = vec![];
-        xor_names.push(map_xor_name);
-        for chunk in &chunks {
-            xor_names.push(*chunk.name());
-        }
-
-        let (.., skipped_chunks) = self.pay(xor_names.into_iter(), wallet).await?;
-
-        // TODO: Upload in parallel
-        if !skipped_chunks.contains(map.name()) {
-            self.upload_chunk(map, wallet).await?;
-        }
-        for chunk in chunks {
-            if skipped_chunks.contains(chunk.name()) {
-                continue;
-            }
-            self.upload_chunk(chunk, wallet).await?;
-        }
-
-        Ok(map_xor_name)
-    }
-
-    // Fetch and decrypt all chunks in the data map.
+    /// Fetch and decrypt all chunks in the data map.
     async fn fetch_from_data_map(&self, data_map: &DataMap) -> Result<Bytes, GetError> {
         let mut encrypted_chunks = vec![];
+
         for info in data_map.infos() {
-            let chunk = self.fetch_chunk(info.dst_hash).await?;
+            let chunk = self
+                .fetch_chunk(info.dst_hash)
+                .await
+                .inspect_err(|err| error!("Error fetching chunk {:?}: {err:?}", info.dst_hash))?;
             let chunk = EncryptedChunk {
                 index: info.index,
                 content: chunk.value,
@@ -142,16 +138,19 @@ impl Client {
             encrypted_chunks.push(chunk);
         }
 
-        let data = decrypt_full_set(data_map, &encrypted_chunks)
-            .map_err(|e| GetError::Decryption(crate::self_encryption::Error::SelfEncryption(e)))?;
+        let data = decrypt_full_set(data_map, &encrypted_chunks).map_err(|e| {
+            error!("Error decrypting encrypted_chunks: {e:?}");
+            GetError::Decryption(crate::self_encryption::Error::SelfEncryption(e))
+        })?;
 
         Ok(data)
     }
 
-    // Unpack a wrapped data map and fetch all bytes using self-encryption.
+    /// Unpack a wrapped data map and fetch all bytes using self-encryption.
     async fn fetch_from_data_map_chunk(&self, data_map_bytes: &Bytes) -> Result<Bytes, GetError> {
-        let mut data_map_level: DataMapLevel =
-            rmp_serde::from_slice(data_map_bytes).map_err(GetError::InvalidDataMap)?;
+        let mut data_map_level: DataMapLevel = rmp_serde::from_slice(data_map_bytes)
+            .map_err(GetError::InvalidDataMap)
+            .inspect_err(|err| error!("Error deserializing data map: {err:?}"))?;
 
         loop {
             let data_map = match &data_map_level {
@@ -164,137 +163,154 @@ impl Client {
             match &data_map_level {
                 DataMapLevel::First(_) => break Ok(data),
                 DataMapLevel::Additional(_) => {
-                    data_map_level =
-                        rmp_serde::from_slice(&data).map_err(GetError::InvalidDataMap)?;
+                    data_map_level = rmp_serde::from_slice(&data).map_err(|err| {
+                        error!("Error deserializing data map: {err:?}");
+                        GetError::InvalidDataMap(err)
+                    })?;
                     continue;
                 }
             };
         }
     }
 
-    /// Returns the storage cost, royalty fees, and skipped chunks. In that order as tuple.
-    pub(crate) async fn pay(
-        &mut self,
-        content_addrs: impl Iterator<Item = XorName>,
-        wallet: &mut HotWallet,
-    ) -> Result<(NanoTokens, NanoTokens, Vec<XorName>), PayError> {
-        let mut tasks = JoinSet::new();
-        for content_addr in content_addrs {
-            let network = self.network.clone();
-            tasks.spawn(async move {
-                // TODO: retry, but where?
-                let cost = network
-                    .get_store_costs_from_network(
-                        NetworkAddress::from_chunk_address(ChunkAddress::new(content_addr)),
-                        vec![],
-                    )
-                    .await
-                    .map_err(PayError::CouldNotGetStoreCosts);
+    /// Upload a piece of data to the network. This data will be self-encrypted,
+    /// and the data map XOR address will be returned.
+    pub async fn put(&self, data: Bytes, wallet: &Wallet) -> Result<XorName, PutError> {
+        let now = sn_networking::target_arch::Instant::now();
+        let (data_map_chunk, chunks) = encrypt(data)?;
+        info!(
+            "Uploading datamap chunk to the network at: {:?}",
+            data_map_chunk.address()
+        );
 
-                tracing::debug!("Storecosts retrieved for {content_addr:?} {cost:?}");
-                (content_addr, cost)
-            });
+        debug!("Encryption took: {:.2?}", now.elapsed());
+
+        let map_xor_name = *data_map_chunk.address().xorname();
+        let mut xor_names = vec![map_xor_name];
+
+        for chunk in &chunks {
+            xor_names.push(*chunk.name());
         }
-        tracing::debug!("Pending store cost tasks: {:?}", tasks.len());
 
-        // collect store costs
-        let mut cost_map = BTreeMap::default();
-        let mut skipped_chunks = vec![];
-        while let Some(res) = tasks.join_next().await {
-            match res {
-                Ok((content_addr, Ok(cost))) => {
-                    if cost.2.cost == NanoTokens::zero() {
-                        skipped_chunks.push(content_addr);
-                        tracing::debug!("Skipped existing chunk {content_addr:?}");
-                    } else {
-                        tracing::debug!("Storecost inserted into payment map for {content_addr:?}");
-                        let _ = cost_map.insert(content_addr, (cost.1, cost.2, cost.0.to_bytes()));
-                    }
-                }
-                Ok((content_addr, Err(err))) => {
-                    tracing::warn!("Cannot get store cost for {content_addr:?} with error {err:?}");
-                    return Err(err);
-                }
-                Err(e) => {
-                    return Err(PayError::JoinError(e));
-                }
+        // Pay for all chunks + data map chunk
+        info!("Paying for {} addresses", xor_names.len());
+        let (payment_proofs, _free_chunks) = self
+            .pay(xor_names.into_iter(), wallet)
+            .await
+            .inspect_err(|err| error!("Error paying for data: {err:?}"))?;
+
+        // Upload data map
+        if let Some(proof) = payment_proofs.get(&map_xor_name) {
+            debug!("Uploading data map chunk: {map_xor_name:?}");
+            self.upload_chunk(data_map_chunk.clone(), proof.clone())
+                .await
+                .inspect_err(|err| error!("Error uploading data map chunk: {err:?}"))?;
+        }
+
+        // Upload the rest of the chunks
+        debug!("Uploading {} chunks", chunks.len());
+        for chunk in chunks {
+            if let Some(proof) = payment_proofs.get(chunk.name()) {
+                let address = *chunk.address();
+                self.upload_chunk(chunk, proof.clone())
+                    .await
+                    .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))?;
             }
         }
 
-        let (storage_cost, royalty_fees) = if cost_map.is_empty() {
-            (NanoTokens::zero(), NanoTokens::zero())
-        } else {
-            self.pay_for_records(&cost_map, wallet).await?
-        };
-        Ok((storage_cost, royalty_fees, skipped_chunks))
+        Ok(map_xor_name)
     }
 
-    async fn pay_for_records(
-        &mut self,
-        cost_map: &BTreeMap<XorName, (MainPubkey, PaymentQuote, Vec<u8>)>,
-        wallet: &mut HotWallet,
-    ) -> Result<(NanoTokens, NanoTokens), PayError> {
-        // Before wallet progress, there shall be no `unconfirmed_spend_requests`
-        self.resend_pending_transactions(wallet).await;
+    /// Get the cost of storing a piece of data.
+    #[cfg_attr(not(feature = "fs"), allow(dead_code, reason = "used only with `fs`"))]
+    pub async fn cost(&self, data: Bytes) -> Result<AttoTokens, PayError> {
+        let now = std::time::Instant::now();
+        let (data_map_chunk, chunks) = encrypt(data)?;
 
-        let total_cost = wallet.local_send_storage_payment(cost_map)?;
+        debug!("Encryption took: {:.2?}", now.elapsed());
 
-        // send to network
-        tracing::trace!("Sending storage payment transfer to the network");
-        let spend_attempt_result = self
-            .send_spends(wallet.unconfirmed_spend_requests().iter())
-            .await;
+        let map_xor_name = *data_map_chunk.address().xorname();
+        let mut content_addrs = vec![map_xor_name];
 
-        tracing::trace!("send_spends of {} chunks completed", cost_map.len(),);
-
-        // Here is bit risky that for the whole bunch of spends to the chunks' store_costs and royalty_fee
-        // they will get re-paid again for ALL, if any one of the payment failed to be put.
-        if let Err(error) = spend_attempt_result {
-            tracing::warn!("The storage payment transfer was not successfully registered in the network: {error:?}. It will be retried later.");
-
-            // if we have a DoubleSpend error, lets remove the CashNote from the wallet
-            if let SendSpendsError::DoubleSpendAttemptedForCashNotes(spent_cash_notes) = &error {
-                for cash_note_key in spent_cash_notes {
-                    tracing::warn!(
-                        "Removing double spends CashNote from wallet: {cash_note_key:?}"
-                    );
-                    wallet.mark_notes_as_spent([cash_note_key]);
-                    wallet.clear_specific_spend_request(*cash_note_key);
-                }
-            }
-
-            wallet.store_unconfirmed_spend_requests()?;
-
-            return Err(PayError::SendSpendsError(error));
-        } else {
-            tracing::info!("Spend has completed: {:?}", spend_attempt_result);
-            wallet.clear_confirmed_spend_requests();
+        for chunk in &chunks {
+            content_addrs.push(*chunk.name());
         }
-        tracing::trace!("clear up spends of {} chunks completed", cost_map.len(),);
 
+        info!(
+            "Calculating cost of storing {} chunks. Data map chunk at: {map_xor_name:?}",
+            content_addrs.len()
+        );
+
+        let cost_map = self
+            .get_store_quotes(content_addrs.into_iter())
+            .await
+            .inspect_err(|err| error!("Error getting store quotes: {err:?}"))?;
+        let total_cost = AttoTokens::from_atto(
+            cost_map
+                .values()
+                .map(|quote| quote.2.cost.as_atto())
+                .sum::<Amount>(),
+        );
         Ok(total_cost)
     }
 
+    /// Pay for the chunks and get the proof of payment.
+    pub(crate) async fn pay(
+        &self,
+        content_addrs: impl Iterator<Item = XorName>,
+        wallet: &Wallet,
+    ) -> Result<(HashMap<XorName, ProofOfPayment>, Vec<XorName>), PayError> {
+        let cost_map = self.get_store_quotes(content_addrs).await?;
+        let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
+
+        // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
+        // TODO: retry when it fails?
+        // Execute chunk payments
+        let payments = wallet
+            .pay_for_quotes(quote_payments)
+            .await
+            .map_err(|err| PayError::from(err.0))?;
+
+        let proofs = construct_proofs(&cost_map, &payments);
+
+        trace!(
+            "Chunk payments of {} chunks completed. {} chunks were free / already paid for",
+            proofs.len(),
+            skipped_chunks.len()
+        );
+
+        Ok((proofs, skipped_chunks))
+    }
+
+    pub(crate) async fn get_store_quotes(
+        &self,
+        content_addrs: impl Iterator<Item = XorName>,
+    ) -> Result<HashMap<XorName, PayeeQuote>, PayError> {
+        let futures: Vec<_> = content_addrs
+            .into_iter()
+            .map(|content_addr| fetch_store_quote_with_retries(&self.network, content_addr))
+            .collect();
+
+        let quotes = futures::future::try_join_all(futures).await?;
+
+        Ok(quotes.into_iter().collect::<HashMap<XorName, PayeeQuote>>())
+    }
+
     /// Directly writes Chunks to the network in the form of immutable self encrypted chunks.
-    async fn upload_chunk(&self, chunk: Chunk, wallet: &mut HotWallet) -> Result<(), PutError> {
-        let xor_name = *chunk.name();
-        let (payment, payee) = self.get_recent_payment_for_addr(&xor_name, wallet)?;
-
-        self.store_chunk(chunk, payee, payment).await?;
-
-        wallet.api().remove_payment_transaction(&xor_name);
-
+    async fn upload_chunk(
+        &self,
+        chunk: Chunk,
+        proof_of_payment: ProofOfPayment,
+    ) -> Result<(), PutError> {
+        self.store_chunk(chunk, proof_of_payment).await?;
         Ok(())
     }
 
     /// Actually store a chunk to a peer.
-    async fn store_chunk(
-        &self,
-        chunk: Chunk,
-        payee: PeerId,
-        payment: Payment,
-    ) -> Result<(), PutError> {
-        tracing::debug!("Storing chunk: {chunk:?} to {payee:?}");
+    async fn store_chunk(&self, chunk: Chunk, payment: ProofOfPayment) -> Result<(), PutError> {
+        let storing_node = payment.to_peer_id_payee().expect("Missing node Peer ID");
+
+        debug!("Storing chunk: {chunk:?} to {:?}", storing_node);
 
         let key = chunk.network_address().to_record_key();
 
@@ -308,12 +324,118 @@ impl Client {
             expires: None,
         };
 
+        let verification = {
+            let verification_cfg = GetRecordCfg {
+                get_quorum: Quorum::N(NonZero::new(2).expect("2 is non-zero")),
+                retry_strategy: Some(RetryStrategy::Quick),
+                target_record: None,
+                expected_holders: Default::default(),
+                is_register: false,
+            };
+
+            let stored_on_node = try_serialize_record(&chunk, RecordKind::Chunk)
+                .map_err(|_| PutError::Serialization)?
+                .to_vec();
+            let random_nonce = thread_rng().gen::<u64>();
+            let expected_proof = ChunkProof::new(&stored_on_node, random_nonce);
+
+            Some((
+                VerificationKind::ChunkProof {
+                    expected_proof,
+                    nonce: random_nonce,
+                },
+                verification_cfg,
+            ))
+        };
+
         let put_cfg = PutRecordCfg {
             put_quorum: Quorum::One,
-            retry_strategy: None,
-            use_put_record_to: Some(vec![payee]),
-            verification: None,
+            retry_strategy: Some(RetryStrategy::Balanced),
+            use_put_record_to: Some(vec![storing_node]),
+            verification,
         };
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
+}
+
+/// Fetch a store quote for a content address with a retry strategy.
+async fn fetch_store_quote_with_retries(
+    network: &Network,
+    content_addr: XorName,
+) -> Result<(XorName, PayeeQuote), PayError> {
+    let mut retries = 0;
+
+    loop {
+        match fetch_store_quote(network, content_addr).await {
+            Ok(quote) => {
+                break Ok((content_addr, quote));
+            }
+            Err(err) if retries < 2 => {
+                retries += 1;
+                error!("Error while fetching store quote: {err:?}, retry #{retries}");
+            }
+            Err(err) => {
+                error!(
+                    "Error while fetching store quote: {err:?}, stopping after {retries} retries"
+                );
+                break Err(PayError::CouldNotGetStoreQuote(content_addr));
+            }
+        }
+    }
+}
+
+/// Fetch a store quote for a content address.
+async fn fetch_store_quote(
+    network: &Network,
+    content_addr: XorName,
+) -> Result<PayeeQuote, NetworkError> {
+    network
+        .get_store_costs_from_network(
+            NetworkAddress::from_chunk_address(ChunkAddress::new(content_addr)),
+            vec![],
+        )
+        .await
+}
+
+/// Form to be executed payments and already executed payments from a cost map.
+fn extract_quote_payments(
+    cost_map: &HashMap<XorName, PayeeQuote>,
+) -> (Vec<QuotePayment>, Vec<XorName>) {
+    let mut to_be_paid = vec![];
+    let mut already_paid = vec![];
+
+    for (chunk_address, quote) in cost_map.iter() {
+        if quote.2.cost.is_zero() {
+            already_paid.push(*chunk_address);
+        } else {
+            to_be_paid.push((
+                quote.2.hash(),
+                quote.2.rewards_address,
+                quote.2.cost.as_atto(),
+            ));
+        }
+    }
+
+    (to_be_paid, already_paid)
+}
+
+/// Construct payment proofs from cost map and payments map.
+fn construct_proofs(
+    cost_map: &HashMap<XorName, PayeeQuote>,
+    payments: &BTreeMap<QuoteHash, TxHash>,
+) -> HashMap<XorName, ProofOfPayment> {
+    cost_map
+        .iter()
+        .filter_map(|(xor_name, (_, _, quote))| {
+            payments.get(&quote.hash()).map(|tx_hash| {
+                (
+                    *xor_name,
+                    ProofOfPayment {
+                        quote: quote.clone(),
+                        tx_hash: *tx_hash,
+                    },
+                )
+            })
+        })
+        .collect()
 }

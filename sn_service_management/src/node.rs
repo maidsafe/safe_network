@@ -11,9 +11,9 @@ use async_trait::async_trait;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use service_manager::{ServiceInstallCtx, ServiceLabel};
+use sn_evm::AttoTokens;
 use sn_logging::LogFormat;
 use sn_protocol::get_port_from_multiaddr;
-use sn_transfers::NanoTokens;
 use std::{
     ffi::OsString,
     net::{Ipv4Addr, SocketAddr},
@@ -292,7 +292,7 @@ pub struct NodeServiceData {
     )]
     pub peer_id: Option<PeerId>,
     pub pid: Option<u32>,
-    pub reward_balance: Option<NanoTokens>,
+    pub reward_balance: Option<AttoTokens>,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,
     pub service_name: String,

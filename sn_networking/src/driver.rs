@@ -30,7 +30,7 @@ use crate::{
 use crate::{transport, NodeIssue};
 use futures::future::Either;
 use futures::StreamExt;
-#[cfg(feature = "local-discovery")]
+#[cfg(feature = "local")]
 use libp2p::mdns;
 use libp2p::Transport as _;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
@@ -47,6 +47,7 @@ use libp2p::{
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::info::Info;
+use sn_evm::PaymentQuote;
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
     storage::{try_deserialize_record, RetryStrategy},
@@ -57,7 +58,6 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::PaymentQuote;
 use std::{
     collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
     fmt::Debug,
@@ -236,7 +236,7 @@ pub(super) struct NodeBehaviour {
     pub(super) blocklist:
         libp2p::allow_block_list::Behaviour<libp2p::allow_block_list::BlockedPeers>,
     pub(super) identify: libp2p::identify::Behaviour,
-    #[cfg(feature = "local-discovery")]
+    #[cfg(feature = "local")]
     pub(super) mdns: mdns::tokio::Behaviour,
     #[cfg(feature = "upnp")]
     pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
@@ -251,7 +251,6 @@ pub struct NetworkBuilder {
     is_behind_home_network: bool,
     keypair: Keypair,
     local: bool,
-    root_dir: PathBuf,
     listen_addr: Option<SocketAddr>,
     request_timeout: Option<Duration>,
     concurrency_limit: Option<usize>,
@@ -265,12 +264,11 @@ pub struct NetworkBuilder {
 }
 
 impl NetworkBuilder {
-    pub fn new(keypair: Keypair, local: bool, root_dir: PathBuf) -> Self {
+    pub fn new(keypair: Keypair, local: bool) -> Self {
         Self {
             is_behind_home_network: false,
             keypair,
             local,
-            root_dir,
             listen_addr: None,
             request_timeout: None,
             concurrency_limit: None,
@@ -335,7 +333,10 @@ impl NetworkBuilder {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
-    pub fn build_node(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+    pub fn build_node(
+        self,
+        root_dir: PathBuf,
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         let mut kad_cfg = kad::Config::new(KAD_STREAM_PROTOCOL_ID);
         let _ = kad_cfg
             .set_kbucket_inserts(libp2p::kad::BucketInserts::Manual)
@@ -363,7 +364,7 @@ impl NetworkBuilder {
 
         let store_cfg = {
             // Configures the disk_store to store records under the provided path and increase the max record size
-            let storage_dir_path = self.root_dir.join("record_store");
+            let storage_dir_path = root_dir.join("record_store");
             if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
                 return Err(NetworkError::FailedToCreateRecordStoreDir {
                     path: storage_dir_path,
@@ -373,7 +374,7 @@ impl NetworkBuilder {
             NodeRecordStoreConfig {
                 max_value_bytes: MAX_PACKET_SIZE, // TODO, does this need to be _less_ than MAX_PACKET_SIZE
                 storage_dir: storage_dir_path,
-                historic_quote_dir: self.root_dir.clone(),
+                historic_quote_dir: root_dir.clone(),
                 ..Default::default()
             }
         };
@@ -583,7 +584,7 @@ impl NetworkBuilder {
             }
         };
 
-        #[cfg(feature = "local-discovery")]
+        #[cfg(feature = "local")]
         let mdns_config = mdns::Config {
             // lower query interval to speed up peer discovery
             // this increases traffic, but means we no longer have clients unable to connect
@@ -592,7 +593,7 @@ impl NetworkBuilder {
             ..Default::default()
         };
 
-        #[cfg(feature = "local-discovery")]
+        #[cfg(feature = "local")]
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
         // Identify Behaviour
@@ -638,7 +639,7 @@ impl NetworkBuilder {
             request_response,
             kademlia,
             identify,
-            #[cfg(feature = "local-discovery")]
+            #[cfg(feature = "local")]
             mdns,
         };
 
@@ -702,7 +703,6 @@ impl NetworkBuilder {
             network_swarm_cmd_sender,
             local_swarm_cmd_sender,
             peer_id,
-            self.root_dir,
             self.keypair,
         );
 

@@ -296,7 +296,13 @@ impl NetworkMetricsRecorder {
                 cost,
                 quoting_metrics,
             } => {
-                let _ = self.store_cost.set(cost as i64);
+                let _ = self.store_cost.set(cost.try_into().unwrap_or(i64::MAX));
+                let _ = self.relevant_records.set(
+                    quoting_metrics
+                        .close_records_stored
+                        .try_into()
+                        .unwrap_or(i64::MAX),
+                );
                 let _ = self
                     .relevant_records
                     .set(quoting_metrics.close_records_stored as i64);

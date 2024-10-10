@@ -48,7 +48,6 @@ pub use metrics::service::MetricsRegistries;
 pub use target_arch::{interval, sleep, spawn, Instant, Interval};
 
 use self::{cmd::NetworkSwarmCmd, error::Result};
-use backoff::{Error as BackoffError, ExponentialBackoff};
 use futures::future::select_all;
 use libp2p::{
     identity::Keypair,
@@ -58,17 +57,16 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 use rand::Rng;
+use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
     storage::{RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
-use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote, QuotingMetrics};
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, HashMap},
     net::IpAddr,
-    path::PathBuf,
     sync::Arc,
 };
 use tokio::sync::{
@@ -78,7 +76,7 @@ use tokio::sync::{
 use tokio::time::Duration;
 
 /// The type of quote for a selected payee.
-pub type PayeeQuote = (PeerId, MainPubkey, PaymentQuote);
+pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
 
 /// The count of peers that will be considered as close to a record target,
 /// that a replication of the record shall be sent/accepted to/by the peer.
@@ -160,7 +158,6 @@ struct NetworkInner {
     network_swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
     local_swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     peer_id: PeerId,
-    root_dir_path: PathBuf,
     keypair: Keypair,
 }
 
@@ -169,7 +166,6 @@ impl Network {
         network_swarm_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
         local_swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
         peer_id: PeerId,
-        root_dir_path: PathBuf,
         keypair: Keypair,
     ) -> Self {
         Self {
@@ -177,7 +173,6 @@ impl Network {
                 network_swarm_cmd_sender,
                 local_swarm_cmd_sender,
                 peer_id,
-                root_dir_path,
                 keypair,
             }),
         }
@@ -191,11 +186,6 @@ impl Network {
     /// Returns the `Keypair` of the instance.
     pub fn keypair(&self) -> &Keypair {
         &self.inner.keypair
-    }
-
-    /// Returns the root directory path of the instance.
-    pub fn root_dir_path(&self) -> &PathBuf {
-        &self.inner.root_dir_path
     }
 
     /// Get the sender to send a `NetworkSwarmCmd` to the underlying `Swarm`.
@@ -346,8 +336,8 @@ impl Network {
     /// Get the store costs from the majority of the closest peers to the provided RecordKey.
     /// Record already exists will have a cost of zero to be returned.
     ///
-    /// Ignore the quote from any peers from `ignore_peers`. This is useful if we want to repay a different PeerId
-    /// on failure.
+    /// Ignore the quote from any peers from `ignore_peers`.
+    /// This is useful if we want to repay a different PeerId on failure.
     pub async fn get_store_costs_from_network(
         &self,
         record_address: NetworkAddress,
@@ -355,7 +345,14 @@ impl Network {
     ) -> Result<PayeeQuote> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
-        let close_nodes = self.get_closest_peers(&record_address, true).await?;
+        let mut close_nodes = self.get_closest_peers(&record_address, true).await?;
+        // Filter out results from the ignored peers.
+        close_nodes.retain(|peer_id| !ignore_peers.contains(peer_id));
+
+        if close_nodes.is_empty() {
+            error!("Cann't get store_cost of {record_address:?}, as all close_nodes are ignored");
+            return Err(NetworkError::NoStoreCostResponses);
+        }
 
         let request = Request::Query(Query::GetStoreCost(record_address.clone()));
         let responses = self
@@ -377,8 +374,10 @@ impl Network {
                     peer_address,
                 }) => {
                     // Check the quote itself is valid.
-                    if quote.cost.as_nano()
-                        != calculate_cost_for_records(quote.quoting_metrics.close_records_stored)
+                    if quote.cost
+                        != AttoTokens::from_u64(calculate_cost_for_records(
+                            quote.quoting_metrics.close_records_stored,
+                        ))
                     {
                         warn!("Received invalid quote from {peer_address:?}, {quote:?}");
                         continue;
@@ -409,27 +408,7 @@ impl Network {
             self.send_req_ignore_reply(request, *peer_id);
         }
 
-        // Sort all_costs by the NetworkAddress proximity to record_address
-        all_costs.sort_by(|(peer_address_a, _, _), (peer_address_b, _, _)| {
-            record_address
-                .distance(peer_address_a)
-                .cmp(&record_address.distance(peer_address_b))
-        });
-        let ignore_peers = ignore_peers
-            .into_iter()
-            .map(NetworkAddress::from_peer)
-            .collect::<BTreeSet<_>>();
-
-        // Ensure we dont have any further out nodes than `close_group_majority()`
-        // This should ensure that if we didnt get all responses from close nodes,
-        // we're less likely to be paying a node that is not in the CLOSE_GROUP
-        //
-        // Also filter out the peers.
-        let all_costs = all_costs
-            .into_iter()
-            .filter(|(peer_address, ..)| !ignore_peers.contains(peer_address))
-            .take(close_group_majority())
-            .collect();
+        filter_out_bad_nodes(&mut all_costs, record_address);
 
         get_fees_from_store_cost_responses(all_costs)
     }
@@ -521,7 +500,7 @@ impl Network {
     ) -> Result<Record> {
         let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
-            ExponentialBackoff {
+            backoff::ExponentialBackoff {
                 // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
                 // be disabled.
                 max_elapsed_time: retry_duration,
@@ -539,7 +518,7 @@ impl Network {
                 let result = receiver.await.map_err(|e| {
                 error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
                 NetworkError::InternalMsgChannelDropped
-            }).map_err(|err| BackoffError::Transient { err,  retry_after: None })?;
+            }).map_err(|err| backoff::Error::Transient { err,  retry_after: None })?;
 
                 // log the results
                 match &result {
@@ -569,13 +548,13 @@ impl Network {
                 // if we don't want to retry, throw permanent error
                 if cfg.retry_strategy.is_none() {
                     if let Err(e) = result {
-                        return Err(BackoffError::Permanent(NetworkError::from(e)));
+                        return Err(backoff::Error::Permanent(NetworkError::from(e)));
                     }
                 }
                 if result.is_err() {
                     debug!("Getting record from network of {pretty_key:?} via backoff...");
                 }
-                result.map_err(|err| BackoffError::Transient {
+                result.map_err(|err| backoff::Error::Transient {
                     err: NetworkError::from(err),
                     retry_after: None,
                 })
@@ -588,7 +567,7 @@ impl Network {
     pub async fn get_local_storecost(
         &self,
         key: RecordKey,
-    ) -> Result<(NanoTokens, QuotingMetrics)> {
+    ) -> Result<(AttoTokens, QuotingMetrics, Vec<NetworkAddress>)> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetLocalStoreCost { key, sender });
 
@@ -628,6 +607,18 @@ impl Network {
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
     /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
+    #[cfg(target_arch = "wasm32")]
+    pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
+        let pretty_key = PrettyPrintRecordKey::from(&record.key);
+
+        info!("Attempting to PUT record with key: {pretty_key:?} to network, with cfg {cfg:?}");
+        self.put_record_once(record.clone(), cfg).await
+    }
+
+    /// Put `Record` to network
+    /// Optionally verify the record is stored after putting it to network
+    /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
+    #[cfg(not(target_arch = "wasm32"))]
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
 
@@ -635,7 +626,7 @@ impl Network {
         // So a long validation time will limit the number of PUT retries we attempt here.
         let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
-            ExponentialBackoff {
+            backoff::ExponentialBackoff {
                 // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
                 // be disabled.
             max_elapsed_time: retry_duration,
@@ -650,9 +641,9 @@ impl Network {
                 warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
                 if cfg.retry_strategy.is_some() {
-                    BackoffError::Transient { err, retry_after: None }
+                    backoff::Error::Transient { err, retry_after: None }
                 } else {
-                    BackoffError::Permanent(err)
+                    backoff::Error::Permanent(err)
                 }
 
             })
@@ -750,7 +741,7 @@ impl Network {
             PrettyPrintRecordKey::from(&record.key),
             record.value.len()
         );
-        self.send_local_swarm_cmd(LocalSwarmCmd::PutVerifiedLocalRecord { record })
+        self.send_local_swarm_cmd(LocalSwarmCmd::PutLocalRecord { record })
     }
 
     /// Returns true if a RecordKey is present locally in the RecordStore
@@ -960,7 +951,7 @@ impl Network {
 /// Given `all_costs` it will return the closest / lowest cost
 /// Closest requiring it to be within CLOSE_GROUP nodes
 fn get_fees_from_store_cost_responses(
-    all_costs: Vec<(NetworkAddress, MainPubkey, PaymentQuote)>,
+    all_costs: Vec<(NetworkAddress, RewardsAddress, PaymentQuote)>,
 ) -> Result<PayeeQuote> {
     // Find the minimum cost using a linear scan with random tie break
     let mut rng = rand::thread_rng();
@@ -991,6 +982,32 @@ fn get_fees_from_store_cost_responses(
         return Err(NetworkError::NoStoreCostResponses);
     };
     Ok((payee_id, payee.1, payee.2))
+}
+
+/// According to the bad_nodes list collected via quotes,
+/// candidate that received majority votes from others shall be ignored.
+fn filter_out_bad_nodes(
+    all_costs: &mut Vec<(NetworkAddress, RewardsAddress, PaymentQuote)>,
+    record_address: NetworkAddress,
+) {
+    let mut bad_node_votes: BTreeMap<NetworkAddress, usize> = BTreeMap::new();
+    for (peer_addr, _reward_addr, quote) in all_costs.iter() {
+        let bad_nodes: Vec<NetworkAddress> = match rmp_serde::from_slice(&quote.bad_nodes) {
+            Ok(bad_nodes) => bad_nodes,
+            Err(err) => {
+                error!("For record {record_address:?}, failed to recover bad_nodes from quote of {peer_addr:?} with error {err:?}");
+                continue;
+            }
+        };
+        for bad_node in bad_nodes {
+            let entry = bad_node_votes.entry(bad_node).or_default();
+            *entry += 1;
+        }
+    }
+    all_costs.retain(|(peer_addr, _, _)| {
+        let entry = bad_node_votes.entry(peer_addr.clone()).or_default();
+        *entry < close_group_majority()
+    });
 }
 
 /// Get the value of the provided Quorum
@@ -1113,7 +1130,7 @@ mod tests {
     use eyre::bail;
 
     use super::*;
-    use sn_transfers::PaymentQuote;
+    use sn_evm::PaymentQuote;
 
     #[test]
     fn test_get_fee_from_store_cost_responses() -> Result<()> {
@@ -1121,18 +1138,18 @@ mod tests {
         // ensure we return the CLOSE_GROUP / 2 indexed price
         let mut costs = vec![];
         for i in 1..CLOSE_GROUP_SIZE {
-            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
+            let addr = sn_evm::utils::dummy_address();
             costs.push((
                 NetworkAddress::from_peer(PeerId::random()),
                 addr,
-                PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i as u64)),
+                PaymentQuote::test_dummy(Default::default(), AttoTokens::from_u64(i as u64)),
             ));
         }
-        let expected_price = costs[0].2.cost.as_nano();
+        let expected_price = costs[0].2.cost.as_atto();
         let (_peer_id, _key, price) = get_fees_from_store_cost_responses(costs)?;
 
         assert_eq!(
-            price.cost.as_nano(),
+            price.cost.as_atto(),
             expected_price,
             "price should be {expected_price}"
         );
@@ -1147,18 +1164,18 @@ mod tests {
         let responses_count = CLOSE_GROUP_SIZE as u64 - 1;
         let mut costs = vec![];
         for i in 1..responses_count {
-            // push random MainPubkey and Nano
-            let addr = MainPubkey::new(bls::SecretKey::random().public_key());
+            // push random addr and Nano
+            let addr = sn_evm::utils::dummy_address();
             costs.push((
                 NetworkAddress::from_peer(PeerId::random()),
                 addr,
-                PaymentQuote::test_dummy(Default::default(), NanoTokens::from(i)),
+                PaymentQuote::test_dummy(Default::default(), AttoTokens::from_u64(i)),
             ));
             println!("price added {i}");
         }
 
         // this should be the lowest price
-        let expected_price = costs[0].2.cost.as_nano();
+        let expected_price = costs[0].2.cost.as_atto();
 
         let (_peer_id, _key, price) = match get_fees_from_store_cost_responses(costs) {
             Err(_) => bail!("Should not have errored as we have enough responses"),
@@ -1166,7 +1183,7 @@ mod tests {
         };
 
         assert_eq!(
-            price.cost.as_nano(),
+            price.cost.as_atto(),
             expected_price,
             "price should be {expected_price}"
         );
@@ -1177,8 +1194,7 @@ mod tests {
     #[test]
     fn test_network_sign_verify() -> eyre::Result<()> {
         let (network, _, _) =
-            NetworkBuilder::new(Keypair::generate_ed25519(), false, std::env::temp_dir())
-                .build_client()?;
+            NetworkBuilder::new(Keypair::generate_ed25519(), false).build_client()?;
         let msg = b"test message";
         let sig = network.sign(msg)?;
         assert!(network.verify(msg, &sig));

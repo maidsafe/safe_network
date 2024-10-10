@@ -27,11 +27,12 @@ pub use self::{
 /// Chunk/Registers/Spend to be more flexible.
 ///
 /// The Duration/Attempts is chosen based on the internal logic.
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, Default)]
 pub enum RetryStrategy {
     /// Quick: Resolves to a 15-second wait or 1 retry attempt.
     Quick,
     /// Balanced: Resolves to a 60-second wait or 3 retry attempt.
+    #[default]
     Balanced,
     /// Persistent: Resolves to a 180-second wait or 6 retry attempt.
     Persistent,

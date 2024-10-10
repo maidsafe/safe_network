@@ -37,10 +37,10 @@ let client = Client::new(signer, peers, req_response_timeout, custom_concurrency
 
 Prerequisites:
 * A running local network. Refer to [`safe_network/README.md`](../README.md) to run a local test network.
-* `SAFE_PEERS` environment variable or running the tests with `--feature=local-discovery`:
+* `SAFE_PEERS` environment variable or running the tests with `--feature=local`:
 
 ```bash
-$ cargo test --package sn_client --release --tests --features=local-discovery
+$ cargo test --package sn_client --release --tests --features=local
 ```
 
 ## Contributing

@@ -1,19 +1,20 @@
 mod common;
 
 use crate::common::quote::random_quote_payment;
-use crate::common::ROYALTIES_WALLET;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::node_bindings::AnvilInstance;
 use alloy::primitives::utils::parse_ether;
 use alloy::providers::ext::AnvilApi;
-use alloy::providers::fillers::{FillProvider, JoinFill, RecommendedFiller, WalletFiller};
-use alloy::providers::{ProviderBuilder, ReqwestProvider, WalletProvider};
+use alloy::providers::fillers::{
+    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+};
+use alloy::providers::{Identity, ProviderBuilder, ReqwestProvider, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{Client, Http};
 use evmlib::common::U256;
-use evmlib::contract::chunk_payments::{ChunkPayments, MAX_TRANSFERS_PER_TRANSACTION};
+use evmlib::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
 use evmlib::contract::network_token::NetworkToken;
-use evmlib::testnet::{deploy_chunk_payments_contract, deploy_network_token_contract, start_node};
+use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
 use evmlib::wallet::wallet_address;
 
 async fn setup() -> (
@@ -21,17 +22,35 @@ async fn setup() -> (
     NetworkToken<
         Http<Client>,
         FillProvider<
-            JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+            JoinFill<
+                JoinFill<
+                    Identity,
+                    JoinFill<
+                        GasFiller,
+                        JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>,
+                    >,
+                >,
+                WalletFiller<EthereumWallet>,
+            >,
             ReqwestProvider,
             Http<Client>,
             Ethereum,
         >,
         Ethereum,
     >,
-    ChunkPayments<
+    DataPaymentsHandler<
         Http<Client>,
         FillProvider<
-            JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+            JoinFill<
+                JoinFill<
+                    Identity,
+                    JoinFill<
+                        GasFiller,
+                        JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>,
+                    >,
+                >,
+                WalletFiller<EthereumWallet>,
+            >,
             ReqwestProvider,
             Http<Client>,
             Ethereum,
@@ -43,11 +62,10 @@ async fn setup() -> (
 
     let network_token = deploy_network_token_contract(&anvil).await;
 
-    let chunk_payments =
-        deploy_chunk_payments_contract(&anvil, *network_token.contract.address(), ROYALTIES_WALLET)
-            .await;
+    let data_payments =
+        deploy_data_payments_contract(&anvil, *network_token.contract.address()).await;
 
-    (anvil, network_token, chunk_payments)
+    (anvil, network_token, data_payments)
 }
 
 #[allow(clippy::unwrap_used)]
@@ -56,7 +74,13 @@ async fn setup() -> (
 async fn provider_with_gas_funded_wallet(
     anvil: &AnvilInstance,
 ) -> FillProvider<
-    JoinFill<RecommendedFiller, WalletFiller<EthereumWallet>>,
+    JoinFill<
+        JoinFill<
+            Identity,
+            JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+        >,
+        WalletFiller<EthereumWallet>,
+    >,
     ReqwestProvider,
     Http<Client>,
     Ethereum,
@@ -89,7 +113,7 @@ async fn test_deploy() {
 
 #[tokio::test]
 async fn test_pay_for_quotes() {
-    let (_anvil, network_token, mut chunk_payments) = setup().await;
+    let (_anvil, network_token, mut data_payments) = setup().await;
 
     let mut quote_payments = vec![];
 
@@ -99,15 +123,15 @@ async fn test_pay_for_quotes() {
     }
 
     let _ = network_token
-        .approve(*chunk_payments.contract.address(), U256::MAX)
+        .approve(*data_payments.contract.address(), U256::MAX)
         .await
         .unwrap();
 
     // Contract provider has a different account coupled to it,
     // so we set it to the same as the network token contract
-    chunk_payments.set_provider(network_token.contract.provider().clone());
+    data_payments.set_provider(network_token.contract.provider().clone());
 
-    let result = chunk_payments.pay_for_quotes(quote_payments).await;
+    let result = data_payments.pay_for_quotes(quote_payments).await;
 
     assert!(result.is_ok(), "Failed with error: {:?}", result.err());
 }

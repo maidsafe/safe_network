@@ -1,5 +1,5 @@
 use crate::common::{Address, QuoteHash, TxHash, U256};
-use crate::event::{ChunkPaymentEvent, CHUNK_PAYMENT_EVENT_SIGNATURE};
+use crate::event::{ChunkPaymentEvent, DATA_PAYMENT_EVENT_SIGNATURE};
 use crate::Network;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::FixedBytes;
@@ -33,7 +33,10 @@ pub async fn get_transaction_receipt_by_hash(
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .on_http(network.rpc_url().clone());
-    let maybe_receipt = provider.get_transaction_receipt(transaction_hash).await?;
+    let maybe_receipt = provider
+        .get_transaction_receipt(transaction_hash)
+        .await
+        .inspect_err(|err| error!("Error getting transaction receipt for transaction_hash: {transaction_hash:?} : {err:?}", ))?;
     Ok(maybe_receipt)
 }
 
@@ -44,7 +47,8 @@ async fn get_block_by_number(network: &Network, block_number: u64) -> Result<Opt
         .on_http(network.rpc_url().clone());
     let block = provider
         .get_block_by_number(BlockNumberOrTag::Number(block_number), true)
-        .await?;
+        .await
+        .inspect_err(|err| error!("Error getting block by number for {block_number} : {err:?}",))?;
     Ok(block)
 }
 
@@ -53,23 +57,29 @@ async fn get_transaction_logs(network: &Network, filter: Filter) -> Result<Vec<L
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .on_http(network.rpc_url().clone());
-    let logs = provider.get_logs(&filter).await?;
+    let logs = provider
+        .get_logs(&filter)
+        .await
+        .inspect_err(|err| error!("Error getting logs for filter: {filter:?} : {err:?}"))?;
     Ok(logs)
 }
 
-/// Get a ChunkPaymentMade event, filtered by a hashed chunk address and a node address.
+/// Get a DataPaymentMade event, filtered by a hashed chunk address and a node address.
 /// Useful for a node if it wants to check if payment for a certain chunk has been made.
-async fn get_chunk_payment_event(
+async fn get_data_payment_event(
     network: &Network,
     block_number: u64,
     quote_hash: QuoteHash,
     reward_addr: Address,
     amount: U256,
 ) -> Result<Vec<Log>, Error> {
+    debug!(
+        "Getting data payment event for quote_hash: {quote_hash:?}, reward_addr: {reward_addr:?}"
+    );
     let topic1: FixedBytes<32> = FixedBytes::left_padding_from(reward_addr.as_slice());
 
     let filter = Filter::new()
-        .event_signature(CHUNK_PAYMENT_EVENT_SIGNATURE)
+        .event_signature(DATA_PAYMENT_EVENT_SIGNATURE)
         .topic1(topic1)
         .topic2(amount)
         .topic3(quote_hash)
@@ -79,8 +89,8 @@ async fn get_chunk_payment_event(
     get_transaction_logs(network, filter).await
 }
 
-/// Verify if a chunk payment is confirmed.
-pub async fn verify_chunk_payment(
+/// Verify if a data payment is confirmed.
+pub async fn verify_data_payment(
     network: &Network,
     tx_hash: TxHash,
     quote_hash: QuoteHash,
@@ -88,18 +98,21 @@ pub async fn verify_chunk_payment(
     amount: U256,
     quote_expiration_timestamp_in_secs: u64,
 ) -> Result<(), Error> {
+    debug!("Verifying data payment for tx_hash: {tx_hash:?}");
     let transaction = get_transaction_receipt_by_hash(network, tx_hash)
         .await?
         .ok_or(Error::TransactionNotFound)?;
 
     // If the status is True, it means the tx is confirmed.
     if !transaction.status() {
+        error!("Transaction {tx_hash:?} is not confirmed");
         return Err(Error::TransactionUnconfirmed);
     }
 
     let block_number = transaction
         .block_number
-        .ok_or(Error::TransactionNotInBlock)?;
+        .ok_or(Error::TransactionNotInBlock)
+        .inspect_err(|_| error!("Transaction {tx_hash:?} has not been included in a block yet"))?;
 
     let block = get_block_by_number(network, block_number)
         .await?
@@ -107,11 +120,12 @@ pub async fn verify_chunk_payment(
 
     // Check if payment was done within the quote expiration timeframe.
     if quote_expiration_timestamp_in_secs < block.header.timestamp {
+        error!("Payment for tx_hash: {tx_hash:?} was done after the quote expired");
         return Err(Error::QuoteExpired);
     }
 
     let logs =
-        get_chunk_payment_event(network, block_number, quote_hash, reward_addr, amount).await?;
+        get_data_payment_event(network, block_number, quote_hash, reward_addr, amount).await?;
 
     for log in logs {
         if log.transaction_hash != Some(tx_hash) {
@@ -121,15 +135,16 @@ pub async fn verify_chunk_payment(
 
         if let Ok(event) = ChunkPaymentEvent::try_from(log) {
             // Check if the event matches what we expect.
-            // The smart contract handles royalties, so we don't have to check that.
             if event.quote_hash == quote_hash
-                && event.reward_address == reward_addr
+                && event.rewards_address == reward_addr
                 && event.amount >= amount
             {
                 return Ok(());
             }
         }
     }
+
+    error!("No event proof found for tx_hash: {tx_hash:?}");
 
     Err(Error::EventProofNotFound)
 }
@@ -138,7 +153,7 @@ pub async fn verify_chunk_payment(
 mod tests {
     use crate::common::{Address, U256};
     use crate::transaction::{
-        get_chunk_payment_event, get_transaction_receipt_by_hash, verify_chunk_payment,
+        get_data_payment_event, get_transaction_receipt_by_hash, verify_data_payment,
     };
     use crate::Network;
     use alloy::hex::FromHex;
@@ -148,7 +163,7 @@ mod tests {
     async fn test_get_transaction_receipt_by_hash() {
         let network = Network::ArbitrumOne;
 
-        let tx_hash = b256!("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066"); // DevSkim: ignore DS173237
+        let tx_hash = b256!("3304465f38fa0bd9670a426108dd1ddd193e059dcb7c13982d31424646217a36"); // DevSkim: ignore DS173237
 
         assert!(get_transaction_receipt_by_hash(&network, tx_hash)
             .await
@@ -157,16 +172,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_chunk_payment_event() {
+    async fn test_get_data_payment_event() {
         let network = Network::ArbitrumOne;
 
-        let block_number: u64 = 250043261;
-        let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap(); // DevSkim: ignore DS173237
-        let amount = U256::from(200);
-        let quote_hash = b256!("477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c"); // DevSkim: ignore DS173237
+        let block_number: u64 = 260246302;
+        let reward_address = Address::from_hex("8AB15A43305854e4AE4E6FBEa0CD1CC0AB4ecB2A").unwrap(); // DevSkim: ignore DS173237
+        let amount = U256::from(1);
+        let quote_hash = b256!("EBD943C38C0422901D4CF22E677DD95F2591CA8D6EBFEA8BAF1BFE9FF5506ECE"); // DevSkim: ignore DS173237
 
         let logs =
-            get_chunk_payment_event(&network, block_number, quote_hash, reward_address, amount)
+            get_data_payment_event(&network, block_number, quote_hash, reward_address, amount)
                 .await
                 .unwrap();
 
@@ -174,15 +189,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_verify_chunk_payment() {
+    async fn test_verify_data_payment() {
         let network = Network::ArbitrumOne;
 
-        let tx_hash = b256!("462ff33b01d7930b05dc87826b485f6f19884f1cf1c15694477be68ff7dda066"); // DevSkim: ignore DS173237
-        let quote_hash = b256!("477a32ca129183ebaa7e0a082813f8f9b121a1f9ba5dd83104bae44b6e32658c"); // DevSkim: ignore DS173237
-        let reward_address = Address::from_hex("fdd33ec6f2325b742c1f32ed5b1da19547cb2f30").unwrap(); // DevSkim: ignore DS173237
-        let amount = U256::from(200);
+        let tx_hash = b256!("3304465f38fa0bd9670a426108dd1ddd193e059dcb7c13982d31424646217a36"); // DevSkim: ignore DS173237
+        let quote_hash = b256!("EBD943C38C0422901D4CF22E677DD95F2591CA8D6EBFEA8BAF1BFE9FF5506ECE"); // DevSkim: ignore DS173237
+        let reward_address = Address::from_hex("8AB15A43305854e4AE4E6FBEa0CD1CC0AB4ecB2A").unwrap(); // DevSkim: ignore DS173237
+        let amount = U256::from(1);
 
-        let result = verify_chunk_payment(
+        let result = verify_data_payment(
             &network,
             tx_hash,
             quote_hash,

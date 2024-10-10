@@ -7,19 +7,15 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{
-    error::{Error, Result},
-    event::NodeEventsChannel,
-    quote::quotes_verification,
-    Marker, NodeEvent,
+    error::Result, event::NodeEventsChannel, quote::quotes_verification, Marker, NodeEvent,
 };
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetricsRecorder;
 use crate::RunningNode;
 use bytes::Bytes;
 use libp2p::{identity::Keypair, Multiaddr, PeerId};
-#[cfg(feature = "open-metrics")]
-use prometheus_client::metrics::gauge::Gauge;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
+use sn_evm::{AttoTokens, RewardsAddress};
 #[cfg(feature = "open-metrics")]
 use sn_networking::MetricsRegistries;
 use sn_networking::{
@@ -31,7 +27,6 @@ use sn_protocol::{
     messages::{ChunkProof, CmdResponse, Query, QueryResponse, Request, Response},
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
-use sn_transfers::{HotWallet, MainPubkey, MainSecretKey, NanoTokens, PAYMENT_FORWARD_PK};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -46,12 +41,7 @@ use tokio::{
     task::{spawn, JoinHandle},
 };
 
-#[cfg(feature = "reward-forward")]
-use libp2p::kad::{Quorum, Record};
-#[cfg(feature = "reward-forward")]
-use sn_networking::PutRecordCfg;
-#[cfg(feature = "reward-forward")]
-use sn_protocol::storage::{try_serialize_record, RecordKind, SpendAddress};
+use sn_evm::EvmNetwork;
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any node will be half this
@@ -61,20 +51,12 @@ pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
 /// This is the max time it should take. Minimum interval at any node will be half this
 const PERIODIC_BAD_NODE_DETECTION_INTERVAL_MAX_S: u64 = 600;
 
-/// Interval to trigger reward forwarding.
-/// This is the max time it should take. Minimum interval at any node will be half this
-const PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S: u64 = 450;
-
 /// Max number of attempts that chunk proof verification will be carried out against certain target,
 /// before classifying peer as a bad peer.
 const MAX_CHUNK_PROOF_VERIFY_ATTEMPTS: usize = 3;
 
 /// Interval between chunk proof verification to be retired against the same target.
 const CHUNK_PROOF_VERIFY_RETRY_INTERVAL: Duration = Duration::from_secs(15);
-
-#[cfg(feature = "reward-forward")]
-/// Track the forward balance by storing the balance in a file. This is useful to restore the balance between restarts.
-const FORWARDED_BALANCE_FILE_NAME: &str = "forwarded_balance";
 
 /// Interval to update the nodes uptime metric
 const UPTIME_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
@@ -84,7 +66,9 @@ const UNRELEVANT_RECORDS_CLEANUP_INTERVAL: Duration = Duration::from_secs(3600);
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
-    keypair: Keypair,
+    identity_keypair: Keypair,
+    evm_address: RewardsAddress,
+    evm_network: EvmNetwork,
     addr: SocketAddr,
     initial_peers: Vec<Multiaddr>,
     local: bool,
@@ -94,24 +78,27 @@ pub struct NodeBuilder {
     metrics_server_port: Option<u16>,
     /// Enable hole punching for nodes connecting from home networks.
     pub is_behind_home_network: bool,
-    owner: Option<String>,
     #[cfg(feature = "upnp")]
     upnp: bool,
 }
 
 impl NodeBuilder {
     /// Instantiate the builder
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
-        keypair: Keypair,
+        identity_keypair: Keypair,
+        evm_address: RewardsAddress,
+        evm_network: EvmNetwork,
         addr: SocketAddr,
         initial_peers: Vec<Multiaddr>,
         local: bool,
         root_dir: PathBuf,
-        owner: Option<String>,
         #[cfg(feature = "upnp")] upnp: bool,
     ) -> Self {
         Self {
-            keypair,
+            identity_keypair,
+            evm_address,
+            evm_network,
             addr,
             initial_peers,
             local,
@@ -119,7 +106,6 @@ impl NodeBuilder {
             #[cfg(feature = "open-metrics")]
             metrics_server_port: None,
             is_behind_home_network: false,
-            owner,
             #[cfg(feature = "upnp")]
             upnp,
         }
@@ -144,21 +130,7 @@ impl NodeBuilder {
     ///
     /// Returns an error if there is a problem initializing the `SwarmDriver`.
     pub fn build_and_run(self) -> Result<RunningNode> {
-        // Using the signature as the seed of generating the reward_key
-        let sig_vec = match self.keypair.sign(b"generate reward seed") {
-            Ok(sig) => sig,
-            Err(_err) => return Err(Error::FailedToGenerateRewardKey),
-        };
-        let mut rng = sn_transfers::rng::from_vec(&sig_vec);
-
-        let reward_key = MainSecretKey::random_from_rng(&mut rng);
-        let reward_address = reward_key.main_pubkey();
-
-        let mut wallet = HotWallet::load_from_main_key(&self.root_dir, reward_key)?;
-        // store in case it's a fresh wallet created if none was found
-        wallet.deposit_and_store_to_disk(&vec![])?;
-
-        let mut network_builder = NetworkBuilder::new(self.keypair, self.local, self.root_dir);
+        let mut network_builder = NetworkBuilder::new(self.identity_keypair, self.local);
 
         #[cfg(feature = "open-metrics")]
         let metrics_recorder = if self.metrics_server_port.is_some() {
@@ -182,17 +154,18 @@ impl NodeBuilder {
         #[cfg(feature = "upnp")]
         network_builder.upnp(self.upnp);
 
-        let (network, network_event_receiver, swarm_driver) = network_builder.build_node()?;
+        let (network, network_event_receiver, swarm_driver) =
+            network_builder.build_node(self.root_dir.clone())?;
         let node_events_channel = NodeEventsChannel::default();
 
         let node = NodeInner {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
             initial_peers: self.initial_peers,
-            reward_address,
+            reward_address: self.evm_address,
             #[cfg(feature = "open-metrics")]
             metrics_recorder,
-            owner: self.owner,
+            evm_network: self.evm_network,
         };
         let node = Node {
             inner: Arc::new(node),
@@ -200,6 +173,7 @@ impl NodeBuilder {
         let running_node = RunningNode {
             network,
             node_events_channel,
+            root_dir_path: self.root_dir,
         };
 
         // Run the node
@@ -226,10 +200,8 @@ struct NodeInner {
     network: Network,
     #[cfg(feature = "open-metrics")]
     metrics_recorder: Option<NodeMetricsRecorder>,
-    /// Node owner's discord username, in readable format
-    /// If not set, there will be no payment forward to be undertaken
-    owner: Option<String>,
-    reward_address: MainPubkey,
+    reward_address: RewardsAddress,
+    evm_network: EvmNetwork,
 }
 
 impl Node {
@@ -255,14 +227,13 @@ impl Node {
         self.inner.metrics_recorder.as_ref()
     }
 
-    /// Returns the owner of the node
-    pub(crate) fn owner(&self) -> Option<&String> {
-        self.inner.owner.as_ref()
+    /// Returns the reward address of the node
+    pub(crate) fn reward_address(&self) -> &RewardsAddress {
+        &self.inner.reward_address
     }
 
-    /// Returns the reward address of the node
-    pub(crate) fn reward_address(&self) -> &MainPubkey {
-        &self.inner.reward_address
+    pub(crate) fn evm_network(&self) -> &EvmNetwork {
+        &self.inner.evm_network
     }
 
     /// Runs the provided `SwarmDriver` and spawns a task to process for `NetworkEvents`
@@ -270,21 +241,6 @@ impl Node {
         let mut rng = StdRng::from_entropy();
 
         let peers_connected = Arc::new(AtomicUsize::new(0));
-
-        // read the forwarded balance from the file and set the metric.
-        // This is done initially because reward forwarding takes a while to kick in
-        #[cfg(all(feature = "reward-forward", feature = "open-metrics"))]
-        let node_copy = self.clone();
-        #[cfg(all(feature = "reward-forward", feature = "open-metrics"))]
-        let _handle = spawn(async move {
-            let root_dir = node_copy.network().root_dir_path().clone();
-            let balance_file_path = root_dir.join(FORWARDED_BALANCE_FILE_NAME);
-            let balance = read_forwarded_balance_value(&balance_file_path);
-
-            if let Some(metrics_recorder) = node_copy.metrics_recorder() {
-                let _ = metrics_recorder.total_forwarded_rewards.set(balance as i64);
-            }
-        });
 
         let _handle = spawn(swarm_driver.run());
         let _handle = spawn(async move {
@@ -311,19 +267,6 @@ impl Node {
             let _ = bad_nodes_check_interval.tick().await; // first tick completes immediately
 
             let mut rolling_index = 0;
-
-            // use a random timeout to ensure not sync when transmit messages.
-            let balance_forward_interval: u64 = rng.gen_range(
-                PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S / 2..PERIODIC_REWARD_FORWARD_INTERVAL_MAX_S,
-            );
-            let balance_forward_time = Duration::from_secs(balance_forward_interval);
-            debug!(
-                "BalanceForward interval set to {balance_forward_time:?} to: {:?}",
-                PAYMENT_FORWARD_PK.to_hex(),
-            );
-
-            let mut balance_forward_interval = tokio::time::interval(balance_forward_time);
-            let _ = balance_forward_interval.tick().await; // first tick completes immediately
 
             let mut uptime_metrics_update_interval =
                 tokio::time::interval(UPTIME_METRICS_UPDATE_INTERVAL);
@@ -382,36 +325,6 @@ impl Node {
                             rolling_index = 0;
                         } else {
                             rolling_index += 1;
-                        }
-                    }
-                    // runs every balance_forward_interval time
-                    _ = balance_forward_interval.tick() => {
-                        if cfg!(feature = "reward-forward") {
-                            if let Some(owner) = self.owner() {
-                                let start = Instant::now();
-                                debug!("Periodic balance forward triggered");
-                                let network = self.network().clone();
-                                let forwarding_reason = owner.clone();
-
-                                #[cfg(feature = "open-metrics")]
-                                let total_forwarded_rewards = self.metrics_recorder().map(|recorder|recorder.total_forwarded_rewards.clone());
-                                #[cfg(feature = "open-metrics")]
-                                let current_reward_wallet_balance = self.metrics_recorder().map(|recorder|recorder.current_reward_wallet_balance.clone());
-
-                                let _handle = spawn(async move {
-
-                                    #[cfg(feature = "open-metrics")]
-                                    if let Err(err) =  Self::try_forward_balance(network, forwarding_reason, total_forwarded_rewards,current_reward_wallet_balance) {
-                                        error!("Error while trying to forward balance: {err:?}");
-                                    }
-                                    #[cfg(not(feature = "open-metrics"))]
-                                    if let Err(err) = Self::try_forward_balance(network, forwarding_reason) {
-                                        error!("Error while trying to forward balance: {err:?}");
-                                    }
-                                    info!("Periodic balance forward took {:?}", start.elapsed());
-                                });
-                            }
-
                         }
                     }
                     _ = uptime_metrics_update_interval.tick() => {
@@ -488,7 +401,7 @@ impl Node {
             }
             NetworkEvent::NewListenAddr(_) => {
                 event_header = "NewListenAddr";
-                if !cfg!(feature = "local-discovery") {
+                if !cfg!(feature = "local") {
                     let network = self.network().clone();
                     let peers = self.initial_peers().clone();
                     let _handle = spawn(async move {
@@ -683,7 +596,7 @@ impl Node {
     async fn handle_query(
         network: &Network,
         query: Query,
-        payment_address: MainPubkey,
+        payment_address: RewardsAddress,
     ) -> Response {
         let resp: QueryResponse = match query {
             Query::GetStoreCost(address) => {
@@ -694,8 +607,8 @@ impl Node {
                 let store_cost = network.get_local_storecost(record_key.clone()).await;
 
                 match store_cost {
-                    Ok((cost, quoting_metrics)) => {
-                        if cost == NanoTokens::zero() {
+                    Ok((cost, quoting_metrics, bad_nodes)) => {
+                        if cost == AttoTokens::zero() {
                             QueryResponse::GetStoreCost {
                                 quote: Err(ProtocolError::RecordExists(
                                     PrettyPrintRecordKey::from(&record_key).into_owned(),
@@ -710,6 +623,8 @@ impl Node {
                                     cost,
                                     &address,
                                     &quoting_metrics,
+                                    bad_nodes,
+                                    &payment_address,
                                 ),
                                 payment_address,
                                 peer_address: NetworkAddress::from_peer(self_id),
@@ -851,130 +766,6 @@ impl Node {
             }
         }
     }
-
-    /// Forward received rewards to another address
-    fn try_forward_balance(
-        network: Network,
-        forward_reason: String,
-        #[cfg(feature = "open-metrics")] forwarded_balance_metric: Option<Gauge>,
-        #[cfg(feature = "open-metrics")] current_reward_wallet_balance: Option<Gauge>,
-    ) -> Result<()> {
-        let mut spend_requests = vec![];
-        {
-            // load wallet
-            let mut wallet = HotWallet::load_from(network.root_dir_path())?;
-            let balance = wallet.balance();
-
-            if !balance.is_zero() {
-                let payee = vec![(balance, *PAYMENT_FORWARD_PK)];
-                spend_requests.extend(wallet.prepare_forward_signed_spend(payee, forward_reason)?);
-            }
-        }
-        let total_forwarded_amount = spend_requests
-            .iter()
-            .map(|s| s.amount().as_nano())
-            .sum::<u64>();
-
-        let record_kind = RecordKind::Spend;
-        let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::Majority,
-            retry_strategy: None,
-            use_put_record_to: None,
-            verification: None,
-        };
-
-        info!(
-            "Reward forwarding sending {} spends in this iteration. Total forwarded amount: {total_forwarded_amount}",
-            spend_requests.len()
-        );
-
-        for spend_request in spend_requests {
-            let network_clone = network.clone();
-            let put_cfg_clone = put_cfg.clone();
-
-            // Sent out spend in separate thread to avoid blocking the main one
-            let _handle = spawn(async move {
-                let unique_pubkey = *spend_request.unique_pubkey();
-                let cash_note_addr = SpendAddress::from_unique_pubkey(&unique_pubkey);
-                let network_address = NetworkAddress::from_spend_address(cash_note_addr);
-
-                let record_key = network_address.to_record_key();
-                let pretty_key = PrettyPrintRecordKey::from(&record_key);
-
-                debug!("Reward forwarding in spend {pretty_key:?}: {spend_request:#?}");
-
-                let value = if let Ok(value) = try_serialize_record(&[spend_request], record_kind) {
-                    value
-                } else {
-                    error!("Reward forwarding: Failed to serialise spend {pretty_key:?}");
-                    return;
-                };
-
-                let record = Record {
-                    key: record_key.clone(),
-                    value: value.to_vec(),
-                    publisher: None,
-                    expires: None,
-                };
-
-                let result = network_clone.put_record(record, &put_cfg_clone).await;
-
-                match result {
-                    Ok(_) => info!("Reward forwarding completed sending spend {pretty_key:?}"),
-                    Err(err) => {
-                        info!("Reward forwarding: sending spend {pretty_key:?} failed with {err:?}")
-                    }
-                }
-            });
-
-            std::thread::sleep(Duration::from_millis(500));
-        }
-
-        // write the balance to a file
-        let balance_file_path = network.root_dir_path().join(FORWARDED_BALANCE_FILE_NAME);
-        let old_balance = read_forwarded_balance_value(&balance_file_path);
-        let updated_balance = old_balance + total_forwarded_amount;
-        debug!("Updating forwarded balance to {updated_balance}");
-        write_forwarded_balance_value(&balance_file_path, updated_balance)?;
-
-        #[cfg(feature = "open-metrics")]
-        {
-            if let Some(forwarded_balance_metric) = forwarded_balance_metric {
-                let _ = forwarded_balance_metric.set(updated_balance as i64);
-            }
-
-            let wallet = HotWallet::load_from(network.root_dir_path())?;
-            let balance = wallet.balance();
-            if let Some(current_reward_wallet_balance) = current_reward_wallet_balance {
-                let _ = current_reward_wallet_balance.set(balance.as_nano() as i64);
-            }
-        }
-
-        Ok(())
-    }
-}
-
-fn read_forwarded_balance_value(balance_file_path: &PathBuf) -> u64 {
-    debug!("Reading forwarded balance from file {balance_file_path:?}");
-    match std::fs::read_to_string(balance_file_path) {
-        Ok(balance) => balance.parse::<u64>().unwrap_or_else(|_| {
-            debug!("The balance from file is not a valid number");
-            0
-        }),
-        Err(_) => {
-            debug!("Error while reading to string, setting the balance to 0. This can happen at node init.");
-            0
-        }
-    }
-}
-
-fn write_forwarded_balance_value(balance_file_path: &PathBuf, balance: u64) -> Result<()> {
-    if let Err(err) = std::fs::write(balance_file_path, balance.to_string()) {
-        error!(
-            "Failed to write the updated balance to the file {balance_file_path:?} with {err:?}"
-        );
-    }
-    Ok(())
 }
 
 async fn chunk_proof_verify_peer(
@@ -1039,31 +830,5 @@ fn received_valid_chunk_proof(
     } else {
         debug!("Did not get a valid response for the ChunkProof from {peer:?}");
         None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use crate::node::{read_forwarded_balance_value, write_forwarded_balance_value};
-    use color_eyre::Result;
-    use tempfile::tempdir;
-    #[test]
-    fn read_and_write_reward_to_file() -> Result<()> {
-        let dir = tempdir()?;
-        let balance_file_path = dir.path().join("forwarded_balance");
-
-        let balance = read_forwarded_balance_value(&balance_file_path);
-        assert_eq!(balance, 0);
-
-        write_forwarded_balance_value(&balance_file_path, balance + 10)?;
-        let balance = read_forwarded_balance_value(&balance_file_path);
-        assert_eq!(balance, 10);
-
-        write_forwarded_balance_value(&balance_file_path, balance + 100)?;
-        let balance = read_forwarded_balance_value(&balance_file_path);
-        assert_eq!(balance, 110);
-
-        Ok(())
     }
 }
