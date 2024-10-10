@@ -11,10 +11,7 @@ readme = "README.md"
 
 [features]
 default = []
-local-discovery = [
-    "sn_client/local-discovery",
-    "sn_peers_acquisition/local-discovery",
-]
+local = ["sn_client/local", "sn_peers_acquisition/local"]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
 nightly = []
 open-metrics = ["sn_client/open-metrics"]

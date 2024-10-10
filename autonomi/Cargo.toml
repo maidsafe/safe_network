@@ -16,14 +16,16 @@ data = []
 vault = ["data"]
 files = ["data"]
 fs = ["tokio/fs", "files"]
-local-discovery = ["sn_networking/local-discovery", "test_utils/local-discovery"]
+local = ["sn_networking/local", "test_utils/local"]
 registers = []
 
 [dependencies]
 bip39 = "2.0.0"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
-curv = { version = "0.10.1", package = "sn_curv", default-features = false, features = ["num-bigint"] }
+curv = { version = "0.10.1", package = "sn_curv", default-features = false, features = [
+    "num-bigint",
+] }
 eip2333 = { version = "0.2.1", package = "sn_bls_ckd" }
 const-hex = "1.12.0"
 evmlib = { path = "../evmlib", version = "0.1" }
@@ -59,7 +61,7 @@ wasm-bindgen-test = "0.3.43"
 console_error_panic_hook = "0.1.7"
 evmlib = { path = "../evmlib", version = "0.1", features = ["wasm-bindgen"] }
 # See https://github.com/sebcrozet/instant/blob/7bd13f51f5c930239fddc0476a837870fb239ed7/README.md#using-instant-for-a-wasm-platform-where-performancenow-is-not-available
-instant = { version = "0.1", features = [ "wasm-bindgen", "inaccurate" ] }
+instant = { version = "0.1", features = ["wasm-bindgen", "inaccurate"] }
 tracing-web = "0.1.3"
 
 [lints]

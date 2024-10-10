@@ -199,11 +199,11 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features=local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features=local --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --no-run
+        run: cargo test --release -p sn_node --features=local --test sequential_transfers --test storage_payments --test double_spend --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -221,21 +221,21 @@ jobs:
           build: true
 
       - name: execute the sequential transfers test
-        run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture --test-threads=1
+        run: cargo test --release -p sn_node --features="local" --test sequential_transfers -- --nocapture --test-threads=1
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           SN_LOG: "all"
         timeout-minutes: 10
 
       - name: execute the storage payment tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
+        run: cargo test --release -p sn_node --features="local" --test storage_payments -- --nocapture --test-threads=1
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
           SN_LOG: "all"
         timeout-minutes: 10
 
       - name: execute the double spend tests
-        run: cargo test --release -p sn_node --features="local-discovery" --test double_spend -- --nocapture --test-threads=1
+        run: cargo test --release -p sn_node --features="local" --test double_spend -- --nocapture --test-threads=1
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
@@ -277,11 +277,11 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features=local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features=local --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local-discovery --test spend_simulation --no-run
+        run: cargo test --release -p sn_node --features=local --test spend_simulation --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -300,7 +300,7 @@ jobs:
           build: true
 
       - name: execute the spend simulation test
-        run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture
+        run: cargo test --release -p sn_node --features="local" --test spend_simulation -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
@@ -341,11 +341,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features=local-discovery,distribution --bin safenode --bin faucet
+        run: cargo build --release --features=local,distribution --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build testing executable
-        run: cargo test --release --features=local-discovery,distribution --no-run
+        run: cargo test --release --features=local,distribution --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -373,7 +373,7 @@ jobs:
           fi
 
       - name: execute token_distribution tests
-        run: cargo test --release --features=local-discovery,distribution token_distribution -- --nocapture --test-threads=1
+        run: cargo test --release --features=local,distribution token_distribution -- --nocapture --test-threads=1
         env:
           SN_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
@@ -412,11 +412,11 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features local --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build churn tests
-        run: cargo test --release -p sn_node --features=local-discovery --test data_with_churn --no-run
+        run: cargo test --release -p sn_node --features=local --test data_with_churn --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -434,7 +434,7 @@ jobs:
           build: true
 
       - name: Chunks data integrity during nodes churn (during 10min) (in theory)
-        run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture
+        run: cargo test --release -p sn_node --features="local" --test data_with_churn -- --nocapture
         env:
           TEST_DURATION_MINS: 60
           TEST_CHURN_CYCLES: 6
@@ -537,11 +537,11 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local-discovery --bin safenode --bin faucet
+        run: cargo build --release --features local --bin safenode --bin faucet
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
-        run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --test verify_routing_table --no-run
+        run: cargo test --release -p sn_node --features=local --test verify_data_location --test verify_routing_table --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -559,20 +559,20 @@ jobs:
           build: true
 
       - name: Verify the Routing table of the nodes
-        run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p sn_node --features="local" --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
       - name: Verify the location of the data on the network
-        run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture
+        run: cargo test --release -p sn_node --features="local" --test verify_data_location -- --nocapture
         env:
           SN_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 90
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p sn_node --features="local" --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5

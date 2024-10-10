@@ -30,7 +30,7 @@ use crate::{
 use crate::{transport, NodeIssue};
 use futures::future::Either;
 use futures::StreamExt;
-#[cfg(feature = "local-discovery")]
+#[cfg(feature = "local")]
 use libp2p::mdns;
 use libp2p::Transport as _;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
@@ -236,7 +236,7 @@ pub(super) struct NodeBehaviour {
     pub(super) blocklist:
         libp2p::allow_block_list::Behaviour<libp2p::allow_block_list::BlockedPeers>,
     pub(super) identify: libp2p::identify::Behaviour,
-    #[cfg(feature = "local-discovery")]
+    #[cfg(feature = "local")]
     pub(super) mdns: mdns::tokio::Behaviour,
     #[cfg(feature = "upnp")]
     pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
@@ -584,7 +584,7 @@ impl NetworkBuilder {
             }
         };
 
-        #[cfg(feature = "local-discovery")]
+        #[cfg(feature = "local")]
         let mdns_config = mdns::Config {
             // lower query interval to speed up peer discovery
             // this increases traffic, but means we no longer have clients unable to connect
@@ -593,7 +593,7 @@ impl NetworkBuilder {
             ..Default::default()
         };
 
-        #[cfg(feature = "local-discovery")]
+        #[cfg(feature = "local")]
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
         // Identify Behaviour
@@ -639,7 +639,7 @@ impl NetworkBuilder {
             request_response,
             kademlia,
             identify,
-            #[cfg(feature = "local-discovery")]
+            #[cfg(feature = "local")]
             mdns,
         };
 

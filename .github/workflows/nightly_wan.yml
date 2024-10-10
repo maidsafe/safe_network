@@ -3,7 +3,7 @@ name: Nightly -- Full WAN Network Tests
 on:
   schedule:
     - cron: "0 0 * * *"
-# enable as below for testing purpose.
+  # enable as below for testing purpose.
   # pull_request:
   #   branches: ["*"]
   workflow_dispatch:
@@ -60,14 +60,14 @@ jobs:
       - name: Check env variables
         shell: bash
         run: |
-           echo "Peer is $SAFE_PEERS"
-           echo "Deployment inventory is $SN_INVENTORY"
+          echo "Peer is $SAFE_PEERS"
+          echo "Deployment inventory is $SN_INVENTORY"
 
       - name: start faucet
         uses: maidsafe/sn-testnet-control-action/start-faucet@main
         with:
-            network-name: ${{ env.NETWORK_NAME }}
-               
+          network-name: ${{ env.NETWORK_NAME }}
+
       - name: Obtain the funds from the faucet
         run: |
           set -e
@@ -80,7 +80,7 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 2
-      
+
       - name: Start a client to carry out chunk actions
         run: |
           set -e
@@ -88,7 +88,7 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 2
-      
+
       - name: Start a client to create a register
         run: |
           set -e
@@ -96,7 +96,7 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 2
-      
+
       - name: Start a client to get a register
         run: |
           set -e
@@ -104,7 +104,7 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 2
-      
+
       - name: Start a client to edit a register
         run: |
           set -e
@@ -112,7 +112,7 @@ jobs:
         env:
           SN_LOG: "all"
         timeout-minutes: 2
-      
+
       # - name: Fetch network logs
       #   uses: maidsafe/sn-testnet-control-action/fetch-logs@main
       #   with:
@@ -120,7 +120,7 @@ jobs:
       #     rust-log: debug
       #     provider: digital-ocean
       #     network-name: ${{ env.NETWORK_NAME }}
-    
+
       - name: Upload local logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -154,17 +154,17 @@ jobs:
   #       os: [ubuntu-latest]
   #   steps:
   #     - uses: actions/checkout@v4
-  
+
   #     - name: Install Rust
   #       uses: dtolnay/rust-toolchain@stable
-  
+
   #     - uses: Swatinem/rust-cache@v2
   #       continue-on-error: true
-  
+
   #     - name: Build testing executable
-  #       run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
+  #       run: cargo test --release -p sn_node --features=local --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
   #       timeout-minutes: 40
-  
+
   #     - name: setup testnet-deploy
   #       uses: maidsafe/sn-testnet-control-action/init-testnet-deploy@main
   #       with:
@@ -188,38 +188,37 @@ jobs:
   #         provider: digital-ocean
   #         safe-network-branch: main
   #         safe-network-user: maidsafe
-  
+
   #     - name: Check env variables
   #       shell: bash
   #       run: |
   #         echo "Peer is $SAFE_PEERS"
   #         echo "Deployment inventory is $SN_INVENTORY"
-  
+
   #     - name: execute the sequential transfers test
   #       run: cargo test --release -p sn_node --test sequential_transfers -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #       timeout-minutes: 45
-  
+
   #     - name: execute the storage payment tests
   #       run: cargo test --release -p sn_node --test storage_payments -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #       timeout-minutes: 45
-  
+
   #     - name: execute the double spend tests
   #       run: cargo test --release -p sn_node --test double_spend -- --nocapture --test-threads=1
   #       timeout-minutes: 45
-  
-  
+
   #     - name: execute the spend simulation tests
   #       run: cargo test --release -p sn_node --test spend_simulation -- --nocapture --test-threads=1
   #       timeout-minutes: 45
-  
+
   #     - name: Small wait to allow reward receipt
   #       run: sleep 30
   #       timeout-minutes: 1
-  
+
   #     - name: Fetch network logs
   #       uses: ermineJose/sn-testnet-control-action/fetch-logs@feat-add_fetch-logs-action
   #       with:
@@ -237,13 +236,13 @@ jobs:
   #           ~/.local/share/safe/node/*/logs/*.log*
   #           ~/.local/share/safe/*/*/*.log*
   #           ~/.local/share/safe/client/logs/*/*.log*
- 
+
   #     - name: destroy network
   #       uses: maidsafe/sn-testnet-control-action/destroy-network@main
   #       with:
   #         network-name: ${{ env.NETWORK_NAME }}
   #         provider: digital-ocean
-  
+
   #     - name: post notification to slack on failure
   #       if: ${{ failure() }}
   #       uses: bryannice/gitactions-slack-notification@2.0.0
@@ -251,7 +250,7 @@ jobs:
   #         SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
   #         SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
   #         SLACK_TITLE: "Nightly Spend Test Run Failed"
-  
+
   # churn:
   #   name: Network churning tests
   #   runs-on: ${{ matrix.os }}

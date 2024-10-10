@@ -140,7 +140,7 @@ async fn main() -> Result<()> {
     );
 
     let bootstrap_peers = if bootstrap_peers.is_empty() {
-        // empty vec is returned if `local-discovery` flag is provided
+        // empty vec is returned if `local` flag is provided
         None
     } else {
         Some(bootstrap_peers)

@@ -5,12 +5,17 @@ edition = "2021"
 
 [features]
 default = ["metrics"]
-local-discovery = ["sn_peers_acquisition/local-discovery"]
+local = ["sn_peers_acquisition/local"]
 metrics = ["sn_logging/process-metrics"]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
 
 [dependencies]
-autonomi = { path = "../autonomi", version = "0.1.0", features = ["data", "files", "fs", "registers"] }
+autonomi = { path = "../autonomi", version = "0.1.0", features = [
+    "data",
+    "files",
+    "fs",
+    "registers",
+] }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "~0.6"
 dirs-next = "~2.0.0"

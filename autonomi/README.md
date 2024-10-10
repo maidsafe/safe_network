@@ -26,10 +26,10 @@ autonomi = { path = "../autonomi", version = "0.1.0" }
 cargo run --bin evm_testnet
 ```
 
-3. Run a local network with the `local-discovery` feature and use the local evm node. 
+3. Run a local network with the `local` feature and use the local evm node. 
 
 ```sh
-cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-local
+cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-local
 ```
 
 4. Then run the tests with the `local` feature and pass the EVM params again:
@@ -37,7 +37,7 @@ cargo run --bin=safenode-manager --features=local-discovery -- local run --build
 ```sh
 $ EVM_NETWORK=local cargo test --package=autonomi --features=local
 # Or with logs
-$ RUST_LOG=autonomi EVM_NETWORK=local cargo test --package=autonomi --features=local-discovery -- --nocapture
+$ RUST_LOG=autonomi EVM_NETWORK=local cargo test --package=autonomi --features=local -- --nocapture
 ```
 
 ### Using a live testnet or mainnet
@@ -45,10 +45,10 @@ $ RUST_LOG=autonomi EVM_NETWORK=local cargo test --package=autonomi --features=l
 Using the hardcoded `Arbitrum One` option as an example, but you can also use the command flags of the steps above and
 point it to a live network.
 
-1. Run a local network with the `local-discovery` feature:
+1. Run a local network with the `local` feature:
 
 ```sh
-cargo run --bin=safenode-manager --features=local-discovery -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-arbitrum-one
+cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-arbitrum-one
 ```
 
 2. Then run the tests with the `local` feature. Make sure that the wallet of the private key you pass has enough gas and
@@ -57,7 +57,7 @@ cargo run --bin=safenode-manager --features=local-discovery -- local run --build
 ```sh
 $ EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
 # Or with logs
-$ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local-discovery -- --nocapture
+$ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local -- --nocapture
 ```
 
 ### WebAssembly

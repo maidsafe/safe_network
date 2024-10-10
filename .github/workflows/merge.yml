@@ -73,9 +73,9 @@ jobs:
         # See https://doc.rust-lang.org/rustdoc/lints.html for lints that are 'warning' by default.
         run: RUSTDOCFLAGS="--deny=warnings" cargo doc --no-deps
 
-      - name: Check local-discovery is not a default feature
+      - name: Check local is not a default feature
         shell: bash
-        run: if [[ ! $(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].features.default[]? | select(. == "local-discovery")') ]]; then echo "local-discovery is not a default feature in any package."; else echo "local-discovery is a default feature in at least one package." && exit 1; fi
+        run: if [[ ! $(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].features.default[]? | select(. == "local")') ]]; then echo "local is not a default feature in any package."; else echo "local is a default feature in at least one package." && exit 1; fi
 
       - name: Clean out the target directory
         run: cargo clean
@@ -224,7 +224,7 @@ jobs:
           UPLOAD_ADDRESS=$(rg "At address: ([0-9a-f]*)" -o -r '$1' ./upload_output)
           echo "UPLOAD_ADDRESS=$UPLOAD_ADDRESS" >> $GITHUB_ENV
         shell: bash
-      
+
       - name: parse address (win)
         if: matrix.os == 'windows-latest'
         run: |
@@ -237,10 +237,10 @@ jobs:
         env:
           SN_LOG: "v"
         timeout-minutes: 5
-      
+
       - name: Generate register signing key
         run: ./target/release/autonomi_cli --log-output-dest=data-dir register generate-key
-      
+
       - name: Create register (writeable by owner)
         run: ./target/release/autonomi_cli --log-output-dest=data-dir register create baobao 123 > ./register_create_output 2>&1
         env:
@@ -253,7 +253,7 @@ jobs:
           REGISTER_ADDRESS=$(rg "Register created at address: ([0-9a-f]*)" -o -r '$1' ./register_create_output)
           echo "REGISTER_ADDRESS=$REGISTER_ADDRESS" >> $GITHUB_ENV
         shell: bash
-      
+
       - name: parse register address (win)
         if: matrix.os == 'windows-latest'
         run: |
@@ -291,7 +291,7 @@ jobs:
           PUBLIC_REGISTER_ADDRESS=$(rg "Register created at address: ([0-9a-f]*)" -o -r '$1' ./register_public_create_output)
           echo "PUBLIC_REGISTER_ADDRESS=$PUBLIC_REGISTER_ADDRESS" >> $GITHUB_ENV
         shell: bash
-      
+
       - name: parse public register address (win)
         if: matrix.os == 'windows-latest'
         run: |
@@ -360,15 +360,15 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features=local-discovery --bin safenode
+  #       run: cargo build --release --features=local --bin safenode
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
-  #       run: cargo build --release --bin faucet --features="local-discovery,gifting"
+  #       run: cargo build --release --bin faucet --features="local,gifting"
   #       timeout-minutes: 30
 
   #     - name: Build testing executable
-  #       run: cargo test --release -p sn_node --features=local-discovery --test sequential_transfers --test storage_payments --test double_spend --no-run
+  #       run: cargo test --release -p sn_node --features=local --test sequential_transfers --test storage_payments --test double_spend --no-run
   #       env:
   #         # only set the target dir for windows to bypass the linker issue.
   #         # happens if we build the node manager via testnet action
@@ -396,21 +396,21 @@ jobs:
   #         fi
 
   #     - name: execute the sequential transfers tests
-  #       run: cargo test --release -p sn_node --features="local-discovery" --test sequential_transfers -- --nocapture --test-threads=1
+  #       run: cargo test --release -p sn_node --features="local" --test sequential_transfers -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
 
   #     - name: execute the storage payment tests
-  #       run: cargo test --release -p sn_node --features="local-discovery" --test storage_payments -- --nocapture --test-threads=1
+  #       run: cargo test --release -p sn_node --features="local" --test storage_payments -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
 
   #     - name: execute the double spend tests
-  #       run: cargo test --release -p sn_node --features="local-discovery" --test double_spend -- --nocapture --test-threads=1
+  #       run: cargo test --release -p sn_node --features="local" --test double_spend -- --nocapture --test-threads=1
   #       env:
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
@@ -440,15 +440,15 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features=local-discovery --bin safenode
+  #       run: cargo build --release --features=local --bin safenode
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
-  #       run: cargo build --release --bin faucet --features="local-discovery,gifting"
+  #       run: cargo build --release --bin faucet --features="local,gifting"
   #       timeout-minutes: 30
 
   #     - name: Build testing executable
-  #       run: cargo test --release -p sn_node --features=local-discovery --test spend_simulation --no-run
+  #       run: cargo test --release -p sn_node --features=local --test spend_simulation --no-run
   #       env:
   #         # only set the target dir for windows to bypass the linker issue.
   #         # happens if we build the node manager via testnet action
@@ -477,7 +477,7 @@ jobs:
   #         fi
 
   #     - name: execute the spend simulation
-  #       run: cargo test --release -p sn_node --features="local-discovery" --test spend_simulation -- --nocapture
+  #       run: cargo test --release -p sn_node --features="local" --test spend_simulation -- --nocapture
   #       env:
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
@@ -506,15 +506,15 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features=local-discovery,distribution --bin safenode
+  #       run: cargo build --release --features=local,distribution --bin safenode
   #       timeout-minutes: 35
 
   #     - name: Build faucet binary
-  #       run: cargo build --release --features=local-discovery,distribution,gifting --bin faucet
+  #       run: cargo build --release --features=local,distribution,gifting --bin faucet
   #       timeout-minutes: 35
 
   #     - name: Build testing executable
-  #       run: cargo test --release --features=local-discovery,distribution --no-run
+  #       run: cargo test --release --features=local,distribution --no-run
   #       env:
   #         # only set the target dir for windows to bypass the linker issue.
   #         # happens if we build the node manager via testnet action
@@ -542,7 +542,7 @@ jobs:
   #         fi
 
   #     - name: execute token_distribution tests
-  #       run: cargo test --release --features=local-discovery,distribution token_distribution -- --nocapture --test-threads=1
+  #       run: cargo test --release --features=local,distribution token_distribution -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
@@ -580,15 +580,15 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features local-discovery --bin safenode
+  #       run: cargo build --release --features local --bin safenode
   #       timeout-minutes: 30
 
   #     - name: Build faucet binaries
-  #       run: cargo build --release --features="local-discovery,gifting" --bin faucet
+  #       run: cargo build --release --features="local,gifting" --bin faucet
   #       timeout-minutes: 30
 
   #     - name: Build churn tests
-  #       run: cargo test --release -p sn_node --features=local-discovery --test data_with_churn --no-run
+  #       run: cargo test --release -p sn_node --features=local --test data_with_churn --no-run
   #       env:
   #         # only set the target dir for windows to bypass the linker issue.
   #         # happens if we build the node manager via testnet action
@@ -616,7 +616,7 @@ jobs:
   #         fi
 
   #     - name: Chunks data integrity during nodes churn
-  #       run: cargo test --release -p sn_node --features="local-discovery" --test data_with_churn -- --nocapture
+  #       run: cargo test --release -p sn_node --features="local" --test data_with_churn -- --nocapture
   #       env:
   #         TEST_DURATION_MINS: 5
   #         TEST_TOTAL_CHURN_CYCLES: 15
@@ -710,11 +710,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local-discovery --bin safenode
+        run: cargo build --release --features local --bin safenode
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
-        run: cargo test --release -p sn_node --features=local-discovery --test verify_data_location --test verify_routing_table --no-run
+        run: cargo test --release -p sn_node --features=local --test verify_data_location --test verify_routing_table --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -745,13 +745,13 @@ jobs:
           fi
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p sn_node --features="local" --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
       - name: Verify the location of the data on the network
-        run: cargo test --release -p sn_node --features="local-discovery" --test verify_data_location -- --nocapture
+        run: cargo test --release -p sn_node --features="local" --test verify_data_location -- --nocapture
         env:
           CHURN_COUNT: 6
           SN_LOG: "all"
@@ -759,7 +759,7 @@ jobs:
         timeout-minutes: 25
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --features="local-discovery" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p sn_node --features="local" --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5

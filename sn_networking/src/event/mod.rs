@@ -13,7 +13,7 @@ mod swarm;
 use crate::{driver::SwarmDriver, error::Result};
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
-#[cfg(feature = "local-discovery")]
+#[cfg(feature = "local")]
 use libp2p::mdns;
 use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
@@ -39,7 +39,7 @@ pub(super) enum NodeEvent {
     Upnp(libp2p::upnp::Event),
     MsgReceived(libp2p::request_response::Event<Request, Response>),
     Kademlia(libp2p::kad::Event),
-    #[cfg(feature = "local-discovery")]
+    #[cfg(feature = "local")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
     RelayClient(Box<libp2p::relay::client::Event>),
@@ -66,7 +66,7 @@ impl From<libp2p::kad::Event> for NodeEvent {
     }
 }
 
-#[cfg(feature = "local-discovery")]
+#[cfg(feature = "local")]
 impl From<mdns::Event> for NodeEvent {
     fn from(event: mdns::Event) -> Self {
         NodeEvent::Mdns(Box::new(event))

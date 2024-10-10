@@ -13,7 +13,7 @@ Running an auditor instance:
 cargo run --release --peer "/ip4/<network_peer_addr>"
 
 # on a local testnet
-cargo run --release --features=local-discovery
+cargo run --release --features=local
 ```
 
 It can be run with the following flags:

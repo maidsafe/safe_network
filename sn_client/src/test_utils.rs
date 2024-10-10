@@ -36,7 +36,7 @@ static FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::const_new(());
 
 /// Get a new Client for testing
 pub async fn get_new_client(owner_sk: SecretKey) -> Result<Client> {
-    let bootstrap_peers = if cfg!(feature = "local-discovery") {
+    let bootstrap_peers = if cfg!(feature = "local") {
         None
     } else {
         match std::env::var("SAFE_PEERS") {
