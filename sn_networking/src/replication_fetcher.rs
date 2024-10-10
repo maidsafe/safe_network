@@ -503,7 +503,6 @@ mod tests {
         let mut replication_fetcher = ReplicationFetcher::new(peer_id, event_sender);
 
         // Set distance range
-        // TODO: close peers can break the distance range check here... we need a proper
         // way to update this test
         let distance_target = NetworkAddress::from_peer(PeerId::random());
         let distance_range = self_address.distance(&distance_target);
