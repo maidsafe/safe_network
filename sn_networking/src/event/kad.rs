@@ -147,7 +147,7 @@ impl SwarmDriver {
                     PrettyPrintRecordKey::from(&peer_record.record.key),
                     peer_record.peer
                 );
-                self.accumulate_get_record_found(id, peer_record, stats, step)?;
+                self.accumulate_get_record_found(id, peer_record)?;
             }
             kad::Event::OutboundQueryProgressed {
                 id,
@@ -369,8 +369,6 @@ impl SwarmDriver {
         &mut self,
         query_id: QueryId,
         peer_record: PeerRecord,
-        _stats: QueryStats,
-        _step: ProgressStep,
     ) -> Result<()> {
         let expected_get_range = self.get_request_range();
         let key = peer_record.record.key.clone();
