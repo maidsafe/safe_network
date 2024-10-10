@@ -160,11 +160,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --bin safenode --bin autonomi_cli
+        run: cargo build --release --features local --bin safenode --bin autonomi_cli
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@evm-dev
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
@@ -338,7 +338,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@evm-dev
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_e2e
@@ -592,7 +592,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@evm-dev
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
@@ -625,7 +625,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@evm-dev
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_churn
@@ -721,7 +721,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@evm-dev
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
@@ -765,7 +765,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@evm-dev
+        uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_data_location

@@ -12,6 +12,7 @@ version = "0.1.0"
 
 [features]
 test-utils = []
+local = ["evmlib/local"]
 
 [dependencies]
 custom_debug = "~0.6.1"

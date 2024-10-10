@@ -36,7 +36,7 @@ pub mod client;
 #[cfg(feature = "data")]
 mod self_encryption;
 
-pub use sn_evm::evm;
+pub use sn_evm::get_evm_network_from_env;
 pub use sn_evm::EvmNetwork;
 pub use sn_evm::EvmWallet as Wallet;
 

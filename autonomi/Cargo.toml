@@ -15,7 +15,7 @@ full = ["data", "registers", "vault"]
 data = []
 vault = ["data"]
 fs = ["tokio/fs", "data"]
-local = ["sn_networking/local", "test_utils/local"]
+local = ["sn_networking/local", "test_utils/local", "sn_evm/local"]
 registers = ["data"]
 loud = []
 

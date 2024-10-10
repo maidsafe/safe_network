@@ -22,16 +22,14 @@ use libp2p::{
 };
 
 use sn_evm::PaymentQuote;
+#[cfg(feature = "open-metrics")]
+use sn_protocol::CLOSE_GROUP_SIZE;
 use sn_protocol::{
     messages::{Query, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-
-#[cfg(feature = "open-metrics")]
-use sn_protocol::CLOSE_GROUP_SIZE;
 #[cfg(feature = "open-metrics")]
 use std::collections::HashSet;
-
 use std::{
     collections::BTreeSet,
     fmt::{Debug, Formatter},
