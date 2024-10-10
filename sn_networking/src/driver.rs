@@ -167,8 +167,8 @@ impl GetRecordCfg {
                     }
                 };
 
-                // Only compare root values of the register
-                target_register.base_register().read() == fetched_register.base_register().read()
+                target_register.base_register() == fetched_register.base_register()
+                    && target_register.ops() == fetched_register.ops()
             } else {
                 target_record == record
             }

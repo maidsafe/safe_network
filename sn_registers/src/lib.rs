@@ -19,6 +19,7 @@ pub use self::{
     error::Error,
     metadata::{Entry, EntryHash},
     permissions::Permissions,
+    reg_crdt::RegisterCrdt,
     register::{Register, SignedRegister},
     register_op::RegisterOp,
 };

@@ -9,17 +9,21 @@
 use crate::{error::Result, Entry, EntryHash, Error, RegisterAddress, RegisterOp};
 
 use crdts::merkle_reg::Node as MerkleDagEntry;
-use crdts::{merkle_reg::MerkleReg, CmRDT, CvRDT};
+use crdts::{
+    merkle_reg::{Hash as CrdtHash, MerkleReg},
+    CmRDT, CvRDT,
+};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeSet, HashSet},
     fmt::{self, Debug, Display, Formatter},
     hash::Hash,
 };
+use xor_name::XorName;
 
 /// Register data type as a CRDT with Access Control
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd)]
-pub(crate) struct RegisterCrdt {
+pub struct RegisterCrdt {
     /// Address on the network of this piece of data
     address: RegisterAddress,
     /// CRDT to store the actual data, i.e. the items of the Register.
@@ -41,7 +45,7 @@ impl Display for RegisterCrdt {
 
 impl RegisterCrdt {
     /// Constructs a new '`RegisterCrdtImpl`'.
-    pub(crate) fn new(address: RegisterAddress) -> Self {
+    pub fn new(address: RegisterAddress) -> Self {
         Self {
             address,
             data: MerkleReg::new(),
@@ -49,23 +53,23 @@ impl RegisterCrdt {
     }
 
     /// Returns the address.
-    pub(crate) fn address(&self) -> &RegisterAddress {
+    pub fn address(&self) -> &RegisterAddress {
         &self.address
     }
 
     /// Merge another register into this one.
-    pub(crate) fn merge(&mut self, other: Self) {
+    pub fn merge(&mut self, other: Self) {
         self.data.merge(other.data);
     }
 
     /// Returns total number of items in the register.
-    pub(crate) fn size(&self) -> u64 {
+    pub fn size(&self) -> u64 {
         (self.data.num_nodes() + self.data.num_orphans()) as u64
     }
 
     /// Write a new entry to the `RegisterCrdt`, returning the hash
     /// of the entry and the CRDT operation without a signature
-    pub(crate) fn write(
+    pub fn write(
         &mut self,
         entry: Entry,
         children: &BTreeSet<EntryHash>,
@@ -81,7 +85,7 @@ impl RegisterCrdt {
     }
 
     /// Apply a remote data CRDT operation to this replica of the `RegisterCrdtImpl`.
-    pub(crate) fn apply_op(&mut self, op: RegisterOp) -> Result<()> {
+    pub fn apply_op(&mut self, op: RegisterOp) -> Result<()> {
         // Let's first check the op is validly signed.
         // Note: Perms and valid sig for the op are checked at the upper Register layer.
 
@@ -100,12 +104,12 @@ impl RegisterCrdt {
     }
 
     /// Get the entry corresponding to the provided `hash` if it exists.
-    pub(crate) fn get(&self, hash: EntryHash) -> Option<&Entry> {
+    pub fn get(&self, hash: EntryHash) -> Option<&Entry> {
         self.data.node(hash.0).map(|node| &node.value)
     }
 
     /// Read current entries (multiple entries occur on concurrent writes).
-    pub(crate) fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
+    pub fn read(&self) -> BTreeSet<(EntryHash, Entry)> {
         self.data
             .read()
             .hashes_and_nodes()
@@ -124,8 +128,83 @@ impl RegisterCrdt {
 
     /// Access the underlying MerkleReg (e.g. for access to history)
     /// NOTE: This API is unstable and may be removed in the future
-    pub(crate) fn merkle_reg(&self) -> &MerkleReg<Entry> {
+    pub fn merkle_reg(&self) -> &MerkleReg<Entry> {
         &self.data
+    }
+
+    /// Log the structure of the MerkleReg as a tree view.
+    /// This is actually being the `update history` of the register.
+    pub fn log_update_history(&self) -> String {
+        let mut output = "MerkleReg Structure:\n".to_string();
+        output = format!(
+            "{output}Total entries: {}\n",
+            self.data.num_nodes() + self.data.num_orphans()
+        );
+
+        // Find root nodes (entries with no parents)
+        let roots: Vec<_> = self.data.read().hashes().into_iter().collect();
+
+        // Print the tree starting from each root
+        for (i, root) in roots.iter().enumerate() {
+            let mut visited = HashSet::new();
+            Self::print_tree(
+                root,
+                &self.data,
+                &mut output,
+                "",
+                i == roots.len() - 1,
+                &mut visited,
+            );
+        }
+
+        output
+    }
+
+    // Helper function to recursively print the MerkleReg tree
+    fn print_tree(
+        hash: &CrdtHash,
+        merkle_reg: &MerkleReg<Entry>,
+        output: &mut String,
+        prefix: &str,
+        is_last: bool,
+        visited: &mut HashSet<CrdtHash>,
+    ) {
+        let pretty_hash = format!("{}", XorName::from_content(hash));
+        if !visited.insert(*hash) {
+            *output = format!(
+                "{}{prefix}{}* {pretty_hash} (cycle detected)\n",
+                output,
+                if is_last { "└── " } else { "├── " },
+            );
+            return;
+        }
+
+        let entry = if let Some(node) = merkle_reg.node(*hash) {
+            format!("value: {}", XorName::from_content(&node.value))
+        } else {
+            "value: None".to_string()
+        };
+        *output = format!(
+            "{}{prefix}{}{pretty_hash}: {entry}\n",
+            output,
+            if is_last { "└── " } else { "├── " },
+        );
+
+        let children: Vec<_> = merkle_reg.children(*hash).hashes().into_iter().collect();
+        let new_prefix = format!("{prefix}{}   ", if is_last { " " } else { "│" });
+
+        for (i, child) in children.iter().enumerate() {
+            Self::print_tree(
+                child,
+                merkle_reg,
+                output,
+                &new_prefix,
+                i == children.len() - 1,
+                visited,
+            );
+        }
+
+        visited.remove(hash);
     }
 }
 

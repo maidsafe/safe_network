@@ -10,27 +10,22 @@
 pub use bls::SecretKey as RegisterSecretKey;
 use sn_evm::Amount;
 use sn_evm::AttoTokens;
-use sn_networking::GetRecordError;
 use sn_networking::VerificationKind;
 use sn_protocol::storage::RetryStrategy;
 pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
-use tracing::warn;
 
 use crate::client::data::PayError;
 use crate::client::Client;
 use bytes::Bytes;
 use evmlib::wallet::Wallet;
 use libp2p::kad::{Quorum, Record};
-use sn_networking::GetRecordCfg;
-use sn_networking::NetworkError;
-use sn_networking::PutRecordCfg;
+use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg};
 use sn_protocol::storage::try_deserialize_record;
 use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
 use sn_protocol::NetworkAddress;
-use sn_registers::Register as ClientRegister;
-use sn_registers::SignedRegister;
-use sn_registers::{EntryHash, Permissions};
+use sn_registers::Register as BaseRegister;
+use sn_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use std::collections::BTreeSet;
 use xor_name::XorName;
 
@@ -56,26 +51,66 @@ pub enum RegisterError {
 
 #[derive(Clone, Debug)]
 pub struct Register {
-    pub(crate) inner: SignedRegister,
+    signed_reg: SignedRegister,
+    crdt_reg: RegisterCrdt,
 }
 
 impl Register {
     pub fn address(&self) -> &RegisterAddress {
-        self.inner.address()
+        self.signed_reg.address()
     }
 
     /// Retrieve the current values of the register. There can be multiple values
     /// in case a register was updated concurrently. This is because of the nature
     /// of registers, which allows for network concurrency.
     pub fn values(&self) -> Vec<Bytes> {
-        self.inner
-            .clone()
-            .register()
-            .expect("register to be valid")
+        self.crdt_reg
             .read()
             .into_iter()
             .map(|(_hash, value)| value.into())
             .collect()
+    }
+
+    fn new(
+        initial_value: Option<Bytes>,
+        name: XorName,
+        owner: RegisterSecretKey,
+        permissions: RegisterPermissions,
+    ) -> Result<Register, RegisterError> {
+        let pk = owner.public_key();
+
+        let base_register = BaseRegister::new(pk, name, permissions);
+
+        let signature = owner.sign(base_register.bytes().map_err(RegisterError::Write)?);
+        let signed_reg = SignedRegister::new(base_register, signature, BTreeSet::new());
+
+        let crdt_reg = RegisterCrdt::new(*signed_reg.address());
+
+        let mut register = Register {
+            signed_reg,
+            crdt_reg,
+        };
+
+        if let Some(value) = initial_value {
+            register.write_atop(&value, &owner)?;
+        }
+
+        Ok(register)
+    }
+
+    fn write_atop(&mut self, entry: &[u8], owner: &RegisterSecretKey) -> Result<(), RegisterError> {
+        let children: BTreeSet<_> = self.crdt_reg.read().iter().map(|(hash, _)| *hash).collect();
+
+        let (_hash, address, crdt_op) = self
+            .crdt_reg
+            .write(entry.to_vec(), &children)
+            .map_err(RegisterError::Write)?;
+
+        let op = RegisterOp::new(address, crdt_op, owner);
+
+        let _ = self.signed_reg.add_op(op);
+
+        Ok(())
     }
 }
 
@@ -99,9 +134,11 @@ impl Client {
             is_register: true,
         };
 
-        let register = match self.network.get_record_from_network(key, &get_cfg).await {
+        let signed_reg = match self.network.get_record_from_network(key, &get_cfg).await {
             Ok(record) => {
-                try_deserialize_record(&record).map_err(|_| RegisterError::Serialization)?
+                let signed_reg: SignedRegister =
+                    try_deserialize_record(&record).map_err(|_| RegisterError::Serialization)?;
+                signed_reg
             }
             // manage forked register case
             Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
@@ -128,58 +165,33 @@ impl Client {
         };
 
         // Make sure the fetched record contains valid CRDT operations
-        register.verify().map_err(|err| {
-            error!("Failed to verify register {address:?} with error: {err}");
-            RegisterError::FailedVerification
-        })?;
+        signed_reg
+            .verify()
+            .map_err(|_| RegisterError::FailedVerification)?;
 
-        Ok(Register { inner: register })
+        let mut crdt_reg = RegisterCrdt::new(*signed_reg.address());
+        for op in signed_reg.ops() {
+            if let Err(err) = crdt_reg.apply_op(op.clone()) {
+                return Err(RegisterError::Write(err));
+            }
+        }
+
+        Ok(Register {
+            signed_reg,
+            crdt_reg,
+        })
     }
 
     /// Updates a Register on the network with a new value. This will overwrite existing value(s).
     pub async fn register_update(
         &self,
-        register: Register,
+        mut register: Register,
         new_value: Bytes,
         owner: RegisterSecretKey,
     ) -> Result<(), RegisterError> {
-        // Fetch the current register
-        let mut signed_register = register.inner;
-        let mut register = signed_register
-            .clone()
-            .register()
-            .map_err(|err| {
-                error!(
-                    "Failed to get register from signed register as it failed verification: {err}"
-                );
-                RegisterError::FailedVerification
-            })?
-            .clone();
+        register.write_atop(&new_value, &owner)?;
 
-        info!("Updating register at addr: {}", register.address());
-
-        // Get all current branches
-        let children: BTreeSet<EntryHash> = register.read().into_iter().map(|(e, _)| e).collect();
-
-        // Write the new value to all branches
-        let (_, op) = register
-            .write(new_value.into(), &children, &owner)
-            .map_err(|err| {
-                error!(
-                    "Failed to write to register at addr: {} : {err}",
-                    register.address()
-                );
-                RegisterError::Write(err)
-            })?;
-
-        // Apply the operation to the register
-        signed_register.add_op(op.clone()).map_err(|err| {
-            error!(
-                "Failed to add op to register at addr: {} : {err}",
-                register.address()
-            );
-            RegisterError::Write(err)
-        })?;
+        let signed_register = register.signed_reg.clone();
 
         // Prepare the record for network storage
         let record = Record {
@@ -230,7 +242,7 @@ impl Client {
         let pk = owner.public_key();
         let name = XorName::from_content_parts(&[name.as_bytes()]);
         let permissions = Permissions::new_with([pk]);
-        let register = ClientRegister::new(pk, name, permissions);
+        let register = Register::new(None, name, owner, permissions)?;
         let reg_xor = register.address().xorname();
 
         // get cost to store register
@@ -281,23 +293,14 @@ impl Client {
         permissions: RegisterPermissions,
         wallet: &Wallet,
     ) -> Result<Register, RegisterError> {
-        let pk = owner.public_key();
+        info!("Creating register with name: {name}");
         let name = XorName::from_content_parts(&[name.as_bytes()]);
 
         // Owner can write to the register.
-        let mut register = ClientRegister::new(pk, name, permissions);
-        let address = NetworkAddress::from_register_address(*register.address());
+        let register = Register::new(Some(value), name, owner, permissions)?;
+        let address = register.address();
 
-        info!("Creating register at address: {address}");
-
-        let entries = register
-            .read()
-            .into_iter()
-            .map(|(entry_hash, _value)| entry_hash)
-            .collect();
-
-        let _ = register.write(value.into(), &entries, &owner);
-        let reg_xor = register.address().xorname();
+        let reg_xor = address.xorname();
         debug!("Paying for register at address: {address}");
         let (payment_proofs, _skipped) = self
             .pay(std::iter::once(reg_xor), wallet)
@@ -317,13 +320,10 @@ impl Client {
             .to_peer_id_payee()
             .ok_or(RegisterError::InvalidQuote)
             .inspect_err(|err| error!("Failed to get payee from payment proof: {err}"))?;
-        let signed_register = register.clone().into_signed(&owner).map_err(|err| {
-            error!("Failed to sign register at address: {address} : {err}");
-            RegisterError::CouldNotSign(err)
-        })?;
+        let signed_register = register.signed_reg.clone();
 
         let record = Record {
-            key: address.to_record_key(),
+            key: NetworkAddress::from_register_address(*address).to_record_key(),
             value: try_serialize_record(
                 &(proof, &signed_register),
                 RecordKind::RegisterWithPayment,
@@ -356,8 +356,6 @@ impl Client {
                 error!("Failed to put record - register {address} to the network: {err}")
             })?;
 
-        Ok(Register {
-            inner: signed_register,
-        })
+        Ok(register)
     }
 }

@@ -18,7 +18,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
     NetworkAddress,
 };
-use sn_registers::{Register, RegisterAddress};
+use sn_registers::{RegisterAddress, SignedRegister};
 use sn_transfers::{NanoTokens, WalletApi};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -420,7 +420,7 @@ impl UploadItem {
 #[derive(Debug)]
 enum TaskResult {
     GetRegisterFromNetworkOk {
-        remote_register: Register,
+        remote_register: SignedRegister,
     },
     GetRegisterFromNetworkErr(XorName),
     PushRegisterOk {
