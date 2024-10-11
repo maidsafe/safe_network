@@ -22,7 +22,7 @@ use sn_protocol::{
     NetworkAddress,
 };
 
-/// Raw Data Address (points to a [`DataMap`])
+/// Raw Data Address (points to a DataMap)
 pub type DataAddr = XorName;
 /// Raw Chunk Address (points to a [`Chunk`])
 pub type ChunkAddr = XorName;
