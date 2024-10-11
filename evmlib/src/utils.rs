@@ -32,7 +32,7 @@ pub fn dummy_hash() -> Hash {
 }
 
 /// Get the `Network` from environment variables
-pub fn evm_network_from_env() -> Result<Network, Error> {
+pub fn network_from_env() -> Result<Network, Error> {
     let evm_vars = [
         env::var(RPC_URL)
             .ok()

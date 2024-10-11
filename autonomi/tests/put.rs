@@ -23,11 +23,11 @@ async fn put() -> Result<()> {
     let wallet = get_funded_wallet();
     let data = gen_random_data(1024 * 1024 * 10);
 
-    let addr = client.put(data.clone(), &wallet).await?;
+    let addr = client.data_put(data.clone(), &wallet).await?;
 
     sleep(Duration::from_secs(10)).await;
 
-    let data_fetched = client.get(addr).await?;
+    let data_fetched = client.data_get(addr).await?;
     assert_eq!(data, data_fetched, "data fetched should match data put");
 
     Ok(())

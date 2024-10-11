@@ -1,0 +1,113 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+#![cfg(feature = "fs")]
+
+use autonomi::Client;
+use eyre::Result;
+use sha2::{Digest, Sha256};
+use sn_logging::LogBuilder;
+use std::fs::File;
+use std::io::{BufReader, Read};
+use std::time::Duration;
+use test_utils::{evm::get_funded_wallet, peers_from_env};
+use tokio::time::sleep;
+use walkdir::WalkDir;
+
+// With a local evm network, and local network, run:
+// EVM_NETWORK=local cargo test --features="fs,local" --package autonomi --test file
+#[tokio::test]
+async fn dir_upload_download() -> Result<()> {
+    let _log_appender_guard =
+        LogBuilder::init_single_threaded_tokio_test("dir_upload_download", false);
+
+    let mut client = Client::connect(&peers_from_env()?).await?;
+    let wallet = get_funded_wallet();
+
+    let addr = client
+        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .await?;
+
+    sleep(Duration::from_secs(10)).await;
+
+    client
+        .dir_download(addr, "tests/file/test_dir_fetched".into())
+        .await?;
+
+    // compare the two directories
+    assert_eq!(
+        compute_dir_sha256("tests/file/test_dir")?,
+        compute_dir_sha256("tests/file/test_dir_fetched")?,
+    );
+    Ok(())
+}
+
+fn compute_sha256(path: &str) -> Result<String> {
+    let mut hasher = Sha256::new();
+    let mut file = BufReader::new(File::open(path)?);
+    let mut buffer = [0; 1024];
+    while let Ok(read_bytes) = file.read(&mut buffer) {
+        if read_bytes == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read_bytes]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn compute_dir_sha256(dir: &str) -> Result<String> {
+    let mut hasher = Sha256::new();
+    for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
+        if entry.file_type().is_file() {
+            let sha = compute_sha256(
+                entry
+                    .path()
+                    .to_str()
+                    .expect("Failed to convert path to string"),
+            )?;
+            hasher.update(sha.as_bytes());
+        }
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+#[cfg(feature = "vault")]
+#[tokio::test]
+async fn file_into_vault() -> Result<()> {
+    let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("file", false);
+
+    let mut client = Client::connect(&peers_from_env()?).await?;
+    let mut wallet = get_funded_wallet();
+    let client_sk = bls::SecretKey::random();
+
+    let addr = client
+        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .await?;
+    sleep(Duration::from_secs(2)).await;
+
+    let archive = client.archive_get(addr).await?;
+    client
+        .write_bytes_to_vault(archive.into_bytes()?, &mut wallet, &client_sk)
+        .await?;
+
+    // now assert over the stored account packet
+    let new_client = Client::connect(&[]).await?;
+
+    if let Some(ap) = new_client.fetch_and_decrypt_vault(&client_sk).await? {
+        let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
+
+        assert_eq!(
+            archive.map, ap_archive_fetched.map,
+            "archive fetched should match archive put"
+        );
+    } else {
+        eyre::bail!("No account packet found");
+    }
+
+    Ok(())
+}

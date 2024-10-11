@@ -77,6 +77,12 @@ impl From<u64> for AttoTokens {
     }
 }
 
+impl From<Amount> for AttoTokens {
+    fn from(value: Amount) -> Self {
+        Self(value)
+    }
+}
+
 impl FromStr for AttoTokens {
     type Err = EvmError;
 

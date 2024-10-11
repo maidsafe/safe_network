@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use autonomi::client::address::xorname_to_str;
+use autonomi::client::address::addr_to_str;
 use autonomi::Multiaddr;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
@@ -31,11 +31,11 @@ pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let mut client = crate::actions::connect_to_network(peers).await?;
 
     println!("Uploading data to network...");
-    let (_, xor_name) = client
-        .upload_from_dir(PathBuf::from(file), &wallet)
+    let xor_name = client
+        .dir_upload(PathBuf::from(file), &wallet)
         .await
         .wrap_err("Failed to upload file")?;
-    let addr = xorname_to_str(xor_name);
+    let addr = addr_to_str(xor_name);
 
     println!("Successfully uploaded: {file}");
     println!("At address: {addr}");

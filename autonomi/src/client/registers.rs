@@ -10,6 +10,7 @@
 pub use bls::SecretKey as RegisterSecretKey;
 use sn_evm::Amount;
 use sn_evm::AttoTokens;
+use sn_evm::EvmWalletError;
 use sn_networking::VerificationKind;
 use sn_protocol::storage::RetryStrategy;
 pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
@@ -17,8 +18,8 @@ pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
 use crate::client::data::PayError;
 use crate::client::Client;
 use bytes::Bytes;
-use evmlib::wallet::Wallet;
 use libp2p::kad::{Quorum, Record};
+use sn_evm::EvmWallet;
 use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg};
 use sn_protocol::storage::try_deserialize_record;
 use sn_protocol::storage::try_serialize_record;
@@ -40,7 +41,7 @@ pub enum RegisterError {
     #[error("Payment failure occurred during register creation.")]
     Pay(#[from] PayError),
     #[error("Failed to retrieve wallet payment")]
-    Wallet(#[from] evmlib::wallet::Error),
+    Wallet(#[from] EvmWalletError),
     #[error("Failed to write to low-level register")]
     Write(#[source] sn_registers::Error),
     #[error("Failed to sign register")]
@@ -273,7 +274,7 @@ impl Client {
         value: Bytes,
         name: &str,
         owner: RegisterSecretKey,
-        wallet: &Wallet,
+        wallet: &EvmWallet,
     ) -> Result<Register, RegisterError> {
         let pk = owner.public_key();
         let permissions = Permissions::new_with([pk]);
@@ -291,7 +292,7 @@ impl Client {
         name: &str,
         owner: RegisterSecretKey,
         permissions: RegisterPermissions,
-        wallet: &Wallet,
+        wallet: &EvmWallet,
     ) -> Result<Register, RegisterError> {
         info!("Creating register with name: {name}");
         let name = XorName::from_content_parts(&[name.as_bytes()]);

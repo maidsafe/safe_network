@@ -44,7 +44,5 @@ pub use sn_evm::EvmWallet as Wallet;
 pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use libp2p::Multiaddr;
-#[doc(no_inline)] // Place this under 'Re-exports' in the docs.
-pub use xor_name::XorName;
 
 pub use client::Client;

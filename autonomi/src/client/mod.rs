@@ -9,13 +9,18 @@
 pub mod address;
 
 #[cfg(feature = "data")]
+pub mod archive;
+#[cfg(feature = "data")]
 pub mod data;
-#[cfg(feature = "files")]
-pub mod files;
+#[cfg(feature = "fs")]
+pub mod fs;
 #[cfg(feature = "registers")]
 pub mod registers;
 #[cfg(feature = "vault")]
 pub mod vault;
+
+// private module with utility functions
+mod utils;
 
 use std::{collections::HashSet, time::Duration};
 

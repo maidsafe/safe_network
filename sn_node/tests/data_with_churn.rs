@@ -315,10 +315,13 @@ fn store_chunks_task(
         loop {
             let random_data = gen_random_data(*DATA_SIZE);
 
-            let data_map = client.put(random_data, &wallet).await.inspect_err(|err| {
-                println!("Error to put chunk: {err:?}");
-                error!("Error to put chunk: {err:?}")
-            })?;
+            let data_map = client
+                .data_put(random_data, &wallet)
+                .await
+                .inspect_err(|err| {
+                    println!("Error to put chunk: {err:?}");
+                    error!("Error to put chunk: {err:?}")
+                })?;
 
             println!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
             info!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
@@ -497,7 +500,7 @@ async fn query_content(client: &Client, net_addr: &NetworkAddress) -> Result<()>
             Ok(())
         }
         NetworkAddress::ChunkAddress(addr) => {
-            client.get(*addr.xorname()).await?;
+            client.data_get(*addr.xorname()).await?;
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet

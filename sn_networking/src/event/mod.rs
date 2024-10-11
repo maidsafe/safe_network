@@ -24,10 +24,16 @@ use libp2p::{
 use sn_evm::PaymentQuote;
 use sn_protocol::{
     messages::{Query, Request, Response},
-    NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
+    NetworkAddress, PrettyPrintRecordKey,
 };
+
+#[cfg(feature = "open-metrics")]
+use sn_protocol::CLOSE_GROUP_SIZE;
+#[cfg(feature = "open-metrics")]
+use std::collections::HashSet;
+
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::BTreeSet,
     fmt::{Debug, Formatter},
 };
 use tokio::sync::oneshot;

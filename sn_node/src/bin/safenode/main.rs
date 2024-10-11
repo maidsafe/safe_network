@@ -261,7 +261,10 @@ fn main() -> Result<()> {
         .as_ref()
         .cloned()
         .map(|v| v.into())
-        .unwrap_or_else(sn_evm::evm::network_from_env);
+        .unwrap_or_else(|| {
+            sn_evm::evm::network_from_env()
+                .expect("Failed to get EVM network from environment variables")
+        });
     if matches!(evm_network, EvmNetwork::Custom(_)) {
         println!("Using custom EVM network");
         info!("Using custom EVM network {evm_network:?}");
