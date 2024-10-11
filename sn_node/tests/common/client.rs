@@ -7,10 +7,14 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use autonomi::Client;
+use evmlib::wallet::Wallet;
 use eyre::Result;
+use sn_evm::Amount;
 use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
 use sn_service_management::{get_local_node_registry_path, NodeRegistry};
+use std::str::FromStr;
 use std::{net::SocketAddr, path::Path};
+use test_utils::evm::get_new_wallet;
 use test_utils::testnet::DeploymentInventory;
 use test_utils::{evm::get_funded_wallet, peers_from_env};
 use tokio::sync::Mutex;
@@ -35,7 +39,7 @@ const LOAD_FAUCET_WALLET_RETRIES: usize = 6;
 // mutex to restrict access to faucet wallet from concurrent tests
 static FAUCET_WALLET_MUTEX: Mutex<()> = Mutex::const_new(());
 
-pub async fn get_client_and_funded_wallet() -> (Client, evmlib::wallet::Wallet) {
+pub async fn get_client_and_funded_wallet() -> (Client, Wallet) {
     match DeploymentInventory::load() {
         Ok(_inventory) => {
             todo!("Not implemented yet for WanNetwork");
@@ -107,20 +111,17 @@ pub fn get_all_rpc_addresses(_skip_genesis_for_droplet: bool) -> Result<Vec<Sock
     }
 }
 
-// /// Adds funds to the provided to_wallet_dir
-// /// If SN_INVENTORY flag is passed, the amount is retrieved from the faucet url
-// /// else obtain it from the provided faucet HotWallet
-// ///
-// /// We obtain 100 SNT from the network per call. Use `get_client_and_wallet` during the initial setup which would
-// /// obtain 10*100 SNT
-// pub async fn add_funds_to_wallet(client: &Client, to_wallet_dir: &Path) -> Result<HotWallet> {
-//     match DeploymentInventory::load() {
-//         Ok(inventory) => {
-//             Droplet::get_funded_wallet(client, to_wallet_dir, inventory.faucet_address, false).await
-//         }
-//         Err(_) => NonDroplet::get_funded_wallet(client, to_wallet_dir, false).await,
-//     }
-// }
+/// Transfer tokens from the provided wallet to a newly created wallet
+/// Returns the newly created wallet
+pub async fn transfer_to_new_wallet(from: &Wallet, amount: usize) -> Result<Wallet> {
+    match DeploymentInventory::load() {
+        Ok(_inventory) => {
+            todo!("Not implemented yet for WanNetwork");
+            // Droplet::get_funded_wallet(client, to_wallet_dir, inventory.faucet_address, false).await
+        }
+        Err(_) => LocalNetwork::transfer_to_new_wallet(from, amount).await,
+    }
+}
 
 pub struct LocalNetwork;
 impl LocalNetwork {
@@ -137,6 +138,28 @@ impl LocalNetwork {
 
     fn get_funded_wallet() -> evmlib::wallet::Wallet {
         get_funded_wallet()
+    }
+
+    /// Transfer tokens from the provided wallet to a newly created wallet
+    /// Returns the newly created wallet
+    async fn transfer_to_new_wallet(from: &Wallet, amount: usize) -> Result<Wallet> {
+        let wallet_balance = from.balance_of_tokens().await?;
+        let gas_balance = from.balance_of_gas_tokens().await?;
+
+        debug!("Wallet balance: {wallet_balance}, Gas balance: {gas_balance}");
+
+        let new_wallet = get_new_wallet()?;
+
+        from.transfer_tokens(new_wallet.address(), Amount::from(amount))
+            .await?;
+
+        from.transfer_gas_tokens(
+            new_wallet.address(),
+            Amount::from_str("10000000000000000000")?,
+        )
+        .await?;
+
+        Ok(new_wallet)
     }
 
     // Restart a local node by sending in the SafenodeRpcCmd::Restart to the node's RPC endpoint.

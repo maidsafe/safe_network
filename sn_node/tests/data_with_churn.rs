@@ -13,6 +13,7 @@ use crate::common::{
     NodeRestart,
 };
 use autonomi::{Client, Wallet};
+use common::client::transfer_to_new_wallet;
 use eyre::{bail, ErrReport, Result};
 use rand::Rng;
 use self_encryption::MAX_CHUNK_SIZE;
@@ -30,6 +31,8 @@ use test_utils::gen_random_data;
 use tokio::{sync::RwLock, task::JoinHandle, time::sleep};
 use tracing::{debug, error, info, trace, warn};
 use xor_name::XorName;
+
+const TOKENS_TO_TRANSFER: usize = 10000000;
 
 const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 2;
@@ -108,11 +111,11 @@ async fn data_availability_during_churn() -> Result<()> {
         if chunks_only { " (Chunks only)" } else { "" }
     );
 
-    let (client, wallet) = get_client_and_funded_wallet().await;
+    let (client, main_wallet) = get_client_and_funded_wallet().await;
 
     info!(
-        "Client and wallet created. Wallet address: {:?}",
-        wallet.address()
+        "Client and wallet created. Main wallet address: {:?}",
+        main_wallet.address()
     );
 
     // Shared bucket where we keep track of content created/stored on the network
@@ -121,9 +124,10 @@ async fn data_availability_during_churn() -> Result<()> {
     // Spawn a task to create Registers and CashNotes at random locations,
     // at a higher frequency than the churning events
     let create_register_handle = if !chunks_only {
+        let register_wallet = transfer_to_new_wallet(&main_wallet, TOKENS_TO_TRANSFER).await?;
         let create_register_handle = create_registers_task(
             client.clone(),
-            wallet.clone(),
+            register_wallet,
             Arc::clone(&content),
             churn_period,
         );
@@ -135,10 +139,11 @@ async fn data_availability_during_churn() -> Result<()> {
     println!("Uploading some chunks before carry out node churning");
     info!("Uploading some chunks before carry out node churning");
 
+    let chunk_wallet = transfer_to_new_wallet(&main_wallet, TOKENS_TO_TRANSFER).await?;
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
     let store_chunks_handle = store_chunks_task(
         client.clone(),
-        wallet.clone(),
+        chunk_wallet,
         Arc::clone(&content),
         churn_period,
     );
@@ -315,21 +320,40 @@ fn store_chunks_task(
         loop {
             let random_data = gen_random_data(*DATA_SIZE);
 
-            let data_map = client
-                .data_put(random_data, &wallet)
-                .await
-                .inspect_err(|err| {
-                    println!("Error to put chunk: {err:?}");
-                    error!("Error to put chunk: {err:?}")
-                })?;
+            // FIXME: The client does not have the retry repay to different payee feature yet.
+            // Retry here for now
+            let mut retries = 1;
+            loop {
+                match client
+                    .data_put(random_data.clone(), &wallet)
+                    .await
+                    .inspect_err(|err| {
+                        println!("Error to put chunk: {err:?}");
+                        error!("Error to put chunk: {err:?}")
+                    }) {
+                    Ok(data_map) => {
+                        println!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
+                        info!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
 
-            println!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
-            info!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
+                        content
+                            .write()
+                            .await
+                            .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(data_map)));
+                        break;
+                    }
+                    Err(err) => {
+                        println!("Failed to store chunk: {err:?}. Retrying ...");
+                        error!("Failed to store chunk: {err:?}. Retrying ...");
+                        if retries >= 3 {
+                            println!("Failed to store chunk after 3 retries: {err}");
+                            error!("Failed to store chunk after 3 retries: {err}");
+                            bail!("Failed to store chunk after 3 retries: {err}");
+                        }
+                        retries += 1;
+                    }
+                }
+            }
 
-            content
-                .write()
-                .await
-                .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(data_map)));
             sleep(delay).await;
         }
     });
