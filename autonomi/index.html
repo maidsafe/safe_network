@@ -24,16 +24,19 @@
         console.log("wallet retrieved");
 
         const data = new Uint8Array([1, 2, 3]);
+        console.log("our data: ", data);
 
         console.log("calculating cost...");
-        let result = await client.cost(data, wallet);
+        let result = await client.dataCost(data, wallet);
         console.log("calculated cost: ", result.toString());
 
         console.log("putting...");
-        const dataAddr = await client.putData(data, wallet);
-        console.log("put done!");
+        const dataAddr = await client.dataPut(data, wallet);
+        console.log("put done: ", dataAddr.toString());
 
-        console.log("Uploaded data to: ", dataAddr.toString());
+        console.log("getting...");
+        const data_get = await client.dataGet(dataAddr);
+        console.log("get done: ", data_get, " (original data: ", data, ")");
       }
 
       document.getElementById ("btn-run").addEventListener("click", run, false);
