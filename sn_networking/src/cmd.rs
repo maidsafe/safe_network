@@ -44,8 +44,6 @@ const REPLICATION_TIMEOUT: Duration = Duration::from_secs(45);
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeIssue {
-    /// Connection issues observed
-    ConnectionIssue,
     /// Data Replication failed
     ReplicationFailure,
     /// Close nodes have reported this peer as bad

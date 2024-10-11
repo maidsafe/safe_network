@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::LocalSwarmCmd, event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p,
-    relay_manager::is_a_relayed_peer, target_arch::Instant, NetworkEvent, Result, SwarmDriver,
+    event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p, relay_manager::is_a_relayed_peer,
+    target_arch::Instant, NetworkEvent, Result, SwarmDriver,
 };
 #[cfg(feature = "local")]
 use libp2p::mdns;
@@ -494,11 +494,6 @@ impl SwarmDriver {
                         .remove_peer(&failed_peer_id)
                     {
                         self.update_on_peer_removal(*dead_peer.node.key.preimage());
-
-                        self.handle_local_cmd(LocalSwarmCmd::RecordNodeIssue {
-                            peer_id: failed_peer_id,
-                            issue: crate::NodeIssue::ConnectionIssue,
-                        })?;
                     }
                 }
             }
