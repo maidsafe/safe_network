@@ -10,8 +10,10 @@
 extern crate tracing;
 
 pub use evmlib::common::Address as RewardsAddress;
+pub use evmlib::common::QuotePayment;
 pub use evmlib::common::{QuoteHash, TxHash};
 pub use evmlib::utils;
+pub use evmlib::wallet::Error as EvmWalletError;
 pub use evmlib::wallet::Wallet as EvmWallet;
 pub use evmlib::Network as EvmNetwork;
 

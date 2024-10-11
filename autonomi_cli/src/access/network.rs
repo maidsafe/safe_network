@@ -12,8 +12,10 @@ use color_eyre::eyre::Context;
 use color_eyre::Result;
 use color_eyre::Section;
 use sn_peers_acquisition::PeersArgs;
-
 use sn_peers_acquisition::SAFE_PEERS_ENV;
+
+#[cfg(not(feature = "local"))]
+use autonomi::evm::{DATA_PAYMENTS_ADDRESS, PAYMENT_TOKEN_ADDRESS, RPC_URL};
 
 pub async fn get_peers(peers: PeersArgs) -> Result<Vec<Multiaddr>> {
     peers.get_peers().await
@@ -33,7 +35,9 @@ pub fn get_evm_network_from_env() -> Result<EvmNetwork> {
     }
     #[cfg(not(feature = "local"))]
     {
-        let network = autonomi::evm::network_from_env();
+        let network = autonomi::evm::network_from_env()
+            .wrap_err("Failed to get EVM network from environment variables")
+            .with_suggestion(|| format!("If connecting to a custom EVM network, make sure you've set the following environment variables: {RPC_URL}, {PAYMENT_TOKEN_ADDRESS} and {DATA_PAYMENTS_ADDRESS}"))?;
         if matches!(network, EvmNetwork::Custom(_)) {
             println!("Using custom EVM network found from environment variables");
             info!("Using custom EVM network found from environment variables {network:?}");

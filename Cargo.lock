@@ -1081,6 +1081,7 @@ dependencies = [
  "rmp-serde",
  "self_encryption",
  "serde",
+ "sha2 0.10.8",
  "sn_bls_ckd",
  "sn_curv",
  "sn_evm",

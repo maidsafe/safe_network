@@ -7,22 +7,21 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use const_hex::traits::FromHex;
-use evmlib::common::{Address, Amount};
-use evmlib::utils::evm_network_from_env;
-use evmlib::wallet::Wallet;
+use sn_evm::evm::network_from_env;
+use sn_evm::EvmWallet;
+use sn_evm::{Amount, RewardsAddress};
 use sn_logging::LogBuilder;
 use test_utils::evm::get_funded_wallet;
 
 #[tokio::test]
 async fn from_private_key() {
     let private_key = "0xdb1049e76a813c94be0df47ec3e20533ca676b1b9fef2ddbce9daa117e4da4aa";
-    let network =
-        evm_network_from_env().expect("Could not get EVM network from environment variables");
-    let wallet = Wallet::new_from_private_key(network, private_key).unwrap();
+    let network = network_from_env().expect("Could not get EVM network from environment variables");
+    let wallet = EvmWallet::new_from_private_key(network, private_key).unwrap();
 
     assert_eq!(
         wallet.address(),
-        Address::from_hex("0x69D5BF2Bc42bca8782b8D2b4FdfF2b1Fa7644Fe7").unwrap()
+        RewardsAddress::from_hex("0x69D5BF2Bc42bca8782b8D2b4FdfF2b1Fa7644Fe7").unwrap()
     )
 }
 
@@ -30,11 +29,10 @@ async fn from_private_key() {
 async fn send_tokens() {
     let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("wallet", false);
 
-    let network =
-        evm_network_from_env().expect("Could not get EVM network from environment variables");
+    let network = network_from_env().expect("Could not get EVM network from environment variables");
     let wallet = get_funded_wallet();
 
-    let receiving_wallet = Wallet::new_with_random_wallet(network);
+    let receiving_wallet = EvmWallet::new_with_random_wallet(network);
 
     let initial_balance = receiving_wallet.balance_of_tokens().await.unwrap();
 

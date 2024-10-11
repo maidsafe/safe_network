@@ -7,15 +7,21 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 pub mod address;
+pub mod error;
 
 #[cfg(feature = "data")]
+pub mod archive;
+#[cfg(feature = "data")]
 pub mod data;
-#[cfg(feature = "files")]
+#[cfg(feature = "fs")]
 pub mod files;
 #[cfg(feature = "registers")]
 pub mod registers;
 #[cfg(feature = "vault")]
 pub mod vault;
+
+// private module with utility functions
+mod utils;
 
 use std::{collections::HashSet, time::Duration};
 

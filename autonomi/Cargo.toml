@@ -14,10 +14,10 @@ default = ["data"]
 full = ["data", "registers", "vault"]
 data = []
 vault = ["data"]
-files = ["data"]
-fs = ["tokio/fs", "files"]
+fs = ["tokio/fs", "data"]
 local = ["sn_networking/local", "test_utils/local"]
-registers = []
+registers = ["data"]
+loud = []
 
 [dependencies]
 bip39 = "2.0.0"
@@ -28,7 +28,6 @@ curv = { version = "0.10.1", package = "sn_curv", default-features = false, feat
 ] }
 eip2333 = { version = "0.2.1", package = "sn_bls_ckd" }
 const-hex = "1.12.0"
-evmlib = { path = "../evmlib", version = "0.1" }
 hex = "~0.4.3"
 libp2p = "0.54.1"
 rand = "0.8.5"
@@ -49,6 +48,7 @@ futures = "0.3.30"
 
 [dev-dependencies]
 eyre = "0.6.5"
+sha2 = "0.10.6"
 sn_logging = { path = "../sn_logging", version = "0.2.33" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.2" }

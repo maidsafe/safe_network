@@ -6,12 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use evmlib::{utils::evm_network_from_env, Network};
+use evmlib::{utils::network_from_env, Network};
 use std::env;
 
 pub fn get_funded_wallet() -> evmlib::wallet::Wallet {
-    let network =
-        evm_network_from_env().expect("Failed to get EVM network from environment variables");
+    let network = network_from_env().expect("Failed to get EVM network from environment variables");
     if matches!(network, Network::ArbitrumOne) {
         panic!("You're trying to use ArbitrumOne network. Use a custom network for testing.");
     }

@@ -8,12 +8,12 @@
 
 use std::collections::HashSet;
 
-use crate::client::data::PutError;
+use crate::client::error::PutError;
 use crate::client::Client;
 use bls::SecretKey;
 use bytes::Bytes;
-use evmlib::wallet::Wallet;
 use libp2p::kad::{Quorum, Record};
+use sn_evm::EvmWallet;
 use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg, VerificationKind};
 use sn_protocol::storage::{
     try_serialize_record, RecordKind, RetryStrategy, Scratchpad, ScratchpadAddress,
@@ -86,7 +86,7 @@ impl Client {
     pub async fn write_bytes_to_vault(
         &mut self,
         data: Bytes,
-        wallet: &mut Wallet,
+        wallet: &mut EvmWallet,
         secret_key: &SecretKey,
     ) -> Result<u64, PutError> {
         let client_pk = secret_key.public_key();
@@ -133,7 +133,11 @@ impl Client {
             Record {
                 key: scratch_key,
                 value: try_serialize_record(&(proof, scratch), RecordKind::ScratchpadWithPayment)
-                    .map_err(|_| PutError::Serialization)?
+                    .map_err(|_| {
+                        PutError::Serialization(
+                            "Failed to serialize scratchpad with payment".to_string(),
+                        )
+                    })?
                     .to_vec(),
                 publisher: None,
                 expires: None,
@@ -142,7 +146,9 @@ impl Client {
             Record {
                 key: scratch_key,
                 value: try_serialize_record(&scratch, RecordKind::Scratchpad)
-                    .map_err(|_| PutError::Serialization)?
+                    .map_err(|_| {
+                        PutError::Serialization("Failed to serialize scratchpad".to_string())
+                    })?
                     .to_vec(),
                 publisher: None,
                 expires: None,

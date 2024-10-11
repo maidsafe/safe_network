@@ -16,7 +16,7 @@ pub enum DataError {
     InvalidHexString,
 }
 
-pub fn str_to_xorname(addr: &str) -> Result<XorName, DataError> {
+pub fn str_to_addr(addr: &str) -> Result<XorName, DataError> {
     let bytes = hex::decode(addr).map_err(|err| {
         error!("Failed to decode hex string: {err:?}");
         DataError::InvalidHexString
@@ -28,7 +28,7 @@ pub fn str_to_xorname(addr: &str) -> Result<XorName, DataError> {
     Ok(xor)
 }
 
-pub fn xorname_to_str(addr: XorName) -> String {
+pub fn addr_to_str(addr: XorName) -> String {
     hex::encode(addr)
 }
 
@@ -41,8 +41,8 @@ mod test {
     fn test_xorname_to_str() {
         let rng = &mut rand::thread_rng();
         let xorname = XorName::random(rng);
-        let str = xorname_to_str(xorname);
-        let xorname2 = str_to_xorname(&str).expect("Failed to convert back to xorname");
+        let str = addr_to_str(xorname);
+        let xorname2 = str_to_addr(&str).expect("Failed to convert back to xorname");
         assert_eq!(xorname, xorname2);
     }
 }

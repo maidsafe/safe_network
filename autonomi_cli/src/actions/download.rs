@@ -7,22 +7,22 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::get_progress_bar;
-use autonomi::{client::address::str_to_xorname, Client};
+use autonomi::{client::address::str_to_addr, Client};
 use color_eyre::eyre::{eyre, Context, Result};
 use std::path::PathBuf;
 
 pub async fn download(addr: &str, dest_path: &str, client: &mut Client) -> Result<()> {
-    let address = str_to_xorname(addr).wrap_err("Failed to parse data address")?;
-    let root = client
-        .fetch_root(address)
+    let address = str_to_addr(addr).wrap_err("Failed to parse data address")?;
+    let archive = client
+        .archive_get(address)
         .await
         .wrap_err("Failed to fetch data from address")?;
 
-    let progress_bar = get_progress_bar(root.map.len() as u64)?;
+    let progress_bar = get_progress_bar(archive.map.len() as u64)?;
     let mut all_errs = vec![];
-    for (path, file) in root.map {
+    for (path, addr) in archive.map {
         progress_bar.println(format!("Fetching file: {path:?}..."));
-        let bytes = match client.fetch_file(&file).await {
+        let bytes = match client.data_get(addr).await {
             Ok(bytes) => bytes,
             Err(e) => {
                 let err = format!("Failed to fetch file {path:?}: {e}");
