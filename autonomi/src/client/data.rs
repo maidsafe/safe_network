@@ -22,13 +22,10 @@ use sn_protocol::{
     NetworkAddress,
 };
 
-/// Raw Data Address
+/// Raw Data Address (points to a [`DataMap`])
 pub type DataAddr = XorName;
-/// Raw Chunk Address
+/// Raw Chunk Address (points to a [`Chunk`])
 pub type ChunkAddr = XorName;
-
-/// The address of a file on the network. Points to a [`DataMap`].
-pub type FileAddr = XorName;
 
 impl Client {
     /// Fetch a blob of data from the network
