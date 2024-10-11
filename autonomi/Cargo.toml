@@ -9,6 +9,9 @@ homepage = "https://maidsafe.net"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [features]
 default = ["data"]
 full = ["data", "registers", "vault"]
