@@ -14,26 +14,25 @@ env:
 
 jobs:
  
-  # wasm:
-  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-  #   name: Wasm builds
-  #   runs-on: ubuntu-latest
+  wasm:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: wasm32-unknown-unknown builds
+    runs-on: ubuntu-latest
     
-  #   steps:
-  #     - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - name: Install Rust
-  #       uses: dtolnay/rust-toolchain@stable
-  #     - uses: Swatinem/rust-cache@v2
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
 
-  #     - name: Install wasm-pack
-  #       run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-  #     - name: Build client for wasm
-  #       # wasm pack doesnt support workspaces
-  #       # --dev to avoid a loong optimisation step
-  #       run: cd sn_client && wasm-pack build --dev 
-  #       timeout-minutes: 30
+      - name: Build WASM package
+        # --dev to avoid optimisation
+        run: wasm-pack build --dev --target=web autonomi
+        timeout-minutes: 30
 
   websocket:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
