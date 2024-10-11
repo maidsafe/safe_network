@@ -1,3 +1,13 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+#![allow(dead_code)]
+
 use crate::common::{Address, Hash};
 use crate::{CustomNetwork, Network};
 use dirs_next::data_dir;
@@ -31,8 +41,19 @@ pub fn dummy_hash() -> Hash {
     Hash::new(rand::rngs::OsRng.gen())
 }
 
+pub fn get_evm_testnet_csv_path() -> Result<PathBuf, Error> {
+    let file = data_dir()
+        .ok_or(Error::FailedToGetEvmNetwork(
+            "failed to get data dir when fetching evm testnet CSV file".to_string(),
+        ))?
+        .join("safe")
+        .join(EVM_TESTNET_CSV_FILENAME);
+    Ok(file)
+}
+
 /// Get the `Network` from environment variables
-pub fn network_from_env() -> Result<Network, Error> {
+/// Returns an error if the we cannot obtain the network from any means.
+pub fn get_evm_network_from_env() -> Result<Network, Error> {
     let evm_vars = [
         env::var(RPC_URL)
             .ok()
@@ -52,40 +73,43 @@ pub fn network_from_env() -> Result<Network, Error> {
     })
     .collect::<Result<Vec<String>, Error>>();
 
-    let use_local_evm = std::env::var("EVM_NETWORK")
+    let mut use_local_evm = std::env::var("EVM_NETWORK")
         .map(|v| v == "local")
         .unwrap_or(false);
+    if use_local_evm {
+        info!("Using local EVM network as EVM_NETWORK is set to 'local'");
+    }
+    if cfg!(feature = "local") {
+        use_local_evm = true;
+        info!("Using local EVM network as 'local' feature flag is enabled");
+    }
+
     let use_arbitrum_one = std::env::var("EVM_NETWORK")
         .map(|v| v == "arbitrum-one")
         .unwrap_or(false);
 
-    if use_arbitrum_one {
-        Ok(Network::ArbitrumOne)
-    } else if use_local_evm {
+    if use_local_evm {
         local_evm_network_from_csv()
+    } else if use_arbitrum_one {
+        info!("Using Arbitrum One EVM network as EVM_NETWORK is set to 'arbitrum-one'");
+        Ok(Network::ArbitrumOne)
     } else if let Ok(evm_vars) = evm_vars {
+        info!("Using custom EVM network from environment variables");
         Ok(Network::Custom(CustomNetwork::new(
             &evm_vars[0],
             &evm_vars[1],
             &evm_vars[2],
         )))
     } else {
-        Ok(Network::ArbitrumOne)
+        error!("Failed to obtain EVM Network through any means");
+        Err(Error::FailedToGetEvmNetwork(
+            "Failed to obtain EVM Network through any means".to_string(),
+        ))
     }
 }
 
-pub fn get_evm_testnet_csv_path() -> Result<PathBuf, Error> {
-    let file = data_dir()
-        .ok_or(Error::FailedToGetEvmNetwork(
-            "failed to get data dir when fetching evm testnet CSV file".to_string(),
-        ))?
-        .join("safe")
-        .join(EVM_TESTNET_CSV_FILENAME);
-    Ok(file)
-}
-
 /// Get the `Network::Custom` from the local EVM testnet CSV file
-pub fn local_evm_network_from_csv() -> Result<Network, Error> {
+fn local_evm_network_from_csv() -> Result<Network, Error> {
     // load the csv
     let csv_path = get_evm_testnet_csv_path()?;
 

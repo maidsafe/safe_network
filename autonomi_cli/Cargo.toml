@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = ["metrics"]
-local = ["sn_peers_acquisition/local"]
+local = ["sn_peers_acquisition/local", "autonomi/local"]
 metrics = ["sn_logging/process-metrics"]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
 

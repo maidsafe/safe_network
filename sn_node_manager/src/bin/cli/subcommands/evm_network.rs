@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use clap::Subcommand;
-use color_eyre::eyre::Result;
-use sn_evm::{utils::local_evm_network_from_csv, EvmNetwork};
+use color_eyre::{eyre::Result, Section};
+use sn_evm::{utils::get_evm_network_from_env, EvmNetwork};
 
 #[derive(Subcommand, Clone, Debug)]
 #[allow(clippy::enum_variant_names)]
@@ -42,7 +42,13 @@ impl TryInto<EvmNetwork> for EvmNetworkCommand {
         match self {
             Self::EvmArbitrumOne => Ok(EvmNetwork::ArbitrumOne),
             Self::EvmLocal => {
-                let network = local_evm_network_from_csv()?;
+                if !cfg!(feature = "local") {
+                    return Err(color_eyre::eyre::eyre!(
+                        "The 'local' feature flag is not enabled."
+                    ))
+                    .suggestion("Enable the 'local' feature flag to use the local EVM testnet.");
+                }
+                let network = get_evm_network_from_env()?;
                 Ok(network)
             }
             Self::EvmCustom {

@@ -17,7 +17,7 @@ use clap::{command, Parser};
 use color_eyre::{eyre::eyre, Result};
 use const_hex::traits::FromHex;
 use libp2p::{identity::Keypair, PeerId};
-use sn_evm::{EvmNetwork, RewardsAddress};
+use sn_evm::{get_evm_network_from_env, EvmNetwork, RewardsAddress};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
@@ -253,22 +253,12 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    #[cfg(feature = "local")]
-    let evm_network = sn_evm::utils::local_evm_network_from_csv()?;
-    #[cfg(not(feature = "local"))]
     let evm_network: EvmNetwork = opt
         .evm_network
         .as_ref()
         .cloned()
-        .map(|v| v.into())
-        .unwrap_or_else(|| {
-            sn_evm::evm::network_from_env()
-                .expect("Failed to get EVM network from environment variables")
-        });
-    if matches!(evm_network, EvmNetwork::Custom(_)) {
-        println!("Using custom EVM network");
-        info!("Using custom EVM network {evm_network:?}");
-    }
+        .map(|v| Ok(v.into()))
+        .unwrap_or_else(get_evm_network_from_env)?;
     println!("EVM network: {evm_network:?}");
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
