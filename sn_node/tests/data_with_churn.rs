@@ -320,21 +320,40 @@ fn store_chunks_task(
         loop {
             let random_data = gen_random_data(*DATA_SIZE);
 
-            let data_map = client
-                .data_put(random_data, &wallet)
-                .await
-                .inspect_err(|err| {
-                    println!("Error to put chunk: {err:?}");
-                    error!("Error to put chunk: {err:?}")
-                })?;
+            // FIXME: The client does not have the retry repay to different payee feature yet.
+            // Retry here for now
+            let mut retries = 1;
+            loop {
+                match client
+                    .data_put(random_data.clone(), &wallet)
+                    .await
+                    .inspect_err(|err| {
+                        println!("Error to put chunk: {err:?}");
+                        error!("Error to put chunk: {err:?}")
+                    }) {
+                    Ok(data_map) => {
+                        println!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
+                        info!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
 
-            println!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
-            info!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
+                        content
+                            .write()
+                            .await
+                            .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(data_map)));
+                        break;
+                    }
+                    Err(err) => {
+                        println!("Failed to store chunk: {err:?}. Retrying ...");
+                        error!("Failed to store chunk: {err:?}. Retrying ...");
+                        if retries >= 3 {
+                            println!("Failed to store chunk after 3 retries: {err}");
+                            error!("Failed to store chunk after 3 retries: {err}");
+                            bail!("Failed to store chunk after 3 retries: {err}");
+                        }
+                        retries += 1;
+                    }
+                }
+            }
 
-            content
-                .write()
-                .await
-                .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(data_map)));
             sleep(delay).await;
         }
     });
