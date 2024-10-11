@@ -13,8 +13,35 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use super::archive::{Archive, ArchiveAddr};
-use super::data::DataAddr;
-use super::error::{DownloadError, UploadError};
+use super::data::{DataAddr, GetError, PutError};
+
+/// Errors that can occur during the file upload operation.
+#[cfg(feature = "fs")]
+#[derive(Debug, thiserror::Error)]
+pub enum UploadError {
+    #[error("Failed to recursively traverse directory")]
+    WalkDir(#[from] walkdir::Error),
+    #[error("Input/output failure")]
+    IoError(#[from] std::io::Error),
+    #[error("Failed to upload file")]
+    PutError(#[from] PutError),
+    #[error("Failed to fetch file")]
+    GetError(#[from] GetError),
+    #[error("Failed to serialize")]
+    Serialization(#[from] rmp_serde::encode::Error),
+    #[error("Failed to deserialize")]
+    Deserialization(#[from] rmp_serde::decode::Error),
+}
+
+#[cfg(feature = "fs")]
+/// Errors that can occur during the download operation.
+#[derive(Debug, thiserror::Error)]
+pub enum DownloadError {
+    #[error("Failed to download file")]
+    GetError(#[from] GetError),
+    #[error("IO failure")]
+    IoError(#[from] std::io::Error),
+}
 
 impl Client {
     /// Download file from network to local file system

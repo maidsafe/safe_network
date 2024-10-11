@@ -8,7 +8,7 @@
 
 use std::collections::HashSet;
 
-use crate::client::error::PutError;
+use crate::client::data::PutError;
 use crate::client::Client;
 use bls::SecretKey;
 use bytes::Bytes;

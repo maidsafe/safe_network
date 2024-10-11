@@ -29,7 +29,7 @@ use xor_name::XorName;
 use crate::self_encryption::DataMapLevel;
 
 use super::{
-    error::{GetError, PayError, PutError},
+    data::{GetError, PayError, PutError},
     Client,
 };
 

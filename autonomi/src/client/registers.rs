@@ -15,7 +15,7 @@ use sn_networking::VerificationKind;
 use sn_protocol::storage::RetryStrategy;
 pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
 
-use crate::client::error::PayError;
+use crate::client::data::PayError;
 use crate::client::Client;
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};

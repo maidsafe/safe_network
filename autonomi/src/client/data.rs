@@ -8,14 +8,14 @@
 
 use bytes::Bytes;
 use libp2p::kad::Quorum;
+use tokio::task::JoinError;
 
 use std::collections::HashSet;
 use xor_name::XorName;
 
-use super::error::{GetError, PayError, PutError};
 use crate::{self_encryption::encrypt, Client};
-use sn_evm::EvmWallet;
 use sn_evm::{Amount, AttoTokens};
+use sn_evm::{EvmWallet, EvmWalletError};
 use sn_networking::{GetRecordCfg, NetworkError};
 use sn_protocol::{
     storage::{try_deserialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind},
@@ -26,6 +26,53 @@ use sn_protocol::{
 pub type DataAddr = XorName;
 /// Raw Chunk Address (points to a [`Chunk`])
 pub type ChunkAddr = XorName;
+
+/// Errors that can occur during the put operation.
+#[derive(Debug, thiserror::Error)]
+pub enum PutError {
+    #[error("Failed to self-encrypt data.")]
+    SelfEncryption(#[from] crate::self_encryption::Error),
+    #[error("Error getting Vault XorName data.")]
+    VaultXorName,
+    #[error("A network error occurred.")]
+    Network(#[from] NetworkError),
+    #[error("Error occurred during payment.")]
+    PayError(#[from] PayError),
+    #[error("Failed to serialize {0}")]
+    Serialization(String),
+    #[error("A wallet error occurred.")]
+    Wallet(#[from] sn_evm::EvmError),
+}
+
+/// Errors that can occur during the pay operation.
+#[derive(Debug, thiserror::Error)]
+pub enum PayError {
+    #[error("Could not get store quote for: {0:?} after several retries")]
+    CouldNotGetStoreQuote(XorName),
+    #[error("Could not get store costs: {0:?}")]
+    CouldNotGetStoreCosts(NetworkError),
+    #[error("Could not simultaneously fetch store costs: {0:?}")]
+    JoinError(JoinError),
+    #[error("Wallet error: {0:?}")]
+    EvmWalletError(#[from] EvmWalletError),
+    #[error("Failed to self-encrypt data.")]
+    SelfEncryption(#[from] crate::self_encryption::Error),
+}
+
+/// Errors that can occur during the get operation.
+#[derive(Debug, thiserror::Error)]
+pub enum GetError {
+    #[error("Could not deserialize data map.")]
+    InvalidDataMap(rmp_serde::decode::Error),
+    #[error("Failed to decrypt data.")]
+    Decryption(crate::self_encryption::Error),
+    #[error("Failed to deserialize")]
+    Deserialization(#[from] rmp_serde::decode::Error),
+    #[error("General networking error: {0:?}")]
+    Network(#[from] NetworkError),
+    #[error("General protocol error: {0:?}")]
+    Protocol(#[from] sn_protocol::Error),
+}
 
 impl Client {
     /// Fetch a blob of data from the network

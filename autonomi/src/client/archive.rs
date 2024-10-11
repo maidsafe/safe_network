@@ -10,7 +10,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use super::{
     data::DataAddr,
-    error::{GetError, PutError},
+    data::{GetError, PutError},
     Client,
 };
 use bytes::Bytes;
