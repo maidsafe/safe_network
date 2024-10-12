@@ -17,6 +17,7 @@ pub use evmlib::utils::get_evm_network_from_env;
 pub use evmlib::utils::{DATA_PAYMENTS_ADDRESS, PAYMENT_TOKEN_ADDRESS, RPC_URL};
 pub use evmlib::wallet::Error as EvmWalletError;
 pub use evmlib::wallet::Wallet as EvmWallet;
+pub use evmlib::CustomNetwork;
 pub use evmlib::Network as EvmNetwork;
 
 mod amount;

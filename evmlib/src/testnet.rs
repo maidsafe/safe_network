@@ -79,7 +79,7 @@ pub fn start_node() -> (AnvilInstance, Url) {
         .try_spawn()
         .expect("Could not spawn Anvil node");
 
-    let url = Url::parse(&format!("http://{}:{}", host, port)).expect("Failed to parse URL");
+    let url = Url::parse(&format!("http://{host}:{port}")).expect("Failed to parse URL");
 
     (anvil, url)
 }
