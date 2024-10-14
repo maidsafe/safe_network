@@ -165,7 +165,7 @@ impl Client {
 
     /// Get the estimated cost of storing a piece of data.
     pub async fn data_cost(&self, data: Bytes) -> Result<AttoTokens, PayError> {
-        let now = std::time::Instant::now();
+        let now = sn_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
 
         debug!("Encryption took: {:.2?}", now.elapsed());
