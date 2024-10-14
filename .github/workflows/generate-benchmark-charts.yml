@@ -2,8 +2,15 @@ name: Benchmark Chart Generation
 
 # Do not run this workflow on pull request since this workflow has permission to modify contents.
 on:
-  pull_request:
-      branches: ["*"]
+  push:
+    branches:
+      - main
+
+permissions:
+  # deployments permission to deploy GitHub pages website
+  deployments: write
+  # contents permission to update benchmark contents in gh-pages branch
+  contents: write
 
 env:
   CARGO_INCREMENTAL: "0"
@@ -67,11 +74,26 @@ jobs:
             value: ((if .throughput[0].unit == "KiB/s" then (.throughput[0].per_iteration / (1024*1024*1024)) else (.throughput[0].per_iteration / (1024*1024)) end) / (.mean.estimate / 1e9))
           })' > files-benchmark.json
 
+      - name: Remove git hooks so gh-pages git commits will work
+        shell: bash
+        run: rm -rf .git/hooks/pre-commit
+
       - name: check files-benchmark.json
         shell: bash
         run: cat files-benchmark.json
 
-      # FIXME: do this in a generic way for localtestnets
+      # gh-pages branch is updated and pushed automatically with extracted benchmark data
+      - name: Store cli files benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: "`safe files` benchmarks"
+          tool: "customBiggerIsBetter"
+          output-file-path: files-benchmark.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          max-items-in-chart: 300
+
+          # FIXME: do this in a generic way for localtestnets
       - name: export default secret key
         run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" >> $GITHUB_ENV
         shell: bash
@@ -122,6 +144,16 @@ jobs:
         shell: bash
         run: cat node_memory_usage.json
 
+      - name: Upload Node Memory Usage
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: "Node memory"
+          tool: "customSmallerIsBetter"
+          output-file-path: node_memory_usage.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          max-items-in-chart: 300
+
       - name: Check client memory usage
         shell: bash
         run: |
@@ -163,6 +195,16 @@ jobs:
       - name: check client_memory_usage.json
         shell: bash
         run: cat client_memory_usage.json
+
+      - name: Upload Client Memory Usage
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: "Client memory"
+          tool: "customSmallerIsBetter"
+          output-file-path: client_memory_usage.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          max-items-in-chart: 300
 
       ###########################################
       ### Swarm_driver handling time Analysis ###
@@ -228,7 +270,13 @@ jobs:
       - name: check swarm_driver_long_handlings.json
         shell: bash
         run: cat swarm_driver_long_handlings.json
-      
-      - name: Setup tmate session
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
+
+      - name: Upload swarm_driver Long Handlings
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: "swarm_driver long handlings"
+          tool: "customSmallerIsBetter"
+          output-file-path: swarm_driver_long_handlings.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          max-items-in-chart: 300
