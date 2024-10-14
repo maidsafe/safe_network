@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728469251542,
+  "lastUpdate": 1728932245669,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "lmazzitelli@gmail.com",
-            "name": "Lautaro Mazzitelli",
-            "username": "mazzi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "9812d39e759786d19702a87a2ead2b088bbcc94b",
-          "message": "feat(node-launchpad): tweaks on resource allocation widget\n\nAdded support for arrow up/down to increment/decrement allocated space.\nValidation when using arrow up/down to avoid going over/under available disk space.\nMinor widget styling: removed cursor, centered title, footer and input field.\nCreated some constants.",
-          "timestamp": "2024-05-16T11:44:23Z",
-          "tree_id": "cdeffe69fa3cb9dd6c40172acf9c1c57a0614b13",
-          "url": "https://github.com/maidsafe/safe_network/commit/9812d39e759786d19702a87a2ead2b088bbcc94b"
-        },
-        "date": 1715862790220,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.157491427352266,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.0065738079241744,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 47.76589575983346,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "safe files download",
             "value": 57.35494403415443,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a074b1cf0829b2cca7d177ce42ddad25580260f2",
+          "message": "Merge pull request #2234 from RolandSherwin/ci_bench\n\nfix(autonomi): log the process metrics",
+          "timestamp": "2024-10-14T17:41:16Z",
+          "tree_id": "21b78c2ef314463ad5fa0fed38cca6963d6b3933",
+          "url": "https://github.com/maidsafe/safe_network/commit/a074b1cf0829b2cca7d177ce42ddad25580260f2"
+        },
+        "date": 1728932237966,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "autonomi files upload 1mb",
+            "value": 0.12375857636608883,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files upload 10mb",
+            "value": 1.2245074707365886,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files download",
+            "value": 2.267449905082781,
             "unit": "MiB/s"
           }
         ]
