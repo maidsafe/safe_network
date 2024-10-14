@@ -181,6 +181,20 @@ impl NetworkMetricsRecorder {
             live_time.clone(),
         );
 
+        let shunned_by_close_group = Gauge::default();
+        sub_registry.register(
+            "shunned_by_close_group",
+            "The number of close group peers that have shunned our node",
+            shunned_by_close_group.clone(),
+        );
+
+        let shunned_by_old_close_group = Gauge::default();
+        sub_registry.register(
+            "shunned_by_old_close_group",
+            "The number of close group peers that have shunned our node. This contains the peers that were once in our close group but have since been evicted.",
+            shunned_by_old_close_group.clone(),
+        );
+
         // ==== Extended metrics =====
 
         let extended_metrics_sub_registry = registries
@@ -193,25 +207,11 @@ impl NetworkMetricsRecorder {
             shunned_count_across_time_frames.clone(),
         );
 
-        let shunned_by_close_group = Gauge::default();
-        extended_metrics_sub_registry.register(
-            "shunned_by_close_group",
-            "The number of close group peers that have shunned our node",
-            shunned_by_close_group.clone(),
-        );
-
-        let shunned_by_old_close_group = Gauge::default();
-        extended_metrics_sub_registry.register(
-            "shunned_by_old_close_group",
-            "The number of close group peers that have shunned our node. This contains the peers that were once in our close group but have since been evicted.",
-            shunned_by_old_close_group.clone(),
-        );
         let bad_nodes_notifier = BadNodeMetrics::spawn_background_task(
             shunned_count_across_time_frames.clone(),
             shunned_by_close_group.clone(),
             shunned_by_old_close_group.clone(),
         );
-
         let network_metrics = Self {
             libp2p_metrics,
             #[cfg(feature = "upnp")]
