@@ -52,7 +52,7 @@ pub fn get_evm_testnet_csv_path() -> Result<PathBuf, Error> {
 }
 
 /// Get the `Network` from environment variables
-/// Returns an error if the we cannot obtain the network from any means.
+/// Returns an error if we cannot obtain the network from any means.
 pub fn get_evm_network_from_env() -> Result<Network, Error> {
     let evm_vars = [
         env::var(RPC_URL)
@@ -61,7 +61,7 @@ pub fn get_evm_network_from_env() -> Result<Network, Error> {
         env::var(PAYMENT_TOKEN_ADDRESS)
             .ok()
             .or_else(|| PAYMENT_TOKEN_ADDRESS_BUILD_TIME_VAL.map(|s| s.to_string())),
-        env::var(PAYMENT_TOKEN_ADDRESS)
+        env::var(DATA_PAYMENTS_ADDRESS)
             .ok()
             .or_else(|| DATA_PAYMENTS_ADDRESS_BUILD_TIME_VAL.map(|s| s.to_string())),
     ]
