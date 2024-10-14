@@ -2,20 +2,13 @@ name: Benchmark Chart Generation
 
 # Do not run this workflow on pull request since this workflow has permission to modify contents.
 on:
-  push:
-    branches:
-      - main
-
-permissions:
-  # deployments permission to deploy GitHub pages website
-  deployments: write
-  # contents permission to update benchmark contents in gh-pages branch
-  contents: write
+  pull_request:
+      branches: ["*"]
 
 env:
   CARGO_INCREMENTAL: "0"
   RUST_BACKTRACE: 1
-  CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi_cli
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
 
 jobs:
@@ -45,71 +38,47 @@ jobs:
         shell: bash
         run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
 
-      - name: Build node and client
-        run: cargo build --release --features local --bin safenode --bin safe
-        timeout-minutes: 30
-
-      - name: Build faucet bin
-        run: cargo build --release --bin faucet --features local --features gifting
+      - name: Build node and cli binaries
+        run: cargo build --release --features local --bin safenode --bin autonomi_cli
         timeout-minutes: 30
 
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
-        env:
-          SN_LOG: "all"
         with:
           action: start
-          interval: 2000
+          enable-evm-testnet: true
           node-path: target/release/safenode
-          faucet-path: target/release/faucet
           platform: ubuntu-latest
           build: true
-
-      - name: Create and fund a wallet to pay for files storage
-        run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          cargo run --bin safe --release -- wallet receive --file transfer_hex
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 10
+          sn-log: "all"
 
       ########################
       ### Benchmark        ###
       ########################
-      - name: Bench `safe` cli
+      - name: Bench `autonomi` cli
         shell: bash
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
         # passes to tee which displays it in the terminal and writes to output.txt
         run: |
-          cargo criterion --features=local --message-format=json 2>&1 -p sn_cli | tee -a output.txt
+          cargo criterion --features=local --message-format=json 2>&1 -p autonomi_cli | tee -a output.txt
           cat output.txt | rg benchmark-complete | jq -s 'map({
             name: (.id | split("/"))[-1],
             unit: "MiB/s",
             value: ((if .throughput[0].unit == "KiB/s" then (.throughput[0].per_iteration / (1024*1024*1024)) else (.throughput[0].per_iteration / (1024*1024)) end) / (.mean.estimate / 1e9))
           })' > files-benchmark.json
 
-      - name: Remove git hooks so gh-pages git commits will work
-        shell: bash
-        run: rm -rf .git/hooks/pre-commit
-
       - name: check files-benchmark.json
         shell: bash
         run: cat files-benchmark.json
 
-      # gh-pages branch is updated and pushed automatically with extracted benchmark data
-      - name: Store cli files benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: "`safe files` benchmarks"
-          tool: "customBiggerIsBetter"
-          output-file-path: files-benchmark.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          max-items-in-chart: 300
+      # FIXME: do this in a generic way for localtestnets
+      - name: export default secret key
+        run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" >> $GITHUB_ENV
+        shell: bash
 
       - name: Start a client instance to compare memory usage
         shell: bash
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload the-test-data.zip --retry-strategy quick
+        run: cargo run --bin autonomi_cli --release -- --log-output-dest=data-dir file upload the-test-data.zip
         env:
           SN_LOG: "all"
 
@@ -153,16 +122,6 @@ jobs:
         shell: bash
         run: cat node_memory_usage.json
 
-      - name: Upload Node Memory Usage
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: "Node memory"
-          tool: "customSmallerIsBetter"
-          output-file-path: node_memory_usage.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          max-items-in-chart: 300
-
       - name: Check client memory usage
         shell: bash
         run: |
@@ -204,16 +163,6 @@ jobs:
       - name: check client_memory_usage.json
         shell: bash
         run: cat client_memory_usage.json
-
-      - name: Upload Client Memory Usage
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: "Client memory"
-          tool: "customSmallerIsBetter"
-          output-file-path: client_memory_usage.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          max-items-in-chart: 300
 
       ###########################################
       ### Swarm_driver handling time Analysis ###
@@ -279,13 +228,7 @@ jobs:
       - name: check swarm_driver_long_handlings.json
         shell: bash
         run: cat swarm_driver_long_handlings.json
-
-      - name: Upload swarm_driver Long Handlings
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: "swarm_driver long handlings"
-          tool: "customSmallerIsBetter"
-          output-file-path: swarm_driver_long_handlings.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
-          max-items-in-chart: 300
+      
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3

@@ -9,6 +9,10 @@ local = ["sn_peers_acquisition/local", "autonomi/local"]
 metrics = ["sn_logging/process-metrics"]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
 
+[[bench]]
+name = "files"
+harness = false
+
 [dependencies]
 autonomi = { path = "../autonomi", version = "0.1.0", features = [
     "data",
@@ -33,6 +37,17 @@ tracing = { version = "~0.1.26" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.0" }
 sn_build_info = { path = "../sn_build_info", version = "0.1.11" }
 sn_logging = { path = "../sn_logging", version = "0.2.33" }
+
+[dev-dependencies]
+autonomi = { path = "../autonomi", version = "0.1.0", features = [
+    "data",
+    "fs",
+] }
+eyre = "0.6.8"
+criterion = "0.5.1"
+tempfile = "3.6.0"
+rand = { version = "~0.8.5", features = ["small_rng"] }
+rayon = "1.8.0"
 
 [lints]
 workspace = true
