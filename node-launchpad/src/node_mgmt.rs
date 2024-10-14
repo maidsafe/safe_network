@@ -410,9 +410,9 @@ async fn add_nodes(
                 {
                     if let Err(err) = action_sender.send(Action::StatusActions(
                         StatusActions::ErrorScalingUpNodes {
-                            raw_error: "When trying to add a node, we failed.\n\n\
-                                 Maybe you ran out of disk space?\n\n\
-                                 Maybe you need to change the port range?\n\n"
+                            raw_error: "When trying to add a node, we failed.\n\
+                                 Maybe you ran out of disk space?\n\
+                                 Maybe you need to change the port range?"
                                 .to_string(),
                         },
                     )) {
@@ -432,7 +432,9 @@ async fn add_nodes(
         if let Err(err) =
             action_sender.send(Action::StatusActions(StatusActions::ErrorScalingUpNodes {
                 raw_error: format!(
-                    "When trying run a node, we reached the maximum amount of retries ({}).",
+                    "When trying run a node, we reached the maximum amount of retries ({}).\n\
+                    Could this be a firewall blocking nodes starting?\n\
+                    Or ports on your router already in use?",
                     NODE_ADD_MAX_RETRIES
                 ),
             }))
