@@ -169,51 +169,70 @@ impl Status<'_> {
     fn update_node_items(&mut self) -> Result<()> {
         // Iterate over existing node services and update their corresponding NodeItem
         if let Some(ref mut items) = self.items {
-            for (node_item, item) in self.node_services.iter().zip(&mut items.items) {
-                if node_item.status == ServiceStatus::Removed {
-                    continue; // Skip removed nodes
-                }
-
-                // Update status based on current node status
-                item.status = match node_item.status {
-                    ServiceStatus::Running => {
-                        // Call calc_next on the spinner state
-                        item.spinner_state.calc_next();
-                        NodeStatus::Running
-                    }
-                    ServiceStatus::Stopped => NodeStatus::Stopped,
-                    ServiceStatus::Added => NodeStatus::Added,
-                    ServiceStatus::Removed => NodeStatus::Removed,
-                };
-
-                // Starting is not part of ServiceStatus so we do it manually
-                if let Some(LockRegistryState::StartingNodes) = self.lock_registry {
-                    item.spinner_state.calc_next();
-                    item.status = NodeStatus::Starting;
-                }
-
-                // Update peers count
-                item.peers = match node_item.connected_peers {
-                    Some(ref peers) => peers.len(),
-                    None => 0,
-                };
-
-                // Update individual stats if available
-                if let Some(stats) = self
-                    .node_stats
-                    .individual_stats
-                    .iter()
-                    .find(|s| s.service_name == node_item.service_name)
+            for node_item in self.node_services.iter() {
+                // Find the corresponding item by service name
+                if let Some(item) = items
+                    .items
+                    .iter_mut()
+                    .find(|i| i.name == node_item.service_name)
                 {
-                    item.nanos = stats.forwarded_rewards;
-                    item.memory = stats.memory_usage_mb;
-                    item.mbps = format!(
-                        "↓{:06.2} ↑{:06.2}",
-                        stats.bandwidth_inbound as f64 / (1024_f64 * 1024_f64),
-                        stats.bandwidth_outbound as f64 / (1024_f64 * 1024_f64)
-                    );
-                    item.records = stats.max_records;
-                    item.connections = stats.connections;
+                    // Update status based on current node status
+                    item.status = match node_item.status {
+                        ServiceStatus::Running => {
+                            // Call calc_next on the spinner state
+                            item.spinner_state.calc_next();
+                            NodeStatus::Running
+                        }
+                        ServiceStatus::Stopped => NodeStatus::Stopped,
+                        ServiceStatus::Added => NodeStatus::Added,
+                        ServiceStatus::Removed => NodeStatus::Removed,
+                    };
+
+                    // Starting is not part of ServiceStatus so we do it manually
+                    if let Some(LockRegistryState::StartingNodes) = self.lock_registry {
+                        item.spinner_state.calc_next();
+                        item.status = NodeStatus::Starting;
+                    }
+
+                    // Update peers count
+                    item.peers = match node_item.connected_peers {
+                        Some(ref peers) => peers.len(),
+                        None => 0,
+                    };
+
+                    // Update individual stats if available
+                    if let Some(stats) = self
+                        .node_stats
+                        .individual_stats
+                        .iter()
+                        .find(|s| s.service_name == node_item.service_name)
+                    {
+                        item.nanos = stats.forwarded_rewards;
+                        item.memory = stats.memory_usage_mb;
+                        item.mbps = format!(
+                            "↓{:06.2} ↑{:06.2}",
+                            stats.bandwidth_inbound as f64 / (1024_f64 * 1024_f64),
+                            stats.bandwidth_outbound as f64 / (1024_f64 * 1024_f64)
+                        );
+                        item.records = stats.max_records;
+                        item.connections = stats.connections;
+                    }
+                } else {
+                    // If not found, create a new NodeItem and add it to items
+                    let new_item = NodeItem {
+                        name: node_item.service_name.clone(),
+                        version: node_item.version.to_string(),
+                        nanos: 0,
+                        memory: 0,
+                        mbps: "-".to_string(),
+                        records: 0,
+                        peers: 0,
+                        connections: 0,
+                        status: NodeStatus::Added, // Set initial status as Added
+                        spinner: Throbber::default(),
+                        spinner_state: ThrobberState::default(),
+                    };
+                    items.items.push(new_item);
                 }
             }
         } else {
