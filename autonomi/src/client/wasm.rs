@@ -103,6 +103,46 @@ mod archive {
     }
 }
 
+mod vault {
+    use super::*;
+    use bls::SecretKey;
+
+    #[wasm_bindgen]
+    impl Client {
+        #[wasm_bindgen(js_name = fetchAndDecryptVault)]
+        pub async fn fetch_and_decrypt_vault(
+            &self,
+            secret_key: Vec<u8>,
+        ) -> Result<Option<Vec<u8>>, JsError> {
+            let secret_key: [u8; 32] = secret_key[..].try_into()?;
+            let secret_key = SecretKey::from_bytes(secret_key)?;
+
+            let vault = self.0.fetch_and_decrypt_vault(&secret_key).await?;
+            let vault = vault.map(|v| v.to_vec());
+
+            Ok(vault)
+        }
+
+        #[wasm_bindgen(js_name = writeBytesToVault)]
+        pub async fn write_bytes_to_vault(
+            &self,
+            vault: Vec<u8>,
+            wallet: &mut super::Wallet,
+            secret_key: Vec<u8>,
+        ) -> Result<(), JsError> {
+            let secret_key: [u8; 32] = secret_key[..].try_into()?;
+            let secret_key = SecretKey::from_bytes(secret_key)?;
+
+            let vault = bytes::Bytes::from(vault);
+            self.0
+                .write_bytes_to_vault(vault, &mut wallet.0, &secret_key)
+                .await?;
+
+            Ok(())
+        }
+    }
+}
+
 #[wasm_bindgen]
 pub struct Wallet(evmlib::wallet::Wallet);
 
