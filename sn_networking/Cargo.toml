@@ -18,7 +18,7 @@ upnp = ["libp2p/upnp"]
 websockets = ["libp2p/tcp"]
 open-metrics = ["libp2p/metrics", "prometheus-client", "hyper", "sysinfo"]
 encrypt-records = []
-
+loud = []
 
 [dependencies]
 lazy_static = "~1.4.0"

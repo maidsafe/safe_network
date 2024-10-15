@@ -245,10 +245,12 @@ impl SwarmDriver {
     /// Update state on addition of a peer to the routing table.
     pub(crate) fn update_on_peer_addition(&mut self, added_peer: PeerId) {
         self.peers_in_rt = self.peers_in_rt.saturating_add(1);
-        info!(
-            "New peer added to routing table: {added_peer:?}, now we have #{} connected peers",
-            self.peers_in_rt
-        );
+        let n_peers = self.peers_in_rt;
+        info!("New peer added to routing table: {added_peer:?}, now we have #{n_peers} connected peers");
+
+        #[cfg(feature = "loud")]
+        println!("New peer added to routing table: {added_peer:?}, now we have #{n_peers} connected peers");
+
         self.log_kbuckets(&added_peer);
         self.send_event(NetworkEvent::PeerAdded(added_peer, self.peers_in_rt));
 
@@ -341,6 +343,8 @@ impl SwarmDriver {
         }
 
         info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}, estimated network size: {estimated_network_size:?}");
+        #[cfg(feature = "loud")]
+        println!("Estimated network size: {estimated_network_size:?}");
     }
 
     /// Estimate the number of nodes in the network
