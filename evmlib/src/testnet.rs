@@ -9,6 +9,7 @@
 use crate::common::Address;
 use crate::contract::data_payments::DataPaymentsHandler;
 use crate::contract::network_token::NetworkToken;
+use crate::reqwest::Url;
 use crate::{CustomNetwork, Network};
 use alloy::hex::ToHexExt;
 use alloy::network::{Ethereum, EthereumWallet};
@@ -22,6 +23,7 @@ use alloy::transports::http::{Client, Http};
 
 pub struct Testnet {
     anvil: AnvilInstance,
+    rpc_url: Url,
     network_token_address: Address,
     data_payments_address: Address,
 }
@@ -29,28 +31,24 @@ pub struct Testnet {
 impl Testnet {
     /// Starts an Anvil node and automatically deploys the network token and chunk payments smart contracts.
     pub async fn new() -> Self {
-        let anvil = start_node();
+        let (anvil, rpc_url) = start_node();
 
-        let network_token = deploy_network_token_contract(&anvil).await;
+        let network_token = deploy_network_token_contract(&rpc_url, &anvil).await;
         let data_payments =
-            deploy_data_payments_contract(&anvil, *network_token.contract.address()).await;
+            deploy_data_payments_contract(&rpc_url, &anvil, *network_token.contract.address())
+                .await;
 
         Testnet {
             anvil,
+            rpc_url,
             network_token_address: *network_token.contract.address(),
             data_payments_address: *data_payments.contract.address(),
         }
     }
 
     pub fn to_network(&self) -> Network {
-        let rpc_url = self
-            .anvil
-            .endpoint()
-            .parse()
-            .expect("Could not parse RPC URL");
-
         Network::Custom(CustomNetwork {
-            rpc_url_http: rpc_url,
+            rpc_url_http: self.rpc_url.clone(),
             payment_token_address: self.network_token_address,
             data_payments_address: self.data_payments_address,
         })
@@ -63,17 +61,31 @@ impl Testnet {
     }
 }
 
-/// Runs a local Anvil node.
-pub fn start_node() -> AnvilInstance {
-    // Spin up a local Anvil node.
-    // Requires you to have Foundry installed: https://book.getfoundry.sh/getting-started/installation
-    Anvil::new()
-        .port(4343_u16)
+/// Runs a local Anvil node bound to a specified IP address.
+///
+/// The `AnvilInstance` `endpoint` function is hardcoded to return "localhost", so we must also
+/// return the RPC URL if we want to listen on a different address.
+///
+/// The `anvil` binary respects the `ANVIL_IP_ADDR` environment variable, but defaults to "localhost".
+pub fn start_node() -> (AnvilInstance, Url) {
+    let host = std::env::var("ANVIL_IP_ADDR").unwrap_or_else(|_| "localhost".to_string());
+    let port = std::env::var("ANVIL_PORT")
+        .unwrap_or_else(|_| "4343".to_string())
+        .parse::<u16>()
+        .expect("Invalid port number");
+
+    let anvil = Anvil::new()
+        .port(port)
         .try_spawn()
-        .expect("Could not spawn Anvil node")
+        .expect("Could not spawn Anvil node");
+
+    let url = Url::parse(&format!("http://{host}:{port}")).expect("Failed to parse URL");
+
+    (anvil, url)
 }
 
 pub async fn deploy_network_token_contract(
+    rpc_url: &Url,
     anvil: &AnvilInstance,
 ) -> NetworkToken<
     Http<Client>,
@@ -95,18 +107,17 @@ pub async fn deploy_network_token_contract(
     let signer: PrivateKeySigner = anvil.keys()[0].clone().into();
     let wallet = EthereumWallet::from(signer);
 
-    let rpc_url = anvil.endpoint().parse().expect("Could not parse RPC URL");
-
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .wallet(wallet)
-        .on_http(rpc_url);
+        .on_http(rpc_url.clone());
 
     // Deploy the contract.
     NetworkToken::deploy(provider).await
 }
 
 pub async fn deploy_data_payments_contract(
+    rpc_url: &Url,
     anvil: &AnvilInstance,
     token_address: Address,
 ) -> DataPaymentsHandler<
@@ -129,12 +140,10 @@ pub async fn deploy_data_payments_contract(
     let signer: PrivateKeySigner = anvil.keys()[1].clone().into();
     let wallet = EthereumWallet::from(signer);
 
-    let rpc_url = anvil.endpoint().parse().expect("Could not parse RPC URL");
-
     let provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .wallet(wallet)
-        .on_http(rpc_url);
+        .on_http(rpc_url.clone());
 
     // Deploy the contract.
     DataPaymentsHandler::deploy(provider, token_address).await

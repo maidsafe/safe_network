@@ -10,6 +10,8 @@ use crate::common::{Address, QuoteHash, TxHash, U256};
 use crate::transaction::verify_data_payment;
 use alloy::primitives::address;
 use alloy::transports::http::reqwest;
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use std::str::FromStr;
 use std::sync::LazyLock;
 
@@ -38,8 +40,10 @@ const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
 const ARBITRUM_ONE_DATA_PAYMENTS_ADDRESS: Address =
     address!("887930F30EDEb1B255Cd2273C3F4400919df2EFe");
 
-#[derive(Clone, Debug, PartialEq)]
+#[serde_as]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CustomNetwork {
+    #[serde_as(as = "DisplayFromStr")]
     pub rpc_url_http: reqwest::Url,
     pub payment_token_address: Address,
     pub data_payments_address: Address,
@@ -57,10 +61,19 @@ impl CustomNetwork {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Network {
     ArbitrumOne,
     Custom(CustomNetwork),
+}
+
+impl std::fmt::Display for Network {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Network::ArbitrumOne => write!(f, "evm-arbitrum-one"),
+            Network::Custom(_) => write!(f, "evm-custom"),
+        }
+    }
 }
 
 impl Network {

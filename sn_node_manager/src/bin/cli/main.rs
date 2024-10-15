@@ -123,6 +123,9 @@ pub enum SubCmd {
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
+        /// Specify what EVM network to use for payments.
+        #[command(subcommand)]
+        evm_network: EvmNetworkCommand,
         /// Set this flag to use the safenode '--home-network' feature.
         ///
         /// This enables the use of safenode services from a home network with a router.
@@ -188,13 +191,6 @@ pub enum SubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         node_port: Option<PortRange>,
-        /// Provide a path for the safenode binary to be used by the service.
-        ///
-        /// Useful for creating the service using a custom built binary.
-        #[clap(long)]
-        path: Option<PathBuf>,
-        #[command(flatten)]
-        peers: PeersArgs,
         /// Specify the owner for the node service.
         ///
         /// This is mainly used for the 'Beta Rewards' programme, for linking your Discord username
@@ -204,6 +200,16 @@ pub enum SubCmd {
         /// run as normal.
         #[clap(long)]
         owner: Option<String>,
+        /// Provide a path for the safenode binary to be used by the service.
+        ///
+        /// Useful for creating the service using a custom built binary.
+        #[clap(long)]
+        path: Option<PathBuf>,
+        #[command(flatten)]
+        peers: PeersArgs,
+        /// Specify the wallet address that will receive the node's earnings.
+        #[clap(long)]
+        rewards_address: RewardsAddress,
         /// Specify an Ipv4Addr for the node's RPC server to run on.
         ///
         /// Useful if you want to expose the RPC server pubilcly. Ports are assigned automatically.
@@ -1082,6 +1088,7 @@ async fn main() -> Result<()> {
             data_dir_path,
             enable_metrics_server,
             env_variables,
+            evm_network,
             home_network,
             local,
             log_dir_path,
@@ -1094,6 +1101,7 @@ async fn main() -> Result<()> {
             owner,
             path,
             peers,
+            rewards_address,
             rpc_address,
             rpc_port,
             url,
@@ -1101,13 +1109,14 @@ async fn main() -> Result<()> {
             user,
             version,
         }) => {
-            let _ = cmd::node::add(
+            cmd::node::add(
                 auto_restart,
                 auto_set_nat_flags,
                 count,
                 data_dir_path,
                 enable_metrics_server,
                 env_variables,
+                Some(evm_network.try_into()?),
                 home_network,
                 local,
                 log_dir_path,
@@ -1119,6 +1128,7 @@ async fn main() -> Result<()> {
                 node_port,
                 owner,
                 peers,
+                rewards_address,
                 rpc_address,
                 rpc_port,
                 path,

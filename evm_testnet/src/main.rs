@@ -156,8 +156,11 @@ impl TestnetData {
         }
 
         let csv = format!(
-            "{},{},{}",
-            self.rpc_url, self.payment_token_address, self.data_payments_address
+            "{},{},{},{}",
+            self.rpc_url,
+            self.payment_token_address,
+            self.data_payments_address,
+            self.deployer_wallet_private_key
         );
         std::fs::write(&csv_path, csv).expect("Could not write to evm_testnet_data.csv file");
         println!("EVM testnet data saved to: {csv_path:?}");

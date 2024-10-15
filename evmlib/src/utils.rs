@@ -125,7 +125,7 @@ fn local_evm_network_from_csv() -> Result<Network, Error> {
     })?;
     let parts: Vec<&str> = csv.split(',').collect();
     match parts.as_slice() {
-        [rpc_url, payment_token_address, chunk_payments_address] => Ok(Network::Custom(
+        [rpc_url, payment_token_address, chunk_payments_address, _] => Ok(Network::Custom(
             CustomNetwork::new(rpc_url, payment_token_address, chunk_payments_address),
         )),
         _ => {
