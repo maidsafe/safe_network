@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728986450752,
+  "lastUpdate": 1728986599024,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "maqi",
-            "username": "maqi"
-          },
-          "distinct": true,
-          "id": "6b0cdac4f8c64fbece495effab2e104b87e65705",
-          "message": "fix: genesis_cn public fields generated from hard coded value",
-          "timestamp": "2024-05-16T18:23:37Z",
-          "tree_id": "93ad63bb74070f8c412265993e6b365ab665aaaf",
-          "url": "https://github.com/maidsafe/safe_network/commit/6b0cdac4f8c64fbece495effab2e104b87e65705"
-        },
-        "date": 1715886980504,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 52,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "chriso83@protonmail.com",
             "name": "Chris O'Neil",
             "username": "jacderida"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 169,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4648e2ca12d626beccd7a1ba09abcaf4a7aa793a",
+          "message": "Merge pull request #2240 from grumbach/loud_2\n\nfeat: print for peers connected and net size in loud mode",
+          "timestamp": "2024-10-15T08:45:38Z",
+          "tree_id": "c1429d633e6ca6ec323e9632cf722488b12250df",
+          "url": "https://github.com/maidsafe/safe_network/commit/4648e2ca12d626beccd7a1ba09abcaf4a7aa793a"
+        },
+        "date": 1728986598700,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 168,
             "unit": "MB"
           }
         ]
