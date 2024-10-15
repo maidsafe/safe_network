@@ -13,6 +13,7 @@ use tokio::task::JoinError;
 use std::collections::HashSet;
 use xor_name::XorName;
 
+use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
 use sn_evm::{Amount, AttoTokens};
 use sn_evm::{EvmWallet, EvmWalletError};
@@ -112,12 +113,15 @@ impl Client {
             .await
             .inspect_err(|err| error!("Error paying for data: {err:?}"))?;
 
+        let mut record_count = 0;
+
         // Upload data map
         if let Some(proof) = payment_proofs.get(&map_xor_name) {
             debug!("Uploading data map chunk: {map_xor_name:?}");
             self.chunk_upload_with_payment(data_map_chunk.clone(), proof.clone())
                 .await
                 .inspect_err(|err| error!("Error uploading data map chunk: {err:?}"))?;
+            record_count += 1;
         }
 
         // Upload the rest of the chunks
@@ -128,6 +132,22 @@ impl Client {
                 self.chunk_upload_with_payment(chunk, proof.clone())
                     .await
                     .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))?;
+                record_count += 1;
+            }
+        }
+
+        if let Some(channel) = self.client_event_sender.as_ref() {
+            let tokens_spent = payment_proofs
+                .values()
+                .map(|proof| proof.quote.cost.as_atto())
+                .sum::<Amount>();
+
+            let summary = UploadSummary {
+                record_count,
+                tokens_spent,
+            };
+            if let Err(err) = channel.send(ClientEvent::UploadComplete(summary)).await {
+                error!("Failed to send client event: {err:?}");
             }
         }
 
