@@ -47,6 +47,14 @@
           const dataFetched = await client.dataGet(addr);
           console.log("data fetched: ", dataFetched);
         }
+
+        // Generate random secret key
+        const secretKey = [...Array(32)].map(() => Math.floor(Math.random() * 9));
+
+        await client.writeBytesToVault(data, wallet, secretKey);
+
+        const vault = await client.fetchAndDecryptVault(secretKey);
+        console.log("vault: ", vault);
       }
 
       document.getElementById ("btn-run").addEventListener("click", run, false);
