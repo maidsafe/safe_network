@@ -818,7 +818,7 @@ impl Component for Status<'_> {
                     .items
                     .iter_mut()
                     .enumerate()
-                    .map(|(i, node_item)| node_item.to_table_item(i, layout[2], f))
+                    .map(|(i, node_item)| node_item.render_as_row(i, layout[2], f))
                     .collect();
 
                 // Table items
@@ -1034,7 +1034,7 @@ pub struct NodeItem<'a> {
 }
 
 impl NodeItem<'_> {
-    fn to_table_item(&mut self, index: usize, area: Rect, f: &mut Frame<'_>) -> Row {
+    fn render_as_row(&mut self, index: usize, area: Rect, f: &mut Frame<'_>) -> Row {
         let mut row_style = Style::default().fg(GHOST_WHITE);
         let mut spinner_state = self.spinner_state.clone();
         match self.status {
