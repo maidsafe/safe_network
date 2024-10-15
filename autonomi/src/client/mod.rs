@@ -25,12 +25,12 @@ pub mod wasm;
 // private module with utility functions
 mod utils;
 
-use std::{collections::HashSet, sync::Arc, time::Duration};
+pub use sn_evm::Amount;
 
 use libp2p::{identity::Keypair, Multiaddr};
-use sn_evm::Amount;
 use sn_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
 
 /// Time before considering the connection timed out.
