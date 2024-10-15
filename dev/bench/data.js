@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728932398551,
+  "lastUpdate": 1728976647578,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "distinct": false,
-          "id": "7568040a0405b4aba419abff15a7ed0e40609ab9",
-          "message": "fix: retain options on upgrade and prevent dup ports\n\nThe following options that can be specified when the service is created are now retained on an\nupgrade:\n\n* Custom `--node-port` value\n* Custom `--metrics-port` value\n* The `--home-network` flag\n* The `--upnp` flag\n\nTests were added for all of these, and in addition, a test was added for the retention of custom RPC\nports, though these were already being retained on upgrade.\n\nAlthough the node port was being tracked as part of the `listen_addr` field in `NodeServiceData`, a\nnew `node_port` field was explicitly added, because it's possible that a service can be upgraded\nbefore it starts, and the `listen_addr` is not assigned until the service starts.\n\nI also discovered the `add` command did not prevent specifying custom ports that were already in\nuse. That was fixed too, and some tests were added.",
-          "timestamp": "2024-05-16T13:46:15Z",
-          "tree_id": "397a2e44ce0c399a474d86bb384330a753edcd97",
-          "url": "https://github.com/maidsafe/safe_network/commit/7568040a0405b4aba419abff15a7ed0e40609ab9"
-        },
-        "date": 1715870376081,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.023454035683795,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.0174425031072374,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 55.91423869632587,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "autonomi files download",
             "value": 2.267449905082781,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "anselmega@gmail.com",
+            "name": "Anselme",
+            "username": "grumbach"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4270467440b50feb4903dac2c10f6467f9f3d9a5",
+          "message": "Merge pull request #2236 from grumbach/loud_mode\n\nfeat: loud mode and vdash log line",
+          "timestamp": "2024-10-15T06:02:39Z",
+          "tree_id": "74d1697748e9153f389512855f2fc20672b1b3e2",
+          "url": "https://github.com/maidsafe/safe_network/commit/4270467440b50feb4903dac2c10f6467f9f3d9a5"
+        },
+        "date": 1728976640261,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "autonomi files upload 1mb",
+            "value": 0.1220410696101854,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files upload 10mb",
+            "value": 1.1480899169608005,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files download",
+            "value": 2.2719648989688106,
             "unit": "MiB/s"
           }
         ]
