@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729002414288,
+  "lastUpdate": 1729002566465,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "Roland Sherwin",
-            "username": "RolandSherwin"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "05c8dc677b91a8bcdb4fd256c8f8c90be86885d6",
-          "message": "chore: use helper function to print banners",
-          "timestamp": "2024-05-16T23:13:22Z",
-          "tree_id": "97a6597cd4e11314290d604f306880827ee5e657",
-          "url": "https://github.com/maidsafe/safe_network/commit/05c8dc677b91a8bcdb4fd256c8f8c90be86885d6"
-        },
-        "date": 1715904376743,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 58,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "anselmega@gmail.com",
             "name": "grumbach",
             "username": "grumbach"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 172,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "chris.oneil@gmail.com",
+            "name": "Chris O'Neil",
+            "username": "jacderida"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "00ad51dbf6069b046588893ffba62a7308d3b642",
+          "message": "Merge pull request #2235 from jacderida/feat-evm_testnet_non_local\n\nfeat: adapt node manager `add` command for evm network",
+          "timestamp": "2024-10-15T13:11:53Z",
+          "tree_id": "d1f6ef6c0195a708781231d964053771f10bcfbd",
+          "url": "https://github.com/maidsafe/safe_network/commit/00ad51dbf6069b046588893ffba62a7308d3b642"
+        },
+        "date": 1729002566191,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 170,
             "unit": "MB"
           }
         ]
