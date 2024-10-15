@@ -23,6 +23,7 @@ nightly = []
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 encrypt-records = ["sn_networking/encrypt-records"]
 upnp = ["sn_networking/upnp"]
+loud = [] # loud mode: print important messages to console
 
 [dependencies]
 assert_fs = "1.0.0"

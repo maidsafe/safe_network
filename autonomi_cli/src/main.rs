@@ -22,6 +22,8 @@ use clap::Parser;
 use color_eyre::Result;
 
 use opt::Opt;
+#[cfg(feature = "metrics")]
+use sn_logging::metrics::init_metrics;
 use sn_logging::{LogBuilder, LogFormat, ReloadHandle, WorkerGuard};
 use tracing::Level;
 
@@ -30,6 +32,8 @@ async fn main() -> Result<()> {
     color_eyre::install().expect("Failed to initialise error handler");
     let opt = Opt::parse();
     let _log_guards = init_logging_and_metrics(&opt)?;
+    #[cfg(feature = "metrics")]
+    tokio::spawn(init_metrics(std::process::id()));
 
     // Log the full command that was run and the git version
     info!("\"{}\"", std::env::args().collect::<Vec<_>>().join(" "));
