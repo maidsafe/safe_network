@@ -17,6 +17,8 @@ pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
 
 use crate::client::data::PayError;
 use crate::client::Client;
+use crate::client::ClientEvent;
+use crate::client::UploadSummary;
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
 use sn_evm::EvmWallet;
@@ -356,6 +358,16 @@ impl Client {
             .inspect_err(|err| {
                 error!("Failed to put record - register {address} to the network: {err}")
             })?;
+
+        if let Some(channel) = self.client_event_sender.as_ref() {
+            let summary = UploadSummary {
+                record_count: 1,
+                tokens_spent: proof.quote.cost.as_atto(),
+            };
+            if let Err(err) = channel.send(ClientEvent::UploadComplete(summary)).await {
+                error!("Failed to send client event: {err}");
+            }
+        }
 
         Ok(register)
     }

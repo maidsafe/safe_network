@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::utils::collect_upload_summary;
 use autonomi::client::registers::RegisterAddress;
 use autonomi::client::registers::RegisterPermissions;
 use autonomi::client::registers::RegisterSecretKey;
@@ -50,7 +51,9 @@ pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>
     let wallet = crate::keys::load_evm_wallet()?;
     let register_key = crate::keys::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
-    let client = crate::actions::connect_to_network(peers).await?;
+    let mut client = crate::actions::connect_to_network(peers).await?;
+    let event_receiver = client.enable_client_events();
+    let (upload_summary_thread, upload_completed_tx) = collect_upload_summary(event_receiver);
 
     println!("Creating register with name: {name}");
     let register = if public {
@@ -84,6 +87,16 @@ pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>
     println!("✅ Register created at address: {address}");
     println!("With name: {name}");
     println!("And initial value: [{value}]");
+
+    if let Ok(()) = upload_completed_tx.send(()) {
+        let summary = upload_summary_thread.await?;
+        if summary.record_count == 0 {
+            println!("The register was already created on the network. No tokens were spent.");
+        } else {
+            println!("Total cost: {} AttoTokens", summary.tokens_spent);
+        }
+    }
+
     Ok(())
 }
 

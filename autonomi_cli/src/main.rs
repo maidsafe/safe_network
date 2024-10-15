@@ -13,6 +13,7 @@ mod access;
 mod actions;
 mod commands;
 mod opt;
+mod utils;
 
 pub use access::data_dir;
 pub use access::keys;
