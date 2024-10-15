@@ -103,6 +103,7 @@ mod archive {
     }
 }
 
+#[cfg(feature = "vault")]
 mod vault {
     use super::*;
     use bls::SecretKey;

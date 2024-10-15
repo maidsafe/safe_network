@@ -23,7 +23,8 @@
         const wallet = aut.getFundedWallet();
         console.log("wallet retrieved");
 
-        const data = new Uint8Array([1, 2, 3]);
+        // Random 32 byte data
+        const data = [...Array(16)].map(() => Math.floor(Math.random() * 9));
         console.log("our data: ", data);
 
         console.log("calculating cost...");
