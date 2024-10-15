@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1729002566465,
+  "lastUpdate": 1729010947726,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "anselmega@gmail.com",
-            "name": "grumbach",
-            "username": "grumbach"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "b656a59a7e15c87e52ceef58558f11b4543d7c91",
-          "message": "feat: remove two uneeded env vars",
-          "timestamp": "2024-05-17T03:21:24Z",
-          "tree_id": "437071acce1ac44c556ecf58a148893b8b4e4ba7",
-          "url": "https://github.com/maidsafe/safe_network/commit/b656a59a7e15c87e52ceef58558f11b4543d7c91"
-        },
-        "date": 1715918816193,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1487581950878198,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.036533868354233,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 53.81394016198434,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "autonomi files download",
             "value": 2.249590801571003,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "qi.ma@maidsafe.net",
+            "name": "maqi",
+            "username": "maqi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "147ba8e1332d56a3c24d18b78fe6c9eaf99422ee",
+          "message": "Merge pull request #2243 from maqi/record_store_dir_prefixed_with_network_keys\n\nfeat(node): using different storage dir for different network",
+          "timestamp": "2024-10-15T15:31:29Z",
+          "tree_id": "6cea4895538e4c56879336618066ab39e9ef7048",
+          "url": "https://github.com/maidsafe/safe_network/commit/147ba8e1332d56a3c24d18b78fe6c9eaf99422ee"
+        },
+        "date": 1729010940902,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "autonomi files upload 1mb",
+            "value": 0.12811114561822895,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files upload 10mb",
+            "value": 1.2015724348638857,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files download",
+            "value": 2.255685656830167,
             "unit": "MiB/s"
           }
         ]
