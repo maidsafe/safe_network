@@ -3,8 +3,8 @@ use wasm_bindgen::prelude::*;
 
 use super::address::{addr_to_str, str_to_addr};
 
-#[wasm_bindgen]
-pub struct Client(super::Client);
+#[wasm_bindgen(js_name = Client)]
+pub struct JsClient(super::Client);
 
 #[wasm_bindgen]
 pub struct AttoTokens(sn_evm::AttoTokens);
@@ -16,10 +16,10 @@ impl AttoTokens {
     }
 }
 
-#[wasm_bindgen]
-impl Client {
+#[wasm_bindgen(js_class = Client)]
+impl JsClient {
     #[wasm_bindgen(constructor)]
-    pub async fn connect(peers: Vec<String>) -> Result<Client, JsError> {
+    pub async fn connect(peers: Vec<String>) -> Result<JsClient, JsError> {
         let peers = peers
             .into_iter()
             .map(|peer| peer.parse())
@@ -27,11 +27,11 @@ impl Client {
 
         let client = super::Client::connect(&peers).await?;
 
-        Ok(Client(client))
+        Ok(JsClient(client))
     }
 
     #[wasm_bindgen(js_name = chunkPut)]
-    pub async fn chunk_put(&self, _data: Vec<u8>, _wallet: &Wallet) -> Result<String, JsError> {
+    pub async fn chunk_put(&self, _data: Vec<u8>, _wallet: &JsWallet) -> Result<String, JsError> {
         async { unimplemented!() }.await
     }
 
@@ -44,7 +44,7 @@ impl Client {
     }
 
     #[wasm_bindgen(js_name = dataPut)]
-    pub async fn data_put(&self, data: Vec<u8>, wallet: &Wallet) -> Result<String, JsError> {
+    pub async fn data_put(&self, data: Vec<u8>, wallet: &JsWallet) -> Result<String, JsError> {
         let data = crate::Bytes::from(data);
         let xorname = self.0.data_put(data, &wallet.0).await?;
 
@@ -74,8 +74,8 @@ mod archive {
     use std::{collections::HashMap, path::PathBuf};
     use xor_name::XorName;
 
-    #[wasm_bindgen]
-    impl Client {
+    #[wasm_bindgen(js_class = Client)]
+    impl JsClient {
         #[wasm_bindgen(js_name = archiveGet)]
         pub async fn archive_get(&self, addr: String) -> Result<js_sys::Map, JsError> {
             let addr = str_to_addr(&addr)?;
@@ -90,7 +90,7 @@ mod archive {
         pub async fn archive_put(
             &self,
             map: JsValue,
-            wallet: &super::Wallet,
+            wallet: &JsWallet,
         ) -> Result<String, JsError> {
             // From `Map<K, V>` or `Iterable<[K, V]>` (JS)
             let map: HashMap<PathBuf, XorName> = serde_wasm_bindgen::from_value(map)?;
@@ -107,8 +107,8 @@ mod vault {
     use super::*;
     use bls::SecretKey;
 
-    #[wasm_bindgen]
-    impl Client {
+    #[wasm_bindgen(js_class = Client)]
+    impl JsClient {
         #[wasm_bindgen(js_name = fetchAndDecryptVault)]
         pub async fn fetch_and_decrypt_vault(
             &self,
@@ -127,7 +127,7 @@ mod vault {
         pub async fn write_bytes_to_vault(
             &self,
             vault: Vec<u8>,
-            wallet: &mut super::Wallet,
+            wallet: &mut JsWallet,
             secret_key: Vec<u8>,
         ) -> Result<(), JsError> {
             let secret_key: [u8; 32] = secret_key[..].try_into()?;
@@ -143,14 +143,14 @@ mod vault {
     }
 }
 
-#[wasm_bindgen]
-pub struct Wallet(evmlib::wallet::Wallet);
+#[wasm_bindgen(js_name = Wallet)]
+pub struct JsWallet(evmlib::wallet::Wallet);
 
 /// Get a funded wallet for testing. This either uses a default private key or the `EVM_PRIVATE_KEY`
 /// environment variable that was used during the build process of this library.
 #[wasm_bindgen(js_name = getFundedWallet)]
-pub fn funded_wallet() -> Wallet {
-    Wallet(test_utils::evm::get_funded_wallet())
+pub fn funded_wallet() -> JsWallet {
+    JsWallet(test_utils::evm::get_funded_wallet())
 }
 
 /// Enable tracing logging in the console.

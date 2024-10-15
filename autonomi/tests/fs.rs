@@ -81,8 +81,8 @@ fn compute_dir_sha256(dir: &str) -> Result<String> {
 async fn file_into_vault() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("file", false);
 
-    let mut client = Client::connect(&peers_from_env()?).await?;
-    let mut wallet = get_funded_wallet();
+    let client = Client::connect(&peers_from_env()?).await?;
+    let wallet = get_funded_wallet();
     let client_sk = bls::SecretKey::random();
 
     let addr = client
@@ -92,7 +92,7 @@ async fn file_into_vault() -> Result<()> {
 
     let archive = client.archive_get(addr).await?;
     client
-        .write_bytes_to_vault(archive.into_bytes()?, &mut wallet, &client_sk)
+        .write_bytes_to_vault(archive.into_bytes()?, &wallet, &client_sk)
         .await?;
 
     // now assert over the stored account packet
