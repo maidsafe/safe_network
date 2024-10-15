@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728977978003,
+  "lastUpdate": 1728979687286,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "e52a1ddabcc752d25dd86ca09ef58178dc5a1e15",
-          "message": "feat: hide genesis keypair",
-          "timestamp": "2024-05-16T14:29:21Z",
-          "tree_id": "b30a07f1041f0492205393e2af4aa8ac9d0d60b3",
-          "url": "https://github.com/maidsafe/safe_network/commit/e52a1ddabcc752d25dd86ca09ef58178dc5a1e15"
-        },
-        "date": 1715872773046,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.077946680281343,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.092278916510099,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 45.63572533058432,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "autonomi files download",
             "value": 2.3152849732790735,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9279b124e24c93521fc7abbaf4a7123e0ed38049",
+          "message": "Merge pull request #2238 from RolandSherwin/retry_on_register_failure\n\nfix(test): retry during register create to fix failures from node res…",
+          "timestamp": "2024-10-15T06:51:54Z",
+          "tree_id": "f5316e5c889ddc2736e15e95bae83913944f7bf2",
+          "url": "https://github.com/maidsafe/safe_network/commit/9279b124e24c93521fc7abbaf4a7123e0ed38049"
+        },
+        "date": 1728979679887,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "autonomi files upload 1mb",
+            "value": 0.12052556422951957,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files upload 10mb",
+            "value": 1.1767293960843852,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files download",
+            "value": 2.276480643532486,
             "unit": "MiB/s"
           }
         ]
