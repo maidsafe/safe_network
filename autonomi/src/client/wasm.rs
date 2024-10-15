@@ -1,21 +1,10 @@
 use libp2p::Multiaddr;
 use wasm_bindgen::prelude::*;
 
+use super::address::{addr_to_str, str_to_addr};
+
 #[wasm_bindgen]
 pub struct Client(super::Client);
-
-#[wasm_bindgen]
-pub struct ChunkAddr(xor_name::XorName);
-
-#[wasm_bindgen]
-pub struct DataAddr(xor_name::XorName);
-#[wasm_bindgen]
-impl DataAddr {
-    #[wasm_bindgen(js_name = toString)]
-    pub fn to_string(&self) -> String {
-        crate::client::address::addr_to_str(self.0)
-    }
-}
 
 #[wasm_bindgen]
 pub struct AttoTokens(sn_evm::AttoTokens);
@@ -42,26 +31,31 @@ impl Client {
     }
 
     #[wasm_bindgen(js_name = chunkPut)]
-    pub async fn chunk_put(&self, _data: Vec<u8>, _wallet: Wallet) -> Result<ChunkAddr, JsError> {
+    pub async fn chunk_put(&self, _data: Vec<u8>, _wallet: &Wallet) -> Result<String, JsError> {
         async { unimplemented!() }.await
     }
 
     #[wasm_bindgen(js_name = chunkGet)]
-    pub async fn chunk_get(&self, addr: ChunkAddr) -> Result<Vec<u8>, JsError> {
-        let chunk = self.0.chunk_get(addr.0).await?;
+    pub async fn chunk_get(&self, addr: String) -> Result<Vec<u8>, JsError> {
+        let addr = str_to_addr(&addr)?;
+        let chunk = self.0.chunk_get(addr).await?;
+
         Ok(chunk.value().to_vec())
     }
 
     #[wasm_bindgen(js_name = dataPut)]
-    pub async fn data_put(&self, data: Vec<u8>, wallet: Wallet) -> Result<DataAddr, JsError> {
+    pub async fn data_put(&self, data: Vec<u8>, wallet: &Wallet) -> Result<String, JsError> {
         let data = crate::Bytes::from(data);
         let xorname = self.0.data_put(data, &wallet.0).await?;
-        Ok(DataAddr(xorname))
+
+        Ok(addr_to_str(xorname))
     }
 
     #[wasm_bindgen(js_name = dataGet)]
-    pub async fn data_get(&self, addr: DataAddr) -> Result<Vec<u8>, JsError> {
-        let data = self.0.data_get(addr.0).await?;
+    pub async fn data_get(&self, addr: String) -> Result<Vec<u8>, JsError> {
+        let addr = str_to_addr(&addr)?;
+        let data = self.0.data_get(addr).await?;
+
         Ok(data.to_vec())
     }
 
@@ -71,6 +65,41 @@ impl Client {
         let cost = self.0.data_cost(data).await.map_err(JsError::from)?;
 
         Ok(AttoTokens(cost))
+    }
+}
+
+mod archive {
+    use super::*;
+    use crate::client::{address::str_to_addr, archive::Archive};
+    use std::{collections::HashMap, path::PathBuf};
+    use xor_name::XorName;
+
+    #[wasm_bindgen]
+    impl Client {
+        #[wasm_bindgen(js_name = archiveGet)]
+        pub async fn archive_get(&self, addr: String) -> Result<js_sys::Map, JsError> {
+            let addr = str_to_addr(&addr)?;
+            let data = self.0.archive_get(addr).await?;
+
+            // To `Map<K, V>` (JS)
+            let data = serde_wasm_bindgen::to_value(&data.map)?;
+            Ok(data.into())
+        }
+
+        #[wasm_bindgen(js_name = archivePut)]
+        pub async fn archive_put(
+            &self,
+            map: JsValue,
+            wallet: &super::Wallet,
+        ) -> Result<String, JsError> {
+            // From `Map<K, V>` or `Iterable<[K, V]>` (JS)
+            let map: HashMap<PathBuf, XorName> = serde_wasm_bindgen::from_value(map)?;
+            let archive = Archive { map };
+
+            let addr = self.0.archive_put(archive, &wallet.0).await?;
+
+            Ok(addr_to_str(addr))
+        }
     }
 }
 
