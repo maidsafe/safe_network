@@ -637,9 +637,16 @@ impl Node {
         self.events_channel()
             .broadcast(crate::NodeEvent::RewardReceived(storecost, address.clone()));
 
-        // NB TODO: tell happybeing about the AttoToken change
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Total payment of {storecost:?} nanos accepted for record {pretty_key}");
+        info!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+
+        // loud mode: print a celebratory message to console
+        #[cfg(feature = "loud")]
+        {
+            println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟   GOT REWARD   🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
+            println!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+            println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
+        }
 
         Ok(())
     }
