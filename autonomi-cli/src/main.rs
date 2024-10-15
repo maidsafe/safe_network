@@ -51,7 +51,7 @@ fn init_logging_and_metrics(opt: &Opt) -> Result<(ReloadHandle, Option<WorkerGua
     let logging_targets = vec![
         ("sn_networking".to_string(), Level::INFO),
         ("sn_build_info".to_string(), Level::TRACE),
-        ("autonomi_cli".to_string(), Level::TRACE),
+        ("autonomi-cli".to_string(), Level::TRACE),
         ("sn_logging".to_string(), Level::TRACE),
         ("sn_peers_acquisition".to_string(), Level::TRACE),
         ("sn_protocol".to_string(), Level::TRACE),

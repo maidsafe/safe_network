@@ -2,15 +2,11 @@
 resolver = "2"
 members = [
     "autonomi",
-    "autonomi_cli",
+    "autonomi-cli",
     "evmlib",
     "evm_testnet",
-    # "sn_auditor",
     "sn_build_info",
     "sn_evm",
-    # "sn_cli",
-    # "sn_client",
-    # "sn_faucet",
     "sn_logging",
     "sn_metrics",
     "nat-detection",

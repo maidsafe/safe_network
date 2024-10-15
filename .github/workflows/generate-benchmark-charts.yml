@@ -15,7 +15,7 @@ permissions:
 env:
   CARGO_INCREMENTAL: "0"
   RUST_BACKTRACE: 1
-  CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi_cli
+  CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
 
 jobs:
@@ -46,7 +46,7 @@ jobs:
         run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
 
       - name: Build node and cli binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi_cli
+        run: cargo build --release --features local --bin safenode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
@@ -67,7 +67,7 @@ jobs:
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
         # passes to tee which displays it in the terminal and writes to output.txt
         run: |
-          cargo criterion --features=local --message-format=json 2>&1 -p autonomi_cli | tee -a output.txt
+          cargo criterion --features=local --message-format=json 2>&1 -p autonomi | tee -a output.txt
           cat output.txt | rg benchmark-complete | jq -s 'map({
             name: (.id | split("/"))[-1],
             unit: "MiB/s",
@@ -100,7 +100,7 @@ jobs:
 
       - name: Start a client instance to compare memory usage
         shell: bash
-        run: cargo run --bin autonomi_cli --release -- --log-output-dest=data-dir file upload the-test-data.zip
+        run: cargo run --bin autonomi --release -- --log-output-dest=data-dir file upload the-test-data.zip
         env:
           SN_LOG: "all"
 
