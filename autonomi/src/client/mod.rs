@@ -25,15 +25,18 @@ pub mod wasm;
 // private module with utility functions
 mod utils;
 
-use std::{collections::HashSet, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use libp2p::{identity::Keypair, Multiaddr};
+use sn_evm::Amount;
 use sn_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
 use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc;
 
 /// Time before considering the connection timed out.
 pub const CONNECT_TIMEOUT_SECS: u64 = 20;
+
+const CLIENT_EVENT_CHANNEL_SIZE: usize = 100;
 
 /// Represents a connection to the Autonomi network.
 ///
@@ -53,6 +56,7 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 #[derive(Clone)]
 pub struct Client {
     pub(crate) network: Network,
+    pub(crate) client_event_sender: Arc<Option<mpsc::Sender<ClientEvent>>>,
 }
 
 /// Error returned by [`Client::connect`].
@@ -103,11 +107,22 @@ impl Client {
 
         receiver.await.expect("sender should not close")?;
 
-        Ok(Self { network })
+        Ok(Self {
+            network,
+            client_event_sender: Arc::new(None),
+        })
+    }
+
+    /// Receive events from the client.
+    pub fn enable_client_events(&mut self) -> mpsc::Receiver<ClientEvent> {
+        let (client_event_sender, client_event_receiver) =
+            tokio::sync::mpsc::channel(CLIENT_EVENT_CHANNEL_SIZE);
+        self.client_event_sender = Arc::new(Some(client_event_sender));
+        client_event_receiver
     }
 }
 
-fn build_client_and_run_swarm(local: bool) -> (Network, Receiver<NetworkEvent>) {
+fn build_client_and_run_swarm(local: bool) -> (Network, mpsc::Receiver<NetworkEvent>) {
     let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
 
     // TODO: Re-export `Receiver<T>` from `sn_networking`. Else users need to keep their `tokio` dependency in sync.
@@ -121,7 +136,7 @@ fn build_client_and_run_swarm(local: bool) -> (Network, Receiver<NetworkEvent>) 
 }
 
 async fn handle_event_receiver(
-    mut event_receiver: Receiver<NetworkEvent>,
+    mut event_receiver: mpsc::Receiver<NetworkEvent>,
     sender: futures::channel::oneshot::Sender<Result<(), ConnectError>>,
 ) {
     // We switch this to `None` when we've sent the oneshot 'connect' result.
@@ -179,4 +194,15 @@ async fn handle_event_receiver(
     }
 
     // TODO: Handle closing of network events sender
+}
+
+/// Events that can be broadcasted by the client.
+pub enum ClientEvent {
+    UploadComplete(UploadSummary),
+}
+
+/// Summary of an upload operation.
+pub struct UploadSummary {
+    pub record_count: usize,
+    pub tokens_spent: Amount,
 }
