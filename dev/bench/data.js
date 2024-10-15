@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728987986724,
+  "lastUpdate": 1728988135499,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11708,35 +11708,6 @@ window.BENCHMARK_DATA = {
       {
         "commit": {
           "author": {
-            "email": "chriso83@protonmail.com",
-            "name": "Chris O'Neil",
-            "username": "jacderida"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": true,
-          "id": "e29c863a5f5d9c4b29bce80c994b3ba37e81bc50",
-          "message": "chore: build auditor in release artifacts workflow\n\nThis workflow is useful for testing and I can use it to produce auditor artifacts that can manually\nbe uploaded to S3.",
-          "timestamp": "2024-05-16T22:21:04Z",
-          "tree_id": "03d5ee274f7facbc19d07c3a590f2eb76c5d1112",
-          "url": "https://github.com/maidsafe/safe_network/commit/e29c863a5f5d9c4b29bce80c994b3ba37e81bc50"
-        },
-        "date": 1715901066440,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 53,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
             "email": "RolandSherwin@protonmail.com",
             "name": "Roland Sherwin",
             "username": "RolandSherwin"
@@ -20401,6 +20372,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Peak memory w/ `safe` benchmarks",
             "value": 168,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "RolandSherwin@protonmail.com",
+            "name": "RolandSherwin",
+            "username": "RolandSherwin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2a91e862a927bef6e6a98206bb521d0aa07a6541",
+          "message": "Merge pull request #2241 from RolandSherwin/client_events\n\nfeat(autonomi): implement client events",
+          "timestamp": "2024-10-15T09:09:53Z",
+          "tree_id": "6342dd3017ea1ef6250a913acaeb6cc75e77fd0c",
+          "url": "https://github.com/maidsafe/safe_network/commit/2a91e862a927bef6e6a98206bb521d0aa07a6541"
+        },
+        "date": 1728988135151,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 172,
             "unit": "MB"
           }
         ]
