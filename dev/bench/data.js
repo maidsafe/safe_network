@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728979687286,
+  "lastUpdate": 1728979839770,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
@@ -11718,35 +11718,6 @@ window.BENCHMARK_DATA = {
             "username": "grumbach"
           },
           "distinct": true,
-          "id": "e52a1ddabcc752d25dd86ca09ef58178dc5a1e15",
-          "message": "feat: hide genesis keypair",
-          "timestamp": "2024-05-16T14:29:21Z",
-          "tree_id": "b30a07f1041f0492205393e2af4aa8ac9d0d60b3",
-          "url": "https://github.com/maidsafe/safe_network/commit/e52a1ddabcc752d25dd86ca09ef58178dc5a1e15"
-        },
-        "date": 1715872905213,
-        "tool": "customSmallerIsBetter",
-        "benches": [
-          {
-            "name": "Peak memory w/ `safe` benchmarks",
-            "value": 54,
-            "unit": "MB"
-          }
-        ]
-      },
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
           "id": "e6b5f2e6d15de6cfee7ba283e6268dc9990f4cfd",
           "message": "feat: pass genesis_cn pub fields separate to hide sk",
           "timestamp": "2024-05-16T16:29:50Z",
@@ -20396,6 +20367,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/maidsafe/safe_network/commit/23b90eb308c6af051d9811dc1950cb1fae893055"
         },
         "date": 1728977977714,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Peak memory w/ `safe` benchmarks",
+            "value": 167,
+            "unit": "MB"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9279b124e24c93521fc7abbaf4a7123e0ed38049",
+          "message": "Merge pull request #2238 from RolandSherwin/retry_on_register_failure\n\nfix(test): retry during register create to fix failures from node res…",
+          "timestamp": "2024-10-15T06:51:54Z",
+          "tree_id": "f5316e5c889ddc2736e15e95bae83913944f7bf2",
+          "url": "https://github.com/maidsafe/safe_network/commit/9279b124e24c93521fc7abbaf4a7123e0ed38049"
+        },
+        "date": 1728979838925,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
