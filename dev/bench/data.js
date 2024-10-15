@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728979839770,
+  "lastUpdate": 1728986118308,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "qi.ma@maidsafe.net",
-            "name": "qima",
-            "username": "maqi"
-          },
-          "committer": {
-            "email": "anselmega@gmail.com",
-            "name": "Anselme",
-            "username": "grumbach"
-          },
-          "distinct": true,
-          "id": "e6b5f2e6d15de6cfee7ba283e6268dc9990f4cfd",
-          "message": "feat: pass genesis_cn pub fields separate to hide sk",
-          "timestamp": "2024-05-16T16:29:50Z",
-          "tree_id": "b62de0bac7c65bf0ba79e0ce2825ac9dbe42a629",
-          "url": "https://github.com/maidsafe/safe_network/commit/e6b5f2e6d15de6cfee7ba283e6268dc9990f4cfd"
-        },
-        "date": 1715880018315,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1753329250761528,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.0505295016878633,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 55.24928109604046,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "autonomi files download",
             "value": 2.276480643532486,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lmazzitelli@gmail.com",
+            "name": "Lautaro Mazzitelli",
+            "username": "mazzi"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b1a0b00b29583832d50d331598f7905f2913fdd5",
+          "message": "Merge pull request #2231 from mazzi/chore_refactor_status_screen\n\nchore(launchpad): refactor status screen",
+          "timestamp": "2024-10-15T08:40:49Z",
+          "tree_id": "06b3c4108ff1be7808aeb3a4aa88ba53651c8f93",
+          "url": "https://github.com/maidsafe/safe_network/commit/b1a0b00b29583832d50d331598f7905f2913fdd5"
+        },
+        "date": 1728986111050,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "autonomi files upload 1mb",
+            "value": 0.12549034648023563,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files upload 10mb",
+            "value": 1.1636133369690485,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files download",
+            "value": 2.3070303185546566,
             "unit": "MiB/s"
           }
         ]
