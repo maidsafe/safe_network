@@ -160,7 +160,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi_cli
+        run: cargo build --release --features local --bin safenode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
@@ -207,13 +207,13 @@ jobs:
         shell: pwsh
 
       - name: Get file cost
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir file cost "./resources"
+        run: ./target/release/autonomi --log-output-dest=data-dir file cost "./resources"
         env:
           SN_LOG: "v"
         timeout-minutes: 15
 
       - name: File upload
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir file upload "./resources" > ./upload_output 2>&1
+        run: ./target/release/autonomi --log-output-dest=data-dir file upload "./resources" > ./upload_output 2>&1
         env:
           SN_LOG: "v"
         timeout-minutes: 15
@@ -233,16 +233,16 @@ jobs:
         shell: pwsh
 
       - name: File Download
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
+        run: ./target/release/autonomi --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
         env:
           SN_LOG: "v"
         timeout-minutes: 5
 
       - name: Generate register signing key
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register generate-key
+        run: ./target/release/autonomi --log-output-dest=data-dir register generate-key
 
       - name: Create register (writeable by owner)
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register create baobao 123 > ./register_create_output 2>&1
+        run: ./target/release/autonomi --log-output-dest=data-dir register create baobao 123 > ./register_create_output 2>&1
         env:
           SN_LOG: "v"
         timeout-minutes: 10
@@ -262,25 +262,25 @@ jobs:
         shell: pwsh
 
       - name: Get register
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
         env:
           SN_LOG: "v"
         timeout-minutes: 5
 
       - name: Edit register
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register edit ${{ env.REGISTER_ADDRESS }} 456
+        run: ./target/release/autonomi --log-output-dest=data-dir register edit ${{ env.REGISTER_ADDRESS }} 456
         env:
           SN_LOG: "v"
         timeout-minutes: 10
 
       - name: Get register (after edit)
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
         env:
           SN_LOG: "v"
         timeout-minutes: 5
 
       - name: Create Public Register (writeable by anyone)
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register create bao 111 --public > ./register_public_create_output 2>&1
+        run: ./target/release/autonomi --log-output-dest=data-dir register create bao 111 --public > ./register_public_create_output 2>&1
         env:
           SN_LOG: "v"
         timeout-minutes: 5
@@ -300,13 +300,13 @@ jobs:
         shell: pwsh
 
       - name: Get Public Register (current key is the owner)
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
           SN_LOG: "v"
         timeout-minutes: 5
 
       - name: Edit Public Register (current key is the owner)
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 222
+        run: ./target/release/autonomi --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 222
         env:
           SN_LOG: "v"
         timeout-minutes: 10
@@ -316,22 +316,22 @@ jobs:
         run: rm -rf ${{ matrix.safe_path }}/client
 
       - name: Generate new register signing key
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register generate-key
+        run: ./target/release/autonomi --log-output-dest=data-dir register generate-key
 
       - name: Get Public Register (new signing key is not the owner)
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: Edit Public Register (new signing key is not the owner)
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 333
+        run: ./target/release/autonomi --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 333
         env:
           SN_LOG: "v"
         timeout-minutes: 10
 
       - name: Get Public Register (new signing key is not the owner)
-        run: ./target/release/autonomi_cli --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
           SN_LOG: "v"
         timeout-minutes: 2
