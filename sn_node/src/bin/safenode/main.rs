@@ -34,6 +34,7 @@ use std::{
     process::Command,
     time::Duration,
 };
+use sysinfo::{self, System};
 use tokio::{
     runtime::Runtime,
     sync::{broadcast::error::RecvError, mpsc},
@@ -385,6 +386,51 @@ You can check your reward balance by running:
             .await
         {
             error!("Failed to send node control msg to safenode bin main thread: {err}");
+        }
+    });
+    let ctrl_tx_clone_cpu = ctrl_tx.clone();
+    // Monitor host CPU usage
+    tokio::spawn(async move {
+        use rand::{thread_rng, Rng};
+
+        const CPU_CHECK_INTERVAL: Duration = Duration::from_secs(60);
+        const CPU_USAGE_THRESHOLD: f32 = 90.0;
+        const HIGH_CPU_CONSECUTIVE_LIMIT: u8 = 3;
+        const NODE_STOP_DELAY: Duration = Duration::from_secs(1);
+        let mut sys = System::new_all();
+
+        let mut high_cpu_count: u8 = 0;
+
+        // Random initial delay between 1 and 5 minutes
+        let initial_delay = Duration::from_secs(thread_rng().gen_range(60..=300));
+        tokio::time::sleep(initial_delay).await;
+
+        loop {
+            sys.refresh_cpu();
+            let cpu_usage = sys.global_cpu_info().cpu_usage();
+
+            if cpu_usage > CPU_USAGE_THRESHOLD {
+                high_cpu_count += 1;
+            } else {
+                high_cpu_count = 0;
+            }
+
+            if high_cpu_count >= HIGH_CPU_CONSECUTIVE_LIMIT {
+                if let Err(err) = ctrl_tx_clone_cpu
+                    .send(NodeCtrl::Stop {
+                        delay: NODE_STOP_DELAY,
+                        cause: eyre!("Excess host CPU detected for {HIGH_CPU_CONSECUTIVE_LIMIT} consecutive minutes!"),
+                    })
+                    .await
+                {
+                    error!("Failed to send node control msg to safenode bin main thread: {err}");
+                }
+                break;
+            }
+
+            // Add jitter to the interval
+            let jitter = Duration::from_millis(thread_rng().gen_range(0..=1000));
+            tokio::time::sleep(CPU_CHECK_INTERVAL + jitter).await;
         }
     });
 
