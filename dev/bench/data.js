@@ -1,47 +1,8 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1728976799989,
+  "lastUpdate": 1728977825386,
   "repoUrl": "https://github.com/maidsafe/safe_network",
   "entries": {
     "`safe files` benchmarks": [
-      {
-        "commit": {
-          "author": {
-            "email": "lmazzitelli@gmail.com",
-            "name": "Lautaro Mazzitelli",
-            "username": "mazzi"
-          },
-          "committer": {
-            "email": "RolandSherwin@protonmail.com",
-            "name": "RolandSherwin",
-            "username": "RolandSherwin"
-          },
-          "distinct": false,
-          "id": "be2006833674d0232b857e8c7f9f3f052e5432ca",
-          "message": "feat(node-launchpad): discord name widget styling\n\nJust centering the title and the input.",
-          "timestamp": "2024-05-16T14:05:23Z",
-          "tree_id": "b203c6e5635827f9907a72d31bcb1afa92f98550",
-          "url": "https://github.com/maidsafe/safe_network/commit/be2006833674d0232b857e8c7f9f3f052e5432ca"
-        },
-        "date": 1715871169334,
-        "tool": "customBiggerIsBetter",
-        "benches": [
-          {
-            "name": "safe files upload 1mb",
-            "value": 1.1376417504330048,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files upload 10mb",
-            "value": 1.2161030506170156,
-            "unit": "MiB/s"
-          },
-          {
-            "name": "safe files download",
-            "value": 46.955101220136505,
-            "unit": "MiB/s"
-          }
-        ]
-      },
       {
         "commit": {
           "author": {
@@ -11699,6 +11660,45 @@ window.BENCHMARK_DATA = {
           {
             "name": "autonomi files download",
             "value": 2.2719648989688106,
+            "unit": "MiB/s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshuef@gmail.com",
+            "name": "joshuef",
+            "username": "joshuef"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "23b90eb308c6af051d9811dc1950cb1fae893055",
+          "message": "Merge pull request #2228 from b-zee/ci-wasm32\n\nci: enable wasm32 compilation step",
+          "timestamp": "2024-10-15T06:20:50Z",
+          "tree_id": "f6dec5d45990b05c122effb8b1e17ccd9a162af9",
+          "url": "https://github.com/maidsafe/safe_network/commit/23b90eb308c6af051d9811dc1950cb1fae893055"
+        },
+        "date": 1728977818619,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "autonomi files upload 1mb",
+            "value": 0.12017236309757469,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files upload 10mb",
+            "value": 1.1728588852249957,
+            "unit": "MiB/s"
+          },
+          {
+            "name": "autonomi files download",
+            "value": 2.3152849732790735,
             "unit": "MiB/s"
           }
         ]
