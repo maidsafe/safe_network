@@ -635,7 +635,37 @@ jobs:
           log_file_prefix: safe_test_logs_churn
           platform: ${{ matrix.os }}
 
-      - name: Verify restart of nodes using rg
+      - name: Get total node count
+        shell: bash
+        timeout-minutes: 1
+        run: |
+          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
+          echo "Node dir count is $node_count"
+
+      - name: Get restart of nodes using rg
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of restarts
+        # TODO: make this use an env var, or relate to testnet size
+        run: |
+          restart_count=$(rg "Node is restarting in" "${{ matrix.node_data_path }}" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          echo "Restarted $restart_count nodes"
+
+      - name: Get peers removed from nodes using rg
+        shell: bash
+        timeout-minutes: 1
+        run: |
+          peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.node_data_path }}" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to extract peer removal count"; exit 1; }
+          if [ -z "$peer_removed" ]; then
+            echo "No peer removal count found"
+            exit 1
+          fi
+          echo "PeerRemovedFromRoutingTable $peer_removed times"
+
+      - name: Verify peers removed exceed restarted node counts
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only
@@ -652,8 +682,6 @@ jobs:
             echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
             exit 1
           fi
-          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
-          echo "Node dir count is $node_count"
 
         # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
         # if [ $restart_count -lt $node_count ]; then
