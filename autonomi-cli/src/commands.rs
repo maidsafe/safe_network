@@ -9,6 +9,7 @@
 mod file;
 mod register;
 mod vault;
+mod wallet;
 
 use clap::Subcommand;
 use color_eyre::Result;
@@ -34,6 +35,12 @@ pub enum SubCmd {
         #[command(subcommand)]
         command: VaultCmd,
     },
+
+    /// Operations related to wallet management.
+    Wallet {
+        #[command(subcommand)]
+        command: WalletCmd,
+    }
 }
 
 #[derive(Subcommand, Debug)]
@@ -145,6 +152,24 @@ pub enum VaultCmd {
     },
 }
 
+#[derive(Subcommand, Debug)]
+pub enum WalletCmd {
+    /// Create a wallet
+    // #[command(subcommand)]
+    Create {
+        #[arg(long)]
+        encrypt: Option<String>,
+        #[arg(long)]
+        password: Option<String>,
+        #[arg(long)]
+        private_key: Option<String>,
+
+    },
+
+    /// Check the balance of the wallet
+    Balance,
+}
+
 pub async fn handle_subcommand(opt: Opt) -> Result<()> {
     let peers = crate::access::network::get_peers(opt.peers);
     let cmd = opt.command;
@@ -180,5 +205,16 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
             VaultCmd::Load => vault::load(peers.await?).await,
             VaultCmd::Sync { force } => vault::sync(peers.await?, force).await,
         },
+        SubCmd::Wallet { command } => match command {
+            WalletCmd::Create {
+                encrypt,
+                password,
+                private_key,
+
+            } => {
+                wallet::create( encrypt, password,private_key)
+            },
+            WalletCmd::Balance => Ok(wallet::balance()?),
+        }
     }
 }

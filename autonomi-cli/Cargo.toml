@@ -34,7 +34,9 @@ autonomi = { path = "../autonomi", version = "0.2.2-rc.2", features = [
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "~0.6"
 dirs-next = "~2.0.0"
+thiserror = "1.0"
 indicatif = { version = "0.17.5", features = ["tokio"] }
+rpassword = "7.0"
 tokio = { version = "1.32.0", features = [
     "io-util",
     "macros",
