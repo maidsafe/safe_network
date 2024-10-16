@@ -18,11 +18,11 @@ pub async fn download(addr: &str, dest_path: &str, client: &mut Client) -> Resul
         .await
         .wrap_err("Failed to fetch data from address")?;
 
-    let progress_bar = get_progress_bar(archive.map.len() as u64)?;
+    let progress_bar = get_progress_bar(archive.iter().count() as u64)?;
     let mut all_errs = vec![];
-    for (path, addr) in archive.map {
+    for (path, addr, _meta) in archive.iter() {
         progress_bar.println(format!("Fetching file: {path:?}..."));
-        let bytes = match client.data_get(addr).await {
+        let bytes = match client.data_get(*addr).await {
             Ok(bytes) => bytes,
             Err(e) => {
                 let err = format!("Failed to fetch file {path:?}: {e}");

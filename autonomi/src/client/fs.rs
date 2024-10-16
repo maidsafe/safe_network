@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::client::archive::Metadata;
 use crate::client::Client;
 use bytes::Bytes;
 use sn_evm::EvmWallet;
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use super::archive::{Archive, ArchiveAddr};
@@ -65,8 +65,8 @@ impl Client {
         to_dest: PathBuf,
     ) -> Result<(), DownloadError> {
         let archive = self.archive_get(archive_addr).await?;
-        for (path, addr) in archive.map {
-            self.file_download(addr, to_dest.join(path)).await?;
+        for (path, addr, _meta) in archive.iter() {
+            self.file_download(*addr, to_dest.join(path)).await?;
         }
         Ok(())
     }
@@ -78,7 +78,7 @@ impl Client {
         dir_path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, UploadError> {
-        let mut map = HashMap::new();
+        let mut archive = Archive::new();
 
         for entry in walkdir::WalkDir::new(dir_path) {
             let entry = entry?;
@@ -93,10 +93,9 @@ impl Client {
             println!("Uploading file: {path:?}");
             let file = self.file_upload(path.clone(), wallet).await?;
 
-            map.insert(path, file);
+            archive.add_file(path, file, Metadata::new());
         }
 
-        let archive = Archive { map };
         let archive_serialized = archive.into_bytes()?;
 
         let arch_addr = self.data_put(archive_serialized, wallet).await?;
@@ -120,7 +119,7 @@ impl Client {
     /// Get the cost to upload a file/dir to the network.
     /// quick and dirty implementation, please refactor once files are cleanly implemented
     pub async fn file_cost(&self, path: &PathBuf) -> Result<sn_evm::AttoTokens, UploadError> {
-        let mut map = HashMap::new();
+        let mut archive = Archive::new();
         let mut total_cost = sn_evm::Amount::ZERO;
 
         for entry in walkdir::WalkDir::new(path) {
@@ -146,11 +145,10 @@ impl Client {
             tracing::debug!("Encryption took: {:.2?}", now.elapsed());
             let map_xor_name = *data_map_chunk.address().xorname();
 
-            map.insert(path, map_xor_name);
+            archive.add_file(path, map_xor_name, Metadata::new());
         }
 
-        let root = Archive { map };
-        let root_serialized = rmp_serde::to_vec(&root).expect("TODO");
+        let root_serialized = rmp_serde::to_vec(&archive).expect("TODO");
 
         let archive_cost = self
             .data_cost(Bytes::from(root_serialized))
