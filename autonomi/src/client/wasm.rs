@@ -149,6 +149,12 @@ mod vault {
     }
 }
 
+#[wasm_bindgen(js_name = genSecretKey)]
+pub fn gen_secret_key() -> Vec<u8> {
+    let secret_key = bls::SecretKey::random();
+    secret_key.to_bytes().to_vec()
+}
+
 #[wasm_bindgen(js_name = Wallet)]
 pub struct JsWallet(evmlib::wallet::Wallet);
 

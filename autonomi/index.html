@@ -1,67 +1,70 @@
 <html>
-  <head>
-    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
-  </head>
-  <body>
-    <!-- credits: https://rustwasm.github.io/docs/wasm-bindgen/examples/without-a-bundler.html -->
-    <script type="module">
-      import init, * as aut from './pkg/autonomi.js';
 
-      async function run() {
-        document.getElementById("btn-run").disabled = true;
-        const peer_addr = document.getElementById('peer_id').value;
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+</head>
 
-        await init();
+<body>
+  <!-- credits: https://rustwasm.github.io/docs/wasm-bindgen/examples/without-a-bundler.html -->
+  <script type="module">
+    import init, * as aut from './pkg/autonomi.js';
 
-        aut.logInit("sn_networking=warn,autonomi=trace");
+    async function run() {
+      document.getElementById("btn-run").disabled = true;
+      const peer_addr = document.getElementById('peer_id').value;
 
-        console.log("connecting...");
-        const client = await new aut.Client([peer_addr]);
-        console.log("connected");
+      await init();
 
-        console.log("getting wallet...");
-        const wallet = aut.getFundedWallet();
-        console.log("wallet retrieved");
+      aut.logInit("sn_networking=warn,autonomi=trace");
 
-        // Random 32 byte data
-        const data = [...Array(16)].map(() => Math.floor(Math.random() * 9));
-        console.log("our data: ", data);
+      console.log("connecting...");
+      const client = await aut.Client.connect([peer_addr]);
+      console.log("connected");
 
-        console.log("calculating cost...");
-        let result = await client.dataCost(data, wallet);
-        console.log("calculated cost: ", result.toString());
+      console.log("getting wallet...");
+      const wallet = aut.getFundedWallet();
+      console.log("wallet retrieved");
 
-        console.log("putting...");
-        const dataAddr = await client.dataPut(data, wallet);
-        console.log("put done: ", dataAddr.toString());
-  
-        let archive = new Map([["README.md", dataAddr]]);
-        console.log("putting data as archive... ", archive);
-        let archiveAddr = await client.archivePut(archive, wallet);
-        console.log("archive put done: ", archiveAddr);
+      // Random 32 byte data
+      const data = [...Array(16)].map(() => Math.floor(Math.random() * 9));
+      console.log("our data: ", data);
 
-        console.log("fetching archive...");
-        let archiveFetched = await client.archiveGet(archiveAddr);
-        console.log("archive fetched: ", archiveFetched);
-        for (const [path, addr] of archiveFetched) {
-          console.log("fetching data: ", path, ", addr: ", addr);
-          const dataFetched = await client.dataGet(addr);
-          console.log("data fetched: ", dataFetched);
-        }
+      console.log("calculating cost...");
+      let result = await client.dataCost(data, wallet);
+      console.log("calculated cost: ", result.toString());
 
-        // Generate random secret key
-        const secretKey = [...Array(32)].map(() => Math.floor(Math.random() * 9));
+      console.log("putting...");
+      const dataAddr = await client.dataPut(data, wallet);
+      console.log("put done: ", dataAddr.toString());
 
-        await client.writeBytesToVault(data, wallet, secretKey);
+      let archive = new Map([["README.md", dataAddr]]);
+      console.log("putting data as archive... ", archive);
+      let archiveAddr = await client.archivePut(archive, wallet);
+      console.log("archive put done: ", archiveAddr);
 
-        const vault = await client.fetchAndDecryptVault(secretKey);
-        console.log("vault: ", vault);
+      console.log("fetching archive...");
+      let archiveFetched = await client.archiveGet(archiveAddr);
+      console.log("archive fetched: ", archiveFetched);
+      for (const [path, addr] of archiveFetched) {
+        console.log("fetching data: ", path, ", addr: ", addr);
+        const dataFetched = await client.dataGet(addr);
+        console.log("data fetched: ", dataFetched);
       }
 
-      document.getElementById ("btn-run").addEventListener("click", run, false);
-    </script>
+      // Generate random secret key
+      const secretKey = [...Array(32)].map(() => Math.floor(Math.random() * 9));
 
-    <label for="peer_id">Peer ID: <input type="text" id="peer_id" /></label>
-    <button id="btn-run">Run</button>
-  </body>
+      await client.writeBytesToVault(data, wallet, secretKey);
+
+      const vault = await client.fetchAndDecryptVault(secretKey);
+      console.log("vault: ", vault);
+    }
+
+    document.getElementById("btn-run").addEventListener("click", run, false);
+  </script>
+
+  <label for="peer_id">Peer ID: <input type="text" id="peer_id" /></label>
+  <button id="btn-run">Run</button>
+</body>
+
 </html>

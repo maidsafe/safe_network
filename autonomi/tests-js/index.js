@@ -54,7 +54,7 @@ describe('autonomi', function () {
 
     it('writes bytes to vault and fetches it', async () => {
         const data = randomData(32);
-        const secretKey = randomData(32);
+        const secretKey = atnm.genSecretKey();
 
         await client.writeBytesToVault(data, wallet, secretKey);
         const dataFetched = await client.fetchAndDecryptVault(secretKey);
