@@ -131,7 +131,6 @@ build-release-artifacts arch nightly="false":
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
     echo "Passing to cross CROSS_CONTAINER_OPTS=$CROSS_CONTAINER_OPTS"
     cargo binstall --no-confirm cross
-    cross build --release --target $arch --bin faucet --features=distribution $nightly_feature
     cross build --release --target $arch --bin nat-detection $nightly_feature
     cross build --release --target $arch --bin node-launchpad $nightly_feature
     cross build --release --features="network-contacts,distribution" --target $arch --bin safe $nightly_feature
@@ -139,9 +138,7 @@ build-release-artifacts arch nightly="false":
     cross build --release --target $arch --bin safenode-manager $nightly_feature
     cross build --release --target $arch --bin safenodemand $nightly_feature
     cross build --release --target $arch --bin safenode_rpc_client $nightly_feature
-    cross build --release --target $arch --bin sn_auditor $nightly_feature
   else
-    cargo build --release --target $arch --bin faucet --features=distribution $nightly_feature
     cargo build --release --target $arch --bin nat-detection $nightly_feature
     cargo build --release --target $arch --bin node-launchpad $nightly_feature
     cargo build --release --features="network-contacts,distribution" --target $arch --bin safe $nightly_feature
@@ -149,7 +146,6 @@ build-release-artifacts arch nightly="false":
     cargo build --release --target $arch --bin safenode-manager $nightly_feature
     cargo build --release --target $arch --bin safenodemand $nightly_feature
     cargo build --release --target $arch --bin safenode_rpc_client $nightly_feature
-    cargo build --release --target $arch --bin sn_auditor $nightly_feature
   fi
 
   find target/$arch/release -maxdepth 1 -type f -exec cp '{}' artifacts \;
@@ -182,7 +178,6 @@ make-artifacts-directory:
 package-all-bins:
   #!/usr/bin/env bash
   set -e
-  just package-bin "faucet"
   just package-bin "nat-detection"
   just package-bin "node-launchpad"
   just package-bin "safe"
@@ -190,7 +185,6 @@ package-all-bins:
   just package-bin "safenode_rpc_client"
   just package-bin "safenode-manager"
   just package-bin "safenodemand"
-  just package-bin "sn_auditor"
 
 package-bin bin version="":
   #!/usr/bin/env bash
@@ -209,24 +203,19 @@ package-bin bin version="":
   bin="{{bin}}"
 
   supported_bins=(\
-    "faucet" \
     "nat-detection" \
     "node-launchpad" \
     "safe" \
     "safenode" \
     "safenode-manager" \
     "safenodemand" \
-    "safenode_rpc_client" \
-    "sn_auditor")
+    "safenode_rpc_client")
   crate_dir_name=""
 
   # In the case of the node manager, the actual name of the crate is `sn-node-manager`, but the
   # directory it's in is `sn_node_manager`.
   bin="{{bin}}"
   case "$bin" in
-    faucet)
-      crate_dir_name="sn_faucet"
-      ;;
     nat-detection)
       crate_dir_name="nat-detection"
       ;;
@@ -247,9 +236,6 @@ package-bin bin version="":
       ;;
     safenode_rpc_client)
       crate_dir_name="sn_node_rpc_client"
-      ;;
-    sn_auditor)
-      crate_dir_name="sn_auditor"
       ;;
     *)
       echo "The $bin binary is not supported"
@@ -287,7 +273,6 @@ upload-all-packaged-bins-to-s3:
   set -e
 
   binaries=(
-    faucet
     nat-detection
     node-launchpad
     safe
@@ -295,7 +280,6 @@ upload-all-packaged-bins-to-s3:
     safenode-manager
     safenode_rpc_client
     safenodemand
-    sn_auditor
   )
   for binary in "${binaries[@]}"; do
     just upload-packaged-bin-to-s3 "$binary"
@@ -306,9 +290,6 @@ upload-packaged-bin-to-s3 bin_name:
   set -e
 
   case "{{bin_name}}" in
-    faucet)
-      bucket="sn-faucet"
-      ;;
     nat-detection)
       bucket="nat-detection"
       ;;
@@ -329,9 +310,6 @@ upload-packaged-bin-to-s3 bin_name:
       ;;
     safenode_rpc_client)
       bucket="sn-node-rpc-client"
-      ;;
-    sn_auditor)
-      bucket="sn-auditor"
       ;;
     *)
       echo "The {{bin_name}} binary is not supported"
@@ -362,9 +340,6 @@ delete-s3-bin bin_name version:
   set -e
 
   case "{{bin_name}}" in
-    faucet)
-      bucket="sn-faucet"
-      ;;
     nat-detection)
       bucket="nat-detection"
       ;;
@@ -385,9 +360,6 @@ delete-s3-bin bin_name version:
       ;;
     safenode_rpc_client)
       bucket="sn-node-rpc-client"
-      ;;
-    sn_auditor)
-      bucket="sn-auditor"
       ;;
     *)
       echo "The {{bin_name}} binary is not supported"
@@ -456,7 +428,6 @@ package-arch arch:
   cd artifacts/$architecture/release
 
   binaries=(
-    faucet
     nat-detection
     node-launchpad
     safe
@@ -464,7 +435,6 @@ package-arch arch:
     safenode-manager
     safenode_rpc_client
     safenodemand
-    sn_auditor
   )
 
   if [[ "$architecture" == *"windows"* ]]; then
@@ -482,10 +452,9 @@ node-man-integration-tests:
   #!/usr/bin/env bash
   set -e
 
-  cargo build --release --bin safenode --bin faucet --bin safenode-manager
+  cargo build --release --bin safenode --bin safenode-manager
   cargo run --release --bin safenode-manager -- local run \
-    --node-path target/release/safenode \
-    --faucet-path target/release/faucet
+    --node-path target/release/safenode
   peer=$(cargo run --release --bin safenode-manager -- local status \
     --json | jq -r .nodes[-1].listen_addr[0])
   export SAFE_PEERS=$peer
