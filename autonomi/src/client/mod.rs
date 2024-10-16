@@ -27,7 +27,7 @@ pub mod vault_user_data;
 pub mod wasm;
 
 // private module with utility functions
-mod utils;
+pub(crate) mod utils;
 
 pub use sn_evm::Amount;
 
