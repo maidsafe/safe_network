@@ -39,6 +39,7 @@ mod self_encryption;
 pub use sn_evm::get_evm_network_from_env;
 pub use sn_evm::EvmNetwork;
 pub use sn_evm::EvmWallet as Wallet;
+pub use sn_evm::RewardsAddress;
 
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
