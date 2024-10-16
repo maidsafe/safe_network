@@ -14,9 +14,9 @@ use crate::{
         help::Help,
         options::Options,
         popup::{
-            beta_programme::BetaProgramme, change_drive::ChangeDrivePopup,
-            connection_mode::ChangeConnectionModePopUp, manage_nodes::ManageNodes,
-            port_range::PortRangePopUp, reset_nodes::ResetNodesPopup,
+            change_drive::ChangeDrivePopup, connection_mode::ChangeConnectionModePopUp,
+            manage_nodes::ManageNodes, port_range::PortRangePopUp, reset_nodes::ResetNodesPopup,
+            wallet_address::EvmInfo,
         },
         status::{Status, StatusConfig},
         Component,
@@ -91,7 +91,7 @@ impl App {
         // Main Screens
         let status_config = StatusConfig {
             allocated_disk_space: app_data.nodes_to_start,
-            discord_username: app_data.discord_username.clone(),
+            wallet_address: app_data.eth_wallet.clone(),
             peers_args,
             safenode_path,
             data_dir_path,
@@ -104,7 +104,7 @@ impl App {
         let options = Options::new(
             storage_mountpoint.clone(),
             storage_drive.clone(),
-            app_data.discord_username.clone(),
+            app_data.eth_wallet.clone(),
             connection_mode,
             Some(port_from),
             Some(port_to),
@@ -119,12 +119,12 @@ impl App {
             ChangeDrivePopup::new(storage_mountpoint.clone(), app_data.nodes_to_start)?;
         let change_connection_mode = ChangeConnectionModePopUp::new(connection_mode)?;
         let port_range = PortRangePopUp::new(connection_mode, port_from, port_to);
-        let beta_programme = BetaProgramme::new(app_data.discord_username.clone());
+        let evm_info = EvmInfo::new(app_data.eth_wallet.clone());
 
         Ok(Self {
             config,
             app_data: AppData {
-                discord_username: app_data.discord_username.clone(),
+                eth_wallet: app_data.eth_wallet.clone(),
                 nodes_to_start: app_data.nodes_to_start,
                 storage_mountpoint: Some(storage_mountpoint),
                 storage_drive: Some(storage_drive),
@@ -143,7 +143,7 @@ impl App {
                 Box::new(change_drive),
                 Box::new(change_connection_mode),
                 Box::new(port_range),
-                Box::new(beta_programme),
+                Box::new(evm_info),
                 Box::new(reset_nodes),
                 Box::new(manage_nodes),
             ],
@@ -276,9 +276,9 @@ impl App {
                         self.app_data.port_to = Some(*to);
                         self.app_data.save(None)?;
                     }
-                    Action::StoreDiscordUserName(ref username) => {
+                    Action::StoreWalletAddress(ref username) => {
                         debug!("Storing discord username: {username:?}");
-                        self.app_data.discord_username.clone_from(username);
+                        self.app_data.eth_wallet.clone_from(username);
                         self.app_data.save(None)?;
                     }
                     Action::StoreNodesToStart(ref count) => {
@@ -359,7 +359,7 @@ mod tests {
         match app_result {
             Ok(app) => {
                 // Check if all fields were correctly loaded
-                assert_eq!(app.app_data.discord_username, "happy_user");
+                assert_eq!(app.app_data.eth_wallet, "happy_user");
                 assert_eq!(app.app_data.nodes_to_start, 5);
                 assert_eq!(app.app_data.storage_mountpoint, Some(mountpoint));
                 assert_eq!(app.app_data.storage_drive, Some("C:".to_string()));
@@ -420,7 +420,7 @@ mod tests {
         match app_result {
             Ok(app) => {
                 // Check if the fields were correctly loaded
-                assert_eq!(app.app_data.discord_username, "test_user");
+                assert_eq!(app.app_data.eth_wallet, "test_user");
                 assert_eq!(app.app_data.nodes_to_start, 3);
                 // Check if the storage_mountpoint is Some (automatically set)
                 assert!(app.app_data.storage_mountpoint.is_some());
@@ -475,7 +475,7 @@ mod tests {
 
         match app_result {
             Ok(app) => {
-                assert_eq!(app.app_data.discord_username, "");
+                assert_eq!(app.app_data.eth_wallet, "");
                 assert_eq!(app.app_data.nodes_to_start, 1);
                 assert!(app.app_data.storage_mountpoint.is_some());
                 assert!(app.app_data.storage_drive.is_some());
@@ -579,7 +579,7 @@ mod tests {
         match app_result {
             Ok(app) => {
                 // Check if the discord_username and nodes_to_start were correctly loaded
-                assert_eq!(app.app_data.discord_username, "test_user");
+                assert_eq!(app.app_data.eth_wallet, "test_user");
                 assert_eq!(app.app_data.nodes_to_start, 3);
 
                 // Check if the connection_mode is set to the default (Automatic)

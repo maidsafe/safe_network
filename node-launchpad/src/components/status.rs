@@ -85,8 +85,8 @@ pub struct Status<'a> {
     items: Option<StatefulTable<NodeItem<'a>>>,
     // Amount of nodes
     nodes_to_start: usize,
-    // Discord username
-    discord_username: String,
+    // Eth wallet address
+    wallet_address: String,
     // Currently the node registry file does not support concurrent actions and thus can lead to
     // inconsistent state. Another solution would be to have a file lock/db.
     lock_registry: Option<LockRegistryState>,
@@ -114,7 +114,7 @@ pub enum LockRegistryState {
 
 pub struct StatusConfig {
     pub allocated_disk_space: usize,
-    pub discord_username: String,
+    pub wallet_address: String,
     pub peers_args: PeersArgs,
     pub safenode_path: Option<PathBuf>,
     pub data_dir_path: PathBuf,
@@ -138,7 +138,7 @@ impl Status<'_> {
             items: None,
             nodes_to_start: config.allocated_disk_space,
             lock_registry: None,
-            discord_username: config.discord_username,
+            wallet_address: config.wallet_address,
             safenode_path: config.safenode_path,
             data_dir_path: config.data_dir_path,
             connection_mode: config.connection_mode,
@@ -356,7 +356,7 @@ impl Component for Status<'_> {
                 let _ = self.update_node_items();
             }
             Action::SwitchScene(scene) => match scene {
-                Scene::Status | Scene::StatusBetaProgrammePopUp => {
+                Scene::Status | Scene::StatusWalletInfoPopUp => {
                     self.active = true;
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
@@ -374,17 +374,17 @@ impl Component for Status<'_> {
                     return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
                 }
             }
-            Action::StoreDiscordUserName(username) => {
+            Action::StoreWalletAddress(username) => {
                 debug!("Storing discord username: {username:?}");
-                let has_changed = self.discord_username != username;
+                let has_changed = self.wallet_address != username;
                 let we_have_nodes = !self.node_services.is_empty();
 
-                self.discord_username = username;
+                self.wallet_address = username;
 
                 if we_have_nodes && has_changed {
                     debug!("Setting lock_registry to ResettingNodes");
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
-                    info!("Resetting safenode services because the Discord Username was reset.");
+                    info!("Resetting safenode services because the wallet address was reset.");
                     let action_sender = self.get_actions_sender()?;
                     reset_nodes(action_sender, false);
                 }
@@ -531,7 +531,7 @@ impl Component for Status<'_> {
 
                     let maintain_nodes_args = MaintainNodesArgs {
                         count: self.nodes_to_start as u16,
-                        owner: self.discord_username.clone(),
+                        owner: self.wallet_address.clone(),
                         peers_args: self.peers_args.clone(),
                         run_nat_detection: self.should_we_run_nat_detection(),
                         safenode_path: self.safenode_path.clone(),
@@ -560,8 +560,8 @@ impl Component for Status<'_> {
 
                     stop_nodes(running_nodes, action_sender);
                 }
-                StatusActions::TriggerBetaProgramme => {
-                    return Ok(Some(Action::SwitchScene(Scene::StatusBetaProgrammePopUp)));
+                StatusActions::TriggerWalletInfo => {
+                    return Ok(Some(Action::SwitchScene(Scene::StatusWalletInfoPopUp)));
                 }
             },
             Action::OptionsActions(OptionsActions::ResetNodes) => {
@@ -661,25 +661,22 @@ impl Component for Status<'_> {
         let column_constraints = [Constraint::Length(23), Constraint::Fill(1)];
         let stats_table = Table::new(stats_rows, stats_width).widths(column_constraints);
 
-        // Combine "Nanos Earned" and "Username" into a single row
-        let discord_username_placeholder = "Username: "; // Used to calculate the width of the username column
-        let discord_username_no_username = "[Ctrl+B] to set";
-        let discord_username_title = Span::styled(
-            discord_username_placeholder,
+        // Combine "Nanos Earned" and "Wallet" into a single row
+        let wallet_address_placeholder = "Wallet: "; // Used to calculate the width of the username column
+        let wallet_address_no_username = "[Ctrl+B] to set";
+        let wallet_address_title = Span::styled(
+            wallet_address_placeholder,
             Style::default().fg(VIVID_SKY_BLUE),
         );
 
-        let discord_username = if !self.discord_username.is_empty() {
+        let wallet_address = if !self.wallet_address.is_empty() {
             Span::styled(
-                self.discord_username.clone(),
+                self.wallet_address.clone(),
                 Style::default().fg(VIVID_SKY_BLUE),
             )
             .bold()
         } else {
-            Span::styled(
-                discord_username_no_username,
-                Style::default().fg(GHOST_WHITE),
-            )
+            Span::styled(wallet_address_no_username, Style::default().fg(GHOST_WHITE))
         };
 
         let total_nanos_earned_and_discord_row = Row::new(vec![
@@ -688,8 +685,7 @@ impl Component for Status<'_> {
                 .fg(VIVID_SKY_BLUE)
                 .bold(),
             Cell::new(
-                Line::from(vec![discord_username_title, discord_username])
-                    .alignment(Alignment::Right),
+                Line::from(vec![wallet_address_title, wallet_address]).alignment(Alignment::Right),
             ),
         ]);
 
@@ -699,11 +695,11 @@ impl Component for Status<'_> {
             Constraint::Length(23),
             Constraint::Fill(1),
             Constraint::Length(
-                discord_username_placeholder.len() as u16
-                    + if !self.discord_username.is_empty() {
-                        self.discord_username.len() as u16
+                wallet_address_placeholder.len() as u16
+                    + if !self.wallet_address.is_empty() {
+                        self.wallet_address.len() as u16
                     } else {
-                        discord_username_no_username.len() as u16
+                        wallet_address_no_username.len() as u16
                     },
             ),
         ];

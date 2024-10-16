@@ -5262,7 +5262,7 @@ async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
-            owner: Some("Discord_Username".to_string()),
+            owner: Some("Wallet_Address".to_string()),
             node_ip: None,
             node_port: None,
             rpc_address: None,

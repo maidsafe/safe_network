@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-pub mod beta_programme;
 pub mod change_drive;
 pub mod connection_mode;
 pub mod manage_nodes;
 pub mod port_range;
 pub mod reset_nodes;
+pub mod wallet_address;

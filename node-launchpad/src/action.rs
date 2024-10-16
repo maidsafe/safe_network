@@ -26,7 +26,7 @@ pub enum Action {
     StoreStorageDrive(PathBuf, String),
     StoreConnectionMode(ConnectionMode),
     StorePortRange(u32, u32),
-    StoreDiscordUserName(String),
+    StoreWalletAddress(String),
     StoreNodesToStart(usize),
 
     Tick,
@@ -58,7 +58,7 @@ pub enum StatusActions {
     NodesStatsObtained(NodeStats),
 
     TriggerManageNodes,
-    TriggerBetaProgramme,
+    TriggerWalletInfo,
 
     PreviousTableItem,
     NextTableItem,
@@ -71,11 +71,11 @@ pub enum OptionsActions {
     TriggerChangeDrive,
     TriggerChangeConnectionMode,
     TriggerChangePortRange,
-    TriggerBetaProgramme,
+    TriggerWalletInfo,
     TriggerResetNodes,
     TriggerAccessLogs,
     UpdateConnectionMode(ConnectionMode),
     UpdatePortRange(u32, u32),
-    UpdateBetaProgrammeUsername(String),
+    UpdateWalletInfoAddress(String),
     UpdateStorageDrive(PathBuf, String),
 }

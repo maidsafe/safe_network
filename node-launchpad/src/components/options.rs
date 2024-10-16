@@ -28,7 +28,7 @@ use sn_node_manager::config::get_service_log_dir_path;
 pub struct Options {
     pub storage_mountpoint: PathBuf,
     pub storage_drive: String,
-    pub discord_username: String,
+    pub wallet_address: String,
     pub connection_mode: ConnectionMode,
     pub port_edit: bool,
     pub port_from: Option<u32>,
@@ -41,7 +41,7 @@ impl Options {
     pub async fn new(
         storage_mountpoint: PathBuf,
         storage_drive: String,
-        discord_username: String,
+        wallet_address: String,
         connection_mode: ConnectionMode,
         port_from: Option<u32>,
         port_to: Option<u32>,
@@ -49,7 +49,7 @@ impl Options {
         Ok(Self {
             storage_mountpoint,
             storage_drive,
-            discord_username,
+            wallet_address,
             connection_mode,
             port_edit: false,
             port_from,
@@ -192,33 +192,33 @@ impl Component for Options {
         .style(Style::default().fg(GHOST_WHITE));
 
         // Beta Rewards Program
-        let beta_legend = " Edit Discord Username ";
+        let eth_legend = " Edit Wallet Address ";
         let beta_key = " [Ctrl+B] ";
         let block2 = Block::default()
-            .title(" Beta Rewards Program ")
+            .title(" Wallett ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
             .border_style(Style::default().fg(VERY_LIGHT_AZURE));
-        let beta_rewards = Table::new(
+        let wallet_info = Table::new(
             vec![Row::new(vec![
                 Cell::from(
                     Line::from(vec![Span::styled(
-                        " Discord Username: ",
+                        " Wallet Address: ",
                         Style::default().fg(LIGHT_PERIWINKLE),
                     )])
                     .alignment(Alignment::Left),
                 ),
                 Cell::from(
                     Line::from(vec![Span::styled(
-                        format!(" {} ", self.discord_username),
+                        format!(" {} ", self.wallet_address),
                         Style::default().fg(VIVID_SKY_BLUE),
                     )])
                     .alignment(Alignment::Left),
                 ),
                 Cell::from(
                     Line::from(vec![
-                        Span::styled(beta_legend, Style::default().fg(VERY_LIGHT_AZURE)),
+                        Span::styled(eth_legend, Style::default().fg(VERY_LIGHT_AZURE)),
                         Span::styled(beta_key, Style::default().fg(GHOST_WHITE)),
                     ])
                     .alignment(Alignment::Right),
@@ -227,7 +227,7 @@ impl Component for Options {
             &[
                 Constraint::Length(18),
                 Constraint::Fill(1),
-                Constraint::Length((beta_legend.len() + beta_key.len()) as u16),
+                Constraint::Length((eth_legend.len() + beta_key.len()) as u16),
             ],
         )
         .block(block2)
@@ -335,7 +335,7 @@ impl Component for Options {
 
         // Render the tables in their respective sections
         f.render_widget(storage_drivename, layout[1]);
-        f.render_widget(beta_rewards, layout[2]);
+        f.render_widget(wallet_info, layout[2]);
         f.render_widget(logs_folder, layout[3]);
         f.render_widget(reset_nodes, layout[4]);
         f.render_widget(quit, layout[5]);
@@ -350,7 +350,7 @@ impl Component for Options {
                 | Scene::ChangeDrivePopUp
                 | Scene::ChangeConnectionModePopUp
                 | Scene::ChangePortsPopUp { .. }
-                | Scene::OptionsBetaProgrammePopUp
+                | Scene::OptionsWalletInfoPopUp
                 | Scene::ResetNodesPopUp => {
                     self.active = true;
                     // make sure we're in navigation mode
@@ -381,11 +381,11 @@ impl Component for Options {
                     self.port_from = Some(from);
                     self.port_to = Some(to);
                 }
-                OptionsActions::TriggerBetaProgramme => {
-                    return Ok(Some(Action::SwitchScene(Scene::OptionsBetaProgrammePopUp)));
+                OptionsActions::TriggerWalletInfo => {
+                    return Ok(Some(Action::SwitchScene(Scene::OptionsWalletInfoPopUp)));
                 }
-                OptionsActions::UpdateBetaProgrammeUsername(username) => {
-                    self.discord_username = username;
+                OptionsActions::UpdateWalletInfoAddress(address) => {
+                    self.wallet_address = address;
                 }
                 OptionsActions::TriggerAccessLogs => {
                     if let Err(e) = system::open_folder(

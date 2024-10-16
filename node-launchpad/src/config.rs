@@ -100,7 +100,7 @@ pub async fn configure_winsw() -> Result<()> {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AppData {
-    pub discord_username: String,
+    pub eth_wallet: String,
     pub nodes_to_start: usize,
     pub storage_mountpoint: Option<PathBuf>,
     pub storage_drive: Option<String>,
@@ -112,7 +112,7 @@ pub struct AppData {
 impl Default for AppData {
     fn default() -> Self {
         Self {
-            discord_username: "".to_string(),
+            eth_wallet: "".to_string(),
             nodes_to_start: 1,
             storage_mountpoint: None,
             storage_drive: None,
@@ -712,7 +712,7 @@ mod tests {
 
         let app_data = AppData::load(Some(non_existent_path))?;
 
-        assert_eq!(app_data.discord_username, "");
+        assert_eq!(app_data.eth_wallet, "");
         assert_eq!(app_data.nodes_to_start, 1);
         assert_eq!(app_data.storage_mountpoint, None);
         assert_eq!(app_data.storage_drive, None);
@@ -730,7 +730,7 @@ mod tests {
 
         let partial_data = r#"
         {
-            "discord_username": "test_user",
+            "eth_wallet": "test_user",
             "nodes_to_start": 3
         }
         "#;
@@ -739,7 +739,7 @@ mod tests {
 
         let app_data = AppData::load(Some(partial_data_path))?;
 
-        assert_eq!(app_data.discord_username, "test_user");
+        assert_eq!(app_data.eth_wallet, "test_user");
         assert_eq!(app_data.nodes_to_start, 3);
         assert_eq!(app_data.storage_mountpoint, None);
         assert_eq!(app_data.storage_drive, None);
@@ -757,7 +757,7 @@ mod tests {
 
         let missing_mountpoint_data = r#"
         {
-            "discord_username": "test_user",
+            "eth_wallet": "test_user",
             "nodes_to_start": 3,
             "storage_drive": "C:"
         }
@@ -767,7 +767,7 @@ mod tests {
 
         let app_data = AppData::load(Some(missing_mountpoint_path))?;
 
-        assert_eq!(app_data.discord_username, "test_user");
+        assert_eq!(app_data.eth_wallet, "test_user");
         assert_eq!(app_data.nodes_to_start, 3);
         assert_eq!(app_data.storage_mountpoint, None);
         assert_eq!(app_data.storage_drive, Some("C:".to_string()));
@@ -785,7 +785,7 @@ mod tests {
 
         let mut app_data = AppData::default();
         let var_name = &"save_load_user";
-        app_data.discord_username = var_name.to_string();
+        app_data.eth_wallet = var_name.to_string();
         app_data.nodes_to_start = 4;
         app_data.storage_mountpoint = Some(PathBuf::from("/mnt/test"));
         app_data.storage_drive = Some("E:".to_string());
@@ -799,7 +799,7 @@ mod tests {
         // Load from custom path
         let loaded_data = AppData::load(Some(test_path))?;
 
-        assert_eq!(loaded_data.discord_username, "save_load_user");
+        assert_eq!(loaded_data.eth_wallet, "save_load_user");
         assert_eq!(loaded_data.nodes_to_start, 4);
         assert_eq!(
             loaded_data.storage_mountpoint,
