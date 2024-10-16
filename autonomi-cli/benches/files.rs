@@ -99,7 +99,7 @@ fn get_cli_path() -> PathBuf {
         path.push("target");
     }
     path.push("release");
-    path.push("autonomi_cli");
+    path.push("autonomi");
     path
 }
 
