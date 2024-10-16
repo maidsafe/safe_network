@@ -63,6 +63,11 @@ impl Wallet {
         wallet_address(&self.wallet)
     }
 
+    /// Returns the `Network` of this wallet.
+    pub fn network(&self) -> &Network {
+        &self.network
+    }
+
     /// Returns the raw balance of payment tokens for this wallet.
     pub async fn balance_of_tokens(&self) -> Result<U256, network_token::Error> {
         balance_of_tokens(wallet_address(&self.wallet), &self.network).await
@@ -112,6 +117,11 @@ impl Wallet {
     ) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
         pay_for_quotes(self.wallet.clone(), &self.network, data_payments).await
     }
+
+    /// Build a provider using this wallet.
+    pub fn to_provider(&self) -> ProviderWithWallet {
+        http_provider_with_wallet(self.network.rpc_url().clone(), self.wallet.clone())
+    }
 }
 
 /// Generate an EthereumWallet with a random private key.
@@ -131,11 +141,7 @@ fn from_private_key(private_key: &str) -> Result<EthereumWallet, Error> {
 
 // TODO(optimization): Find a way to reuse/persist contracts and/or a provider without the wallet nonce going out of sync
 
-#[allow(clippy::type_complexity)]
-fn http_provider_with_wallet(
-    rpc_url: reqwest::Url,
-    wallet: EthereumWallet,
-) -> FillProvider<
+pub type ProviderWithWallet = FillProvider<
     JoinFill<
         JoinFill<
             Identity,
@@ -146,7 +152,9 @@ fn http_provider_with_wallet(
     ReqwestProvider,
     Http<Client>,
     Ethereum,
-> {
+>;
+
+fn http_provider_with_wallet(rpc_url: reqwest::Url, wallet: EthereumWallet) -> ProviderWithWallet {
     ProviderBuilder::new()
         .with_recommended_fillers()
         .wallet(wallet)

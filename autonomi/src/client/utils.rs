@@ -229,7 +229,7 @@ async fn fetch_store_quote(
 }
 
 /// Form to be executed payments and already executed payments from a cost map.
-fn extract_quote_payments(
+pub(crate) fn extract_quote_payments(
     cost_map: &HashMap<XorName, PayeeQuote>,
 ) -> (Vec<QuotePayment>, Vec<XorName>) {
     let mut to_be_paid = vec![];

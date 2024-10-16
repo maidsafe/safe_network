@@ -52,10 +52,10 @@ pub fn transfer_tokens_calldata(
 
 #[allow(dead_code)]
 pub struct PayForQuotesCalldataReturnType {
-    batched_calldata_map: HashMap<Calldata, Vec<QuoteHash>>,
-    to: Address,
-    approve_spender: Address,
-    approve_amount: Amount,
+    pub batched_calldata_map: HashMap<Calldata, Vec<QuoteHash>>,
+    pub to: Address,
+    pub approve_spender: Address,
+    pub approve_amount: Amount,
 }
 
 #[allow(dead_code)]
@@ -71,7 +71,7 @@ pub fn pay_for_quotes_calldata<T: IntoIterator<Item = QuotePayment>>(
 
     let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
 
-    let approve_spender = *network.data_payments_address();
+    let approve_to = *network.data_payments_address();
     let approve_amount = total_amount;
 
     let provider = http_provider(network.rpc_url().clone());
@@ -92,7 +92,7 @@ pub fn pay_for_quotes_calldata<T: IntoIterator<Item = QuotePayment>>(
     Ok(PayForQuotesCalldataReturnType {
         batched_calldata_map: calldata_map,
         to: *data_payments.contract.address(),
-        approve_spender,
+        approve_spender: approve_to,
         approve_amount,
     })
 }

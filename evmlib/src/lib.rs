@@ -22,7 +22,7 @@ pub mod common;
 pub mod contract;
 pub mod cryptography;
 pub(crate) mod event;
-#[cfg(feature = "external_signer")]
+#[cfg(feature = "external-signer")]
 pub mod external_signer;
 pub mod testnet;
 pub mod transaction;
