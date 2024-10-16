@@ -270,6 +270,11 @@ impl SwarmDriver {
     /// Update state on removal of a peer from the routing table.
     pub(crate) fn update_on_peer_removal(&mut self, removed_peer: PeerId) {
         self.peers_in_rt = self.peers_in_rt.saturating_sub(1);
+
+        // ensure we disconnect bad peer
+        // err result just means no connections were open
+        let _result = self.swarm.disconnect_peer_id(removed_peer);
+
         info!(
             "Peer removed from routing table: {removed_peer:?}, now we have #{} connected peers",
             self.peers_in_rt

@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p, relay_manager::is_a_relayed_peer,
-    target_arch::Instant, NetworkEvent, Result, SwarmDriver,
+    cmd::NetworkSwarmCmd, event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p,
+    relay_manager::is_a_relayed_peer, target_arch::Instant, NetworkEvent, Result, SwarmDriver,
 };
 #[cfg(feature = "local")]
 use libp2p::mdns;
@@ -25,7 +25,7 @@ use libp2p::{
 };
 use sn_protocol::version::{IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR};
 use std::collections::HashSet;
-use tokio::time::Duration;
+use tokio::{sync::oneshot, time::Duration};
 
 impl SwarmDriver {
     /// Handle `SwarmEvents`
@@ -244,7 +244,7 @@ impl SwarmDriver {
                         }
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if self.local || has_dialed {
+                        if !self.local && has_dialed {
                             // A bad node cannot establish a connection with us. So we can add it to the RT directly.
                             self.remove_bootstrap_from_full(peer_id);
 
@@ -254,7 +254,10 @@ impl SwarmDriver {
                                     multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit))
                                 });
                             }
+                        }
 
+                        if self.local || has_dialed {
+                            // If we are not local, we care only for peers that we dialed and thus are reachable.
                             debug!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
                             // Attempt to add the addresses to the routing table.
@@ -392,6 +395,7 @@ impl SwarmDriver {
                 let _ = self.live_connected_peers.remove(&connection_id);
                 self.record_connection_metrics();
 
+                let mut failed_peer_addresses = vec![];
                 // we need to decide if this was a critical error and the peer should be removed from the routing table
                 let should_clean_peer = match error {
                     DialError::Transport(errors) => {
@@ -401,9 +405,13 @@ impl SwarmDriver {
                         // so we default to it not being a real issue
                         // unless there are _specific_ errors (connection refused eg)
                         error!("Dial errors len : {:?}", errors.len());
-                        let mut there_is_a_serious_issue = false;
-                        for (_addr, err) in errors {
+                        let mut remove_peer_track_peer_issue = false;
+                        for (addr, err) in errors {
                             error!("OutgoingTransport error : {err:?}");
+
+                            if !failed_peer_addresses.contains(&addr) {
+                                failed_peer_addresses.push(addr)
+                            }
 
                             match err {
                                 TransportError::MultiaddrNotSupported(addr) => {
@@ -414,14 +422,13 @@ impl SwarmDriver {
                                         println!("If this was your bootstrap peer, restart your node with a supported multiaddr");
                                     }
                                     // if we can't dial a peer on a given address, we should remove it from the routing table
-                                    there_is_a_serious_issue = true
+                                    remove_peer_track_peer_issue = false
                                 }
                                 TransportError::Other(err) => {
-                                    let problematic_errors = [
-                                        "ConnectionRefused",
-                                        "HostUnreachable",
-                                        "HandshakeTimedOut",
-                                    ];
+                                    let problematic_errors =
+                                        ["ConnectionRefused", "HostUnreachable"];
+
+                                    let intermittent_errors = ["HandshakeTimedOut"];
 
                                     let is_bootstrap_peer = self
                                         .bootstrap_peers
@@ -432,7 +439,7 @@ impl SwarmDriver {
                                         && self.peers_in_rt < self.bootstrap_peers.len()
                                     {
                                         warn!("OutgoingConnectionError: On bootstrap peer {failed_peer_id:?}, while still in bootstrap mode, ignoring");
-                                        there_is_a_serious_issue = false;
+                                        remove_peer_track_peer_issue = false;
                                     } else {
                                         // It is really difficult to match this error, due to being eg:
                                         // Custom { kind: Other, error: Left(Left(Os { code: 61, kind: ConnectionRefused, message: "Connection refused" })) }
@@ -443,13 +450,19 @@ impl SwarmDriver {
                                             .any(|err| error_msg.contains(err))
                                         {
                                             warn!("Problematic error encountered: {error_msg}");
-                                            there_is_a_serious_issue = true;
+                                            remove_peer_track_peer_issue = true;
+                                        } else if intermittent_errors
+                                            .iter()
+                                            .any(|err| error_msg.contains(err))
+                                        {
+                                            warn!("Intermittent error encountered: {error_msg}");
+                                            remove_peer_track_peer_issue = false;
                                         }
                                     }
                                 }
                             }
                         }
-                        there_is_a_serious_issue
+                        remove_peer_track_peer_issue
                     }
                     DialError::NoAddresses => {
                         // We provided no address, and while we can't really blame the peer
@@ -490,7 +503,7 @@ impl SwarmDriver {
                 };
 
                 if should_clean_peer {
-                    warn!("Tracking issue of {failed_peer_id:?}. Clearing it out for now");
+                    warn!("Serious issue with {failed_peer_id:?}. Clearing it out for now");
 
                     if let Some(dead_peer) = self
                         .swarm
@@ -499,6 +512,15 @@ impl SwarmDriver {
                         .remove_peer(&failed_peer_id)
                     {
                         self.update_on_peer_removal(*dead_peer.node.key.preimage());
+                    }
+                }
+
+                if !should_clean_peer {
+                    // lets try and redial.
+                    for addr in failed_peer_addresses {
+                        let (sender, _recv) = oneshot::channel();
+
+                        self.queue_network_swarm_cmd(NetworkSwarmCmd::Dial { addr, sender });
                     }
                 }
             }

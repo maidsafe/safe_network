@@ -158,7 +158,7 @@ To upload a file or a directory, you need to set the `SECRET_KEY` environment va
 > When running a local network, you can use the `SECRET_KEY` printed by the `evm_testnet` command [step 2](#2-run-a-local-evm-node) as it has all the money.
 
 ```bash
-SECRET_KEY=<YOUR_EVM_SECRET_KEY> cargo run --bin autonomi_cli --features local -- file upload <path>
+SECRET_KEY=<YOUR_EVM_SECRET_KEY> cargo run --bin autonomi --features local -- file upload <path>
 ```
 
 The output will print out the address at which the content was uploaded.
@@ -166,7 +166,7 @@ The output will print out the address at which the content was uploaded.
 Now to download the files again:
 
 ```bash
-cargo run --bin autonomi_cli --features local -- file download <addr> <dest_path>
+cargo run --bin autonomi --features local -- file download <addr> <dest_path>
 ```
 
 ### Registers

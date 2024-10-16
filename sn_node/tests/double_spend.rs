@@ -13,18 +13,19 @@
 // use common::client::{get_client_and_funded_wallet, get_wallet};
 // use eyre::{bail, Result};
 // use itertools::Itertools;
-// use sn_transfers::{
-//     get_genesis_sk, rng, NanoTokens, DerivationIndex, HotWallet, SignedTransaction,
-//     SpendReason, WalletError, GENESIS_CASHNOTE,
-// };
 // use sn_logging::LogBuilder;
 // use sn_networking::NetworkError;
+// use sn_transfers::{
+//     get_genesis_sk, rng, DerivationIndex, HotWallet, NanoTokens, SignedTransaction, SpendReason,
+//     WalletError, GENESIS_CASHNOTE,
+// };
 // use std::time::Duration;
 // use tracing::*;
 
 // #[tokio::test]
 // async fn cash_note_transfer_double_spend_fail() -> Result<()> {
-//     let _log_guards = LogBuilder::init_single_threaded_tokio_test("double_spend", true);
+//     let _log_guards =
+//         LogBuilder::init_single_threaded_tokio_test("cash_note_transfer_double_spend_fail", true);
 //     // create 1 wallet add money from faucet
 //     let first_wallet_dir = TempDir::new()?;
 
@@ -40,7 +41,7 @@
 //     assert_eq!(third_wallet.balance(), NanoTokens::zero());
 
 //     // manually forge two transfers of the same source
-//     let amount = first_wallet_balance / 3;
+//     let amount = NanoTokens::from(first_wallet_balance / 3);
 //     let to1 = first_wallet.address();
 //     let to2 = second_wallet.address();
 //     let to3 = third_wallet.address();
@@ -70,31 +71,50 @@
 //     )?;
 
 //     // send both transfers to the network
-//     // upload won't error out, only error out during verification.
-//     info!("Sending both transfers to the network...");
-//     let res = client.send_spends(transfer_to_2.spends.iter(), false).await;
-//     assert!(res.is_ok());
-//     let res = client.send_spends(transfer_to_3.spends.iter(), false).await;
-//     assert!(res.is_ok());
 
-//     // we wait 5s to ensure that the double spend attempt is detected and accumulated
-//     info!("Verifying the transfers from first wallet... Sleeping for 10 seconds.");
-//     tokio::time::sleep(Duration::from_secs(10)).await;
+//     info!("Sending both transfers to the network...");
+//     // These may error (but may not depending on network speed)
+//     // so we're not going to rely on it here.
+//     let _ = client.send_spends(transfer_to_2.spends.iter(), true).await;
+
+//     let _ = client.send_spends(transfer_to_3.spends.iter(), true).await;
+
+//     // check the CashNotes, it should fail
+//     info!("Verifying the transfers from first wallet...");
 
 //     let cash_notes_for_2: Vec<_> = transfer_to_2.output_cashnotes.clone();
 //     let cash_notes_for_3: Vec<_> = transfer_to_3.output_cashnotes.clone();
 
-//     // check the CashNotes, it should fail
-//     let should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
-//     let should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
-//     info!("Both should fail during GET record accumulation : {should_err1:?} {should_err2:?}");
+//     let mut should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
+//     let mut should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
+
+//     for i in 0..5 {
+//         if should_err1.is_err() && should_err2.is_err() {
+//             break;
+//         }
+
+//         tokio::time::sleep(Duration::from_secs(1)).await;
+//         info!("Retrying verification.{i}... for should_err1+2");
+//         println!("Retrying verification{i} ... for should_err1+2");
+//         should_err1 = client.verify_cashnote(&cash_notes_for_2[0]).await;
+//         should_err2 = client.verify_cashnote(&cash_notes_for_3[0]).await;
+//     }
+
+//     info!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
+//     println!("Both should fail during GET record accumulation + Double SpendAttempt should be flagged: {should_err1:?} {should_err2:?}");
 //     assert!(should_err1.is_err() && should_err2.is_err());
-//     assert_matches!(should_err1, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//     });
-//     assert_matches!(should_err2, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//     });
+
+//     assert_eq!(
+//         format!("{should_err1:?}"),
+//         format!("Err({:?})", WalletError::BurntSpend),
+//         "Should have been BurntSpend error, was: {should_err1:?}"
+//     );
+
+//     assert_eq!(
+//         format!("{should_err2:?}"),
+//         format!("Err({:?})", WalletError::BurntSpend),
+//         "Should have been BurntSpend error, was: {should_err2:?}"
+//     );
 
 //     Ok(())
 // }
@@ -168,7 +188,7 @@
 //     )?;
 
 //     // send the transfer to the network which should reject it
-//     let res = client.send_spends(transfer2.spends.iter(), false).await;
+//     let res = client.send_spends(transfer2.spends.iter(), true).await;
 //     std::mem::drop(exclusive_access);
 //     assert_matches!(res, Err(WalletError::CouldNotSendMoney(_)));
 
@@ -184,8 +204,8 @@
 //     let wallet_dir_1 = TempDir::new()?;
 
 //     let (client, mut wallet_1) = get_client_and_funded_wallet(wallet_dir_1.path()).await?;
-//     let balance_1 = wallet_1.balance();
-//     let amount = balance_1 / 2;
+//     let balance_1 = wallet_1.balance().as_nano();
+//     let amount = NanoTokens::from(balance_1 / 2);
 //     let to1 = wallet_1.address();
 
 //     // Send from 1 -> 2
@@ -262,14 +282,18 @@
 //         reason.clone(),
 //         wallet_1.key(),
 //     )?; // reuse the old cash notes
-//     client
-//         .send_spends(transfer_to_3.spends.iter(), false)
-//         .await?;
+//         // ignore response in case it errors out early, we verify below
+//     let _res = client.send_spends(transfer_to_3.spends.iter(), true).await;
 //     info!("Verifying the transfers from 1 -> 3 wallet... It should error out.");
 //     let cash_notes_for_3: Vec<_> = transfer_to_3.output_cashnotes.clone();
-//     assert!(client.verify_cashnote(&cash_notes_for_3[0]).await.is_err()); // the old spend has been poisoned
+
+//     let res = client.verify_cashnote(&cash_notes_for_3[0]).await;
+//     assert!(res.is_err(), "should be error, was {res:?}"); // the old spend has been poisoned
+
 //     info!("Verifying the original transfers from 1 -> 2 wallet... It should error out.");
-//     assert!(client.verify_cashnote(&cash_notes_for_2[0]).await.is_err()); // the old spend has been poisoned
+
+//     let res = client.verify_cashnote(&cash_notes_for_2[0]).await;
+//     assert!(res.is_err(), "should be error, was {res:?}"); // the old spend has been poisoned
 
 //     // The old spend has been poisoned, but spends from 22 -> 222 should still work
 //     let wallet_dir_222 = TempDir::new()?;
@@ -300,16 +324,16 @@
 //     client.verify_cashnote(&cash_notes_for_222[0]).await?;
 
 //     // finally assert that we have a double spend attempt error here
-//     // we wait 1s to ensure that the double spend attempt is detected and accumulated
+//     // we wait to ensure that the double spend attempt is detected and accumulated
 //     tokio::time::sleep(Duration::from_secs(5)).await;
 
 //     match client.verify_cashnote(&cash_notes_for_2[0]).await {
 //         Ok(_) => bail!("Cashnote verification should have failed"),
 //         Err(e) => {
-//             assert!(
-//                 e.to_string()
-//                     .contains("Network Error Double spend(s) attempt was detected"),
-//                 "error should reflect double spend attempt",
+//             assert_eq!(
+//                 e.to_string(),
+//                 format!("{}", WalletError::BurntSpend),
+//                 "error should reflect double spend attempt was: {e:?}",
 //             );
 //         }
 //     }
@@ -317,10 +341,10 @@
 //     match client.verify_cashnote(&cash_notes_for_3[0]).await {
 //         Ok(_) => bail!("Cashnote verification should have failed"),
 //         Err(e) => {
-//             assert!(
-//                 e.to_string()
-//                     .contains("Network Error Double spend(s) attempt was detected"),
-//                 "error should reflect double spend attempt",
+//             assert_eq!(
+//                 e.to_string(),
+//                 format!("{}", WalletError::BurntSpend),
+//                 "error should reflect double spend attempt was: {e:?}",
 //             );
 //         }
 //     }
@@ -339,7 +363,7 @@
 
 //     let (client, mut wallet_a) = get_client_and_funded_wallet(wallet_dir_a.path()).await?;
 //     let balance_a = wallet_a.balance().as_nano();
-//     let amount = balance_a / 2;
+//     let amount = NanoTokens::from(balance_a / 2);
 
 //     // Send from A -> B
 //     let wallet_dir_b = TempDir::new()?;
@@ -428,12 +452,10 @@
 //     let result = client.verify_cashnote(&cash_notes_for_x[0]).await;
 //     info!("Got result while verifying double spend from A -> X: {result:?}");
 
-//     // sleep for a bit to allow the network to process and accumulate the double spend
-//     tokio::time::sleep(Duration::from_secs(10)).await;
-
-//     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//     }); // poisoned
+//     assert!(
+//         format!("{result:?}").starts_with("Err(UnexpectedParentSpends"),
+//         "Should have been UnexpectedParentSpends error, was: {result:?}"
+//     );
 
 //     // Try to double spend from B -> Y
 //     let wallet_dir_y = TempDir::new()?;
@@ -470,32 +492,48 @@
 
 //     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
 //     info!("Got result while verifying double spend from B -> Y: {result:?}");
-//     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//     });
+//     assert_eq!(
+//         format!("{result:?}"),
+//         format!("Err({:?})", WalletError::BurntSpend),
+//         "Should have been BurntSpent error, was: {result:?}"
+//     );
 
 //     info!("Verifying the original cashnote of A -> B");
+
+//     // arbitrary time sleep to allow for network accumulation of double spend.
+//     tokio::time::sleep(Duration::from_secs(1)).await;
+
 //     let result = client.verify_cashnote(&cash_notes_for_b[0]).await;
 //     info!("Got result while verifying the original spend from A -> B: {result:?}");
-//     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//     });
+//     assert_eq!(
+//         format!("{result:?}"),
+//         format!("Err({:?})", WalletError::BurntSpend),
+//         "Should have been BurntSpent error, was: {result:?}"
+//     );
 
-//     info!("Verifying the original cashnote of B -> C");
+//     println!("Verifying the original cashnote of B -> C");
+
 //     let result = client.verify_cashnote(&cash_notes_for_c[0]).await;
 //     info!("Got result while verifying the original spend from B -> C: {result:?}");
-//     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//     }, "result should be verify error, it was {result:?}");
+//     assert_eq!(
+//         format!("{result:?}"),
+//         format!("Err({:?})", WalletError::BurntSpend),
+//         "Should have been BurntSpent error, was: {result:?}"
+//     );
 
 //     let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
-//     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//     }, "result should be verify error, it was {result:?}");
+//     assert_eq!(
+//         format!("{result:?}"),
+//         format!("Err({:?})", WalletError::BurntSpend),
+//         "Should have been BurntSpent error, was: {result:?}"
+//     );
+
 //     let result = client.verify_cashnote(&cash_notes_for_b[0]).await;
-//     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//     }, "result should be verify error, it was {result:?}");
+//     assert_eq!(
+//         format!("{result:?}"),
+//         format!("Err({:?})", WalletError::BurntSpend),
+//         "Should have been BurntSpent error, was: {result:?}"
+//     );
 
 //     Ok(())
 // }
@@ -511,8 +549,8 @@
 //     let wallet_dir_a = TempDir::new()?;
 
 //     let (client, mut wallet_a) = get_client_and_funded_wallet(wallet_dir_a.path()).await?;
-//     let balance_a = wallet_a.balance();
-//     let amount = balance_a / 2;
+//     let balance_a = wallet_a.balance().as_nano();
+//     let amount = NanoTokens::from(balance_a / 2);
 
 //     // Send from A -> B
 //     let wallet_dir_b = TempDir::new()?;
@@ -574,7 +612,7 @@
 //     )?;
 
 //     client
-//         .send_spends(transfer_to_c.spends.iter(), false)
+//         .send_spends(transfer_to_c.spends.iter(), true)
 //         .await?;
 
 //     info!("Verifying the transfers from B -> C wallet...");
@@ -611,9 +649,10 @@
 
 //     let result = client.verify_cashnote(&cash_notes_for_x[0]).await;
 //     info!("Got result while verifying double spend from A -> X: {result:?}");
-//     assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//         assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//     });
+//     assert_eq!(
+//         format!("{result:?}"),
+//         format!("Err({:?})", WalletError::BurntSpend)
+//     );
 
 //     // the original A should still be present as one of the double spends
 //     let res = client
@@ -649,20 +688,23 @@
 //             reason.clone(),
 //             wallet_a.key(),
 //         )?; // reuse the old cash notes
-//         client
-//             .send_spends(transfer_to_y.spends.iter(), false)
-//             .await?;
+
+//         // we actually don't care about the result here, we just want to spam the network with double spends
+//         let _ = client.send_spends(transfer_to_y.spends.iter(), false).await;
+
+//         // and then we verify the double spend attempt
 //         info!("Verifying the transfers from A -> Y wallet... It should error out.");
 //         let cash_notes_for_y: Vec<_> = transfer_to_y.output_cashnotes.clone();
 
 //         // sleep for a bit to allow the network to process and accumulate the double spend
-//         tokio::time::sleep(Duration::from_millis(500)).await;
+//         tokio::time::sleep(Duration::from_millis(1500)).await;
 
 //         let result = client.verify_cashnote(&cash_notes_for_y[0]).await;
 //         info!("Got result while verifying double spend from A -> Y: {result:?}");
-//         assert_matches!(result, Err(WalletError::CouldNotVerifyTransfer(str)) => {
-//             assert!(str.starts_with("Network Error Double spend(s) attempt was detected"), "Expected double spend, but got {str}");
-//         });
+//         assert_eq!(
+//             format!("{result:?}"),
+//             format!("Err({:?})", WalletError::BurntSpend)
+//         );
 
 //         // the original A should still be present as one of the double spends
 //         let res = client

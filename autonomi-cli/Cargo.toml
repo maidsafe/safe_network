@@ -1,7 +1,11 @@
 [package]
-name = "autonomi_cli"
+name = "autonomi-cli"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "autonomi"
+path = "src/main.rs"
 
 [features]
 default = ["metrics"]
