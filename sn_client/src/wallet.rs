@@ -1009,9 +1009,7 @@ impl Client {
         }
 
         if cash_notes.is_empty() {
-            return Err(WalletError::CouldNotVerifyTransfer(
-                "All the redeemed CashNotes are already spent".to_string(),
-            ));
+            return Err(WalletError::AllRedeemedCashnotesSpent);
         }
 
         Ok(cash_notes)
@@ -1049,14 +1047,22 @@ impl Client {
     /// # }
     /// ```
     pub async fn verify_cashnote(&self, cash_note: &CashNote) -> WalletResult<()> {
+        let address = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
+
         // We need to get all the spends in the cash_note from the network,
         // and compare them to the spends in the cash_note, to know if the
         // transfer is considered valid in the network.
         let mut tasks = Vec::new();
+
+        info!(
+            "parent spends for cn; {address:?}: {:?}",
+            &cash_note.parent_spends.len()
+        );
+
         for spend in &cash_note.parent_spends {
             let address = SpendAddress::from_unique_pubkey(spend.unique_pubkey());
-            debug!(
-                "Getting spend for pubkey {:?} from network at {address:?}",
+            info!(
+                "Getting parent spend for cn {address:?} pubkey {:?} from network at {address:?}",
                 spend.unique_pubkey()
             );
             tasks.push(self.get_spend_from_network(address));
@@ -1064,8 +1070,17 @@ impl Client {
 
         let mut received_spends = std::collections::BTreeSet::new();
         for result in join_all(tasks).await {
-            let network_valid_spend =
-                result.map_err(|err| WalletError::CouldNotVerifyTransfer(err.to_string()))?;
+            let network_valid_spend = match result {
+                Ok(spend) => Ok(spend),
+                Err(error) => match error {
+                    Error::Network(sn_networking::NetworkError::DoubleSpendAttempt(spends)) => {
+                        warn!("BurntSpend found with {spends:?}");
+                        Err(WalletError::BurntSpend)
+                    }
+                    err => Err(WalletError::CouldNotVerifyTransfer(format!("{err:?}"))),
+                },
+            }?;
+
             let _ = received_spends.insert(network_valid_spend);
         }
 
@@ -1074,9 +1089,12 @@ impl Client {
         if received_spends == cash_note.parent_spends {
             return Ok(());
         }
-        Err(WalletError::CouldNotVerifyTransfer(
-            "The spends in network were not the same as the ones in the CashNote. The parents of this CashNote are probably double spends.".into(),
-        ))
+
+        warn!(
+            "Unexpected parent spends found in CashNote verification at {:?}: {received_spends:?}.",
+            address
+        );
+        Err(WalletError::UnexpectedParentSpends(address))
     }
 }
 

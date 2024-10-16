@@ -13,6 +13,7 @@ use crate::UploadSummary;
 use super::ClientEvent;
 use sn_protocol::NetworkAddress;
 use sn_registers::{Entry, EntryHash};
+use sn_transfers::SpendAddress;
 use std::collections::BTreeSet;
 use thiserror::Error;
 use tokio::time::Duration;
@@ -23,6 +24,8 @@ use xor_name::XorName;
 pub enum Error {
     #[error("Genesis disbursement failed")]
     GenesisDisbursement,
+    #[error("Faucet disbursement has already occured")]
+    FaucetDisbursement,
 
     #[error("Genesis error {0}")]
     GenesisError(#[from] sn_transfers::GenesisError),
@@ -45,6 +48,9 @@ pub enum Error {
     #[error("Chunks error {0}.")]
     Chunks(#[from] super::chunks::Error),
 
+    #[error("No cashnote found at {0:?}.")]
+    NoCashNoteFound(SpendAddress),
+
     #[error("Decrypting a Folder's item failed: {0}")]
     FolderEntryDecryption(EntryHash),
 
@@ -63,9 +69,6 @@ pub enum Error {
     #[error(transparent)]
     JoinError(#[from] tokio::task::JoinError),
 
-    /// A general error when verifying a transfer validity in the network.
-    #[error("Failed to verify transfer validity in the network {0}")]
-    CouldNotVerifyTransfer(String),
     #[error("Invalid DAG")]
     InvalidDag,
     #[error("Serialization error: {0:?}")]

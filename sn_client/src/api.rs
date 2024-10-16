@@ -14,14 +14,15 @@ use super::{
 use bls::{PublicKey, SecretKey, Signature};
 use libp2p::{
     identity::Keypair,
-    kad::{Quorum, Record},
+    kad::{KBucketDistance, Quorum, Record},
     Multiaddr, PeerId,
 };
 use rand::{thread_rng, Rng};
 use sn_networking::{
     get_signed_spend_from_record, multiaddr_is_global,
     target_arch::{interval, spawn, timeout, Instant},
-    GetRecordCfg, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg, VerificationKind,
+    GetRecordCfg, GetRecordError, NetworkBuilder, NetworkError, NetworkEvent, PutRecordCfg,
+    VerificationKind,
 };
 use sn_protocol::{
     error::Error as ProtocolError,
@@ -305,6 +306,11 @@ impl Client {
         self.events_broadcaster.subscribe()
     }
 
+    /// Return the underlying network GetRange
+    pub async fn get_range(&self) -> Result<KBucketDistance> {
+        self.network.get_range().await.map_err(Error::from)
+    }
+
     /// Sign the given data.
     ///
     /// # Arguments
@@ -405,18 +411,60 @@ impl Client {
     /// let xorname = XorName::random(&mut rng);
     /// let address = RegisterAddress::new(xorname, owner);
     /// // Get a signed register
-    /// let signed_register = client.get_signed_register_from_network(address);
+    /// let signed_register = client.get_signed_register_from_network(address, true);
     /// # Ok(())
     /// # }
     /// ```
     pub async fn get_signed_register_from_network(
         &self,
         address: RegisterAddress,
+        is_verifying: bool,
     ) -> Result<SignedRegister> {
         let key = NetworkAddress::from_register_address(address).to_record_key();
+        let get_quorum = if is_verifying {
+            Quorum::All
+        } else {
+            Quorum::Majority
+        };
+        let retry_strategy = if is_verifying {
+            Some(RetryStrategy::Balanced)
+        } else {
+            Some(RetryStrategy::Quick)
+        };
+        let get_cfg = GetRecordCfg {
+            get_quorum,
+            retry_strategy,
+            target_record: None,
+            expected_holders: Default::default(),
+            is_register: true,
+        };
 
-        let maybe_records = self.network.get_register_record_from_network(key).await?;
-        merge_register_records(address, &maybe_records)
+        let maybe_record = self.network.get_record_from_network(key, &get_cfg).await;
+        let record = match &maybe_record {
+            Ok(r) => r,
+            Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
+                let mut results_to_merge = HashMap::default();
+
+                for (address, (r, _peers)) in result_map {
+                    results_to_merge.insert(*address, r.clone());
+                }
+
+                return merge_register_records(address, &results_to_merge);
+            }
+            Err(e) => {
+                warn!("Failed to get record at {address:?} from the network: {e:?}");
+                return Err(ProtocolError::RegisterNotFound(Box::new(address)).into());
+            }
+        };
+
+        debug!(
+            "Got record from the network, {:?}",
+            PrettyPrintRecordKey::from(&record.key)
+        );
+
+        let register = get_register_from_record(record)
+            .map_err(|_| ProtocolError::RegisterNotFound(Box::new(address)))?;
+        Ok(register)
     }
 
     /// Retrieve a Register from the network.
@@ -742,7 +790,7 @@ impl Client {
     /// ```
     pub async fn verify_register_stored(&self, address: RegisterAddress) -> Result<SignedRegister> {
         info!("Verifying register: {address:?}");
-        self.get_signed_register_from_network(address).await
+        self.get_signed_register_from_network(address, true).await
     }
 
     /// Quickly checks if a `Register` is stored by expected nodes on the network.
@@ -776,7 +824,7 @@ impl Client {
         address: RegisterAddress,
     ) -> Result<SignedRegister> {
         info!("Quickly checking for existing register : {address:?}");
-        self.get_signed_register_from_network(address).await
+        self.get_signed_register_from_network(address, false).await
     }
 
     /// Send a `SpendCashNote` request to the network. Protected method.
@@ -816,6 +864,7 @@ impl Client {
                 .iter()
                 .cloned()
                 .collect();
+            info!("Expecting holders: {expected_holders:?}");
             (Some(record.clone()), expected_holders)
         } else {
             (None, Default::default())
@@ -823,18 +872,26 @@ impl Client {
 
         // When there is retry on Put side, no need to have a retry on Get
         let verification_cfg = GetRecordCfg {
-            get_quorum: Quorum::Majority,
+            get_quorum: Quorum::All,
             retry_strategy: None,
             target_record: record_to_verify,
             expected_holders,
             is_register: false,
         };
+
+        let verification = if verify_store {
+            Some((VerificationKind::Network, verification_cfg))
+        } else {
+            None
+        };
+
         let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::Majority,
+            put_quorum: Quorum::All,
             retry_strategy: Some(RetryStrategy::Persistent),
             use_put_record_to: None,
-            verification: Some((VerificationKind::Network, verification_cfg)),
+            verification,
         };
+
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
 
@@ -871,7 +928,7 @@ impl Client {
         self.try_fetch_spend_from_network(
             address,
             GetRecordCfg {
-                get_quorum: Quorum::Majority,
+                get_quorum: Quorum::All,
                 retry_strategy: Some(RetryStrategy::Balanced),
                 target_record: None,
                 expected_holders: Default::default(),
@@ -904,7 +961,7 @@ impl Client {
         self.try_fetch_spend_from_network(
             address,
             GetRecordCfg {
-                get_quorum: Quorum::Majority,
+                get_quorum: Quorum::All,
                 retry_strategy: None,
                 target_record: None,
                 expected_holders: Default::default(),
@@ -961,9 +1018,7 @@ impl Client {
             }
             Err(err) => {
                 warn!("Invalid signed spend got from network for {address:?}: {err:?}.");
-                Err(Error::CouldNotVerifyTransfer(format!(
-                    "Verification failed for spent at {address:?} with error {err:?}"
-                )))
+                Err(Error::from(err))
             }
         }
     }

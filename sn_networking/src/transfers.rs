@@ -6,9 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{
-    close_group_majority, driver::GetRecordCfg, GetRecordError, Network, NetworkError, Result,
-};
+use crate::{driver::GetRecordCfg, Network, NetworkError, Result};
 use libp2p::kad::{Quorum, Record};
 use sn_protocol::{
     storage::{try_deserialize_record, RecordHeader, RecordKind, RetryStrategy, SpendAddress},
@@ -39,7 +37,7 @@ impl Network {
         };
         let record = self.get_record_from_network(key.clone(), &get_cfg).await?;
         debug!(
-            "Got record from the network, {:?}",
+            "Got raw spends from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
         );
         get_raw_signed_spends_from_record(&record)
@@ -51,38 +49,14 @@ impl Network {
     /// If we get a quorum error, we increase the RetryStrategy
     pub async fn get_spend(&self, address: SpendAddress) -> Result<SignedSpend> {
         let key = NetworkAddress::from_spend_address(address).to_record_key();
-        let mut get_cfg = GetRecordCfg {
+        let get_cfg = GetRecordCfg {
             get_quorum: Quorum::All,
             retry_strategy: Some(RetryStrategy::Quick),
             target_record: None,
             expected_holders: Default::default(),
             is_register: false,
         };
-        let record = match self.get_record_from_network(key.clone(), &get_cfg).await {
-            Ok(record) => record,
-            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
-                record,
-                expected,
-                got,
-            })) => {
-                // if majority holds the spend, it might be worth to be trusted.
-                if got >= close_group_majority() {
-                    debug!("At least a majority nodes hold the spend {address:?}, going to trust it if can fetch with majority again.");
-                    get_cfg.get_quorum = Quorum::Majority;
-                    get_cfg.retry_strategy = Some(RetryStrategy::Balanced);
-                    self.get_record_from_network(key, &get_cfg).await?
-                } else {
-                    return Err(NetworkError::GetRecordError(
-                        GetRecordError::NotEnoughCopies {
-                            record,
-                            expected,
-                            got,
-                        },
-                    ));
-                }
-            }
-            Err(err) => return Err(err),
-        };
+        let record = self.get_record_from_network(key.clone(), &get_cfg).await?;
         debug!(
             "Got record from the network, {:?}",
             PrettyPrintRecordKey::from(&record.key)
