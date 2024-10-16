@@ -263,7 +263,7 @@ impl SwarmDriver {
             // In additon to verify the sender, we also verify a random close node.
             // This is to avoid malicious node escaping the check by never send a replication_list.
             // With further reduced probability of 1% (5% * 20%)
-            if rng.gen_bool(0.2) {
+            if rng.gen_bool(0.5) {
                 let close_group_peers = sort_peers_by_address_and_limit(
                     &peers,
                     &NetworkAddress::from_peer(our_peer_id),
@@ -273,6 +273,7 @@ impl SwarmDriver {
 
                 loop {
                     let index: usize = OsRng.gen_range(0..close_group_peers.len());
+                    let candidate_peer_id = *close_group_peers[index];
                     let candidate = NetworkAddress::from_peer(*close_group_peers[index]);
                     if sender != candidate {
                         let keys_to_verify = Self::select_verification_data_candidates(
@@ -283,7 +284,7 @@ impl SwarmDriver {
                             debug!("No valid candidate to be checked against peer {candidate:?}");
                         } else if let Err(error) = event_sender
                             .send(NetworkEvent::ChunkProofVerification {
-                                peer_id: holder,
+                                peer_id: candidate_peer_id,
                                 keys_to_verify,
                             })
                             .await
