@@ -133,7 +133,7 @@ build-release-artifacts arch nightly="false":
     cargo binstall --no-confirm cross
     cross build --release --target $arch --bin nat-detection $nightly_feature
     cross build --release --target $arch --bin node-launchpad $nightly_feature
-    cross build --release --features="network-contacts,distribution" --target $arch --bin safe $nightly_feature
+    cross build --release --features=network-contacts --target $arch --bin autonomi $nightly_feature
     cross build --release --features=network-contacts --target $arch --bin safenode $nightly_feature
     cross build --release --target $arch --bin safenode-manager $nightly_feature
     cross build --release --target $arch --bin safenodemand $nightly_feature
@@ -141,7 +141,7 @@ build-release-artifacts arch nightly="false":
   else
     cargo build --release --target $arch --bin nat-detection $nightly_feature
     cargo build --release --target $arch --bin node-launchpad $nightly_feature
-    cargo build --release --features="network-contacts,distribution" --target $arch --bin safe $nightly_feature
+    cargo build --release --features=network-contacts --target $arch --bin autonomi $nightly_feature
     cargo build --release --features=network-contacts --target $arch --bin safenode $nightly_feature
     cargo build --release --target $arch --bin safenode-manager $nightly_feature
     cargo build --release --target $arch --bin safenodemand $nightly_feature
@@ -180,11 +180,11 @@ package-all-bins:
   set -e
   just package-bin "nat-detection"
   just package-bin "node-launchpad"
-  just package-bin "safe"
+  just package-bin "autonomi"
   just package-bin "safenode"
-  just package-bin "safenode_rpc_client"
   just package-bin "safenode-manager"
   just package-bin "safenodemand"
+  just package-bin "safenode_rpc_client"
 
 package-bin bin version="":
   #!/usr/bin/env bash
@@ -205,7 +205,7 @@ package-bin bin version="":
   supported_bins=(\
     "nat-detection" \
     "node-launchpad" \
-    "safe" \
+    "autonomi" \
     "safenode" \
     "safenode-manager" \
     "safenodemand" \
@@ -222,8 +222,8 @@ package-bin bin version="":
     node-launchpad)
       crate_dir_name="node-launchpad"
       ;;
-    safe)
-      crate_dir_name="sn_cli"
+    autonomi)
+      crate_dir_name="autonomi-cli"
       ;;
     safenode)
       crate_dir_name="sn_node"
@@ -275,7 +275,7 @@ upload-all-packaged-bins-to-s3:
   binaries=(
     nat-detection
     node-launchpad
-    safe
+    autonomi
     safenode
     safenode-manager
     safenode_rpc_client
@@ -296,8 +296,8 @@ upload-packaged-bin-to-s3 bin_name:
     node-launchpad)
       bucket="node-launchpad"
       ;;
-    safe)
-      bucket="sn-cli"
+    autonomi)
+      bucket="autonomi-cli"
       ;;
     safenode)
       bucket="sn-node"
@@ -346,8 +346,8 @@ delete-s3-bin bin_name version:
     node-launchpad)
       bucket="node-launchpad"
       ;;
-    safe)
-      bucket="sn-cli"
+    autonomi)
+      bucket="autonomi-cli"
       ;;
     safenode)
       bucket="sn-node"
@@ -430,7 +430,7 @@ package-arch arch:
   binaries=(
     nat-detection
     node-launchpad
-    safe
+    autonomi
     safenode
     safenode-manager
     safenode_rpc_client
