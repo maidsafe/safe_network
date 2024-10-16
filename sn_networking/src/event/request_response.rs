@@ -271,31 +271,27 @@ impl SwarmDriver {
                 )
                 .unwrap_or_default();
 
-                if close_group_peers.len() >= CLOSE_GROUP_SIZE {
-                    loop {
-                        let index: usize = OsRng.gen_range(0..close_group_peers.len());
-                        let candidate = NetworkAddress::from_peer(*close_group_peers[index]);
-                        if sender != candidate {
-                            let keys_to_verify = Self::select_verification_data_candidates(
-                                &peers, &all_keys, &candidate,
-                            );
+                loop {
+                    let index: usize = OsRng.gen_range(0..close_group_peers.len());
+                    let candidate = NetworkAddress::from_peer(*close_group_peers[index]);
+                    if sender != candidate {
+                        let keys_to_verify = Self::select_verification_data_candidates(
+                            &peers, &all_keys, &candidate,
+                        );
 
-                            if keys_to_verify.is_empty() {
-                                debug!(
-                                    "No valid candidate to be checked against peer {candidate:?}"
-                                );
-                            } else if let Err(error) = event_sender
-                                .send(NetworkEvent::ChunkProofVerification {
-                                    peer_id: holder,
-                                    keys_to_verify,
-                                })
-                                .await
-                            {
-                                error!("SwarmDriver failed to send event: {}", error);
-                            }
-
-                            break;
+                        if keys_to_verify.is_empty() {
+                            debug!("No valid candidate to be checked against peer {candidate:?}");
+                        } else if let Err(error) = event_sender
+                            .send(NetworkEvent::ChunkProofVerification {
+                                peer_id: holder,
+                                keys_to_verify,
+                            })
+                            .await
+                        {
+                            error!("SwarmDriver failed to send event: {}", error);
                         }
+
+                        break;
                     }
                 }
             }
