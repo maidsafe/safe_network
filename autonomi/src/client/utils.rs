@@ -12,7 +12,7 @@ use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_evm::{EvmWallet, PaymentQuote, ProofOfPayment, QuotePayment};
+use sn_evm::{EvmWallet, ProofOfPayment, QuotePayment};
 use sn_networking::{
     GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
 };
@@ -149,12 +149,7 @@ impl Client {
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &EvmWallet,
     ) -> Result<(HashMap<XorName, ProofOfPayment>, Vec<XorName>), PayError> {
-        let cost_map = self
-            .get_store_quotes(content_addrs)
-            .await?
-            .into_iter()
-            .map(|(name, (_, _, q))| (name, q))
-            .collect();
+        let cost_map = self.get_store_quotes(content_addrs).await?;
 
         let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
 
@@ -233,12 +228,12 @@ async fn fetch_store_quote(
 
 /// Form to be executed payments and already executed payments from a cost map.
 pub(crate) fn extract_quote_payments(
-    cost_map: &HashMap<XorName, PaymentQuote>,
+    cost_map: &HashMap<XorName, PayeeQuote>,
 ) -> (Vec<QuotePayment>, Vec<XorName>) {
     let mut to_be_paid = vec![];
     let mut already_paid = vec![];
 
-    for (chunk_address, quote) in cost_map.iter() {
+    for (chunk_address, (_, _, quote)) in cost_map.iter() {
         if quote.cost.is_zero() {
             already_paid.push(*chunk_address);
         } else {

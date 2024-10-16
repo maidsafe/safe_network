@@ -11,6 +11,7 @@ pub use bls::SecretKey as RegisterSecretKey;
 use sn_evm::Amount;
 use sn_evm::AttoTokens;
 use sn_evm::EvmWalletError;
+use sn_evm::ProofOfPayment;
 use sn_networking::VerificationKind;
 use sn_protocol::storage::RetryStrategy;
 pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
@@ -119,6 +120,36 @@ impl Register {
 
         Ok(())
     }
+
+    /// Merge two registers together.
+    pub(crate) fn merge(&mut self, other: &Self) -> Result<(), RegisterError> {
+        debug!("Merging Register of: {:?}", self.address());
+
+        other.signed_reg.verify().map_err(|_| {
+            error!(
+                "Failed to verify register at address: {:?}",
+                other.address()
+            );
+            RegisterError::FailedVerification
+        })?;
+
+        self.signed_reg.merge(&other.signed_reg).map_err(|err| {
+            error!("Failed to merge registers {}: {err}", self.address());
+            RegisterError::Write(err)
+        })?;
+
+        for op in other.signed_reg.ops() {
+            if let Err(err) = self.crdt_reg.apply_op(op.clone()) {
+                error!(
+                    "Failed to apply {op:?} to Register {}: {err}",
+                    self.address()
+                );
+                return Err(RegisterError::Write(err));
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl Client {
@@ -160,13 +191,18 @@ impl Client {
         };
 
         // Make sure the fetched record contains valid CRDT operations
-        signed_reg
-            .verify()
-            .map_err(|_| RegisterError::FailedVerification)?;
+        signed_reg.verify().map_err(|_| {
+            error!("Failed to verify register at address: {address}");
+            RegisterError::FailedVerification
+        })?;
 
         let mut crdt_reg = RegisterCrdt::new(*signed_reg.address());
         for op in signed_reg.ops() {
             if let Err(err) = crdt_reg.apply_op(op.clone()) {
+                error!(
+                    "Failed to apply {op:?} to Register {address}: {err}",
+                    address = signed_reg.address()
+                );
                 return Err(RegisterError::Write(err));
             }
         }
@@ -186,18 +222,6 @@ impl Client {
     ) -> Result<(), RegisterError> {
         register.write_atop(&new_value, &owner)?;
 
-        let signed_register = register.signed_reg.clone();
-
-        // Prepare the record for network storage
-        let record = Record {
-            key: NetworkAddress::from_register_address(*register.address()).to_record_key(),
-            value: try_serialize_record(&signed_register, RecordKind::Register)
-                .map_err(|_| RegisterError::Serialization)?
-                .to_vec(),
-            publisher: None,
-            expires: None,
-        };
-
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
             retry_strategy: Some(RetryStrategy::default()),
@@ -212,16 +236,7 @@ impl Client {
             verification: Some((VerificationKind::Network, get_cfg)),
         };
 
-        // Store the updated register on the network
-        self.network
-            .put_record(record, &put_cfg)
-            .await
-            .inspect_err(|err| {
-                error!(
-                    "Failed to put record - register {:?} to the network: {err}",
-                    register.address()
-                )
-            })?;
+        self.register_upload(&register, None, &put_cfg).await?;
 
         Ok(())
     }
@@ -303,31 +318,16 @@ impl Client {
             .inspect_err(|err| {
                 error!("Failed to pay for register at address: {address} : {err}")
             })?;
-        let proof = if let Some(proof) = payment_proofs.get(&reg_xor) {
-            proof
-        } else {
+        let proof = payment_proofs.get(&reg_xor).ok_or_else(|| {
             // register was skipped, meaning it was already paid for
             error!("Register at address: {address} was already paid for");
-            return Err(RegisterError::Network(NetworkError::RegisterAlreadyExists));
-        };
+            RegisterError::Network(NetworkError::RegisterAlreadyExists)
+        })?;
 
         let payee = proof
             .to_peer_id_payee()
             .ok_or(RegisterError::InvalidQuote)
             .inspect_err(|err| error!("Failed to get payee from payment proof: {err}"))?;
-        let signed_register = register.signed_reg.clone();
-
-        let record = Record {
-            key: NetworkAddress::from_register_address(*address).to_record_key(),
-            value: try_serialize_record(
-                &(proof, &signed_register),
-                RecordKind::RegisterWithPayment,
-            )
-            .map_err(|_| RegisterError::Serialization)?
-            .to_vec(),
-            publisher: None,
-            expires: None,
-        };
 
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
@@ -343,13 +343,8 @@ impl Client {
             verification: Some((VerificationKind::Network, get_cfg)),
         };
 
-        debug!("Storing register at address {address} to the network");
-        self.network
-            .put_record(record, &put_cfg)
-            .await
-            .inspect_err(|err| {
-                error!("Failed to put record - register {address} to the network: {err}")
-            })?;
+        self.register_upload(&register, Some(proof), &put_cfg)
+            .await?;
 
         if let Some(channel) = self.client_event_sender.as_ref() {
             let summary = UploadSummary {
@@ -362,5 +357,48 @@ impl Client {
         }
 
         Ok(register)
+    }
+
+    pub(crate) async fn register_upload(
+        &self,
+        register: &Register,
+        payment: Option<&ProofOfPayment>,
+        put_cfg: &PutRecordCfg,
+    ) -> Result<(), RegisterError> {
+        let signed_register = &register.signed_reg;
+        let record = if let Some(proof) = payment {
+            Record {
+                key: NetworkAddress::from_register_address(*register.address()).to_record_key(),
+                value: try_serialize_record(
+                    &(proof, signed_register),
+                    RecordKind::RegisterWithPayment,
+                )
+                .map_err(|_| RegisterError::Serialization)?
+                .to_vec(),
+                publisher: None,
+                expires: None,
+            }
+        } else {
+            Record {
+                key: NetworkAddress::from_register_address(*register.address()).to_record_key(),
+                value: try_serialize_record(signed_register, RecordKind::Register)
+                    .map_err(|_| RegisterError::Serialization)?
+                    .to_vec(),
+                publisher: None,
+                expires: None,
+            }
+        };
+
+        self.network
+            .put_record(record, put_cfg)
+            .await
+            .inspect_err(|err| {
+                error!(
+                    "Failed to put record - register {:?} to the network: {err}",
+                    register.address()
+                )
+            })?;
+
+        Ok(())
     }
 }
