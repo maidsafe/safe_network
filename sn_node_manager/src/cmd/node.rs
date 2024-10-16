@@ -22,7 +22,7 @@ use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
-use sn_evm::{EvmNetwork, RewardsAddress};
+use sn_evm::{CustomNetwork, EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
@@ -714,7 +714,16 @@ pub async fn maintain_n_running_nodes(
                         data_dir_path.clone(),
                         enable_metrics_server,
                         env_variables.clone(),
-                        None,
+                        // FIXME: Hardcoding for demo. Should be fixed!!
+                        Some(EvmNetwork::Custom(CustomNetwork {
+                            rpc_url_http: "http://165.227.234.109:4343/".parse()?,
+                            payment_token_address: RewardsAddress::from_str(
+                                "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                            )?,
+                            data_payments_address: RewardsAddress::from_str(
+                                "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                            )?,
+                        })),
                         home_network,
                         local,
                         log_dir_path.clone(),
