@@ -10,6 +10,7 @@ use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
 use crate::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
 use crate::contract::{data_payments, network_token};
+use crate::utils::http_provider;
 use crate::Network;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
 use alloy::providers::fillers::{
@@ -129,23 +130,6 @@ fn from_private_key(private_key: &str) -> Result<EthereumWallet, Error> {
 }
 
 // TODO(optimization): Find a way to reuse/persist contracts and/or a provider without the wallet nonce going out of sync
-
-#[allow(clippy::type_complexity)]
-fn http_provider(
-    rpc_url: reqwest::Url,
-) -> FillProvider<
-    JoinFill<
-        Identity,
-        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
-    >,
-    ReqwestProvider,
-    Http<Client>,
-    Ethereum,
-> {
-    ProviderBuilder::new()
-        .with_recommended_fillers()
-        .on_http(rpc_url)
-}
 
 #[allow(clippy::type_complexity)]
 fn http_provider_with_wallet(

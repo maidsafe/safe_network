@@ -10,6 +10,12 @@
 
 use crate::common::{Address, Hash};
 use crate::{CustomNetwork, Network};
+use alloy::network::Ethereum;
+use alloy::providers::fillers::{
+    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller,
+};
+use alloy::providers::{Identity, ProviderBuilder, ReqwestProvider};
+use alloy::transports::http::{reqwest, Client, Http};
 use dirs_next::data_dir;
 use rand::Rng;
 use std::env;
@@ -142,4 +148,21 @@ fn local_evm_network_from_csv() -> Result<Network, Error> {
             ))
         }
     }
+}
+
+#[allow(clippy::type_complexity)]
+pub(crate) fn http_provider(
+    rpc_url: reqwest::Url,
+) -> FillProvider<
+    JoinFill<
+        Identity,
+        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+    >,
+    ReqwestProvider,
+    Http<Client>,
+    Ethereum,
+> {
+    ProviderBuilder::new()
+        .with_recommended_fillers()
+        .on_http(rpc_url)
 }
