@@ -41,7 +41,7 @@ sn_networking = { path = "../sn_networking", version = "0.19.0-rc.1" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.4-rc.1" }
 sn_protocol = { version = "0.17.12-rc.1", path = "../sn_protocol" }
 sn_registers = { path = "../sn_registers", version = "0.4.0-rc.1" }
-sn_evm = { path = "../sn_evm" }
+sn_evm = { path = "../sn_evm", version = "0.1.1-rc.1" }
 thiserror = "1.0.23"
 tokio = { version = "1.35.0", features = ["sync"] }
 tracing = { version = "~0.1.26" }
@@ -66,7 +66,7 @@ wasm-bindgen-test = "0.3.43"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.7"
-evmlib = { path = "../evmlib", version = "0.1", features = ["wasm-bindgen"] }
+evmlib = { path = "../evmlib", version = "0.1.1-rc.1", features = ["wasm-bindgen"] }
 # See https://github.com/sebcrozet/instant/blob/7bd13f51f5c930239fddc0476a837870fb239ed7/README.md#using-instant-for-a-wasm-platform-where-performancenow-is-not-available
 instant = { version = "0.1", features = ["wasm-bindgen", "inaccurate"] }
 js-sys = "0.3.70"

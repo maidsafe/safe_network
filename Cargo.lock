@@ -2747,7 +2747,7 @@ dependencies = [
 
 [[package]]
 name = "evm_testnet"
-version = "0.1.0"
+version = "0.1.1-rc.1"
 dependencies = [
  "clap",
  "dirs-next",
@@ -2758,7 +2758,7 @@ dependencies = [
 
 [[package]]
 name = "evmlib"
-version = "0.1.0"
+version = "0.1.1-rc.1"
 dependencies = [
  "alloy",
  "dirs-next",
@@ -8144,7 +8144,7 @@ dependencies = [
 
 [[package]]
 name = "sn_evm"
-version = "0.1.0"
+version = "0.1.1-rc.1"
 dependencies = [
  "custom_debug",
  "evmlib",
@@ -8756,7 +8756,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "test_utils"
-version = "0.4.7"
+version = "0.4.8-rc.1"
 dependencies = [
  "bytes",
  "color-eyre",

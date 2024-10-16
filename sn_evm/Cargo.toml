@@ -16,7 +16,7 @@ local = ["evmlib/local"]
 
 [dependencies]
 custom_debug = "~0.6.1"
-evmlib = { path = "../evmlib" }
+evmlib = { path = "../evmlib", version = "0.1.1-rc.1" }
 hex = "~0.4.3"
 lazy_static = "~1.4.0"
 libp2p = { version = "0.53", features = ["identify", "kad"] }

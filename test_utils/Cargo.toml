@@ -16,7 +16,7 @@ local = ["sn_peers_acquisition/local"]
 bytes = { version = "1.0.1", features = ["serde"] }
 color-eyre = "~0.6.2"
 dirs-next = "~2.0.0"
-evmlib = { path = "../evmlib", version = "0.1" }
+evmlib = { path = "../evmlib", version = "0.1.1-rc.1" }
 libp2p = { version = "0.54.1", features = ["identify", "kad"] }
 rand = "0.8.5"
 serde = { version = "1.0.133", features = ["derive"] }

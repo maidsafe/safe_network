@@ -52,7 +52,7 @@ sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.4-rc.1
 sn_protocol = { path = "../sn_protocol", version = "0.17.12-rc.1" }
 sn_service_management = { path = "../sn_service_management", version = "0.4.0-rc.1" }
 sn-releases = "0.2.6"
-sn_evm = { path = "../sn_evm", version = "0.1" }
+sn_evm = { path = "../sn_evm", version = "0.1.1-rc.1" }
 sn_transfers = { path = "../sn_transfers", version = "0.20.0-rc.1" }
 sysinfo = "0.30.12"
 thiserror = "1.0.23"

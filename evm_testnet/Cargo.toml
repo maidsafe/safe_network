@@ -11,8 +11,8 @@ version = "0.1.1-rc.1"
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 dirs-next = "~2.0.0"
-evmlib = { path = "../evmlib" }
-sn_evm = { path = "../sn_evm" }
+evmlib = { path = "../evmlib", version = "0.1.1-rc.1" }
+sn_evm = { path = "../sn_evm", version = "0.1.1-rc.1" }
 tokio = { version = "1.40", features = ["rt-multi-thread", "signal"] }
 
 [lints]
