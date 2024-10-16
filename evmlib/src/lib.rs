@@ -33,12 +33,24 @@ static PUBLIC_ARBITRUM_ONE_HTTP_RPC_URL: LazyLock<reqwest::Url> = LazyLock::new(
         .expect("Invalid RPC URL")
 });
 
+static PUBLIC_ARBITRUM_SEPOLIA_HTTP_RPC_URL: LazyLock<reqwest::Url> = LazyLock::new(|| {
+    "https://sepolia-rollup.arbitrum.io/rpc"
+        .parse()
+        .expect("Invalid RPC URL")
+});
+
 const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
+    address!("4bc1aCE0E66170375462cB4E6Af42Ad4D5EC689C");
+
+const ARBITRUM_SEPOLIA_PAYMENT_TOKEN_ADDRESS: Address =
     address!("4bc1aCE0E66170375462cB4E6Af42Ad4D5EC689C");
 
 // Should be updated when the smart contract changes!
 const ARBITRUM_ONE_DATA_PAYMENTS_ADDRESS: Address =
     address!("887930F30EDEb1B255Cd2273C3F4400919df2EFe");
+
+const ARBITRUM_SEPOLIA_DATA_PAYMENTS_ADDRESS: Address =
+    address!("e6D6bB5Fa796baA8c1ADc439Ac0fd66fd2A1858b");
 
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -64,6 +76,7 @@ impl CustomNetwork {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Network {
     ArbitrumOne,
+    ArbitrumSepolia,
     Custom(CustomNetwork),
 }
 
@@ -71,6 +84,7 @@ impl std::fmt::Display for Network {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Network::ArbitrumOne => write!(f, "evm-arbitrum-one"),
+            Network::ArbitrumSepolia => write!(f, "evm-arbitrum-sepolia"),
             Network::Custom(_) => write!(f, "evm-custom"),
         }
     }
@@ -88,6 +102,7 @@ impl Network {
     pub fn identifier(&self) -> &str {
         match self {
             Network::ArbitrumOne => "arbitrum-one",
+            Network::ArbitrumSepolia => "arbitrum-sepolia",
             Network::Custom(_) => "custom",
         }
     }
@@ -95,6 +110,7 @@ impl Network {
     pub fn rpc_url(&self) -> &reqwest::Url {
         match self {
             Network::ArbitrumOne => &PUBLIC_ARBITRUM_ONE_HTTP_RPC_URL,
+            Network::ArbitrumSepolia => &PUBLIC_ARBITRUM_SEPOLIA_HTTP_RPC_URL,
             Network::Custom(custom) => &custom.rpc_url_http,
         }
     }
@@ -102,6 +118,7 @@ impl Network {
     pub fn payment_token_address(&self) -> &Address {
         match self {
             Network::ArbitrumOne => &ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS,
+            Network::ArbitrumSepolia => &ARBITRUM_SEPOLIA_PAYMENT_TOKEN_ADDRESS,
             Network::Custom(custom) => &custom.payment_token_address,
         }
     }
@@ -109,6 +126,7 @@ impl Network {
     pub fn data_payments_address(&self) -> &Address {
         match self {
             Network::ArbitrumOne => &ARBITRUM_ONE_DATA_PAYMENTS_ADDRESS,
+            Network::ArbitrumSepolia => &ARBITRUM_SEPOLIA_DATA_PAYMENTS_ADDRESS,
             Network::Custom(custom) => &custom.data_payments_address,
         }
     }
