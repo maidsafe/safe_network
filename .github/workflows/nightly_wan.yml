@@ -129,7 +129,7 @@ jobs:
           path: |
             ~/.local/share/safe/node/*/logs/*.log*
             ~/.local/share/safe/*/*/*.log*
-            ~/.local/share/safe/client/logs/*/*.log*
+            ~/.local/share/safe/autonomi/logs/*/*.log*
 
       - name: destroy network
         if: always()
@@ -235,7 +235,7 @@ jobs:
   #         path: |
   #           ~/.local/share/safe/node/*/logs/*.log*
   #           ~/.local/share/safe/*/*/*.log*
-  #           ~/.local/share/safe/client/logs/*/*.log*
+  #           ~/.local/share/safe/autonomi/logs/*/*.log*
 
   #     - name: destroy network
   #       uses: maidsafe/sn-testnet-control-action/destroy-network@main
@@ -349,7 +349,7 @@ jobs:
   #         path: |
   #           ~/.local/share/safe/node/*/logs/*.log*
   #           ~/.local/share/safe/*/*/*.log*
-  #           ~/.local/share/safe/client/logs/*/*.log*
+  #           ~/.local/share/safe/autonomi/logs/*/*.log*
   #
   #     - name: Stop the WAN network
   #       if: always()
@@ -555,7 +555,7 @@ jobs:
   #         path: |
   #           ~/.local/share/safe/node/*/logs/*.log*
   #           ~/.local/share/safe/*/*/*.log*
-  #           ~/.local/share/safe/client/logs/*/*.log*
+  #           ~/.local/share/safe/autonomi/logs/*/*.log*
   #
   #     - name: Stop the WAN network
   #       if: always()

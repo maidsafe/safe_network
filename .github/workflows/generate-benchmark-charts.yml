@@ -67,7 +67,7 @@ jobs:
         # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
         # passes to tee which displays it in the terminal and writes to output.txt
         run: |
-          cargo criterion --features=local --message-format=json 2>&1 -p autonomi | tee -a output.txt
+          cargo criterion --features=local --message-format=json 2>&1 -p autonomi-cli | tee -a output.txt
           cat output.txt | rg benchmark-complete | jq -s 'map({
             name: (.id | split("/"))[-1],
             unit: "MiB/s",
@@ -158,17 +158,17 @@ jobs:
         shell: bash
         run: |
           peak_mem_usage=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/*/*.log -o --no-line-number --no-filename |
             awk -F':' '/"memory_used_mb":/{print $2}' |
             sort -n |
             tail -n 1
           )
           total_mem=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs/*/*.log -o --no-line-number --no-filename |
             awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
           )
           num_of_times=$(
-            rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs --glob safe.* -c --stats |
+            rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs/*/*.log -c --stats |
             rg "(\d+) matches" |
             rg "\d+" -o
           )

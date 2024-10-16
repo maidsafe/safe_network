@@ -13,7 +13,7 @@ pub fn get_client_data_dir_path() -> Result<PathBuf> {
     let mut home_dirs = dirs_next::data_dir()
         .ok_or_else(|| eyre!("Failed to obtain data dir, your OS might not be supported."))?;
     home_dirs.push("safe");
-    home_dirs.push("client");
+    home_dirs.push("autonomi");
     std::fs::create_dir_all(home_dirs.as_path()).wrap_err("Failed to create data dir")?;
     Ok(home_dirs)
 }
