@@ -27,6 +27,7 @@ pub use evmlib::Network as EvmNetwork;
 mod amount;
 mod data_payments;
 mod error;
+pub mod wallet;
 
 pub use data_payments::{PaymentQuote, ProofOfPayment, QuotingMetrics};
 
