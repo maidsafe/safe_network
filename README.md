@@ -16,7 +16,7 @@ Libp2p.<br>
 
 ### For Users
 
-- [CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi_cli/README.md) The Command Line
+- [CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi-cli/README.md) The Command Line
   Interface, allowing users to interact with the network from their terminal.
 - [Node](https://github.com/maidsafe//safe_network/blob/main/sn_node/README.md) The backbone of the
   safe network. Nodes can be run on commodity hardware and provide storage space and validation of
@@ -65,7 +65,7 @@ cargo build --release --features=network-contacts --bin safenode
 
 - [Autonomi API](https://github.com/maidsafe/safe_network/blob/main/autonomi/README.md) The client APIs
   allowing use of the Autonomi Network to users and developers.
-- [Autonomi CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi_cli/README.md) The Command Line
+- [Autonomi CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi-cli/README.md) The Command Line
   Interface, allowing users to interact with the network from their terminal.
 - [Node](https://github.com/maidsafe/safe_network/blob/main/sn_node/README.md) The backbone of the
   autonomi network. Nodes can be run on commodity hardware and run the Network.
