@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Mocha Tests</title>
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+    <link href="./node_modules/mocha/mocha.css" rel="stylesheet" />
+</head>
+
+<body>
+
+    <div id="mocha"></div>
+
+    <script type="module" class="mocha-init">
+        import './node_modules/mocha/mocha.js';
+        mocha.setup('bdd');
+        mocha.checkLeaks();
+    </script>
+    <script type="module" src="index.js"></script>
+    <script type="module" class="mocha-exec">
+        document.getElementById("btn-run").addEventListener("click", run, false);
+
+        function run() {
+            document.getElementById("btn-run").disabled = true;
+            window.peer_addr = document.getElementById('peer_addr').value;
+            mocha.run();
+        }
+    </script>
+
+    <label for="peer_addr">Peer multiaddr: <input type="text" id="peer_addr" style="width: 75%;"
+            placeholder="/ip4/127.0.0.1/tcp/1234/ws/p2p/12D3Koo..." /></label>
+    <button id="btn-run">Run</button>
+</body>
+
+</html>
