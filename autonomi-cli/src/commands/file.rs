@@ -17,6 +17,7 @@ pub async fn cost(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let client = crate::actions::connect_to_network(peers).await?;
 
     println!("Getting upload cost...");
+    info!("Calculating cost for file: {file}");
     let cost = client
         .file_cost(&PathBuf::from(file))
         .await
@@ -24,6 +25,7 @@ pub async fn cost(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
 
     println!("Estimate cost to upload file: {file}");
     println!("Total cost: {cost}");
+    info!("Total cost: {cost} for file: {file}");
     Ok(())
 }
 pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
@@ -33,6 +35,7 @@ pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let (upload_summary_thread, upload_completed_tx) = collect_upload_summary(event_receiver);
 
     println!("Uploading data to network...");
+    info!("Uploading file: {file}");
 
     let xor_name = client
         .dir_upload(PathBuf::from(file), &wallet)
@@ -42,6 +45,7 @@ pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
 
     println!("Successfully uploaded: {file}");
     println!("At address: {addr}");
+    info!("Successfully uploaded: {file} at address: {addr}");
     if let Ok(()) = upload_completed_tx.send(()) {
         let summary = upload_summary_thread.await?;
         if summary.record_count == 0 {
@@ -50,6 +54,7 @@ pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
             println!("Number of chunks uploaded: {}", summary.record_count);
             println!("Total cost: {} AttoTokens", summary.tokens_spent);
         }
+        info!("Summary for upload of file {file} at {addr:?}: {summary:?}");
     }
 
     Ok(())

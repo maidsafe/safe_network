@@ -41,12 +41,14 @@ pub async fn download(addr: &str, dest_path: &str, client: &mut Client) -> Resul
     progress_bar.finish_and_clear();
 
     if all_errs.is_empty() {
+        info!("Successfully downloaded data at: {addr}");
         println!("Successfully downloaded data at: {addr}");
         Ok(())
     } else {
         let err_no = all_errs.len();
         eprintln!("{err_no} errors while downloading data at: {addr}");
         eprintln!("{all_errs:#?}");
+        error!("Errors while downloading data at {addr}: {all_errs:#?}");
         Err(eyre!("Errors while downloading data"))
     }
 }
