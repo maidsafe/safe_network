@@ -1,70 +1,5 @@
 #!/usr/bin/env just --justfile
 
-release_repo := "maidsafe/safe_network"
-
-droplet-testbed:
-  #!/usr/bin/env bash
-
-  DROPLET_NAME="node-manager-testbed"
-  REGION="lon1"
-  SIZE="s-1vcpu-1gb"
-  IMAGE="ubuntu-20-04-x64"
-  SSH_KEY_ID="30878672"
-
-  droplet_ip=$(doctl compute droplet list \
-    --format Name,PublicIPv4 --no-header | grep "^$DROPLET_NAME " | awk '{ print $2 }')
-
-  if [ -z "$droplet_ip" ]; then
-    droplet_id=$(doctl compute droplet create $DROPLET_NAME \
-      --region $REGION \
-      --size $SIZE \
-      --image $IMAGE \
-      --ssh-keys $SSH_KEY_ID \
-      --format ID \
-      --no-header \
-      --wait)
-    if [ -z "$droplet_id" ]; then
-      echo "Failed to obtain droplet ID"
-      exit 1
-    fi
-
-    echo "Droplet ID: $droplet_id"
-    echo "Waiting for droplet IP address..."
-    droplet_ip=$(doctl compute droplet get $droplet_id --format PublicIPv4 --no-header)
-    while [ -z "$droplet_ip" ]; do
-      echo "Still waiting to obtain droplet IP address..."
-      sleep 5
-      droplet_ip=$(doctl compute droplet get $droplet_id --format PublicIPv4 --no-header)
-    done
-  fi
-  echo "Droplet IP address: $droplet_ip"
-
-  nc -zw1 $droplet_ip 22
-  exit_code=$?
-  while [ $exit_code -ne 0 ]; do
-    echo "Waiting on SSH to become available..."
-    sleep 5
-    nc -zw1 $droplet_ip 22
-    exit_code=$?
-  done
-
-  cargo build --release --target x86_64-unknown-linux-musl
-  scp -r ./target/x86_64-unknown-linux-musl/release/safenode-manager \
-    root@$droplet_ip:/root/safenode-manager
-
-kill-testbed:
-  #!/usr/bin/env bash
-
-  DROPLET_NAME="node-manager-testbed"
-
-  droplet_id=$(doctl compute droplet list \
-    --format Name,ID --no-header | grep "^$DROPLET_NAME " | awk '{ print $2 }')
-
-  if [ -z "$droplet_ip" ]; then
-    echo "Deleting droplet with ID $droplet_id"
-    doctl compute droplet delete $droplet_id
-  fi
-
 build-release-artifacts arch nightly="false":
   #!/usr/bin/env bash
   set -e
@@ -447,15 +382,3 @@ package-arch arch:
   fi
 
   cd ../../..
-
-node-man-integration-tests:
-  #!/usr/bin/env bash
-  set -e
-
-  cargo build --release --bin safenode --bin safenode-manager
-  cargo run --release --bin safenode-manager -- local run \
-    --node-path target/release/safenode
-  peer=$(cargo run --release --bin safenode-manager -- local status \
-    --json | jq -r .nodes[-1].listen_addr[0])
-  export SAFE_PEERS=$peer
-  cargo test --release --package sn-node-manager --test e2e -- --nocapture
