@@ -127,7 +127,7 @@ jobs:
           path: |
             ~/.local/share/safe/node/*/logs/*.log*
             ~/.local/share/safe/*/*/*.log*
-            ~/.local/share/safe/client/logs/*/*.log*
+            ~/.local/share/safe/autonomi/logs/*/*.log*
 
       - name: Stop the WAN network
         if: always()

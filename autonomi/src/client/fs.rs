@@ -6,10 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::client::archive::Metadata;
+use crate::client::data::CostError;
 use crate::client::Client;
 use bytes::Bytes;
 use sn_evm::EvmWallet;
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use super::archive::{Archive, ArchiveAddr};
@@ -43,6 +44,22 @@ pub enum DownloadError {
     IoError(#[from] std::io::Error),
 }
 
+#[cfg(feature = "fs")]
+/// Errors that can occur during the file cost calculation.
+#[derive(Debug, thiserror::Error)]
+pub enum FileCostError {
+    #[error("Cost error: {0}")]
+    Cost(#[from] CostError),
+    #[error("IO failure")]
+    IoError(#[from] std::io::Error),
+    #[error("Serialization error")]
+    Serialization(#[from] rmp_serde::encode::Error),
+    #[error("Self encryption error")]
+    SelfEncryption(#[from] crate::self_encryption::Error),
+    #[error("Walkdir error")]
+    WalkDir(#[from] walkdir::Error),
+}
+
 impl Client {
     /// Download file from network to local file system
     pub async fn file_download(
@@ -65,8 +82,8 @@ impl Client {
         to_dest: PathBuf,
     ) -> Result<(), DownloadError> {
         let archive = self.archive_get(archive_addr).await?;
-        for (path, addr) in archive.map {
-            self.file_download(addr, to_dest.join(path)).await?;
+        for (path, addr, _meta) in archive.iter() {
+            self.file_download(*addr, to_dest.join(path)).await?;
         }
         Ok(())
     }
@@ -78,7 +95,7 @@ impl Client {
         dir_path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, UploadError> {
-        let mut map = HashMap::new();
+        let mut archive = Archive::new();
 
         for entry in walkdir::WalkDir::new(dir_path) {
             let entry = entry?;
@@ -93,10 +110,9 @@ impl Client {
             println!("Uploading file: {path:?}");
             let file = self.file_upload(path.clone(), wallet).await?;
 
-            map.insert(path, file);
+            archive.add_file(path, file, Metadata::new());
         }
 
-        let archive = Archive { map };
         let archive_serialized = archive.into_bytes()?;
 
         let arch_addr = self.data_put(archive_serialized, wallet).await?;
@@ -119,8 +135,8 @@ impl Client {
 
     /// Get the cost to upload a file/dir to the network.
     /// quick and dirty implementation, please refactor once files are cleanly implemented
-    pub async fn file_cost(&self, path: &PathBuf) -> Result<sn_evm::AttoTokens, UploadError> {
-        let mut map = HashMap::new();
+    pub async fn file_cost(&self, path: &PathBuf) -> Result<sn_evm::AttoTokens, FileCostError> {
+        let mut archive = Archive::new();
         let mut total_cost = sn_evm::Amount::ZERO;
 
         for entry in walkdir::WalkDir::new(path) {
@@ -135,27 +151,23 @@ impl Client {
 
             let data = tokio::fs::read(&path).await?;
             let file_bytes = Bytes::from(data);
-            let file_cost = self.data_cost(file_bytes.clone()).await.expect("TODO");
+            let file_cost = self.data_cost(file_bytes.clone()).await?;
 
             total_cost += file_cost.as_atto();
 
             // re-do encryption to get the correct map xorname here
             // this code needs refactor
             let now = sn_networking::target_arch::Instant::now();
-            let (data_map_chunk, _) = crate::self_encryption::encrypt(file_bytes).expect("TODO");
+            let (data_map_chunk, _) = crate::self_encryption::encrypt(file_bytes)?;
             tracing::debug!("Encryption took: {:.2?}", now.elapsed());
             let map_xor_name = *data_map_chunk.address().xorname();
 
-            map.insert(path, map_xor_name);
+            archive.add_file(path, map_xor_name, Metadata::new());
         }
 
-        let root = Archive { map };
-        let root_serialized = rmp_serde::to_vec(&root).expect("TODO");
+        let root_serialized = rmp_serde::to_vec(&archive)?;
 
-        let archive_cost = self
-            .data_cost(Bytes::from(root_serialized))
-            .await
-            .expect("TODO");
+        let archive_cost = self.data_cost(Bytes::from(root_serialized)).await?;
 
         total_cost += archive_cost.as_atto();
         Ok(total_cost.into())

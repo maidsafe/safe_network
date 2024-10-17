@@ -1,7 +1,7 @@
 # A CLI for the Autonomi Network
 
 ```
-Usage: autonomi_cli [OPTIONS] <COMMAND>
+Usage: autonomi [OPTIONS] <COMMAND>
 
 Commands:
   file      Operations related to file handling

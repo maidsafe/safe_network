@@ -18,11 +18,11 @@ pub async fn download(addr: &str, dest_path: &str, client: &mut Client) -> Resul
         .await
         .wrap_err("Failed to fetch data from address")?;
 
-    let progress_bar = get_progress_bar(archive.map.len() as u64)?;
+    let progress_bar = get_progress_bar(archive.iter().count() as u64)?;
     let mut all_errs = vec![];
-    for (path, addr) in archive.map {
+    for (path, addr, _meta) in archive.iter() {
         progress_bar.println(format!("Fetching file: {path:?}..."));
-        let bytes = match client.data_get(addr).await {
+        let bytes = match client.data_get(*addr).await {
             Ok(bytes) => bytes,
             Err(e) => {
                 let err = format!("Failed to fetch file {path:?}: {e}");
@@ -41,12 +41,14 @@ pub async fn download(addr: &str, dest_path: &str, client: &mut Client) -> Resul
     progress_bar.finish_and_clear();
 
     if all_errs.is_empty() {
+        info!("Successfully downloaded data at: {addr}");
         println!("Successfully downloaded data at: {addr}");
         Ok(())
     } else {
         let err_no = all_errs.len();
         eprintln!("{err_no} errors while downloading data at: {addr}");
         eprintln!("{all_errs:#?}");
+        error!("Errors while downloading data at {addr}: {all_errs:#?}");
         Err(eyre!("Errors while downloading data"))
     }
 }

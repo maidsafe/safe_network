@@ -21,6 +21,7 @@ pub fn generate_key(overwrite: bool) -> Result<()> {
     // check if the key already exists
     let key_path = crate::keys::get_register_signing_key_path()?;
     if key_path.exists() && !overwrite {
+        error!("Register key already exists at: {key_path:?}");
         return Err(eyre!("Register key already exists at: {}", key_path.display()))
             .with_suggestion(|| "if you want to overwrite the existing key, run the command with the --overwrite flag")
             .with_warning(|| "overwriting the existing key might result in loss of access to any existing registers created using that key");
@@ -30,6 +31,7 @@ pub fn generate_key(overwrite: bool) -> Result<()> {
     let key = RegisterSecretKey::random();
     let path = crate::keys::create_register_signing_key_file(key)
         .wrap_err("Failed to create new register key")?;
+    info!("Created new register key at: {path:?}");
     println!("✅ Created new register key at: {}", path.display());
     Ok(())
 }
@@ -43,6 +45,7 @@ pub async fn cost(name: &str, peers: Vec<Multiaddr>) -> Result<()> {
         .register_cost(name.to_string(), register_key)
         .await
         .wrap_err("Failed to get cost for register")?;
+    info!("Estimated cost to create a register with name {name}: {cost}");
     println!("✅ The estimated cost to create a register with name {name} is: {cost}");
     Ok(())
 }
@@ -56,8 +59,10 @@ pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>
     let (upload_summary_thread, upload_completed_tx) = collect_upload_summary(event_receiver);
 
     println!("Creating register with name: {name}");
+    info!("Creating register with name: {name}");
     let register = if public {
         println!("With public write access");
+        info!("With public write access");
         let permissions = RegisterPermissions::new_anyone_can_write();
         client
             .register_create_with_permissions(
@@ -71,6 +76,7 @@ pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>
             .wrap_err("Failed to create register")?
     } else {
         println!("With private write access");
+        info!("With private write access");
         client
             .register_create(
                 value.as_bytes().to_vec().into(),
@@ -87,6 +93,7 @@ pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>
     println!("✅ Register created at address: {address}");
     println!("With name: {name}");
     println!("And initial value: [{value}]");
+    info!("✅ Register created at address: {address} with name: {name}");
 
     if let Ok(()) = upload_completed_tx.send(()) {
         let summary = upload_summary_thread.await?;
@@ -95,6 +102,7 @@ pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>
         } else {
             println!("Total cost: {} AttoTokens", summary.tokens_spent);
         }
+        info!("Summary of register creation: {summary:?}");
     }
 
     Ok(())
@@ -116,13 +124,16 @@ pub async fn edit(address: String, name: bool, value: &str, peers: Vec<Multiaddr
     };
 
     println!("Getting register at address: {address}");
+    info!("Getting register at address: {address}");
     let register = client
         .register_get(address)
         .await
         .wrap_err(format!("Failed to get register at address: {address}"))?;
-    println!("Found register at address: {address}");
 
+    println!("Found register at address: {address}");
     println!("Updating register with new value: {value}");
+    info!("Updating register at address: {address} with new value: {value}");
+
     client
         .register_update(register, value.as_bytes().to_vec().into(), register_key)
         .await
@@ -130,6 +141,7 @@ pub async fn edit(address: String, name: bool, value: &str, peers: Vec<Multiaddr
 
     println!("✅ Successfully updated register");
     println!("With value: [{value}]");
+    info!("Successfully updated register at address: {address}");
 
     Ok(())
 }
@@ -150,6 +162,7 @@ pub async fn get(address: String, name: bool, peers: Vec<Multiaddr>) -> Result<(
     };
 
     println!("Getting register at address: {address}");
+    info!("Getting register at address: {address}");
     let register = client
         .register_get(address)
         .await
@@ -157,6 +170,7 @@ pub async fn get(address: String, name: bool, peers: Vec<Multiaddr>) -> Result<(
     let values = register.values();
 
     println!("✅ Register found at address: {address}");
+    info!("Register found at address: {address}");
     match values.as_slice() {
         [one] => println!("With value: [{:?}]", String::from_utf8_lossy(one)),
         _ => {

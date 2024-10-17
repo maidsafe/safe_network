@@ -11,7 +11,7 @@ on:
 
 env:
   SAFE_DATA_PATH: /home/runner/.local/share/safe
-  CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
   BOOTSTRAP_NODE_DATA_PATH: /home/runner/.local/share/safe/bootstrap_node
   RESTART_TEST_NODE_DATA_PATH: /home/runner/.local/share/safe/restart_node

@@ -7,19 +7,22 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use std::time::Instant;
+pub use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 /// Wasm32 target arch does not support `time` or spawning via tokio
 /// so we shim in alternatives here when building for that architecture
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use tokio::{
     spawn,
-    time::{interval, sleep, timeout, Duration, Interval},
+    time::{interval, sleep, timeout, Interval},
 };
 
 #[cfg(target_arch = "wasm32")]
+pub use std::time::Duration;
+
+#[cfg(target_arch = "wasm32")]
 pub use wasmtimer::{
-    std::Instant,
+    std::{Instant, SystemTime, UNIX_EPOCH},
     tokio::{interval, sleep, timeout, Interval},
 };
 

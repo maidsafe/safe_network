@@ -70,7 +70,7 @@ impl Client {
             .get_record_from_network(scratch_key, &get_cfg)
             .await
             .inspect_err(|err| {
-                error!("Failed to fetch vault {network_address:?} from network: {err}");
+                debug!("Failed to fetch vault {network_address:?} from network: {err}");
             })?;
 
         let pad = try_deserialize_record::<Scratchpad>(&record)
@@ -84,9 +84,9 @@ impl Client {
     /// Pays for a new VaultPacket if none yet created for the client. Returns the current version
     /// of the data on success.
     pub async fn write_bytes_to_vault(
-        &mut self,
+        &self,
         data: Bytes,
-        wallet: &mut EvmWallet,
+        wallet: &EvmWallet,
         secret_key: &SecretKey,
     ) -> Result<u64, PutError> {
         let client_pk = secret_key.public_key();
