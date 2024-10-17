@@ -70,6 +70,7 @@ impl JsClient {
 
 mod archive {
     use super::*;
+    use crate::client::archive::Metadata;
     use crate::client::{address::str_to_addr, archive::Archive};
     use std::{collections::HashMap, path::PathBuf};
     use xor_name::XorName;
@@ -82,7 +83,7 @@ mod archive {
             let data = self.0.archive_get(addr).await?;
 
             // To `Map<K, V>` (JS)
-            let data = serde_wasm_bindgen::to_value(&data.map)?;
+            let data = serde_wasm_bindgen::to_value(&data.map())?;
             Ok(data.into())
         }
 
@@ -93,8 +94,12 @@ mod archive {
             wallet: &JsWallet,
         ) -> Result<String, JsError> {
             // From `Map<K, V>` or `Iterable<[K, V]>` (JS)
-            let map: HashMap<PathBuf, XorName> = serde_wasm_bindgen::from_value(map)?;
-            let archive = Archive { map };
+            let map: HashMap<PathBuf, (XorName, Metadata)> = serde_wasm_bindgen::from_value(map)?;
+            let mut archive = Archive::new();
+
+            for (path, (xorname, meta)) in map {
+                archive.add_file(path, xorname, meta);
+            }
 
             let addr = self.0.archive_put(archive, &wallet.0).await?;
 

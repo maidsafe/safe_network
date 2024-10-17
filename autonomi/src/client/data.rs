@@ -48,16 +48,12 @@ pub enum PutError {
 /// Errors that can occur during the pay operation.
 #[derive(Debug, thiserror::Error)]
 pub enum PayError {
-    #[error("Could not get store quote for: {0:?} after several retries")]
-    CouldNotGetStoreQuote(XorName),
-    #[error("Could not get store costs: {0:?}")]
-    CouldNotGetStoreCosts(NetworkError),
-    #[error("Could not simultaneously fetch store costs: {0:?}")]
-    JoinError(JoinError),
     #[error("Wallet error: {0:?}")]
     EvmWalletError(#[from] EvmWalletError),
     #[error("Failed to self-encrypt data.")]
     SelfEncryption(#[from] crate::self_encryption::Error),
+    #[error("Cost error: {0:?}")]
+    Cost(#[from] CostError),
 }
 
 /// Errors that can occur during the get operation.
@@ -73,6 +69,19 @@ pub enum GetError {
     Network(#[from] NetworkError),
     #[error("General protocol error: {0:?}")]
     Protocol(#[from] sn_protocol::Error),
+}
+
+/// Errors that can occur during the cost calculation.
+#[derive(Debug, thiserror::Error)]
+pub enum CostError {
+    #[error("Could not simultaneously fetch store costs: {0:?}")]
+    JoinError(JoinError),
+    #[error("Failed to self-encrypt data.")]
+    SelfEncryption(#[from] crate::self_encryption::Error),
+    #[error("Could not get store quote for: {0:?} after several retries")]
+    CouldNotGetStoreQuote(XorName),
+    #[error("Could not get store costs: {0:?}")]
+    CouldNotGetStoreCosts(NetworkError),
 }
 
 impl Client {
@@ -184,7 +193,7 @@ impl Client {
     }
 
     /// Get the estimated cost of storing a piece of data.
-    pub async fn data_cost(&self, data: Bytes) -> Result<AttoTokens, PayError> {
+    pub async fn data_cost(&self, data: Bytes) -> Result<AttoTokens, CostError> {
         let now = sn_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
 
