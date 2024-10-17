@@ -70,7 +70,7 @@ build-release-artifacts arch nightly="false":
     cross build --release --target $arch --bin node-launchpad $nightly_feature
     cross build --release --features=network-contacts --target $arch --bin autonomi $nightly_feature
     cross build --release --features=network-contacts --target $arch --bin safenode $nightly_feature
-    cross build --release --target $arch --bin safenode-manager $nightly_feature
+    cross build --release --features=websockets --target $arch --bin safenode-manager $nightly_feature
     cross build --release --target $arch --bin safenodemand $nightly_feature
     cross build --release --target $arch --bin safenode_rpc_client $nightly_feature
   else
@@ -78,7 +78,7 @@ build-release-artifacts arch nightly="false":
     cargo build --release --target $arch --bin node-launchpad $nightly_feature
     cargo build --release --features=network-contacts --target $arch --bin autonomi $nightly_feature
     cargo build --release --features=network-contacts --target $arch --bin safenode $nightly_feature
-    cargo build --release --target $arch --bin safenode-manager $nightly_feature
+    cargo build --release --features=websockets --target $arch --bin safenode-manager $nightly_feature
     cargo build --release --target $arch --bin safenodemand $nightly_feature
     cargo build --release --target $arch --bin safenode_rpc_client $nightly_feature
   fi
