@@ -114,15 +114,18 @@ pub(super) async fn start_upload(
         // The loop also breaks if we fail to get_store_cost / make payment / upload for n consecutive times.
         if uploader.all_upload_items.is_empty() {
             debug!("Upload items are empty, exiting main upload loop.");
-            // To avoid empty final_balance when all items are skipped.
-            uploader.upload_final_balance =
-                uploader
+
+            // To avoid empty final_balance when all items are skipped. Skip for tests.
+            #[cfg(not(test))]
+            {
+                uploader.upload_final_balance = uploader
                     .wallet
                     .balance_of_tokens()
                     .await
                     .inspect_err(|err| {
                         error!("Failed to get wallet balance: {err:?}");
                     })?;
+            }
 
             #[cfg(test)]
             trace!("UPLOADER STATE: finished uploading all items {uploader:?}");
