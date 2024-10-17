@@ -251,7 +251,7 @@ fn extract_quote_payments(
 }
 
 /// Construct payment proofs from cost map and payments map.
-fn construct_proofs(
+pub(crate) fn construct_proofs(
     cost_map: &HashMap<XorName, PayeeQuote>,
     payments: &BTreeMap<QuoteHash, TxHash>,
 ) -> HashMap<XorName, ProofOfPayment> {
