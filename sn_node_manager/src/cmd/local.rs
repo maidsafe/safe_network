@@ -170,13 +170,18 @@ pub async fn run(
     // been killed, which clears it out.
     let local_node_reg_path = &get_local_node_registry_path()?;
     let mut local_node_registry: NodeRegistry = if clean {
-        debug!("Clean set to true, removing client, node dir and killing the network.");
+        debug!(
+            "Clean set to true, removing client, node dir, local registry and killing the network."
+        );
         let client_data_path = dirs_next::data_dir()
             .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
             .join("safe")
             .join("client");
         if client_data_path.is_dir() {
             std::fs::remove_dir_all(client_data_path)?;
+        }
+        if local_node_reg_path.exists() {
+            std::fs::remove_file(local_node_reg_path)?;
         }
         kill(false, verbosity)?;
         NodeRegistry::load(local_node_reg_path)?
