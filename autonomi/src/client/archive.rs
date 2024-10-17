@@ -9,8 +9,12 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    time::SystemTime,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use std::time::{Duration, SystemTime, UNIX_EPOCH};
+#[cfg(target_arch = "wasm32")]
+pub use wasmtimer::std::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::{
     data::DataAddr,
@@ -28,7 +32,7 @@ pub type ArchiveAddr = XorName;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq, Eq)]
-pub enum ArchiveError {
+pub enum RenameError {
     #[error("File not found in archive: {0}")]
     FileNotFound(PathBuf),
 }
@@ -43,14 +47,20 @@ pub struct Archive {
 /// Metadata for a file in an archive
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Metadata {
-    pub created: SystemTime,
+    pub created: u64,
+    pub modified: u64,
 }
 
 impl Metadata {
     /// Create a new metadata struct
     pub fn new() -> Self {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_secs();
         Self {
-            created: SystemTime::now(),
+            created: now,
+            modified: now,
         }
     }
 }
@@ -79,12 +89,17 @@ impl Archive {
 
     /// Rename a file in an archive
     /// Note that this does not upload the archive to the network
-    pub fn rename_file(&mut self, old_path: &Path, new_path: &Path) -> Result<(), ArchiveError> {
-        let data_addr = self
+    pub fn rename_file(&mut self, old_path: &Path, new_path: &Path) -> Result<(), RenameError> {
+        let (data_addr, mut meta) = self
             .map
             .remove(old_path)
-            .ok_or(ArchiveError::FileNotFound(old_path.to_path_buf()))?;
-        self.map.insert(new_path.to_path_buf(), data_addr);
+            .ok_or(RenameError::FileNotFound(old_path.to_path_buf()))?;
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_secs();
+        meta.modified = now;
+        self.map.insert(new_path.to_path_buf(), (data_addr, meta));
         Ok(())
     }
 

@@ -32,8 +32,12 @@ use sn_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use std::collections::BTreeSet;
 use xor_name::XorName;
 
+use super::data::CostError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum RegisterError {
+    #[error("Cost error: {0}")]
+    Cost(#[from] CostError),
     #[error("Network error")]
     Network(#[from] NetworkError),
     #[error("Serialization error")]
