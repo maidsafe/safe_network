@@ -140,6 +140,11 @@ impl Archive {
             .iter()
             .map(|(path, (addr, meta))| (path, addr, meta))
     }
+
+    /// Get the underlying map
+    pub fn map(&self) -> &HashMap<PathBuf, (DataAddr, Metadata)> {
+        &self.map
+    }
 }
 
 impl Default for Archive {
