@@ -21,6 +21,7 @@ fs = ["tokio/fs", "data"]
 local = ["sn_networking/local", "test_utils/local", "sn_evm/local"]
 registers = ["data"]
 loud = []
+external-signer = ["sn_evm/external-signer", "data"]
 
 [dependencies]
 bip39 = "2.0.0"
@@ -53,6 +54,7 @@ wasm-bindgen-futures = "0.4.43"
 serde-wasm-bindgen = "0.6.5"
 
 [dev-dependencies]
+alloy = { version = "0.4.2", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
 eyre = "0.6.5"
 sha2 = "0.10.6"
 sn_logging = { path = "../sn_logging", version = "0.2.33" }
