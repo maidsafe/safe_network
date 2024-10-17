@@ -399,7 +399,7 @@ impl Network {
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// Excludes the client's `PeerId` while calculating the closest peers.
     pub async fn client_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
-        self.get_closest_peers(key, true).await
+        self.get_close_group_closest_peers(key, true).await
     }
 
     /// Returns a map where each key is the ilog2 distance of that Kbucket and each value is a vector of peers in that
@@ -449,7 +449,9 @@ impl Network {
                 // Do not query the closest_peers during every re-try attempt.
                 // The close_nodes don't change often and the previous set of close_nodes might be taking a while to write
                 // the Chunk, so query them again incase of a failure.
-                close_nodes = self.get_closest_peers(&chunk_address, true).await?;
+                close_nodes = self
+                    .get_close_group_closest_peers(&chunk_address, true)
+                    .await?;
             }
             retry_attempts += 1;
             info!(
@@ -514,7 +516,9 @@ impl Network {
     ) -> Result<PayeeQuote> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
-        let mut close_nodes = self.get_closest_peers(&record_address, true).await?;
+        let mut close_nodes = self
+            .get_close_group_closest_peers(&record_address, true)
+            .await?;
         // Filter out results from the ignored peers.
         close_nodes.retain(|peer_id| !ignore_peers.contains(peer_id));
 
@@ -597,7 +601,9 @@ impl Network {
         let record_address = NetworkAddress::from_record_key(&key);
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
-        let close_nodes = self.get_closest_peers(&record_address, true).await?;
+        let close_nodes = self
+            .get_close_group_closest_peers(&record_address, true)
+            .await?;
 
         let self_address = NetworkAddress::from_peer(self.peer_id());
         let request = Request::Query(Query::GetRegisterRecord {
@@ -1069,7 +1075,7 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// If `client` is false, then include `self` among the `closest_peers`
-    pub async fn get_closest_peers(
+    pub async fn get_close_group_closest_peers(
         &self,
         key: &NetworkAddress,
         client: bool,
