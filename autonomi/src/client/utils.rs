@@ -29,7 +29,7 @@ use xor_name::XorName;
 use crate::self_encryption::DataMapLevel;
 
 use super::{
-    data::{GetError, PayError, PutError},
+    data::{CostError, GetError, PayError, PutError},
     Client,
 };
 
@@ -177,7 +177,7 @@ impl Client {
     pub(crate) async fn get_store_quotes(
         &self,
         content_addrs: impl Iterator<Item = XorName>,
-    ) -> Result<HashMap<XorName, PayeeQuote>, PayError> {
+    ) -> Result<HashMap<XorName, PayeeQuote>, CostError> {
         let futures: Vec<_> = content_addrs
             .into_iter()
             .map(|content_addr| fetch_store_quote_with_retries(&self.network, content_addr))
@@ -193,7 +193,7 @@ impl Client {
 async fn fetch_store_quote_with_retries(
     network: &Network,
     content_addr: XorName,
-) -> Result<(XorName, PayeeQuote), PayError> {
+) -> Result<(XorName, PayeeQuote), CostError> {
     let mut retries = 0;
 
     loop {
@@ -209,7 +209,7 @@ async fn fetch_store_quote_with_retries(
                 error!(
                     "Error while fetching store quote: {err:?}, stopping after {retries} retries"
                 );
-                break Err(PayError::CouldNotGetStoreQuote(content_addr));
+                break Err(CostError::CouldNotGetStoreQuote(content_addr));
             }
         }
     }
