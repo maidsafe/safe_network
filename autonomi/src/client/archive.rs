@@ -11,10 +11,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[cfg(not(target_arch = "wasm32"))]
-pub use std::time::{Duration, SystemTime, UNIX_EPOCH};
-#[cfg(target_arch = "wasm32")]
-pub use wasmtimer::std::{Duration, SystemTime, UNIX_EPOCH};
+use sn_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::{
     data::DataAddr,
