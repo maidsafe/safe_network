@@ -528,7 +528,7 @@ impl Node {
     async fn close_nodes_shunning_peer(network: &Network, peer_id: PeerId) -> bool {
         // using `client` to exclude self
         let closest_peers = match network
-            .client_get_closest_peers(&NetworkAddress::from_peer(peer_id))
+            .client_get_all_close_peers_in_range_or_close_group(&NetworkAddress::from_peer(peer_id))
             .await
         {
             Ok(peers) => peers,
