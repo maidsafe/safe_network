@@ -221,6 +221,19 @@ impl Uploader {
             .set_batch_size(batch_size);
     }
 
+    /// Sets the default  payment batch size that determines the number of payments that are made in a single
+    /// transaction. The maximum number of payments that can be made in a single transaction is 512.
+    ///
+    /// By default, this option is set to the constant `PAYMENT_BATCH_SIZE: usize = 512`.
+    pub fn set_payment_batch_size(&mut self, payment_batch_size: usize) {
+        // Self can only be constructed with new(), which will set inner to InnerUploader always.
+        // So it is okay to call unwrap here.
+        self.inner
+            .as_mut()
+            .expect("Uploader::new makes sure inner is present")
+            .set_payment_batch_size(payment_batch_size);
+    }
+
     /// Sets the option to verify the data after they have been uploaded.
     ///
     /// By default, this option is set to true.
@@ -369,6 +382,10 @@ impl InnerUploader {
 
     pub(super) fn set_batch_size(&mut self, batch_size: usize) {
         self.cfg.batch_size = batch_size;
+    }
+
+    pub(super) fn set_payment_batch_size(&mut self, payment_batch_size: usize) {
+        self.cfg.payment_batch_size = payment_batch_size;
     }
 
     pub(super) fn set_verify_store(&mut self, verify_store: bool) {

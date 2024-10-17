@@ -150,6 +150,15 @@ impl Register {
 
         Ok(())
     }
+
+    #[cfg(test)]
+    pub(crate) fn test_new_from_register(signed_reg: SignedRegister) -> Register {
+        let crdt_reg = RegisterCrdt::new(*signed_reg.address());
+        Register {
+            signed_reg,
+            crdt_reg,
+        }
+    }
 }
 
 impl Client {

@@ -1079,6 +1079,7 @@ name = "autonomi"
 version = "0.2.1"
 dependencies = [
  "alloy",
+ "assert_matches",
  "bip39",
  "blst",
  "blstrs 0.7.1",
@@ -1110,6 +1111,7 @@ dependencies = [
  "sn_peers_acquisition",
  "sn_protocol",
  "sn_registers",
+ "tempfile",
  "test_utils",
  "thiserror",
  "tiny_http",
