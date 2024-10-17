@@ -18,7 +18,7 @@ impl AttoTokens {
 
 #[wasm_bindgen(js_class = Client)]
 impl JsClient {
-    #[wasm_bindgen(constructor)]
+    #[wasm_bindgen]
     pub async fn connect(peers: Vec<String>) -> Result<JsClient, JsError> {
         let peers = peers
             .into_iter()
@@ -133,7 +133,7 @@ mod vault {
         pub async fn write_bytes_to_vault(
             &self,
             vault: Vec<u8>,
-            wallet: &mut JsWallet,
+            wallet: &JsWallet,
             secret_key: Vec<u8>,
         ) -> Result<(), JsError> {
             let secret_key: [u8; 32] = secret_key[..].try_into()?;
@@ -141,12 +141,18 @@ mod vault {
 
             let vault = bytes::Bytes::from(vault);
             self.0
-                .write_bytes_to_vault(vault, &mut wallet.0, &secret_key)
+                .write_bytes_to_vault(vault, &wallet.0, &secret_key)
                 .await?;
 
             Ok(())
         }
     }
+}
+
+#[wasm_bindgen(js_name = genSecretKey)]
+pub fn gen_secret_key() -> Vec<u8> {
+    let secret_key = bls::SecretKey::random();
+    secret_key.to_bytes().to_vec()
 }
 
 #[wasm_bindgen(js_name = Wallet)]

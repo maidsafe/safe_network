@@ -35,9 +35,9 @@ cargo run --bin=safenode-manager --features=local -- local run --build --clean -
 4. Then run the tests with the `local` feature and pass the EVM params again:
 
 ```sh
-$ EVM_NETWORK=local cargo test --package=autonomi --features=local
+EVM_NETWORK=local cargo test --package=autonomi --features=local
 # Or with logs
-$ RUST_LOG=autonomi EVM_NETWORK=local cargo test --package=autonomi --features=local -- --nocapture
+RUST_LOG=autonomi EVM_NETWORK=local cargo test --package=autonomi --features=local -- --nocapture
 ```
 
 ### Using a live testnet or mainnet
@@ -55,9 +55,9 @@ cargo run --bin=safenode-manager --features=local -- local run --build --clean -
    payment tokens on the network (in this case Arbitrum One):
 
 ```sh
-$ EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
+EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
 # Or with logs
-$ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local -- --nocapture
+RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local -- --nocapture
 ```
 
 ### WebAssembly
@@ -70,9 +70,39 @@ To run a WASM test
 - Optionally specify the specific test, e.g. `-- put` to run `put()` in `wasm.rs` only.
 
 Example:
-````sh
+```sh
 SAFE_PEERS=/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID> wasm-pack test --release --firefox autonomi --features=data,files --test wasm -- put
 ```
+
+#### Test from JS in the browser
+
+`wasm-pack test` does not execute JavaScript, but runs mostly WebAssembly. Again make sure the environment variables are set and build the JS package:
+
+```sh
+wasm-pack build --dev --target=web autonomi --features=vault
+```
+
+Then cd into `autonomi/tests-js`, and use `npm` to install and serve the test html file.
+```
+cd autonomi/tests-js
+npm install
+npm run serve
+```
+
+Then go to `http://127.0.0.1:8080/tests-js` in the browser. Here, enter a `ws` multiaddr of a local node and press 'run'.
+
+
+#### `index.html`
+
+There is also a simple `index.html` file that runs some JavaScript.
+
+Build the package (again with the env variables) and run a webserver, e.g. with Python:
+```sh
+wasm-pack build --dev --target=web autonomi
+python -m http.server --directory=autonomi 8000
+```
+
+Then visit `http://127.0.0.1:8000/` in your (modern) browser.
 
 
 ## Faucet (local)
