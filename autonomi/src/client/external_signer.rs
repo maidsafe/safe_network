@@ -4,13 +4,13 @@ use crate::self_encryption::encrypt;
 use crate::Client;
 use bytes::Bytes;
 use sn_evm::{ProofOfPayment, QuotePayment};
+use sn_networking::PayeeQuote;
 use sn_protocol::storage::Chunk;
 use std::collections::HashMap;
 use xor_name::XorName;
 
 #[allow(unused_imports)]
 pub use sn_evm::external_signer::*;
-use sn_networking::PayeeQuote;
 
 impl Client {
     /// Upload a piece of data to the network. This data will be self-encrypted.
@@ -27,11 +27,11 @@ impl Client {
         Ok(*data_map_chunk.address().xorname())
     }
 
-    /// Get quotes for certain content addresses.
-    /// Returns a cost map, data payments to be executed and a list of free chunks.
-    pub async fn get_quotes_for_content_addrs(
+    /// Get quotes for data.
+    /// Returns a cost map, data payments to be executed and a list of free (already paid for) chunks.
+    pub async fn get_quotes_for_data(
         &self,
-        content_addrs: impl Iterator<Item = XorName>,
+        data: Bytes,
     ) -> Result<
         (
             HashMap<XorName, PayeeQuote>,
@@ -40,7 +40,9 @@ impl Client {
         ),
         PutError,
     > {
-        let cost_map = self.get_store_quotes(content_addrs).await?;
+        // Encrypt the data as chunks
+        let (_data_map_chunk, _chunks, xor_names) = encrypt_data(data)?;
+        let cost_map = self.get_store_quotes(xor_names.into_iter()).await?;
         let (quote_payments, free_chunks) = extract_quote_payments(&cost_map);
         Ok((cost_map, quote_payments, free_chunks))
     }
@@ -83,7 +85,7 @@ impl Client {
 /// Encrypts data as chunks.
 ///
 /// Returns the data map chunk, file chunks and a list of all content addresses including the data map.
-pub fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>, Vec<XorName>), PutError> {
+fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>, Vec<XorName>), PutError> {
     let now = sn_networking::target_arch::Instant::now();
     let result = encrypt(data)?;
 
