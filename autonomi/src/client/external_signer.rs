@@ -80,6 +80,9 @@ impl Client {
     }
 }
 
+/// Encrypts data as chunks.
+///
+/// Returns the data map chunk, file chunks and a list of all content addresses including the data map.
 pub fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>, Vec<XorName>), PutError> {
     let now = sn_networking::target_arch::Instant::now();
     let result = encrypt(data)?;
