@@ -1071,6 +1071,8 @@ checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
 name = "autonomi"
 version = "0.1.2"
 dependencies = [
+ "alloy",
+ "assert_matches",
  "bip39",
  "blsttc",
  "bytes",
@@ -1100,6 +1102,7 @@ dependencies = [
  "sn_peers_acquisition",
  "sn_protocol",
  "sn_registers",
+ "tempfile",
  "test_utils",
  "thiserror",
  "tiny_http",
