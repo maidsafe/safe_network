@@ -23,11 +23,9 @@ use rand::{thread_rng, Rng};
 use sn_evm::{Amount, EvmWallet, ProofOfPayment};
 use sn_networking::target_arch::{mpsc, mpsc_channel, mpsc_recv, spawn};
 use sn_networking::{GetRecordCfg, PayeeQuote, PutRecordCfg, VerificationKind};
-use sn_protocol::{
-    messages::ChunkProof,
-    storage::{Chunk, RetryStrategy},
-    NetworkAddress,
-};
+#[cfg(feature = "data")]
+use sn_protocol::{messages::ChunkProof, storage::Chunk};
+use sn_protocol::{storage::RetryStrategy, NetworkAddress};
 #[cfg(feature = "registers")]
 use sn_registers::RegisterAddress;
 use std::{
@@ -91,17 +89,20 @@ pub(super) async fn start_upload(
     )?;
 
     // chunks can be pushed to pending_get_store_cost directly
-    uploader.pending_to_get_store_cost = uploader
-        .all_upload_items
-        .iter()
-        .filter_map(|(xorname, item)| {
-            if let UploadItem::Chunk { .. } = item {
-                Some((*xorname, GetStoreCostStrategy::Cheapest))
-            } else {
-                None
-            }
-        })
-        .collect();
+    #[cfg(feature = "data")]
+    {
+        uploader.pending_to_get_store_cost = uploader
+            .all_upload_items
+            .iter()
+            .filter_map(|(xorname, item)| {
+                if let UploadItem::Chunk { .. } = item {
+                    Some((*xorname, GetStoreCostStrategy::Cheapest))
+                } else {
+                    None
+                }
+            })
+            .collect();
+    }
 
     // registers have to be verified + merged with remote replica, so we have to fetch it first.
     #[cfg(feature = "registers")]
@@ -374,6 +375,7 @@ pub(super) async fn start_upload(
 
                     // if during the first try we skip the item, then it is already present in the network.
                     match removed_item {
+                        #[cfg(feature = "data")]
                         UploadItem::Chunk { address, .. } => {
                             uploader.emit_upload_event(UploadEvent::ChunkAlreadyExistsInNetwork(
                                 address,
@@ -487,6 +489,7 @@ pub(super) async fn start_upload(
                 let _ = uploader.uploaded_addresses.insert(removed_item.address());
 
                 match removed_item {
+                    #[cfg(feature = "data")]
                     UploadItem::Chunk { address, .. } => {
                         uploader.emit_upload_event(UploadEvent::ChunkUploaded(address));
                     }
@@ -974,9 +977,9 @@ impl InnerUploader {
                             }
                         }
                     };
-                    let pay_for_chunk_sender_clone = task_result_sender.clone();
+                    let result_sender = task_result_sender.clone();
                     let _handle = spawn(async move {
-                        let _ = pay_for_chunk_sender_clone.send(result).await;
+                        let _ = result_sender.send(result).await;
                     });
 
                     cost_map = HashMap::new();
@@ -1100,6 +1103,7 @@ impl InnerUploader {
         debug!("Payments for upload item: {xorname:?} to {payee:?}:  {payment_proof:?}");
 
         match upload_item {
+            #[cfg(feature = "data")]
             UploadItem::Chunk { address: _, chunk } => {
                 let chunk = match chunk {
                     Either::Left(chunk) => chunk,
