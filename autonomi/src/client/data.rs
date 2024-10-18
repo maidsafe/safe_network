@@ -6,15 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::client::ClientEvent;
+use crate::uploader::{UploadError, Uploader};
+use crate::{self_encryption::encrypt, Client};
 use bytes::Bytes;
 use libp2p::kad::Quorum;
-use tokio::task::JoinError;
-
-use std::collections::HashSet;
-use xor_name::XorName;
-
-use crate::client::{ClientEvent, UploadSummary};
-use crate::{self_encryption::encrypt, Client};
 use sn_evm::{Amount, AttoTokens};
 use sn_evm::{EvmWallet, EvmWalletError};
 use sn_networking::{GetRecordCfg, NetworkError};
@@ -22,6 +18,9 @@ use sn_protocol::{
     storage::{try_deserialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind},
     NetworkAddress,
 };
+use std::collections::HashSet;
+use tokio::task::JoinError;
+use xor_name::XorName;
 
 /// Raw Data Address (points to a DataMap)
 pub type DataAddr = XorName;
@@ -43,6 +42,8 @@ pub enum PutError {
     PayError(#[from] PayError),
     #[error("Serialization error: {0}")]
     Serialization(String),
+    #[error("Upload Error")]
+    Upload(#[from] UploadError),
     #[error("A wallet error occurred.")]
     Wallet(#[from] sn_evm::EvmError),
 }
@@ -113,57 +114,24 @@ impl Client {
         debug!("Encryption took: {:.2?}", now.elapsed());
 
         let map_xor_name = *data_map_chunk.address().xorname();
-        let mut xor_names = vec![map_xor_name];
 
-        for chunk in &chunks {
-            xor_names.push(*chunk.name());
-        }
+        let mut uploader = Uploader::new(self.clone(), wallet.clone());
+        uploader.insert_chunks(chunks);
+        uploader.insert_chunks(vec![data_map_chunk]);
 
-        // Pay for all chunks + data map chunk
-        info!("Paying for {} addresses", xor_names.len());
-        let (payment_proofs, _free_chunks) = self
-            .pay(xor_names.into_iter(), wallet)
-            .await
-            .inspect_err(|err| error!("Error paying for data: {err:?}"))?;
-
-        let mut record_count = 0;
-
-        // Upload data map
-        if let Some(proof) = payment_proofs.get(&map_xor_name) {
-            debug!("Uploading data map chunk: {map_xor_name:?}");
-            self.chunk_upload_with_payment(data_map_chunk.clone(), proof.clone(), None)
-                .await
-                .inspect_err(|err| error!("Error uploading data map chunk: {err:?}"))?;
-            record_count += 1;
-        }
-
-        // Upload the rest of the chunks
-        debug!("Uploading {} chunks", chunks.len());
-        for chunk in chunks {
-            if let Some(proof) = payment_proofs.get(chunk.name()) {
-                let address = *chunk.address();
-                self.chunk_upload_with_payment(chunk, proof.clone(), None)
-                    .await
-                    .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))?;
-                record_count += 1;
-            }
-        }
+        let summary = uploader.start_upload().await?;
 
         if let Some(channel) = self.client_event_sender.as_ref() {
-            let tokens_spent = payment_proofs
-                .values()
-                .map(|proof| proof.quote.cost.as_atto())
-                .sum::<Amount>();
-
-            let summary = UploadSummary {
-                record_count,
-                tokens_spent,
-            };
-            if let Err(err) = channel.send(ClientEvent::UploadComplete(summary)).await {
+            if let Err(err) = channel
+                .send(ClientEvent::UploadComplete {
+                    record_count: summary.uploaded_count,
+                    tokens_spent: summary.storage_cost,
+                })
+                .await
+            {
                 error!("Failed to send client event: {err:?}");
             }
         }
-
         Ok(map_xor_name)
     }
 

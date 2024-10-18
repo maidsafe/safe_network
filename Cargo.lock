@@ -1079,7 +1079,6 @@ dependencies = [
  "console_error_panic_hook",
  "const-hex",
  "custom_debug",
- "dashmap",
  "evmlib",
  "eyre",
  "futures",
