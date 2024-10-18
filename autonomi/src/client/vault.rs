@@ -34,14 +34,15 @@ pub enum VaultError {
     Network(#[from] NetworkError),
 }
 
-/// The version of the vault content
-/// The version is used to determine the type of the contents of the bytes contained in a vault
+/// The content type of the vault data
+/// The number is used to determine the type of the contents of the bytes contained in a vault
 /// Custom apps can use this to store their own custom types of data in vaults
+/// It is recommended to use the hash of the app name or unique identifier as the version
 /// The value 0 is reserved for tests
-pub type VaultContentVersion = u64;
+pub type VaultContentType = u64;
 
-/// For custom apps using Scratchpad, this function converts an app identifier or name to a VaultContentVersion
-pub fn app_name_to_version<T: Hash>(s: T) -> VaultContentVersion {
+/// For custom apps using Scratchpad, this function converts an app identifier or name to a VaultContentType
+pub fn app_name_to_vault_content_type<T: Hash>(s: T) -> VaultContentType {
     let mut hasher = DefaultHasher::new();
     s.hash(&mut hasher);
     hasher.finish()
@@ -54,12 +55,12 @@ impl Client {
     pub async fn fetch_and_decrypt_vault(
         &self,
         secret_key: &SecretKey,
-    ) -> Result<(Bytes, VaultContentVersion), VaultError> {
+    ) -> Result<(Bytes, VaultContentType), VaultError> {
         info!("Fetching and decrypting vault");
         let pad = self.get_vault_from_network(secret_key).await?;
 
         let data = pad.decrypt_data(secret_key)?;
-        Ok((data, pad.version()))
+        Ok((data, pad.data_encoding()))
     }
 
     /// Gets the vault Scratchpad from a provided client public key
@@ -107,7 +108,7 @@ impl Client {
         data: Bytes,
         wallet: &EvmWallet,
         secret_key: &SecretKey,
-        version: VaultContentVersion,
+        version: VaultContentType,
     ) -> Result<(), PutError> {
         let client_pk = secret_key.public_key();
 

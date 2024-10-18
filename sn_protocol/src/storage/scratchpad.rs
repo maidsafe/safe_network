@@ -23,8 +23,8 @@ pub struct Scratchpad {
     /// Network address. Omitted when serialising and
     /// calculated from the `encrypted_data` when deserialising.
     address: ScratchpadAddress,
-    /// Data version
-    version: u64,
+    /// Data encoding: custom apps using scratchpad should use this so they can identify the type of data they are storing
+    data_encoding: u64,
     /// Contained data. This should be encrypted
     #[debug(skip)]
     encrypted_data: Bytes,
@@ -37,11 +37,11 @@ pub struct Scratchpad {
 
 impl Scratchpad {
     /// Creates a new instance of `Scratchpad`.
-    pub fn new(owner: PublicKey, version: u64) -> Self {
+    pub fn new(owner: PublicKey, data_encoding: u64) -> Self {
         Self {
             address: ScratchpadAddress::new(owner),
             encrypted_data: Bytes::new(),
-            version,
+            data_encoding,
             counter: 0,
             signature: None,
         }
@@ -52,9 +52,9 @@ impl Scratchpad {
         self.counter
     }
 
-    /// Return the current version
-    pub fn version(&self) -> u64 {
-        self.version
+    /// Return the current data encoding
+    pub fn data_encoding(&self) -> u64 {
+        self.data_encoding
     }
 
     /// Increments the counter value.
