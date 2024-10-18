@@ -74,10 +74,8 @@ impl JsClient {
 
 mod archive {
     use super::*;
-    use crate::client::archive::Metadata;
     use crate::client::{address::str_to_addr, archive::Archive};
-    use std::{collections::HashMap, path::PathBuf};
-    use xor_name::XorName;
+    use std::path::PathBuf;
 
     #[wasm_bindgen(js_name = Archive)]
     pub struct JsArchive(Archive);
