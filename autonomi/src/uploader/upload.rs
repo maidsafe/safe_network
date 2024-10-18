@@ -6,9 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-// TODO: fix
-#![allow(clippy::result_large_err)]
-
 use super::{
     GetStoreCostStrategy, TaskResult, UploadCfg, UploadEvent, UploadItem, UploadSummary, Uploader,
     UploaderInterface, PAYMENT_BATCH_SIZE,
@@ -56,12 +53,10 @@ const UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE: usize = 1;
 type Result<T> = std::result::Result<T, UploadError>;
 
 // TODO:
-// 1. since wallet balance is not fetched after finishing a task, get it before we send OK/Err
-// 2. Rework client event, it should be sent via the lowest level of the PUT. while for chunks it is done earlier (data.rs)
-// 3. track each batch with an id
-// 4. create a irrecoverable error type, so we can bail on io/serialization etc.
-// 5. separate cfgs/retries for register/chunk etc
-// 1. log whenever we insert/remove items. i.e., don't ignore values with `let _`
+// 1. track each batch with an id
+// 2. create a irrecoverable error type, so we can bail on io/serialization etc.
+// 3. separate cfgs/retries for register/chunk etc
+// 4. log whenever we insert/remove items. i.e., don't ignore values with `let _`
 
 /// The main loop that performs the upload process.
 /// An interface is passed here for easy testing.
@@ -156,7 +151,6 @@ pub(super) async fn start_upload(
                 );
                 return Err(UploadError::MaximumRepaymentsReached {
                     items: uploader.max_repayments_reached.into_iter().collect(),
-                    summary,
                 });
             }
 
@@ -1067,7 +1061,6 @@ impl InnerUploader {
                     // error is used by the caller.
                     return Err(UploadError::MaximumRepaymentsReached {
                         items: vec![xorname],
-                        summary: UploadSummary::default(),
                     });
                 }
 

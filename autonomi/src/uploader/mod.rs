@@ -6,6 +6,22 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+//! The uploader module provides an interface to upload data to the network, with the ability to retry failed uploads,
+//! make repayments for failed payments, and verify the data after it has been uploaded.
+//!
+//! # Example
+//! let mut uploader = Uploader::new(self.clone(), wallet.clone());
+//! uploader.insert_chunks(chunks);
+//! uploader.insert_chunks(vec![data_map_chunk]);
+//! let summary = uploader.start_upload().await?;
+//!
+//! # Configuration
+//! The `Uploader` can be configured using the `UploadCfg` struct. The most notable options are the `batch_size` and
+//! `payment_batch_size` which determine the number of data that are processed in parallel and the number of payments
+//! that are made in a single evm transaction, respectively.
+//! Also the `max_repayments_for_failed_data` option determines the maximum number of repayments to make if the
+//! initial payment fails.
+
 #[cfg(test)]
 mod tests;
 mod upload;
@@ -56,11 +72,8 @@ pub enum UploadError {
     InvalidCfg(String),
     #[error("I/O error: {0:?}")]
     Io(#[from] std::io::Error),
-    #[error("The upload failed with maximum repayments reached for multiple items: {items:?} Summary: {summary:?}")]
-    MaximumRepaymentsReached {
-        items: Vec<XorName>,
-        summary: UploadSummary,
-    },
+    #[error("The upload failed with maximum repayments reached for multiple items: {items:?}")]
+    MaximumRepaymentsReached { items: Vec<XorName> },
     #[error("Network error: {0:?}")]
     Network(#[from] NetworkError),
     #[cfg(feature = "registers")]
@@ -303,7 +316,7 @@ impl Uploader {
     /// Sets the maximum number of repayments to perform if the initial payment failed.
     /// NOTE: This creates an extra Spend and uses the wallet funds.
     ///
-    /// By default, this option is set to `1` retry.
+    /// By default, this option is set to `3` repayments.
     pub fn set_max_repayments_for_failed_data(&mut self, retries: usize) {
         self.inner
             .as_mut()
