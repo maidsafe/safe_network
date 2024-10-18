@@ -18,11 +18,10 @@ use std::collections::HashMap;
 pub enum Error {
     #[error("Network token contract error: {0}")]
     NetworkTokenContract(#[from] network_token::Error),
-    #[error("Chunk payments contract error: {0}")]
-    ChunkPaymentsContract(#[from] data_payments::error::Error),
+    #[error("Data payments contract error: {0}")]
+    DataPaymentsContract(#[from] data_payments::error::Error),
 }
 
-#[allow(dead_code)]
 /// Approve an address / smart contract to spend this wallet's payment tokens.
 ///
 /// Returns the transaction calldata (input, to).
@@ -36,7 +35,6 @@ pub fn approve_to_spend_tokens_calldata(
     network_token.approve_calldata(spender, value)
 }
 
-#[allow(dead_code)]
 /// Transfer payment tokens from the supplied wallet to an address.
 ///
 /// Returns the transaction calldata (input, to).
@@ -50,7 +48,6 @@ pub fn transfer_tokens_calldata(
     network_token.transfer_calldata(receiver, amount)
 }
 
-#[allow(dead_code)]
 pub struct PayForQuotesCalldataReturnType {
     pub batched_calldata_map: HashMap<Calldata, Vec<QuoteHash>>,
     pub to: Address,
@@ -58,7 +55,6 @@ pub struct PayForQuotesCalldataReturnType {
     pub approve_amount: Amount,
 }
 
-#[allow(dead_code)]
 /// Use this wallet to pay for chunks in batched transfer transactions.
 /// If the amount of transfers is more than one transaction can contain, the transfers will be split up over multiple transactions.
 ///
