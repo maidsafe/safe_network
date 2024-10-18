@@ -507,6 +507,7 @@ enum TaskResult {
     UploadOk(XorName),
     UploadErr {
         xorname: XorName,
+        io_error: Option<Box<std::io::Error>>,
     },
 }
 

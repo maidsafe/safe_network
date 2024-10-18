@@ -346,10 +346,18 @@ impl UploaderInterface for TestUploader {
                         .expect("Failed to send task result");
                 });
             }
-            TestSteps::UploadItemErr => {
+            TestSteps::UploadItemErr { io_error } => {
                 handle.spawn(async move {
+                    let io_error = if io_error {
+                        Some(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            "Test IO Error",
+                        )))
+                    } else {
+                        None
+                    };
                     task_result_sender
-                        .send(TaskResult::UploadErr { xorname })
+                        .send(TaskResult::UploadErr { xorname, io_error })
                         .await
                         .expect("Failed to send task result");
                 });
@@ -376,7 +384,9 @@ pub enum TestSteps {
     MakePaymentOk,
     MakePaymentErr,
     UploadItemOk,
-    UploadItemErr,
+    UploadItemErr {
+        io_error: bool,
+    },
 }
 
 pub fn get_inner_uploader() -> Result<(InnerUploader, mpsc::Sender<TaskResult>)> {
