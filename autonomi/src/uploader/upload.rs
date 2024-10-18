@@ -481,9 +481,16 @@ pub(super) async fn start_upload(
                     }
                 }
             }
-            TaskResult::UploadErr { xorname } => {
+            TaskResult::UploadErr { xorname, io_error } => {
+                if let Some(io_error) = io_error {
+                    error!(
+                        "Upload failed for {xorname:?} with error: {io_error:?}. Stopping upload."
+                    );
+                    return Err(UploadError::Io(*io_error));
+                }
+
                 let _ = uploader.on_going_uploads.remove(&xorname);
-                trace!("UploadErr for {xorname:?}");
+                debug!("UploadErr for {xorname:?}. Keeping track of failure and trying again.");
 
                 // keep track of the failure
                 let n_errors = uploader.n_errors_during_uploads.entry(xorname).or_insert(0);
@@ -672,9 +679,20 @@ impl UploaderInterface for Uploader {
                 Ok(_) => {
                     let _ = task_result_sender.send(TaskResult::UploadOk(xorname)).await;
                 }
+                Err(UploadError::Io(io_error)) => {
+                    let _ = task_result_sender
+                        .send(TaskResult::UploadErr {
+                            xorname,
+                            io_error: Some(Box::new(io_error)),
+                        })
+                        .await;
+                }
                 Err(_) => {
                     let _ = task_result_sender
-                        .send(TaskResult::UploadErr { xorname })
+                        .send(TaskResult::UploadErr {
+                            xorname,
+                            io_error: None,
+                        })
                         .await;
                 }
             };
