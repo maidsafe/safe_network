@@ -18,10 +18,9 @@ use sn_evm::EvmWallet;
 use sn_evm::{Amount, EvmNetworkTokenError, ProofOfPayment};
 use sn_networking::target_arch::{mpsc, mpsc_channel};
 use sn_networking::{NetworkError, PayeeQuote};
-use sn_protocol::{
-    storage::{Chunk, ChunkAddress, RetryStrategy},
-    NetworkAddress,
-};
+#[cfg(feature = "data")]
+use sn_protocol::storage::{Chunk, ChunkAddress};
+use sn_protocol::{storage::RetryStrategy, NetworkAddress};
 #[cfg(feature = "registers")]
 use sn_registers::RegisterAddress;
 use std::{
@@ -176,13 +175,14 @@ impl UploadSummary {
 /// The events emitted from the upload process.
 pub enum UploadEvent {
     /// Uploaded a record to the network.
+    #[cfg(feature = "data")]
     ChunkUploaded(ChunkAddress),
     /// Uploaded a Register to the network.
     /// The returned register is just the passed in register.
     #[cfg(feature = "registers")]
     RegisterUploaded(Register),
-    ///
     /// The Chunk already exists in the network. No payments were made.
+    #[cfg(feature = "data")]
     ChunkAlreadyExistsInNetwork(ChunkAddress),
     /// The Register already exists in the network. The locally register changes were pushed to the network.
     /// No payments were made.
@@ -334,6 +334,7 @@ impl Uploader {
     }
 
     /// Insert a list of chunk paths to upload to upload.
+    #[cfg(feature = "fs")]
     pub fn insert_chunk_paths(&mut self, chunks: impl IntoIterator<Item = (XorName, PathBuf)>) {
         self.inner
             .as_mut()
@@ -342,6 +343,7 @@ impl Uploader {
     }
 
     /// Insert a list of chunks to upload to upload.
+    #[cfg(feature = "data")]
     pub fn insert_chunks(&mut self, chunks: impl IntoIterator<Item = Chunk>) {
         self.inner
             .as_mut()
@@ -451,6 +453,7 @@ impl InnerUploader {
         rx
     }
 
+    #[cfg(feature = "fs")]
     pub(super) fn insert_chunk_paths(
         &mut self,
         chunks: impl IntoIterator<Item = (XorName, PathBuf)>,
@@ -465,6 +468,7 @@ impl InnerUploader {
             }));
     }
 
+    #[cfg(feature = "data")]
     pub(super) fn insert_chunks(&mut self, chunks: impl IntoIterator<Item = Chunk>) {
         self.all_upload_items
             .extend(chunks.into_iter().map(|chunk| {
@@ -490,6 +494,7 @@ impl InnerUploader {
 
 #[derive(Debug, Clone)]
 enum UploadItem {
+    #[cfg(feature = "data")]
     Chunk {
         address: ChunkAddress,
         // Either the actual chunk or the path to the chunk.
@@ -505,6 +510,7 @@ enum UploadItem {
 impl UploadItem {
     fn address(&self) -> NetworkAddress {
         match self {
+            #[cfg(feature = "data")]
             Self::Chunk { address, .. } => NetworkAddress::from_chunk_address(*address),
             #[cfg(feature = "registers")]
             Self::Register { address, .. } => NetworkAddress::from_register_address(*address),
@@ -513,6 +519,7 @@ impl UploadItem {
 
     fn xorname(&self) -> XorName {
         match self {
+            #[cfg(feature = "data")]
             UploadItem::Chunk { address, .. } => *address.xorname(),
             #[cfg(feature = "registers")]
             UploadItem::Register { address, .. } => address.xorname(),
