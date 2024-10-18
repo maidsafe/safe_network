@@ -28,6 +28,7 @@ mod amount;
 mod data_payments;
 mod error;
 pub mod wallet;
+pub mod encryption;
 
 pub use data_payments::{PaymentQuote, ProofOfPayment, QuotingMetrics};
 

@@ -36,6 +36,7 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
+use std::fs;
 use xor_name::XorName;
 
 /// A locked file handle, that when dropped releases the lock.
@@ -148,6 +149,7 @@ impl HotWallet {
         }
 
         let wallet_key = Self::load_from(root_dir)?.key;
+        println!("{:?}: {:?} {} {}", root_dir,wallet_key.to_bytes(), root_dir.is_file(), root_dir.is_dir());
         let wallet_dir = root_dir.join(WALLET_DIR_NAME);
 
         // Save the secret key as an encrypted file
@@ -1221,14 +1223,43 @@ mod tests {
         let dir = create_temp_dir();
         let root_dir = dir.path().to_path_buf();
         let wallet_key = MainSecretKey::random();
+        
+        let entries = std::fs::read_dir(root_dir.clone())?;
 
+        for entry in entries {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                println!("D: {}", path.display());
+            } else {
+                println!("f: {}", path.display());
+            }
+        }
+
+     
         let unencrypted_wallet = HotWallet::create_from_key(&root_dir, wallet_key, None)?;
-
+        println!("{:?}",root_dir);
         HotWallet::encrypt(&root_dir, password)?;
+        // println!("{:?}",root_dir);
+        let entries = std::fs::read_dir(root_dir.clone())?;
 
+        for entry in entries {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                println!("D: {}", path.display());
+            } else {
+                println!("f: {}", path.display());
+            }
+        }
+
+
+        // println!("{:?}",root_dir);
         let mut encrypted_wallet =
             HotWallet::load_encrypted_from_path(&root_dir, password.to_owned())?;
-
+            // println!("{:?}",root_dir);
         // Should fail when not authenticated with password yet
         assert!(encrypted_wallet.authenticate().is_err());
 
