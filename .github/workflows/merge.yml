@@ -110,6 +110,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: Run autonomi tests
+        timeout-minutes: 25
+        run: cargo test --release --package autonomi --lib --features="full,fs"
+
       - name: Run node tests
         timeout-minutes: 25
         run: cargo test --release --package sn_node --lib
@@ -188,7 +192,7 @@ jobs:
 
       # only these unit tests require a network, the rest are run above
       - name: Run autonomi --tests
-        run: cargo test --package autonomi --tests -- --nocapture
+        run: cargo test --package autonomi --features="full,fs" --tests -- --nocapture
         env:
           SN_LOG: "v"
           # only set the target dir for windows to bypass the linker issue.
