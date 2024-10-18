@@ -15,7 +15,7 @@ use libp2p::{
     request_response::{self, Message},
     PeerId,
 };
-use rand::{rngs::OsRng, Rng};
+use rand::{rngs::OsRng, thread_rng, Rng};
 use sn_protocol::{
     messages::{CmdResponse, Request, Response},
     storage::RecordType,
@@ -230,6 +230,7 @@ impl SwarmDriver {
             .record_addresses_ref()
             .clone();
 
+        let more_than_one_key = incoming_keys.len() > 1;
         let keys_to_fetch =
             self.replication_fetcher
                 .add_keys(holder, incoming_keys, &all_keys, &peers);
@@ -240,57 +241,74 @@ impl SwarmDriver {
             self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
         }
 
-        let event_sender = self.event_sender.clone();
-        let _handle = tokio::spawn(async move {
-            let keys_to_verify =
-                Self::select_verification_data_candidates(&peers, &all_keys, &sender);
+        // Only trigger chunk_proof check based every X% of the time
+        let mut rng = thread_rng();
+        // 5% probability
+        if more_than_one_key && rng.gen_bool(0.05) {
+            let event_sender = self.event_sender.clone();
+            let peers_clone = peers.clone();
+            let all_keys_clone = all_keys.clone();
+            let sender_clone = sender.clone();
+            let _handle = tokio::spawn(async move {
+                let keys_to_verify = Self::select_verification_data_candidates(
+                    &peers_clone,
+                    &all_keys_clone,
+                    &sender_clone,
+                );
 
-            if keys_to_verify.is_empty() {
-                debug!("No valid candidate to be checked against peer {holder:?}");
-            } else if let Err(error) = event_sender
-                .send(NetworkEvent::ChunkProofVerification {
-                    peer_id: holder,
-                    keys_to_verify,
-                })
-                .await
-            {
-                error!("SwarmDriver failed to send event: {}", error);
-            }
+                if keys_to_verify.is_empty() {
+                    debug!("No valid candidate to be checked against peer {holder:?}");
+                } else if let Err(error) = event_sender
+                    .send(NetworkEvent::ChunkProofVerification {
+                        peer_id: holder,
+                        keys_to_verify,
+                    })
+                    .await
+                {
+                    error!("SwarmDriver failed to send event: {}", error);
+                }
+            });
 
             // In additon to verify the sender, we also verify a random close node.
             // This is to avoid malicious node escaping the check by never send a replication_list.
-            // With further reduced probability of 1% (5% * 20%)
-            let close_group_peers = sort_peers_by_address_and_limit(
-                &peers,
-                &NetworkAddress::from_peer(our_peer_id),
-                CLOSE_GROUP_SIZE,
-            )
-            .unwrap_or_default();
+            // With further reduced probability to 1% (5% * 20%)
+            if rng.gen_bool(0.2) {
+                let event_sender = self.event_sender.clone();
+                let close_group_peers = sort_peers_by_address_and_limit(
+                    &peers,
+                    &NetworkAddress::from_peer(our_peer_id),
+                    CLOSE_GROUP_SIZE,
+                )
+                .unwrap_or_default();
 
-            loop {
-                let index: usize = OsRng.gen_range(0..close_group_peers.len());
-                let candidate_peer_id = *close_group_peers[index];
-                let candidate = NetworkAddress::from_peer(*close_group_peers[index]);
-                if sender != candidate {
-                    let keys_to_verify =
-                        Self::select_verification_data_candidates(&peers, &all_keys, &candidate);
+                loop {
+                    let index: usize = OsRng.gen_range(0..close_group_peers.len());
+                    let candidate_peer_id = *close_group_peers[index];
+                    let candidate = NetworkAddress::from_peer(*close_group_peers[index]);
+                    if sender != candidate {
+                        let _handle = tokio::spawn(async move {
+                            let keys_to_verify = Self::select_verification_data_candidates(
+                                &peers, &all_keys, &sender,
+                            );
 
-                    if keys_to_verify.is_empty() {
-                        debug!("No valid candidate to be checked against peer {candidate:?}");
-                    } else if let Err(error) = event_sender
-                        .send(NetworkEvent::ChunkProofVerification {
-                            peer_id: candidate_peer_id,
-                            keys_to_verify,
-                        })
-                        .await
-                    {
-                        error!("SwarmDriver failed to send event: {}", error);
+                            if keys_to_verify.is_empty() {
+                                debug!("No valid candidate to be checked against peer {candidate_peer_id:?}");
+                            } else if let Err(error) = event_sender
+                                .send(NetworkEvent::ChunkProofVerification {
+                                    peer_id: candidate_peer_id,
+                                    keys_to_verify,
+                                })
+                                .await
+                            {
+                                error!("SwarmDriver failed to send event: {}", error);
+                            }
+                        });
+
+                        break;
                     }
-
-                    break;
                 }
             }
-        });
+        }
     }
 
     /// Check among all chunk type records that we have, select those close to the peer,

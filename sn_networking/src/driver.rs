@@ -48,6 +48,7 @@ use libp2p::{
 use libp2p::{kad::KBucketDistance, Transport as _};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::info::Info;
+use rand::Rng;
 use sn_evm::PaymentQuote;
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
@@ -848,45 +849,49 @@ impl SwarmDriver {
         queried_address: NetworkAddress,
         network_discovery_peers: &[PeerId],
     ) {
-        info!(
-            "Adding a GetRange to our stash deriving from {:?} peers",
-            network_discovery_peers.len()
-        );
+        let mut rng = rand::thread_rng();
+        // Undertake the work with 20%
+        if rng.gen_bool(0.2) {
+            info!(
+                "Adding a GetRange to our stash deriving from {:?} peers",
+                network_discovery_peers.len()
+            );
 
-        let sorted_distances = sort_peers_by_distance_to(network_discovery_peers, queried_address);
+            let sorted_distances = sort_peers_by_distance_to(network_discovery_peers, queried_address);
 
-        let mapped: Vec<_> = sorted_distances.iter().map(|d| d.ilog2()).collect();
-        info!("Sorted distances: {:?}", mapped);
+            let mapped: Vec<_> = sorted_distances.iter().map(|d| d.ilog2()).collect();
+            info!("Sorted distances: {:?}", mapped);
 
-        let farthest_peer_to_check = self
-            .get_all_local_peers_excluding_self()
-            .len()
-            .checked_div(3 * CLOSE_GROUP_SIZE)
-            .unwrap_or(1);
+            let farthest_peer_to_check = self
+                .get_all_local_peers_excluding_self()
+                .len()
+                .checked_div(3 * CLOSE_GROUP_SIZE)
+                .unwrap_or(1);
 
-        info!("Farthest peer we'll check: {:?}", farthest_peer_to_check);
+            info!("Farthest peer we'll check: {:?}", farthest_peer_to_check);
 
-        let yardstick = if sorted_distances.len() >= farthest_peer_to_check {
-            sorted_distances.get(farthest_peer_to_check.saturating_sub(1))
-        } else {
-            sorted_distances.last()
-        };
-        if let Some(distance) = yardstick {
-            if self.range_distances.len() >= GET_RANGE_STORAGE_LIMIT {
-                if let Some(distance) = self.range_distances.pop_front() {
-                    trace!("Removed distance range: {:?}", distance.ilog2());
+            let yardstick = if sorted_distances.len() >= farthest_peer_to_check {
+                sorted_distances.get(farthest_peer_to_check.saturating_sub(1))
+            } else {
+                sorted_distances.last()
+            };
+            if let Some(distance) = yardstick {
+                if self.range_distances.len() >= GET_RANGE_STORAGE_LIMIT {
+                    if let Some(distance) = self.range_distances.pop_front() {
+                        trace!("Removed distance range: {:?}", distance.ilog2());
+                    }
                 }
+
+                info!("Adding new distance range: {:?}", distance.ilog2());
+
+                self.range_distances.push_back(*distance);
             }
 
-            info!("Adding new distance range: {:?}", distance.ilog2());
-
-            self.range_distances.push_back(*distance);
+            info!(
+                "Distance between peers in set_request_range call: {:?}",
+                yardstick
+            );
         }
-
-        info!(
-            "Distance between peers in set_request_range call: {:?}",
-            yardstick
-        );
     }
 
     /// Returns the KBucketDistance we are currently using as our X value
