@@ -44,7 +44,8 @@ describe('autonomi', function () {
     it('puts data, creates archive and retrieves it', async () => {
         const data = randomData(32);
         const addr = await client.dataPut(data, wallet);
-        const archive = new Map([["foo", addr]]);
+        const archive = new atnm.Archive();
+        archive.addNewFile("foo", addr);
         const archiveAddr = await client.archivePut(archive, wallet);
 
         const archiveFetched = await client.archiveGet(archiveAddr);
