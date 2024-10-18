@@ -26,7 +26,7 @@ use tracing::{error, info, trace};
 
 /// Sleep for sometime for the nodes for discover each other before verification
 /// Also can be set through the env variable of the same name.
-const SLEEP_BEFORE_VERIFICATION: Duration = Duration::from_secs(5);
+const SLEEP_BEFORE_VERIFICATION: Duration = Duration::from_secs(60);
 
 #[tokio::test(flavor = "multi_thread")]
 async fn verify_routing_table() -> Result<()> {

@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::utils::collect_upload_summary;
 use autonomi::client::address::addr_to_str;
 use autonomi::Multiaddr;
 use color_eyre::eyre::Context;
@@ -25,12 +26,14 @@ pub async fn cost(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     println!("Total cost: {cost}");
     Ok(())
 }
-
 pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let wallet = crate::keys::load_evm_wallet()?;
     let mut client = crate::actions::connect_to_network(peers).await?;
+    let event_receiver = client.enable_client_events();
+    let (upload_summary_thread, upload_completed_tx) = collect_upload_summary(event_receiver);
 
     println!("Uploading data to network...");
+
     let xor_name = client
         .dir_upload(PathBuf::from(file), &wallet)
         .await
@@ -39,9 +42,18 @@ pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
 
     println!("Successfully uploaded: {file}");
     println!("At address: {addr}");
+    if let Ok(()) = upload_completed_tx.send(()) {
+        let summary = upload_summary_thread.await?;
+        if summary.record_count == 0 {
+            println!("All chunks already exist on the network");
+        } else {
+            println!("Number of chunks uploaded: {}", summary.record_count);
+            println!("Total cost: {} AttoTokens", summary.tokens_spent);
+        }
+    }
+
     Ok(())
 }
-
 pub async fn download(addr: &str, dest_path: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let mut client = crate::actions::connect_to_network(peers).await?;
     crate::actions::download(addr, dest_path, &mut client).await

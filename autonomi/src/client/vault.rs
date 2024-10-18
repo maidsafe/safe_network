@@ -70,7 +70,7 @@ impl Client {
             .get_record_from_network(scratch_key, &get_cfg)
             .await
             .inspect_err(|err| {
-                error!("Failed to fetch vault {network_address:?} from network: {err}");
+                debug!("Failed to fetch vault {network_address:?} from network: {err}");
             })?;
 
         let pad = try_deserialize_record::<Scratchpad>(&record)

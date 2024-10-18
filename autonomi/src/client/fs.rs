@@ -74,7 +74,7 @@ impl Client {
     /// Upload a directory to the network. The directory is recursively walked.
     /// Reads all files, splits into chunks, uploads chunks, uploads datamaps, uploads archive, returns ArchiveAddr (pointing to the archive)
     pub async fn dir_upload(
-        &mut self,
+        &self,
         dir_path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, UploadError> {
@@ -107,7 +107,7 @@ impl Client {
     /// Upload a file to the network.
     /// Reads file, splits into chunks, uploads chunks, uploads datamap, returns DataAddr (pointing to the datamap)
     async fn file_upload(
-        &mut self,
+        &self,
         path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<DataAddr, UploadError> {

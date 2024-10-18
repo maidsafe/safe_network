@@ -313,7 +313,7 @@ pub async fn run_network(
                 .nodes
                 .iter()
                 .find_map(|n| n.listen_addr.clone())
-                .ok_or_else(|| eyre!("Unable to obtain a peer to connect to"))?;
+                .ok_or_eyre("Unable to obtain a peer to connect to")?;
             (peer, 1)
         }
     } else {
@@ -474,7 +474,7 @@ pub async fn run_node(
         run_options.owner.clone(),
         run_options.rpc_socket_addr,
         run_options.rewards_address,
-        run_options.evm_network,
+        run_options.evm_network.clone(),
     )?;
     launcher.wait(run_options.interval);
 
@@ -492,6 +492,7 @@ pub async fn run_node(
         auto_restart: false,
         connected_peers,
         data_dir_path: node_info.data_path,
+        evm_network: run_options.evm_network.unwrap_or(EvmNetwork::ArbitrumOne),
         genesis: run_options.genesis,
         home_network: false,
         listen_addr: Some(listen_addrs),
@@ -507,6 +508,7 @@ pub async fn run_node(
         owner: run_options.owner,
         peer_id: Some(peer_id),
         pid: Some(node_info.pid),
+        rewards_address: run_options.rewards_address,
         reward_balance: None,
         rpc_socket_addr: run_options.rpc_socket_addr,
         safenode_path: launcher.get_safenode_path(),

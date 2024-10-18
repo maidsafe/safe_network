@@ -26,7 +26,7 @@ async fn dir_upload_download() -> Result<()> {
     let _log_appender_guard =
         LogBuilder::init_single_threaded_tokio_test("dir_upload_download", false);
 
-    let mut client = Client::connect(&peers_from_env()?).await?;
+    let client = Client::connect(&peers_from_env()?).await?;
     let wallet = get_funded_wallet();
 
     let addr = client

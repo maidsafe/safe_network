@@ -84,6 +84,33 @@ impl Display for RecordKind {
     }
 }
 
+/// Return the RecordType
+pub fn get_type_from_record(record: &Record) -> Result<RecordType, Error> {
+    let key = record.key.clone();
+    let record_key = PrettyPrintRecordKey::from(&key);
+
+    match RecordHeader::from_record(record) {
+        Ok(record_header) => match record_header.kind {
+            RecordKind::Chunk => Ok(RecordType::Chunk),
+            RecordKind::Scratchpad => Ok(RecordType::Scratchpad),
+            RecordKind::Spend | RecordKind::Register => {
+                let content_hash = XorName::from_content(&record.value);
+                Ok(RecordType::NonChunk(content_hash))
+            }
+            RecordKind::ChunkWithPayment
+            | RecordKind::RegisterWithPayment
+            | RecordKind::ScratchpadWithPayment => {
+                error!("Record {record_key:?} with payment shall not be stored locally.");
+                Err(Error::IncorrectRecordHeader)
+            }
+        },
+        Err(err) => {
+            error!("For record {record_key:?}, failed to parse record_header {err:?}");
+            Err(Error::IncorrectRecordHeader)
+        }
+    }
+}
+
 impl RecordHeader {
     pub const SIZE: usize = 2;
 

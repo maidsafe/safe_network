@@ -552,7 +552,7 @@ impl Node {
         };
 
         debug!(
-            "Got {} validated spends with key: {unique_pubkey:?} at {pretty_key:?}",
+            "Found {} spends with key: {unique_pubkey:?} at {pretty_key:?}",
             validated_spends.len()
         );
 
@@ -564,14 +564,12 @@ impl Node {
             expires: None,
         };
         self.network().put_local_record(record);
-        debug!(
-            "Successfully stored validated spends with key: {unique_pubkey:?} at {pretty_key:?}"
-        );
+        debug!("Successfully stored spends with key: {unique_pubkey:?} at {pretty_key:?}");
 
         // Just log the double spend attempt. DoubleSpend error during PUT is not used and would just lead to
         // RecordRejected marker (which is incorrect, since we store double spends).
         if validated_spends.len() > 1 {
-            warn!("Got double spend(s) of len {} for the Spend PUT with unique_pubkey {unique_pubkey}", validated_spends.len());
+            warn!("Got Burnt SpendAttempts of len {} for the Spend PUT with unique_pubkey {unique_pubkey} at {pretty_key:?}", validated_spends.len());
         }
 
         self.record_metrics(Marker::ValidSpendRecordPutFromNetwork(&pretty_key));
@@ -637,9 +635,16 @@ impl Node {
         self.events_channel()
             .broadcast(crate::NodeEvent::RewardReceived(storecost, address.clone()));
 
-        // NB TODO: tell happybeing about the AttoToken change
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Total payment of {storecost:?} nanos accepted for record {pretty_key}");
+        info!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+
+        // loud mode: print a celebratory message to console
+        #[cfg(feature = "loud")]
+        {
+            println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟   RECEIVED REWARD   🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
+            println!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+            println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
+        }
 
         Ok(())
     }
@@ -749,13 +754,14 @@ impl Node {
                 }
                 spends
             }
-            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopiesInRange {
                 record,
                 got,
+                range,
                 ..
             })) => {
                 info!(
-                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network"
+                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network in range {range}"
                 );
                 match get_raw_signed_spends_from_record(&record) {
                     Ok(spends) => spends,

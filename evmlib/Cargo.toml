@@ -6,7 +6,7 @@ homepage = "https://maidsafe.net"
 license = "GPL-3.0"
 name = "evmlib"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.1.0"
+version = "0.1.1-rc.1"
 
 [features]
 wasm-bindgen = ["alloy/wasm-bindgen"]
@@ -16,6 +16,7 @@ local = []
 alloy = { version = "0.4.2", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
 dirs-next = "~2.0.0"
 serde = "1.0"
+serde_with = { version = "3.11.0", features = ["macros"] }
 thiserror = "1.0"
 tracing = { version = "~0.1.26" }
 tokio = "1.38.0"

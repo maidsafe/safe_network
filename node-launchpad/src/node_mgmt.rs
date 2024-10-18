@@ -1,18 +1,15 @@
-use std::path::PathBuf;
-
+use crate::action::{Action, StatusActions};
+use crate::connection_mode::ConnectionMode;
 use color_eyre::eyre::{eyre, Error};
+use sn_evm::RewardsAddress;
 use sn_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
 use sn_peers_acquisition::PeersArgs;
-use sn_service_management::NodeRegistry;
-use tokio::sync::mpsc::UnboundedSender;
-
-use crate::action::{Action, StatusActions};
-
-use crate::connection_mode::ConnectionMode;
-
 use sn_releases::{self, ReleaseType, SafeReleaseRepoActions};
+use sn_service_management::NodeRegistry;
+use std::{path::PathBuf, str::FromStr};
+use tokio::sync::mpsc::UnboundedSender;
 
 pub const PORT_MAX: u32 = 65535;
 pub const PORT_MIN: u32 = 1024;
@@ -302,6 +299,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         None, // We don't care about the port, as we are scaling down
         config.owner.clone(),
         config.peers_args.clone(),
+        RewardsAddress::from_str("0x1111111111111111111111111111111111111111").unwrap(),
         None,
         None,
         config.safenode_path.clone(),
@@ -375,6 +373,7 @@ async fn add_nodes(
             port_range,
             config.owner.clone(),
             config.peers_args.clone(),
+            RewardsAddress::from_str("0x1111111111111111111111111111111111111111").unwrap(),
             None,
             None,
             config.safenode_path.clone(),

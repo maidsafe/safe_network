@@ -2,9 +2,13 @@ use clap::Subcommand;
 use sn_evm::EvmNetwork;
 
 #[derive(Subcommand, Clone, Debug)]
+#[allow(clippy::enum_variant_names)]
 pub(crate) enum EvmNetworkCommand {
     /// Use the Arbitrum One network
     EvmArbitrumOne,
+
+    /// Use the Arbitrum Sepolia network
+    EvmArbitrumSepolia,
 
     /// Use a custom network
     EvmCustom {
@@ -27,6 +31,7 @@ impl Into<EvmNetwork> for EvmNetworkCommand {
     fn into(self) -> EvmNetwork {
         match self {
             Self::EvmArbitrumOne => EvmNetwork::ArbitrumOne,
+            Self::EvmArbitrumSepolia => EvmNetwork::ArbitrumSepolia,
             Self::EvmCustom {
                 rpc_url,
                 payment_token_address,

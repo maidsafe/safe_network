@@ -673,7 +673,7 @@ mod tests {
     use mockall::{mock, predicate::*};
     use predicates::prelude::*;
     use service_manager::ServiceInstallCtx;
-    use sn_evm::AttoTokens;
+    use sn_evm::{AttoTokens, CustomNetwork, EvmNetwork, RewardsAddress};
     use sn_logging::LogFormat;
     use sn_service_management::{
         error::{Error as ServiceControlError, Result as ServiceControlResult},
@@ -768,6 +768,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -783,6 +792,9 @@ mod tests {
             owner: None,
             peer_id: None,
             pid: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -872,6 +884,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -889,6 +910,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -941,6 +965,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -958,6 +991,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1053,6 +1089,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1070,6 +1115,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1135,6 +1183,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1150,6 +1207,9 @@ mod tests {
             owner: None,
             peer_id: None,
             pid: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1227,6 +1287,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1242,6 +1311,9 @@ mod tests {
             owner: None,
             peer_id: None,
             pid: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1318,6 +1390,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1333,6 +1414,9 @@ mod tests {
             owner: None,
             peer_id: None,
             pid: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1379,6 +1463,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1396,6 +1489,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1430,6 +1526,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1445,6 +1550,9 @@ mod tests {
             owner: None,
             peer_id: None,
             pid: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1479,6 +1587,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1496,6 +1613,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1531,6 +1651,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1546,6 +1675,9 @@ mod tests {
             owner: None,
             peer_id: None,
             pid: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1596,6 +1728,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1613,6 +1754,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -1724,6 +1868,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1741,6 +1894,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -1814,6 +1970,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1831,6 +1996,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -1949,6 +2117,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -1966,6 +2143,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -2096,6 +2276,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -2113,6 +2302,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -2238,6 +2430,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -2255,6 +2456,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -2381,6 +2585,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -2398,6 +2611,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -2498,6 +2714,7 @@ mod tests {
                         OsString::from("--log-output-dest"),
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--upnp"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -2554,6 +2771,7 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -2571,6 +2789,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -2654,6 +2875,7 @@ mod tests {
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--log-format"),
                         OsString::from("json"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -2710,6 +2932,7 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -2727,6 +2950,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -2813,6 +3039,7 @@ mod tests {
                         OsString::from("--log-output-dest"),
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--home-network"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -2869,6 +3096,7 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: true,
             listen_addr: None,
@@ -2886,6 +3114,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -2969,6 +3200,7 @@ mod tests {
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--ip"),
                         OsString::from("192.168.1.1"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -3025,6 +3257,7 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -3042,6 +3275,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -3128,6 +3364,7 @@ mod tests {
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--port"),
                         OsString::from("12000"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -3184,6 +3421,7 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -3201,6 +3439,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -3284,6 +3525,7 @@ mod tests {
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--max-archived-log-files"),
                         OsString::from("20"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -3366,6 +3608,10 @@ mod tests {
             user: Some("safe".to_string()),
             user_mode: false,
             version: current_version.to_string(),
+            evm_network: EvmNetwork::ArbitrumOne,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
 
@@ -3443,6 +3689,7 @@ mod tests {
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--max-log-files"),
                         OsString::from("20"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -3525,6 +3772,10 @@ mod tests {
             user: Some("safe".to_string()),
             user_mode: false,
             version: current_version.to_string(),
+            evm_network: EvmNetwork::ArbitrumOne,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
         };
         let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
 
@@ -3599,6 +3850,7 @@ mod tests {
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--metrics-server-port"),
                         OsString::from("12000"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -3655,6 +3907,7 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -3672,6 +3925,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -3758,6 +4014,7 @@ mod tests {
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--metrics-server-port"),
                         OsString::from("12000"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -3814,6 +4071,7 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -3831,6 +4089,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -3917,6 +4178,7 @@ mod tests {
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--owner"),
                         OsString::from("discord_username"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -3973,6 +4235,7 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -3990,6 +4253,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -4076,6 +4342,7 @@ mod tests {
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--owner"),
                         OsString::from("discord_username"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: true,
                     contents: None,
@@ -4132,6 +4399,7 @@ mod tests {
             auto_restart: true,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -4149,7 +4417,186 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
+            rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
+            safenode_path: current_node_bin.to_path_buf(),
+            service_name: "safenode1".to_string(),
+            status: ServiceStatus::Running,
+            upnp: false,
+            user: Some("safe".to_string()),
+            user_mode: false,
+            version: current_version.to_string(),
+        };
+        let service = NodeService::new(&mut service_data, Box::new(mock_rpc_client));
+
+        let mut service_manager = ServiceManager::new(
+            service,
+            Box::new(mock_service_control),
+            VerbosityLevel::Normal,
+        );
+
+        service_manager
+            .upgrade(UpgradeOptions {
+                auto_restart: true,
+                bootstrap_peers: Vec::new(),
+                env_variables: None,
+                force: false,
+                start_service: true,
+                target_bin_path: target_node_bin.to_path_buf(),
+                target_version: Version::parse(target_version).unwrap(),
+            })
+            .await?;
+
+        assert!(service_manager.service.service_data.auto_restart,);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn upgrade_should_retain_evm_network_settings() -> Result<()> {
+        let current_version = "0.1.0";
+        let target_version = "0.2.0";
+
+        let tmp_data_dir = assert_fs::TempDir::new()?;
+        let current_install_dir = tmp_data_dir.child("safenode_install");
+        current_install_dir.create_dir_all()?;
+
+        let current_node_bin = current_install_dir.child("safenode");
+        current_node_bin.write_binary(b"fake safenode binary")?;
+        let target_node_bin = tmp_data_dir.child("safenode");
+        target_node_bin.write_binary(b"fake safenode binary")?;
+
+        let mut mock_service_control = MockServiceControl::new();
+        let mut mock_rpc_client = MockRpcClient::new();
+
+        // before binary upgrade
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
+            .times(1)
+            .returning(|_| Ok(1000));
+        mock_service_control
+            .expect_stop()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        // after binary upgrade
+        mock_service_control
+            .expect_uninstall()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_service_control
+            .expect_install()
+            .with(
+                eq(ServiceInstallCtx {
+                    args: vec![
+                        OsString::from("--rpc"),
+                        OsString::from("127.0.0.1:8081"),
+                        OsString::from("--root-dir"),
+                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("--log-output-dest"),
+                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("--owner"),
+                        OsString::from("discord_username"),
+                        OsString::from("evm-custom"),
+                        OsString::from("--rpc-url"),
+                        OsString::from("http://localhost:8545/"),
+                        OsString::from("--payment-token-address"),
+                        OsString::from("0x5FbDB2315678afecb367f032d93F642f64180aa3"),
+                        OsString::from("--data-payments-address"),
+                        OsString::from("0x8464135c8F25Da09e49BC8782676a84730C318bC"),
+                    ],
+                    autostart: true,
+                    contents: None,
+                    environment: None,
+                    label: "safenode1".parse()?,
+                    program: current_node_bin.to_path_buf(),
+                    username: Some("safe".to_string()),
+                    working_directory: None,
+                }),
+                eq(false),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+
+        // after service restart
+        mock_service_control
+            .expect_start()
+            .with(eq("safenode1"), eq(false))
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_service_control
+            .expect_wait()
+            .with(eq(3000))
+            .times(1)
+            .returning(|_| ());
+        mock_service_control
+            .expect_get_process_pid()
+            .with(eq(current_node_bin.to_path_buf().clone()))
+            .times(1)
+            .returning(|_| Ok(100));
+
+        mock_rpc_client.expect_node_info().times(1).returning(|| {
+            Ok(NodeInfo {
+                pid: 2000,
+                peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
+                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                version: target_version.to_string(),
+                uptime: std::time::Duration::from_secs(1), // the service was just started
+                wallet_balance: 0,
+            })
+        });
+        mock_rpc_client
+            .expect_network_info()
+            .times(1)
+            .returning(|| {
+                Ok(NetworkInfo {
+                    connected_peers: Vec::new(),
+                    listeners: Vec::new(),
+                })
+            });
+
+        let mut service_data = NodeServiceData {
+            auto_restart: true,
+            connected_peers: None,
+            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
+            genesis: false,
+            home_network: false,
+            listen_addr: None,
+            local: false,
+            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_format: None,
+            max_archived_log_files: None,
+            max_log_files: None,
+            metrics_port: None,
+            node_ip: None,
+            node_port: None,
+            number: 1,
+            owner: Some("discord_username".to_string()),
+            peer_id: Some(PeerId::from_str(
+                "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
+            )?),
+            pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
+            reward_balance: Some(AttoTokens::zero()),
+
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
             service_name: "safenode1".to_string(),
@@ -4231,6 +4678,7 @@ mod tests {
                         OsString::from("--log-output-dest"),
                         OsString::from("/var/log/safenode/safenode1"),
                         OsString::from("--upnp"),
+                        OsString::from("evm-arbitrum-one"),
                     ],
                     autostart: false,
                     contents: None,
@@ -4290,6 +4738,7 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -4307,6 +4756,9 @@ mod tests {
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
             pid: Some(1000),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: current_node_bin.to_path_buf(),
@@ -4364,6 +4816,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: data_dir.to_path_buf(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -4379,6 +4840,9 @@ mod tests {
             owner: None,
             pid: None,
             peer_id: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: safenode_bin.to_path_buf(),
@@ -4423,6 +4887,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -4440,6 +4913,9 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -4498,6 +4974,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -4515,6 +5000,9 @@ mod tests {
             peer_id: Some(PeerId::from_str(
                 "12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR",
             )?),
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
@@ -4565,6 +5053,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: data_dir.to_path_buf(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -4580,6 +5077,9 @@ mod tests {
             owner: None,
             pid: None,
             peer_id: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: safenode_bin.to_path_buf(),
@@ -4630,6 +5130,15 @@ mod tests {
             auto_restart: false,
             connected_peers: None,
             data_dir_path: data_dir.to_path_buf(),
+            evm_network: EvmNetwork::Custom(CustomNetwork {
+                rpc_url_http: "http://localhost:8545".parse()?,
+                payment_token_address: RewardsAddress::from_str(
+                    "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+                )?,
+                data_payments_address: RewardsAddress::from_str(
+                    "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+                )?,
+            }),
             genesis: false,
             home_network: false,
             listen_addr: None,
@@ -4645,6 +5154,9 @@ mod tests {
             owner: None,
             pid: None,
             peer_id: None,
+            rewards_address: RewardsAddress::from_str(
+                "0x03B770D9cD32077cC0bF330c13C114a87643B124",
+            )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             safenode_path: safenode_bin.to_path_buf(),

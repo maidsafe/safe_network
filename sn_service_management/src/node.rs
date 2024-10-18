@@ -11,7 +11,7 @@ use async_trait::async_trait;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use service_manager::{ServiceInstallCtx, ServiceLabel};
-use sn_evm::AttoTokens;
+use sn_evm::{AttoTokens, EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_protocol::get_port_from_multiaddr;
 use std::{
@@ -124,6 +124,20 @@ impl<'a> ServiceStateActions for NodeService<'a> {
                 .join(",");
             args.push(OsString::from("--peer"));
             args.push(OsString::from(peers_str));
+        }
+
+        args.push(OsString::from(self.service_data.evm_network.to_string()));
+        if let EvmNetwork::Custom(custom_network) = &self.service_data.evm_network {
+            args.push(OsString::from("--rpc-url"));
+            args.push(OsString::from(custom_network.rpc_url_http.to_string()));
+            args.push(OsString::from("--payment-token-address"));
+            args.push(OsString::from(
+                custom_network.payment_token_address.to_string(),
+            ));
+            args.push(OsString::from("--data-payments-address"));
+            args.push(OsString::from(
+                custom_network.data_payments_address.to_string(),
+            ));
         }
 
         Ok(ServiceInstallCtx {
@@ -269,6 +283,7 @@ pub struct NodeServiceData {
     )]
     pub connected_peers: Option<Vec<PeerId>>,
     pub data_dir_path: PathBuf,
+    pub evm_network: EvmNetwork,
     pub genesis: bool,
     pub home_network: bool,
     pub listen_addr: Option<Vec<Multiaddr>>,
@@ -292,6 +307,7 @@ pub struct NodeServiceData {
     )]
     pub peer_id: Option<PeerId>,
     pub pid: Option<u32>,
+    pub rewards_address: RewardsAddress,
     pub reward_balance: Option<AttoTokens>,
     pub rpc_socket_addr: SocketAddr,
     pub safenode_path: PathBuf,

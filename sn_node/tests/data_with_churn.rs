@@ -282,20 +282,33 @@ fn create_registers_task(
 
             sleep(delay).await;
 
-            let register = client
-                .register_create(random_data, &random_name, owner, &wallet)
-                .await
-                .inspect_err(|err| {
-                    println!("Error while creating register: {err:?}");
-                    error!("Error while creating register: {err:?}")
-                })?;
-
-            let addr = register.address();
-            println!("Created new Register ({addr:?}) after a delay of: {delay:?}");
-            content
-                .write()
-                .await
-                .push_back(NetworkAddress::RegisterAddress(*addr));
+            let mut retries = 1;
+            loop {
+                match client
+                    .register_create(random_data.clone(), &random_name, owner.clone(), &wallet)
+                    .await
+                {
+                    Ok(register) => {
+                        let addr = register.address();
+                        println!("Created new Register ({addr:?}) after a delay of: {delay:?}");
+                        content
+                            .write()
+                            .await
+                            .push_back(NetworkAddress::RegisterAddress(*addr));
+                        break;
+                    }
+                    Err(err) => {
+                        println!("Failed to create register: {err:?}. Retrying ...");
+                        error!("Failed to create register: {err:?}. Retrying ...");
+                        if retries >= 3 {
+                            println!("Failed to create register after 3 retries: {err}");
+                            error!("Failed to create register after 3 retries: {err}");
+                            bail!("Failed to create register after 3 retries: {err}");
+                        }
+                        retries += 1;
+                    }
+                }
+            }
         }
     });
     handle
