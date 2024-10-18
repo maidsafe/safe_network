@@ -1022,147 +1022,119 @@ jobs:
   #         platform: ubuntu-latest
   #         log_file_prefix: safe_test_logs_faucet
 
-  # large_file_upload_test:
-  #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-  #   name: Large file upload
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
+  large_file_upload_test:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Large file upload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - name: Install Rust
-  #       uses: dtolnay/rust-toolchain@stable
-  #     - uses: Swatinem/rust-cache@v2
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
 
-  #     - name: install ripgrep
-  #       shell: bash
-  #       run: sudo apt-get install -y ripgrep
+      - name: install ripgrep
+        shell: bash
+        run: sudo apt-get install -y ripgrep
 
-  #     - name: Check the available space
-  #       run: |
-  #         df
-  #         echo "Home dir:"
-  #         du -sh /home/runner/
-  #         echo "Home subdirs:"
-  #         du -sh /home/runner/*/
-  #         echo "PWD:"
-  #         du -sh .
-  #         echo "PWD subdirs:"
-  #         du -sh */
+      - name: Check the available space
+        run: |
+          df
+          echo "Home dir:"
+          du -sh /home/runner/
+          echo "Home subdirs:"
+          du -sh /home/runner/*/
+          echo "PWD:"
+          du -sh .
+          echo "PWD subdirs:"
+          du -sh */
 
-  #     - name: Download material, 1.1G
-  #       shell: bash
-  #       run: |
-  #         wget https://releases.ubuntu.com/14.04.6/ubuntu-14.04.6-desktop-i386.iso
-  #         ls -l
+      - name: Download material (135MB)
+        shell: bash
+        run: |
+          mkdir test_data_1
+          cd test_data_1
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safe-qiWithListeners-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safenode-qiWithListeners-x86_64.tar.gz
+          ls -l
+          cd ..
+          tar -cvzf test_data_1.tar.gz test_data_1
+          ls -l
 
-  #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin safe
-  #       timeout-minutes: 30
+      - name: Build binaries
+        run: cargo build --release --features local --bin safenode --bin autonomi
+        timeout-minutes: 30
 
-  #     - name: Build faucet binary
-  #       run: cargo build --release --bin faucet --features gifting
-  #       timeout-minutes: 30
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          enable-evm-testnet: true
+          node-path: target/release/safenode
+          platform: ubuntu-latest
+          build: true
 
-  #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
-  #       with:
-  #         action: start
-  #         interval: 2000
-  #         node-path: target/release/safenode
-  #         faucet-path: target/release/faucet
-  #         platform: ubuntu-latest
-  #         build: true
+      - name: Check if SAFE_PEERS and EVM_NETWORK are set
+        shell: bash
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          elif [[ -z "$EVM_NETWORK" ]]; then
+            echo "The EVM_NETWORK variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+            echo "EVM_NETWORK has been set to $EVM_NETWORK"
+          fi
 
-  #     - name: Check we're _not_ warned about using default genesis
-  #       run: |
-  #         if rg "USING DEFAULT" "${{ matrix.safe_path }}"/*/*/logs; then
-  #           exit 1
-  #         fi
-  #       shell: bash
+      - name: Check the available space post download
+        run: |
+          df
+          echo "Home dir:"
+          du -sh /home/runner/
+          echo "Home subdirs:"
+          du -sh /home/runner/*/
+          echo "PWD:"
+          du -sh .
+          echo "PWD subdirs:"
+          du -sh */
 
-  #     # The test currently fails because the GH runner runs out of disk space. So we clear out the target dir here.
-  #     # Might be related to additional deps used in the codebase.
-  #     - name: Move built binaries and clear out target dir
-  #       shell: bash
-  #       run: |
-  #         mv target/release/faucet ~/faucet
-  #         mv target/release/safe ~/safe
-  #         rm -rf target
+      - name: export default secret key
+        run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" >> $GITHUB_ENV
+        shell: bash
 
-  #     - name: Check SAFE_PEERS was set
-  #       shell: bash
-  #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
-  #           exit 1
-  #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
-  #         fi
+      - name: File upload
+        run: ./target/release/autonomi --log-output-dest=data-dir file upload "./test_data_1.tar.gz" > ./upload_output 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 5
 
-  #     - name: Check the available space post download
-  #       run: |
-  #         df
-  #         echo "Home dir:"
-  #         du -sh /home/runner/
-  #         echo "Home subdirs:"
-  #         du -sh /home/runner/*/
-  #         echo "PWD:"
-  #         du -sh .
-  #         echo "PWD subdirs:"
-  #         du -sh */
+      - name: showing the upload terminal output
+        run: cat upload_output
+        shell: bash
+        if: always()
 
-  # - name: Create and fund a wallet to pay for files storage
-  #   run: |
-  #     ~/safe --log-output-dest=data-dir wallet create --no-password
-  #     ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-  #     ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
+      - name: parse address
+        run: |
+          UPLOAD_ADDRESS=$(rg "At address: ([0-9a-f]*)" -o -r '$1' ./upload_output)
+          echo "UPLOAD_ADDRESS=$UPLOAD_ADDRESS" >> $GITHUB_ENV
+        shell: bash
 
-  #     - name: Start a client to upload
-  #       run: ~/safe --log-output-dest=data-dir files upload "ubuntu-14.04.6-desktop-i386.iso" --retry-strategy quick
-  #       env:
-  #         SN_LOG: "all"
-  #       timeout-minutes: 30
+      - name: File Download
+        run: ./target/release/autonomi --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
 
-  #     - name: Stop the local network and upload logs
-  #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
-  #       with:
-  #         action: stop
-  #         platform: ubuntu-latest
-  #         log_file_prefix: safe_test_logs_large_file_upload
-  #         build: true
-
-  #     - name: check there is no failed replication fetch
-  #       shell: bash
-  #       run: |
-  #         if grep -r "failed to fetch" $NODE_DATA_PATH
-  #         then
-  #           echo "We find failed replication fetch"
-  #           exit 1
-  #         fi
-  #       env:
-  #         NODE_DATA_PATH: /home/runner/.local/share/safe/node
-  #       timeout-minutes: 1
-
-  #     - name: Check the home dir leftover space
-  #       run: |
-  #         df
-  #         du -sh /home/runner/
-
-  #     - name: Confirm the wallet files (cash_notes, confirmed_spends)
-  #       run: |
-  #         pwd
-  #         ls $CLIENT_DATA_PATH/ -l
-  #         ls $CLIENT_DATA_PATH/wallet -l
-  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #         ls $CLIENT_DATA_PATH/wallet/confirmed_spends -l
-  #         ls $CLIENT_DATA_PATH/logs -l
-  #       env:
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
-  #       timeout-minutes: 1
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          platform: ubuntu-latest
+          log_file_prefix: safe_test_logs_large_file_upload
+          build: true
 
   # replication_bench_with_heavy_upload:
   #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
