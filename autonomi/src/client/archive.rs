@@ -14,13 +14,12 @@ use std::{
 use sn_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::{
-    data::DataAddr,
-    data::{GetError, PutError},
+    data::{CostError, DataAddr, GetError, PutError},
     Client,
 };
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::EvmWallet;
+use sn_evm::{AttoTokens, EvmWallet};
 use xor_name::XorName;
 
 /// The address of an archive on the network. Points to an [`Archive`].
@@ -36,13 +35,13 @@ pub enum RenameError {
 
 /// An archive of files that containing file paths, their metadata and the files data addresses
 /// Using archives is useful for uploading entire directories to the network, only needing to keep track of a single address.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct Archive {
     map: HashMap<PathBuf, (DataAddr, Metadata)>,
 }
 
 /// Metadata for a file in an archive
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Metadata {
     pub created: u64,
     pub modified: u64,
@@ -147,12 +146,6 @@ impl Archive {
     }
 }
 
-impl Default for Archive {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Client {
     /// Fetch an archive from the network
     pub async fn archive_get(&self, addr: ArchiveAddr) -> Result<Archive, GetError> {
@@ -170,5 +163,13 @@ impl Client {
             .into_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
         self.data_put(bytes, wallet).await
+    }
+
+    /// Get the cost to upload an archive
+    pub async fn archive_cost(&self, archive: Archive) -> Result<AttoTokens, CostError> {
+        let bytes = archive
+            .into_bytes()
+            .map_err(|e| CostError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
+        self.data_cost(bytes).await
     }
 }

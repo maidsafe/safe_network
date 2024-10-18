@@ -13,10 +13,10 @@ repository = "https://github.com/maidsafe/safe_network"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["data"]
+default = ["data", "vault"]
 full = ["data", "registers", "vault"]
 data = []
-vault = ["data"]
+vault = ["data", "registers"]
 fs = ["tokio/fs", "data"]
 local = ["sn_networking/local", "test_utils/local", "sn_evm/local"]
 registers = ["data"]

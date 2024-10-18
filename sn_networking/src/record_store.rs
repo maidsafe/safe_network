@@ -1238,7 +1238,7 @@ mod tests {
         let owner_sk = SecretKey::random();
         let owner_pk = owner_sk.public_key();
 
-        let mut scratchpad = Scratchpad::new(owner_pk);
+        let mut scratchpad = Scratchpad::new(owner_pk, 0);
 
         let _next_version =
             scratchpad.update_and_sign(unencrypted_scratchpad_data.clone(), &owner_sk);
@@ -1283,8 +1283,7 @@ mod tests {
             let decrypted_data = scratchpad.decrypt_data(&owner_sk)?;
 
             assert_eq!(
-                decrypted_data,
-                Some(unencrypted_scratchpad_data),
+                decrypted_data, unencrypted_scratchpad_data,
                 "Stored scratchpad data should match original"
             );
         }
