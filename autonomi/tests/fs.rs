@@ -104,8 +104,7 @@ async fn file_into_vault() -> Result<()> {
     let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
 
     assert_eq!(
-        archive.iter().count(),
-        ap_archive_fetched.iter().count(),
+        archive, ap_archive_fetched,
         "archive fetched should match archive put"
     );
 
