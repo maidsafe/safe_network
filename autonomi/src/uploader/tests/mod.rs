@@ -187,8 +187,8 @@ async fn chunks_should_perform_repayment_if_the_upload_fails_multiple_times() ->
             assert_select_different_payee: false,
         },
         TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr,
-        TestSteps::UploadItemErr,
+        TestSteps::UploadItemErr { io_error: false },
+        TestSteps::UploadItemErr { io_error: false },
         TestSteps::GetStoreCostOk {
             trigger_zero_cost: false,
             assert_select_different_payee: true,
@@ -235,8 +235,8 @@ async fn registers_should_perform_repayment_if_the_upload_fails_multiple_times()
             assert_select_different_payee: false,
         },
         TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr,
-        TestSteps::UploadItemErr,
+        TestSteps::UploadItemErr { io_error: false },
+        TestSteps::UploadItemErr { io_error: false },
         TestSteps::GetStoreCostOk {
             trigger_zero_cost: false,
             assert_select_different_payee: true,
@@ -484,16 +484,16 @@ async fn maximum_repayment_error_should_be_triggered_during_get_store_cost() -> 
             assert_select_different_payee: false,
         },
         TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr,
-        TestSteps::UploadItemErr,
+        TestSteps::UploadItemErr { io_error: false },
+        TestSteps::UploadItemErr { io_error: false },
         // first repayment
         TestSteps::GetStoreCostOk {
             trigger_zero_cost: false,
             assert_select_different_payee: true,
         },
         TestSteps::MakePaymentOk,
-        TestSteps::UploadItemErr,
-        TestSteps::UploadItemErr,
+        TestSteps::UploadItemErr { io_error: false },
+        TestSteps::UploadItemErr { io_error: false },
         // thus after reaching max repayments, we should error out during get store cost.
         TestSteps::GetStoreCostErr {
             assert_select_different_payee: true,
@@ -516,5 +516,42 @@ async fn maximum_repayment_error_should_be_triggered_during_get_store_cost() -> 
     assert_eq!(events.len(), 2);
     assert_matches!(events[0], UploadEvent::PaymentMade { .. });
     assert_matches!(events[1], UploadEvent::PaymentMade { .. });
+    Ok(())
+}
+
+// 7. if we get io error during upload, then the entire upload should error out.
+#[tokio::test]
+async fn io_error_during_upload_should_stop_the_uploads() -> Result<()> {
+    let _log_guards = LogBuilder::init_single_threaded_tokio_test("uploader", true);
+    let temp_dir = tempdir()?;
+    let (mut inner_uploader, task_result_rx) = get_inner_uploader()?;
+
+    // cfg
+    inner_uploader.set_batch_size(1);
+    inner_uploader.set_payment_batch_size(1);
+    inner_uploader.insert_chunk_paths(get_dummy_chunk_paths(1, temp_dir.path().to_path_buf()));
+
+    // the path to test
+    let steps = vec![
+        TestSteps::GetStoreCostOk {
+            trigger_zero_cost: false,
+            assert_select_different_payee: false,
+        },
+        TestSteps::MakePaymentOk,
+        TestSteps::UploadItemErr { io_error: true },
+    ];
+
+    let (upload_handle, events_handle) = start_uploading_with_steps(
+        inner_uploader,
+        VecDeque::from(steps),
+        SecretKey::random(),
+        task_result_rx,
+    );
+
+    assert_matches!(upload_handle.await?, Err(UploadError::Io { .. }));
+    let events = events_handle.await?;
+
+    assert_eq!(events.len(), 1);
+    assert_matches!(events[0], UploadEvent::PaymentMade { .. });
     Ok(())
 }
