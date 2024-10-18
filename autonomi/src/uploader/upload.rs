@@ -13,10 +13,9 @@ use super::{
     GetStoreCostStrategy, TaskResult, UploadCfg, UploadEvent, UploadItem, UploadSummary, Uploader,
     UploaderInterface, PAYMENT_BATCH_SIZE,
 };
-use crate::{
-    client::registers::Register, uploader::UploadError,
-    utils::payment_proof_from_quotes_and_payments, Client,
-};
+#[cfg(feature = "registers")]
+use crate::client::registers::Register;
+use crate::{uploader::UploadError, utils::payment_proof_from_quotes_and_payments, Client};
 use bytes::Bytes;
 use itertools::Either;
 use libp2p::{kad::Quorum, PeerId};
@@ -29,6 +28,7 @@ use sn_protocol::{
     storage::{Chunk, RetryStrategy},
     NetworkAddress,
 };
+#[cfg(feature = "registers")]
 use sn_registers::RegisterAddress;
 use std::{
     collections::{HashMap, HashSet},
@@ -104,17 +104,20 @@ pub(super) async fn start_upload(
         .collect();
 
     // registers have to be verified + merged with remote replica, so we have to fetch it first.
-    uploader.pending_to_get_register = uploader
-        .all_upload_items
-        .iter()
-        .filter_map(|(_xorname, item)| {
-            if let UploadItem::Register { address, .. } = item {
-                Some(*address)
-            } else {
-                None
-            }
-        })
-        .collect();
+    #[cfg(feature = "registers")]
+    {
+        uploader.pending_to_get_register = uploader
+            .all_upload_items
+            .iter()
+            .filter_map(|(_xorname, item)| {
+                if let UploadItem::Register { address, .. } = item {
+                    Some(*address)
+                } else {
+                    None
+                }
+            })
+            .collect();
+    }
 
     loop {
         // Break if we have uploaded all the items.
@@ -162,39 +165,45 @@ pub(super) async fn start_upload(
         // try to GET register if we have enough buffer.
         // The results of the get & push register steps are used to fill up `pending_to_get_store` cost
         // Since the get store cost list is the init state, we don't have to check if it is not full.
-        while !uploader.pending_to_get_register.is_empty()
-            && uploader.on_going_get_register.len() < uploader.cfg.batch_size
+        #[cfg(feature = "registers")]
         {
-            if let Some(reg_addr) = uploader.pending_to_get_register.pop() {
-                trace!("Conditions met for GET registers {:?}", reg_addr.xorname());
-                let _ = uploader.on_going_get_register.insert(reg_addr.xorname());
-                interface.submit_get_register_task(
-                    uploader.client.clone(),
-                    reg_addr,
-                    task_result_sender.clone(),
-                );
+            while !uploader.pending_to_get_register.is_empty()
+                && uploader.on_going_get_register.len() < uploader.cfg.batch_size
+            {
+                if let Some(reg_addr) = uploader.pending_to_get_register.pop() {
+                    trace!("Conditions met for GET registers {:?}", reg_addr.xorname());
+                    let _ = uploader.on_going_get_register.insert(reg_addr.xorname());
+                    interface.submit_get_register_task(
+                        uploader.client.clone(),
+                        reg_addr,
+                        task_result_sender.clone(),
+                    );
+                }
             }
         }
 
         // try to push register if we have enough buffer.
         // No other checks for the same reason as the above step.
-        while !uploader.pending_to_push_register.is_empty()
-            && uploader.on_going_get_register.len() < uploader.cfg.batch_size
+        #[cfg(feature = "registers")]
         {
-            let upload_item = uploader.pop_item_for_push_register()?;
-            trace!(
-                "Conditions met for push registers {:?}",
-                upload_item.xorname()
-            );
-            let _ = uploader
-                .on_going_push_register
-                .insert(upload_item.xorname());
-            interface.submit_push_register_task(
-                uploader.client.clone(),
-                upload_item,
-                uploader.cfg.verify_store,
-                task_result_sender.clone(),
-            );
+            while !uploader.pending_to_push_register.is_empty()
+                && uploader.on_going_get_register.len() < uploader.cfg.batch_size
+            {
+                let upload_item = uploader.pop_item_for_push_register()?;
+                trace!(
+                    "Conditions met for push registers {:?}",
+                    upload_item.xorname()
+                );
+                let _ = uploader
+                    .on_going_push_register
+                    .insert(upload_item.xorname());
+                interface.submit_push_register_task(
+                    uploader.client.clone(),
+                    upload_item,
+                    uploader.cfg.verify_store,
+                    task_result_sender.clone(),
+                );
+            }
         }
 
         // try to get store cost for an item if pending_to_pay needs items & if we have enough buffer.
@@ -278,6 +287,7 @@ pub(super) async fn start_upload(
             .ok_or(UploadError::InternalError)?;
         trace!("Received task result: {task_result:?}");
         match task_result {
+            #[cfg(feature = "registers")]
             TaskResult::GetRegisterFromNetworkOk { remote_register } => {
                 // if we got back the register, then merge & PUT it.
                 let xorname = remote_register.address().xorname();
@@ -295,6 +305,7 @@ pub(super) async fn start_upload(
                     uploader.pending_to_push_register.push(xorname);
                 }
             }
+            #[cfg(feature = "registers")]
             TaskResult::GetRegisterFromNetworkErr(xorname) => {
                 // then the register is a new one. It can follow the same flow as chunks now.
                 let _ = uploader.on_going_get_register.remove(&xorname);
@@ -303,6 +314,7 @@ pub(super) async fn start_upload(
                     .pending_to_get_store_cost
                     .push((xorname, GetStoreCostStrategy::Cheapest));
             }
+            #[cfg(feature = "registers")]
             TaskResult::PushRegisterOk { updated_register } => {
                 // push modifies the register, so we return this instead of the one from all_upload_items
                 let xorname = updated_register.address().xorname();
@@ -327,6 +339,7 @@ pub(super) async fn start_upload(
                 }
                 uploader.emit_upload_event(UploadEvent::RegisterUpdated(updated_register));
             }
+            #[cfg(feature = "registers")]
             TaskResult::PushRegisterErr(xorname) => {
                 // the register failed to be Pushed. Retry until failure.
                 let _ = uploader.on_going_push_register.remove(&xorname);
@@ -366,7 +379,7 @@ pub(super) async fn start_upload(
                                 address,
                             ));
                         }
-
+                        #[cfg(feature = "registers")]
                         UploadItem::Register { reg, .. } => {
                             if uploader.cfg.collect_registers {
                                 let _ = uploader
@@ -477,6 +490,7 @@ pub(super) async fn start_upload(
                     UploadItem::Chunk { address, .. } => {
                         uploader.emit_upload_event(UploadEvent::ChunkUploaded(address));
                     }
+                    #[cfg(feature = "registers")]
                     UploadItem::Register { reg, .. } => {
                         if uploader.cfg.collect_registers {
                             let _ = uploader
@@ -591,6 +605,7 @@ impl UploaderInterface for Uploader {
         });
     }
 
+    #[cfg(feature = "registers")]
     fn submit_get_register_task(
         &mut self,
         client: Client,
@@ -617,6 +632,7 @@ impl UploaderInterface for Uploader {
         });
     }
 
+    #[cfg(feature = "registers")]
     fn submit_push_register_task(
         &mut self,
         client: Client,
@@ -719,7 +735,9 @@ pub(super) struct InnerUploader {
 
     // states
     pub(super) all_upload_items: HashMap<XorName, UploadItem>,
+    #[cfg(feature = "registers")]
     pub(super) pending_to_get_register: Vec<RegisterAddress>,
+    #[cfg(feature = "registers")]
     pub(super) pending_to_push_register: Vec<XorName>,
     pub(super) pending_to_get_store_cost: Vec<(XorName, GetStoreCostStrategy)>,
     pub(super) pending_to_pay: Vec<(XorName, Box<PayeeQuote>)>,
@@ -727,7 +745,9 @@ pub(super) struct InnerUploader {
     pub(super) payment_proofs: HashMap<XorName, Vec<ProofOfPayment>>,
 
     // trackers
+    #[cfg(feature = "registers")]
     pub(super) on_going_get_register: HashSet<XorName>,
+    #[cfg(feature = "registers")]
     pub(super) on_going_push_register: HashSet<XorName>,
     pub(super) on_going_get_cost: HashSet<XorName>,
     pub(super) on_going_payments: HashSet<XorName>,
@@ -735,6 +755,7 @@ pub(super) struct InnerUploader {
 
     // error trackers
     pub(super) n_errors_during_uploads: HashMap<XorName, usize>,
+    #[cfg(feature = "registers")]
     pub(super) push_register_errors: usize,
     pub(super) get_store_cost_errors: usize,
     pub(super) make_payments_errors: usize,
@@ -744,6 +765,7 @@ pub(super) struct InnerUploader {
     pub(super) upload_final_balance: Amount,
     pub(super) max_repayments_reached: HashSet<XorName>,
     pub(super) uploaded_addresses: HashSet<NetworkAddress>,
+    #[cfg(feature = "registers")]
     pub(super) uploaded_registers: HashMap<RegisterAddress, Register>,
     pub(super) uploaded_count: usize,
     pub(super) skipped_count: usize,
@@ -767,20 +789,25 @@ impl InnerUploader {
             wallet,
 
             all_upload_items: Default::default(),
+            #[cfg(feature = "registers")]
             pending_to_get_register: Default::default(),
+            #[cfg(feature = "registers")]
             pending_to_push_register: Default::default(),
             pending_to_get_store_cost: Default::default(),
             pending_to_pay: Default::default(),
             pending_to_upload: Default::default(),
             payment_proofs: Default::default(),
 
+            #[cfg(feature = "registers")]
             on_going_get_register: Default::default(),
+            #[cfg(feature = "registers")]
             on_going_push_register: Default::default(),
             on_going_get_cost: Default::default(),
             on_going_payments: Default::default(),
             on_going_uploads: Default::default(),
 
             n_errors_during_uploads: Default::default(),
+            #[cfg(feature = "registers")]
             push_register_errors: Default::default(),
             get_store_cost_errors: Default::default(),
             max_repayments_reached: Default::default(),
@@ -789,6 +816,7 @@ impl InnerUploader {
             tokens_spent: Amount::from(0),
             upload_final_balance: Amount::from(0),
             uploaded_addresses: Default::default(),
+            #[cfg(feature = "registers")]
             uploaded_registers: Default::default(),
             uploaded_count: Default::default(),
             skipped_count: Default::default(),
@@ -801,6 +829,7 @@ impl InnerUploader {
 
     // ====== Pop items ======
 
+    #[cfg(feature = "registers")]
     fn pop_item_for_push_register(&mut self) -> Result<UploadItem> {
         if let Some(name) = self.pending_to_push_register.pop() {
             let upload_item = self.all_upload_items.get(&name).cloned().ok_or_else(|| {
@@ -970,11 +999,13 @@ impl InnerUploader {
 
     // ====== Logic ======
 
+    #[cfg(feature = "registers")]
     async fn get_register(client: Client, reg_addr: RegisterAddress) -> Result<Register> {
         let reg = client.register_get(reg_addr).await?;
         Ok(reg)
     }
 
+    #[cfg(feature = "registers")]
     async fn push_register(
         client: Client,
         upload_item: UploadItem,
@@ -1123,6 +1154,7 @@ impl InnerUploader {
 
                 debug!("Client upload completed for chunk: {xorname:?}");
             }
+            #[cfg(feature = "registers")]
             UploadItem::Register { address: _, reg } => {
                 debug!("Client upload started for register: {xorname:?}");
                 let verification = if verify_store {
