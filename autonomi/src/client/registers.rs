@@ -6,34 +6,29 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::data::CostError;
+use crate::client::{Client, ClientEvent};
+use crate::uploader::{UploadError, Uploader};
 /// Register Secret Key
 pub use bls::SecretKey as RegisterSecretKey;
-use sn_evm::Amount;
-use sn_evm::AttoTokens;
-use sn_evm::EvmWalletError;
-use sn_evm::ProofOfPayment;
-use sn_networking::VerificationKind;
-use sn_protocol::storage::RetryStrategy;
-pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
-
-use crate::client::data::PayError;
-use crate::client::Client;
-use crate::client::ClientEvent;
-use crate::client::UploadSummary;
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
+use sn_evm::Amount;
+use sn_evm::AttoTokens;
 use sn_evm::EvmWallet;
+use sn_evm::ProofOfPayment;
+use sn_networking::VerificationKind;
 use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg};
 use sn_protocol::storage::try_deserialize_record;
 use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
+use sn_protocol::storage::RetryStrategy;
 use sn_protocol::NetworkAddress;
 use sn_registers::Register as BaseRegister;
+pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
 use sn_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use std::collections::BTreeSet;
 use xor_name::XorName;
-
-use super::data::CostError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RegisterError {
@@ -45,16 +40,12 @@ pub enum RegisterError {
     Serialization,
     #[error("Register could not be verified (corrupt)")]
     FailedVerification,
-    #[error("Payment failure occurred during register creation.")]
-    Pay(#[from] PayError),
-    #[error("Failed to retrieve wallet payment")]
-    Wallet(#[from] EvmWalletError),
+    #[error("Upload Error")]
+    Upload(#[from] UploadError),
     #[error("Failed to write to low-level register")]
     Write(#[source] sn_registers::Error),
     #[error("Failed to sign register")]
     CouldNotSign(#[source] sn_registers::Error),
-    #[error("Received invalid quote from node, this node is possibly malfunctioning, try another node by trying another register name")]
-    InvalidQuote,
 }
 
 #[derive(Clone, Debug)]
@@ -317,57 +308,39 @@ impl Client {
 
         // Owner can write to the register.
         let register = Register::new(Some(value), name, owner, permissions)?;
-        let address = register.address();
+        let address = *register.address();
 
-        let reg_xor = address.xorname();
-        debug!("Paying for register at address: {address}");
-        let (payment_proofs, _skipped) = self
-            .pay(std::iter::once(reg_xor), wallet)
-            .await
-            .inspect_err(|err| {
-                error!("Failed to pay for register at address: {address} : {err}")
-            })?;
-        let proof = payment_proofs.get(&reg_xor).ok_or_else(|| {
-            // register was skipped, meaning it was already paid for
-            error!("Register at address: {address} was already paid for");
-            RegisterError::Network(NetworkError::RegisterAlreadyExists)
-        })?;
+        let mut uploader = Uploader::new(self.clone(), wallet.clone());
+        uploader.insert_register(vec![register]);
+        uploader.set_collect_registers(true);
 
-        let payee = proof
-            .to_peer_id_payee()
-            .ok_or(RegisterError::InvalidQuote)
-            .inspect_err(|err| error!("Failed to get payee from payment proof: {err}"))?;
+        let summary = uploader.start_upload().await?;
 
-        let get_cfg = GetRecordCfg {
-            get_quorum: Quorum::Majority,
-            retry_strategy: Some(RetryStrategy::default()),
-            target_record: None,
-            expected_holders: Default::default(),
-            is_register: true,
-        };
-        let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::All,
-            retry_strategy: None,
-            use_put_record_to: Some(vec![payee]),
-            verification: Some((VerificationKind::Network, get_cfg)),
-        };
-
-        self.register_upload(&register, Some(proof), &put_cfg)
-            .await?;
+        let register = summary
+            .uploaded_registers
+            .get(&address)
+            .ok_or_else(|| {
+                error!("Failed to get register with name: {name}");
+                RegisterError::Upload(UploadError::InternalError)
+            })?
+            .clone();
 
         if let Some(channel) = self.client_event_sender.as_ref() {
-            let summary = UploadSummary {
-                record_count: 1,
-                tokens_spent: proof.quote.cost.as_atto(),
-            };
-            if let Err(err) = channel.send(ClientEvent::UploadComplete(summary)).await {
-                error!("Failed to send client event: {err}");
+            if let Err(err) = channel
+                .send(ClientEvent::UploadComplete {
+                    record_count: summary.uploaded_count,
+                    tokens_spent: summary.storage_cost,
+                })
+                .await
+            {
+                error!("Failed to send client event: {err:?}");
             }
         }
 
         Ok(register)
     }
 
+    // Used by the uploader.
     pub(crate) async fn register_upload(
         &self,
         register: &Register,

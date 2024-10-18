@@ -10,7 +10,6 @@
 mod tests;
 mod upload;
 
-use crate::client::data::PutError;
 use crate::client::registers::{Register, RegisterError};
 use crate::Client;
 use itertools::Either;
@@ -48,6 +47,8 @@ pub(super) const MAX_REPAYMENTS_PER_FAILED_ITEM: usize = 1;
 
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
+    #[error("Network Token error: {0:?}")]
+    EvmNetworkTokenError(#[from] EvmNetworkTokenError),
     #[error("Internal Error")]
     InternalError,
     #[error("Invalid cfg: {0:?}")]
@@ -61,18 +62,34 @@ pub enum UploadError {
     },
     #[error("Network error: {0:?}")]
     Network(#[from] NetworkError),
-    #[error("Put error: {0:?}")]
-    PutError(#[from] PutError),
-    #[error("Register error: {0:?}")]
-    RegisterError(#[from] RegisterError),
+    #[error("Register could not be verified (corrupt)")]
+    RegisterFailedVerification,
+    #[error("Failed to write to low-level register")]
+    RegisterWrite(#[source] sn_registers::Error),
+    #[error("Failed to sign register")]
+    RegisterCouldNotSign(#[source] sn_registers::Error),
     #[error("Multiple consecutive network errors reported during upload")]
     SequentialNetworkErrors,
     #[error("Too many sequential payment errors reported during upload")]
     SequentialUploadPaymentError,
     #[error("Failed to serialize {0}")]
     Serialization(String),
-    #[error("Network Token error: {0:?}")]
-    EvmNetworkTokenError(#[from] EvmNetworkTokenError),
+}
+
+// UploadError is used inside RegisterError, but the uploader emits RegisterError. So this is used to avoid
+// recursive enum definition.
+impl From<RegisterError> for UploadError {
+    fn from(err: RegisterError) -> Self {
+        match err {
+            RegisterError::Network(err) => Self::Network(err),
+            RegisterError::Write(err) => Self::RegisterWrite(err),
+            RegisterError::CouldNotSign(err) => Self::RegisterCouldNotSign(err),
+            RegisterError::Cost(_) => Self::InternalError,
+            RegisterError::Serialization => Self::Serialization("Register".to_string()),
+            RegisterError::FailedVerification => Self::RegisterFailedVerification,
+            RegisterError::Upload(err) => err,
+        }
+    }
 }
 
 /// The set of options to pass into the `Uploader`
@@ -108,7 +125,9 @@ pub struct UploadSummary {
     pub final_balance: Amount,
     pub uploaded_addresses: HashSet<NetworkAddress>,
     pub uploaded_registers: HashMap<RegisterAddress, Register>,
+    /// The number of records that were paid for and uploaded to the network.
     pub uploaded_count: usize,
+    /// The number of records that were skipped during because they were already present in the network.
     pub skipped_count: usize,
 }
 
