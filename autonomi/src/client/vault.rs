@@ -37,11 +37,11 @@ pub enum VaultError {
 /// The content type of the vault data
 /// The number is used to determine the type of the contents of the bytes contained in a vault
 /// Custom apps can use this to store their own custom types of data in vaults
-/// It is recommended to use the hash of the app name or unique identifier as the version
+/// It is recommended to use the hash of the app name or an unique identifier as the content type using [`app_name_to_vault_content_type`]
 /// The value 0 is reserved for tests
 pub type VaultContentType = u64;
 
-/// For custom apps using Scratchpad, this function converts an app identifier or name to a VaultContentType
+/// For custom apps using Scratchpad, this function converts an app identifier or name to a [`VaultContentType`]
 pub fn app_name_to_vault_content_type<T: Hash>(s: T) -> VaultContentType {
     let mut hasher = DefaultHasher::new();
     s.hash(&mut hasher);
@@ -50,8 +50,7 @@ pub fn app_name_to_vault_content_type<T: Hash>(s: T) -> VaultContentType {
 
 impl Client {
     /// Retrieves and returns a decrypted vault if one exists.
-    /// Returns the version of the vault content
-    /// The version is used to determine the type of the contents of the bytes
+    /// Returns the content type of the bytes in the vault
     pub async fn fetch_and_decrypt_vault(
         &self,
         secret_key: &SecretKey,
@@ -100,15 +99,14 @@ impl Client {
     /// Put data into the client's VaultPacket
     ///
     /// Pays for a new VaultPacket if none yet created for the client.
-    /// Provide the bytes to be written to the vault and the version of the vault content.
-    /// The Version of the vault content is used to determine the type of the contents of the bytes.
-    /// It is recommended to use the hash of the app name or unique identifier as the version.
+    /// Provide the bytes to be written to the vault and the content type of those bytes.
+    /// It is recommended to use the hash of the app name or unique identifier as the content type.
     pub async fn write_bytes_to_vault(
         &self,
         data: Bytes,
         wallet: &EvmWallet,
         secret_key: &SecretKey,
-        version: VaultContentType,
+        content_type: VaultContentType,
     ) -> Result<(), PutError> {
         let client_pk = secret_key.public_key();
 
@@ -127,7 +125,7 @@ impl Client {
             existing_data
         } else {
             trace!("new scratchpad creation");
-            Scratchpad::new(client_pk, version)
+            Scratchpad::new(client_pk, content_type)
         };
 
         let _next_count = scratch.update_and_sign(data, secret_key);

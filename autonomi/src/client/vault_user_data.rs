@@ -84,10 +84,12 @@ impl Client {
         &self,
         secret_key: &SecretKey,
     ) -> Result<UserData, UserDataVaultGetError> {
-        let (bytes, version) = self.fetch_and_decrypt_vault(secret_key).await?;
+        let (bytes, content_type) = self.fetch_and_decrypt_vault(secret_key).await?;
 
-        if version != *USER_DATA_VAULT_CONTENT_IDENTIFIER {
-            return Err(UserDataVaultGetError::UnsupportedVaultContentType(version));
+        if content_type != *USER_DATA_VAULT_CONTENT_IDENTIFIER {
+            return Err(UserDataVaultGetError::UnsupportedVaultContentType(
+                content_type,
+            ));
         }
 
         let vault = UserData::from_bytes(bytes).map_err(|e| {
