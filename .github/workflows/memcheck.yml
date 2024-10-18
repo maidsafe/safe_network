@@ -13,509 +13,282 @@ env:
   SAFE_DATA_PATH: /home/runner/.local/share/safe
   CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
-  BOOTSTRAP_NODE_DATA_PATH: /home/runner/.local/share/safe/bootstrap_node
   RESTART_TEST_NODE_DATA_PATH: /home/runner/.local/share/safe/restart_node
-  FAUCET_LOG_PATH: /home/runner/.local/share/safe/test_faucet/logs
 
-# jobs:
-#   memory-check:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
+jobs:
+  memory-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-#       - name: Check we're on the right commit
-#         run: git log -1 --oneline
+      - name: Check we're on the right commit
+        run: git log -1 --oneline
 
-#       - name: Install Rust
-#         uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
-#       - uses: Swatinem/rust-cache@v2
-#         continue-on-error: true
+      - uses: Swatinem/rust-cache@v2
+        continue-on-error: true
 
-#       - name: install ripgrep
-#         shell: bash
-#         run: sudo apt-get install -y ripgrep
+      - name: install ripgrep
+        shell: bash
+        run: sudo apt-get install -y ripgrep
 
-#       - name: Build binaries
-#         run: cargo build --release --bin safe --bin safenode
-#         timeout-minutes: 30
+      - name: Build binaries
+        run: cargo build --release --features local --bin safenode --bin autonomi
+        timeout-minutes: 30
 
-#       - name: Build faucet binary with gifting
-#         run: cargo build --release --bin faucet --features gifting
-#         timeout-minutes: 30
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          enable-evm-testnet: true
+          node-path: target/release/safenode
+          platform: ubuntu-latest
+          build: true
 
-#       - name: Build tests
-#         run: cargo test --release -p sn_node --test data_with_churn --test verify_routing_table --no-run
-#         timeout-minutes: 30
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
-#       - name: Start a node instance that does not undergo churn
-#         run: |
-#           mkdir -p $BOOTSTRAP_NODE_DATA_PATH
-#           ./target/release/safenode --first \
-#             --root-dir $BOOTSTRAP_NODE_DATA_PATH --log-output-dest $BOOTSTRAP_NODE_DATA_PATH --local --owner=bootstrap &
-#           sleep 10
-#         env:
-#           SN_LOG: "all"
+      - name: Start a node instance to be restarted
+        run: |
+          mkdir -p $RESTART_TEST_NODE_DATA_PATH
+          ./target/release/safenode \
+            --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --rewards-address "0x03B770D9cD32077cC0bF330c13C114a87643B124" &
+          sleep 10
+        env:
+          SN_LOG: "all"
 
-#       - name: Set SAFE_PEERS
-#         run: |
-#           safe_peers=$(rg "Local node is listening .+ on \".+\"" $BOOTSTRAP_NODE_DATA_PATH -u | \
-#             rg '/ip4.*$' -m1 -o | rg '"' -r '')
-#           echo "SAFE_PEERS=$safe_peers" >> $GITHUB_ENV
+      - name: Download 95mb file to be uploaded with the safe client
+        shell: bash
+        run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
 
-#       - name: Check SAFE_PEERS was set
-#         shell: bash
-#         run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
+      - name: export default secret key
+        run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" >> $GITHUB_ENV
+        shell: bash
 
-#       - name: Start a node instance to be restarted
-#         run: |
-#           mkdir -p $RESTART_TEST_NODE_DATA_PATH
-#           ./target/release/safenode \
-#             --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --owner=restart &
-#           sleep 10
-#         env:
-#           SN_LOG: "all"
+      - name: File upload
+        run: ./target/release/autonomi --log-output-dest=data-dir file upload "./the-test-data.zip" > ./upload_output 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 5
 
-#       - name: Start a local network
-#         env:
-#           SN_LOG: "all"
-#         uses: maidsafe/sn-local-testnet-action@main
-#         with:
-#           action: start
-#           build: true
-#           faucet-path: target/release/faucet
-#           interval: 2000
-#           join: true
-#           node-path: target/release/safenode
-#           owner-prefix: node
-#           platform: ubuntu-latest
-#           set-safe-peers: false
+      - name: showing the upload terminal output
+        run: cat upload_output
+        shell: bash
+        if: always()
 
-#       # In this case we did *not* want SAFE_PEERS to be set to another value by starting the testnet
-#       - name: Check SAFE_PEERS was not changed
-#         shell: bash
-#         run: echo "The SAFE_PEERS variable has been set to ${SAFE_PEERS}"
+      - name: parse address
+        run: |
+          UPLOAD_ADDRESS=$(rg "At address: ([0-9a-f]*)" -o -r '$1' ./upload_output)
+          echo "UPLOAD_ADDRESS=$UPLOAD_ADDRESS" >> $GITHUB_ENV
+        shell: bash
 
-#       - name: Create and fund a wallet to pay for files storage
-#         run: |
-#           echo "Obtaining address for use with the faucet..."
-#           ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-#           address=$(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1)
-#           echo "Sending tokens to the faucet at $address"
-#           ./target/release/faucet --log-output-dest=data-dir send 5000000 $address > initial_balance_from_faucet.txt
-#           cat initial_balance_from_faucet.txt
-#           cat initial_balance_from_faucet.txt | tail -n 1 > transfer_hex
-#           cat transfer_hex
-#           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-#         env:
-#           SN_LOG: "all"
-#         timeout-minutes: 15
+      # Uploading same file using different client shall not incur any payment neither uploads
+      # Note rg will throw an error directly in case of failed to find a matching pattern.
+      - name: Start a different client to upload the same file
+        run: |
+          pwd
+          ls -l $SAFE_DATA_PATH
+          mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
+          ls -l $SAFE_DATA_PATH
+          ls -l $SAFE_DATA_PATH/client_first
+          ls -l $SAFE_DATA_PATH/client_first/logs
+          mkdir $SAFE_DATA_PATH/client
+          ls -l $SAFE_DATA_PATH
+          cp ./the-test-data.zip ./the-test-data_1.zip
+          ./target/release/autonomi --log-output-dest=data-dir file upload "./the-test-data_1.zip" > ./second_upload 2>&1
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 25
 
-#       - name: Move faucet log to the working folder
-#         run: |
-#           echo "SAFE_DATA_PATH has: "
-#           ls -l $SAFE_DATA_PATH
-#           echo "test_faucet foder has: "
-#           ls -l $SAFE_DATA_PATH/test_faucet
-#           echo "logs folder has: "
-#           ls -l $SAFE_DATA_PATH/test_faucet/logs
-#           mv $FAUCET_LOG_PATH/faucet.log ./faucet_log.log
-#         continue-on-error: true
-#         if: always()
-#         timeout-minutes: 1
+      - name: showing the second upload terminal output
+        run: cat second_upload
+        shell: bash
+        if: always()
 
-#       - name: Download 95mb file to be uploaded with the safe client
-#         shell: bash
-#         run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
+      - name: Stop the restart node
+        run: kill $( cat $RESTART_TEST_NODE_DATA_PATH/safenode.pid )
 
-#       # The resources file we upload may change, and with it mem consumption.
-#       # Be aware!
-#       - name: Start a client to upload files
-#         # -p makes files public
-#         run: |
-#           ls -l
-#           ./target/release/safe --log-output-dest=data-dir files upload "./the-test-data.zip" --retry-strategy quick -p
-#         env:
-#           SN_LOG: "all"
-#         timeout-minutes: 25
+      - name: Start the restart node again
+        run: |
+          ./target/release/safenode \
+            --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --rewards-address "0x03B770D9cD32077cC0bF330c13C114a87643B124" &
+          sleep 10
+        env:
+          SN_LOG: "all"
 
-#         # this check needs to be after some transfer activity
-#       - name: Check we're warned about using default genesis
-#         run: |
-#           git log -1 --oneline
-#           ls -la $RESTART_TEST_NODE_DATA_PATH
-#           cat $RESTART_TEST_NODE_DATA_PATH/safenode.log
-#       - name: Check we're warned about using default genesis
-#         run: |
-#           git log -1 --oneline
-#           ls -la $BOOTSTRAP_NODE_DATA_PATH
-#           cat $BOOTSTRAP_NODE_DATA_PATH/safenode.log
+      # Records are encrypted, and seeds will change after restart
+      # Currently, there will be `Existing record found`, but NO `Existing record loaded`
+      # Due to the failure on decryption (as different seed used)
+      - name: Assert we've reloaded some chunks
+        run: rg "Existing record found" $RESTART_TEST_NODE_DATA_PATH
 
-#       - name: Check we're warned about using default genesis
-#         run: |
-#           git log -1 --oneline
-#           ls -la $NODE_DATA_PATH
-#           rg "USING DEFAULT" "$NODE_DATA_PATH" -u
-#         shell: bash
+      - name: Verify data replication using rg
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of replication
+        run: |
+          sending_list_count=$(rg "Sending a replication list" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          echo "Sent $sending_list_count replication lists"
+          received_list_count=$(rg "Received replication list from" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          echo "Received $received_list_count replication lists"
+          fetching_attempt_count=$(rg "FetchingKeysForReplication" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          echo "Carried out $fetching_attempt_count fetching attempts"
+        if: always()
 
-#       # Uploading same file using different client shall not incur any payment neither uploads
-#       # Note rg will throw an error directly in case of failed to find a matching pattern.
-#       - name: Start a different client to upload the same file
-#         run: |
-#           pwd
-#           mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
-#           ls -l $SAFE_DATA_PATH
-#           ls -l $SAFE_DATA_PATH/client_first
-#           mkdir $SAFE_DATA_PATH/client
-#           ls -l $SAFE_DATA_PATH
-#           mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
-#           ls -l $CLIENT_DATA_PATH
-#           cp ./the-test-data.zip ./the-test-data_1.zip
-#           ./target/release/safe --log-output-dest=data-dir wallet create --no-replace --no-password
-#           ./target/release/faucet --log-output-dest=data-dir send 5000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) > initial_balance_from_faucet_1.txt
-#           cat initial_balance_from_faucet_1.txt
-#           cat initial_balance_from_faucet_1.txt | tail -n 1 > transfer_hex
-#           cat transfer_hex
-#           ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-#           ./target/release/safe --log-output-dest=data-dir files upload "./the-test-data_1.zip" --retry-strategy quick -p > second_upload.txt
-#           cat second_upload.txt
-#           rg "New wallet balance: 5000000.000000000" second_upload.txt -c --stats
-#         env:
-#           SN_LOG: "all"
-#         timeout-minutes: 25
+      - name: File Download
+        run: ./target/release/autonomi --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
 
-#       - name: Stop the restart node
-#         run: kill $( cat $RESTART_TEST_NODE_DATA_PATH/safenode.pid )
+      - name: Check nodes running
+        shell: bash
+        timeout-minutes: 1
+        continue-on-error: true
+        run: pgrep safenode | wc -l
+        if: always()
 
-#       - name: Start the restart node again
-#         run: |
-#           ./target/release/safenode \
-#             --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --owner=restarted &
-#           sleep 10
-#         env:
-#           SN_LOG: "all"
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_memcheck
+          platform: ubuntu-latest
+          build: true
 
-#       - name: Assert we've reloaded some chunks
-#         run: rg "Existing record loaded" $RESTART_TEST_NODE_DATA_PATH
+      - name: Check node memory usage
+        shell: bash
+        # The resources file and churning chunk_size we upload may change, and with it mem consumption.
+        # This is set to a value high enough to allow for some variation depending on
+        # resources and node location in the network, but hopefully low enough to catch
+        # any wild memory issues
+        # Any changes to this value should be carefully considered and tested!
+        # As we have a bootstrap node acting as an access point for churning nodes and client,
+        # The memory usage here will be significantly higher here than in the benchmark test,
+        # where we don't have a bootstrap node.
+        run: |
+          node_peak_mem_limit_mb="300" # mb
 
-#       - name: Chunks data integrity during nodes churn
-#         run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
-#         env:
-#           TEST_DURATION_MINS: 5
-#           TEST_TOTAL_CHURN_CYCLES: 15
-#           SN_LOG: "all"
-#         timeout-minutes: 30
+          peak_mem_usage=$(
+            rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/{print $2}' |
+            sort -n |
+            tail -n 1
+          )
+          echo "Node memory usage: $peak_mem_usage MB"
 
-#       - name: Check current files
-#         run: ls -la
-#       - name: Check safenode file
-#         run: ls /home/runner/work/safe_network/safe_network/target/release
+          if (( $(echo "$peak_mem_usage > $node_peak_mem_limit_mb" | bc -l) )); then
+            echo "Node memory usage exceeded threshold: $peak_mem_usage MB"
+            exit 1
+          fi
+        if: always()
 
-#       - name: Check there was no restart issues
-#         run: |
-#           if rg 'Failed to execute hard-restart command' $NODE_DATA_PATH; then
-#             echo "Restart issues detected"
-#             exit 1
-#           else
-#             echo "No restart issues detected"
-#           fi
+      - name: Check client memory usage
+        shell: bash
+        # limits here are lower that benchmark tests as there is less going on.
+        run: |
+          client_peak_mem_limit_mb="1024" # mb
+          client_avg_mem_limit_mb="512" # mb
 
-#       - name: Verify the routing tables of the nodes
-#         run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
-#         env:
-#           SLEEP_BEFORE_VERIFICATION: 300
-#         timeout-minutes: 10
+          peak_mem_usage=$(
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob autonomi.* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/{print $2}' |
+            sort -n |
+            tail -n 1
+          )
+          echo "Peak memory usage: $peak_mem_usage MB"
+          if (( $(echo "$peak_mem_usage > $client_peak_mem_limit_mb" | bc -l) )); then
+            echo "Client peak memory usage exceeded threshold: $client_peak_mem_limit_mb MB"
+            exit 1
+          fi
 
-#       - name: Verify restart of nodes using rg
-#         shell: bash
-#         timeout-minutes: 1
-#         # get the counts, then the specific line, and then the digit count only
-#         # then check we have an expected level of restarts
-#         # TODO: make this use an env var, or relate to testnet size
-#         run: |
-#           restart_count=$(rg "Node is restarting in" $NODE_DATA_PATH -c --stats | \
-#             rg "(\d+) matches" | rg "\d+" -o)
-#           echo "Restart $restart_count nodes"
-#           peer_removed=$(rg "PeerRemovedFromRoutingTable" $NODE_DATA_PATH -c --stats | \
-#             rg "(\d+) matches" | rg "\d+" -o)
-#           echo "PeerRemovedFromRoutingTable $peer_removed times"
-#           if [ $peer_removed -lt $restart_count ]; then
-#             echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
-#             exit 1
-#           fi
-#           node_count=$(ls $NODE_DATA_PATH | wc -l)
-#           echo "Node dir count is $node_count"
-#         # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
-#         # if [ $restart_count -lt $node_count ]; then
-#         #   echo "Restart count of: $restart_count is less than the node count of: $node_count"
-#         #   exit 1
-#         # fi
+          total_mem=$(
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob autonomi.* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
+          )
+          num_of_times=$(
+            rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs --glob autonomi.* -c --stats |
+            rg "(\d+) matches" |
+            rg "\d+" -o
+          )
+          echo "num_of_times: $num_of_times"
+          echo "Total memory is: $total_mem"
+          average_mem=$(($total_mem/$(($num_of_times))))
+          echo "Average memory is: $average_mem"
 
-#       - name: Verify data replication using rg
-#         shell: bash
-#         timeout-minutes: 1
-#         # get the counts, then the specific line, and then the digit count only
-#         # then check we have an expected level of replication
-#         # TODO: make this use an env var, or relate to testnet size
-#         # As the bootstrap_node using separate folder for logging,
-#         # hence the folder input to rg needs to cover that as well.
-#         run: |
-#           sending_list_count=$(rg "Sending a replication list" $NODE_DATA_PATH -c --stats | \
-#             rg "(\d+) matches" | rg "\d+" -o)
-#           echo "Sent $sending_list_count replication lists"
-#           received_list_count=$(rg "Received replication list from" $NODE_DATA_PATH -c --stats | \
-#             rg "(\d+) matches" | rg "\d+" -o)
-#           echo "Received $received_list_count replication lists"
-#           fetching_attempt_count=$(rg "FetchingKeysForReplication" $NODE_DATA_PATH -c --stats | \
-#             rg "(\d+) matches" | rg "\d+" -o)
-#           echo "Carried out $fetching_attempt_count fetching attempts"
-#         if: always()
+          if (( $(echo "$average_mem > $client_avg_mem_limit_mb" | bc -l) )); then
+            echo "Client average memory usage exceeded threshold: $client_avg_mem_limit_mb MB"
+            exit 1
+          fi
 
-#       - name: Start a client to download files
-#         run: |
-#           ./target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
-#           ls -l $CLIENT_DATA_PATH/safe_files
-#           downloaded_files=$(ls $CLIENT_DATA_PATH/safe_files | wc -l)
-#           if [ $downloaded_files -lt 1 ]; then
-#             echo "Only downloaded $downloaded_files files, less than the 1 file uploaded"
-#             exit 1
-#           fi
-#         env:
-#           SN_LOG: "all"
-#         timeout-minutes: 10
+      # Logging of handling time is on Trace level,
+      # meanwhile the local_network startup tool sets the logging level on Debug.
+      # 
+      # - name: Check node swarm_driver handling statistics
+      #   shell: bash
+      #   # With the latest improvements, swarm_driver will be in high chance
+      #   # has no super long handling (longer than 1s).
+      #   # As the `rg` cmd will fail the shell directly if no entry find,
+      #   # hence not covering it.
+      #   # Be aware that if do need to looking for handlings longer than second, it shall be:
+      #   #   rg "SwarmCmd handled in [^m,µ,n]*s:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats
+      #   run: |
+      #     num_of_times=$(
+      #       rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats |
+      #       rg "(\d+) matches" |
+      #       rg "\d+" -o
+      #     )
+      #     echo "Number of long cmd handling times: $num_of_times"
+      #     total_long_handling_ms=$(
+      #       rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -o --no-line-number --no-filename |
+      #       awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
+      #     )
+      #     echo "Total cmd long handling time is: $total_long_handling_ms ms"
+      #     average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
+      #     echo "Average cmd long handling time is: $average_handling_ms ms"
+      #     total_long_handling=$(($total_long_handling_ms))
+      #     total_num_of_times=$(($num_of_times))
+      #     num_of_times=$(
+      #       rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats |
+      #       rg "(\d+) matches" |
+      #       rg "\d+" -o
+      #     )
+      #     echo "Number of long event handling times: $num_of_times"
+      #     total_long_handling_ms=$(
+      #       rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -o --no-line-number --no-filename |
+      #       awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
+      #     )
+      #     echo "Total event long handling time is: $total_long_handling_ms ms"
+      #     average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
+      #     echo "Average event long handling time is: $average_handling_ms ms"
+      #     total_long_handling=$(($total_long_handling_ms+$total_long_handling))
+      #     total_num_of_times=$(($num_of_times+$total_num_of_times))
+      #     average_handling_ms=$(($total_long_handling/$(($total_num_of_times))))
+      #     echo "Total swarm_driver long handling times is: $total_num_of_times"
+      #     echo "Total swarm_driver long handling duration is: $total_long_handling ms"
+      #     echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
 
-#       # Download the same files again to ensure files won't get corrupted.
-#       - name: Start a client to download the same files again
-#         run: |
-#           ./target/release/safe --log-output-dest=data-dir files download --show-holders --retry-strategy quick
-#           ls -l $CLIENT_DATA_PATH/safe_files
-#           downloaded_files=$(ls $CLIENT_DATA_PATH/safe_files | wc -l)
-#           if [ $downloaded_files -lt 1 ]; then
-#             echo "Only downloaded $downloaded_files files, less than the 1 file uploaded"
-#             exit 1
-#           fi
-#           file_size1=$(stat -c "%s" ./the-test-data_1.zip)
-#           file_size2=$(stat -c "%s" $CLIENT_DATA_PATH/safe_files/the-test-data_1.zip)
-#           if [ $file_size1 != $file_size2 ]; then
-#             echo "The downloaded file has a different size $file_size2 to the original $file_size1."
-#             exit 1
-#           fi
-#         env:
-#           SN_LOG: "all"
-#         timeout-minutes: 10
+      - name: Move restart_node log to the working directory
+        run: |
+          ls -l $RESTART_TEST_NODE_DATA_PATH
+          mv $RESTART_TEST_NODE_DATA_PATH/safenode.log ./restart_node.log
+        continue-on-error: true
+        if: always()
+        timeout-minutes: 1
 
-#       - name: Audit from genesis to collect entire spend DAG and dump to a dot file
-#         run: |
-#           ./target/release/safe --log-output-dest=data-dir wallet audit --dot --sk-str 49113d2083f57a976076adbe85decb75115820de1e6e74b47e0429338cef124a > spend_dag_and_statistics.txt
-#           echo "=============================================================================="
-#           cat spend_dag_and_statistics.txt
-#         env:
-#           SN_LOG: "all"
-#         timeout-minutes: 5
-#         if: always()
-
-#       - name: Ensure discord_ids decrypted
-#         run: |
-#           rg 'node_' ./spend_dag_and_statistics.txt -o
-#         timeout-minutes: 1
-#         if: always()
-
-#       - name: Check nodes running
-#         shell: bash
-#         timeout-minutes: 1
-#         continue-on-error: true
-#         run: pgrep safenode | wc -l
-#         if: always()
-
-#       - name: Wait before verifying reward forwarding
-#         run: sleep 300
-
-#       - name: Stop the local network and upload logs
-#         if: always()
-#         uses: maidsafe/sn-local-testnet-action@main
-#         with:
-#           action: stop
-#           log_file_prefix: safe_test_logs_memcheck
-#           platform: ubuntu-latest
-#           build: true
-
-#       - name: Check node memory usage
-#         shell: bash
-#         # The resources file and churning chunk_size we upload may change, and with it mem consumption.
-#         # This is set to a value high enough to allow for some variation depending on
-#         # resources and node location in the network, but hopefully low enough to catch
-#         # any wild memory issues
-#         # Any changes to this value should be carefully considered and tested!
-#         # As we have a bootstrap node acting as an access point for churning nodes and client,
-#         # The memory usage here will be significantly higher here than in the benchmark test,
-#         # where we don't have a bootstrap node.
-#         run: |
-#           node_peak_mem_limit_mb="300" # mb
-
-#           peak_mem_usage=$(
-#             rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename |
-#             awk -F':' '/"memory_used_mb":/{print $2}' |
-#             sort -n |
-#             tail -n 1
-#           )
-#           echo "Node memory usage: $peak_mem_usage MB"
-
-#           if (( $(echo "$peak_mem_usage > $node_peak_mem_limit_mb" | bc -l) )); then
-#             echo "Node memory usage exceeded threshold: $peak_mem_usage MB"
-#             exit 1
-#           fi
-#         if: always()
-
-#       - name: Check client memory usage
-#         shell: bash
-#         # limits here are lower that benchmark tests as there is less going on.
-#         run: |
-#           client_peak_mem_limit_mb="1024" # mb
-#           client_avg_mem_limit_mb="512" # mb
-
-#           peak_mem_usage=$(
-#             rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
-#             awk -F':' '/"memory_used_mb":/{print $2}' |
-#             sort -n |
-#             tail -n 1
-#           )
-#           echo "Peak memory usage: $peak_mem_usage MB"
-#           if (( $(echo "$peak_mem_usage > $client_peak_mem_limit_mb" | bc -l) )); then
-#             echo "Client peak memory usage exceeded threshold: $client_peak_mem_limit_mb MB"
-#             exit 1
-#           fi
-
-#           total_mem=$(
-#             rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
-#             awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
-#           )
-#           num_of_times=$(
-#             rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs --glob safe.* -c --stats |
-#             rg "(\d+) matches" |
-#             rg "\d+" -o
-#           )
-#           echo "num_of_times: $num_of_times"
-#           echo "Total memory is: $total_mem"
-#           average_mem=$(($total_mem/$(($num_of_times))))
-#           echo "Average memory is: $average_mem"
-
-#           if (( $(echo "$average_mem > $client_avg_mem_limit_mb" | bc -l) )); then
-#             echo "Client average memory usage exceeded threshold: $client_avg_mem_limit_mb MB"
-#             exit 1
-#           fi
-
-#       - name: Check node swarm_driver handling statistics
-#         shell: bash
-#         # With the latest improvements, swarm_driver will be in high chance
-#         # has no super long handling (longer than 1s).
-#         # As the `rg` cmd will fail the shell directly if no entry find,
-#         # hence not covering it.
-#         # Be aware that if do need to looking for handlings longer than second, it shall be:
-#         #   rg "SwarmCmd handled in [^m,µ,n]*s:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats
-#         run: |
-#           num_of_times=$(
-#             rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
-#             rg "(\d+) matches" |
-#             rg "\d+" -o
-#           )
-#           echo "Number of long cmd handling times: $num_of_times"
-#           total_long_handling_ms=$(
-#             rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
-#             awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
-#           )
-#           echo "Total cmd long handling time is: $total_long_handling_ms ms"
-#           average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
-#           echo "Average cmd long handling time is: $average_handling_ms ms"
-#           total_long_handling=$(($total_long_handling_ms))
-#           total_num_of_times=$(($num_of_times))
-#           num_of_times=$(
-#             rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
-#             rg "(\d+) matches" |
-#             rg "\d+" -o
-#           )
-#           echo "Number of long event handling times: $num_of_times"
-#           total_long_handling_ms=$(
-#             rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
-#             awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
-#           )
-#           echo "Total event long handling time is: $total_long_handling_ms ms"
-#           average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
-#           echo "Average event long handling time is: $average_handling_ms ms"
-#           total_long_handling=$(($total_long_handling_ms+$total_long_handling))
-#           total_num_of_times=$(($num_of_times+$total_num_of_times))
-#           average_handling_ms=$(($total_long_handling/$(($total_num_of_times))))
-#           echo "Total swarm_driver long handling times is: $total_num_of_times"
-#           echo "Total swarm_driver long handling duration is: $total_long_handling ms"
-#           echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
-
-#       - name: Verify reward forwarding using rg
-#         shell: bash
-#         timeout-minutes: 1
-#         run: |
-#           min_reward_forwarding_times="100"
-#           reward_forwarding_count=$(rg "Reward forwarding completed sending spend" $NODE_DATA_PATH -c --stats | \
-#             rg "(\d+) matches" | rg "\d+" -o)
-#           echo "Carried out $reward_forwarding_count reward forwardings"
-#           if (( $(echo "$reward_forwarding_count < $min_reward_forwarding_times" | bc -l) )); then
-#             echo "Reward forwarding times below the threshold: $min_reward_forwarding_times"
-#             exit 1
-#           fi
-#         if: always()
-
-#       - name: Upload payment wallet initialization log
-#         uses: actions/upload-artifact@main
-#         with:
-#           name: payment_wallet_initialization_log
-#           path: initial_balance_from_faucet.txt
-#         continue-on-error: true
-#         if: always()
-
-#       - name: Move faucet log to the working folder
-#         run: |
-#           echo "current folder is:"
-#           pwd
-#           echo "SAFE_DATA_PATH has: "
-#           ls -l $SAFE_DATA_PATH
-#           echo "test_faucet foder has: "
-#           ls -l $SAFE_DATA_PATH/test_faucet
-#           echo "logs folder has: "
-#           ls -l $SAFE_DATA_PATH/test_faucet/logs
-#           mv $FAUCET_LOG_PATH/*.log ./faucet_log.log
-#         env:
-#           SN_LOG: "all"
-#         continue-on-error: true
-#         if: always()
-#         timeout-minutes: 1
-
-#       - name: Move bootstrap_node log to the working directory
-#         run: |
-#           ls -l $BOOTSTRAP_NODE_DATA_PATH
-#           mv $BOOTSTRAP_NODE_DATA_PATH/safenode.log ./bootstrap_node.log
-#         continue-on-error: true
-#         if: always()
-#         timeout-minutes: 1
-
-#       - name: Upload faucet log
-#         uses: actions/upload-artifact@main
-#         with:
-#           name: memory_check_faucet_log
-#           path: faucet_log.log
-#         continue-on-error: true
-#         if: always()
-
-#       - name: Upload bootstrap_node log
-#         uses: actions/upload-artifact@main
-#         with:
-#           name: memory_check_bootstrap_node_log
-#           path: bootstrap_node.log
-#         continue-on-error: true
-#         if: always()
-
-#       - name: Upload spend DAG and statistics
-#         uses: actions/upload-artifact@main
-#         with:
-#           name: memory_check_spend_dag_and_statistics
-#           path: spend_dag_and_statistics.txt
-#         continue-on-error: true
-#         if: always()
+      - name: Upload restart_node log
+        uses: actions/upload-artifact@main
+        with:
+          name: memory_check_restart_node_log
+          path: restart_node.log
+        continue-on-error: true
+        if: always()
