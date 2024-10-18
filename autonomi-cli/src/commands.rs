@@ -139,7 +139,12 @@ pub enum VaultCmd {
 #[derive(Subcommand, Debug)]
 pub enum WalletCmd {
     /// Create a wallet
-    Create,
+    Create {
+        encrypt: Option<String>,
+        password: Option<String>,
+        private_key: Option<String>,
+
+    },
 
     /// Check the balance of the wallet
     Balance,
@@ -180,7 +185,14 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
             VaultCmd::Sync => vault::sync(peers.await?),
         },
         SubCmd::Wallet { command } => match command {
-            WalletCmd::Create => wallet::create(peers.await?),
+            WalletCmd::Create {
+                encrypt,
+                password,
+                private_key,
+
+            } => {
+                wallet::initiate_wallet_creation(private_key, encrypt, password)  
+            },
             WalletCmd::Balance => wallet::balance(peers.await?),
         }
     }
