@@ -91,24 +91,23 @@ async fn file_into_vault() -> Result<()> {
     sleep(Duration::from_secs(2)).await;
 
     let archive = client.archive_get(addr).await?;
+    let set_version = 0;
     client
-        .write_bytes_to_vault(archive.into_bytes()?, &wallet, &client_sk)
+        .write_bytes_to_vault(archive.into_bytes()?, &wallet, &client_sk, set_version)
         .await?;
 
     // now assert over the stored account packet
     let new_client = Client::connect(&[]).await?;
 
-    if let Some(ap) = new_client.fetch_and_decrypt_vault(&client_sk).await? {
-        let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
+    let (ap, got_version) = new_client.fetch_and_decrypt_vault(&client_sk).await?;
+    assert_eq!(set_version, got_version);
+    let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
 
-        assert_eq!(
-            archive.iter().count(),
-            ap_archive_fetched.iter().count(),
-            "archive fetched should match archive put"
-        );
-    } else {
-        eyre::bail!("No account packet found");
-    }
+    assert_eq!(
+        archive.iter().count(),
+        ap_archive_fetched.iter().count(),
+        "archive fetched should match archive put"
+    );
 
     Ok(())
 }
