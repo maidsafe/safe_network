@@ -6,8 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{collections::HashMap, num::NonZero};
-
+use super::{
+    data::{CostError, GetError, PayError, PutError},
+    Client,
+};
+use crate::self_encryption::DataMapLevel;
+use crate::utils::payment_proof_from_quotes_and_payments;
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
@@ -21,14 +25,8 @@ use sn_protocol::{
     storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind, RetryStrategy},
     NetworkAddress,
 };
+use std::{collections::HashMap, num::NonZero};
 use xor_name::XorName;
-
-use super::{
-    data::{CostError, GetError, PayError, PutError},
-    Client,
-};
-use crate::self_encryption::DataMapLevel;
-use crate::utils::payment_proof_from_quotes_and_payments;
 
 impl Client {
     /// Fetch and decrypt all chunks in the data map.
@@ -89,6 +87,7 @@ impl Client {
         &self,
         chunk: Chunk,
         payment: ProofOfPayment,
+        cfg: Option<PutRecordCfg>,
     ) -> Result<(), PutError> {
         let storing_node = payment.to_peer_id_payee().expect("Missing node Peer ID");
 
@@ -110,35 +109,39 @@ impl Client {
             expires: None,
         };
 
-        let verification = {
-            let verification_cfg = GetRecordCfg {
-                get_quorum: Quorum::N(NonZero::new(2).expect("2 is non-zero")),
-                retry_strategy: Some(RetryStrategy::Quick),
-                target_record: None,
-                expected_holders: Default::default(),
-                is_register: false,
+        let put_cfg = if let Some(cfg) = cfg {
+            cfg
+        } else {
+            let verification = {
+                let verification_cfg = GetRecordCfg {
+                    get_quorum: Quorum::N(NonZero::new(2).expect("2 is non-zero")),
+                    retry_strategy: Some(RetryStrategy::Quick),
+                    target_record: None,
+                    expected_holders: Default::default(),
+                    is_register: false,
+                };
+
+                let random_nonce = thread_rng().gen::<u64>();
+                let expected_proof =
+                    ChunkProof::from_chunk(&chunk, random_nonce).map_err(|err| {
+                        PutError::Serialization(format!("Failed to obtain chunk proof: {err:?}"))
+                    })?;
+
+                Some((
+                    VerificationKind::ChunkProof {
+                        expected_proof,
+                        nonce: random_nonce,
+                    },
+                    verification_cfg,
+                ))
             };
 
-            let stored_on_node = try_serialize_record(&chunk, RecordKind::Chunk)
-                .map_err(|e| PutError::Serialization(format!("Failed to serialize chunk: {e:?}")))?
-                .to_vec();
-            let random_nonce = thread_rng().gen::<u64>();
-            let expected_proof = ChunkProof::new(&stored_on_node, random_nonce);
-
-            Some((
-                VerificationKind::ChunkProof {
-                    expected_proof,
-                    nonce: random_nonce,
-                },
-                verification_cfg,
-            ))
-        };
-
-        let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::One,
-            retry_strategy: Some(RetryStrategy::Balanced),
-            use_put_record_to: Some(vec![storing_node]),
-            verification,
+            PutRecordCfg {
+                put_quorum: Quorum::One,
+                retry_strategy: Some(RetryStrategy::Balanced),
+                use_put_record_to: Some(vec![storing_node]),
+                verification,
+            }
         };
         Ok(self.network.put_record(record, &put_cfg).await?)
     }

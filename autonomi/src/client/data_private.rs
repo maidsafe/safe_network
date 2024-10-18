@@ -88,7 +88,7 @@ impl Client {
                 let proof_clone = proof.clone();
                 tasks.spawn(async move {
                     self_clone
-                        .chunk_upload_with_payment(chunk, proof_clone)
+                        .chunk_upload_with_payment(chunk, proof_clone, None)
                         .await
                         .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))
                 });

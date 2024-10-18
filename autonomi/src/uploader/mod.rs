@@ -69,6 +69,8 @@ pub enum UploadError {
     SequentialNetworkErrors,
     #[error("Too many sequential payment errors reported during upload")]
     SequentialUploadPaymentError,
+    #[error("Failed to serialize {0}")]
+    Serialization(String),
     #[error("Network Token error: {0:?}")]
     EvmNetworkTokenError(#[from] EvmNetworkTokenError),
 }
@@ -236,7 +238,7 @@ impl Uploader {
 
     /// Sets the option to verify the data after they have been uploaded.
     ///
-    /// By default, this option is set to true.
+    /// By default, this option is set to `true`.
     pub fn set_verify_store(&mut self, verify_store: bool) {
         self.inner
             .as_mut()
@@ -258,7 +260,7 @@ impl Uploader {
     /// This does not affect the retries during the Payment task. Use `set_max_repayments_for_failed_data` to
     /// configure the re-payment attempts.
     ///
-    /// By default, this option is set to RetryStrategy::Quick
+    /// By default, this option is set to `RetryStrategy::Quick`
     pub fn set_retry_strategy(&mut self, retry_strategy: RetryStrategy) {
         self.inner
             .as_mut()
@@ -269,7 +271,7 @@ impl Uploader {
     /// Sets the maximum number of repayments to perform if the initial payment failed.
     /// NOTE: This creates an extra Spend and uses the wallet funds.
     ///
-    /// By default, this option is set to 1 retry.
+    /// By default, this option is set to `1` retry.
     pub fn set_max_repayments_for_failed_data(&mut self, retries: usize) {
         self.inner
             .as_mut()
@@ -281,7 +283,7 @@ impl Uploader {
     /// The registers are emitted through the event channel whenever they're completed, but this returns them
     /// through the UploadSummary when the whole upload process completes.
     ///
-    /// By default, this option is set to False
+    /// By default, this option is set to `False`
     pub fn set_collect_registers(&mut self, collect_registers: bool) {
         self.inner
             .as_mut()
