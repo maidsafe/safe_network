@@ -24,7 +24,7 @@ use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::PeersArgs;
 use sn_protocol::{
-    node::get_safenode_root_dir, node_rpc::NodeCtrl, version::IDENTIFY_PROTOCOL_STR,
+    node::get_safenode_root_dir, node_rpc::{NodeCtrl, StopResult}, version::IDENTIFY_PROTOCOL_STR,
 };
 use std::{
     env,
@@ -381,7 +381,7 @@ You can check your reward balance by running:
         if let Err(err) = ctrl_tx_clone
             .send(NodeCtrl::Stop {
                 delay: Duration::from_secs(1),
-                cause: eyre!("Ctrl-C received!"),
+                result: StopResult::Error(eyre!("Ctrl-C received!")),
             })
             .await
         {
@@ -426,7 +426,7 @@ You can check your reward balance by running:
                 if let Err(err) = ctrl_tx_clone_cpu
                     .send(NodeCtrl::Stop {
                         delay: NODE_STOP_DELAY,
-                        cause: eyre!("Excess host CPU detected for {HIGH_CPU_CONSECUTIVE_LIMIT} consecutive minutes!"),
+                        result: StopResult::Success(format!("Excess host CPU %{CPU_USAGE_THRESHOLD} detected for {HIGH_CPU_CONSECUTIVE_LIMIT} consecutive minutes!")),
                     })
                     .await
                 {
@@ -475,12 +475,21 @@ You can check your reward balance by running:
 
                 break Ok(res);
             }
-            Some(NodeCtrl::Stop { delay, cause }) => {
+            Some(NodeCtrl::Stop { delay, result }) => {
                 let msg = format!("Node is stopping in {delay:?}...");
                 info!("{msg}");
                 println!("{msg} Node log path: {log_output_dest}");
                 sleep(delay).await;
-                return Err(cause);
+                match result {
+                    StopResult::Success(message) => {
+                        info!("Node stopped successfully: {}", message);
+                        return Ok(None);
+                    }
+                    StopResult::Error(cause) => {
+                        error!("Node stopped with error: {}", cause);
+                        return Err(cause);
+                    }
+                }
             }
             Some(NodeCtrl::Update(_delay)) => {
                 // TODO: implement self-update once safenode app releases are published again
@@ -503,7 +512,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {
                             delay: Duration::from_secs(1),
-                            cause: eyre!("Node events channel closed!"),
+                            result: StopResult::Error(eyre!("Node events channel closed!")),
                         })
                         .await
                     {
@@ -517,13 +526,11 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {
                             delay: Duration::from_secs(1),
-                            cause: eyre!("Node terminated due to: {reason:?}"),
+                            result: StopResult::Error(eyre!("Node terminated due to: {reason:?}")),
                         })
                         .await
                     {
-                        error!(
-                            "Failed to send node control msg to safenode bin main thread: {err}"
-                        );
+                        error!("Failed to send node control msg to safenode bin main thread: {err}");
                         break;
                     }
                 }
