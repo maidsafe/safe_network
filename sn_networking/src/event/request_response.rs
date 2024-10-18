@@ -15,13 +15,15 @@ use libp2p::{
     request_response::{self, Message},
     PeerId,
 };
-use rand::{rngs::OsRng, Rng};
+use rand::{rngs::OsRng, seq::SliceRandom, Rng};
 use sn_protocol::{
     messages::{CmdResponse, Request, Response},
     storage::RecordType,
     NetworkAddress,
 };
 use std::collections::HashMap;
+
+const MAX_CONCURRENT_CHUNK_PROOF_VERIFICATIONS: usize = 1;
 
 impl SwarmDriver {
     /// Forwards `Request` to the upper layers using `Sender<NetworkEvent>`. Sends `Response` to the peers
@@ -242,8 +244,17 @@ impl SwarmDriver {
 
         let event_sender = self.event_sender.clone();
         let _handle = tokio::spawn(async move {
-            let keys_to_verify =
-                Self::select_verification_data_candidates(&peers, &all_keys, &sender);
+            let keys_to_verify: Vec<_> = {
+                let mut vec = Self::select_verification_data_candidates(&peers, &all_keys, &sender)
+                    .into_iter()
+                    .collect::<Vec<_>>();
+
+                vec.shuffle(&mut rand::thread_rng());
+
+                vec.into_iter()
+                    .take(MAX_CONCURRENT_CHUNK_PROOF_VERIFICATIONS)
+                    .collect()
+            };
 
             if keys_to_verify.is_empty() {
                 debug!("No valid candidate to be checked against peer {holder:?}");
@@ -272,8 +283,20 @@ impl SwarmDriver {
                 let candidate_peer_id = *close_group_peers[index];
                 let candidate = NetworkAddress::from_peer(*close_group_peers[index]);
                 if sender != candidate {
-                    let keys_to_verify =
-                        Self::select_verification_data_candidates(&peers, &all_keys, &candidate);
+                    let keys_to_verify: Vec<_> = {
+                        let mut vec = Self::select_verification_data_candidates(
+                            &peers, &all_keys, &candidate,
+                        )
+                        .into_iter()
+                        .collect::<Vec<_>>();
+
+                        // shuffle to ensure random keys are selected
+                        vec.shuffle(&mut rand::thread_rng());
+
+                        vec.into_iter()
+                            .take(MAX_CONCURRENT_CHUNK_PROOF_VERIFICATIONS)
+                            .collect()
+                    };
 
                     if keys_to_verify.is_empty() {
                         debug!("No valid candidate to be checked against peer {candidate:?}");
