@@ -10,6 +10,7 @@
 mod tests;
 mod upload;
 
+#[cfg(feature = "registers")]
 use crate::client::registers::{Register, RegisterError};
 use crate::Client;
 use itertools::Either;
@@ -21,6 +22,7 @@ use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
     NetworkAddress,
 };
+#[cfg(feature = "registers")]
 use sn_registers::RegisterAddress;
 use std::{
     collections::{HashMap, HashSet},
@@ -62,10 +64,13 @@ pub enum UploadError {
     },
     #[error("Network error: {0:?}")]
     Network(#[from] NetworkError),
+    #[cfg(feature = "registers")]
     #[error("Register could not be verified (corrupt)")]
     RegisterFailedVerification,
+    #[cfg(feature = "registers")]
     #[error("Failed to write to low-level register")]
     RegisterWrite(#[source] sn_registers::Error),
+    #[cfg(feature = "registers")]
     #[error("Failed to sign register")]
     RegisterCouldNotSign(#[source] sn_registers::Error),
     #[error("Multiple consecutive network errors reported during upload")]
@@ -78,6 +83,7 @@ pub enum UploadError {
 
 // UploadError is used inside RegisterError, but the uploader emits RegisterError. So this is used to avoid
 // recursive enum definition.
+#[cfg(feature = "registers")]
 impl From<RegisterError> for UploadError {
     fn from(err: RegisterError) -> Self {
         match err {
@@ -101,6 +107,7 @@ pub struct UploadCfg {
     pub show_holders: bool,
     pub retry_strategy: RetryStrategy,
     pub max_repayments_for_failed_data: usize,
+    #[cfg(feature = "registers")]
     pub collect_registers: bool,
 }
 
@@ -113,6 +120,7 @@ impl Default for UploadCfg {
             show_holders: false,
             retry_strategy: RetryStrategy::Balanced,
             max_repayments_for_failed_data: MAX_REPAYMENTS_PER_FAILED_ITEM,
+            #[cfg(feature = "registers")]
             collect_registers: false,
         }
     }
@@ -124,6 +132,7 @@ pub struct UploadSummary {
     pub storage_cost: Amount,
     pub final_balance: Amount,
     pub uploaded_addresses: HashSet<NetworkAddress>,
+    #[cfg(feature = "registers")]
     pub uploaded_registers: HashMap<RegisterAddress, Register>,
     /// The number of records that were paid for and uploaded to the network.
     pub uploaded_count: usize,
@@ -135,6 +144,7 @@ impl UploadSummary {
     /// Merge two UploadSummary together.
     pub fn merge(mut self, other: Self) -> Result<Self, Box<dyn std::error::Error>> {
         self.uploaded_addresses.extend(other.uploaded_addresses);
+        #[cfg(feature = "registers")]
         self.uploaded_registers.extend(other.uploaded_registers);
 
         let summary = Self {
@@ -153,6 +163,7 @@ impl UploadSummary {
                     UploadError::InternalError
                 })?,
             uploaded_addresses: self.uploaded_addresses,
+            #[cfg(feature = "registers")]
             uploaded_registers: self.uploaded_registers,
             uploaded_count: self.uploaded_count + other.uploaded_count,
             skipped_count: self.skipped_count + other.skipped_count,
@@ -168,6 +179,7 @@ pub enum UploadEvent {
     ChunkUploaded(ChunkAddress),
     /// Uploaded a Register to the network.
     /// The returned register is just the passed in register.
+    #[cfg(feature = "registers")]
     RegisterUploaded(Register),
     ///
     /// The Chunk already exists in the network. No payments were made.
@@ -175,6 +187,7 @@ pub enum UploadEvent {
     /// The Register already exists in the network. The locally register changes were pushed to the network.
     /// No payments were made.
     /// The returned register contains the remote replica merged with the passed in register.
+    #[cfg(feature = "registers")]
     RegisterUpdated(Register),
     /// Payment for a batch of records has been made.
     PaymentMade { tokens_spent: Amount },
@@ -303,6 +316,7 @@ impl Uploader {
     /// through the UploadSummary when the whole upload process completes.
     ///
     /// By default, this option is set to `False`
+    #[cfg(feature = "registers")]
     pub fn set_collect_registers(&mut self, collect_registers: bool) {
         self.inner
             .as_mut()
@@ -336,6 +350,7 @@ impl Uploader {
     }
 
     /// Insert a list of registers to upload.
+    #[cfg(feature = "registers")]
     pub fn insert_register(&mut self, registers: impl IntoIterator<Item = Register>) {
         self.inner
             .as_mut()
@@ -425,6 +440,7 @@ impl InnerUploader {
         self.cfg.max_repayments_for_failed_data = retries;
     }
 
+    #[cfg(feature = "registers")]
     pub(super) fn set_collect_registers(&mut self, collect_registers: bool) {
         self.cfg.collect_registers = collect_registers;
     }
@@ -461,6 +477,7 @@ impl InnerUploader {
             }));
     }
 
+    #[cfg(feature = "registers")]
     pub(super) fn insert_register(&mut self, registers: impl IntoIterator<Item = Register>) {
         self.all_upload_items
             .extend(registers.into_iter().map(|reg| {
@@ -478,6 +495,7 @@ enum UploadItem {
         // Either the actual chunk or the path to the chunk.
         chunk: Either<Chunk, PathBuf>,
     },
+    #[cfg(feature = "registers")]
     Register {
         address: RegisterAddress,
         reg: Register,
@@ -488,6 +506,7 @@ impl UploadItem {
     fn address(&self) -> NetworkAddress {
         match self {
             Self::Chunk { address, .. } => NetworkAddress::from_chunk_address(*address),
+            #[cfg(feature = "registers")]
             Self::Register { address, .. } => NetworkAddress::from_register_address(*address),
         }
     }
@@ -495,6 +514,7 @@ impl UploadItem {
     fn xorname(&self) -> XorName {
         match self {
             UploadItem::Chunk { address, .. } => *address.xorname(),
+            #[cfg(feature = "registers")]
             UploadItem::Register { address, .. } => address.xorname(),
         }
     }
@@ -502,10 +522,13 @@ impl UploadItem {
 
 #[derive(Debug)]
 enum TaskResult {
+    #[cfg(feature = "registers")]
     GetRegisterFromNetworkOk {
         remote_register: Register,
     },
+    #[cfg(feature = "registers")]
     GetRegisterFromNetworkErr(XorName),
+    #[cfg(feature = "registers")]
     PushRegisterOk {
         updated_register: Register,
     },
