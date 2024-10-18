@@ -19,7 +19,7 @@ use super::data::{DataAddr, GetError, PutError};
 /// Errors that can occur during the file upload operation.
 #[cfg(feature = "fs")]
 #[derive(Debug, thiserror::Error)]
-pub enum UploadError {
+pub enum FileUploadError {
     #[error("Failed to recursively traverse directory")]
     WalkDir(#[from] walkdir::Error),
     #[error("Input/output failure")]
@@ -37,7 +37,7 @@ pub enum UploadError {
 #[cfg(feature = "fs")]
 /// Errors that can occur during the download operation.
 #[derive(Debug, thiserror::Error)]
-pub enum DownloadError {
+pub enum FileDownloadError {
     #[error("Failed to download file")]
     GetError(#[from] GetError),
     #[error("IO failure")]
@@ -66,7 +66,7 @@ impl Client {
         &self,
         data_addr: DataAddr,
         to_dest: PathBuf,
-    ) -> Result<(), DownloadError> {
+    ) -> Result<(), FileDownloadError> {
         let data = self.data_get(data_addr).await?;
         if let Some(parent) = to_dest.parent() {
             tokio::fs::create_dir_all(parent).await?;
@@ -80,7 +80,7 @@ impl Client {
         &self,
         archive_addr: ArchiveAddr,
         to_dest: PathBuf,
-    ) -> Result<(), DownloadError> {
+    ) -> Result<(), FileDownloadError> {
         let archive = self.archive_get(archive_addr).await?;
         for (path, addr, _meta) in archive.iter() {
             self.file_download(*addr, to_dest.join(path)).await?;
@@ -94,7 +94,7 @@ impl Client {
         &self,
         dir_path: PathBuf,
         wallet: &EvmWallet,
-    ) -> Result<ArchiveAddr, UploadError> {
+    ) -> Result<ArchiveAddr, FileUploadError> {
         let mut archive = Archive::new();
 
         for entry in walkdir::WalkDir::new(dir_path) {
@@ -126,7 +126,7 @@ impl Client {
         &self,
         path: PathBuf,
         wallet: &EvmWallet,
-    ) -> Result<DataAddr, UploadError> {
+    ) -> Result<DataAddr, FileUploadError> {
         let data = tokio::fs::read(path).await?;
         let data = Bytes::from(data);
         let addr = self.data_put(data, wallet).await?;
