@@ -65,6 +65,31 @@ impl UserData {
         Self::default()
     }
 
+    /// Add an archive. Returning true if the archive was newly added.
+    pub fn add_file_archive(&mut self, archive: ArchiveAddr) -> bool {
+        self.file_archives.insert(archive)
+    }
+
+    /// Add a name for an archive. Returning the old archive if it existed.
+    pub fn add_file_archive_name(
+        &mut self,
+        archive: ArchiveAddr,
+        name: String,
+    ) -> Option<ArchiveAddr> {
+        self.file_archive_names.insert(name, archive)
+    }
+
+    /// Remove an archive. Returning true if the archive was removed.
+    pub fn remove_file_archive(&mut self, archive: ArchiveAddr) -> bool {
+        // TODO: Should we also remove the name?
+        self.file_archives.remove(&archive)
+    }
+
+    /// Remove a archive name. Returning the archive if it existed.
+    pub fn remove_file_archive_name(&mut self, name: String) -> Option<ArchiveAddr> {
+        self.file_archive_names.remove(&name)
+    }
+
     /// To bytes
     pub fn to_bytes(&self) -> Result<Bytes, rmp_serde::encode::Error> {
         let bytes = rmp_serde::to_vec(&self)?;

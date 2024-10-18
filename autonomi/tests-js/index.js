@@ -53,13 +53,22 @@ describe('autonomi', function () {
         assert.deepEqual(archive, archiveFetched);
     });
 
-    it('writes bytes to vault and fetches it', async () => {
+    it('writes archive to vault and fetches it', async () => {
+        const addr = "0000000000000000000000000000000000000000000000000000000000000000"; // Dummy data address
         const data = randomData(32);
         const secretKey = atnm.genSecretKey();
 
-        await client.writeBytesToVault(data, wallet, secretKey);
-        const dataFetched = await client.fetchAndDecryptVault(secretKey);
+        const archive = new atnm.Archive();
+        archive.addNewFile('foo', addr);
+        const archiveAddr = await client.archivePut(archive, wallet);
+    
+        const userData = new atnm.UserData();
+        userData.addArchive(archiveAddr, 'foo');
 
-        assert.deepEqual(data, dataFetched);
+        await client.putUserDataToVault(data, wallet, secretKey);
+        const userDataFetched = await client.put_user_data_to_vault(secretKey);
+
+        assert.deepEqual(userDataFetched.archives(), userData.archives());
+        assert.deepEqual(userDataFetched.archiveNames(), userData.archiveNames());
     });
 });

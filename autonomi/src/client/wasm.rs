@@ -4,9 +4,6 @@ use wasm_bindgen::prelude::*;
 use super::address::{addr_to_str, str_to_addr};
 use super::vault_user_data::UserData;
 
-#[wasm_bindgen(js_name = UserData)]
-pub struct JsUserData(UserData);
-
 #[wasm_bindgen(js_name = Client)]
 pub struct JsClient(super::Client);
 
@@ -140,6 +137,66 @@ mod archive {
 mod vault {
     use super::*;
     use bls::SecretKey;
+
+    #[wasm_bindgen(js_name = UserData)]
+    pub struct JsUserData(UserData);
+
+    #[wasm_bindgen(js_class = UserData)]
+    impl JsUserData {
+        #[wasm_bindgen(constructor)]
+        pub fn new() -> Self {
+            Self(UserData::new())
+        }
+
+        #[wasm_bindgen(js_name = addArchive)]
+        pub fn add_archive(
+            &mut self,
+            archive: String,
+            name: Option<String>,
+        ) -> Result<(), JsError> {
+            let archive = str_to_addr(&archive)?;
+
+            // TODO: Log when archive already exists?
+            self.0.add_file_archive(archive);
+
+            if let Some(name) = name {
+                if let Some(old_archive) = self.0.add_file_archive_name(archive, name.clone()) {
+                    tracing::warn!(
+                        "Overwriting archive stored as '{name}': {old_archive} -> {archive}"
+                    );
+                }
+            }
+
+            Ok(())
+        }
+
+        #[wasm_bindgen(js_name = removeArchive)]
+        pub fn remove_archive(&mut self, archive: String) -> Result<(), JsError> {
+            let archive = str_to_addr(&archive)?;
+            self.0.remove_file_archive(archive);
+
+            Ok(())
+        }
+
+        #[wasm_bindgen(js_name = removeArchiveName)]
+        pub fn remove_archive_name(&mut self, name: String) -> Result<(), JsError> {
+            let _archive_name = self.0.remove_file_archive_name(name);
+
+            Ok(())
+        }
+
+        #[wasm_bindgen(js_name = archives)]
+        pub fn archives(&self) -> Result<JsValue, JsError> {
+            let archives = serde_wasm_bindgen::to_value(&self.0.file_archives)?;
+            Ok(archives)
+        }
+
+        #[wasm_bindgen(js_name = archiveNames)]
+        pub fn archive_names(&self) -> Result<JsValue, JsError> {
+            let archives = serde_wasm_bindgen::to_value(&self.0.file_archive_names)?;
+            Ok(archives)
+        }
+    }
 
     #[wasm_bindgen(js_class = Client)]
     impl JsClient {
