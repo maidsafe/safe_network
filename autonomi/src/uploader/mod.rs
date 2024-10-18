@@ -15,6 +15,7 @@ use crate::Client;
 use itertools::Either;
 use sn_evm::EvmWallet;
 use sn_evm::{Amount, EvmNetworkTokenError, ProofOfPayment};
+use sn_networking::target_arch::{mpsc, mpsc_channel};
 use sn_networking::{NetworkError, PayeeQuote};
 use sn_protocol::{
     storage::{Chunk, ChunkAddress, RetryStrategy},
@@ -26,7 +27,6 @@ use std::{
     fmt::Debug,
     path::PathBuf,
 };
-use tokio::sync::mpsc;
 use upload::InnerUploader;
 use xor_name::XorName;
 
@@ -430,7 +430,7 @@ impl InnerUploader {
     }
 
     pub(super) fn get_event_receiver(&mut self) -> mpsc::Receiver<UploadEvent> {
-        let (tx, rx) = mpsc::channel(100);
+        let (tx, rx) = mpsc_channel(100);
         self.event_sender = Some(tx);
         rx
     }

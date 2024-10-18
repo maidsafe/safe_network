@@ -22,6 +22,7 @@ use itertools::Either;
 use libp2p::{kad::Quorum, PeerId};
 use rand::{thread_rng, Rng};
 use sn_evm::{Amount, EvmWallet, ProofOfPayment};
+use sn_networking::target_arch::{mpsc, mpsc_channel, mpsc_recv, spawn};
 use sn_networking::{GetRecordCfg, PayeeQuote, PutRecordCfg, VerificationKind};
 use sn_protocol::{
     messages::ChunkProof,
@@ -33,7 +34,6 @@ use std::{
     collections::{HashMap, HashSet},
     num::NonZero,
 };
-use tokio::sync::mpsc;
 use xor_name::XorName;
 
 /// The maximum number of sequential payment failures before aborting the upload process.
@@ -80,9 +80,9 @@ pub(super) async fn start_upload(
             channels
         } else {
             // 6 because of the 6 pipelines, 1 for redundancy.
-            mpsc::channel(uploader.cfg.batch_size * 6 + 1)
+            mpsc_channel(uploader.cfg.batch_size * 6 + 1)
         };
-    let (make_payment_sender, make_payment_receiver) = mpsc::channel(uploader.cfg.batch_size);
+    let (make_payment_sender, make_payment_receiver) = mpsc_channel(uploader.cfg.batch_size);
 
     uploader.start_payment_processing_thread(
         make_payment_receiver,
@@ -273,8 +273,7 @@ pub(super) async fn start_upload(
         trace!("UPLOADER STATE: before await task result: {uploader:?}");
 
         trace!("Fetching task result");
-        let task_result = task_result_receiver
-            .recv()
+        let task_result = mpsc_recv(&mut task_result_receiver)
             .await
             .ok_or(UploadError::InternalError)?;
         trace!("Received task result: {task_result:?}");
@@ -556,7 +555,7 @@ impl UploaderInterface for Uploader {
             Ok(vec![])
         };
 
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             let task_result = match InnerUploader::get_store_cost(
                 client,
                 xorname,
@@ -600,7 +599,7 @@ impl UploaderInterface for Uploader {
     ) {
         let xorname = reg_addr.xorname();
         trace!("Spawning get_register for {xorname:?}");
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             let task_result = match InnerUploader::get_register(client, reg_addr).await {
                 Ok(register) => {
                     debug!("Register retrieved for {xorname:?}");
@@ -627,7 +626,7 @@ impl UploaderInterface for Uploader {
     ) {
         let xorname = upload_item.xorname();
         trace!("Spawning push_register for {xorname:?}");
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             let task_result = match InnerUploader::push_register(client, upload_item, verify_store)
                 .await
             {
@@ -652,7 +651,7 @@ impl UploaderInterface for Uploader {
         to_send: Option<(UploadItem, Box<PayeeQuote>)>,
         make_payment_sender: mpsc::Sender<Option<(UploadItem, Box<PayeeQuote>)>>,
     ) {
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             let _ = make_payment_sender.send(to_send).await;
         });
     }
@@ -670,7 +669,7 @@ impl UploaderInterface for Uploader {
 
         let last_payment = previous_payments.and_then(|payments| payments.last().cloned());
 
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             let xorname = upload_item.xorname();
             let result = InnerUploader::upload_item(
                 client,
@@ -874,14 +873,14 @@ impl InnerUploader {
     ) -> Result<()> {
         let wallet = self.wallet.clone();
 
-        let _handle = tokio::spawn(async move {
+        let _handle = spawn(async move {
             debug!("Spawning the long running make payment processing loop.");
 
             let mut to_be_paid_list = Vec::new();
             let mut cost_map = HashMap::new();
 
             let mut got_a_previous_force_payment = false;
-            while let Some(payment) = make_payment_receiver.recv().await {
+            while let Some(payment) = mpsc_recv(&mut make_payment_receiver).await {
                 let make_payments = if let Some((item, quote)) = payment {
                     to_be_paid_list.push((
                         quote.2.hash(),
@@ -947,7 +946,7 @@ impl InnerUploader {
                         }
                     };
                     let pay_for_chunk_sender_clone = task_result_sender.clone();
-                    let _handle = tokio::spawn(async move {
+                    let _handle = spawn(async move {
                         let _ = pay_for_chunk_sender_clone.send(result).await;
                     });
 
@@ -1160,7 +1159,7 @@ impl InnerUploader {
     fn emit_upload_event(&mut self, event: UploadEvent) {
         if let Some(sender) = self.event_sender.as_ref() {
             let sender_clone = sender.clone();
-            let _handle = tokio::spawn(async move {
+            let _handle = spawn(async move {
                 if let Err(err) = sender_clone.send(event).await {
                     error!("Error emitting upload event: {err:?}");
                 }
