@@ -59,10 +59,10 @@ impl Client {
             debug!("Uploading data map chunk: {map_xor_name:?}");
             self.chunk_upload_with_payment(data_map_chunk.clone(), proof.clone(), None)
                 .await
-                .inspect_err(|err| error!("Error uploading data map chunk: {err:?}"))
-        } else {
-            Ok(())
+                .inspect_err(|err| error!("Error uploading data map chunk: {err:?}"))?;
         }
+
+        Ok(())
     }
 
     async fn upload_chunks(
