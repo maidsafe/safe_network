@@ -92,19 +92,6 @@ npm run serve
 Then go to `http://127.0.0.1:8080/tests-js` in the browser. Here, enter a `ws` multiaddr of a local node and press 'run'.
 
 
-#### `index.html`
-
-There is also a simple `index.html` file that runs some JavaScript.
-
-Build the package (again with the env variables) and run a webserver, e.g. with Python:
-```sh
-wasm-pack build --dev --target=web autonomi
-python -m http.server --directory=autonomi 8000
-```
-
-Then visit `http://127.0.0.1:8000/` in your (modern) browser.
-
-
 ## Faucet (local)
 
 There is no faucet server, but instead you can use the `Deployer wallet private key` printed in the EVM node output to

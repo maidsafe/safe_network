@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "serve": "http-server -a 127.0.0.1 ../"
+    "serve": "http-server -c-1 -a 127.0.0.1 ../"
   },
   "devDependencies": {
     "chai": "^5.1.1",
