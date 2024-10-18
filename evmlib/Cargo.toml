@@ -11,6 +11,7 @@ version = "0.1.0"
 [features]
 wasm-bindgen = ["alloy/wasm-bindgen"]
 local = []
+external-signer = []
 
 [dependencies]
 alloy = { version = "0.4.2", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }

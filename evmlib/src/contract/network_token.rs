@@ -6,8 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::common::{Address, TxHash, U256};
+use crate::common::{Address, Calldata, TxHash, U256};
 use crate::contract::network_token::NetworkTokenContract::NetworkTokenContractInstance;
+use alloy::network::TransactionBuilder;
 use alloy::providers::{Network, Provider};
 use alloy::sol;
 use alloy::transports::{RpcError, Transport, TransportErrorKind};
@@ -77,15 +78,30 @@ where
     /// Approve spender to spend a raw amount of tokens.
     pub async fn approve(&self, spender: Address, value: U256) -> Result<TxHash, Error> {
         debug!("Approving spender to spend raw amt of tokens: {value}");
-        let call = self.contract.approve(spender, value);
-        let pending_tx_builder = call.send().await.inspect_err(|err| {
-            error!(
+        let (calldata, to) = self.approve_calldata(spender, value);
+
+        let transaction_request = self
+            .contract
+            .provider()
+            .transaction_request()
+            .with_to(to)
+            .with_input(calldata);
+
+        let pending_tx_builder = self
+            .contract
+            .provider()
+            .send_transaction(transaction_request)
+            .await
+            .inspect_err(|err| {
+                error!(
                 "Error approving spender {spender:?} to spend raw amt of tokens {value}:  {err:?}"
             )
-        })?;
+            })?;
 
         let pending_tx_hash = *pending_tx_builder.tx_hash();
+
         debug!("The approval from sender {spender:?} is pending with tx_hash: {pending_tx_hash:?}",);
+
         let tx_hash = pending_tx_builder.watch().await.inspect_err(|err| {
             error!("Error watching approve tx with hash {pending_tx_hash:?}:  {err:?}")
         })?;
@@ -95,13 +111,33 @@ where
         Ok(tx_hash)
     }
 
+    /// Approve spender to spend a raw amount of tokens.
+    /// Returns the transaction calldata.
+    pub fn approve_calldata(&self, spender: Address, value: U256) -> (Calldata, Address) {
+        let calldata = self.contract.approve(spender, value).calldata().to_owned();
+        (calldata, *self.contract.address())
+    }
+
     /// Transfer a raw amount of tokens.
     pub async fn transfer(&self, receiver: Address, amount: U256) -> Result<TxHash, Error> {
         debug!("Transferring raw amt of tokens: {amount} to {receiver:?}");
-        let call = self.contract.transfer(receiver, amount);
-        let pending_tx_builder = call.send().await.inspect_err(|err| {
-            error!("Error transferring raw amt of tokens to {receiver:?}: {err:?}")
-        })?;
+        let (calldata, to) = self.transfer_calldata(receiver, amount);
+
+        let transaction_request = self
+            .contract
+            .provider()
+            .transaction_request()
+            .with_to(to)
+            .with_input(calldata);
+
+        let pending_tx_builder = self
+            .contract
+            .provider()
+            .send_transaction(transaction_request)
+            .await
+            .inspect_err(|err| {
+                error!("Error transferring raw amt of tokens to {receiver:?}: {err:?}")
+            })?;
 
         let pending_tx_hash = *pending_tx_builder.tx_hash();
         debug!(
@@ -114,5 +150,16 @@ where
         debug!("Transfer tx with hash {tx_hash:?} is successful");
 
         Ok(tx_hash)
+    }
+
+    /// Transfer a raw amount of tokens.
+    /// Returns the transaction calldata.
+    pub fn transfer_calldata(&self, receiver: Address, amount: U256) -> (Calldata, Address) {
+        let calldata = self
+            .contract
+            .transfer(receiver, amount)
+            .calldata()
+            .to_owned();
+        (calldata, *self.contract.address())
     }
 }
