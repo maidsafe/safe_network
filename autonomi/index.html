@@ -17,54 +17,59 @@
 
       aut.logInit("sn_networking=warn,autonomi=trace");
 
-      console.log("connecting...");
+      updateProgress("Connecting...");
       const client = await aut.Client.connect([peer_addr]);
-      console.log("connected");
+      updateProgress("Connected");
 
-      console.log("getting wallet...");
+      updateProgress("Getting wallet...");
       const wallet = aut.getFundedWallet();
-      console.log("wallet retrieved");
+      updateProgress("Wallet retrieved");
 
       // Random 32 byte data
       const data = [...Array(16)].map(() => Math.floor(Math.random() * 9));
-      console.log("our data: ", data);
+      updateProgress("Our data: " + data);
 
-      console.log("calculating cost...");
+      updateProgress("Calculating cost...");
       let result = await client.dataCost(data, wallet);
-      console.log("calculated cost: ", result.toString());
+      updateProgress("Calculated cost: " + result.toString());
 
-      console.log("putting...");
+      updateProgress("Putting data...");
       const dataAddr = await client.dataPut(data, wallet);
-      console.log("put done: ", dataAddr.toString());
+      updateProgress("Put done: " + dataAddr.toString());
 
       let archive = new Map([["README.md", dataAddr]]);
-      console.log("putting data as archive... ", archive);
+      updateProgress("Putting data as archive... " + archive);
       let archiveAddr = await client.archivePut(archive, wallet);
-      console.log("archive put done: ", archiveAddr);
+      updateProgress("Archive put done: " + archiveAddr);
 
-      console.log("fetching archive...");
+      updateProgress("Fetching archive...");
       let archiveFetched = await client.archiveGet(archiveAddr);
-      console.log("archive fetched: ", archiveFetched);
+      updateProgress("Archive fetched: " + archiveFetched);
+
       for (const [path, addr] of archiveFetched) {
-        console.log("fetching data: ", path, ", addr: ", addr);
+        updateProgress("Fetching data: " + path + ", addr: " + addr);
         const dataFetched = await client.dataGet(addr);
-        console.log("data fetched: ", dataFetched);
+        updateProgress("Data fetched: " + dataFetched);
       }
 
       // Generate random secret key
       const secretKey = [...Array(32)].map(() => Math.floor(Math.random() * 9));
-
       await client.writeBytesToVault(data, wallet, secretKey);
 
       const vault = await client.fetchAndDecryptVault(secretKey);
-      console.log("vault: ", vault);
+      updateProgress("Vault: " + vault);
+    }
+
+    function updateProgress(message) {
+      document.getElementById('progress').textContent = message;
     }
 
     document.getElementById("btn-run").addEventListener("click", run, false);
   </script>
 
-  <label for="peer_id">Peer ID: <input type="text" id="peer_id" /></label>
+  <label for="peer_id">Peer MultiAddr: <input type="text" id="peer_id" /></label>
   <button id="btn-run">Run</button>
+  <span id="progress"></span>
 </body>
 
 </html>

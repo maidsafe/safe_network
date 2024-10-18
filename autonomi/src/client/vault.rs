@@ -7,17 +7,18 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use std::collections::HashSet;
+use std::hash::{DefaultHasher, Hash, Hasher};
 
 use crate::client::data::PutError;
 use crate::client::Client;
 use bls::SecretKey;
-use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
 use sn_evm::EvmWallet;
 use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg, VerificationKind};
 use sn_protocol::storage::{
     try_serialize_record, RecordKind, RetryStrategy, Scratchpad, ScratchpadAddress,
 };
+use sn_protocol::Bytes;
 use sn_protocol::{storage::try_deserialize_record, NetworkAddress};
 use tracing::info;
 
@@ -33,16 +34,32 @@ pub enum VaultError {
     Network(#[from] NetworkError),
 }
 
+/// The content type of the vault data
+/// The number is used to determine the type of the contents of the bytes contained in a vault
+/// Custom apps can use this to store their own custom types of data in vaults
+/// It is recommended to use the hash of the app name or an unique identifier as the content type using [`app_name_to_vault_content_type`]
+/// The value 0 is reserved for tests
+pub type VaultContentType = u64;
+
+/// For custom apps using Scratchpad, this function converts an app identifier or name to a [`VaultContentType`]
+pub fn app_name_to_vault_content_type<T: Hash>(s: T) -> VaultContentType {
+    let mut hasher = DefaultHasher::new();
+    s.hash(&mut hasher);
+    hasher.finish()
+}
+
 impl Client {
     /// Retrieves and returns a decrypted vault if one exists.
+    /// Returns the content type of the bytes in the vault
     pub async fn fetch_and_decrypt_vault(
         &self,
         secret_key: &SecretKey,
-    ) -> Result<Option<Bytes>, VaultError> {
+    ) -> Result<(Bytes, VaultContentType), VaultError> {
         info!("Fetching and decrypting vault");
         let pad = self.get_vault_from_network(secret_key).await?;
 
-        Ok(pad.decrypt_data(secret_key)?)
+        let data = pad.decrypt_data(secret_key)?;
+        Ok((data, pad.data_encoding()))
     }
 
     /// Gets the vault Scratchpad from a provided client public key
@@ -81,14 +98,16 @@ impl Client {
 
     /// Put data into the client's VaultPacket
     ///
-    /// Pays for a new VaultPacket if none yet created for the client. Returns the current version
-    /// of the data on success.
+    /// Pays for a new VaultPacket if none yet created for the client.
+    /// Provide the bytes to be written to the vault and the content type of those bytes.
+    /// It is recommended to use the hash of the app name or unique identifier as the content type.
     pub async fn write_bytes_to_vault(
         &self,
         data: Bytes,
         wallet: &EvmWallet,
         secret_key: &SecretKey,
-    ) -> Result<u64, PutError> {
+        content_type: VaultContentType,
+    ) -> Result<(), PutError> {
         let client_pk = secret_key.public_key();
 
         let pad_res = self.get_vault_from_network(secret_key).await;
@@ -106,10 +125,10 @@ impl Client {
             existing_data
         } else {
             trace!("new scratchpad creation");
-            Scratchpad::new(client_pk)
+            Scratchpad::new(client_pk, content_type)
         };
 
-        let next_count = scratch.update_and_sign(data, secret_key);
+        let _next_count = scratch.update_and_sign(data, secret_key);
         let scratch_address = scratch.network_address();
         let scratch_key = scratch_address.to_record_key();
 
@@ -181,6 +200,6 @@ impl Client {
                 )
             })?;
 
-        Ok(next_count)
+        Ok(())
     }
 }

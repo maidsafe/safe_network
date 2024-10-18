@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::NetworkSwarmCmd, driver::PendingGetClosestType, get_quorum_value, GetRecordCfg,
-    GetRecordError, NetworkError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    cmd::NetworkSwarmCmd, driver::PendingGetClosestType, get_quorum_value, target_arch::Instant,
+    GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::{
@@ -23,10 +23,7 @@ use sn_protocol::{
     storage::get_type_from_record,
     NetworkAddress, PrettyPrintRecordKey,
 };
-use std::{
-    collections::{hash_map::Entry, HashSet},
-    time::Instant,
-};
+use std::collections::{hash_map::Entry, HashSet};
 use tokio::sync::oneshot;
 use xor_name::XorName;
 

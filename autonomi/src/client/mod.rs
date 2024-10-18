@@ -12,12 +12,16 @@ pub mod address;
 pub mod archive;
 #[cfg(feature = "data")]
 pub mod data;
+#[cfg(feature = "external-signer")]
+pub mod external_signer;
 #[cfg(feature = "fs")]
 pub mod fs;
 #[cfg(feature = "registers")]
 pub mod registers;
 #[cfg(feature = "vault")]
 pub mod vault;
+#[cfg(feature = "vault")]
+pub mod vault_user_data;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
