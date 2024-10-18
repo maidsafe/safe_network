@@ -531,19 +531,15 @@ jobs:
   #         platform: ${{ matrix.os }}
   #         build: true
 
-  # # incase the faucet is not ready yet
-  # - name: 30s sleep for faucet completion
-  #   run: sleep 30
-
-  # - name: Check SAFE_PEERS was set
-  #   shell: bash
-  #   run: |
-  #     if [[ -z "$SAFE_PEERS" ]]; then
-  #       echo "The SAFE_PEERS variable has not been set"
-  #       exit 1
-  #     else
-  #       echo "SAFE_PEERS has been set to $SAFE_PEERS"
-  #     fi
+  #     - name: Check SAFE_PEERS was set
+  #       shell: bash
+  #       run: |
+  #         if [[ -z "$SAFE_PEERS" ]]; then
+  #           echo "The SAFE_PEERS variable has not been set"
+  #           exit 1
+  #         else
+  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #         fi
 
   #     - name: execute token_distribution tests
   #       run: cargo test --release --features=local,distribution token_distribution -- --nocapture --test-threads=1
@@ -635,37 +631,7 @@ jobs:
           log_file_prefix: safe_test_logs_churn
           platform: ${{ matrix.os }}
 
-      - name: Get total node count
-        shell: bash
-        timeout-minutes: 1
-        run: |
-          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
-          echo "Node dir count is $node_count"
-
-      - name: Get restart of nodes using rg
-        shell: bash
-        timeout-minutes: 1
-        # get the counts, then the specific line, and then the digit count only
-        # then check we have an expected level of restarts
-        # TODO: make this use an env var, or relate to testnet size
-        run: |
-          restart_count=$(rg "Node is restarting in" "${{ matrix.node_data_path }}" -c --stats | \
-            rg "(\d+) matches" | rg "\d+" -o)
-          echo "Restarted $restart_count nodes"
-
-      - name: Get peers removed from nodes using rg
-        shell: bash
-        timeout-minutes: 1
-        run: |
-          peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.node_data_path }}" -c --stats | \
-            rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to extract peer removal count"; exit 1; }
-          if [ -z "$peer_removed" ]; then
-            echo "No peer removal count found"
-            exit 1
-          fi
-          echo "PeerRemovedFromRoutingTable $peer_removed times"
-
-      - name: Verify peers removed exceed restarted node counts
+      - name: Verify restart of nodes using rg
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only
@@ -682,6 +648,8 @@ jobs:
             echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
             exit 1
           fi
+          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
+          echo "Node dir count is $node_count"
 
         # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
         # if [ $restart_count -lt $node_count ]; then
@@ -800,7 +768,7 @@ jobs:
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
-          log_file_prefix: safe_test_logs_data_location_routing_table
+          log_file_prefix: safe_test_logs_data_location
           platform: ${{ matrix.os }}
 
       - name: Verify restart of nodes using rg
@@ -892,15 +860,15 @@ jobs:
   #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
   #         fi
 
-  # - name: Create and fund a wallet first time
-  #   run: |
-  #     ~/safe --log-output-dest=data-dir wallet create --no-password
-  #     ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
-  #     echo "----------"
-  #     cat first.txt
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
+  #     - name: Create and fund a wallet first time
+  #       run: |
+  #         ~/safe --log-output-dest=data-dir wallet create --no-password
+  #         ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>first.txt
+  #         echo "----------"
+  #         cat first.txt
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
   #     - name: Move faucet log to the working folder
   #       run: |
@@ -926,64 +894,44 @@ jobs:
   #       continue-on-error: true
   #       if: always()
 
-  # - name: Cleanup prior faucet and cashnotes
-  #   run: |
-  #     ls -l /home/runner/.local/share
-  #     ls -l /home/runner/.local/share/safe
-  #     rm -rf /home/runner/.local/share/safe/test_faucet
-  #     rm -rf /home/runner/.local/share/safe/test_genesis
-  #     rm -rf /home/runner/.local/share/safe/client
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
+  #     - name: Create and fund a wallet second time
+  #       run: |
+  #         ls -l /home/runner/.local/share
+  #         ls -l /home/runner/.local/share/safe
+  #         rm -rf /home/runner/.local/share/safe/test_faucet
+  #         rm -rf /home/runner/.local/share/safe/test_genesis
+  #         rm -rf /home/runner/.local/share/safe/client
+  #         ~/safe --log-output-dest=data-dir wallet create --no-password
+  #         ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 1>second.txt
+  #         echo "----------"
+  #         cat second.txt
+  #         if grep "genesis is already spent" second.txt; then
+  #           echo "Duplicated faucet rejected"
+  #         else
+  #           echo "Duplicated faucet not rejected!"
+  #           exit 1
+  #         fi
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
-  # - name: Create a new wallet
-  #   run: ~/safe --log-output-dest=data-dir wallet create --no-password
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
-
-  # - name: Attempt second faucet genesis disbursement
-  #   run: ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1)  > second.txt 2>&1 || true
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
-
-  # - name: cat second.txt
-  #   run: cat second.txt
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
-
-  # - name: Verify a second disbursement is rejected
-  #   run: |
-  #     if grep "Faucet disbursement has already occured" second.txt; then
-  #     echo "Duplicated faucet rejected"
-  #     else
-  #     echo "Duplicated faucet not rejected!"
-  #     exit 1
-  #     fi
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
-
-  # - name: Create and fund a wallet with different keypair
-  #   run: |
-  #     ls -l /home/runner/.local/share
-  #     ls -l /home/runner/.local/share/safe
-  #     rm -rf /home/runner/.local/share/safe/test_faucet
-  #     rm -rf /home/runner/.local/share/safe/test_genesis
-  #     rm -rf /home/runner/.local/share/safe/client
-  #     ~/safe --log-output-dest=data-dir wallet create --no-password
-  #     if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
-  #       echo "Faucet with different genesis key not rejected!"
-  #       exit 1
-  #     else
-  #       echo "Faucet with different genesis key rejected"
-  #     fi
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
+  #     - name: Create and fund a wallet with different keypair
+  #       run: |
+  #         ls -l /home/runner/.local/share
+  #         ls -l /home/runner/.local/share/safe
+  #         rm -rf /home/runner/.local/share/safe/test_faucet
+  #         rm -rf /home/runner/.local/share/safe/test_genesis
+  #         rm -rf /home/runner/.local/share/safe/client
+  #         ~/safe --log-output-dest=data-dir wallet create --no-password
+  #         if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
+  #           echo "Faucet with different genesis key not rejected!"
+  #           exit 1
+  #         else
+  #           echo "Faucet with different genesis key rejected"
+  #         fi
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
   #     - name: Build faucet binary again without the gifting feature
   #       run: cargo build --release --bin faucet
@@ -1111,14 +1059,14 @@ jobs:
   #         echo "PWD subdirs:"
   #         du -sh */
 
-  # - name: Create and fund a wallet to pay for files storage
-  #   run: |
-  #     ~/safe --log-output-dest=data-dir wallet create --no-password
-  #     ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-  #     ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
+  #     - name: Create and fund a wallet to pay for files storage
+  #       run: |
+  #         ~/safe --log-output-dest=data-dir wallet create --no-password
+  #         ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #         ~/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
   #     - name: Start a client to upload
   #       run: ~/safe --log-output-dest=data-dir files upload "ubuntu-14.04.6-desktop-i386.iso" --retry-strategy quick
@@ -1168,8 +1116,6 @@ jobs:
   #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
   #   name: Replication bench with heavy upload
   #   runs-on: ubuntu-latest
-  #   env:
-  #     CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
   #   steps:
   #     - uses: actions/checkout@v4
 
@@ -1246,28 +1192,14 @@ jobs:
   #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
   #         fi
 
-  # - name: Sleep 15s
-  #   shell: bash
-  #   run: sleep 15
-
-  # - name: Check faucet has been funded
-  #   shell: bash
-  #   run: |
-  #     cash_note_count=$(ls -l /home/runner/.local/share/safe/test_faucet/wallet/cash_notes/ | wc -l)
-  #     echo $cash_note_count
-  #     if [ "$cash_note_count" -eq 0 ]; then
-  #       echo "Error: Expected at least 1 cash note, but found $cash_note_count"
-  #       exit 1
-  #     fi
-
-  # - name: Create and fund a wallet to pay for files storage
-  #   run: |
-  #     ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-  #     ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-  #     ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-  #   env:
-  #     SN_LOG: "all"
-  #   timeout-minutes: 5
+  #     - name: Create and fund a wallet to pay for files storage
+  #       run: |
+  #         ./target/release/safe --log-output-dest=data-dir wallet create --no-password
+  #         ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #       env:
+  #         SN_LOG: "all"
+  #       timeout-minutes: 5
 
   #     - name: Start a client to upload first file
   #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_1.tar.gz" --retry-strategy quick
@@ -1275,32 +1207,29 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 5
 
-  # - name: Check current directories
-  #   run: |
-  #     pwd
-  #     ls $CLIENT_DATA_PATH/ -l
-  #     ls $CLIENT_DATA_PATH/wallet -l
-  #     ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #   timeout-minutes: 1
-
-  # - name: Ensure no leftover cash_notes and payment files
-  #   run: |
-  #     expected_cash_notes_files="1"
-  #     expected_payment_files="0"
-  #     cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
-  #     echo "Find $cash_note_files cash_note files"
-  #     if [ $expected_cash_notes_files -lt $cash_note_files ]; then
-  #       echo "Got too many cash_note files leftover: $cash_note_files"
-  #       exit 1
-  #     fi
-  #     ls $CLIENT_DATA_PATH/wallet/payments -l
-  #     payment_files=$(ls $CLIENT_DATA_PATH/wallet/payments | wc -l)
-  #     if [ $expected_payment_files -lt $payment_files ]; then
-  #       echo "Got too many payment files leftover: $payment_files"
-  #       exit 1
-  #     fi
-
-  #   timeout-minutes: 10
+  #     - name: Ensure no leftover cash_notes and payment files
+  #       run: |
+  #         expected_cash_notes_files="1"
+  #         expected_payment_files="0"
+  #         pwd
+  #         ls $CLIENT_DATA_PATH/ -l
+  #         ls $CLIENT_DATA_PATH/wallet -l
+  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+  #         cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
+  #         echo "Find $cash_note_files cash_note files"
+  #         if [ $expected_cash_notes_files -lt $cash_note_files ]; then
+  #           echo "Got too many cash_note files leftover: $cash_note_files"
+  #           exit 1
+  #         fi
+  #         ls $CLIENT_DATA_PATH/wallet/payments -l
+  #         payment_files=$(ls $CLIENT_DATA_PATH/wallet/payments | wc -l)
+  #         if [ $expected_payment_files -lt $payment_files ]; then
+  #           echo "Got too many payment files leftover: $payment_files"
+  #           exit 1
+  #         fi
+  #       env:
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #       timeout-minutes: 10
 
   #     - name: Wait for certain period
   #       run: sleep 300
@@ -1312,49 +1241,52 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 10
 
-  # - name: Ensure no leftover cash_notes and payment files
-  #   run: |
-  #     expected_cash_notes_files="1"
-  #     expected_payment_files="0"
-  #     pwd
-  #     ls $CLIENT_DATA_PATH/ -l
-  #     ls $CLIENT_DATA_PATH/wallet -l
-  #     ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #     cash_note_files=$(find $CLIENT_DATA_PATH/wallet/cash_notes -type f | wc -l)
-  #     if (( $(echo "$cash_note_files > $expected_cash_notes_files" | bc -l) )); then
-  #       echo "Got too many cash_note files leftover: $cash_note_files when we expected $expected_cash_notes_files"
-  #       exit 1
-  #     fi
-  #     ls $CLIENT_DATA_PATH/wallet/payments -l
-  #     payment_files=$(find $CLIENT_DATA_PATH/wallet/payments -type f | wc -l)
-  #     if (( $(echo "$payment_files > $expected_payment_files" | bc -l) )); then
-  #       echo "Got too many payment files leftover: $payment_files"
-  #       exit 1
-  #     fi
-  #   timeout-minutes: 10
+  #     - name: Ensure no leftover cash_notes and payment files
+  #       run: |
+  #         expected_cash_notes_files="1"
+  #         expected_payment_files="0"
+  #         pwd
+  #         ls $CLIENT_DATA_PATH/ -l
+  #         ls $CLIENT_DATA_PATH/wallet -l
+  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+  #         cash_note_files=$(find $CLIENT_DATA_PATH/wallet/cash_notes -type f | wc -l)
+  #         if (( $(echo "$cash_note_files > $expected_cash_notes_files" | bc -l) )); then
+  #           echo "Got too many cash_note files leftover: $cash_note_files when we expected $expected_cash_notes_files"
+  #           exit 1
+  #         fi
+  #         ls $CLIENT_DATA_PATH/wallet/payments -l
+  #         payment_files=$(find $CLIENT_DATA_PATH/wallet/payments -type f | wc -l)
+  #         if (( $(echo "$payment_files > $expected_payment_files" | bc -l) )); then
+  #           echo "Got too many payment files leftover: $payment_files"
+  #           exit 1
+  #         fi
+  #       env:
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #       timeout-minutes: 10
 
   #     - name: Wait for certain period
   #       run: sleep 300
   #       timeout-minutes: 6
 
-  # # Start a different client to avoid local wallet slow down with more payments handled.
-  # - name: Start a different client
-  #   run: |
-  #     pwd
-  #     mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
-  #     ls -l $SAFE_DATA_PATH
-  #     ls -l $SAFE_DATA_PATH/client_first
-  #     mkdir $SAFE_DATA_PATH/client
-  #     ls -l $SAFE_DATA_PATH
-  #     mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
-  #     ls -l $CLIENT_DATA_PATH
-  #     ./target/release/safe --log-output-dest=data-dir wallet create --no-password
-  #     ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-  #     ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
-  #   env:
-  #     SN_LOG: "all"
-  #     SAFE_DATA_PATH: /home/runner/.local/share/safe
-  #   timeout-minutes: 25
+  #     # Start a different client to avoid local wallet slow down with more payments handled.
+  #     - name: Start a different client
+  #       run: |
+  #         pwd
+  #         mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
+  #         ls -l $SAFE_DATA_PATH
+  #         ls -l $SAFE_DATA_PATH/client_first
+  #         mkdir $SAFE_DATA_PATH/client
+  #         ls -l $SAFE_DATA_PATH
+  #         mv $SAFE_DATA_PATH/client_first/logs $CLIENT_DATA_PATH/logs
+  #         ls -l $CLIENT_DATA_PATH
+  #         ./target/release/safe --log-output-dest=data-dir wallet create --no-password
+  #         ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
+  #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
+  #       env:
+  #         SN_LOG: "all"
+  #         SAFE_DATA_PATH: /home/runner/.local/share/safe
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #       timeout-minutes: 25
 
   #     - name: Use second client to upload third file
   #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_3.tar.gz" --retry-strategy quick
@@ -1362,27 +1294,29 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 10
 
-  # - name: Ensure no leftover cash_notes and payment files
-  #   run: |
-  #     expected_cash_notes_files="1"
-  #     expected_payment_files="0"
-  #     pwd
-  #     ls $CLIENT_DATA_PATH/ -l
-  #     ls $CLIENT_DATA_PATH/wallet -l
-  #     ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #     cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
-  #     echo "Find $cash_note_files cash_note files"
-  #     if [ $expected_cash_notes_files -lt $cash_note_files ]; then
-  #       echo "Got too many cash_note files leftover: $cash_note_files"
-  #       exit 1
-  #     fi
-  #     ls $CLIENT_DATA_PATH/wallet/payments -l
-  #     payment_files=$(ls $CLIENT_DATA_PATH/wallet/payments | wc -l)
-  #     if [ $expected_payment_files -lt $payment_files ]; then
-  #       echo "Got too many payment files leftover: $payment_files"
-  #       exit 1
-  #     fi
-  #   timeout-minutes: 10
+  #     - name: Ensure no leftover cash_notes and payment files
+  #       run: |
+  #         expected_cash_notes_files="1"
+  #         expected_payment_files="0"
+  #         pwd
+  #         ls $CLIENT_DATA_PATH/ -l
+  #         ls $CLIENT_DATA_PATH/wallet -l
+  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
+  #         cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
+  #         echo "Find $cash_note_files cash_note files"
+  #         if [ $expected_cash_notes_files -lt $cash_note_files ]; then
+  #           echo "Got too many cash_note files leftover: $cash_note_files"
+  #           exit 1
+  #         fi
+  #         ls $CLIENT_DATA_PATH/wallet/payments -l
+  #         payment_files=$(ls $CLIENT_DATA_PATH/wallet/payments | wc -l)
+  #         if [ $expected_payment_files -lt $payment_files ]; then
+  #           echo "Got too many payment files leftover: $payment_files"
+  #           exit 1
+  #         fi
+  #       env:
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #       timeout-minutes: 10
 
   #     - name: Stop the local network and upload logs
   #       if: always()

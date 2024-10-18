@@ -552,7 +552,7 @@ impl Node {
         };
 
         debug!(
-            "Found {} spends with key: {unique_pubkey:?} at {pretty_key:?}",
+            "Got {} validated spends with key: {unique_pubkey:?} at {pretty_key:?}",
             validated_spends.len()
         );
 
@@ -564,12 +564,14 @@ impl Node {
             expires: None,
         };
         self.network().put_local_record(record);
-        debug!("Successfully stored spends with key: {unique_pubkey:?} at {pretty_key:?}");
+        debug!(
+            "Successfully stored validated spends with key: {unique_pubkey:?} at {pretty_key:?}"
+        );
 
         // Just log the double spend attempt. DoubleSpend error during PUT is not used and would just lead to
         // RecordRejected marker (which is incorrect, since we store double spends).
         if validated_spends.len() > 1 {
-            warn!("Got Burnt SpendAttempts of len {} for the Spend PUT with unique_pubkey {unique_pubkey} at {pretty_key:?}", validated_spends.len());
+            warn!("Got double spend(s) of len {} for the Spend PUT with unique_pubkey {unique_pubkey}", validated_spends.len());
         }
 
         self.record_metrics(Marker::ValidSpendRecordPutFromNetwork(&pretty_key));
@@ -754,14 +756,13 @@ impl Node {
                 }
                 spends
             }
-            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopiesInRange {
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
                 record,
                 got,
-                range,
                 ..
             })) => {
                 info!(
-                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network in range {range}"
+                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network"
                 );
                 match get_raw_signed_spends_from_record(&record) {
                     Ok(spends) => spends,

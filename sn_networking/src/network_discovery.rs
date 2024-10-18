@@ -8,6 +8,7 @@
 
 use crate::target_arch::Instant;
 use libp2p::{kad::KBucketKey, PeerId};
+use rand::{thread_rng, Rng};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sn_protocol::NetworkAddress;
 use std::collections::{btree_map::Entry, BTreeMap};
@@ -51,13 +52,13 @@ impl NetworkDiscovery {
     }
 
     /// The result from the kad::GetClosestPeers are again used to update our kbucket.
-    pub(crate) fn handle_get_closest_query(&mut self, closest_peers: &[PeerId]) {
+    pub(crate) fn handle_get_closest_query(&mut self, closest_peers: Vec<PeerId>) {
         let now = Instant::now();
 
         let candidates_map: BTreeMap<u32, Vec<NetworkAddress>> = closest_peers
-            .iter()
+            .into_iter()
             .filter_map(|peer| {
-                let peer = NetworkAddress::from_peer(*peer);
+                let peer = NetworkAddress::from_peer(peer);
                 let peer_key = peer.as_kbucket_key();
                 peer_key
                     .distance(&self.self_key)
@@ -82,28 +83,18 @@ impl NetworkDiscovery {
 
     /// Returns one random candidate per bucket. Also tries to refresh the candidate list.
     /// Todo: Limit the candidates to return. Favor the closest buckets.
-    pub(crate) fn candidates(&mut self) -> Vec<NetworkAddress> {
+    pub(crate) fn candidates(&mut self) -> Vec<&NetworkAddress> {
+        self.try_refresh_candidates();
+
+        let mut rng = thread_rng();
         let mut op = Vec::with_capacity(self.candidates.len());
 
-        let mut generate_fresh_candidates = false;
-        for addresses in self.candidates.values_mut() {
-            // get a random candidate from each bucket each time
-            if addresses.is_empty() {
-                generate_fresh_candidates = true;
-                continue;
-            }
-
-            // remove the first each time
-            let address = addresses.remove(0);
-            op.push(address);
-        }
-
-        if generate_fresh_candidates {
-            // we only refresh when we are running low on candidates
-            self.try_refresh_candidates();
-        }
-
-        debug!("Candidates returned: {}", op.len());
+        let candidates = self.candidates.values().filter_map(|candidates| {
+            // get a random index each time
+            let random_index = rng.gen::<usize>() % candidates.len();
+            candidates.get(random_index)
+        });
+        op.extend(candidates);
         op
     }
 

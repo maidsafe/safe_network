@@ -20,7 +20,6 @@ use crate::{
     record_store_api::UnifiedRecordStore,
     relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
-    sort_peers_by_distance_to,
     target_arch::{interval, spawn, Instant},
     GetRecordError, Network, CLOSE_GROUP_SIZE,
 };
@@ -33,6 +32,7 @@ use futures::future::Either;
 use futures::StreamExt;
 #[cfg(feature = "local")]
 use libp2p::mdns;
+use libp2p::Transport as _;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
@@ -45,7 +45,6 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
-use libp2p::{kad::KBucketDistance, Transport as _};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::info::Info;
 use sn_evm::PaymentQuote;
@@ -60,9 +59,10 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use std::{
-    collections::{btree_map::Entry, BTreeMap, HashMap, HashSet, VecDeque},
+    collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
     fmt::Debug,
     net::SocketAddr,
+    num::NonZeroUsize,
     path::PathBuf,
 };
 use tokio::sync::{mpsc, oneshot};
@@ -77,9 +77,6 @@ pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(15
 /// Interval over which we query relay manager to check if we can make any more reservations.
 pub(crate) const RELAY_MANAGER_RESERVATION_INTERVAL: Duration = Duration::from_secs(30);
 
-// Number of range distances to keep in the circular buffer
-pub const GET_RANGE_STORAGE_LIMIT: usize = 100;
-
 const KAD_STREAM_PROTOCOL_ID: StreamProtocol = StreamProtocol::new("/autonomi/kad/1.0.0");
 
 /// The ways in which the Get Closest queries are used.
@@ -90,9 +87,7 @@ pub(crate) enum PendingGetClosestType {
     /// These are queries made by a function at the upper layers and contains a channel to send the result back.
     FunctionCall(oneshot::Sender<Vec<PeerId>>),
 }
-
-/// Maps a query to the address, the type of query and the peers that are being queried.
-type PendingGetClosest = HashMap<QueryId, (NetworkAddress, PendingGetClosestType, Vec<PeerId>)>;
+type PendingGetClosest = HashMap<QueryId, (PendingGetClosestType, Vec<PeerId>)>;
 
 /// Using XorName to differentiate different record content under the same key.
 type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
@@ -127,6 +122,13 @@ const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
 /// Time before a Kad query times out if no response is received
 const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(10);
+
+// Init during compilation, instead of runtime error that should never happen
+// Option<T>::expect will be stabilised as const in the future (https://github.com/rust-lang/rust/issues/67441)
+const REPLICATION_FACTOR: NonZeroUsize = match NonZeroUsize::new(CLOSE_GROUP_SIZE) {
+    Some(v) => v,
+    None => panic!("CLOSE_GROUP_SIZE should not be zero"),
+};
 
 /// The various settings to apply to when fetching a record from network
 #[derive(Clone)]
@@ -347,6 +349,8 @@ impl NetworkBuilder {
             .set_publication_interval(None)
             // 1mb packet size
             .set_max_packet_size(MAX_PACKET_SIZE)
+            // How many nodes _should_ store data.
+            .set_replication_factor(REPLICATION_FACTOR)
             .set_query_timeout(KAD_QUERY_TIMEOUT_S)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true)
@@ -426,7 +430,9 @@ impl NetworkBuilder {
             .set_kbucket_inserts(libp2p::kad::BucketInserts::Manual)
             .set_max_packet_size(MAX_PACKET_SIZE)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
-            .disjoint_query_paths(true);
+            .disjoint_query_paths(true)
+            // How many nodes _should_ store data.
+            .set_replication_factor(REPLICATION_FACTOR);
 
         let (network, net_event_recv, driver) = self.build(
             kad_cfg,
@@ -692,8 +698,6 @@ impl NetworkBuilder {
             bad_nodes: Default::default(),
             quotes_history: Default::default(),
             replication_targets: Default::default(),
-            range_distances: VecDeque::with_capacity(GET_RANGE_STORAGE_LIMIT),
-            first_contact_made: false,
         };
 
         let network = Network::new(
@@ -729,7 +733,7 @@ pub struct SwarmDriver {
     pub(crate) local_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     local_cmd_receiver: mpsc::Receiver<LocalSwarmCmd>,
     network_cmd_receiver: mpsc::Receiver<NetworkSwarmCmd>,
-    pub(crate) event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
+    event_sender: mpsc::Sender<NetworkEvent>, // Use `self.send_event()` to send a NetworkEvent.
 
     /// Trackers for underlying behaviour related events
     pub(crate) pending_get_closest_peers: PendingGetClosest,
@@ -752,13 +756,6 @@ pub struct SwarmDriver {
     pub(crate) bad_nodes: BadNodes,
     pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
     pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
-
-    // The recent range_distances calculated by the node
-    // Each update is generated when there is a routing table change
-    // We use the largest of these X_STORAGE_LIMIT values as our X distance.
-    pub(crate) range_distances: VecDeque<KBucketDistance>,
-    // have we found out initial peer
-    pub(crate) first_contact_made: bool,
 }
 
 impl SwarmDriver {
@@ -809,24 +806,28 @@ impl SwarmDriver {
                     // logging for handling events happens inside handle_swarm_events
                     // otherwise we're rewriting match statements etc around this anwyay
                     if let Err(err) = self.handle_swarm_events(swarm_event) {
-                        warn!("Issue while handling swarm event: {err}");
+                        warn!("Error while handling swarm event: {err}");
                     }
                 },
                 // thereafter we can check our intervals
 
                 // runs every bootstrap_interval time
                 _ = bootstrap_interval.tick() => {
-                    self.run_bootstrap_continuously();
+                    if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {
+                        bootstrap_interval = new_interval;
+                    }
                 }
                 _ = set_farthest_record_interval.tick() => {
                     if !self.is_client {
-                        let get_range = self.get_request_range();
-                        self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(get_range);
+                        let closest_k_peers = self.get_closest_k_value_local_peers();
 
-                        // the distance range within the replication_fetcher shall be in sync as well
-                        self.replication_fetcher.set_replication_distance_range(get_range);
-
-
+                        if let Some(distance) = self.get_responsbile_range_estimate(&closest_k_peers) {
+                            info!("Set responsible range to {distance}");
+                            // set any new distance to farthest record in the store
+                            self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+                            // the distance range within the replication_fetcher shall be in sync as well
+                            self.replication_fetcher.set_replication_distance_range(distance);
+                        }
                     }
                 }
                 _ = relay_manager_reservation_interval.tick() => self.relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes),
@@ -838,90 +839,32 @@ impl SwarmDriver {
     // ---------- Crate helpers -------------------
     // --------------------------------------------
 
-    /// Defines a new X distance range to be used for GETs and data replication
-    ///
-    /// Enumerates buckets and generates a random distance in the first bucket
-    /// that has at least `MIN_PEERS_IN_BUCKET` peers.
-    ///
-    pub(crate) fn set_request_range(
+    /// Uses the closest k peers to estimate the farthest address as
+    /// `K_VALUE / 2`th peer's bucket.
+    fn get_responsbile_range_estimate(
         &mut self,
-        queried_address: NetworkAddress,
-        network_discovery_peers: &[PeerId],
-    ) {
-        info!(
-            "Adding a GetRange to our stash deriving from {:?} peers",
-            network_discovery_peers.len()
-        );
+        // Sorted list of closest k peers to our peer id.
+        closest_k_peers: &[PeerId],
+    ) -> Option<u32> {
+        // if we don't have enough peers we don't set the distance range yet.
+        let mut farthest_distance = None;
 
-        let sorted_distances = sort_peers_by_distance_to(network_discovery_peers, queried_address);
-
-        let mapped: Vec<_> = sorted_distances.iter().map(|d| d.ilog2()).collect();
-        info!("Sorted distances: {:?}", mapped);
-
-        let farthest_peer_to_check = self
-            .get_all_local_peers_excluding_self()
-            .len()
-            .checked_div(3 * CLOSE_GROUP_SIZE)
-            .unwrap_or(1);
-
-        info!("Farthest peer we'll check: {:?}", farthest_peer_to_check);
-
-        let yardstick = if sorted_distances.len() >= farthest_peer_to_check {
-            sorted_distances.get(farthest_peer_to_check.saturating_sub(1))
-        } else {
-            sorted_distances.last()
-        };
-        if let Some(distance) = yardstick {
-            if self.range_distances.len() >= GET_RANGE_STORAGE_LIMIT {
-                if let Some(distance) = self.range_distances.pop_front() {
-                    trace!("Removed distance range: {:?}", distance.ilog2());
-                }
-            }
-
-            info!("Adding new distance range: {:?}", distance.ilog2());
-
-            self.range_distances.push_back(*distance);
+        if closest_k_peers.is_empty() {
+            return farthest_distance;
         }
 
-        info!(
-            "Distance between peers in set_request_range call: {:?}",
-            yardstick
-        );
-    }
+        let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
-    /// Returns the KBucketDistance we are currently using as our X value
-    /// for range based search.
-    pub(crate) fn get_request_range(&self) -> KBucketDistance {
-        let mut sorted_distances = self.range_distances.iter().collect::<Vec<_>>();
+        // get `K_VALUE / 2`th peer's address distance
+        // This is a rough estimate of the farthest address we might be responsible for.
+        // We want this to be higher than actually necessary, so we retain more data
+        // and can be sure to pass bad node checks
+        let target_index = std::cmp::min(K_VALUE.get() / 2, closest_k_peers.len()) - 1;
 
-        sorted_distances.sort_unstable();
+        let address = NetworkAddress::from_peer(closest_k_peers[target_index]);
+        farthest_distance = our_address.distance(&address).ilog2();
 
-        let median_index = sorted_distances.len() / 2;
-
-        let default = KBucketDistance::default();
-        let median = sorted_distances.get(median_index).cloned();
-
-        if let Some(dist) = median {
-            *dist
-        } else {
-            default
-        }
-    }
-
-    /// get all the peers from our local RoutingTable. Excluding self
-    pub(crate) fn get_all_local_peers_excluding_self(&mut self) -> Vec<PeerId> {
-        let our_peer_id = self.self_peer_id;
-        let mut all_peers: Vec<PeerId> = vec![];
-        for kbucket in self.swarm.behaviour_mut().kademlia.kbuckets() {
-            for entry in kbucket.iter() {
-                let id = entry.node.key.into_preimage();
-
-                if id != our_peer_id {
-                    all_peers.push(id);
-                }
-            }
-        }
-        all_peers
+        farthest_distance
     }
 
     /// Pushes NetworkSwarmCmd off thread so as to be non-blocking
