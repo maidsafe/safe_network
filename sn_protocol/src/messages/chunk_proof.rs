@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::storage::{try_serialize_record, Chunk, RecordKind};
+use crate::Error;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -22,6 +24,13 @@ impl ChunkProof {
         let combined = [record_value, &nonce_bytes].concat();
         let hash = sha3_256(&combined);
         ChunkProof(hash)
+    }
+
+    pub fn from_chunk(chunk: &Chunk, nonce: Nonce) -> Result<Self, Error> {
+        let stored_on_node = try_serialize_record(chunk, RecordKind::Chunk)?.to_vec();
+        let proof = ChunkProof::new(&stored_on_node, nonce);
+
+        Ok(proof)
     }
 
     pub fn verify(&self, other_proof: &ChunkProof) -> bool {

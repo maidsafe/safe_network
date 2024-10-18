@@ -20,14 +20,19 @@ use crate::{
 use bytes::Bytes;
 use itertools::Either;
 use libp2p::{kad::Quorum, PeerId};
+use rand::{thread_rng, Rng};
 use sn_evm::{Amount, EvmWallet, ProofOfPayment};
 use sn_networking::{GetRecordCfg, PayeeQuote, PutRecordCfg, VerificationKind};
 use sn_protocol::{
+    messages::ChunkProof,
     storage::{Chunk, RetryStrategy},
     NetworkAddress,
 };
 use sn_registers::RegisterAddress;
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    num::NonZero,
+};
 use tokio::sync::mpsc;
 use xor_name::XorName;
 
@@ -56,6 +61,8 @@ type Result<T> = std::result::Result<T, UploadError>;
 // 1. since wallet balance is not fetched after finishing a task, get it before we send OK/Err
 // 2. Rework client event, it should be sent via the lowest level of the PUT. while for chunks it is done earlier (data.rs)
 // 3. track each batch with an id
+// 4. create a irrecoverable error type, so we can bail on io/serialization etc.
+// 5. separate cfgs/retries for register/chunk etc
 // 1. log whenever we insert/remove items. i.e., don't ignore values with `let _`
 
 /// The main loop that performs the upload process.
@@ -925,7 +932,6 @@ impl InnerUploader {
 
                             TaskResult::MakePaymentsOk { payment_proofs }
                         }
-                        // TODO: Don't allow > 1 batch.
                         Err(err) => {
                             let error = err.0;
                             let _succeeded_batch = err.1;
@@ -1047,8 +1053,8 @@ impl InnerUploader {
         client: Client,
         upload_item: UploadItem,
         previous_payments: Option<ProofOfPayment>,
-        _verify_store: bool,
-        _retry_strategy: RetryStrategy,
+        verify_store: bool,
+        retry_strategy: RetryStrategy,
     ) -> Result<()> {
         let xorname = upload_item.xorname();
 
@@ -1059,7 +1065,7 @@ impl InnerUploader {
         let payee = payment_proof.to_peer_id_payee().ok_or_else(|| {
             error!("Invalid payment proof found, could not obtain peer_id {payment_proof:?}");
             UploadError::InternalError
-        });
+        })?;
 
         debug!("Payments for upload item: {xorname:?} to {payee:?}:  {payment_proof:?}");
 
@@ -1075,19 +1081,74 @@ impl InnerUploader {
                     }
                 };
 
-                trace!("Client upload started for chunk: {xorname:?}");
-                // TODO: pass in the verify_store, retry_startegy (or putcfg is even better). Also the fn has a panic. remove it.
+                let verification = if verify_store {
+                    let verification_cfg = GetRecordCfg {
+                        get_quorum: Quorum::N(NonZero::new(2).expect("2 is non-zero")),
+                        retry_strategy: Some(retry_strategy),
+                        target_record: None,
+                        expected_holders: Default::default(),
+                        is_register: false,
+                    };
+
+                    let random_nonce = thread_rng().gen::<u64>();
+                    let expected_proof =
+                        ChunkProof::from_chunk(&chunk, random_nonce).map_err(|err| {
+                            error!("Failed to create chunk proof: {err:?}");
+                            UploadError::Serialization(format!(
+                                "Failed to create chunk proof for {xorname:?}"
+                            ))
+                        })?;
+
+                    Some((
+                        VerificationKind::ChunkProof {
+                            expected_proof,
+                            nonce: random_nonce,
+                        },
+                        verification_cfg,
+                    ))
+                } else {
+                    None
+                };
+
+                let put_cfg = PutRecordCfg {
+                    put_quorum: Quorum::One,
+                    retry_strategy: Some(retry_strategy),
+                    use_put_record_to: Some(vec![payee]),
+                    verification,
+                };
+
+                debug!("Client upload started for chunk: {xorname:?}");
                 client
-                    .chunk_upload_with_payment(chunk, payment_proof)
+                    .chunk_upload_with_payment(chunk, payment_proof, Some(put_cfg))
                     .await?;
 
-                trace!("Client upload completed for chunk: {xorname:?}");
+                debug!("Client upload completed for chunk: {xorname:?}");
             }
-            UploadItem::Register { address: _, reg: _ } => {
-                // TODO: create a new fn to perform register_upload_with_payment
-                // reg.publish_register(Some((payment, payee)), verify_store)
-                //     .await?;
-                trace!("Client upload completed for register: {xorname:?}");
+            UploadItem::Register { address: _, reg } => {
+                debug!("Client upload started for register: {xorname:?}");
+                let verification = if verify_store {
+                    let get_cfg = GetRecordCfg {
+                        get_quorum: Quorum::Majority,
+                        retry_strategy: Some(retry_strategy),
+                        target_record: None,
+                        expected_holders: Default::default(),
+                        is_register: true,
+                    };
+                    Some((VerificationKind::Network, get_cfg))
+                } else {
+                    None
+                };
+
+                let put_cfg = PutRecordCfg {
+                    put_quorum: Quorum::All,
+                    retry_strategy: Some(retry_strategy),
+                    use_put_record_to: Some(vec![payee]),
+                    verification,
+                };
+                client
+                    .register_upload(&reg, Some(&payment_proof), &put_cfg)
+                    .await?;
+                debug!("Client upload completed for register: {xorname:?}");
             }
         }
 
