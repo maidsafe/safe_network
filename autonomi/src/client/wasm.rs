@@ -2,6 +2,10 @@ use libp2p::Multiaddr;
 use wasm_bindgen::prelude::*;
 
 use super::address::{addr_to_str, str_to_addr};
+use super::vault_user_data::UserData;
+
+#[wasm_bindgen(js_name = UserData)]
+pub struct JsUserData(UserData);
 
 #[wasm_bindgen(js_name = Client)]
 pub struct JsClient(super::Client);
@@ -115,33 +119,31 @@ mod vault {
 
     #[wasm_bindgen(js_class = Client)]
     impl JsClient {
-        #[wasm_bindgen(js_name = fetchAndDecryptVault)]
-        pub async fn fetch_and_decrypt_vault(
+        #[wasm_bindgen(js_name = getUserDataFromVault)]
+        pub async fn get_user_data_from_vault(
             &self,
             secret_key: Vec<u8>,
-        ) -> Result<Option<Vec<u8>>, JsError> {
+        ) -> Result<JsUserData, JsError> {
             let secret_key: [u8; 32] = secret_key[..].try_into()?;
             let secret_key = SecretKey::from_bytes(secret_key)?;
 
-            let vault = self.0.fetch_and_decrypt_vault(&secret_key).await?;
-            let vault = vault.map(|v| v.to_vec());
+            let user_data = self.0.get_user_data_from_vault(&secret_key).await?;
 
-            Ok(vault)
+            Ok(JsUserData(user_data))
         }
 
-        #[wasm_bindgen(js_name = writeBytesToVault)]
-        pub async fn write_bytes_to_vault(
+        #[wasm_bindgen(js_name = putUserDataToVault)]
+        pub async fn put_user_data_to_vault(
             &self,
-            vault: Vec<u8>,
+            user_data: JsUserData,
             wallet: &mut JsWallet,
             secret_key: Vec<u8>,
         ) -> Result<(), JsError> {
             let secret_key: [u8; 32] = secret_key[..].try_into()?;
             let secret_key = SecretKey::from_bytes(secret_key)?;
 
-            let vault = bytes::Bytes::from(vault);
             self.0
-                .write_bytes_to_vault(vault, &mut wallet.0, &secret_key)
+                .put_user_data_to_vault(&secret_key, &wallet.0, user_data.0)
                 .await?;
 
             Ok(())
