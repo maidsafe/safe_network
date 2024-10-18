@@ -21,15 +21,15 @@ wasm_bindgen_test_configure!(run_in_browser);
 async fn put() -> Result<(), Box<dyn std::error::Error>> {
     enable_logging_wasm("sn_networking,autonomi,wasm");
 
-    let client = Client::connect(&peers_from_env()?).await.unwrap();
+    let client = Client::connect(&peers_from_env()?).await?;
     let wallet = get_funded_wallet();
+    let data = gen_random_data(1024 * 1024 * 10);
 
-    let data = gen_random_data(1024 * 1024 * 2); // 2MiB
-    let addr = client.put(data.clone(), &wallet).await.unwrap();
+    let addr = client.data_put(data.clone(), &wallet).await?;
 
-    sleep(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(10)).await;
 
-    let data_fetched = client.get(addr).await.unwrap();
+    let data_fetched = client.data_get(addr).await?;
     assert_eq!(data, data_fetched, "data fetched should match data put");
 
     Ok(())
