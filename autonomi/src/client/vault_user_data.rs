@@ -15,7 +15,7 @@ use super::data::PutError;
 use super::registers::RegisterAddress;
 use super::vault::VaultError;
 use super::Client;
-use crate::client::vault::{app_name_to_version, VaultContentVersion};
+use crate::client::vault::{app_name_to_vault_content_type, VaultContentType};
 use bls::SecretKey;
 use serde::{Deserialize, Serialize};
 use sn_evm::EvmWallet;
@@ -23,9 +23,9 @@ use sn_protocol::Bytes;
 
 use std::sync::LazyLock;
 
-/// Vault content version for UserDataVault
-pub static USER_DATA_VAULT_CONTENT_VERSION: LazyLock<VaultContentVersion> =
-    LazyLock::new(|| app_name_to_version("UserData"));
+/// Vault content type for UserDataVault
+pub static USER_DATA_VAULT_CONTENT_IDENTIFIER: LazyLock<VaultContentType> =
+    LazyLock::new(|| app_name_to_vault_content_type("UserData"));
 
 /// UserData is stored in Vaults and contains most of a user's private data:
 /// It allows users to keep track of only the key to their User Data Vault
@@ -51,8 +51,8 @@ pub struct UserData {
 pub enum UserDataVaultGetError {
     #[error("Vault error: {0}")]
     Vault(#[from] VaultError),
-    #[error("Unsupported vault content version: {0}")]
-    UnsupportedVaultContentVersion(VaultContentVersion),
+    #[error("Unsupported vault content type: {0}")]
+    UnsupportedVaultContentType(VaultContentType),
     #[error("Serialization error: {0}")]
     Serialization(String),
     #[error("Get error: {0}")]
@@ -86,10 +86,8 @@ impl Client {
     ) -> Result<UserData, UserDataVaultGetError> {
         let (bytes, version) = self.fetch_and_decrypt_vault(secret_key).await?;
 
-        if version != *USER_DATA_VAULT_CONTENT_VERSION {
-            return Err(UserDataVaultGetError::UnsupportedVaultContentVersion(
-                version,
-            ));
+        if version != *USER_DATA_VAULT_CONTENT_IDENTIFIER {
+            return Err(UserDataVaultGetError::UnsupportedVaultContentType(version));
         }
 
         let vault = UserData::from_bytes(bytes).map_err(|e| {
@@ -111,8 +109,13 @@ impl Client {
         let bytes = user_data
             .to_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize user data: {e}")))?;
-        self.write_bytes_to_vault(bytes, wallet, secret_key, *USER_DATA_VAULT_CONTENT_VERSION)
-            .await?;
+        self.write_bytes_to_vault(
+            bytes,
+            wallet,
+            secret_key,
+            *USER_DATA_VAULT_CONTENT_IDENTIFIER,
+        )
+        .await?;
         Ok(())
     }
 }
