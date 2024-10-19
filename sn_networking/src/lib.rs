@@ -30,6 +30,7 @@ mod transfers;
 mod transport;
 
 use cmd::LocalSwarmCmd;
+use sn_registers::SignedRegister;
 use xor_name::XorName;
 
 // re-export arch dependent deps for use in the crate, or above
@@ -61,11 +62,15 @@ use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
-    storage::{RecordType, RetryStrategy},
+    storage::{
+        try_deserialize_record, try_serialize_record, RecordHeader, RecordKind, RecordType,
+        RetryStrategy,
+    },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
+use sn_transfers::SignedSpend;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     net::IpAddr,
     sync::Arc,
 };
@@ -671,16 +676,15 @@ impl Network {
     /// In case a target_record is provided, only return when fetched target.
     /// Otherwise count it as a failure when all attempts completed.
     ///
+    /// It also handles the split record error for spends and registers.
+    /// For spends, it accumulates the spends and returns an error if more than one.
+    /// For registers, it merges the registers and returns the merged record.
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn get_record_from_network(
         &self,
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
-        use std::collections::BTreeSet;
-
-        use sn_transfers::SignedSpend;
-
         let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
         backoff::future::retry(
             backoff::ExponentialBackoff {
@@ -720,39 +724,16 @@ impl Network {
                     Err(GetRecordError::RecordNotFound) => {
                         warn!("No holder of record '{pretty_key:?}' found.");
                     }
+                    // This is returned during SplitRecordError, we should not get this error here.
+                    Err(GetRecordError::RecordKindMismatch) => {
+                        error!("Record kind mismatch for {pretty_key:?}. This error should not happen here.");
+                    }
                     Err(GetRecordError::SplitRecord { result_map }) => {
                         error!("Encountered a split record for {pretty_key:?}.");
-
-                        // attempt to deserialise and accumulate any spends
-                        let mut accumulated_spends = BTreeSet::new();
-                        let results_count = result_map.len();
-                        // try and accumulate any SpendAttempts
-                        if results_count > 1 {
-                            info!("For record {pretty_key:?}, we have more than one result returned.");
-                            // Allow for early bail if we've already seen a split SpendAttempt
-                            for (record, _) in result_map.values() {
-                                match get_raw_signed_spends_from_record(record) {
-                                    Ok(spends) => {
-                                        accumulated_spends.extend(spends);
-                                    }
-                                    Err(_) => {
-                                        continue;
-                                    }
-                                }
-                            }
+                        if let Some(record) = Self::handle_split_record_error(result_map, &key)? {
+                                info!("Merged the split record (register) for {pretty_key:?}, into a single record");
+                                return Ok(record);
                         }
-
-                        // we have a Double SpendAttempt and will exit
-                        if accumulated_spends.len() > 1 {
-                            info!("For record {pretty_key:?} task found split record for a spend, accumulated and sending them as a single record");
-                            let accumulated_spends =
-                                accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
-
-                            return Err(backoff::Error::Permanent(NetworkError::DoubleSpendAttempt(
-                                accumulated_spends,
-                            )));
-                        }
-
                     }
                     Err(GetRecordError::QueryTimeout) => {
                         error!("Encountered query timeout for {pretty_key:?}.");
@@ -775,6 +756,111 @@ impl Network {
             },
         )
         .await
+    }
+
+    /// Handle the split record error.
+    /// Spend: Accumulate spends and return error if more than one.
+    /// Register: Merge registers and return the merged record.
+    fn handle_split_record_error(
+        result_map: &HashMap<XorName, (Record, HashSet<PeerId>)>,
+        key: &RecordKey,
+    ) -> std::result::Result<Option<Record>, backoff::Error<NetworkError>> {
+        let pretty_key = PrettyPrintRecordKey::from(key);
+
+        // attempt to deserialise and accumulate any spends or registers
+        let results_count = result_map.len();
+        let mut accumulated_spends = HashSet::new();
+        let mut collected_registers = Vec::new();
+
+        if results_count > 1 {
+            let mut record_kind = None;
+            info!("For record {pretty_key:?}, we have more than one result returned.");
+            for (record, _) in result_map.values() {
+                let Ok(header) = RecordHeader::from_record(record) else {
+                    continue;
+                };
+                let kind = record_kind.get_or_insert(header.kind);
+                if *kind != header.kind {
+                    error!("Encountered a split record for {pretty_key:?} with different RecordHeaders. Expected {kind:?} but got {:?}",header.kind);
+                    return Err(backoff::Error::Permanent(NetworkError::GetRecordError(
+                        GetRecordError::RecordKindMismatch,
+                    )));
+                }
+
+                // Accumulate the spends
+                if kind == &RecordKind::Spend {
+                    info!("For record {pretty_key:?}, we have a split record for a spend attempt. Accumulating spends");
+
+                    match get_raw_signed_spends_from_record(record) {
+                        Ok(spends) => {
+                            accumulated_spends.extend(spends);
+                        }
+                        Err(_) => {
+                            continue;
+                        }
+                    }
+                }
+                // Accumulate the registers
+                else if kind == &RecordKind::Register {
+                    info!("For record {pretty_key:?}, we have a split record for a register. Accumulating registers");
+                    let Ok(register) = try_deserialize_record::<SignedRegister>(record) else {
+                        error!(
+                            "Failed to deserialize register {pretty_key}. Skipping accumulation"
+                        );
+                        continue;
+                    };
+
+                    match register.verify() {
+                        Ok(_) => {
+                            collected_registers.push(register);
+                        }
+                        Err(_) => {
+                            error!(
+                                "Failed to verify register for {pretty_key} at address: {}. Skipping accumulation",
+                                register.address()
+                            );
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Allow for early bail if we've already seen a split SpendAttempt
+        if accumulated_spends.len() > 1 {
+            info!("For record {pretty_key:?} task found split record for a spend, accumulated and sending them as a single record");
+            let accumulated_spends = accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
+
+            return Err(backoff::Error::Permanent(NetworkError::DoubleSpendAttempt(
+                accumulated_spends,
+            )));
+        } else if !collected_registers.is_empty() {
+            info!("For record {pretty_key:?} task found multiple registers, merging them.");
+            let signed_register = collected_registers.iter().fold(collected_registers[0].clone(), |mut acc, x| {
+                if let Err(e) = acc.merge(x) {
+                    warn!("Ignoring forked register as we failed to merge conflicting registers at {}: {e}", x.address());
+                }
+                acc
+            });
+
+            let record_value = try_serialize_record(&signed_register, RecordKind::Register)
+                .map_err(|err| {
+                    error!(
+                        "Error while serializing the merged register for {pretty_key:?}: {err:?}"
+                    );
+                    backoff::Error::Permanent(NetworkError::from(err))
+                })?
+                .to_vec();
+
+            let record = Record {
+                key: key.clone(),
+                value: record_value,
+                publisher: None,
+                expires: None,
+            };
+            return Ok(Some(record));
+        }
+        Ok(None)
     }
 
     /// Get the cost of storing the next record from the network
@@ -852,6 +938,7 @@ impl Network {
             );
             self.put_record_once(record.clone(), cfg).await.map_err(|err|
             {
+                // FIXME: Skip if we get a permanent error during verification, e.g., DoubleSpendAttempt
                 warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
                 if cfg.retry_strategy.is_some() {
