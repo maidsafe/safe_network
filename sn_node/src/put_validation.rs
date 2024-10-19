@@ -743,6 +743,8 @@ impl Node {
         // get spends from the network at the address for that unique pubkey
         let network_spends = match self.network().get_raw_spends(spend_addr).await {
             Ok(spends) => spends,
+            // Fixme: We don't return SplitRecord Error for spends, instead we return NetworkError::DoubleSpendAttempt.
+            // The fix should also consider/change all the places we try to get spends, for eg `get_raw_signed_spends_from_record` etc.
             Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
                 warn!("Got a split record (double spend) for {unique_pubkey:?} from the network");
                 let mut spends = vec![];
