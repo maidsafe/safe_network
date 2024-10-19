@@ -147,23 +147,11 @@ impl Client {
                     try_deserialize_record(&record).map_err(|_| RegisterError::Serialization)?;
                 signed_reg
             }
-            // manage forked register case
             Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
-                debug!("Forked register detected for {address:?} merging forks");
-                let mut registers: Vec<SignedRegister> = vec![];
-                for (_, (record, _)) in result_map {
-                    registers.push(
-                        try_deserialize_record(&record)
-                            .map_err(|_| RegisterError::Serialization)?,
-                    );
-                }
-                let register = registers.iter().fold(registers[0].clone(), |mut acc, x| {
-                    if let Err(e) = acc.merge(x) {
-                        warn!("Ignoring forked register as we failed to merge conflicting registers at {}: {e}", x.address());
-                    }
-                    acc
-                });
-                register
+                error!("Got split record error for register at address: {address}. This should've been handled at the network layer");
+                Err(RegisterError::Network(NetworkError::GetRecordError(
+                    GetRecordError::SplitRecord { result_map },
+                )))?
             }
             Err(e) => {
                 error!("Failed to get register {address:?} from network: {e}");
