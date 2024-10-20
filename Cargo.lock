@@ -8168,7 +8168,9 @@ dependencies = [
 name = "sn_evm"
 version = "0.1.0"
 dependencies = [
+ "color-eyre",
  "custom_debug",
+ "dirs-next",
  "evmlib",
  "hex 0.4.3",
  "lazy_static",

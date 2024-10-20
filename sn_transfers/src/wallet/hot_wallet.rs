@@ -36,7 +36,6 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
-use std::fs;
 use xor_name::XorName;
 
 /// A locked file handle, that when dropped releases the lock.

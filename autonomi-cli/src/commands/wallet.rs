@@ -47,7 +47,7 @@ pub fn process_password(encryption: Option<String>, password: Option<String>) ->
 
 pub fn initiate_wallet_creation(encryption: Option<String>, password: Option<String>, private_key: Option<String>) -> Result<()>{
     let pass = process_password(encryption, password);
-    println!("pass is {:?}", pass);
+
     match private_key {
         Some(priv_key) => {
             import_new_wallet(priv_key, pass)
@@ -81,7 +81,9 @@ pub fn create_new_wallet(encryption: Option<String>) -> Result<()> {
 pub fn balance() -> Result<()> {
     // list_available_public_wallets
     // Call the function to get numbered file names as a HashMap
-    let files = get_numbered_files("safe/client/wallets")?;
+    let get_client_data_dir_path = get_wallet_directory();
+
+    let files = get_numbered_files(get_client_data_dir_path.to_str().expect("error"))?;
     let mut sorted_files: Vec<(&u32, &(String,String))> = files.iter().collect();
     sorted_files.sort_by_key(|&(key, _)| key);
     // Print the HashMap
@@ -92,7 +94,6 @@ pub fn balance() -> Result<()> {
     let key = prompt_for_key();
 
     if let Some(private_key) = get_private_key_from_wallet(key, files){
-        println!("Private_key is {}", private_key);
         get_wallet_information(private_key);
     }
     Ok(())
