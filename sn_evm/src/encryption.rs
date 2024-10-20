@@ -1,10 +1,7 @@
-use rand::{distributions::Standard, Rng, RngCore};
+use rand::Rng;
 use std::num::NonZeroU32;
-use ring::aead::{BoundKey, Nonce, NonceSequence, NONCE_LEN};
+use ring::aead::{BoundKey, Nonce, NonceSequence};
 use ring::error::Unspecified;
-// use error::{EvmError, Result};
-
-use crate::wallet::wallet_encryption_storage;
 use crate::EvmError;
 struct NonceSeq([u8; 12]);
 
