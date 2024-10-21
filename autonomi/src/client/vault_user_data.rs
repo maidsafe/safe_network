@@ -37,13 +37,11 @@ pub struct UserData {
     pub register_sk: Option<String>,
     /// Owned register addresses
     pub registers: HashSet<RegisterAddress>,
-    /// Owned file archive addresses
-    pub file_archives: HashSet<ArchiveAddr>,
+    /// Owned file archive addresses, along with an optional name for that archive
+    pub file_archives: HashMap<ArchiveAddr, Option<String>>,
 
     /// Owner register names, providing it is optional
     pub register_names: HashMap<String, RegisterAddress>,
-    /// Owned file archive addresses along with a name for that archive providing it is optional
-    pub file_archive_names: HashMap<String, ArchiveAddr>,
 }
 
 /// Errors that can occur during the get operation.
@@ -63,6 +61,25 @@ impl UserData {
     /// Create a new empty UserData
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Add an archive. Returning `Some` (with the optional old name) if the archive was already in the set.
+    pub fn add_file_archive(&mut self, archive: ArchiveAddr) -> Option<Option<String>> {
+        self.file_archives.insert(archive, None)
+    }
+
+    /// Add an archive. Returning `Some` (with the optional old name) if the archive was already in the set.
+    pub fn add_file_archive_with_name(
+        &mut self,
+        archive: ArchiveAddr,
+        name: String,
+    ) -> Option<Option<String>> {
+        self.file_archives.insert(archive, Some(name))
+    }
+
+    /// Remove an archive. Returning `Some` (with the optional old name) if the archive was in the set.
+    pub fn remove_file_archive(&mut self, archive: ArchiveAddr) -> Option<Option<String>> {
+        self.file_archives.remove(&archive)
     }
 
     /// To bytes
