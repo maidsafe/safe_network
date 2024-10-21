@@ -22,7 +22,7 @@ use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
-use sn_evm::{CustomNetwork, EvmNetwork, RewardsAddress};
+use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_logging::LogFormat;
 use sn_peers_acquisition::PeersArgs;
 use sn_releases::{ReleaseType, SafeReleaseRepoActions};
@@ -610,6 +610,7 @@ pub async fn maintain_n_running_nodes(
     data_dir_path: Option<PathBuf>,
     enable_metrics_server: bool,
     env_variables: Option<Vec<(String, String)>>,
+    evm_network: Option<EvmNetwork>,
     home_network: bool,
     local: bool,
     log_dir_path: Option<PathBuf>,
@@ -714,8 +715,7 @@ pub async fn maintain_n_running_nodes(
                         data_dir_path.clone(),
                         enable_metrics_server,
                         env_variables.clone(),
-                        // FIXME: Hardcoding for demo. Should be fixed!!
-                        Some(EvmNetwork::ArbitrumSepolia),
+                        evm_network.clone(),
                         home_network,
                         local,
                         log_dir_path.clone(),

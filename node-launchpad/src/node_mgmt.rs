@@ -1,7 +1,7 @@
 use crate::action::{Action, StatusActions};
 use crate::connection_mode::ConnectionMode;
 use color_eyre::eyre::{eyre, Error};
-use sn_evm::RewardsAddress;
+use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
@@ -291,6 +291,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         config.data_dir_path.clone(),
         true,
         None,
+        Some(EvmNetwork::ArbitrumSepolia), //FIXME: should come from an UI element.
         config.home_network,
         false,
         None,
@@ -365,6 +366,7 @@ async fn add_nodes(
             config.data_dir_path.clone(),
             true,
             None,
+            Some(EvmNetwork::ArbitrumSepolia), //FIXME: Should come from an UI element
             config.home_network,
             false,
             None,
