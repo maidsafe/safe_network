@@ -32,7 +32,10 @@ pub use error::Error;
 use storage::ScratchpadAddress;
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
-use bytes::Bytes;
+
+/// Re-export of Bytes used throughout the protocol
+pub use bytes::Bytes;
+
 use libp2p::{
     kad::{KBucketDistance as Distance, KBucketKey as Key, RecordKey},
     multiaddr::Protocol,

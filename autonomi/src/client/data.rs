@@ -37,9 +37,11 @@ pub enum PutError {
     VaultXorName,
     #[error("A network error occurred.")]
     Network(#[from] NetworkError),
+    #[error("Error occurred during cost estimation.")]
+    CostError(#[from] CostError),
     #[error("Error occurred during payment.")]
     PayError(#[from] PayError),
-    #[error("Failed to serialize {0}")]
+    #[error("Serialization error: {0}")]
     Serialization(String),
     #[error("A wallet error occurred.")]
     Wallet(#[from] sn_evm::EvmError),
@@ -82,6 +84,8 @@ pub enum CostError {
     CouldNotGetStoreQuote(XorName),
     #[error("Could not get store costs: {0:?}")]
     CouldNotGetStoreCosts(NetworkError),
+    #[error("Failed to serialize {0}")]
+    Serialization(String),
 }
 
 impl Client {

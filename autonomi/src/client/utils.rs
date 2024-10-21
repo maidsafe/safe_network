@@ -6,16 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    num::NonZero,
-};
+use std::{collections::HashMap, num::NonZero};
 
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_evm::{EvmWallet, ProofOfPayment, QuoteHash, QuotePayment, TxHash};
+use sn_evm::{EvmWallet, ProofOfPayment, QuotePayment};
 use sn_networking::{
     GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
 };
@@ -26,12 +23,12 @@ use sn_protocol::{
 };
 use xor_name::XorName;
 
-use crate::self_encryption::DataMapLevel;
-
 use super::{
     data::{CostError, GetError, PayError, PutError},
     Client,
 };
+use crate::self_encryption::DataMapLevel;
+use crate::utils::payment_proof_from_quotes_and_payments;
 
 impl Client {
     /// Fetch and decrypt all chunks in the data map.
@@ -163,7 +160,7 @@ impl Client {
             .await
             .map_err(|err| PayError::from(err.0))?;
 
-        let proofs = construct_proofs(&cost_map, &payments);
+        let proofs = payment_proof_from_quotes_and_payments(&cost_map, &payments);
 
         trace!(
             "Chunk payments of {} chunks completed. {} chunks were free / already paid for",
@@ -229,7 +226,7 @@ async fn fetch_store_quote(
 }
 
 /// Form to be executed payments and already executed payments from a cost map.
-fn extract_quote_payments(
+pub(crate) fn extract_quote_payments(
     cost_map: &HashMap<XorName, PayeeQuote>,
 ) -> (Vec<QuotePayment>, Vec<XorName>) {
     let mut to_be_paid = vec![];
@@ -248,25 +245,4 @@ fn extract_quote_payments(
     }
 
     (to_be_paid, already_paid)
-}
-
-/// Construct payment proofs from cost map and payments map.
-fn construct_proofs(
-    cost_map: &HashMap<XorName, PayeeQuote>,
-    payments: &BTreeMap<QuoteHash, TxHash>,
-) -> HashMap<XorName, ProofOfPayment> {
-    cost_map
-        .iter()
-        .filter_map(|(xor_name, (_, _, quote))| {
-            payments.get(&quote.hash()).map(|tx_hash| {
-                (
-                    *xor_name,
-                    ProofOfPayment {
-                        quote: quote.clone(),
-                        tx_hash: *tx_hash,
-                    },
-                )
-            })
-        })
-        .collect()
 }
