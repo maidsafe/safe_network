@@ -24,7 +24,9 @@ use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::PeersArgs;
 use sn_protocol::{
-    node::get_safenode_root_dir, node_rpc::{NodeCtrl, StopResult}, version::IDENTIFY_PROTOCOL_STR,
+    node::get_safenode_root_dir,
+    node_rpc::{NodeCtrl, StopResult},
+    version::IDENTIFY_PROTOCOL_STR,
 };
 use std::{
     env,
@@ -530,7 +532,9 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                         })
                         .await
                     {
-                        error!("Failed to send node control msg to safenode bin main thread: {err}");
+                        error!(
+                            "Failed to send node control msg to safenode bin main thread: {err}"
+                        );
                         break;
                     }
                 }
