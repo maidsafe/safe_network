@@ -148,52 +148,38 @@ mod vault {
             Self(UserData::new())
         }
 
-        #[wasm_bindgen(js_name = addArchive)]
-        pub fn add_archive(
+        #[wasm_bindgen(js_name = addFileArchive)]
+        pub fn add_file_archive(
             &mut self,
             archive: String,
             name: Option<String>,
         ) -> Result<(), JsError> {
             let archive = str_to_addr(&archive)?;
 
-            // TODO: Log when archive already exists?
-            self.0.add_file_archive(archive);
+            let old_name = if let Some(ref name) = name {
+                self.0.add_file_archive_with_name(archive, name.clone())
+            } else {
+                self.0.add_file_archive(archive)
+            };
 
-            if let Some(name) = name {
-                if let Some(old_archive) = self.0.add_file_archive_name(archive, name.clone()) {
-                    tracing::warn!(
-                        "Overwriting archive stored as '{name}': {old_archive} -> {archive}"
-                    );
-                }
+            if let Some(old_name) = old_name {
+                tracing::warn!("Overwriting archive (`{archive}`): `{old_name:?}` -> `{name:?}`");
             }
 
             Ok(())
         }
 
-        #[wasm_bindgen(js_name = removeArchive)]
-        pub fn remove_archive(&mut self, archive: String) -> Result<(), JsError> {
+        #[wasm_bindgen(js_name = removeFileArchive)]
+        pub fn remove_file_archive(&mut self, archive: String) -> Result<(), JsError> {
             let archive = str_to_addr(&archive)?;
             self.0.remove_file_archive(archive);
 
             Ok(())
         }
 
-        #[wasm_bindgen(js_name = removeArchiveName)]
-        pub fn remove_archive_name(&mut self, name: String) -> Result<(), JsError> {
-            let _archive_name = self.0.remove_file_archive_name(name);
-
-            Ok(())
-        }
-
-        #[wasm_bindgen(js_name = archives)]
-        pub fn archives(&self) -> Result<JsValue, JsError> {
+        #[wasm_bindgen(js_name = fileArchives)]
+        pub fn file_archives(&self) -> Result<JsValue, JsError> {
             let archives = serde_wasm_bindgen::to_value(&self.0.file_archives)?;
-            Ok(archives)
-        }
-
-        #[wasm_bindgen(js_name = archiveNames)]
-        pub fn archive_names(&self) -> Result<JsValue, JsError> {
-            let archives = serde_wasm_bindgen::to_value(&self.0.file_archive_names)?;
             Ok(archives)
         }
     }
@@ -203,12 +189,9 @@ mod vault {
         #[wasm_bindgen(js_name = getUserDataFromVault)]
         pub async fn get_user_data_from_vault(
             &self,
-            secret_key: Vec<u8>,
+            secret_key: &SecretKeyJs,
         ) -> Result<JsUserData, JsError> {
-            let secret_key: [u8; 32] = secret_key[..].try_into()?;
-            let secret_key = SecretKey::from_bytes(secret_key)?;
-
-            let user_data = self.0.get_user_data_from_vault(&secret_key).await?;
+            let user_data = self.0.get_user_data_from_vault(&secret_key.0).await?;
 
             Ok(JsUserData(user_data))
         }
@@ -216,15 +199,12 @@ mod vault {
         #[wasm_bindgen(js_name = putUserDataToVault)]
         pub async fn put_user_data_to_vault(
             &self,
-            user_data: JsUserData,
+            user_data: &JsUserData,
             wallet: &JsWallet,
-            secret_key: Vec<u8>,
+            secret_key: &SecretKeyJs,
         ) -> Result<(), JsError> {
-            let secret_key: [u8; 32] = secret_key[..].try_into()?;
-            let secret_key = SecretKey::from_bytes(secret_key)?;
-
             self.0
-                .put_user_data_to_vault(&secret_key, &wallet.0, user_data.0)
+                .put_user_data_to_vault(&secret_key.0, &wallet.0, user_data.0.clone())
                 .await?;
 
             Ok(())
@@ -232,10 +212,13 @@ mod vault {
     }
 }
 
+#[wasm_bindgen(js_name = SecretKey)]
+pub struct SecretKeyJs(bls::SecretKey);
+
 #[wasm_bindgen(js_name = genSecretKey)]
-pub fn gen_secret_key() -> Vec<u8> {
+pub fn gen_secret_key() -> SecretKeyJs {
     let secret_key = bls::SecretKey::random();
-    secret_key.to_bytes().to_vec()
+    SecretKeyJs(secret_key)
 }
 
 #[wasm_bindgen(js_name = Wallet)]

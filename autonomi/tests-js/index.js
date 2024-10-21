@@ -63,12 +63,11 @@ describe('autonomi', function () {
         const archiveAddr = await client.archivePut(archive, wallet);
     
         const userData = new atnm.UserData();
-        userData.addArchive(archiveAddr, 'foo');
+        userData.addFileArchive(archiveAddr, 'foo');
 
-        await client.putUserDataToVault(data, wallet, secretKey);
-        const userDataFetched = await client.put_user_data_to_vault(secretKey);
-
-        assert.deepEqual(userDataFetched.archives(), userData.archives());
-        assert.deepEqual(userDataFetched.archiveNames(), userData.archiveNames());
+        await client.putUserDataToVault(userData, wallet, secretKey);
+        const userDataFetched = await client.getUserDataFromVault(secretKey);
+    
+        assert.deepEqual(userDataFetched.fileArchives(), userData.fileArchives());
     });
 });
