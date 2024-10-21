@@ -59,7 +59,7 @@ const MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION: usize = 3;
 // Table Widths
 const NODE_WIDTH: usize = 10;
 const VERSION_WIDTH: usize = 7;
-const NANOS_WIDTH: usize = 5;
+const ATTOS_WIDTH: usize = 5;
 const MEMORY_WIDTH: usize = 7;
 const MBPS_WIDTH: usize = 15;
 const RECORDS_WIDTH: usize = 4;
@@ -207,7 +207,7 @@ impl Status<'_> {
                         .iter()
                         .find(|s| s.service_name == node_item.service_name)
                     {
-                        item.nanos = stats.forwarded_rewards;
+                        item.attos = stats.forwarded_rewards;
                         item.memory = stats.memory_usage_mb;
                         item.mbps = format!(
                             "↓{:06.2} ↑{:06.2}",
@@ -222,7 +222,7 @@ impl Status<'_> {
                     let new_item = NodeItem {
                         name: node_item.service_name.clone(),
                         version: node_item.version.to_string(),
-                        nanos: 0,
+                        attos: 0,
                         memory: 0,
                         mbps: "-".to_string(),
                         records: 0,
@@ -256,7 +256,7 @@ impl Status<'_> {
                     Some(NodeItem {
                         name: node_item.service_name.clone().to_string(),
                         version: node_item.version.to_string(),
-                        nanos: 0,
+                        attos: 0,
                         memory: 0,
                         mbps: "-".to_string(),
                         records: 0,
@@ -539,6 +539,7 @@ impl Component for Status<'_> {
                         action_sender: action_sender.clone(),
                         connection_mode: self.connection_mode,
                         port_range: Some(port_range),
+                        rewards_address: self.discord_username.clone(),
                     };
 
                     debug!("Calling maintain_n_running_nodes");
@@ -561,7 +562,11 @@ impl Component for Status<'_> {
                     stop_nodes(running_nodes, action_sender);
                 }
                 StatusActions::TriggerBetaProgramme => {
-                    return Ok(Some(Action::SwitchScene(Scene::StatusBetaProgrammePopUp)));
+                    if self.discord_username.is_empty() {
+                        return Ok(Some(Action::SwitchScene(Scene::StatusBetaProgrammePopUp)));
+                    } else {
+                        return Ok(None);
+                    }
                 }
             },
             Action::OptionsActions(OptionsActions::ResetNodes) => {
@@ -661,54 +666,44 @@ impl Component for Status<'_> {
         let column_constraints = [Constraint::Length(23), Constraint::Fill(1)];
         let stats_table = Table::new(stats_rows, stats_width).widths(column_constraints);
 
-        // Combine "Nanos Earned" and "Username" into a single row
-        let discord_username_placeholder = "Username: "; // Used to calculate the width of the username column
-        let discord_username_no_username = "[Ctrl+B] to set";
-        let discord_username_title = Span::styled(
-            discord_username_placeholder,
-            Style::default().fg(VIVID_SKY_BLUE),
-        );
-
-        let discord_username = if !self.discord_username.is_empty() {
-            Span::styled(
-                self.discord_username.clone(),
-                Style::default().fg(VIVID_SKY_BLUE),
-            )
-            .bold()
+        let wallet_not_set = if self.discord_username.is_empty() {
+            vec![
+                Span::styled("Press ".to_string(), Style::default().fg(VIVID_SKY_BLUE)),
+                Span::styled("[Ctrl+B] ".to_string(), Style::default().fg(GHOST_WHITE)),
+                Span::styled(
+                    "to add your ".to_string(),
+                    Style::default().fg(VIVID_SKY_BLUE),
+                ),
+                Span::styled(
+                    "Wallet Address".to_string(),
+                    Style::default().fg(VIVID_SKY_BLUE).bold(),
+                ),
+            ]
         } else {
-            Span::styled(
-                discord_username_no_username,
-                Style::default().fg(GHOST_WHITE),
-            )
+            vec![]
         };
 
-        let total_nanos_earned_and_discord_row = Row::new(vec![
-            Cell::new("Nanos Earned".to_string()).fg(VIVID_SKY_BLUE),
+        let total_attos_earned_and_wallet_row = Row::new(vec![
+            Cell::new("Attos Earned".to_string()).fg(VIVID_SKY_BLUE),
             Cell::new(self.node_stats.total_forwarded_rewards.to_string())
                 .fg(VIVID_SKY_BLUE)
                 .bold(),
-            Cell::new(
-                Line::from(vec![discord_username_title, discord_username])
-                    .alignment(Alignment::Right),
-            ),
+            Cell::new(Line::from(wallet_not_set).alignment(Alignment::Right)),
         ]);
 
-        let nanos_discord_rows = vec![total_nanos_earned_and_discord_row];
-        let nanos_discord_width = [Constraint::Length(5)];
+        let attos_wallet_rows = vec![total_attos_earned_and_wallet_row];
+        let attos_wallet_width = [Constraint::Length(5)];
         let column_constraints = [
             Constraint::Length(23),
             Constraint::Fill(1),
-            Constraint::Length(
-                discord_username_placeholder.len() as u16
-                    + if !self.discord_username.is_empty() {
-                        self.discord_username.len() as u16
-                    } else {
-                        discord_username_no_username.len() as u16
-                    },
-            ),
+            Constraint::Length(if self.discord_username.is_empty() {
+                41 //TODO: make it dynamic with wallet_not_set
+            } else {
+                0
+            }),
         ];
-        let nanos_discord_table =
-            Table::new(nanos_discord_rows, nanos_discord_width).widths(column_constraints);
+        let attos_wallet_table =
+            Table::new(attos_wallet_rows, attos_wallet_width).widths(column_constraints);
 
         let inner_area = combined_block.inner(layout[1]);
         let device_layout = Layout::new(
@@ -719,7 +714,7 @@ impl Component for Status<'_> {
 
         // Render both tables inside the combined block
         f.render_widget(stats_table, device_layout[0]);
-        f.render_widget(nanos_discord_table, device_layout[1]);
+        f.render_widget(attos_wallet_table, device_layout[1]);
 
         // ==== Node Status =====
 
@@ -783,7 +778,7 @@ impl Component for Status<'_> {
                 let node_widths = [
                     Constraint::Min(NODE_WIDTH as u16),
                     Constraint::Min(VERSION_WIDTH as u16),
-                    Constraint::Min(NANOS_WIDTH as u16),
+                    Constraint::Min(ATTOS_WIDTH as u16),
                     Constraint::Min(MEMORY_WIDTH as u16),
                     Constraint::Min(MBPS_WIDTH as u16),
                     Constraint::Min(RECORDS_WIDTH as u16),
@@ -797,7 +792,7 @@ impl Component for Status<'_> {
                 let header_row = Row::new(vec![
                     Cell::new("Node").fg(COOL_GREY),
                     Cell::new("Version").fg(COOL_GREY),
-                    Cell::new("Nanos").fg(COOL_GREY),
+                    Cell::new("Attos").fg(COOL_GREY),
                     Cell::new("Memory").fg(COOL_GREY),
                     Cell::new(
                         format!("{}{}", " ".repeat(MBPS_WIDTH - "Mbps".len()), "Mbps")
@@ -1022,7 +1017,7 @@ impl fmt::Display for NodeStatus {
 pub struct NodeItem<'a> {
     name: String,
     version: String,
-    nanos: u64,
+    attos: u64,
     memory: usize,
     mbps: String,
     records: usize,
@@ -1075,8 +1070,8 @@ impl NodeItem<'_> {
             self.version.to_string(),
             format!(
                 "{}{}",
-                " ".repeat(NANOS_WIDTH.saturating_sub(self.nanos.to_string().len())),
-                self.nanos.to_string()
+                " ".repeat(ATTOS_WIDTH.saturating_sub(self.attos.to_string().len())),
+                self.attos.to_string()
             ),
             format!(
                 "{}{} MB",

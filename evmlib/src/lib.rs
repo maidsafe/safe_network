@@ -75,8 +75,9 @@ impl CustomNetwork {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum Network {
+    #[default]
     ArbitrumOne,
     ArbitrumSepolia,
     Custom(CustomNetwork),
@@ -150,11 +151,5 @@ impl Network {
             quote_expiration_timestamp_in_secs,
         )
         .await
-    }
-}
-
-impl Default for Network {
-    fn default() -> Self {
-        Self::ArbitrumOne
     }
 }
