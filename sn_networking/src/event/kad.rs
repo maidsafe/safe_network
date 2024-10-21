@@ -391,24 +391,17 @@ impl SwarmDriver {
             // Insert the record and the peer into the result_map.
             let record_content_hash = XorName::from_content(&peer_record.record.value);
 
-            let peer_list =
+            let responded_peers =
                 if let Entry::Occupied(mut entry) = result_map.entry(record_content_hash) {
                     let (_, peer_list) = entry.get_mut();
-
-                    let _ = peer_list.insert(peer_id);
-                    peer_list.clone()
+                    peer_list.insert(peer_id);
+                    peer_list.len()
                 } else {
                     let mut peer_list = HashSet::new();
-                    let _ = peer_list.insert(peer_id);
-                    result_map.insert(
-                        record_content_hash,
-                        (peer_record.record.clone(), peer_list.clone()),
-                    );
-
-                    peer_list
+                    peer_list.insert(peer_id);
+                    result_map.insert(record_content_hash, (peer_record.record, peer_list));
+                    1
                 };
-
-            let responded_peers = peer_list.len();
 
             let expected_answers = get_quorum_value(&cfg.get_quorum);
             trace!("Expecting {expected_answers:?} answers to exceed {expected_get_range:?} for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
