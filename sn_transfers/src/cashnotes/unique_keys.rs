@@ -258,7 +258,6 @@ impl std::fmt::Debug for MainPubkey {
 /// The secret MainSecretKey has a static MainPubkey, which
 /// is shared with others in order to receive payments.
 /// With this MainSecretKey, new DerivedSecretKey:UniquePubkey pairs can be generated.
-#[derive(Debug)]
 pub struct MainSecretKey(SerdeSecret<SecretKey>);
 
 impl MainSecretKey {
