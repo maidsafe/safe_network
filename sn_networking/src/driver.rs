@@ -52,8 +52,8 @@ use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
     storage::{try_deserialize_record, RetryStrategy},
     version::{
-        get_key_version_str, IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR,
-        IDENTIFY_PROTOCOL_STR, REQ_RESPONSE_VERSION_STR,
+        IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
+        REQ_RESPONSE_VERSION_STR,
     },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
@@ -364,8 +364,7 @@ impl NetworkBuilder {
 
         let store_cfg = {
             // Configures the disk_store to store records under the provided path and increase the max record size
-            // The storage dir is appendixed with key_version str to avoid bringing records from old network into new
-            let storage_dir_path = root_dir.join(format!("record_store_{}", get_key_version_str()));
+            let storage_dir_path = root_dir.join("record_store");
             if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
                 return Err(NetworkError::FailedToCreateRecordStoreDir {
                     path: storage_dir_path,
