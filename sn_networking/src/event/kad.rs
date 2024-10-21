@@ -323,7 +323,7 @@ impl SwarmDriver {
 
         self.log_handling(event_string.to_string(), start.elapsed());
 
-        trace!(
+        info!(
             "kad::Event handled in {:?}: {event_string:?}",
             start.elapsed()
         );
