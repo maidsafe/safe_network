@@ -8,9 +8,7 @@
 #![allow(clippy::mutable_key_type)]
 
 use crate::target_arch::spawn;
-use crate::CLOSE_GROUP_SIZE;
 use crate::{event::NetworkEvent, target_arch::Instant};
-use itertools::Itertools;
 use libp2p::{
     kad::{KBucketDistance as Distance, RecordKey, K_VALUE},
     PeerId,
@@ -43,8 +41,8 @@ pub(crate) struct ReplicationFetcher {
     // Avoid fetching same chunk from different nodes AND carry out too many parallel tasks.
     on_going_fetches: HashMap<(RecordKey, RecordType), (PeerId, ReplicationTimeout)>,
     event_sender: mpsc::Sender<NetworkEvent>,
-    /// KBucketDistance range that the incoming key shall be fetched
-    distance_range: Option<Distance>,
+    /// ilog2 bucket distance range that the incoming key shall be fetched
+    distance_range: Option<u32>,
     /// Restrict fetch range to closer than this value
     /// used when the node is full, but we still have "close" data coming in
     /// that is _not_ closer than our farthest max record
@@ -65,7 +63,7 @@ impl ReplicationFetcher {
     }
 
     /// Set the distance range.
-    pub(crate) fn set_replication_distance_range(&mut self, distance_range: Distance) {
+    pub(crate) fn set_replication_distance_range(&mut self, distance_range: u32) {
         self.distance_range = Some(distance_range);
     }
 
@@ -78,7 +76,6 @@ impl ReplicationFetcher {
         holder: PeerId,
         incoming_keys: Vec<(NetworkAddress, RecordType)>,
         locally_stored_keys: &HashMap<RecordKey, (NetworkAddress, RecordType)>,
-        all_local_peers: &[PeerId],
     ) -> Vec<(PeerId, RecordKey)> {
         // remove locally stored from incoming_keys
         let mut new_incoming_keys: Vec<_> = incoming_keys
@@ -136,30 +133,12 @@ impl ReplicationFetcher {
             .retain(|_, time_out| *time_out > Instant::now());
 
         let mut out_of_range_keys = vec![];
-
         // Filter out those out_of_range ones among the incoming_keys.
         if let Some(ref distance_range) = self.distance_range {
             new_incoming_keys.retain(|(addr, _record_type)| {
-                // find all closer peers to the data
-                let closer_peers_len = all_local_peers
-                    .iter()
-                    .filter(|peer_id| {
-                        let peer_address = NetworkAddress::from_peer(**peer_id);
-                        addr.distance(&peer_address) <= *distance_range
-                    })
-                    .collect_vec()
-                    .len();
-
-                // we consider ourselves in range if
-                // A) We don't know enough closer peers than ourselves
-                // or B) The distance to the data is within our GetRange
-                let is_in_range = closer_peers_len <= CLOSE_GROUP_SIZE
-                    || self_address.distance(addr).ilog2() <= distance_range.ilog2();
+                let is_in_range =
+                    self_address.distance(addr).ilog2().unwrap_or(0) <= *distance_range;
                 if !is_in_range {
-                    warn!(
-                    "Rejecting incoming key: {addr:?} as out of range. {:?} is larger than {:?} ",
-                    self_address.distance(addr).ilog2(),
-                    distance_range.ilog2());
                     out_of_range_keys.push(addr.clone());
                 }
                 is_in_range
@@ -449,12 +428,8 @@ mod tests {
             incoming_keys.push((key, RecordType::Chunk));
         });
 
-        let keys_to_fetch = replication_fetcher.add_keys(
-            PeerId::random(),
-            incoming_keys,
-            &locally_stored_keys,
-            &[],
-        );
+        let keys_to_fetch =
+            replication_fetcher.add_keys(PeerId::random(), incoming_keys, &locally_stored_keys);
         assert_eq!(keys_to_fetch.len(), MAX_PARALLEL_FETCH);
 
         // we should not fetch anymore keys
@@ -466,7 +441,6 @@ mod tests {
             PeerId::random(),
             vec![(key_1, RecordType::Chunk), (key_2, RecordType::Chunk)],
             &locally_stored_keys,
-            &[],
         );
         assert!(keys_to_fetch.is_empty());
 
@@ -477,7 +451,6 @@ mod tests {
             PeerId::random(),
             vec![(key, RecordType::Chunk)],
             &locally_stored_keys,
-            &[],
         );
         assert!(!keys_to_fetch.is_empty());
 
@@ -503,13 +476,9 @@ mod tests {
         let mut replication_fetcher = ReplicationFetcher::new(peer_id, event_sender);
 
         // Set distance range
-        // way to update this test
         let distance_target = NetworkAddress::from_peer(PeerId::random());
-        let distance_range = self_address.distance(&distance_target);
+        let distance_range = self_address.distance(&distance_target).ilog2().unwrap_or(1);
         replication_fetcher.set_replication_distance_range(distance_range);
-
-        // generate a list of close peers
-        let close_peers = (0..100).map(|_| PeerId::random()).collect::<Vec<_>>();
 
         let mut incoming_keys = Vec::new();
         let mut in_range_keys = 0;
@@ -517,27 +486,24 @@ mod tests {
             let random_data: Vec<u8> = (0..50).map(|_| rand::random::<u8>()).collect();
             let key = NetworkAddress::from_record_key(&RecordKey::from(random_data));
 
-            if key.distance(&self_address).ilog2() <= distance_range.ilog2() {
+            if key.distance(&self_address).ilog2().unwrap_or(0) <= distance_range {
                 in_range_keys += 1;
             }
 
             incoming_keys.push((key, RecordType::Chunk));
         });
 
-        let keys_to_fetch = replication_fetcher.add_keys(
-            PeerId::random(),
-            incoming_keys,
-            &Default::default(),
-            &close_peers,
-        );
+        let keys_to_fetch =
+            replication_fetcher.add_keys(PeerId::random(), incoming_keys, &Default::default());
         assert_eq!(
             keys_to_fetch.len(),
             replication_fetcher.on_going_fetches.len(),
             "keys to fetch and ongoing fetches should match"
         );
-        assert!(
-            keys_to_fetch.len() + replication_fetcher.to_be_fetched.len() >= in_range_keys,
-            "at least all keys in range should be in the fetcher"
+        assert_eq!(
+            in_range_keys,
+            keys_to_fetch.len() + replication_fetcher.to_be_fetched.len(),
+            "all keys should be in range and in the fetcher"
         );
     }
 }

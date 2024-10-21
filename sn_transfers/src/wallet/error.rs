@@ -40,19 +40,9 @@ pub enum Error {
     /// A general error when receiving a transfer fails
     #[error("Failed to receive transfer due to {0}")]
     CouldNotReceiveMoney(String),
-    /// A spend has been burnt (ie there was a DoubleSpendAttempt)
-    #[error("Failed to verify transfer validity in the network, a burnt SpendAttempt was found")]
-    BurntSpend,
-    /// Parents of a spend were not as expected in a provided cash note
-    #[error("Failed to verify transfer's parents in the network, transfer could be invalid or a parent double spent")]
-    UnexpectedParentSpends(crate::SpendAddress),
-    ///No valid unspent cashnotes found
-    #[error("All the redeemed CashNotes are already spent")]
-    AllRedeemedCashnotesSpent,
     /// A general error when verifying a transfer validity in the network
     #[error("Failed to verify transfer validity in the network {0}")]
     CouldNotVerifyTransfer(String),
-
     /// Failed to fetch spend from network
     #[error("Failed to fetch spend from network: {0}")]
     FailedToGetSpend(String),
