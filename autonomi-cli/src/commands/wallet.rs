@@ -11,6 +11,7 @@ use autonomi::wallet::*;
 use color_eyre::Result;
 use rpassword::read_password;
 
+
 pub fn process_password(encryption: Option<String>, password: Option<String>) -> Option<String> {
     match encryption {
         Some(value) => {
@@ -30,7 +31,6 @@ pub fn process_password(encryption: Option<String>, password: Option<String>) ->
                         Ok(pwd) => pwd,
                         Err(e) => {
                             eprintln!("Failed to read password: {}",e);
-                            // return Ok(())
                             println!("Try again...");
                             panic!("issue with password");
                         }
@@ -45,7 +45,7 @@ pub fn process_password(encryption: Option<String>, password: Option<String>) ->
 
 
 
-pub fn initiate_wallet_creation(encryption: Option<String>, password: Option<String>, private_key: Option<String>) -> Result<()>{
+pub fn create(encryption: Option<String>, password: Option<String>, private_key: Option<String>) -> Result<()>{
     let pass = process_password(encryption, password);
 
     match private_key {
@@ -60,21 +60,20 @@ pub fn import_new_wallet(private_key: String, encryption: Option<String>) -> Res
     let mut file_path = import_evm_wallet(private_key);
 
     if let Some(passw) = encryption {
-        file_path = encrypt_evm_wallet(file_path, passw);
+        file_path = encrypt_evm_wallet(file_path?, passw);
     }
 
-    println!("The wallet is imported here: {}", file_path);
-
+    println!("The wallet is imported here: {}", file_path?);
     Ok(())
 }
 pub fn create_new_wallet(encryption: Option<String>) -> Result<()> {
     let mut file_path = create_evm_wallet();
 
     if let Some(passw) = encryption {
-        file_path = encrypt_evm_wallet(file_path, passw);
+        file_path = encrypt_evm_wallet(file_path?, passw);
     }
 
-    println!("The wallet is created here: {}", file_path);
+    println!("The wallet is created here: {}", file_path?);
     Ok(())
 }
 
@@ -82,8 +81,9 @@ pub fn balance() -> Result<()> {
     // list_available_public_wallets
     // Call the function to get numbered file names as a HashMap
     let get_client_data_dir_path = get_wallet_directory();
+    
+    let files = get_numbered_files(get_client_data_dir_path)?;
 
-    let files = get_numbered_files(get_client_data_dir_path.to_str().expect("error"))?;
     let mut sorted_files: Vec<(&u32, &(String,String))> = files.iter().collect();
     sorted_files.sort_by_key(|&(key, _)| key);
     // Print the HashMap
@@ -91,9 +91,9 @@ pub fn balance() -> Result<()> {
         println!("{}: - {} - {}", key, value.0, value.1);
     }
 
-    let key = prompt_for_key();
+    let key = prompt_for_key()?;
 
-    if let Some(private_key) = get_private_key_from_wallet(key, files){
+    if let Ok(private_key) = get_private_key_from_wallet(key, files){
         get_wallet_information(private_key);
     }
     Ok(())

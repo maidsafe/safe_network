@@ -212,9 +212,9 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
                 private_key,
 
             } => {
-                wallet::initiate_wallet_creation( encrypt, password,private_key)
+                wallet::create( encrypt, password,private_key)
             },
-            WalletCmd::Balance => wallet::balance(),
+            WalletCmd::Balance => Ok(wallet::balance()?),
         }
     }
 }
