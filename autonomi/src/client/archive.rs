@@ -30,7 +30,7 @@ pub struct Archive {
 
 impl Archive {
     /// Deserialize from bytes.
-    pub fn from_bytes(data: Bytes) -> Result<Archive, rmp_serde::decode::Error> {
+    pub fn from_bytes(data: &Bytes) -> Result<Archive, rmp_serde::decode::Error> {
         let root: Archive = rmp_serde::from_slice(&data[..])?;
 
         Ok(root)
@@ -49,7 +49,7 @@ impl Client {
     /// Fetch an archive from the network
     pub async fn archive_get(&self, addr: ArchiveAddr) -> Result<Archive, GetError> {
         let data = self.data_get(addr).await?;
-        Ok(Archive::from_bytes(data)?)
+        Ok(Archive::from_bytes(&data)?)
     }
 
     /// Upload an archive to the network
