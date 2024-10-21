@@ -202,7 +202,14 @@ impl SafeNode for SafeNodeRpcService {
         };
 
         let delay = Duration::from_millis(request.get_ref().delay_millis);
-        match self.ctrl_tx.send(NodeCtrl::Stop { delay, result: StopResult::Success(cause.to_string()) }).await {
+        match self
+            .ctrl_tx
+            .send(NodeCtrl::Stop {
+                delay,
+                result: StopResult::Success(cause.to_string()),
+            })
+            .await
+        {
             Ok(()) => Ok(Response::new(StopResponse {})),
             Err(err) => Err(Status::new(
                 Code::Internal,
