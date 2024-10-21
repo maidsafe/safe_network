@@ -7,25 +7,24 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    close_group_majority,
     driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     event::TerminateNodeReason,
     log_markers::Marker,
-    multiaddr_pop_p2p, sort_peers_by_address_and_limit, GetRecordCfg, GetRecordError, MsgResponder,
-    NetworkEvent, CLOSE_GROUP_SIZE,
+    multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
+    REPLICATION_PEERS_COUNT,
 };
 use libp2p::{
     kad::{
         store::{Error as StoreError, RecordStore},
-        KBucketDistance, Quorum, Record, RecordKey,
+        Quorum, Record, RecordKey,
     },
     Multiaddr, PeerId,
 };
 use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics};
 use sn_protocol::{
     messages::{Cmd, Request, Response},
-    storage::{get_type_from_record, RecordType},
+    storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
@@ -34,6 +33,7 @@ use std::{
     time::Duration,
 };
 use tokio::sync::oneshot;
+use xor_name::XorName;
 
 use crate::target_arch::Instant;
 
@@ -56,15 +56,6 @@ pub enum NodeIssue {
 
 /// Commands to send to the Swarm
 pub enum LocalSwarmCmd {
-    // Returns all the peers from all the k-buckets from the local Routing Table.
-    // This includes our PeerId as well.
-    GetAllLocalPeersExcludingSelf {
-        sender: oneshot::Sender<Vec<PeerId>>,
-    },
-    /// Return the current GetRange as determined by the SwarmDriver
-    GetCurrentRange {
-        sender: oneshot::Sender<KBucketDistance>,
-    },
     /// Get a map where each key is the ilog2 distance of that Kbucket and each value is a vector of peers in that
     /// bucket.
     GetKBuckets {
@@ -76,8 +67,8 @@ pub enum LocalSwarmCmd {
         sender: oneshot::Sender<Vec<PeerId>>,
     },
     // Get closest peers from the local RoutingTable
-    GetCloseRangeLocalPeers {
-        address: NetworkAddress,
+    GetCloseGroupLocalPeers {
+        key: NetworkAddress,
         sender: oneshot::Sender<Vec<PeerId>>,
     },
     GetSwarmLocalState(oneshot::Sender<SwarmLocalState>),
@@ -222,11 +213,15 @@ impl Debug for LocalSwarmCmd {
                     PrettyPrintRecordKey::from(key)
                 )
             }
+
             LocalSwarmCmd::GetClosestKLocalPeers { .. } => {
                 write!(f, "LocalSwarmCmd::GetClosestKLocalPeers")
             }
-            LocalSwarmCmd::GetCloseRangeLocalPeers { address: key, .. } => {
-                write!(f, "SwarmCmd::GetCloseGroupLocalPeers {{ key: {key:?} }}")
+            LocalSwarmCmd::GetCloseGroupLocalPeers { key, .. } => {
+                write!(
+                    f,
+                    "LocalSwarmCmd::GetCloseGroupLocalPeers {{ key: {key:?} }}"
+                )
             }
             LocalSwarmCmd::GetLocalStoreCost { .. } => {
                 write!(f, "LocalSwarmCmd::GetLocalStoreCost")
@@ -246,12 +241,6 @@ impl Debug for LocalSwarmCmd {
             }
             LocalSwarmCmd::GetKBuckets { .. } => {
                 write!(f, "LocalSwarmCmd::GetKBuckets")
-            }
-            LocalSwarmCmd::GetCurrentRange { .. } => {
-                write!(f, "SwarmCmd::GetCurrentRange")
-            }
-            LocalSwarmCmd::GetAllLocalPeersExcludingSelf { .. } => {
-                write!(f, "SwarmCmd::GetAllLocalPeers")
             }
             LocalSwarmCmd::GetSwarmLocalState { .. } => {
                 write!(f, "LocalSwarmCmd::GetSwarmLocalState")
@@ -483,7 +472,6 @@ impl SwarmDriver {
                 let _ = self.pending_get_closest_peers.insert(
                     query_id,
                     (
-                        key,
                         PendingGetClosestType::FunctionCall(sender),
                         Default::default(),
                     ),
@@ -553,7 +541,6 @@ impl SwarmDriver {
 
         Ok(())
     }
-
     pub(crate) fn handle_local_cmd(&mut self, cmd: LocalSwarmCmd) -> Result<(), NetworkError> {
         let start = Instant::now();
         let mut cmd_string;
@@ -637,7 +624,28 @@ impl SwarmDriver {
                 let key = record.key.clone();
                 let record_key = PrettyPrintRecordKey::from(&key);
 
-                let record_type = get_type_from_record(&record)?;
+                let record_type = match RecordHeader::from_record(&record) {
+                    Ok(record_header) => {
+                        match record_header.kind {
+                            RecordKind::Chunk => RecordType::Chunk,
+                            RecordKind::Scratchpad => RecordType::Scratchpad,
+                            RecordKind::Spend | RecordKind::Register => {
+                                let content_hash = XorName::from_content(&record.value);
+                                RecordType::NonChunk(content_hash)
+                            }
+                            RecordKind::ChunkWithPayment
+                            | RecordKind::RegisterWithPayment
+                            | RecordKind::ScratchpadWithPayment => {
+                                error!("Record {record_key:?} with payment shall not be stored locally.");
+                                return Err(NetworkError::InCorrectRecordHeader);
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        error!("For record {record_key:?}, failed to parse record_header {err:?}");
+                        return Err(NetworkError::InCorrectRecordHeader);
+                    }
+                };
 
                 let result = self
                     .swarm
@@ -686,8 +694,16 @@ impl SwarmDriver {
 
                 // The record_store will prune far records and setup a `distance range`,
                 // once reached the `max_records` cap.
-                self.replication_fetcher
-                    .set_replication_distance_range(self.get_request_range());
+                if let Some(distance) = self
+                    .swarm
+                    .behaviour_mut()
+                    .kademlia
+                    .store_mut()
+                    .get_farthest_replication_distance_bucket()
+                {
+                    self.replication_fetcher
+                        .set_replication_distance_range(distance);
+                }
 
                 if let Err(err) = result {
                     error!("Can't store verified record {record_key:?} locally: {err:?}");
@@ -744,10 +760,6 @@ impl SwarmDriver {
                     .record_addresses();
                 let _ = sender.send(addresses);
             }
-            LocalSwarmCmd::GetCurrentRange { sender } => {
-                cmd_string = "GetCurrentRange";
-                let _ = sender.send(self.get_request_range());
-            }
             LocalSwarmCmd::GetKBuckets { sender } => {
                 cmd_string = "GetKBuckets";
                 let mut ilog2_kbuckets = BTreeMap::new();
@@ -766,13 +778,9 @@ impl SwarmDriver {
                 }
                 let _ = sender.send(ilog2_kbuckets);
             }
-            LocalSwarmCmd::GetAllLocalPeersExcludingSelf { sender } => {
-                cmd_string = "GetAllLocalPeersExcludingSelf";
-                let _ = sender.send(self.get_all_local_peers_excluding_self());
-            }
-            LocalSwarmCmd::GetCloseRangeLocalPeers { address, sender } => {
-                cmd_string = "GetCloseRangeLocalPeers";
-                let key = address.as_kbucket_key();
+            LocalSwarmCmd::GetCloseGroupLocalPeers { key, sender } => {
+                cmd_string = "GetCloseGroupLocalPeers";
+                let key = key.as_kbucket_key();
                 // calls `kbuckets.closest_keys(key)` internally, which orders the peers by
                 // increasing distance
                 // Note it will return all peers, heance a chop down is required.
@@ -782,6 +790,7 @@ impl SwarmDriver {
                     .kademlia
                     .get_closest_local_peers(&key)
                     .map(|peer| peer.into_preimage())
+                    .take(CLOSE_GROUP_SIZE)
                     .collect();
 
                 let _ = sender.send(closest_peers);
@@ -972,71 +981,23 @@ impl SwarmDriver {
         let _ = self.quotes_history.insert(peer_id, quote);
     }
 
-    /// From all local peers, returns any within (and just exceeding) current get_range for a given key
-    pub(crate) fn get_filtered_peers_exceeding_range(
-        &mut self,
-        target_address: &NetworkAddress,
-    ) -> Vec<PeerId> {
-        let acceptable_distance_range = self.get_request_range();
-        let target_key = target_address.as_kbucket_key();
-
-        let peers = self
+    fn try_interval_replication(&mut self) -> Result<()> {
+        // get closest peers from buckets, sorted by increasing distance to us
+        let our_peer_id = self.self_peer_id.into();
+        let closest_k_peers = self
             .swarm
             .behaviour_mut()
             .kademlia
-            .get_closest_local_peers(&target_key)
-            .filter_map(|key| {
-                // here we compare _bucket_, not the exact distance.
-                // We want to include peers that are just outside the range
-                // Such that we can and will exceed the range in a search eventually
-                if acceptable_distance_range.ilog2() < target_key.distance(&key).ilog2() {
-                    return None;
-                }
+            .get_closest_local_peers(&our_peer_id)
+            // Map KBucketKey<PeerId> to PeerId.
+            .map(|key| key.into_preimage());
 
-                // Map KBucketKey<PeerId> to PeerId.
-                let peer_id = key.into_preimage();
-                Some(peer_id)
-            })
+        // Only grab the closest nodes within the REPLICATE_RANGE
+        let mut replicate_targets = closest_k_peers
+            .into_iter()
+            // add some leeway to allow for divergent knowledge
+            .take(REPLICATION_PEERS_COUNT)
             .collect::<Vec<_>>();
-
-        peers
-    }
-
-    /// From all local peers, returns any within current get_range for a given key
-    /// Excludes self
-    pub(crate) fn get_filtered_peers_exceeding_range_or_closest_nodes(
-        &mut self,
-        target_address: &NetworkAddress,
-    ) -> Vec<PeerId> {
-        let filtered_peers = self.get_filtered_peers_exceeding_range(target_address);
-        let closest_node_buffer_zone = CLOSE_GROUP_SIZE + close_group_majority();
-        if filtered_peers.len() >= closest_node_buffer_zone {
-            filtered_peers
-        } else {
-            warn!("Insufficient peers within replication range of {target_address:?}. Falling back to use {closest_node_buffer_zone:?} closest nodes");
-            let all_peers = self.get_all_local_peers_excluding_self();
-            match sort_peers_by_address_and_limit(
-                &all_peers,
-                target_address,
-                closest_node_buffer_zone,
-            ) {
-                Ok(peers) => peers.iter().map(|p| **p).collect(),
-                Err(err) => {
-                    error!("sorting peers close to {target_address:?} failed, sort error: {err:?}");
-                    warn!(
-                        "Using all peers within range even though it's less than CLOSE_GROUP_SIZE."
-                    );
-                    filtered_peers
-                }
-            }
-        }
-    }
-
-    fn try_interval_replication(&mut self) -> Result<()> {
-        let our_address = NetworkAddress::from_peer(self.self_peer_id);
-
-        let mut replicate_targets =
-            self.get_filtered_peers_exceeding_range_or_closest_nodes(&our_address);
 
         let now = Instant::now();
         self.replication_targets
