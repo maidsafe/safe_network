@@ -1129,6 +1129,7 @@ dependencies = [
  "sn_logging",
  "sn_peers_acquisition",
  "tempfile",
+ "thiserror",
  "tokio",
  "tracing",
 ]

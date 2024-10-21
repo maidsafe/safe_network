@@ -36,4 +36,7 @@ pub enum EvmError {
 
     #[error("Failed to decrypt secret key: {0}")]
     FailedToDecryptKey(String),
+
+    #[error("Failed to process Operation: {0}")]
+    OperationError(String),
 }
