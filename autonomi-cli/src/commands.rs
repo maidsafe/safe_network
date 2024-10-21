@@ -9,6 +9,7 @@
 mod file;
 mod register;
 mod vault;
+use std::path::PathBuf;
 
 use clap::Subcommand;
 use color_eyre::Result;
@@ -55,7 +56,7 @@ pub enum FileCmd {
         /// The address of the file to download.
         addr: String,
         /// The destination file path.
-        dest_file: String,
+        dest_file: PathBuf,
     },
 
     /// List previous uploads

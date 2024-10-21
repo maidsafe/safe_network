@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 use sn_logging::LogBuilder;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::path::PathBuf;
 use std::time::Duration;
 use test_utils::{evm::get_funded_wallet, peers_from_env};
 use tokio::time::sleep;
@@ -30,13 +31,13 @@ async fn dir_upload_download() -> Result<()> {
     let wallet = get_funded_wallet();
 
     let addr = client
-        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .dir_upload(&PathBuf::from("tests/file/test_dir"), &wallet)
         .await?;
 
     sleep(Duration::from_secs(10)).await;
 
     client
-        .dir_download(addr, "tests/file/test_dir_fetched".into())
+        .dir_download(addr, &PathBuf::from("tests/file/test_dir_fetched"))
         .await?;
 
     // compare the two directories
@@ -86,7 +87,7 @@ async fn file_into_vault() -> Result<()> {
     let client_sk = bls::SecretKey::random();
 
     let addr = client
-        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .dir_upload(&PathBuf::from("tests/file/test_dir"), &wallet)
         .await?;
     sleep(Duration::from_secs(2)).await;
 
@@ -99,7 +100,7 @@ async fn file_into_vault() -> Result<()> {
     let new_client = Client::connect(&[]).await?;
 
     if let Some(ap) = new_client.fetch_and_decrypt_vault(&client_sk).await? {
-        let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
+        let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(&ap)?;
 
         assert_eq!(
             archive.map, ap_archive_fetched.map,
