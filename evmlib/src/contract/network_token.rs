@@ -75,6 +75,20 @@ where
         Ok(balance)
     }
 
+    /// See how many tokens are approved to be spent.
+    pub async fn allowance(&self, owner: Address, spender: Address) -> Result<U256, Error> {
+        debug!("Getting allowance of owner: {owner} for spender: {spender}",);
+        let balance = self
+            .contract
+            .allowance(owner, spender)
+            .call()
+            .await
+            .inspect_err(|err| error!("Error getting allowance: {err:?}"))?
+            ._0;
+        debug!("Allowance of owner: {owner} for spender: {spender} is: {balance}");
+        Ok(balance)
+    }
+
     /// Approve spender to spend a raw amount of tokens.
     pub async fn approve(&self, spender: Address, value: U256) -> Result<TxHash, Error> {
         debug!("Approving spender to spend raw amt of tokens: {value}");
