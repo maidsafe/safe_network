@@ -22,7 +22,7 @@ impl AttoTokens {
 
 #[wasm_bindgen(js_class = Client)]
 impl JsClient {
-    #[wasm_bindgen(constructor)]
+    #[wasm_bindgen]
     pub async fn connect(peers: Vec<String>) -> Result<JsClient, JsError> {
         let peers = peers
             .into_iter()
@@ -74,38 +74,62 @@ impl JsClient {
 
 mod archive {
     use super::*;
-    use crate::client::archive::Metadata;
     use crate::client::{address::str_to_addr, archive::Archive};
-    use std::{collections::HashMap, path::PathBuf};
-    use xor_name::XorName;
+    use std::path::PathBuf;
+
+    #[wasm_bindgen(js_name = Archive)]
+    pub struct JsArchive(Archive);
+
+    #[wasm_bindgen(js_class = Archive)]
+    impl JsArchive {
+        #[wasm_bindgen(constructor)]
+        pub fn new() -> Self {
+            Self(Archive::new())
+        }
+
+        #[wasm_bindgen(js_name = addNewFile)]
+        pub fn add_new_file(&mut self, path: String, data_addr: String) -> Result<(), JsError> {
+            let path = PathBuf::from(path);
+            let data_addr = str_to_addr(&data_addr)?;
+            self.0.add_new_file(path, data_addr);
+
+            Ok(())
+        }
+
+        #[wasm_bindgen(js_name = renameFile)]
+        pub fn rename_file(&mut self, old_path: String, new_path: String) -> Result<(), JsError> {
+            let old_path = PathBuf::from(old_path);
+            let new_path = PathBuf::from(new_path);
+            self.0.rename_file(&old_path, &new_path)?;
+
+            Ok(())
+        }
+
+        #[wasm_bindgen]
+        pub fn map(&self) -> Result<JsValue, JsError> {
+            let files = serde_wasm_bindgen::to_value(self.0.map())?;
+            Ok(files)
+        }
+    }
 
     #[wasm_bindgen(js_class = Client)]
     impl JsClient {
         #[wasm_bindgen(js_name = archiveGet)]
-        pub async fn archive_get(&self, addr: String) -> Result<js_sys::Map, JsError> {
+        pub async fn archive_get(&self, addr: String) -> Result<JsArchive, JsError> {
             let addr = str_to_addr(&addr)?;
-            let data = self.0.archive_get(addr).await?;
+            let archive = self.0.archive_get(addr).await?;
+            let archive = JsArchive(archive);
 
-            // To `Map<K, V>` (JS)
-            let data = serde_wasm_bindgen::to_value(&data.map())?;
-            Ok(data.into())
+            Ok(archive)
         }
 
         #[wasm_bindgen(js_name = archivePut)]
         pub async fn archive_put(
             &self,
-            map: JsValue,
+            archive: &JsArchive,
             wallet: &JsWallet,
         ) -> Result<String, JsError> {
-            // From `Map<K, V>` or `Iterable<[K, V]>` (JS)
-            let map: HashMap<PathBuf, (XorName, Metadata)> = serde_wasm_bindgen::from_value(map)?;
-            let mut archive = Archive::new();
-
-            for (path, (xorname, meta)) in map {
-                archive.add_file(path, xorname, meta);
-            }
-
-            let addr = self.0.archive_put(archive, &wallet.0).await?;
+            let addr = self.0.archive_put(archive.0.clone(), &wallet.0).await?;
 
             Ok(addr_to_str(addr))
         }
@@ -136,7 +160,7 @@ mod vault {
         pub async fn put_user_data_to_vault(
             &self,
             user_data: JsUserData,
-            wallet: &mut JsWallet,
+            wallet: &JsWallet,
             secret_key: Vec<u8>,
         ) -> Result<(), JsError> {
             let secret_key: [u8; 32] = secret_key[..].try_into()?;
@@ -149,6 +173,12 @@ mod vault {
             Ok(())
         }
     }
+}
+
+#[wasm_bindgen(js_name = genSecretKey)]
+pub fn gen_secret_key() -> Vec<u8> {
+    let secret_key = bls::SecretKey::random();
+    secret_key.to_bytes().to_vec()
 }
 
 #[wasm_bindgen(js_name = Wallet)]

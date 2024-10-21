@@ -13,6 +13,7 @@ version = "0.1.0"
 [features]
 test-utils = []
 local = ["evmlib/local"]
+external-signer = ["evmlib/external-signer"]
 
 [dependencies]
 custom_debug = "~0.6.1"

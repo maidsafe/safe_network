@@ -1,0 +1,11 @@
+{
+  "type": "module",
+  "scripts": {
+    "serve": "http-server -c-1 -a 127.0.0.1 ../"
+  },
+  "devDependencies": {
+    "chai": "^5.1.1",
+    "http-server": "^14.1.1",
+    "mocha": "^10.7.3"
+  }
+}

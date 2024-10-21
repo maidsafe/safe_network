@@ -37,6 +37,8 @@ pub enum PutError {
     VaultXorName,
     #[error("A network error occurred.")]
     Network(#[from] NetworkError),
+    #[error("Error occurred during cost estimation.")]
+    CostError(#[from] CostError),
     #[error("Error occurred during payment.")]
     PayError(#[from] PayError),
     #[error("Serialization error: {0}")]
