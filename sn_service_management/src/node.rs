@@ -283,6 +283,7 @@ pub struct NodeServiceData {
     )]
     pub connected_peers: Option<Vec<PeerId>>,
     pub data_dir_path: PathBuf,
+    #[serde(default)]
     pub evm_network: EvmNetwork,
     pub genesis: bool,
     pub home_network: bool,
@@ -307,6 +308,7 @@ pub struct NodeServiceData {
     )]
     pub peer_id: Option<PeerId>,
     pub pid: Option<u32>,
+    #[serde(default)]
     pub rewards_address: RewardsAddress,
     pub reward_balance: Option<AttoTokens>,
     pub rpc_socket_addr: SocketAddr,

@@ -1,7 +1,7 @@
 use crate::action::{Action, StatusActions};
 use crate::connection_mode::ConnectionMode;
 use color_eyre::eyre::{eyre, Error};
-use sn_evm::RewardsAddress;
+use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
@@ -51,6 +51,7 @@ pub struct MaintainNodesArgs {
     pub action_sender: UnboundedSender<Action>,
     pub connection_mode: ConnectionMode,
     pub port_range: Option<PortRange>,
+    pub rewards_address: String,
 }
 
 /// Maintain the specified number of nodes
@@ -172,6 +173,7 @@ struct NodeConfig {
     data_dir_path: Option<PathBuf>,
     peers_args: PeersArgs,
     safenode_path: Option<PathBuf>,
+    rewards_address: String,
 }
 
 /// Run the NAT detection process
@@ -234,6 +236,7 @@ fn prepare_node_config(args: &MaintainNodesArgs) -> NodeConfig {
         data_dir_path: args.data_dir_path.clone(),
         peers_args: args.peers_args.clone(),
         safenode_path: args.safenode_path.clone(),
+        rewards_address: args.rewards_address.clone(),
     }
 }
 
@@ -288,6 +291,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         config.data_dir_path.clone(),
         true,
         None,
+        Some(EvmNetwork::ArbitrumSepolia), //FIXME: should come from an UI element.
         config.home_network,
         false,
         None,
@@ -299,7 +303,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         None, // We don't care about the port, as we are scaling down
         config.owner.clone(),
         config.peers_args.clone(),
-        RewardsAddress::from_str("0x1111111111111111111111111111111111111111").unwrap(),
+        RewardsAddress::from_str(config.rewards_address.as_str()).unwrap(),
         None,
         None,
         config.safenode_path.clone(),
@@ -362,6 +366,7 @@ async fn add_nodes(
             config.data_dir_path.clone(),
             true,
             None,
+            Some(EvmNetwork::ArbitrumSepolia), //FIXME: Should come from an UI element
             config.home_network,
             false,
             None,
@@ -373,7 +378,7 @@ async fn add_nodes(
             port_range,
             config.owner.clone(),
             config.peers_args.clone(),
-            RewardsAddress::from_str("0x1111111111111111111111111111111111111111").unwrap(),
+            RewardsAddress::from_str(config.rewards_address.as_str()).unwrap(),
             None,
             None,
             config.safenode_path.clone(),
