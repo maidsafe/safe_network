@@ -57,7 +57,7 @@ use xor_name::XorName;
 const MAX_RECORDS_COUNT: usize = 16 * 1024;
 
 /// The maximum number of records to cache in memory.
-const MAX_RECORDS_CACHE_SIZE: usize = 100;
+const MAX_RECORDS_CACHE_SIZE: usize = 25;
 
 /// File name of the recorded historical quoting metrics.
 const HISTORICAL_QUOTING_METRICS_FILENAME: &str = "historic_quoting_metrics";
