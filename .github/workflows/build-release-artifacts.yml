@@ -17,17 +17,6 @@ on:
         description: Set to build a particular tag
         type: string
 
-# The key variables also need to be passed to `cross`, which runs in a container and does not
-# inherit variables from the parent environment. The `cross` tool is used in the `build`
-# job. If any keys are added, the `build-release-artifacts` target in the Justfile must
-# also be updated.
-env:
-  GENESIS_PK: ${{ secrets.STABLE_GENESIS_PK }}
-  GENESIS_SK: ${{ secrets.STABLE_GENESIS_SK }}
-  FOUNDATION_PK: ${{ secrets.STABLE_FOUNDATION_PK }}
-  NETWORK_ROYALTIES_PK: ${{ secrets.STABLE_NETWORK_ROYALTIES_PK }}
-  PAYMENT_FORWARD_PK: ${{ secrets.STABLE_REWARD_FORWARDING_PK }}
-
 jobs:
   build:
     name: build
