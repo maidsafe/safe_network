@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    close_group_majority,
     driver::{PendingGetClosestType, SwarmDriver},
     error::{NetworkError, Result},
     event::TerminateNodeReason,
@@ -977,6 +976,7 @@ impl SwarmDriver {
         &mut self,
         target_address: &NetworkAddress,
     ) -> Vec<PeerId> {
+        info!("Getting peers within range of {target_address:?}");
         let acceptable_distance_range = self.get_request_range();
         let target_key = target_address.as_kbucket_key();
 
@@ -1009,7 +1009,7 @@ impl SwarmDriver {
         target_address: &NetworkAddress,
     ) -> Vec<PeerId> {
         let filtered_peers = self.get_filtered_peers_exceeding_range(target_address);
-        let closest_node_buffer_zone = CLOSE_GROUP_SIZE + close_group_majority();
+        let closest_node_buffer_zone = CLOSE_GROUP_SIZE;
         if filtered_peers.len() >= closest_node_buffer_zone {
             filtered_peers
         } else {
@@ -1024,7 +1024,7 @@ impl SwarmDriver {
                 Err(err) => {
                     error!("sorting peers close to {target_address:?} failed, sort error: {err:?}");
                     warn!(
-                        "Using all peers within range even though it's less than CLOSE_GROUP_SIZE."
+                        "Using all peers within range even though it's less than {closest_node_buffer_zone:?}."
                     );
                     filtered_peers
                 }
