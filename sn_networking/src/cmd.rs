@@ -28,6 +28,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
+    cmp::Ordering,
     collections::{BTreeMap, HashMap},
     fmt::Debug,
     time::Duration,
@@ -980,26 +981,30 @@ impl SwarmDriver {
         let acceptable_distance_range = self.get_request_range();
         let target_key = target_address.as_kbucket_key();
 
-        let peers = self
+        let sorted_peers: Vec<_> = self
             .swarm
             .behaviour_mut()
             .kademlia
             .get_closest_local_peers(&target_key)
-            .filter_map(|key| {
-                // here we compare _bucket_, not the exact distance.
-                // We want to include peers that are just outside the range
-                // Such that we can and will exceed the range in a search eventually
-                if acceptable_distance_range.ilog2() < target_key.distance(&key).ilog2() {
-                    return None;
+            .collect();
+
+        // Binary search to find the index where we exceed the acceptable range
+        let split_index = sorted_peers
+            .binary_search_by(|key| {
+                let distance = target_key.distance(key);
+                if distance >= acceptable_distance_range {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
                 }
-
-                // Map KBucketKey<PeerId> to PeerId.
-                let peer_id = key.into_preimage();
-                Some(peer_id)
             })
-            .collect::<Vec<_>>();
+            .unwrap_or_else(|x| x);
 
-        peers
+        // Convert KBucketKey<PeerId> to PeerId for all peers within range
+        sorted_peers[..split_index]
+            .iter()
+            .map(|key| key.into_preimage())
+            .collect()
     }
 
     /// From all local peers, returns any within current get_range for a given key
