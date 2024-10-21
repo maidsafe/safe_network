@@ -62,6 +62,8 @@ use sn_registers::SignedRegister;
 use std::{
     collections::{btree_map::Entry, BTreeMap, HashMap, HashSet, VecDeque},
     fmt::Debug,
+    fs,
+    io::{Read, Write},
     net::SocketAddr,
     path::PathBuf,
 };
@@ -359,9 +361,19 @@ impl NetworkBuilder {
             .set_provider_publication_interval(None);
 
         let store_cfg = {
+            let storage_dir_path = root_dir.join("record_store");
+            // In case the node instanace is restarted for a different version of network,
+            // the previous storage folder shall be wiped out,
+            // to avoid bring old data into new network.
+            check_and_wipe_storage_dir_if_necessary(
+                root_dir.clone(),
+                storage_dir_path.clone(),
+                get_key_version_str(),
+            )?;
+
             // Configures the disk_store to store records under the provided path and increase the max record size
             // The storage dir is appendixed with key_version str to avoid bringing records from old network into new
-            let storage_dir_path = root_dir.join(format!("record_store_{}", get_key_version_str()));
+
             if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
                 return Err(NetworkError::FailedToCreateRecordStoreDir {
                     path: storage_dir_path,
@@ -705,6 +717,45 @@ impl NetworkBuilder {
 
         Ok((network, network_event_receiver, swarm_driver))
     }
+}
+
+fn check_and_wipe_storage_dir_if_necessary(
+    root_dir: PathBuf,
+    storage_dir_path: PathBuf,
+    cur_version_str: String,
+) -> Result<()> {
+    let mut prev_version_str = String::new();
+    let version_file = root_dir.join("network_key_version");
+    {
+        match fs::File::open(version_file.clone()) {
+            Ok(mut file) => {
+                file.read_to_string(&mut prev_version_str)?;
+            }
+            Err(err) => {
+                warn!("Failed in accessing version file {version_file:?}: {err:?}");
+                // Assuming file was not created yet
+                info!("Creating a new version file at {version_file:?}");
+                fs::File::create(version_file.clone())?;
+            }
+        }
+    }
+
+    // In case of version mismatch:
+    //   * the storage_dir shall be wiped out
+    //   * the version file shall be updated
+    if cur_version_str != prev_version_str {
+        warn!("Trying to wipe out storege dir {storage_dir_path:?}, as cur_version {cur_version_str:?} doesn't match prev_version {prev_version_str:?}");
+        let _ = fs::remove_dir_all(storage_dir_path);
+
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(version_file.clone())?;
+        info!("Writing cur_version {cur_version_str:?} into version file at {version_file:?}");
+        file.write_all(cur_version_str.as_bytes())?;
+    }
+
+    Ok(())
 }
 
 pub struct SwarmDriver {
@@ -1066,5 +1117,68 @@ impl SwarmDriver {
         let id = self.swarm.listen_on(addr.clone())?;
         info!("Listening on {id:?} with addr: {addr:?}");
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::check_and_wipe_storage_dir_if_necessary;
+
+    use std::{fs, io::Read};
+
+    #[tokio::test]
+    async fn version_file_update() {
+        let temp_dir = std::env::temp_dir();
+        let unique_dir_name = uuid::Uuid::new_v4().to_string();
+        let root_dir = temp_dir.join(unique_dir_name);
+        fs::create_dir_all(&root_dir).expect("Failed to create root directory");
+
+        let version_file = root_dir.join("network_key_version");
+        let storage_dir = root_dir.join("record_store");
+
+        let cur_version = uuid::Uuid::new_v4().to_string();
+        assert!(check_and_wipe_storage_dir_if_necessary(
+            root_dir.clone(),
+            storage_dir.clone(),
+            cur_version.clone()
+        )
+        .is_ok());
+        {
+            let mut content_str = String::new();
+            let mut file = fs::OpenOptions::new()
+                .read(true)
+                .open(version_file.clone())
+                .expect("Failed to open version file");
+            file.read_to_string(&mut content_str)
+                .expect("Failed to read from version file");
+            assert_eq!(content_str, cur_version);
+
+            drop(file);
+        }
+
+        fs::create_dir_all(&storage_dir).expect("Failed to create storage directory");
+        assert!(fs::metadata(storage_dir.clone()).is_ok());
+
+        let cur_version = uuid::Uuid::new_v4().to_string();
+        assert!(check_and_wipe_storage_dir_if_necessary(
+            root_dir.clone(),
+            storage_dir.clone(),
+            cur_version.clone()
+        )
+        .is_ok());
+        {
+            let mut content_str = String::new();
+            let mut file = fs::OpenOptions::new()
+                .read(true)
+                .open(version_file.clone())
+                .expect("Failed to open version file");
+            file.read_to_string(&mut content_str)
+                .expect("Failed to read from version file");
+            assert_eq!(content_str, cur_version);
+
+            drop(file);
+        }
+        // The storage_dir shall be removed as version_key changed
+        assert!(fs::metadata(storage_dir.clone()).is_err());
     }
 }
