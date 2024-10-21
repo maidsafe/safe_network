@@ -788,7 +788,7 @@ impl SwarmDriver {
                         if let Err(err) = self.handle_local_cmd(cmd) {
                             warn!("Error while handling local cmd: {err}");
                         }
-                        trace!("LocalCmd handled in {:?}: {cmd_string:?}", start.elapsed());
+                        info!("LocalCmd handled in {:?}: {cmd_string:?}", start.elapsed());
                     },
                     None =>  continue,
                 },
@@ -800,7 +800,7 @@ impl SwarmDriver {
                         if let Err(err) = self.handle_network_cmd(cmd) {
                             warn!("Error while handling cmd: {err}");
                         }
-                        trace!("SwarmCmd handled in {:?}: {cmd_string:?}", start.elapsed());
+                        info!("NetworkCmd handled in {:?}: {cmd_string:?}", start.elapsed());
                     },
                     None =>  continue,
                 },
