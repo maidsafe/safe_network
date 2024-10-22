@@ -12,6 +12,7 @@ use crate::contract::network_token::NetworkToken;
 use crate::contract::{data_payments, network_token};
 use crate::utils::http_provider;
 use crate::Network;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(thiserror::Error, Debug)]
@@ -48,6 +49,7 @@ pub fn transfer_tokens_calldata(
     network_token.transfer_calldata(receiver, amount)
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct PayForQuotesCalldataReturnType {
     pub batched_calldata_map: HashMap<Calldata, Vec<QuoteHash>>,
     pub to: Address,
@@ -67,7 +69,7 @@ pub fn pay_for_quotes_calldata<T: IntoIterator<Item = QuotePayment>>(
 
     let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
 
-    let approve_to = *network.data_payments_address();
+    let approve_spender = *network.data_payments_address();
     let approve_amount = total_amount;
 
     let provider = http_provider(network.rpc_url().clone());
@@ -88,7 +90,7 @@ pub fn pay_for_quotes_calldata<T: IntoIterator<Item = QuotePayment>>(
     Ok(PayForQuotesCalldataReturnType {
         batched_calldata_map: calldata_map,
         to: *data_payments.contract.address(),
-        approve_spender: approve_to,
+        approve_spender,
         approve_amount,
     })
 }

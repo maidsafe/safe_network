@@ -26,7 +26,7 @@ autonomi = { path = "../autonomi", version = "0.1.0" }
 cargo run --bin evm_testnet
 ```
 
-3. Run a local network with the `local` feature and use the local evm node. 
+3. Run a local network with the `local` feature and use the local evm node.
 
 ```sh
 cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-local
@@ -63,34 +63,56 @@ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo t
 ### WebAssembly
 
 To run a WASM test
+
 - Install `wasm-pack`
-- Make sure your Rust supports the `wasm32-unknown-unknown` target. (If you have `rustup`: `rustup target add wasm32-unknown-unknown`.)
-- Pass a bootstrap peer via `SAFE_PEERS`. This *has* to be the websocket address, e.g. `/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID>`.
+- Make sure your Rust supports the `wasm32-unknown-unknown` target. (If you
+  have `rustup`: `rustup target add wasm32-unknown-unknown`.)
+- Pass a bootstrap peer via `SAFE_PEERS`. This *has* to be the websocket address,
+  e.g. `/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID>`.
     - As well as the other environment variables needed for EVM payments (e.g. `RPC_URL`).
 - Optionally specify the specific test, e.g. `-- put` to run `put()` in `wasm.rs` only.
 
 Example:
+
 ```sh
 SAFE_PEERS=/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID> wasm-pack test --release --firefox autonomi --features=data,files --test wasm -- put
 ```
 
 #### Test from JS in the browser
 
-`wasm-pack test` does not execute JavaScript, but runs mostly WebAssembly. Again make sure the environment variables are set and build the JS package:
+`wasm-pack test` does not execute JavaScript, but runs mostly WebAssembly. Again make sure the environment variables are
+set and build the JS package:
 
 ```sh
 wasm-pack build --dev --target=web autonomi --features=vault
 ```
 
 Then cd into `autonomi/tests-js`, and use `npm` to install and serve the test html file.
+
 ```
 cd autonomi/tests-js
 npm install
 npm run serve
 ```
 
-Then go to `http://127.0.0.1:8080/tests-js` in the browser. Here, enter a `ws` multiaddr of a local node and press 'run'.
+Then go to `http://127.0.0.1:8080/tests-js` in the browser. Here, enter a `ws` multiaddr of a local node and press '
+run'.
 
+#### MetaMask example
+
+There is a MetaMask example for doing a simple put operation.
+
+Build the package with the `external-signer` feature (and again with the env variables) and run a webserver, e.g. with
+Python:
+
+```sh
+wasm-pack build --dev --target=web autonomi --features=external-signer
+python -m http.server --directory=autonomi 8000
+```
+
+Then visit `http://127.0.0.1:8000/examples/metamask` in your (modern) browser.
+
+Here, enter a `ws` multiaddr of a local node and press 'run'.
 
 ## Faucet (local)
 

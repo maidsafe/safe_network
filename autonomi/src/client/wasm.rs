@@ -214,6 +214,83 @@ mod vault {
     }
 }
 
+#[cfg(feature = "external-signer")]
+mod external_signer {
+    use super::*;
+    use crate::payment_proof_from_quotes_and_payments;
+    use sn_evm::external_signer::{approve_to_spend_tokens_calldata, pay_for_quotes_calldata};
+    use sn_evm::EvmNetwork;
+    use sn_evm::ProofOfPayment;
+    use sn_evm::QuotePayment;
+    use sn_evm::{Amount, PaymentQuote};
+    use sn_evm::{EvmAddress, QuoteHash, TxHash};
+    use std::collections::{BTreeMap, HashMap};
+    use wasm_bindgen::prelude::wasm_bindgen;
+    use wasm_bindgen::{JsError, JsValue};
+    use xor_name::XorName;
+
+    #[wasm_bindgen(js_class = Client)]
+    impl JsClient {
+        #[wasm_bindgen(js_name = getQuotes)]
+        pub async fn get_quotes_for_data(&self, data: Vec<u8>) -> Result<JsValue, JsError> {
+            let data = crate::Bytes::from(data);
+            let result = self.0.get_quotes_for_data(data).await?;
+            let js_value = serde_wasm_bindgen::to_value(&result)?;
+            Ok(js_value)
+        }
+
+        #[wasm_bindgen(js_name = dataPutWithProof)]
+        pub async fn data_put_with_proof_of_payment(
+            &self,
+            data: Vec<u8>,
+            proof: JsValue,
+        ) -> Result<String, JsError> {
+            let data = crate::Bytes::from(data);
+            let proof: HashMap<XorName, ProofOfPayment> = serde_wasm_bindgen::from_value(proof)?;
+            let xorname = self.0.data_put_with_proof_of_payment(data, proof).await?;
+            Ok(addr_to_str(xorname))
+        }
+    }
+
+    #[wasm_bindgen(js_name = getPayForQuotesCalldata)]
+    pub fn get_pay_for_quotes_calldata(
+        network: JsValue,
+        payments: JsValue,
+    ) -> Result<JsValue, JsError> {
+        let network: EvmNetwork = serde_wasm_bindgen::from_value(network)?;
+        let payments: Vec<QuotePayment> = serde_wasm_bindgen::from_value(payments)?;
+        let calldata = pay_for_quotes_calldata(&network, payments.into_iter())?;
+        let js_value = serde_wasm_bindgen::to_value(&calldata)?;
+        Ok(js_value)
+    }
+
+    #[wasm_bindgen(js_name = getApproveToSpendTokensCalldata)]
+    pub fn get_approve_to_spend_tokens_calldata(
+        network: JsValue,
+        spender: JsValue,
+        amount: JsValue,
+    ) -> Result<JsValue, JsError> {
+        let network: EvmNetwork = serde_wasm_bindgen::from_value(network)?;
+        let spender: EvmAddress = serde_wasm_bindgen::from_value(spender)?;
+        let amount: Amount = serde_wasm_bindgen::from_value(amount)?;
+        let calldata = approve_to_spend_tokens_calldata(&network, spender, amount);
+        let js_value = serde_wasm_bindgen::to_value(&calldata)?;
+        Ok(js_value)
+    }
+
+    #[wasm_bindgen(js_name = getPaymentProofFromQuotesAndPayments)]
+    pub fn get_payment_proof_from_quotes_and_payments(
+        quotes: JsValue,
+        payments: JsValue,
+    ) -> Result<JsValue, JsError> {
+        let quotes: HashMap<XorName, PaymentQuote> = serde_wasm_bindgen::from_value(quotes)?;
+        let payments: BTreeMap<QuoteHash, TxHash> = serde_wasm_bindgen::from_value(payments)?;
+        let proof = payment_proof_from_quotes_and_payments(&quotes, &payments);
+        let js_value = serde_wasm_bindgen::to_value(&proof)?;
+        Ok(js_value)
+    }
+}
+
 #[wasm_bindgen(js_name = SecretKey)]
 pub struct SecretKeyJs(bls::SecretKey);
 
@@ -231,6 +308,14 @@ pub struct JsWallet(evmlib::wallet::Wallet);
 #[wasm_bindgen(js_name = getFundedWallet)]
 pub fn funded_wallet() -> JsWallet {
     JsWallet(test_utils::evm::get_funded_wallet())
+}
+
+/// Get the current `EvmNetwork` that was set using environment variables that were used during the build process of this library.
+#[wasm_bindgen(js_name = getEvmNetwork)]
+pub fn evm_network() -> Result<JsValue, JsError> {
+    let evm_network = evmlib::utils::get_evm_network_from_env()?;
+    let js_value = serde_wasm_bindgen::to_value(&evm_network)?;
+    Ok(js_value)
 }
 
 /// Enable tracing logging in the console.

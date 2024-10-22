@@ -1,0 +1,26 @@
+<html>
+
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+</head>
+
+<body>
+<!-- credits: https://rustwasm.github.io/docs/wasm-bindgen/examples/without-a-bundler.html -->
+<script type="module">
+    import {externalSignerPut} from "./index.js";
+
+    async function run() {
+        document.getElementById("btn-run").disabled = true;
+        const peerAddr = document.getElementById('peer_id').value;
+        await externalSignerPut(peerAddr);
+    }
+
+    document.getElementById("btn-run").addEventListener("click", run, false);
+</script>
+
+<label for="peer_id">Peer MultiAddr: <input type="text" id="peer_id"/></label>
+<button id="btn-run">Run</button>
+<span id="progress"></span>
+</body>
+
+</html>
