@@ -91,7 +91,7 @@ impl App {
         // Main Screens
         let status_config = StatusConfig {
             allocated_disk_space: app_data.nodes_to_start,
-            discord_username: app_data.discord_username.clone(),
+            rewards_address: app_data.discord_username.clone(),
             peers_args,
             safenode_path,
             data_dir_path,
@@ -276,9 +276,9 @@ impl App {
                         self.app_data.port_to = Some(*to);
                         self.app_data.save(None)?;
                     }
-                    Action::StoreDiscordUserName(ref username) => {
-                        debug!("Storing discord username: {username:?}");
-                        self.app_data.discord_username.clone_from(username);
+                    Action::StoreRewardsAddress(ref rewards_address) => {
+                        debug!("Storing rewards address: {rewards_address:?}");
+                        self.app_data.discord_username.clone_from(rewards_address);
                         self.app_data.save(None)?;
                     }
                     Action::StoreNodesToStart(ref count) => {

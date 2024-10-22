@@ -85,8 +85,8 @@ pub struct Status<'a> {
     items: Option<StatefulTable<NodeItem<'a>>>,
     // Amount of nodes
     nodes_to_start: usize,
-    // Discord username
-    discord_username: String,
+    // Rewards address
+    rewards_address: String,
     // Currently the node registry file does not support concurrent actions and thus can lead to
     // inconsistent state. Another solution would be to have a file lock/db.
     lock_registry: Option<LockRegistryState>,
@@ -114,7 +114,7 @@ pub enum LockRegistryState {
 
 pub struct StatusConfig {
     pub allocated_disk_space: usize,
-    pub discord_username: String,
+    pub rewards_address: String,
     pub peers_args: PeersArgs,
     pub safenode_path: Option<PathBuf>,
     pub data_dir_path: PathBuf,
@@ -138,7 +138,7 @@ impl Status<'_> {
             items: None,
             nodes_to_start: config.allocated_disk_space,
             lock_registry: None,
-            discord_username: config.discord_username,
+            rewards_address: config.rewards_address,
             safenode_path: config.safenode_path,
             data_dir_path: config.data_dir_path,
             connection_mode: config.connection_mode,
@@ -374,17 +374,17 @@ impl Component for Status<'_> {
                     return Ok(Some(Action::StatusActions(StatusActions::StartNodes)));
                 }
             }
-            Action::StoreDiscordUserName(username) => {
-                debug!("Storing discord username: {username:?}");
-                let has_changed = self.discord_username != username;
+            Action::StoreRewardsAddress(rewards_address) => {
+                debug!("Storing rewards address: {rewards_address:?}");
+                let has_changed = self.rewards_address != rewards_address;
                 let we_have_nodes = !self.node_services.is_empty();
 
-                self.discord_username = username;
+                self.rewards_address = rewards_address;
 
                 if we_have_nodes && has_changed {
                     debug!("Setting lock_registry to ResettingNodes");
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
-                    info!("Resetting safenode services because the Discord Username was reset.");
+                    info!("Resetting safenode services because the Rewards Address was reset.");
                     let action_sender = self.get_actions_sender()?;
                     reset_nodes(action_sender, false);
                 }
@@ -531,7 +531,7 @@ impl Component for Status<'_> {
 
                     let maintain_nodes_args = MaintainNodesArgs {
                         count: self.nodes_to_start as u16,
-                        owner: self.discord_username.clone(),
+                        owner: self.rewards_address.clone(),
                         peers_args: self.peers_args.clone(),
                         run_nat_detection: self.should_we_run_nat_detection(),
                         safenode_path: self.safenode_path.clone(),
@@ -539,7 +539,7 @@ impl Component for Status<'_> {
                         action_sender: action_sender.clone(),
                         connection_mode: self.connection_mode,
                         port_range: Some(port_range),
-                        rewards_address: self.discord_username.clone(),
+                        rewards_address: self.rewards_address.clone(),
                     };
 
                     debug!("Calling maintain_n_running_nodes");
@@ -562,7 +562,7 @@ impl Component for Status<'_> {
                     stop_nodes(running_nodes, action_sender);
                 }
                 StatusActions::TriggerRewardsAddress => {
-                    if self.discord_username.is_empty() {
+                    if self.rewards_address.is_empty() {
                         return Ok(Some(Action::SwitchScene(Scene::StatusRewardsAddressPopUp)));
                     } else {
                         return Ok(None);
@@ -666,7 +666,7 @@ impl Component for Status<'_> {
         let column_constraints = [Constraint::Length(23), Constraint::Fill(1)];
         let stats_table = Table::new(stats_rows, stats_width).widths(column_constraints);
 
-        let wallet_not_set = if self.discord_username.is_empty() {
+        let wallet_not_set = if self.rewards_address.is_empty() {
             vec![
                 Span::styled("Press ".to_string(), Style::default().fg(VIVID_SKY_BLUE)),
                 Span::styled("[Ctrl+B] ".to_string(), Style::default().fg(GHOST_WHITE)),
@@ -696,7 +696,7 @@ impl Component for Status<'_> {
         let column_constraints = [
             Constraint::Length(23),
             Constraint::Fill(1),
-            Constraint::Length(if self.discord_username.is_empty() {
+            Constraint::Length(if self.rewards_address.is_empty() {
                 41 //TODO: make it dynamic with wallet_not_set
             } else {
                 0

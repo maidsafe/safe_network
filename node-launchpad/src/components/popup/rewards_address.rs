@@ -20,8 +20,8 @@ use ratatui::{prelude::*, widgets::*};
 use regex::Regex;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
-const INPUT_SIZE_USERNAME: u16 = 42; // Etherum address plus 0x
-const INPUT_AREA_USERNAME: u16 = INPUT_SIZE_USERNAME + 2; // +2 for the padding
+const INPUT_SIZE_REWARDS_ADDRESS: u16 = 42; // Etherum address plus 0x
+const INPUT_AREA_REWARDS_ADDRESS: u16 = INPUT_SIZE_REWARDS_ADDRESS + 2; // +2 for the padding
 
 pub struct RewardsAddress {
     /// Whether the component is active right now, capturing keystrokes + draw things.
@@ -36,22 +36,22 @@ pub struct RewardsAddress {
 
 #[allow(dead_code)]
 enum RewardsAddressState {
-    DiscordIdAlreadySet,
+    RewardsAddressAlreadySet,
     ShowTCs,
-    AcceptTCsAndEnterDiscordId,
+    AcceptTCsAndEnterRewardsAddress,
 }
 
 impl RewardsAddress {
-    pub fn new(username: String) -> Self {
-        let state = if username.is_empty() {
+    pub fn new(rewards_address: String) -> Self {
+        let state = if rewards_address.is_empty() {
             RewardsAddressState::ShowTCs
         } else {
-            RewardsAddressState::DiscordIdAlreadySet
+            RewardsAddressState::RewardsAddressAlreadySet
         };
         Self {
             active: false,
             state,
-            rewards_address_input_field: Input::default().with_value(username),
+            rewards_address_input_field: Input::default().with_value(rewards_address),
             old_value: Default::default(),
             back_to: Scene::Status,
             can_save: false,
@@ -72,20 +72,22 @@ impl RewardsAddress {
             KeyCode::Enter => {
                 self.validate();
                 if self.can_save {
-                    let username = self
+                    let rewards_address = self
                         .rewards_address_input_field
                         .value()
                         .to_string()
                         .to_lowercase();
-                    self.rewards_address_input_field = username.clone().into();
+                    self.rewards_address_input_field = rewards_address.clone().into();
 
                     debug!(
-                        "Got Enter, saving the discord username {username:?}  and switching to DiscordIdAlreadySet, and Home Scene",
+                        "Got Enter, saving the rewards address {rewards_address:?}  and switching to RewardsAddressAlreadySet, and Home Scene",
                     );
-                    self.state = RewardsAddressState::DiscordIdAlreadySet;
+                    self.state = RewardsAddressState::RewardsAddressAlreadySet;
                     return vec![
-                        Action::StoreDiscordUserName(username.clone()),
-                        Action::OptionsActions(OptionsActions::UpdateRewardsAddress(username)),
+                        Action::StoreRewardsAddress(rewards_address.clone()),
+                        Action::OptionsActions(OptionsActions::UpdateRewardsAddress(
+                            rewards_address,
+                        )),
                         Action::SwitchScene(Scene::Status),
                     ];
                 }
@@ -113,7 +115,7 @@ impl RewardsAddress {
             }
             _ => {
                 if self.rewards_address_input_field.value().chars().count()
-                    < INPUT_SIZE_USERNAME as usize
+                    < INPUT_SIZE_REWARDS_ADDRESS as usize
                 {
                     self.rewards_address_input_field
                         .handle_event(&Event::Key(key));
@@ -133,16 +135,15 @@ impl Component for RewardsAddress {
         }
         // while in entry mode, keybinds are not captured, so gotta exit entry mode from here
         let send_back = match &self.state {
-            RewardsAddressState::DiscordIdAlreadySet => self.capture_inputs(key),
+            RewardsAddressState::RewardsAddressAlreadySet => self.capture_inputs(key),
             RewardsAddressState::ShowTCs => match key.code {
                 KeyCode::Char('y') | KeyCode::Char('Y') => {
-                    let is_discord_id_set = !self.rewards_address_input_field.value().is_empty();
-                    if is_discord_id_set {
-                        debug!("User accepted the TCs, but discord id already set, moving to DiscordIdAlreadySet");
-                        self.state = RewardsAddressState::DiscordIdAlreadySet;
+                    if !self.rewards_address_input_field.value().is_empty() {
+                        debug!("User accepted the TCs, but rewards address already set, moving to RewardsAddressAlreadySet");
+                        self.state = RewardsAddressState::RewardsAddressAlreadySet;
                     } else {
-                        debug!("User accepted the TCs, but no discord id set, moving to AcceptTCsAndEnterDiscordId");
-                        self.state = RewardsAddressState::AcceptTCsAndEnterDiscordId;
+                        debug!("User accepted the TCs, but no rewards address set, moving to AcceptTCsAndEnterRewardsAddress");
+                        self.state = RewardsAddressState::AcceptTCsAndEnterRewardsAddress;
                     }
                     vec![]
                 }
@@ -155,7 +156,7 @@ impl Component for RewardsAddress {
                     vec![]
                 }
             },
-            RewardsAddressState::AcceptTCsAndEnterDiscordId => self.capture_inputs(key),
+            RewardsAddressState::AcceptTCsAndEnterRewardsAddress => self.capture_inputs(key),
         };
         Ok(send_back)
     }
@@ -218,7 +219,7 @@ impl Component for RewardsAddress {
         clear_area(f, layer_zero);
 
         match self.state {
-            RewardsAddressState::DiscordIdAlreadySet => {
+            RewardsAddressState::RewardsAddressAlreadySet => {
                 self.validate(); // FIXME: maybe this should be somewhere else
                                  // split into 4 parts, for the prompt, input, text, dash , and buttons
                 let layer_two = Layout::new(
@@ -249,7 +250,7 @@ impl Component for RewardsAddress {
                 f.render_widget(prompt_text, layer_two[0]);
 
                 let spaces = " ".repeat(
-                    (INPUT_AREA_USERNAME - 1) as usize
+                    (INPUT_AREA_REWARDS_ADDRESS - 1) as usize
                         - self.rewards_address_input_field.value().len(),
                 );
                 let input = Paragraph::new(Span::styled(
@@ -373,7 +374,7 @@ impl Component for RewardsAddress {
                 .alignment(Alignment::Right);
                 f.render_widget(button_yes, buttons_layer[1]);
             }
-            RewardsAddressState::AcceptTCsAndEnterDiscordId => {
+            RewardsAddressState::AcceptTCsAndEnterRewardsAddress => {
                 // split into 4 parts, for the prompt, input, text, dash , and buttons
                 let layer_two = Layout::new(
                     Direction::Vertical,
@@ -403,7 +404,7 @@ impl Component for RewardsAddress {
                 f.render_widget(prompt.fg(GHOST_WHITE), layer_two[0]);
 
                 let spaces = " ".repeat(
-                    (INPUT_AREA_USERNAME - 1) as usize
+                    (INPUT_AREA_REWARDS_ADDRESS - 1) as usize
                         - self.rewards_address_input_field.value().len(),
                 );
                 let input = Paragraph::new(Span::styled(

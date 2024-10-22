@@ -26,7 +26,7 @@ pub enum Action {
     StoreStorageDrive(PathBuf, String),
     StoreConnectionMode(ConnectionMode),
     StorePortRange(u32, u32),
-    StoreDiscordUserName(String),
+    StoreRewardsAddress(String),
     StoreNodesToStart(usize),
 
     Tick,
