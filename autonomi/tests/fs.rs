@@ -8,7 +8,10 @@
 
 #![cfg(feature = "fs")]
 
+mod common;
+
 use autonomi::Client;
+use common::{get_funded_wallet, peers_from_env};
 use eyre::Result;
 use sha2::{Digest, Sha256};
 use sn_logging::LogBuilder;
@@ -16,7 +19,6 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
 use std::time::Duration;
-use test_utils::{evm::get_funded_wallet, peers_from_env};
 use tokio::time::sleep;
 use walkdir::WalkDir;
 

@@ -14,6 +14,7 @@ use crate::common::{
 };
 use autonomi::{Client, Wallet};
 use common::client::transfer_to_new_wallet;
+use common::gen_random_data;
 use eyre::{bail, ErrReport, Result};
 use rand::Rng;
 use self_encryption::MAX_CHUNK_SIZE;
@@ -27,7 +28,6 @@ use std::{
     time::{Duration, Instant},
 };
 use tempfile::tempdir;
-use test_utils::gen_random_data;
 use tokio::{sync::RwLock, task::JoinHandle, time::sleep};
 use tracing::{debug, error, info, trace, warn};
 use xor_name::XorName;

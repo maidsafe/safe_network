@@ -8,11 +8,12 @@
 
 #![cfg(target_arch = "wasm32")]
 
-use std::time::Duration;
+mod common;
 
 use autonomi::Client;
+use common::{gen_random_data, get_funded_wallet, peers_from_env};
 use sn_networking::target_arch::sleep;
-use test_utils::{evm::get_funded_wallet, gen_random_data, peers_from_env};
+use std::time::Duration;
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);

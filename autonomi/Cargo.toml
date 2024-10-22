@@ -18,7 +18,7 @@ full = ["data", "registers", "vault"]
 data = []
 vault = ["data"]
 fs = ["tokio/fs", "data"]
-local = ["sn_networking/local", "test_utils/local", "sn_evm/local"]
+local = ["sn_networking/local", "sn_evm/local"]
 registers = ["data"]
 loud = []
 
@@ -53,13 +53,11 @@ wasm-bindgen-futures = "0.4.43"
 serde-wasm-bindgen = "0.6.5"
 
 [dev-dependencies]
+evmlib = { path = "../evmlib", version = "0.1.1" }
 eyre = "0.6.5"
 sha2 = "0.10.6"
 sn_logging = { path = "../sn_logging", version = "0.2.37" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.4" }
-# Do not specify the version field. Release process expects even the local dev deps to be published.
-# Removing the version field is a workaround.
-test_utils = { path = "../test_utils" }
 tiny_http = "0.11"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wasm-bindgen-test = "0.3.43"
@@ -70,7 +68,6 @@ evmlib = { path = "../evmlib", version = "0.1.1", features = ["wasm-bindgen"] }
 # See https://github.com/sebcrozet/instant/blob/7bd13f51f5c930239fddc0476a837870fb239ed7/README.md#using-instant-for-a-wasm-platform-where-performancenow-is-not-available
 instant = { version = "0.1", features = ["wasm-bindgen", "inaccurate"] }
 js-sys = "0.3.70"
-test_utils = { path = "../test_utils" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-web = "0.1.3"
 

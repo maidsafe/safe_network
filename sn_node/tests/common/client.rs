@@ -6,17 +6,20 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use super::peers_from_env;
+use super::testnet::DeploymentInventory;
 use autonomi::Client;
-use evmlib::wallet::Wallet;
-use eyre::Result;
+use color_eyre::{
+    eyre::{bail, Context},
+    Result,
+};
+use evmlib::{utils::get_evm_network_from_env, wallet::Wallet, Network};
 use sn_evm::Amount;
 use sn_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
 use sn_service_management::{get_local_node_registry_path, NodeRegistry};
+use std::env;
 use std::str::FromStr;
 use std::{net::SocketAddr, path::Path};
-use test_utils::evm::get_new_wallet;
-use test_utils::testnet::DeploymentInventory;
-use test_utils::{evm::get_funded_wallet, peers_from_env};
 use tokio::sync::Mutex;
 use tonic::Request;
 use tracing::{debug, info};
@@ -327,4 +330,29 @@ impl WanNetwork {
 
     //     Ok(())
     // }
+}
+
+pub fn get_funded_wallet() -> evmlib::wallet::Wallet {
+    let network =
+        get_evm_network_from_env().expect("Failed to get EVM network from environment variables");
+    if matches!(network, Network::ArbitrumOne) {
+        panic!("You're trying to use ArbitrumOne network. Use a custom network for testing.");
+    }
+    // Default deployer wallet of the testnet.
+    const DEFAULT_WALLET_PRIVATE_KEY: &str =
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+    let private_key = env::var("SECRET_KEY").unwrap_or(DEFAULT_WALLET_PRIVATE_KEY.to_string());
+
+    Wallet::new_from_private_key(network, &private_key).expect("Invalid private key")
+}
+
+pub fn get_new_wallet() -> Result<Wallet> {
+    let network = get_evm_network_from_env()
+        .wrap_err("Failed to get EVM network from environment variables")?;
+    if matches!(network, Network::ArbitrumOne) {
+        bail!("You're trying to use ArbitrumOne network. Use a custom network for testing.");
+    }
+
+    Ok(Wallet::new_with_random_wallet(network))
 }

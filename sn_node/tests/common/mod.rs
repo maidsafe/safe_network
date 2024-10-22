@@ -8,20 +8,45 @@
 #![allow(dead_code)]
 
 pub mod client;
+pub mod testnet;
 
 use self::client::LocalNetwork;
+use bytes::Bytes;
 use eyre::{bail, eyre, OptionExt, Result};
 use itertools::Either;
-use libp2p::PeerId;
+use libp2p::{Multiaddr, PeerId};
+use rand::Rng;
+use sn_peers_acquisition::parse_peer_addr;
 use sn_protocol::safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest};
 use sn_service_management::{
     get_local_node_registry_path,
     safenode_manager_proto::safe_node_manager_client::SafeNodeManagerClient, NodeRegistry,
 };
 use std::{net::SocketAddr, time::Duration};
-use test_utils::testnet::DeploymentInventory;
+use testnet::DeploymentInventory;
 use tonic::Request;
 use tracing::{debug, error, warn};
+
+/// Generate random data of the given length.
+pub fn gen_random_data(len: usize) -> Bytes {
+    let mut data = vec![0u8; len];
+    rand::thread_rng().fill(&mut data[..]);
+    Bytes::from(data)
+}
+
+/// Parse the `SAFE_PEERS` env var into a list of Multiaddrs.
+///
+/// An empty `Vec` will be returned if the env var is not set or if local discovery is enabled.
+pub fn peers_from_env() -> Result<Vec<Multiaddr>> {
+    let bootstrap_peers = if cfg!(feature = "local") {
+        Ok(vec![])
+    } else if let Ok(peers_str) = std::env::var("SAFE_PEERS") {
+        peers_str.split(',').map(parse_peer_addr).collect()
+    } else {
+        Ok(vec![])
+    }?;
+    Ok(bootstrap_peers)
+}
 
 // type ResultRandomContent = Result<(FilesApi, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
 

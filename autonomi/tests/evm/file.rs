@@ -8,11 +8,13 @@
 
 #[cfg(feature = "evm-payments")]
 mod test {
+    mod common;
+
     use autonomi::Client;
     use bytes::Bytes;
+    use common::get_funded_wallet;
     use eyre::bail;
     use std::time::Duration;
-    use test_utils::evm::get_funded_wallet;
     use tokio::time::sleep;
 
     #[tokio::test]
@@ -22,9 +24,6 @@ mod test {
 
         let mut client = Client::connect(&[]).await.unwrap();
         let mut wallet = get_funded_wallet();
-
-        // let data = common::gen_random_data(1024 * 1024 * 1000);
-        // let user_key = common::gen_random_data(32);
 
         let (root, addr) = client
             .upload_from_dir("tests/file/test_dir".into(), &mut wallet)

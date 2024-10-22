@@ -19,10 +19,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .git_describe(true, false, None)
         .emit()?;
 
-    println!("cargo:rustc-env=RELEASE_YEAR={}", release_info::RELEASE_YEAR);
-    println!("cargo:rustc-env=RELEASE_MONTH={}", release_info::RELEASE_MONTH);
-    println!("cargo:rustc-env=RELEASE_CYCLE={}", release_info::RELEASE_CYCLE);
-    println!("cargo:rustc-env=RELEASE_CYCLE_COUNTER={}", release_info::RELEASE_CYCLE_COUNTER);
+    println!(
+        "cargo:rustc-env=RELEASE_YEAR={}",
+        release_info::RELEASE_YEAR
+    );
+    println!(
+        "cargo:rustc-env=RELEASE_MONTH={}",
+        release_info::RELEASE_MONTH
+    );
+    println!(
+        "cargo:rustc-env=RELEASE_CYCLE={}",
+        release_info::RELEASE_CYCLE
+    );
+    println!(
+        "cargo:rustc-env=RELEASE_CYCLE_COUNTER={}",
+        release_info::RELEASE_CYCLE_COUNTER
+    );
 
     Ok(())
 }

@@ -81,7 +81,19 @@ pub struct Wallet(evmlib::wallet::Wallet);
 /// environment variable that was used during the build process of this library.
 #[wasm_bindgen(js_name = getFundedWallet)]
 pub fn funded_wallet() -> Wallet {
-    Wallet(test_utils::evm::get_funded_wallet())
+    let network = evmlib::utils::get_evm_network_from_env()
+        .expect("Failed to get EVM network from environment variables");
+    if matches!(network, evmlib::Network::ArbitrumOne) {
+        panic!("You're trying to use ArbitrumOne network. Use a custom network for testing.");
+    }
+    // Default deployer wallet of the testnet.
+    const DEFAULT_WALLET_PRIVATE_KEY: &str =
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+    let private_key = std::env::var("SECRET_KEY").unwrap_or(DEFAULT_WALLET_PRIVATE_KEY.to_string());
+
+    evmlib::wallet::Wallet::new_from_private_key(network, &private_key)
+        .expect("Invalid private key")
 }
 
 /// Enable tracing logging in the console.

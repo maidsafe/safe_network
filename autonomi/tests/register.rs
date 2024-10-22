@@ -8,13 +8,15 @@
 
 #![cfg(feature = "registers")]
 
+mod common;
+
 use autonomi::Client;
 use bytes::Bytes;
+use common::{get_funded_wallet, peers_from_env};
 use eyre::Result;
 use rand::Rng;
 use sn_logging::LogBuilder;
 use std::time::Duration;
-use test_utils::{evm::get_funded_wallet, peers_from_env};
 use tokio::time::sleep;
 
 #[tokio::test]
