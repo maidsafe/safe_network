@@ -163,7 +163,9 @@ mod vault {
             };
 
             if let Some(old_name) = old_name {
-                tracing::warn!("Overwriting archive (`{archive}`): `{old_name:?}` -> `{name:?}`");
+                tracing::warn!(
+                    "Changing name of archive `{archive}` from `{old_name:?}` to `{name:?}`"
+                );
             }
 
             Ok(())
