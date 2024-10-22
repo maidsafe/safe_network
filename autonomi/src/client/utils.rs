@@ -99,13 +99,9 @@ impl Client {
         let record_kind = RecordKind::ChunkWithPayment;
         let record = Record {
             key: key.clone(),
-            value: try_serialize_record(&(payment, chunk.clone()), record_kind)
-                .map_err(|e| {
-                    PutError::Serialization(format!(
-                        "Failed to serialize chunk with payment: {e:?}"
-                    ))
-                })?
-                .to_vec(),
+            value: try_serialize_record(&(payment, chunk.clone()), record_kind).map_err(|e| {
+                PutError::Serialization(format!("Failed to serialize chunk with payment: {e:?}"))
+            })?,
             publisher: None,
             expires: None,
         };

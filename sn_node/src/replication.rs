@@ -68,7 +68,7 @@ impl Node {
                 };
 
                 let record = if let Some(record_content) = record_opt {
-                    Record::new(key, record_content.to_vec())
+                    Record::new(key, record_content)
                 } else {
                     debug!(
                         "Can not fetch record {pretty_key:?} from node {holder:?}, fetching from the network"
@@ -96,7 +96,7 @@ impl Node {
 
                                 Record {
                                     key,
-                                    value: bytes.to_vec(),
+                                    value: bytes,
                                     publisher: None,
                                     expires: None,
                                 }

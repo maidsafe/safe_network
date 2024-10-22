@@ -153,22 +153,19 @@ impl Client {
                 key: scratch_key,
                 value: try_serialize_record(&(proof, scratch), RecordKind::ScratchpadWithPayment)
                     .map_err(|_| {
-                        PutError::Serialization(
-                            "Failed to serialize scratchpad with payment".to_string(),
-                        )
-                    })?
-                    .to_vec(),
+                    PutError::Serialization(
+                        "Failed to serialize scratchpad with payment".to_string(),
+                    )
+                })?,
                 publisher: None,
                 expires: None,
             }
         } else {
             Record {
                 key: scratch_key,
-                value: try_serialize_record(&scratch, RecordKind::Scratchpad)
-                    .map_err(|_| {
-                        PutError::Serialization("Failed to serialize scratchpad".to_string())
-                    })?
-                    .to_vec(),
+                value: try_serialize_record(&scratch, RecordKind::Scratchpad).map_err(|_| {
+                    PutError::Serialization("Failed to serialize scratchpad".to_string())
+                })?,
                 publisher: None,
                 expires: None,
             }

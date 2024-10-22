@@ -204,8 +204,7 @@ impl Client {
         let record = Record {
             key: NetworkAddress::from_register_address(*register.address()).to_record_key(),
             value: try_serialize_record(&signed_register, RecordKind::Register)
-                .map_err(|_| RegisterError::Serialization)?
-                .to_vec(),
+                .map_err(|_| RegisterError::Serialization)?,
             publisher: None,
             expires: None,
         };
@@ -335,8 +334,7 @@ impl Client {
                 &(proof, &signed_register),
                 RecordKind::RegisterWithPayment,
             )
-            .map_err(|_| RegisterError::Serialization)?
-            .to_vec(),
+            .map_err(|_| RegisterError::Serialization)?,
             publisher: None,
             expires: None,
         };

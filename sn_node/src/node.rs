@@ -12,7 +12,6 @@ use super::{
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetricsRecorder;
 use crate::RunningNode;
-use bytes::Bytes;
 use libp2p::{identity::Keypair, Multiaddr, PeerId};
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
 use sn_evm::{AttoTokens, RewardsAddress};
@@ -650,7 +649,7 @@ impl Node {
 
                 if let Some(record_key) = record_key {
                     if let Ok(Some(record)) = network.get_local_record(&record_key).await {
-                        result = Ok((our_address, Bytes::from(record.value)));
+                        result = Ok((our_address, record.value));
                     }
                 }
 
@@ -668,7 +667,7 @@ impl Node {
 
                 if let Some(record_key) = record_key {
                     if let Ok(Some(record)) = network.get_local_record(&record_key).await {
-                        result = Ok((our_address, Bytes::from(record.value)));
+                        result = Ok((our_address, record.value));
                     }
                 }
 

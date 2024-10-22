@@ -513,7 +513,7 @@ impl SwarmDriver {
                 }
 
                 for (record, _peers) in result_map.values() {
-                    self.reput_data_to_range(&record, &data_key_address, &all_seen_peers)?;
+                    self.reput_data_to_range(record, &data_key_address, &all_seen_peers)?;
                 }
 
                 return Ok(());
@@ -584,10 +584,10 @@ impl SwarmDriver {
 
         warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need PUT the data back into nodes in that range.");
 
-        let record_type = get_type_from_record(&record)?;
+        let record_type = get_type_from_record(record)?;
 
         let replicate_targets: HashSet<_> = self
-            .get_filtered_peers_exceeding_range_or_closest_nodes(&data_key_address)
+            .get_filtered_peers_exceeding_range_or_closest_nodes(data_key_address)
             .iter()
             .cloned()
             .collect();

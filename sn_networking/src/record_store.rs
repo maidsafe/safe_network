@@ -17,6 +17,7 @@ use aes_gcm_siv::{
     Aes256GcmSiv, Nonce,
 };
 
+use bytes::Bytes;
 use itertools::Itertools;
 use libp2p::{
     identity::PeerId,
@@ -339,7 +340,7 @@ impl NodeRecordStore {
     ) -> Option<Cow<'a, Record>> {
         let mut record = Record {
             key: key.clone(),
-            value: bytes,
+            value: Bytes::from(bytes),
             publisher: None,
             expires: None,
         };
@@ -354,7 +355,7 @@ impl NodeRecordStore {
 
         match cipher.decrypt(&nonce, record.value.as_ref()) {
             Ok(value) => {
-                record.value = value;
+                record.value = Bytes::from(value);
                 return Some(Cow::Owned(record));
             }
             Err(error) => {
@@ -536,7 +537,7 @@ impl NodeRecordStore {
     fn prepare_record_bytes(
         record: Record,
         encryption_details: (Aes256GcmSiv, [u8; 4]),
-    ) -> Option<Vec<u8>> {
+    ) -> Option<Bytes> {
         if !cfg!(feature = "encrypt-records") {
             return Some(record.value);
         }
@@ -545,7 +546,7 @@ impl NodeRecordStore {
         let nonce = generate_nonce_for_record(&nonce_starter, &record.key);
 
         match cipher.encrypt(&nonce, record.value.as_ref()) {
-            Ok(value) => Some(value),
+            Ok(value) => Some(Bytes::from(value)),
             Err(error) => {
                 warn!(
                     "Failed to encrypt record {:?} : {error:?}",
@@ -988,7 +989,7 @@ mod tests {
                 &(0..50).map(|_| rand::random::<u8>()).collect::<Bytes>(),
                 RecordKind::Chunk,
             ) {
-                Ok(value) => value.to_vec(),
+                Ok(value) => value,
                 Err(err) => panic!("Cannot generate record value {err:?}"),
             };
             let record = Record {
@@ -1177,7 +1178,7 @@ mod tests {
         // Create a record from the chunk
         let record = Record {
             key: NetworkAddress::ChunkAddress(chunk_address).to_record_key(),
-            value: chunk_data.to_vec(),
+            value: chunk_data.clone(),
             expires: None,
             publisher: None,
         };
@@ -1248,7 +1249,7 @@ mod tests {
         // Create a record from the scratchpad
         let record = Record {
             key: NetworkAddress::ScratchpadAddress(scratchpad_address).to_record_key(),
-            value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)?.to_vec(),
+            value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)?,
             expires: None,
             publisher: None,
         };
@@ -1340,7 +1341,7 @@ mod tests {
                 &(0..50).map(|_| rand::random::<u8>()).collect::<Bytes>(),
                 RecordKind::Chunk,
             ) {
-                Ok(value) => value.to_vec(),
+                Ok(value) => value,
                 Err(err) => panic!("Cannot generate record value {err:?}"),
             };
             let record = Record {
@@ -1463,7 +1464,7 @@ mod tests {
                     .collect::<Bytes>(),
                 RecordKind::Chunk,
             ) {
-                Ok(value) => value.to_vec(),
+                Ok(value) => value,
                 Err(err) => panic!("Cannot generate record value {err:?}"),
             };
             let record = Record {

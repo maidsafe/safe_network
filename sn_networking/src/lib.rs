@@ -623,7 +623,7 @@ impl Network {
         for response in responses.into_values().flatten() {
             match response {
                 Response::Query(QueryResponse::GetRegisterRecord(Ok((holder, content)))) => {
-                    let register_record = Record::new(key.clone(), content.to_vec());
+                    let register_record = Record::new(key.clone(), content);
                     let content_hash = XorName::from_content(&register_record.value);
                     debug!(
                         "RegisterRecordReq of {record_address:?} received register of version {content_hash:?} from {holder:?}"
