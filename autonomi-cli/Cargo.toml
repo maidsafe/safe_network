@@ -1,6 +1,6 @@
 [package]
 name = "autonomi-cli"
-version = "0.1.1-rc.2"
+version = "0.1.1"
 edition = "2021"
 
 [[bin]]
@@ -18,7 +18,7 @@ name = "files"
 harness = false
 
 [dependencies]
-autonomi = { path = "../autonomi", version = "0.2.0-rc.2", features = [
+autonomi = { path = "../autonomi", version = "0.2.0", features = [
     "data",
     "fs",
     "registers",
@@ -38,12 +38,12 @@ tokio = { version = "1.32.0", features = [
     "fs",
 ] }
 tracing = { version = "~0.1.26" }
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.4-rc.2" }
-sn_build_info = { path = "../sn_build_info", version = "0.1.16-rc.2" }
-sn_logging = { path = "../sn_logging", version = "0.2.37-rc.2" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.4" }
+sn_build_info = { path = "../sn_build_info", version = "0.1.16" }
+sn_logging = { path = "../sn_logging", version = "0.2.37" }
 
 [dev-dependencies]
-autonomi = { path = "../autonomi", version = "0.2.0-rc.2", features = [
+autonomi = { path = "../autonomi", version = "0.2.0", features = [
     "data",
     "fs",
 ] }
