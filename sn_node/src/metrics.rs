@@ -14,10 +14,12 @@ use prometheus_client::{
         family::Family,
         gauge::Gauge,
         histogram::{exponential_buckets, Histogram},
+        info::Info,
     },
-    registry::Registry,
 };
-use sn_networking::Instant;
+use sn_networking::target_arch::Instant;
+#[cfg(feature = "open-metrics")]
+use sn_networking::MetricsRegistries;
 
 #[derive(Clone)]
 /// The shared recorders that are used to record metrics.
@@ -36,7 +38,7 @@ pub(crate) struct NodeMetricsRecorder {
 
     // wallet
     pub(crate) current_reward_wallet_balance: Gauge,
-    pub(crate) total_forwarded_rewards: Gauge,
+    pub(crate) _total_forwarded_rewards: Gauge,
 
     // to track the uptime of the node.
     pub(crate) started_instant: Instant,
@@ -56,8 +58,20 @@ enum RecordType {
 }
 
 impl NodeMetricsRecorder {
-    pub(crate) fn new(registry: &mut Registry) -> Self {
-        let sub_registry = registry.sub_registry_with_prefix("sn_node");
+    pub(crate) fn new(registries: &mut MetricsRegistries) -> Self {
+        let node_metadata_sub_registry = registries.metadata.sub_registry_with_prefix("sn_node");
+        node_metadata_sub_registry.register(
+            "safenode_version",
+            "The version of the safe node",
+            Info::new(vec![(
+                "safenode_version".to_string(),
+                env!("CARGO_PKG_VERSION").to_string(),
+            )]),
+        );
+
+        let sub_registry = registries
+            .standard_metrics
+            .sub_registry_with_prefix("sn_node");
 
         let put_record_ok = Family::default();
         sub_registry.register(
@@ -130,7 +144,7 @@ impl NodeMetricsRecorder {
             peer_added_to_routing_table,
             peer_removed_from_routing_table,
             current_reward_wallet_balance,
-            total_forwarded_rewards,
+            _total_forwarded_rewards: total_forwarded_rewards,
             started_instant: Instant::now(),
             uptime,
         }

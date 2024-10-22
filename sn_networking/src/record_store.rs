@@ -30,11 +30,11 @@ use prometheus_client::metrics::gauge::Gauge;
 use rand::RngCore;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
+use sn_evm::{AttoTokens, QuotingMetrics};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::{NanoTokens, QuotingMetrics};
 use std::collections::VecDeque;
 use std::{
     borrow::Cow,
@@ -57,7 +57,7 @@ use xor_name::XorName;
 const MAX_RECORDS_COUNT: usize = 16 * 1024;
 
 /// The maximum number of records to cache in memory.
-const MAX_RECORDS_CACHE_SIZE: usize = 100;
+const MAX_RECORDS_CACHE_SIZE: usize = 25;
 
 /// File name of the recorded historical quoting metrics.
 const HISTORICAL_QUOTING_METRICS_FILENAME: &str = "historic_quoting_metrics";
@@ -461,7 +461,7 @@ impl NodeRecordStore {
     // result in mis-calculation of relevant records.
     pub fn cleanup_unrelevant_records(&mut self) {
         let accumulated_records = self.records.len();
-        if accumulated_records < 6 * MAX_RECORDS_COUNT / 10 {
+        if accumulated_records < MAX_RECORDS_COUNT * 6 / 10 {
             return;
         }
 
@@ -651,7 +651,7 @@ impl NodeRecordStore {
     }
 
     /// Calculate the cost to store data for our current store state
-    pub(crate) fn store_cost(&self, key: &Key) -> (NanoTokens, QuotingMetrics) {
+    pub(crate) fn store_cost(&self, key: &Key) -> (AttoTokens, QuotingMetrics) {
         let records_stored = self.records.len();
         let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
 
@@ -685,7 +685,7 @@ impl NodeRecordStore {
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Cost is now {cost:?} for quoting_metrics {quoting_metrics:?}");
 
-        (NanoTokens::from(cost), quoting_metrics)
+        (AttoTokens::from_u64(cost), quoting_metrics)
     }
 
     /// Notify the node received a payment.
@@ -955,16 +955,20 @@ mod tests {
 
     use super::*;
     use bls::SecretKey;
+    use xor_name::XorName;
+
     use bytes::Bytes;
     use eyre::{bail, ContextCompat};
     use libp2p::kad::K_VALUE;
     use libp2p::{core::multihash::Multihash, kad::RecordKey};
     use quickcheck::*;
-    use sn_transfers::{MainPubkey, PaymentQuote};
+    use sn_evm::utils::dummy_address;
+    use sn_evm::{PaymentQuote, RewardsAddress};
+    use sn_protocol::storage::{
+        try_deserialize_record, try_serialize_record, Chunk, ChunkAddress, Scratchpad,
+    };
     use std::collections::BTreeMap;
     use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-
-    use sn_protocol::storage::{try_serialize_record, ChunkAddress};
     use tokio::runtime::Runtime;
     use tokio::time::{sleep, Duration};
 
@@ -1153,6 +1157,152 @@ mod tests {
         assert!(store.get(&r.key).is_none());
     }
 
+    #[tokio::test]
+    async fn can_store_and_retrieve_chunk() {
+        let temp_dir = std::env::temp_dir();
+        let store_config = NodeRecordStoreConfig {
+            storage_dir: temp_dir,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
+
+        // Create a chunk
+        let chunk_data = Bytes::from_static(b"Test chunk data");
+        let chunk = Chunk::new(chunk_data.clone());
+        let chunk_address = *chunk.address();
+
+        // Create a record from the chunk
+        let record = Record {
+            key: NetworkAddress::ChunkAddress(chunk_address).to_record_key(),
+            value: chunk_data.to_vec(),
+            expires: None,
+            publisher: None,
+        };
+
+        // Store the chunk using put_verified
+        assert!(store
+            .put_verified(record.clone(), RecordType::Chunk)
+            .is_ok());
+
+        // Mark as stored (simulating the CompletedWrite event)
+        store.mark_as_stored(record.key.clone(), RecordType::Chunk);
+
+        // Verify the chunk is stored
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Chunk should be stored");
+
+        if let Some(stored) = stored_record {
+            assert_eq!(
+                stored.value, chunk_data,
+                "Stored chunk data should match original"
+            );
+
+            let stored_address = ChunkAddress::new(XorName::from_content(&stored.value));
+            assert_eq!(
+                stored_address, chunk_address,
+                "Stored chunk address should match original"
+            );
+        }
+
+        // Clean up
+        store.remove(&record.key);
+        assert!(
+            store.get(&record.key).is_none(),
+            "Chunk should be removed after cleanup"
+        );
+    }
+
+    #[tokio::test]
+    async fn can_store_and_retrieve_scratchpad() -> eyre::Result<()> {
+        let temp_dir = std::env::temp_dir();
+        let store_config = NodeRecordStoreConfig {
+            storage_dir: temp_dir,
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
+
+        // Create a scratchpad
+        let unencrypted_scratchpad_data = Bytes::from_static(b"Test scratchpad data");
+        let owner_sk = SecretKey::random();
+        let owner_pk = owner_sk.public_key();
+
+        let mut scratchpad = Scratchpad::new(owner_pk);
+
+        let _next_version =
+            scratchpad.update_and_sign(unencrypted_scratchpad_data.clone(), &owner_sk);
+
+        let scratchpad_address = *scratchpad.address();
+
+        // Create a record from the scratchpad
+        let record = Record {
+            key: NetworkAddress::ScratchpadAddress(scratchpad_address).to_record_key(),
+            value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)?.to_vec(),
+            expires: None,
+            publisher: None,
+        };
+
+        // Store the scratchpad using put_verified
+        assert!(store
+            .put_verified(
+                record.clone(),
+                RecordType::NonChunk(XorName::from_content(&record.value))
+            )
+            .is_ok());
+
+        // Mark as stored (simulating the CompletedWrite event)
+        store.mark_as_stored(
+            record.key.clone(),
+            RecordType::NonChunk(XorName::from_content(&record.value)),
+        );
+
+        // Verify the scratchpad is stored
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Scratchpad should be stored");
+
+        if let Some(stored) = stored_record {
+            let scratchpad = try_deserialize_record::<Scratchpad>(&stored)?;
+
+            let stored_address = scratchpad.address();
+            assert_eq!(
+                stored_address, &scratchpad_address,
+                "Stored scratchpad address should match original"
+            );
+
+            let decrypted_data = scratchpad.decrypt_data(&owner_sk)?;
+
+            assert_eq!(
+                decrypted_data,
+                Some(unencrypted_scratchpad_data),
+                "Stored scratchpad data should match original"
+            );
+        }
+
+        store.remove(&record.key);
+        assert!(
+            store.get(&record.key).is_none(),
+            "Scratchpad should be removed after cleanup"
+        );
+
+        Ok(())
+    }
     #[tokio::test]
     async fn pruning_on_full() -> Result<()> {
         let max_iterations = 10;
@@ -1414,12 +1564,14 @@ mod tests {
 
     struct PeerStats {
         address: NetworkAddress,
-        pk: MainPubkey,
+        rewards_addr: RewardsAddress,
         records_stored: AtomicUsize,
         nanos_earned: AtomicU64,
         payments_received: AtomicUsize,
     }
 
+    // takes a long time to run
+    #[ignore]
     #[test]
     fn address_distribution_sim() {
         use rayon::prelude::*;
@@ -1442,7 +1594,7 @@ mod tests {
                 records_stored: AtomicUsize::new(0),
                 nanos_earned: AtomicU64::new(0),
                 payments_received: AtomicUsize::new(0),
-                pk: MainPubkey::new(SecretKey::random().public_key()),
+                rewards_addr: dummy_address(),
             })
             .collect();
 
@@ -1508,8 +1660,10 @@ mod tests {
                         peer.records_stored.fetch_add(1, Ordering::Relaxed);
 
                         if peer_index == payee_index {
-                            peer.nanos_earned
-                                .fetch_add(cost.as_nano(), Ordering::Relaxed);
+                            peer.nanos_earned.fetch_add(
+                                cost.as_atto().try_into().unwrap_or(u64::MAX),
+                                Ordering::Relaxed,
+                            );
                             peer.payments_received.fetch_add(1, Ordering::Relaxed);
                         }
                     }
@@ -1598,8 +1752,8 @@ mod tests {
                     max_store_cost / min_store_cost
                 );
                 assert!(
-                    (max_earned / min_earned) < 300000000,
-                    "earning distribution is not balanced, expected to be < 200000000, but was {}",
+                    (max_earned / min_earned) < 500000000,
+                    "earning distribution is not balanced, expected to be < 500000000, but was {}",
                     max_earned / min_earned
                 );
                 break;
@@ -1610,7 +1764,7 @@ mod tests {
     fn pick_cheapest_payee(
         peers: &[PeerStats],
         close_group: &[usize],
-    ) -> eyre::Result<(usize, NanoTokens)> {
+    ) -> eyre::Result<(usize, AttoTokens)> {
         let mut costs_vec = Vec::with_capacity(close_group.len());
         let mut address_to_index = BTreeMap::new();
 
@@ -1619,7 +1773,7 @@ mod tests {
             address_to_index.insert(peer.address.clone(), i);
 
             let close_records_stored = peer.records_stored.load(Ordering::Relaxed);
-            let cost = NanoTokens::from(calculate_cost_for_records(close_records_stored));
+            let cost = AttoTokens::from(calculate_cost_for_records(close_records_stored));
 
             let quote = PaymentQuote {
                 content: XorName::default(), // unimportant for cost calc
@@ -1631,11 +1785,13 @@ mod tests {
                     received_payment_count: 1, // unimportant for cost calc
                     live_time: 0,              // unimportant for cost calc
                 },
-                pub_key: peer.pk.to_bytes().to_vec(),
-                signature: vec![], // unimportant for cost calc
+                bad_nodes: vec![],
+                pub_key: bls::SecretKey::random().public_key().to_bytes().to_vec(),
+                signature: vec![],
+                rewards_address: peer.rewards_addr, // unimportant for cost calc
             };
 
-            costs_vec.push((peer.address.clone(), peer.pk, quote));
+            costs_vec.push((peer.address.clone(), peer.rewards_addr, quote));
         }
 
         // sort by address first

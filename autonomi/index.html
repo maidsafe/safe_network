@@ -1,0 +1,48 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+  </head>
+  <body>
+    <!-- credits: https://rustwasm.github.io/docs/wasm-bindgen/examples/without-a-bundler.html -->
+    <script type="module">
+      import init, { Client, getFundedWallet, logInit } from './pkg/autonomi.js';
+
+      async function run() {
+        document.getElementById("btn-run").disabled = true;
+        const peer_addr = document.getElementById('peer_id').value;
+
+        await init();
+
+        logInit("sn_networking=debug,autonomi=trace");
+
+        console.log("connecting...");
+        const client = await new Client([peer_addr]);
+        console.log("connected");
+
+        console.log("getting wallet...");
+        const wallet = getFundedWallet();
+        console.log("wallet retrieved");
+
+        const data = new Uint8Array([1, 2, 3]);
+        console.log("our data: ", data);
+
+        console.log("calculating cost...");
+        let result = await client.dataCost(data, wallet);
+        console.log("calculated cost: ", result.toString());
+
+        console.log("putting...");
+        const dataAddr = await client.dataPut(data, wallet);
+        console.log("put done: ", dataAddr.toString());
+
+        console.log("getting...");
+        const data_get = await client.dataGet(dataAddr);
+        console.log("get done: ", data_get, " (original data: ", data, ")");
+      }
+
+      document.getElementById ("btn-run").addEventListener("click", run, false);
+    </script>
+
+    <label for="peer_id">Peer ID: <input type="text" id="peer_id" /></label>
+    <button id="btn-run">Run</button>
+  </body>
+</html>

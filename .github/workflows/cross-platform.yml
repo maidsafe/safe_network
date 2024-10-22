@@ -16,7 +16,7 @@ jobs:
  
   wasm:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: Wasm builds
+    name: wasm32-unknown-unknown builds
     runs-on: ubuntu-latest
     
     steps:
@@ -29,10 +29,9 @@ jobs:
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - name: Build client for wasm
-        # wasm pack doesnt support workspaces
-        # --dev to avoid a loong optimisation step
-        run: cd sn_client && wasm-pack build --dev 
+      - name: Build WASM package
+        # --dev to avoid optimisation
+        run: wasm-pack build --dev --target=web autonomi
         timeout-minutes: 30
 
   websocket:

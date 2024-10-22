@@ -2,11 +2,11 @@
 resolver = "2"
 members = [
     "autonomi",
-    "sn_auditor",
+    "autonomi-cli",
+    "evmlib",
+    "evm_testnet",
     "sn_build_info",
-    "sn_cli",
-    "sn_client",
-    "sn_faucet",
+    "sn_evm",
     "sn_logging",
     "sn_metrics",
     "nat-detection",
@@ -29,7 +29,7 @@ arithmetic_overflow = "forbid"
 mutable_transmutes = "forbid"
 no_mangle_const_items = "forbid"
 unknown_crate_types = "forbid"
-unsafe_code = "forbid"
+unsafe_code = "warn"
 trivial_casts = "warn"
 trivial_numeric_casts = "warn"
 unused_extern_crates = "warn"

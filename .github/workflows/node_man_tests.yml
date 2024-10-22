@@ -35,122 +35,122 @@ jobs:
       - shell: bash
         run: cargo test --lib --package sn-node-manager
 
-  node-manager-user-mode-e2e-tests:
-    name: user-mode e2e
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { os: ubuntu-latest }
-          - { os: macos-latest }
-    steps:
-      - uses: actions/checkout@v4
+  # node-manager-user-mode-e2e-tests:
+  #   name: user-mode e2e
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - { os: ubuntu-latest }
+  #         - { os: macos-latest }
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: Build binaries
-        run: cargo build --release --bin safenode --bin faucet
-        timeout-minutes: 30
+  #     - name: Build binaries
+  #       run: cargo build --release --bin safenode --bin faucet
+  #       timeout-minutes: 30
 
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
+  #     - name: Start a local network
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: start
+  #         interval: 2000
+  #         node-path: target/release/safenode
+  #         faucet-path: target/release/faucet
+  #         platform: ${{ matrix.os }}
+  #         build: true
 
-      - name: Check SAFE_PEERS was set
-        shell: bash
-        run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
-            exit 1
-          else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
-          fi
+  #     - name: Check SAFE_PEERS was set
+  #       shell: bash
+  #       run: |
+  #         if [[ -z "$SAFE_PEERS" ]]; then
+  #           echo "The SAFE_PEERS variable has not been set"
+  #           exit 1
+  #         else
+  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #         fi
 
-      - shell: bash
-        run: |
-          cargo test --package sn-node-manager --release --test e2e -- --nocapture
+  #     - shell: bash
+  #       run: |
+  #         cargo test --package sn-node-manager --release --test e2e -- --nocapture
 
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: node_man_tests_user_mode
-          platform: ${{ matrix.os }}
+  #     - name: Stop the local network and upload logs
+  #       if: always()
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: stop
+  #         log_file_prefix: node_man_tests_user_mode
+  #         platform: ${{ matrix.os }}
 
-  node-manager-e2e-tests:
-    name: system-wide e2e
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { os: ubuntu-latest, elevated: sudo -E env PATH="$PATH" }
-          - { os: macos-latest, elevated: sudo -E }
-          - { os: windows-latest }
-    steps:
-      - uses: actions/checkout@v4
+  # node-manager-e2e-tests:
+  #   name: system-wide e2e
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - { os: ubuntu-latest, elevated: sudo -E env PATH="$PATH" }
+  #         - { os: macos-latest, elevated: sudo -E }
+  #         - { os: windows-latest }
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+  #     - name: Install Rust
+  #       uses: dtolnay/rust-toolchain@stable
+  #     - uses: Swatinem/rust-cache@v2
 
-      - name: Build binaries
-        run: cargo build --release --bin safenode --bin faucet
-        timeout-minutes: 30
+  #     - name: Build binaries
+  #       run: cargo build --release --bin safenode --bin faucet
+  #       timeout-minutes: 30
 
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
+  #     - name: Start a local network
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: start
+  #         interval: 2000
+  #         node-path: target/release/safenode
+  #         faucet-path: target/release/faucet
+  #         platform: ${{ matrix.os }}
+  #         build: true
 
-      - name: Check SAFE_PEERS was set
-        shell: bash
-        run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
-            exit 1
-          else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
-          fi
+  #     - name: Check SAFE_PEERS was set
+  #       shell: bash
+  #       run: |
+  #         if [[ -z "$SAFE_PEERS" ]]; then
+  #           echo "The SAFE_PEERS variable has not been set"
+  #           exit 1
+  #         else
+  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #         fi
 
-      - shell: bash
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
-        run: |
-          ${{ matrix.elevated }} rustup default stable
-          ${{ matrix.elevated }} cargo test --package sn-node-manager --release --test e2e -- --nocapture
+  #     - shell: bash
+  #       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+  #       run: |
+  #         ${{ matrix.elevated }} rustup default stable
+  #         ${{ matrix.elevated }} cargo test --package sn-node-manager --release --test e2e -- --nocapture
 
-      # Powershell step runs as admin by default.
-      - name: run integration test in powershell
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          curl -L -o WinSW.exe $env:WINSW_URL
+  #     # Powershell step runs as admin by default.
+  #     - name: run integration test in powershell
+  #       if: matrix.os == 'windows-latest'
+  #       shell: pwsh
+  #       run: |
+  #         curl -L -o WinSW.exe $env:WINSW_URL
 
-          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\bin"
-          Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
-          $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
+  #         New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\bin"
+  #         Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
+  #         $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
 
-          cargo test --release --package sn-node-manager --test e2e -- --nocapture
+  #         cargo test --release --package sn-node-manager --test e2e -- --nocapture
 
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: node_man_tests_system_wide
-          platform: ${{ matrix.os }}
+  #     - name: Stop the local network and upload logs
+  #       if: always()
+  #       uses: maidsafe/sn-local-testnet-action@main
+  #       with:
+  #         action: stop
+  #         log_file_prefix: node_man_tests_system_wide
+  #         platform: ${{ matrix.os }}

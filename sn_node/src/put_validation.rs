@@ -6,34 +6,33 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{node::Node, quote::verify_quote_for_storecost, Error, Marker, Result};
+use crate::{node::Node, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
+use sn_evm::ProofOfPayment;
 use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
 use sn_protocol::{
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
-        SpendAddress,
+        Scratchpad, SpendAddress,
     },
     NetworkAddress, PrettyPrintRecordKey,
 };
 use sn_registers::SignedRegister;
-use sn_transfers::{
-    calculate_royalties_fee, CashNote, CashNoteRedemption, HotWallet, NanoTokens, Payment,
-    SignedSpend, Transfer, TransferError, UniquePubkey, WalletError, NETWORK_ROYALTIES_PK,
-};
+use sn_transfers::{SignedSpend, TransferError, UniquePubkey, QUOTE_EXPIRATION_SECS};
 use std::collections::BTreeSet;
+use std::time::{Duration, UNIX_EPOCH};
 use tokio::task::JoinSet;
 use xor_name::XorName;
 
 impl Node {
-    /// Validate a record and it's payment, and store the record to the RecordStore
+    /// Validate a record and its payment, and store the record to the RecordStore
     pub(crate) async fn validate_and_store_record(&self, record: Record) -> Result<()> {
         let record_header = RecordHeader::from_record(&record)?;
 
         match record_header.kind {
             RecordKind::ChunkWithPayment => {
                 let record_key = record.key.clone();
-                let (payment, chunk) = try_deserialize_record::<(Payment, Chunk)>(&record)?;
+                let (payment, chunk) = try_deserialize_record::<(ProofOfPayment, Chunk)>(&record)?;
                 let already_exists = self
                     .validate_key_and_existence(&chunk.network_address(), &record_key)
                     .await?;
@@ -87,8 +86,58 @@ impl Node {
 
                 store_chunk_result
             }
+
             RecordKind::Chunk => {
                 error!("Chunk should not be validated at this point");
+                Err(Error::InvalidPutWithoutPayment(
+                    PrettyPrintRecordKey::from(&record.key).into_owned(),
+                ))
+            }
+            RecordKind::ScratchpadWithPayment => {
+                let record_key = record.key.clone();
+                let (payment, scratchpad) =
+                    try_deserialize_record::<(ProofOfPayment, Scratchpad)>(&record)?;
+                let _already_exists = self
+                    .validate_key_and_existence(&scratchpad.network_address(), &record_key)
+                    .await?;
+
+                // Validate the payment and that we received what we asked.
+                // This stores any payments to disk
+                let payment_res = self
+                    .payment_for_us_exists_and_is_still_valid(
+                        &scratchpad.network_address(),
+                        payment,
+                    )
+                    .await;
+
+                // Finally before we store, lets bail for any payment issues
+                payment_res?;
+
+                // Writing chunk to disk takes time, hence try to execute it first.
+                // So that when the replicate target asking for the copy,
+                // the node can have a higher chance to respond.
+                let store_scratchpad_result = self
+                    .validate_and_store_scratchpad_record(scratchpad, record_key.clone(), true)
+                    .await;
+
+                if store_scratchpad_result.is_ok() {
+                    Marker::ValidScratchpadRecordPutFromClient(&PrettyPrintRecordKey::from(
+                        &record_key,
+                    ))
+                    .log();
+                    self.replicate_valid_fresh_record(record_key.clone(), RecordType::Scratchpad);
+
+                    // Notify replication_fetcher to mark the attempt as completed.
+                    // Send the notification earlier to avoid it got skipped due to:
+                    // the record becomes stored during the fetch because of other interleaved process.
+                    self.network()
+                        .notify_fetch_completed(record_key, RecordType::Scratchpad);
+                }
+
+                store_scratchpad_result
+            }
+            RecordKind::Scratchpad => {
+                error!("Scratchpad should not be validated at this point");
                 Err(Error::InvalidPutWithoutPayment(
                     PrettyPrintRecordKey::from(&record.key).into_owned(),
                 ))
@@ -159,7 +208,7 @@ impl Node {
             }
             RecordKind::RegisterWithPayment => {
                 let (payment, register) =
-                    try_deserialize_record::<(Payment, SignedRegister)>(&record)?;
+                    try_deserialize_record::<(ProofOfPayment, SignedRegister)>(&record)?;
 
                 // check if the deserialized value's RegisterAddress matches the record's key
                 let net_addr = NetworkAddress::from_register_address(*register.address());
@@ -213,7 +262,9 @@ impl Node {
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
             // A separate flow handles payment for chunks and registers
-            RecordKind::ChunkWithPayment | RecordKind::RegisterWithPayment => {
+            RecordKind::ChunkWithPayment
+            | RecordKind::RegisterWithPayment
+            | RecordKind::ScratchpadWithPayment => {
                 warn!("Prepaid record came with Payment, which should be handled in another flow");
                 Err(Error::UnexpectedRecordWithPayment(
                     PrettyPrintRecordKey::from(&record.key).into_owned(),
@@ -235,6 +286,12 @@ impl Node {
                 }
 
                 self.store_chunk(&chunk)
+            }
+            RecordKind::Scratchpad => {
+                let key = record.key.clone();
+                let scratchpad = try_deserialize_record::<Scratchpad>(&record)?;
+                self.validate_and_store_scratchpad_record(scratchpad, key, false)
+                    .await
             }
             RecordKind::Spend => {
                 let record_key = record.key.clone();
@@ -323,6 +380,69 @@ impl Node {
         Ok(())
     }
 
+    /// Validate and store a `Scratchpad` to the RecordStore
+    ///
+    /// When a node receives an update packet:
+    /// Verify Name: It MUST hash the provided public key and confirm it matches the name in the packet.
+    /// Check Counter: It MUST ensure that the new counter value is strictly greater than the currently stored value to prevent replay attacks.
+    /// Verify Signature: It MUST use the public key to verify the BLS12-381 signature against the content hash and the counter.
+    /// Accept or Reject: If all verifications succeed, the node MUST accept the packet and replace any previous version. Otherwise, it MUST reject the update.
+
+    pub(crate) async fn validate_and_store_scratchpad_record(
+        &self,
+        scratchpad: Scratchpad,
+        record_key: RecordKey,
+        is_client_put: bool,
+    ) -> Result<()> {
+        // owner PK is defined herein, so as long as record key and this match, we're good
+        let addr = scratchpad.address();
+        debug!("Validating and storing scratchpad {addr:?}");
+
+        // check if the deserialized value's RegisterAddress matches the record's key
+        let scratchpad_key = NetworkAddress::ScratchpadAddress(*addr).to_record_key();
+        if scratchpad_key != record_key {
+            warn!("Record's key does not match with the value's ScratchpadAddress, ignoring PUT.");
+            return Err(Error::RecordKeyMismatch);
+        }
+
+        // check if the Scratchpad is present locally that we don't have a newer version
+        if let Some(local_pad) = self.network().get_local_record(&scratchpad_key).await? {
+            let local_pad = try_deserialize_record::<Scratchpad>(&local_pad)?;
+            if local_pad.count() >= scratchpad.count() {
+                warn!("Rejecting Scratchpad PUT with counter less than or equal to the current counter");
+                return Err(Error::IgnoringOutdatedScratchpadPut);
+            }
+        }
+
+        // ensure data integrity
+        if !scratchpad.is_valid() {
+            warn!("Rejecting Scratchpad PUT with invalid signature");
+            return Err(Error::InvalidScratchpadSignature);
+        }
+
+        info!(
+            "Storing sratchpad {addr:?} with content of {:?} as Record locally",
+            scratchpad.encrypted_data_hash()
+        );
+
+        let record = Record {
+            key: scratchpad_key.clone(),
+            value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)?.to_vec(),
+            publisher: None,
+            expires: None,
+        };
+        self.network().put_local_record(record);
+
+        let pretty_key = PrettyPrintRecordKey::from(&scratchpad_key);
+
+        self.record_metrics(Marker::ValidScratchpadRecordPutFromNetwork(&pretty_key));
+
+        if is_client_put {
+            self.replicate_valid_fresh_record(scratchpad_key, RecordType::Scratchpad);
+        }
+
+        Ok(())
+    }
     /// Validate and store a `Register` to the RecordStore
     pub(crate) async fn validate_and_store_register(
         &self,
@@ -458,160 +578,75 @@ impl Node {
         Ok(())
     }
 
-    /// Gets CashNotes out of Transfers, this includes network verifications of the Transfers
-    /// Rewraps the royalties transfers into encrypted Transfers ready to be sent directly to the beneficiary
-    async fn cash_notes_from_transfers(
-        &self,
-        transfers: Vec<Transfer>,
-        wallet: &HotWallet,
-        pretty_key: PrettyPrintRecordKey<'static>,
-    ) -> Result<(NanoTokens, Vec<CashNote>, Vec<CashNoteRedemption>)> {
-        let royalties_pk = *NETWORK_ROYALTIES_PK;
-        let mut cash_notes = vec![];
-        let mut royalties_cash_notes_r = vec![];
-        let mut received_fee = NanoTokens::zero();
-
-        for transfer in transfers {
-            match transfer {
-                Transfer::Encrypted(_) => match self
-                    .network()
-                    .verify_and_unpack_transfer(&transfer, wallet)
-                    .await
-                {
-                    // transfer not for us
-                    Err(NetworkError::Wallet(WalletError::FailedToDecypherTransfer)) => continue,
-                    // transfer invalid
-                    Err(e) => return Err(e.into()),
-                    // transfer ok, add to cash_notes and continue as more transfers might be ours
-                    Ok(cns) => cash_notes.extend(cns),
-                },
-                Transfer::NetworkRoyalties(cashnote_redemptions) => {
-                    match self
-                        .network()
-                        .verify_cash_notes_redemptions(royalties_pk, &cashnote_redemptions)
-                        .await
-                    {
-                        Ok(cash_notes) => {
-                            let received_royalties = total_cash_notes_amount(&cash_notes)?;
-                            debug!(
-                                "{} network royalties payment cash notes found for record {pretty_key} for a total value of {received_royalties:?}",
-                                cash_notes.len()
-                            );
-                            royalties_cash_notes_r.extend(cashnote_redemptions);
-                            received_fee = received_fee
-                                .checked_add(received_royalties)
-                                .ok_or_else(|| Error::NumericOverflow)?;
-                        }
-                        Err(e) => {
-                            warn!(
-                                "Invalid network royalties payment for record {pretty_key}: {e:?}"
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        if cash_notes.is_empty() {
-            Err(Error::NoPaymentToOurNode(pretty_key))
-        } else {
-            let received_fee_to_our_node = total_cash_notes_amount(&cash_notes)?;
-            info!(
-                "{} cash note/s (for a total of {received_fee_to_our_node:?}) are for us for {pretty_key}",
-                cash_notes.len()
-            );
-            received_fee = received_fee
-                .checked_add(received_fee_to_our_node)
-                .ok_or_else(|| Error::NumericOverflow)?;
-
-            Ok((received_fee, cash_notes, royalties_cash_notes_r))
-        }
-    }
-
     /// Perform validations on the provided `Record`.
     async fn payment_for_us_exists_and_is_still_valid(
         &self,
         address: &NetworkAddress,
-        payment: Payment,
+        payment: ProofOfPayment,
     ) -> Result<()> {
         let key = address.to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
         debug!("Validating record payment for {pretty_key}");
 
-        // load wallet
-        let mut wallet = HotWallet::load_from(self.network().root_dir_path())?;
-        let old_balance = wallet.balance().as_nano();
-
-        // unpack transfer
-        debug!("Unpacking incoming Transfers for record {pretty_key}");
-        let (received_fee, mut cash_notes, royalties_cash_notes_r) = self
-            .cash_notes_from_transfers(payment.transfers, &wallet, pretty_key.clone())
-            .await?;
-
-        // check for cash notes that we have already spent
-        // this can happen in cases where the client retries a failed PUT after we have already used the cash note
-        cash_notes.retain(|cash_note| {
-            let already_present = wallet.cash_note_presents(&cash_note.unique_pubkey());
-            if already_present {
-                return !already_present;
-            }
-
-            let spend_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
-            !wallet.has_confirmed_spend(spend_addr)
-        });
-        if cash_notes.is_empty() {
-            info!("All incoming cash notes were already received, no need to further process");
-            return Err(Error::ReusedPayment);
+        // check if the quote is valid
+        let storecost = payment.quote.cost;
+        let self_peer_id = self.network().peer_id();
+        if !payment.quote.check_is_signed_by_claimed_peer(self_peer_id) {
+            warn!("Payment quote signature is not valid for record {pretty_key}");
+            return Err(Error::InvalidRequest(format!(
+                "Payment quote signature is not valid for record {pretty_key}"
+            )));
         }
+        debug!("Payment quote signature is valid for record {pretty_key}");
 
-        debug!("Received payment of {received_fee:?} for {pretty_key}");
+        // verify quote timestamp
+        let quote_timestamp = payment.quote.timestamp;
+        let quote_expiration_time = quote_timestamp + Duration::from_secs(QUOTE_EXPIRATION_SECS);
+        let quote_expiration_time_in_secs = quote_expiration_time
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| {
+                Error::InvalidRequest(format!(
+                    "Payment quote timestamp is invalid for record {pretty_key}: {e}"
+                ))
+            })?
+            .as_secs();
+
+        // check if payment is valid on chain
+        debug!("Verifying payment for record {pretty_key}");
+        self.evm_network()
+            .verify_data_payment(
+                payment.tx_hash,
+                payment.quote.hash(),
+                *self.reward_address(),
+                storecost.as_atto(),
+                quote_expiration_time_in_secs,
+            )
+            .await
+            .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
+        debug!("Payment is valid for record {pretty_key}");
 
         // Notify `record_store` that the node received a payment.
         self.network().notify_payment_received();
 
-        // deposit the CashNotes in our wallet
-        wallet.deposit_and_store_to_disk(&cash_notes)?;
-        let new_balance = wallet.balance().as_nano();
-        info!(
-            "The new wallet balance is {new_balance}, after earning {}",
-            new_balance - old_balance
-        );
-
         #[cfg(feature = "open-metrics")]
-        if let Some(node_metrics) = self.node_metrics() {
-            let _ = node_metrics
+        if let Some(metrics_recorder) = self.metrics_recorder() {
+            let _ = metrics_recorder
                 .current_reward_wallet_balance
-                .set(new_balance as i64);
+                .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX)); // TODO maybe metrics should be in u256 too?
         }
+        self.events_channel()
+            .broadcast(crate::NodeEvent::RewardReceived(storecost, address.clone()));
 
-        if royalties_cash_notes_r.is_empty() {
-            warn!("No network royalties payment found for record {pretty_key}");
-            return Err(Error::NoNetworkRoyaltiesPayment(pretty_key.into_owned()));
-        }
-
-        // check if the quote is valid
-        let storecost = payment.quote.cost;
-        verify_quote_for_storecost(self.network(), payment.quote, address)?;
-        debug!("Payment quote valid for record {pretty_key}");
-
-        // Let's check payment is sufficient both for our store cost and for network royalties
-        // Since the storage payment is made to a single node, we can calculate the royalties fee based on that single payment.
-        let expected_royalties_fee = calculate_royalties_fee(storecost);
-        let expected_fee = storecost
-            .checked_add(expected_royalties_fee)
-            .ok_or(Error::NumericOverflow)?;
-
-        // finally, (after we accept any payments to us as they are ours now anyway)
-        // lets check they actually paid enough
-        if received_fee < expected_fee {
-            debug!("Payment insufficient for record {pretty_key}. {received_fee:?} is less than {expected_fee:?}");
-            return Err(Error::PaymentProofInsufficientAmount {
-                paid: received_fee,
-                expected: expected_fee,
-            });
-        }
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Total payment of {received_fee:?} nanos accepted for record {pretty_key}");
+        info!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+
+        // loud mode: print a celebratory message to console
+        #[cfg(feature = "loud")]
+        {
+            println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟   RECEIVED REWARD   🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
+            println!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+            println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
+        }
 
         Ok(())
     }
@@ -888,20 +923,4 @@ impl Node {
             ))),
         }
     }
-}
-
-// Helper to calculate total amout of tokens received in a given set of CashNotes
-fn total_cash_notes_amount<'a, I>(cash_notes: I) -> Result<NanoTokens>
-where
-    I: IntoIterator<Item = &'a CashNote>,
-{
-    let mut received_fee = NanoTokens::zero();
-    for cash_note in cash_notes {
-        let amount = cash_note.value();
-        received_fee = received_fee
-            .checked_add(amount)
-            .ok_or(Error::NumericOverflow)?;
-    }
-
-    Ok(received_fee)
 }

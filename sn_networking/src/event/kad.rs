@@ -8,7 +8,8 @@
 
 use crate::{
     driver::PendingGetClosestType, get_quorum_value, get_raw_signed_spends_from_record,
-    GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    target_arch::Instant, GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver,
+    CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::kad::{
@@ -20,10 +21,7 @@ use sn_protocol::{
     PrettyPrintRecordKey,
 };
 use sn_transfers::SignedSpend;
-use std::{
-    collections::{hash_map::Entry, BTreeSet, HashSet},
-    time::Instant,
-};
+use std::collections::{hash_map::Entry, BTreeSet, HashSet};
 use tokio::sync::oneshot;
 use xor_name::XorName;
 
@@ -53,7 +51,7 @@ impl SwarmDriver {
                     //       following criteria:
                     //   1, `stats.num_pending()` is 0
                     //   2, `stats.duration()` is longer than a defined period
-                    current_closest.extend(closest_peers.peers.clone());
+                    current_closest.extend(closest_peers.peers.iter().map(|i| i.peer_id));
                     if current_closest.len() >= usize::from(K_VALUE) || step.last {
                         let (get_closest_type, current_closest) = entry.remove();
                         match get_closest_type {
@@ -101,7 +99,7 @@ impl SwarmDriver {
                 // Trust them and leave for the caller to check whether they are enough.
                 match err {
                     GetClosestPeersError::Timeout { ref peers, .. } => {
-                        current_closest.extend(peers);
+                        current_closest.extend(peers.iter().map(|i| i.peer_id));
                     }
                 }
 
@@ -612,7 +610,7 @@ impl SwarmDriver {
         record: Record,
         cfg: &GetRecordCfg,
     ) -> Result<()> {
-        let res = if cfg.target_record.is_none() || cfg.does_target_match(&record) {
+        let res = if cfg.does_target_match(&record) {
             Ok(record)
         } else {
             Err(GetRecordError::RecordDoesNotMatch(record))

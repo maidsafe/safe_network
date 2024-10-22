@@ -13,7 +13,7 @@ mod swarm;
 use crate::{driver::SwarmDriver, error::Result};
 use core::fmt;
 use custom_debug::Debug as CustomDebug;
-#[cfg(feature = "local-discovery")]
+#[cfg(feature = "local")]
 use libp2p::mdns;
 use libp2p::{
     kad::{Record, RecordKey, K_VALUE},
@@ -21,11 +21,15 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 
+use sn_evm::PaymentQuote;
+#[cfg(feature = "open-metrics")]
+use sn_protocol::CLOSE_GROUP_SIZE;
 use sn_protocol::{
     messages::{Query, Request, Response},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::PaymentQuote;
+#[cfg(feature = "open-metrics")]
+use std::collections::HashSet;
 use std::{
     collections::BTreeSet,
     fmt::{Debug, Formatter},
@@ -39,7 +43,7 @@ pub(super) enum NodeEvent {
     Upnp(libp2p::upnp::Event),
     MsgReceived(libp2p::request_response::Event<Request, Response>),
     Kademlia(libp2p::kad::Event),
-    #[cfg(feature = "local-discovery")]
+    #[cfg(feature = "local")]
     Mdns(Box<mdns::Event>),
     Identify(Box<libp2p::identify::Event>),
     RelayClient(Box<libp2p::relay::client::Event>),
@@ -66,7 +70,7 @@ impl From<libp2p::kad::Event> for NodeEvent {
     }
 }
 
-#[cfg(feature = "local-discovery")]
+#[cfg(feature = "local")]
 impl From<mdns::Event> for NodeEvent {
     fn from(event: mdns::Event) -> Self {
         NodeEvent::Mdns(Box::new(event))
@@ -216,25 +220,61 @@ impl Debug for NetworkEvent {
 }
 
 impl SwarmDriver {
+    /// Check for changes in our close group
+    #[cfg(feature = "open-metrics")]
+    pub(crate) fn check_for_change_in_our_close_group(&mut self) {
+        // this includes self
+        let closest_k_peers = self.get_closest_k_value_local_peers();
+
+        let new_closest_peers: Vec<_> =
+            closest_k_peers.into_iter().take(CLOSE_GROUP_SIZE).collect();
+
+        let old = self.close_group.iter().cloned().collect::<HashSet<_>>();
+        let new_members: Vec<_> = new_closest_peers
+            .iter()
+            .filter(|p| !old.contains(p))
+            .collect();
+        if !new_members.is_empty() {
+            debug!("The close group has been updated. The new members are {new_members:?}");
+            debug!("New close group: {new_closest_peers:?}");
+            self.close_group = new_closest_peers.clone();
+            self.record_change_in_close_group(new_closest_peers);
+        }
+    }
+
     /// Update state on addition of a peer to the routing table.
     pub(crate) fn update_on_peer_addition(&mut self, added_peer: PeerId) {
         self.peers_in_rt = self.peers_in_rt.saturating_add(1);
-        info!(
-            "New peer added to routing table: {added_peer:?}, now we have #{} connected peers",
-            self.peers_in_rt
-        );
+        let n_peers = self.peers_in_rt;
+        info!("New peer added to routing table: {added_peer:?}, now we have #{n_peers} connected peers");
+
+        #[cfg(feature = "loud")]
+        println!("New peer added to routing table: {added_peer:?}, now we have #{n_peers} connected peers");
+
         self.log_kbuckets(&added_peer);
         self.send_event(NetworkEvent::PeerAdded(added_peer, self.peers_in_rt));
 
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
-            metrics.peers_in_routing_table.set(self.peers_in_rt as i64);
+        if self.metrics_recorder.is_some() {
+            self.check_for_change_in_our_close_group();
+        }
+
+        #[cfg(feature = "open-metrics")]
+        if let Some(metrics_recorder) = &self.metrics_recorder {
+            metrics_recorder
+                .peers_in_routing_table
+                .set(self.peers_in_rt as i64);
         }
     }
 
     /// Update state on removal of a peer from the routing table.
     pub(crate) fn update_on_peer_removal(&mut self, removed_peer: PeerId) {
         self.peers_in_rt = self.peers_in_rt.saturating_sub(1);
+
+        // ensure we disconnect bad peer
+        // err result just means no connections were open
+        let _result = self.swarm.disconnect_peer_id(removed_peer);
+
         info!(
             "Peer removed from routing table: {removed_peer:?}, now we have #{} connected peers",
             self.peers_in_rt
@@ -243,8 +283,15 @@ impl SwarmDriver {
         self.send_event(NetworkEvent::PeerRemoved(removed_peer, self.peers_in_rt));
 
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
-            metrics.peers_in_routing_table.set(self.peers_in_rt as i64);
+        if self.metrics_recorder.is_some() {
+            self.check_for_change_in_our_close_group();
+        }
+
+        #[cfg(feature = "open-metrics")]
+        if let Some(metrics_recorder) = &self.metrics_recorder {
+            metrics_recorder
+                .peers_in_routing_table
+                .set(self.peers_in_rt as i64);
         }
     }
 
@@ -284,8 +331,8 @@ impl SwarmDriver {
         let estimated_network_size =
             Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
-            let _ = metrics
+        if let Some(metrics_recorder) = &self.metrics_recorder {
+            let _ = metrics_recorder
                 .estimated_network_size
                 .set(estimated_network_size as i64);
         }
@@ -301,6 +348,8 @@ impl SwarmDriver {
         }
 
         info!("kBucketTable has {index:?} kbuckets {total_peers:?} peers, {kbucket_table_stats:?}, estimated network size: {estimated_network_size:?}");
+        #[cfg(feature = "loud")]
+        println!("Estimated network size: {estimated_network_size:?}");
     }
 
     /// Estimate the number of nodes in the network

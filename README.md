@@ -1,26 +1,27 @@
-# The Safe Network
+# The Autonomi Network (previously Safe Network)
 
-[SafenetForum.org](https://safenetforum.org/)
+[Autonomi.com](https://autonomi.com/)
 
 Own your data. Share your disk space. Get paid for doing so.<br>
-The Data on the Safe Network is Decentralised, Autonomous, and built atop of Kademlia and
+The Data on the Autonomi Network is Decentralised, Autonomous, and built atop of Kademlia and
 Libp2p.<br>
 
 ## Table of Contents
 
-- [For Users](#for-Users)
+- [For Users](#for-users)
 - [For Developers](#for-developers)
 - [For the Technical](#for-the-technical)
-- [Using a Local Network](#Using-a-local-network)
+- [Using a Local Network](#using-a-local-network)
 - [Metrics Dashboard](#metrics-dashboard)
 
 ### For Users
 
-- [CLI](https://github.com/maidsafe/safe_network/blob/main/sn_cli/README.md) The Command Line
+- [CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi_cli/README.md) The Command Line
   Interface, allowing users to interact with the network from their terminal.
 - [Node](https://github.com/maidsafe//safe_network/blob/main/sn_node/README.md) The backbone of the
   safe network. Nodes can be run on commodity hardware and provide storage space and validation of
   transactions to the network.
+- Web App: Coming Soon!
 
 #### Building the Node from Source
 
@@ -28,66 +29,52 @@ If you wish to build a version of `safenode` from source, some special considera
 if you want it to connect to the current beta network.
 
 You should build from the `stable` branch, as follows:
+
 ```
 git checkout stable
-export FOUNDATION_PK=8c89a2230096d07b3013089ffd594b23f468e72f19672c3dc1e50747c4c954fbf54ef8e98809e2d2253b14321e2123ad
-export GENESIS_PK=93fa3c5e1b68ace4fb02845f89f1eb5ff42c64cd31ee1b908d7c3bbb236d009ae4ae9a1a16d42bc7586e88db1248494c
-export NETWORK_ROYALTIES_PK=87ec7d1e5e0252d29b1b0ac42a04d7e8daf7dd9f212a23dbc4a9ca5a6442fdab74196ef7cca150ecd6f9848d49148ed4
-export PAYMENT_FORWARD_PK=887c9371cb9a1467cd45b6f31367520ab44cc40281d52039acfd6f967bdb0c3e214bb81f2a0adcf683bd6608980a7b5f
+export FOUNDATION_PK=88a82d718d16dccc839188eddc9a46cb216667c940cd46285199458c919a170a55490db09763ae216ed25e9db78c3576
+export GENESIS_PK=aa3526db2dbc43998e0b541b8455e2ce9dd4f1cad80090e671da16e3cd11cd5e3550f74c3cefd09ad253d93cacae2320
+export NETWORK_ROYALTIES_PK=8b5463a2c8142959a7b7cfd9295587812eb07ccbe13a85865503c8004eeeb6889ccace3588dcf9f7396784d9ee48f4d5
+export PAYMENT_FORWARD_PK=87d5b511a497183c945df63ab8790a4b94cfe452d00bfbdb39e41ee861384fe0de716a224da1c6fd11356de49877dfc2
 cargo build --release --features=network-contacts --bin safenode
 ```
 
-For more information about the keys, please refer to the [Keys](#keys) section below.
+#### Running the Node
+
+To run a node and receive rewards, you need to specify your Ethereum address as a parameter. Rewards are paid to the specified address.
+
+```
+cargo run --release --bin safenode --features=network-contacts -- --rewards-address <YOUR_ETHEREUM_ADDRESS_TO_RECEIVE_REWARDS>
+```
+
+More options about EVM Network below.
 
 ### For Developers
 
-#### Connecting to the Beta Network
-
-##### Keys
-
-Various keys in the network control where initial funds are distributed and how ongoing fees and
-royalties are collected. They are also used as part of the node version string, to determine whether
-a connecting node is compatible.
-
-For a client to connect to the current beta network, these keys must be set at build time:
-```
-FOUNDATION_PK=8c89a2230096d07b3013089ffd594b23f468e72f19672c3dc1e50747c4c954fbf54ef8e98809e2d2253b14321e2123ad
-GENESIS_PK=93fa3c5e1b68ace4fb02845f89f1eb5ff42c64cd31ee1b908d7c3bbb236d009ae4ae9a1a16d42bc7586e88db1248494c
-NETWORK_ROYALTIES_PK=87ec7d1e5e0252d29b1b0ac42a04d7e8daf7dd9f212a23dbc4a9ca5a6442fdab74196ef7cca150ecd6f9848d49148ed4
-PAYMENT_FORWARD_PK=887c9371cb9a1467cd45b6f31367520ab44cc40281d52039acfd6f967bdb0c3e214bb81f2a0adcf683bd6608980a7b5f
-```
-
-##### Features
+#### Build
 
 You should also build `safe` with the `network-contacts` and `distribution` features enabled:
+
 ```
 cargo build --release --features="network-contacts,distribution" --bin safe
 ```
 
 For `safenode`, only the `network-contacts` feature should be required:
+
 ```
 cargo build --release --features=network-contacts --bin safenode
 ```
 
-#### Utility Scripts
+#### Main Crates
 
-When you start a network there are a few scripts to aid with basic processes:
-
-- `resources/scripts/claim-genesis.sh` which will claim the genesis tokens for a wallet on a launched network (if you
-  have set up the foundation wallet locally by adding a `client/account_secret` and regenerating the wallet or directly
-  adding the `client/wallet/main_secret_key` itself).
-- `resources/scripts/make-wallets.sh` which if you have a wallet with a balance will create a number of wallets with
-  another balance. eg `resources/scripts/make-wallets.sh 5 1` will make 5 wallets with 1 token.
-- `resources/scripts/upload-random-data` will use the existing `client` to upload random data to the network.
-
-- [Client](https://github.com/maidsafe/safe_network/blob/main/sn_client/README.md) The client APIs
-  allowing use of the SafeNetwork to users and developers.
-- [Registers](https://github.com/maidsafe/safe_network/blob/main/sn_registers/README.md) The CRDT
-  registers structures available on the network.
+- [Autonomi API](https://github.com/maidsafe/safe_network/blob/main/autonomi/README.md) The client APIs
+  allowing use of the Autonomi Network to users and developers.
+- [Autonomi CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi_cli/README.md) The Command Line
+  Interface, allowing users to interact with the network from their terminal.
+- [Node](https://github.com/maidsafe/safe_network/blob/main/sn_node/README.md) The backbone of the
+  autonomi network. Nodes can be run on commodity hardware and run the Network.
 - [Node Manager](https://github.com/maidsafe/safe_network/blob/main/sn_node_manager/README.md) Use
   to create a local network for development and testing.
-- [Faucet](https://github.com/maidsafe/safe_network/blob/main/sn_faucet/README.md) The local faucet
-  server, used to claim genesis and request tokens from the network.
 - [Node RPC](https://github.com/maidsafe/safe_network/blob/main/sn_node_rpc_client/README.md) The
   RPC server used by the nodes to expose API calls to the outside world.
 
@@ -99,22 +86,12 @@ The `websockets` feature is available for the `sn_networking` crate, and above, 
 tcp over websockets.
 
 If building for `wasm32` then `websockets` are enabled by default as this is the only method
-avilable to communicate with a network as things stand. (And that network must have `websockets`
+available to communicate with a network as things stand. (And that network must have `websockets`
 enabled.)
 
-##### Building for wasm32
+#### Building for wasm32
 
-- Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-- `cd sn_client && wasm-pack build`
-
-You can then pull this package into a web app eg, to use it.
-
-eg `await safe.get_data("/ip4/127.0.0.1/tcp/59324/ws/p2p/12D3KooWG6kyBwLVHj5hYK2SqGkP4GqrCz5gfwsvPBYic4c4TeUz","9d7e115061066126482a229822e6d68737bd67d826c269762c0f64ce87af6b4c")`
-
-#### Browser usage
-
-Browser usage is highly experimental, but the wasm32 target for `sn_client` _should_ work here.
-YMMV until stabilised.
+WASM support for the autonomi API is currently under active development. More docs coming soon.
 
 ### For the Technical
 
@@ -127,201 +104,73 @@ YMMV until stabilised.
 - [Protocol](https://github.com/maidsafe/safe_network/blob/main/sn_protocol/README.md) The protocol
   used by the safe network.
 - [Transfers](https://github.com/maidsafe/safe_network/blob/main/sn_transfers/README.md) The
-  transfers crate, used to send and receive tokens on the network.
+  transfers crate, used to send and receive tokens Native to the network.
+- [Registers](https://github.com/maidsafe/safe_network/blob/main/sn_registers/README.md) The
+  registers crate, used for the Register CRDT data type on the network.
 - [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acquisition/README.md)
-  The peers peers acqisition crate, or: how the network layer discovers bootstrap peers.
+  The peers acquisition crate, or: how the network layer discovers bootstrap peers.
 - [Build Info](https://github.com/maidsafe/safe_network/blob/main/sn_build_info/README.md) Small
   helper used to get the build/commit versioning info for debug purposes.
 
-## Using a Local Network
+### Using a Local Network
 
-We can explore the network's features by using multiple node processes to form a local network.
-
-The latest version of [Rust](https://www.rust-lang.org/learn/get-started) should be installed. If
-you already have an installation, use `rustup update` to get the latest version.
-
-Run all the commands from the root of this repository.
-
-### Run the Network
+We can explore the network's features by using multiple node processes to form a local network. e also need to run a
+local EVM network for our nodes and client to connect to.
 
 Follow these steps to create a local network:
 
-1. Create the test network: <br>
+##### 1. Prerequisites
+
+The latest version of [Rust](https://www.rust-lang.org/learn/get-started) should be installed. If you already have an installation, use `rustup update` to get the latest version.
+
+Run all the commands from the root of this repository.
+
+If you haven't already, install Foundry. We need to have access to Anvil, which is packaged with Foundry, to run an EVM node: https://book.getfoundry.sh/getting-started/installation
+
+To collect rewards for you nodes, you will need an EVM address, you can create one using [metamask](https://metamask.io/).
+
+##### 2. Run a local EVM node
+
+```sh
+cargo run --bin evm_testnet
+```
+
+This creates a CSV file with the EVM network params in your data directory.
+
+##### 3. Create the test network and pass the EVM params
+   `--rewards-address` _is the address where you will receive your node earnings on._
 
 ```bash
-cargo run --bin safenode-manager --features local-discovery -- local run --build
+cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <YOUR_ETHEREUM_ADDRESS>
 ```
 
-2. Verify node status: <br>
+The EVM Network parameters are loaded from the CSV file in your data directory automatically when the `local` feature flag is enabled (`--features=local`).
+
+##### 4. Verify node status
 
 ```bash
-cargo run --bin safenode-manager --features local-discovery -- status
+cargo run --bin safenode-manager --features local -- status
 ```
 
-3. Build a tokenized wallet: <br>
+The node manager's `run` command starts the node processes. The `status` command should show twenty-five
+running nodes.
+
+##### 5. Uploading and Downloading Data
+
+To upload a file or a directory, you need to set the `SECRET_KEY` environment variable to your EVM secret key:
+
+> When running a local network, you can use the `SECRET_KEY` printed by the `evm_testnet` command [step 2](#2-run-a-local-evm-node) as it has all the money.
 
 ```bash
-cargo run --bin safe --features local-discovery -- wallet get-faucet 127.0.0.1:8000
+SECRET_KEY=<YOUR_EVM_SECRET_KEY> cargo run --bin autonomi --features local -- file upload <path>
 ```
 
-The node manager's `run` command starts the node processes and a faucet process, the latter of
-which will dispense tokens for use with the network. The `status` command should show twenty-five
-running nodes. The `wallet` command retrieves some tokens, which enables file uploads.
+The output will print out the address at which the content was uploaded.
 
-### Files
-
-The file storage capability can be demonstrated by uploading files to the local network, then
-retrieving them.
-
-Upload a file or a directory:
+Now to download the files again:
 
 ```bash
-cargo run --bin safe --features local-discovery -- files upload <path>
-```
-
-The output will show that the upload costs some tokens.
-
-Now download the files again:
-
-```bash
-cargo run --bin safe --features local-discovery -- files download
-```
-
-### Folders
-
-The folders storage capability can be demonstrated by storing folders on the network, making
-changes and syncing them with the stored version on the network, as well as downloading the entire
-folders hierarchy onto a local directory.
-
-All the following commands act on the current directory by default, but since we are building the
-CLI binary to run it, we will have to always provide the directory we want them to act as a path
-argument.
-When otherwise running directly an already built CLI binary, we can simply make sure we are located
-at the directory we want to act on without the need of providing the path as argument.
-
-Initialise a directory to then be able to track changes made on it, and sync them up with the
-network:
-
-```bash
-cargo run --bin safe --features local-discovery -- folders init <dir-path>
-```
-
-Make sure you made a backup copy of the "recovery secret" generated by the above command, or the
-one you have provided when prompted.
-
-If any changes are now made to files or directories within this folder (at this point all files and
-folders are considered new since it has just been initalised for tracking), before trying to push
-those changes to the network, we can get a report of the changes that have been made locally:
-
-```bash
-cargo run --bin safe --features local-discovery -- folders status <dir-path>
-```
-
-We can now push all local changes made to files and directories to the network, as well as pull any
-changes that could have been made to the version stored on the network since last time we synced
-with it:
-
-```bash
-cargo run --bin safe --features local-discovery -- folders sync <dir-path>
-```
-
-Now that's all stored on the network, you can download the folders onto any other path by providing
-it as the target directory to the following command (you will be prompted to enter the "recovery
-secret" you obtained when initialising the directory with `init` command):
-
-```bash
-cargo run --bin safe --features local-discovery -- folders download <target dir path>
-```
-
-### Token Transfers
-
-Use your local wallet to demonstrate sending tokens and receiving transfers.
-
-First, get your wallet address, this address can be safely shared publicly
-
-```
-cargo run --bin safe -- wallet address
-```
-
-You can also get your balance with:
-
-```
-cargo run --bin safe -- wallet balance
-```
-
-Now to send some tokens to an address:
-
-```
-cargo run --bin safe --features local-discovery -- wallet send 2 [address]
-```
-
-This will output a transfer as a hex string, which should be sent to the recipient.
-This transfer is encrypted to the recipient so only the recipient can read and redeem it. 
-To receive a transfer, simply paste it after the wallet receive command:
-
-```
-cargo run --bin safe --features local-discovery -- wallet receive [transfer]
-```
-
-#### Out of band transaction signing
-
-When you want to transfer tokens from a cold storage or hardware wallet, you can create and sign
-the transaction offline. This is done to prevent the private key from being exposed to any online
-threats.
-For this type of scenarios you can create a watch-only wallet (it holds only a public key) on the
-online device, while using a hot-wallet (which holds the secret key) on a device that is offline.
-The following steps are a simple guide for performing such an operation.
-
-Steps on the online device/computer with a watch-only wallet:
-
-1. Create a watch-only wallet using the hex-encoded public key:
-   `cargo run --release --bin safe -- wowallet create <hex-encoded public key>`
-
-2. Deposit a cash-note, owned by the public key used above when creating, into the watch-only
-   wallet:
-   `cargo run --release --bin safe -- wowallet deposit <hex-encoded public key> --cash-note <hex-encoded cash-note>`
-
-3. Build an unsigned transaction:
-   `cargo run --release --bin safe -- wowallet transaction <hex-encoded public key> <amount> <recipient's hex-encoded public key>`
-
-4. Copy the built unsigned Tx generated by the above command, and send it out-of-band to the
-   desired device where the hot-wallet can be loaded.
-
-Steps on the offline device/computer with the corresponding hot-wallet:
-
-5. If you still don't have a hot-wallet created, which owns the cash-notes used to build the
-   unsigned transaction, create it with the corresponding secret key:
-   `cargo run --release --bin safe -- wallet create --key <hex-encoded secret key>`
-
-6. Use the hot-wallet to sign the built transaction:
-   `cargo run --release --bin safe -- wallet sign <unsigned transaction>`
-
-7. Copy the signed Tx generated by the above command, and send it out-of-band back to the online
-   device.
-
-Steps on the online device/computer with the watch-only wallet:
-
-8. Broadcast the signed transaction to the network using the watch-only wallet:
-   `cargo run --release --bin safe -- wowallet broadcast <signed transaction>`
-
-9. Deposit the change cash-note to the watch-only wallet:
-   `cargo run --release --bin safe -- wowallet deposit <hex-encoded public key> <change cash-note>`
-
-10. Send/share the output cash-note generated by the above command at step #8 to/with the
-    recipient.
-
-### Auditing
-
-We can verify a spend, optionally going back to the genesis transaction:
-
-```
-cargo run --bin safe --features local-discovery -- wallet verify [--genesis] [spend address]
-```
-
-All spends from genesis can be audited:
-
-```
-cargo run --bin safe --features local-discovery -- wallet audit
+cargo run --bin autonomi --features local -- file download <addr> <dest_path>
 ```
 
 ### Registers
@@ -332,11 +181,11 @@ their use by two users to exchange text messages in a crude chat application.
 In the first terminal, using the registers example, Alice creates a register:
 
 ```
-cargo run --example registers --features=local-discovery -- --user alice --reg-nickname myregister
+cargo run --example registers --features=local -- --user alice --reg-nickname myregister
 ```
 
 Alice can now write a message to the register and see anything written by anyone else. For example
-she might enter the text "hello, who's there?" which is written to the register and then shown as
+she might enter the text "Hello, who's there?" which is written to the register and then shown as
 the "Latest value", in her terminal:
 
 ```
@@ -350,15 +199,15 @@ Latest value (more than one if concurrent writes were made):
 --------------
 
 Enter a blank line to receive updates, or some text to be written.
-hello, who's there?
-Writing msg (offline) to Register: 'hello, who's there?'
+Hello, who's there?
+Writing msg (offline) to Register: 'Hello, who's there?'
 Syncing with SAFE in 2s...
 synced!
 
 Current total number of items in Register: 1
 Latest value (more than one if concurrent writes were made):
 --------------
-[alice]: hello, who's there?
+[Alice]: Hello, who's there?
 --------------
 
 Enter a blank line to receive updates, or some text to be written.
@@ -367,7 +216,7 @@ Enter a blank line to receive updates, or some text to be written.
 
 For anyone else to write to the same register they need to know its xor address, so to communicate
 with her friend Bob, Alice needs to find a way to send it to Bob. In her terminal, this is the
-value starting "50f4..." in the output above. This value it will be different each time you run the
+value starting "50f4..." in the output above. This value will be different each time you run the
 example to create a register.
 
 Having received the xor address, in another terminal Bob can access the same register to see the
@@ -375,7 +224,7 @@ message Alice has written, and he can write back by running this command with th
 from Alice. (Note that the command should all be on one line):
 
 ```
-cargo run --example registers --features=local-discovery -- --user bob --reg-address 50f4c9d55aa1f4fc19149a86e023cd189e509519788b4ad8625a1ce62932d1938cf4242e029cada768e7af0123a98c25973804d84ad397ca65cb89d6580d04ff07e5b196ea86f882b925be6ade06fc8d
+cargo run --example registers --features=local -- --user bob --reg-address 50f4c9d55aa1f4fc19149a86e023cd189e509519788b4ad8625a1ce62932d1938cf4242e029cada768e7af0123a98c25973804d84ad397ca65cb89d6580d04ff07e5b196ea86f882b925be6ade06fc8d
 ```
 
 After retrieving the register and displaying the message from Alice, Bob can reply and at any time,
@@ -387,7 +236,7 @@ Here's Bob writing from his terminal:
 ```
 Latest value (more than one if concurrent writes were made):
 --------------
-[alice]: hello, who's there?
+[Alice]: Hello, who's there?
 --------------
 
 Enter a blank line to receive updates, or some text to be written.
@@ -402,7 +251,7 @@ A second example, `register_inspect` allows you to view its structure and conten
 the above example you again provide the address of the register. For example:
 
 ```
-cargo run --example register_inspect --features=local-discovery -- --reg-address 50f4c9d55aa1f4fc19149a86e023cd189e509519788b4ad8625a1ce62932d1938cf4242e029cada768e7af0123a98c25973804d84ad397ca65cb89d6580d04ff07e5b196ea86f882b925be6ade06fc8d
+cargo run --example register_inspect --features=local -- --reg-address 50f4c9d55aa1f4fc19149a86e023cd189e509519788b4ad8625a1ce62932d1938cf4242e029cada768e7af0123a98c25973804d84ad397ca65cb89d6580d04ff07e5b196ea86f882b925be6ade06fc8d
 ```
 
 After printing a summary of the register, this example will display
@@ -522,7 +371,7 @@ Listening to royalty payment events:
 
 ```
 $ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 transfers
-Listening to transfers notifications... (press Ctrl+C to exit)
+Listening to transfer notifications... (press Ctrl+C to exit)
 
 New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
 CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
@@ -535,7 +384,7 @@ The `transfers` command can provide a path for royalty payment cash notes:
 
 ```
 $ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:34416 transfers ./royalties-cash-notes
-Listening to transfers notifications... (press Ctrl+C to exit)
+Listening to transfer notifications... (press Ctrl+C to exit)
 Writing cash notes to: ./royalties-cash-notes
 ```
 

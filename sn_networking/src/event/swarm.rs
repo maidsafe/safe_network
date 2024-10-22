@@ -7,10 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::LocalSwarmCmd, event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p,
-    relay_manager::is_a_relayed_peer, target_arch::Instant, NetworkEvent, Result, SwarmDriver,
+    event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p, relay_manager::is_a_relayed_peer,
+    target_arch::Instant, NetworkEvent, Result, SwarmDriver,
 };
-#[cfg(feature = "local-discovery")]
+#[cfg(feature = "local")]
 use libp2p::mdns;
 #[cfg(feature = "open-metrics")]
 use libp2p::metrics::Recorder;
@@ -33,8 +33,8 @@ impl SwarmDriver {
         // This does not record all the events. `SwarmEvent::Behaviour(_)` are skipped. Hence `.record()` has to be
         // called individually on each behaviour.
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
-            metrics.record(&event);
+        if let Some(metrics_recorder) = &self.metrics_recorder {
+            metrics_recorder.record(&event);
         }
         let start = Instant::now();
         let event_string;
@@ -47,8 +47,8 @@ impl SwarmDriver {
             }
             SwarmEvent::Behaviour(NodeEvent::Kademlia(kad_event)) => {
                 #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics.record(&kad_event);
+                if let Some(metrics_recorder) = &self.metrics_recorder {
+                    metrics_recorder.record(&kad_event);
                 }
                 event_string = "kad_event";
                 self.handle_kad_event(kad_event)?;
@@ -69,8 +69,8 @@ impl SwarmDriver {
             #[cfg(feature = "upnp")]
             SwarmEvent::Behaviour(NodeEvent::Upnp(upnp_event)) => {
                 #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics.record(&upnp_event);
+                if let Some(metrics_recorder) = &self.metrics_recorder {
+                    metrics_recorder.record(&upnp_event);
                 }
                 event_string = "upnp_event";
                 info!(?upnp_event, "UPnP event");
@@ -84,8 +84,8 @@ impl SwarmDriver {
 
             SwarmEvent::Behaviour(NodeEvent::RelayServer(event)) => {
                 #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics.record(&(*event));
+                if let Some(metrics_recorder) = &self.metrics_recorder {
+                    metrics_recorder.record(&(*event));
                 }
 
                 event_string = "relay_server_event";
@@ -109,14 +109,18 @@ impl SwarmDriver {
             SwarmEvent::Behaviour(NodeEvent::Identify(iden)) => {
                 // Record the Identify event for metrics if the feature is enabled.
                 #[cfg(feature = "open-metrics")]
-                if let Some(metrics) = &self.network_metrics {
-                    metrics.record(&(*iden));
+                if let Some(metrics_recorder) = &self.metrics_recorder {
+                    metrics_recorder.record(&(*iden));
                 }
                 event_string = "identify";
 
                 match *iden {
-                    libp2p::identify::Event::Received { peer_id, info } => {
-                        debug!(%peer_id, ?info, "identify: received info");
+                    libp2p::identify::Event::Received {
+                        peer_id,
+                        info,
+                        connection_id,
+                    } => {
+                        debug!(conn_id=%connection_id, %peer_id, ?info, "identify: received info");
 
                         if info.protocol_version != IDENTIFY_PROTOCOL_STR.to_string() {
                             warn!(?info.protocol_version, "identify: {peer_id:?} does not have the same protocol. Our IDENTIFY_PROTOCOL_STR: {:?}", IDENTIFY_PROTOCOL_STR.as_str());
@@ -273,7 +277,7 @@ impl SwarmDriver {
                     libp2p::identify::Event::Error { .. } => debug!("identify: {iden:?}"),
                 }
             }
-            #[cfg(feature = "local-discovery")]
+            #[cfg(feature = "local")]
             SwarmEvent::Behaviour(NodeEvent::Mdns(mdns_event)) => {
                 event_string = "mdns";
                 match *mdns_event {
@@ -325,6 +329,7 @@ impl SwarmDriver {
                 self.send_event(NetworkEvent::NewListenAddr(address.clone()));
 
                 info!("Local node is listening {listener_id:?} on {address:?}");
+                println!("Local node is listening on {address:?}"); // TODO: make it print only once
             }
             SwarmEvent::ListenerClosed {
                 listener_id,
@@ -403,6 +408,11 @@ impl SwarmDriver {
                             match err {
                                 TransportError::MultiaddrNotSupported(addr) => {
                                     warn!("Multiaddr not supported : {addr:?}");
+                                    #[cfg(feature = "loud")]
+                                    {
+                                        println!("Multiaddr not supported : {addr:?}");
+                                        println!("If this was your bootstrap peer, restart your node with a supported multiaddr");
+                                    }
                                     // if we can't dial a peer on a given address, we should remove it from the routing table
                                     there_is_a_serious_issue = true
                                 }
@@ -489,11 +499,6 @@ impl SwarmDriver {
                         .remove_peer(&failed_peer_id)
                     {
                         self.update_on_peer_removal(*dead_peer.node.key.preimage());
-
-                        self.handle_local_cmd(LocalSwarmCmd::RecordNodeIssue {
-                            peer_id: failed_peer_id,
-                            issue: crate::NodeIssue::ConnectionIssue,
-                        })?;
                     }
                 }
             }
@@ -639,7 +644,7 @@ impl SwarmDriver {
     /// Record the metrics on update of connection state.
     fn record_connection_metrics(&self) {
         #[cfg(feature = "open-metrics")]
-        if let Some(metrics) = &self.network_metrics {
+        if let Some(metrics) = &self.metrics_recorder {
             metrics
                 .open_connections
                 .set(self.live_connected_peers.len() as i64);

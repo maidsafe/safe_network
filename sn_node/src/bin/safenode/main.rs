@@ -10,16 +10,24 @@
 extern crate tracing;
 
 mod rpc_service;
+mod subcommands;
 
-use clap::Parser;
-use eyre::{eyre, Result};
+use crate::subcommands::EvmNetworkCommand;
+use clap::{command, Parser};
+use color_eyre::{eyre::eyre, Result};
+use const_hex::traits::FromHex;
 use libp2p::{identity::Keypair, PeerId};
+use sn_evm::{get_evm_network_from_env, EvmNetwork, RewardsAddress};
 #[cfg(feature = "metrics")]
 use sn_logging::metrics::init_metrics;
 use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::PeersArgs;
-use sn_protocol::{node::get_safenode_root_dir, node_rpc::NodeCtrl};
+use sn_protocol::{
+    node::get_safenode_root_dir,
+    node_rpc::{NodeCtrl, StopResult},
+    version::IDENTIFY_PROTOCOL_STR,
+};
 use std::{
     env,
     io::Write,
@@ -28,6 +36,7 @@ use std::{
     process::Command,
     time::Duration,
 };
+use sysinfo::{self, System};
 use tokio::{
     runtime::Runtime,
     sync::{broadcast::error::RecvError, mpsc},
@@ -65,6 +74,7 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDestArg> {
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
+#[command(disable_version_flag = true)]
 #[clap(name = "safenode cli", version = env!("CARGO_PKG_VERSION"))]
 struct Opt {
     /// Specify whether the node is operating from a home network and situated behind a NAT without port forwarding
@@ -117,6 +127,19 @@ struct Opt {
     /// After reaching this limit, the older archived files are deleted.
     #[clap(long, verbatim_doc_comment)]
     max_archived_log_files: Option<usize>,
+
+    /// Specify the rewards address.
+    /// The rewards address is the address that will receive the rewards for the node.
+    /// It should be a valid EVM address.
+    #[clap(long)]
+    rewards_address: Option<String>,
+
+    /// Specify the EVM network to use.
+    /// The network can either be a pre-configured one or a custom network.
+    /// When setting a custom network, you must specify the RPC URL to a fully synced node and
+    /// the addresses of the network token and chunk payments contracts.
+    #[command(subcommand)]
+    evm_network: Option<EvmNetworkCommand>,
 
     /// Specify the node's data directory.
     ///
@@ -177,11 +200,69 @@ struct Opt {
         required_if_eq("metrics_server_port", "0")
     )]
     enable_metrics_server: bool,
+
+    /// Print the crate version.
+    #[clap(long)]
+    crate_version: bool,
+
+    /// Print the network protocol version.
+    #[clap(long)]
+    protocol_version: bool,
+
+    /// Print the package version.
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    package_version: bool,
+
+    /// Print version information.
+    #[clap(long)]
+    version: bool,
 }
 
 fn main() -> Result<()> {
     color_eyre::install()?;
     let opt = Opt::parse();
+
+    if opt.version {
+        println!(
+            "{}",
+            sn_build_info::version_string(
+                "Autonomi Node",
+                env!("CARGO_PKG_VERSION"),
+                Some(&IDENTIFY_PROTOCOL_STR)
+            )
+        );
+        return Ok(());
+    }
+
+    // evm config
+    let rewards_address = RewardsAddress::from_hex(opt.rewards_address.as_ref().expect(
+        "the following required arguments were not provided: --rewards-address <REWARDS_ADDRESS>",
+    ))?;
+
+    if opt.crate_version {
+        println!("Crate version: {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    if opt.protocol_version {
+        println!("Network version: {}", *IDENTIFY_PROTOCOL_STR);
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if opt.package_version {
+        println!("Package version: {}", sn_build_info::package_version());
+        return Ok(());
+    }
+
+    let evm_network: EvmNetwork = opt
+        .evm_network
+        .as_ref()
+        .cloned()
+        .map(|v| Ok(v.into()))
+        .unwrap_or_else(get_evm_network_from_env)?;
+    println!("EVM network: {evm_network:?}");
 
     let node_socket_addr = SocketAddr::new(opt.ip, opt.port);
     let (root_dir, keypair) = get_root_dir_and_keypair(&opt.root_dir)?;
@@ -197,6 +278,8 @@ fn main() -> Result<()> {
         env!("CARGO_PKG_VERSION")
     );
     info!("\n{}\n{}", msg, "=".repeat(msg.len()));
+
+    sn_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR);
     debug!(
         "safenode built with git version: {}",
         sn_build_info::git_info()
@@ -213,11 +296,12 @@ fn main() -> Result<()> {
     let restart_options = rt.block_on(async move {
         let mut node_builder = NodeBuilder::new(
             keypair,
+            rewards_address,
+            evm_network,
             node_socket_addr,
             bootstrap_peers,
             opt.local,
             root_dir,
-            opt.owner.clone(),
             #[cfg(feature = "upnp")]
             opt.upnp,
         );
@@ -299,11 +383,63 @@ You can check your reward balance by running:
         if let Err(err) = ctrl_tx_clone
             .send(NodeCtrl::Stop {
                 delay: Duration::from_secs(1),
-                cause: eyre!("Ctrl-C received!"),
+                result: StopResult::Error(eyre!("Ctrl-C received!")),
             })
             .await
         {
             error!("Failed to send node control msg to safenode bin main thread: {err}");
+        }
+    });
+    let ctrl_tx_clone_cpu = ctrl_tx.clone();
+    // Monitor host CPU usage
+    tokio::spawn(async move {
+        use rand::{thread_rng, Rng};
+
+        const CPU_CHECK_INTERVAL: Duration = Duration::from_secs(60);
+        const CPU_USAGE_THRESHOLD: f32 = 50.0;
+        const HIGH_CPU_CONSECUTIVE_LIMIT: u8 = 5;
+        const NODE_STOP_DELAY: Duration = Duration::from_secs(1);
+        const INITIAL_DELAY_MIN_S: u64 = 10;
+        const INITIAL_DELAY_MAX_S: u64 =
+            HIGH_CPU_CONSECUTIVE_LIMIT as u64 * CPU_CHECK_INTERVAL.as_secs();
+        const JITTER_MIN_S: u64 = 1;
+        const JITTER_MAX_S: u64 = 15;
+
+        let mut sys = System::new_all();
+
+        let mut high_cpu_count: u8 = 0;
+
+        // Random initial delay between 1 and 5 minutes
+        let initial_delay =
+            Duration::from_secs(thread_rng().gen_range(INITIAL_DELAY_MIN_S..=INITIAL_DELAY_MAX_S));
+        tokio::time::sleep(initial_delay).await;
+
+        loop {
+            sys.refresh_cpu();
+            let cpu_usage = sys.global_cpu_info().cpu_usage();
+
+            if cpu_usage > CPU_USAGE_THRESHOLD {
+                high_cpu_count += 1;
+            } else {
+                high_cpu_count = 0;
+            }
+
+            if high_cpu_count >= HIGH_CPU_CONSECUTIVE_LIMIT {
+                if let Err(err) = ctrl_tx_clone_cpu
+                    .send(NodeCtrl::Stop {
+                        delay: NODE_STOP_DELAY,
+                        result: StopResult::Success(format!("Excess host CPU %{CPU_USAGE_THRESHOLD} detected for {HIGH_CPU_CONSECUTIVE_LIMIT} consecutive minutes!")),
+                    })
+                    .await
+                {
+                    error!("Failed to send node control msg to safenode bin main thread: {err}");
+                }
+                break;
+            }
+
+            // Add jitter to the interval
+            let jitter = Duration::from_secs(thread_rng().gen_range(JITTER_MIN_S..=JITTER_MAX_S));
+            tokio::time::sleep(CPU_CHECK_INTERVAL + jitter).await;
         }
     });
 
@@ -341,12 +477,21 @@ You can check your reward balance by running:
 
                 break Ok(res);
             }
-            Some(NodeCtrl::Stop { delay, cause }) => {
+            Some(NodeCtrl::Stop { delay, result }) => {
                 let msg = format!("Node is stopping in {delay:?}...");
                 info!("{msg}");
                 println!("{msg} Node log path: {log_output_dest}");
                 sleep(delay).await;
-                return Err(cause);
+                match result {
+                    StopResult::Success(message) => {
+                        info!("Node stopped successfully: {}", message);
+                        return Ok(None);
+                    }
+                    StopResult::Error(cause) => {
+                        error!("Node stopped with error: {}", cause);
+                        return Err(cause);
+                    }
+                }
             }
             Some(NodeCtrl::Update(_delay)) => {
                 // TODO: implement self-update once safenode app releases are published again
@@ -369,7 +514,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {
                             delay: Duration::from_secs(1),
-                            cause: eyre!("Node events channel closed!"),
+                            result: StopResult::Error(eyre!("Node events channel closed!")),
                         })
                         .await
                     {
@@ -383,7 +528,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {
                             delay: Duration::from_secs(1),
-                            cause: eyre!("Node terminated due to: {reason:?}"),
+                            result: StopResult::Error(eyre!("Node terminated due to: {reason:?}")),
                         })
                         .await
                     {
@@ -417,6 +562,7 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, ReloadHandle, Opt
         ("sn_protocol".to_string(), Level::DEBUG),
         ("sn_registers".to_string(), Level::DEBUG),
         ("sn_transfers".to_string(), Level::DEBUG),
+        ("sn_evm".to_string(), Level::DEBUG),
     ];
 
     let output_dest = match &opt.log_output_dest {

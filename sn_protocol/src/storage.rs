@@ -9,15 +9,17 @@
 mod address;
 mod chunks;
 mod header;
+mod scratchpad;
 
 use crate::error::Error;
 use core::fmt;
 use std::{str::FromStr, time::Duration};
 
 pub use self::{
-    address::{ChunkAddress, RegisterAddress, SpendAddress},
+    address::{ChunkAddress, RegisterAddress, ScratchpadAddress, SpendAddress},
     chunks::Chunk,
     header::{try_deserialize_record, try_serialize_record, RecordHeader, RecordKind, RecordType},
+    scratchpad::Scratchpad,
 };
 
 /// Represents the strategy for retrying operations. This encapsulates both the duration it may take for an operation to
@@ -25,11 +27,12 @@ pub use self::{
 /// Chunk/Registers/Spend to be more flexible.
 ///
 /// The Duration/Attempts is chosen based on the internal logic.
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, Default)]
 pub enum RetryStrategy {
     /// Quick: Resolves to a 15-second wait or 1 retry attempt.
     Quick,
     /// Balanced: Resolves to a 60-second wait or 3 retry attempt.
+    #[default]
     Balanced,
     /// Persistent: Resolves to a 180-second wait or 6 retry attempt.
     Persistent,

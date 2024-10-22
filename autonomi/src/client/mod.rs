@@ -1,25 +1,42 @@
-use std::{collections::HashSet, time::Duration};
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
 
-use libp2p::{identity::Keypair, Multiaddr};
-use sn_client::networking::{multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
-use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
-use tokio::{sync::mpsc::Receiver, time::interval};
+pub mod address;
 
 #[cfg(feature = "data")]
-#[cfg_attr(docsrs, doc(cfg(feature = "data")))]
-mod data;
-#[cfg(feature = "files")]
-#[cfg_attr(docsrs, doc(cfg(feature = "files")))]
-mod files;
+pub mod archive;
+#[cfg(feature = "data")]
+pub mod data;
+#[cfg(feature = "fs")]
+pub mod fs;
 #[cfg(feature = "registers")]
-#[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
-mod registers;
-#[cfg(feature = "transfers")]
-#[cfg_attr(docsrs, doc(cfg(feature = "transfers")))]
-mod transfers;
+pub mod registers;
+#[cfg(feature = "vault")]
+pub mod vault;
+
+#[cfg(target_arch = "wasm32")]
+pub mod wasm;
+
+// private module with utility functions
+mod utils;
+
+pub use sn_evm::Amount;
+
+use libp2p::{identity::Keypair, Multiaddr};
+use sn_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
+use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
+use std::{collections::HashSet, sync::Arc, time::Duration};
+use tokio::sync::mpsc;
 
 /// Time before considering the connection timed out.
 pub const CONNECT_TIMEOUT_SECS: u64 = 20;
+
+const CLIENT_EVENT_CHANNEL_SIZE: usize = 100;
 
 /// Represents a connection to the Autonomi network.
 ///
@@ -28,7 +45,7 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 /// To connect to the network, use [`Client::connect`].
 ///
 /// ```no_run
-/// # use autonomi::Client;
+/// # use autonomi::client::Client;
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
@@ -39,6 +56,7 @@ pub const CONNECT_TIMEOUT_SECS: u64 = 20;
 #[derive(Clone)]
 pub struct Client {
     pub(crate) network: Network,
+    pub(crate) client_event_sender: Arc<Option<mpsc::Sender<ClientEvent>>>,
 }
 
 /// Error returned by [`Client::connect`].
@@ -58,7 +76,7 @@ impl Client {
     /// This will timeout after 20 seconds. (See [`CONNECT_TIMEOUT_SECS`].)
     ///
     /// ```no_run
-    /// # use autonomi::Client;
+    /// # use autonomi::client::Client;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
@@ -75,47 +93,59 @@ impl Client {
         // Spawn task to dial to the given peers
         let network_clone = network.clone();
         let peers = peers.to_vec();
-        let _handle = tokio::spawn(async move {
+        let _handle = sn_networking::target_arch::spawn(async move {
             for addr in peers {
                 if let Err(err) = network_clone.dial(addr.clone()).await {
+                    error!("Failed to dial addr={addr} with err: {err:?}");
                     eprintln!("addr={addr} Failed to dial: {err:?}");
                 };
             }
         });
 
-        let (sender, receiver) = tokio::sync::oneshot::channel();
-        tokio::spawn(handle_event_receiver(event_receiver, sender));
+        let (sender, receiver) = futures::channel::oneshot::channel();
+        sn_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
 
         receiver.await.expect("sender should not close")?;
 
-        Ok(Self { network })
+        Ok(Self {
+            network,
+            client_event_sender: Arc::new(None),
+        })
+    }
+
+    /// Receive events from the client.
+    pub fn enable_client_events(&mut self) -> mpsc::Receiver<ClientEvent> {
+        let (client_event_sender, client_event_receiver) =
+            tokio::sync::mpsc::channel(CLIENT_EVENT_CHANNEL_SIZE);
+        self.client_event_sender = Arc::new(Some(client_event_sender));
+        client_event_receiver
     }
 }
 
-fn build_client_and_run_swarm(local: bool) -> (Network, Receiver<NetworkEvent>) {
-    // TODO: `root_dir` is only used for nodes. `NetworkBuilder` should not require it.
-    let root_dir = std::env::temp_dir();
-    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local, root_dir);
+fn build_client_and_run_swarm(local: bool) -> (Network, mpsc::Receiver<NetworkEvent>) {
+    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
 
     // TODO: Re-export `Receiver<T>` from `sn_networking`. Else users need to keep their `tokio` dependency in sync.
     // TODO: Think about handling the mDNS error here.
     let (network, event_receiver, swarm_driver) =
         network_builder.build_client().expect("mdns to succeed");
 
-    let _swarm_driver = tokio::spawn(swarm_driver.run());
+    let _swarm_driver = sn_networking::target_arch::spawn(swarm_driver.run());
 
     (network, event_receiver)
 }
 
 async fn handle_event_receiver(
-    mut event_receiver: Receiver<NetworkEvent>,
-    sender: tokio::sync::oneshot::Sender<Result<(), ConnectError>>,
+    mut event_receiver: mpsc::Receiver<NetworkEvent>,
+    sender: futures::channel::oneshot::Sender<Result<(), ConnectError>>,
 ) {
     // We switch this to `None` when we've sent the oneshot 'connect' result.
     let mut sender = Some(sender);
     let mut unsupported_protocols = vec![];
 
     let mut timeout_timer = interval(Duration::from_secs(CONNECT_TIMEOUT_SECS));
+
+    #[cfg(not(target_arch = "wasm32"))]
     timeout_timer.tick().await;
 
     loop {
@@ -164,4 +194,16 @@ async fn handle_event_receiver(
     }
 
     // TODO: Handle closing of network events sender
+}
+
+/// Events that can be broadcasted by the client.
+pub enum ClientEvent {
+    UploadComplete(UploadSummary),
+}
+
+/// Summary of an upload operation.
+#[derive(Debug, Clone)]
+pub struct UploadSummary {
+    pub record_count: usize,
+    pub tokens_spent: Amount,
 }

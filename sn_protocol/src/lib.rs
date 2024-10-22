@@ -29,6 +29,7 @@ pub mod safenode_proto {
     tonic::include_proto!("safenode_proto");
 }
 pub use error::Error;
+use storage::ScratchpadAddress;
 
 use self::storage::{ChunkAddress, RegisterAddress, SpendAddress};
 use bytes::Bytes;
@@ -82,6 +83,8 @@ pub enum NetworkAddress {
     RegisterAddress(RegisterAddress),
     /// The NetworkAddress is representing a RecordKey.
     RecordKey(Bytes),
+    /// The NetworkAddress is representing a ScratchpadAddress.
+    ScratchpadAddress(ScratchpadAddress),
 }
 
 impl NetworkAddress {
@@ -93,6 +96,10 @@ impl NetworkAddress {
     /// Return a `NetworkAddress` representation of the `SpendAddress`.
     pub fn from_spend_address(cash_note_address: SpendAddress) -> Self {
         NetworkAddress::SpendAddress(cash_note_address)
+    }
+    /// Return a `NetworkAddress` representation of the `SpendAddress`.
+    pub fn from_scratchpad_address(address: ScratchpadAddress) -> Self {
+        NetworkAddress::ScratchpadAddress(address)
     }
 
     /// Return a `NetworkAddress` representation of the `RegisterAddress`.
@@ -118,6 +125,7 @@ impl NetworkAddress {
             NetworkAddress::SpendAddress(cash_note_address) => {
                 cash_note_address.xorname().0.to_vec()
             }
+            NetworkAddress::ScratchpadAddress(addr) => addr.xorname().0.to_vec(),
             NetworkAddress::RegisterAddress(register_address) => {
                 register_address.xorname().0.to_vec()
             }
@@ -141,6 +149,7 @@ impl NetworkAddress {
             NetworkAddress::SpendAddress(cash_note_address) => Some(*cash_note_address.xorname()),
             NetworkAddress::ChunkAddress(chunk_address) => Some(*chunk_address.xorname()),
             NetworkAddress::RegisterAddress(register_address) => Some(register_address.xorname()),
+            NetworkAddress::ScratchpadAddress(address) => Some(address.xorname()),
             _ => None,
         }
     }
@@ -164,6 +173,7 @@ impl NetworkAddress {
             NetworkAddress::SpendAddress(cash_note_address) => {
                 RecordKey::new(cash_note_address.xorname())
             }
+            NetworkAddress::ScratchpadAddress(addr) => RecordKey::new(&addr.xorname()),
             NetworkAddress::PeerId(bytes) => RecordKey::new(bytes),
         }
     }
@@ -216,6 +226,12 @@ impl Debug for NetworkAddress {
                     &spend_address.to_hex()[0..6]
                 )
             }
+            NetworkAddress::ScratchpadAddress(scratchpad_address) => {
+                format!(
+                    "NetworkAddress::ScratchpadAddress({} - ",
+                    &scratchpad_address.to_hex()[0..6]
+                )
+            }
             NetworkAddress::RegisterAddress(register_address) => format!(
                 "NetworkAddress::RegisterAddress({} - ",
                 &register_address.to_hex()[0..6]
@@ -244,6 +260,9 @@ impl Display for NetworkAddress {
             }
             NetworkAddress::SpendAddress(addr) => {
                 write!(f, "NetworkAddress::SpendAddress({addr:?})")
+            }
+            NetworkAddress::ScratchpadAddress(addr) => {
+                write!(f, "NetworkAddress::ScratchpadAddress({addr:?})")
             }
             NetworkAddress::RegisterAddress(addr) => {
                 write!(f, "NetworkAddress::RegisterAddress({addr:?})")
@@ -375,61 +394,9 @@ impl<'a> std::fmt::Debug for PrettyPrintRecordKey<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{NetworkAddress, PrettyPrintRecordKey};
+    use crate::NetworkAddress;
     use bls::rand::thread_rng;
-    use bytes::Bytes;
-    use libp2p::kad::{KBucketKey, RecordKey};
     use sn_transfers::SpendAddress;
-
-    // A struct that implements hex representation of RecordKey using `bytes::Bytes`
-    struct OldRecordKeyPrint(RecordKey);
-
-    // old impl using Bytes
-    impl std::fmt::Display for OldRecordKeyPrint {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let b: Vec<u8> = self.0.as_ref().to_vec();
-            let record_key_b = Bytes::from(b);
-            let record_key_str = &format!("{record_key_b:64x}")[0..6]; // only the first 6 chars are logged
-            write!(
-                f,
-                "{record_key_str}({:?})",
-                OldKBucketKeyPrint(NetworkAddress::from_record_key(&self.0).as_kbucket_key())
-            )
-        }
-    }
-
-    impl std::fmt::Debug for OldRecordKeyPrint {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{self}")
-        }
-    }
-
-    // A struct that implements hex representation of KBucketKey using `bytes::Bytes`
-    pub struct OldKBucketKeyPrint(KBucketKey<Vec<u8>>);
-
-    // old impl using Bytes
-    impl std::fmt::Display for OldKBucketKeyPrint {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let kbucket_key_b = Bytes::from(self.0.hashed_bytes().to_vec());
-            write!(f, "{kbucket_key_b:64x}")
-        }
-    }
-
-    impl std::fmt::Debug for OldKBucketKeyPrint {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{self}")
-        }
-    }
-
-    #[test]
-    fn verify_custom_hex_representation() {
-        let random = xor_name::XorName::random(&mut thread_rng());
-        let key = RecordKey::new(&random.0);
-        let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
-        let old_record_key = OldRecordKeyPrint(key);
-
-        assert_eq!(format!("{pretty_key:?}"), format!("{old_record_key:?}"));
-    }
 
     #[test]
     fn verify_spend_addr_is_actionable() {

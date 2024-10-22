@@ -15,8 +15,6 @@ use lazy_static::lazy_static;
 use libp2p::{multiaddr::Protocol, Multiaddr};
 use rand::{seq::SliceRandom, thread_rng};
 use reqwest::Client;
-#[cfg(feature = "network-contacts")]
-use sn_protocol::version::get_network_version;
 use std::time::Duration;
 use tracing::*;
 use url::Url;
@@ -24,11 +22,8 @@ use url::Url;
 #[cfg(feature = "network-contacts")]
 lazy_static! {
     // URL containing the multi-addresses of the bootstrap nodes.
-    pub static ref NETWORK_CONTACTS_URL: String = {
-        let version = get_network_version();
-        let version_prefix = if !version.is_empty() { format!("{version}-") } else { version.to_string() };
-        format!("https://sn-testnet.s3.eu-west-2.amazonaws.com/{version_prefix}network-contacts")
-    };
+    pub static ref NETWORK_CONTACTS_URL: String =
+       "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts".to_string();
 }
 
 // The maximum number of retries to be performed while trying to get peers from a URL.
@@ -60,7 +55,7 @@ pub struct PeersArgs {
 
     /// Specify the URL to fetch the network contacts from.
     ///
-    /// This argument will be overridden if the "peers" argument is set or if the `local-discovery`
+    /// This argument will be overridden if the "peers" argument is set or if the `local`
     /// feature flag is enabled.
     #[cfg(feature = "network-contacts")]
     #[clap(long, conflicts_with = "first")]
@@ -75,7 +70,7 @@ impl PeersArgs {
     /// Otherwise, peers are obtained in the following order of precedence:
     /// * The `--peer` argument.
     /// * The `SAFE_PEERS` environment variable.
-    /// * Using the `local-discovery` feature, which will return an empty peer list.
+    /// * Using the `local` feature, which will return an empty peer list.
     /// * Using the `network-contacts` feature, which will download the peer list from a file on S3.
     ///
     /// Note: the current behaviour is that `--peer` and `SAFE_PEERS` will be combined. Some tests
@@ -91,7 +86,7 @@ impl PeersArgs {
     /// Otherwise, peers are obtained in the following order of precedence:
     /// * The `--peer` argument.
     /// * The `SAFE_PEERS` environment variable.
-    /// * Using the `local-discovery` feature, which will return an empty peer list.
+    /// * Using the `local` feature, which will return an empty peer list.
     ///
     /// This will not fetch the peers from network-contacts even if the `network-contacts` feature is enabled. Use
     /// get_peers() instead.
@@ -111,11 +106,9 @@ impl PeersArgs {
         let mut peers = if !self.peers.is_empty() {
             info!("Using peers supplied with the --peer argument(s) or SAFE_PEERS");
             self.peers
-        } else if cfg!(feature = "local-discovery") {
+        } else if cfg!(feature = "local") {
             info!("No peers given");
-            info!(
-            "The `local-discovery` feature is enabled, so peers will be discovered through mDNS."
-        );
+            info!("The `local` feature is enabled, so peers will be discovered through mDNS.");
             return Ok(vec![]);
         } else if skip_network_contacts {
             info!("Skipping network contacts");
@@ -159,7 +152,7 @@ impl PeersArgs {
 }
 
 /// Parse strings like `1.2.3.4:1234` and `/ip4/1.2.3.4/tcp/1234` into a multiaddr.
-pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
+pub fn parse_peer_addr(addr: &str) -> std::result::Result<Multiaddr, libp2p::multiaddr::Error> {
     // Parse valid IPv4 socket address, e.g. `1.2.3.4:1234`.
     if let Ok(addr) = addr.parse::<std::net::SocketAddrV4>() {
         let start_addr = Multiaddr::from(*addr.ip());
@@ -180,12 +173,7 @@ pub fn parse_peer_addr(addr: &str) -> Result<Multiaddr> {
     }
 
     // Parse any valid multiaddr string
-    if let Ok(addr) = addr.parse::<Multiaddr>() {
-        debug!("Parsing a full multiaddr: {:?}", addr);
-        return Ok(addr);
-    }
-
-    Err(Error::InvalidPeerAddr)
+    addr.parse::<Multiaddr>()
 }
 
 /// Get and parse a list of peers from a URL. The URL should contain one multiaddr per line.
@@ -249,6 +237,6 @@ pub async fn get_peers_from_url(url: Url) -> Result<Vec<Multiaddr>> {
         trace!(
             "Failed to get peers from URL, retrying {retries}/{MAX_RETRIES_ON_GET_PEERS_FROM_URL}"
         );
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 }

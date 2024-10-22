@@ -39,7 +39,7 @@ impl std::hash::Hash for RegisterOp {
 
 impl RegisterOp {
     /// Create a new RegisterOp
-    pub(crate) fn new(
+    pub fn new(
         address: RegisterAddress,
         crdt_op: MerkleDagEntry<Entry>,
         signer: &SecretKey,

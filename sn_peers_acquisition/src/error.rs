@@ -5,7 +5,7 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Could not parse the supplied multiaddr or socket address")]
-    InvalidPeerAddr,
+    InvalidPeerAddr(#[from] libp2p::multiaddr::Error),
     #[error("Could not obtain network contacts from {0} after {1} retries")]
     FailedToObtainPeersFromUrl(String, usize),
     #[error("No valid multaddr was present in the contacts file at {0}")]

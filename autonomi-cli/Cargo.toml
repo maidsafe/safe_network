@@ -1,0 +1,57 @@
+[package]
+name = "autonomi-cli"
+version = "0.1.1"
+edition = "2021"
+
+[[bin]]
+name = "autonomi"
+path = "src/main.rs"
+
+[features]
+default = ["metrics"]
+local = ["sn_peers_acquisition/local", "autonomi/local"]
+metrics = ["sn_logging/process-metrics"]
+network-contacts = ["sn_peers_acquisition/network-contacts"]
+
+[[bench]]
+name = "files"
+harness = false
+
+[dependencies]
+autonomi = { path = "../autonomi", version = "0.2.0", features = [
+    "data",
+    "fs",
+    "registers",
+    "loud",
+] }
+clap = { version = "4.2.1", features = ["derive"] }
+color-eyre = "~0.6"
+dirs-next = "~2.0.0"
+indicatif = { version = "0.17.5", features = ["tokio"] }
+tokio = { version = "1.32.0", features = [
+    "io-util",
+    "macros",
+    "parking_lot",
+    "rt",
+    "sync",
+    "time",
+    "fs",
+] }
+tracing = { version = "~0.1.26" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.4" }
+sn_build_info = { path = "../sn_build_info", version = "0.1.16" }
+sn_logging = { path = "../sn_logging", version = "0.2.37" }
+
+[dev-dependencies]
+autonomi = { path = "../autonomi", version = "0.2.0", features = [
+    "data",
+    "fs",
+] }
+eyre = "0.6.8"
+criterion = "0.5.1"
+tempfile = "3.6.0"
+rand = { version = "~0.8.5", features = ["small_rng"] }
+rayon = "1.8.0"
+
+[lints]
+workspace = true

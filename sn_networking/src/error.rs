@@ -105,6 +105,8 @@ pub enum NetworkError {
     Wallet(#[from] sn_transfers::WalletError),
     #[error("Transfer Error {0}")]
     Transfer(#[from] sn_transfers::TransferError),
+    #[error("Evm payment Error {0}")]
+    EvmPaymemt(#[from] sn_evm::EvmError),
 
     #[error("Failed to sign the message with the PeerId keypair")]
     SigningFailed(#[from] libp2p::identity::SigningError),
@@ -181,6 +183,9 @@ pub enum NetworkError {
 
     #[error("Error setting up behaviour: {0}")]
     BahviourErr(String),
+
+    #[error("Register already exists at this address")]
+    RegisterAlreadyExists,
 }
 
 #[cfg(test)]

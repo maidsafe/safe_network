@@ -8,7 +8,7 @@ Accepted
 
 Idle nodes in a network of moderate data have a high ongoing bandwidth.
 
-This appears to be because of the identify polling of nodes, which occurs at the deafult libp2p rate, of once per 5 minutes.
+This appears to be because of the identify polling of nodes, which occurs at the default libp2p rate, of once per 5 minutes.
 
 We see ~1mb/s traffic on nodes in a moderate network.
 

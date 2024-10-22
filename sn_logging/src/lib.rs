@@ -17,12 +17,12 @@ use layers::TracingLayers;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tracing::info;
-use tracing_appender::non_blocking::WorkerGuard;
 use tracing_core::dispatcher::DefaultGuard;
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 
 pub use error::Error;
 pub use layers::ReloadHandle;
+pub use tracing_appender::non_blocking::WorkerGuard;
 
 // re-exporting the tracing crate's Level as it is used in our public API
 pub use tracing_core::Level;
@@ -268,7 +268,7 @@ impl LogBuilder {
                 let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
                 let path = dir
                     .join("safe")
-                    .join("client")
+                    .join("autonomi")
                     .join("logs")
                     .join(format!("log_{timestamp}"));
                 LogOutputDest::Path(path)

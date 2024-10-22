@@ -106,6 +106,10 @@ pub struct PaymentQuote {
     pub timestamp: SystemTime,
     /// quoting metrics being used to generate this quote
     pub quoting_metrics: QuotingMetrics,
+    /// list of bad_nodes that client shall not pick as a payee
+    /// in `serialised` format to avoid cyclic dependent on sn_protocol
+    #[debug(skip)]
+    pub bad_nodes: Vec<u8>,
     /// node's public key that can verify the signature
     #[debug(skip)]
     pub pub_key: Vec<u8>,
@@ -121,6 +125,7 @@ impl PaymentQuote {
             cost: NanoTokens::zero(),
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
+            bad_nodes: vec![],
             pub_key: vec![],
             signature: vec![],
         }
@@ -132,6 +137,7 @@ impl PaymentQuote {
         cost: NanoTokens,
         timestamp: SystemTime,
         quoting_metrics: &QuotingMetrics,
+        serialised_bad_nodes: &[u8],
     ) -> Vec<u8> {
         let mut bytes = xorname.to_vec();
         bytes.extend_from_slice(&cost.to_bytes());
@@ -144,6 +150,7 @@ impl PaymentQuote {
         );
         let serialised_quoting_metrics = rmp_serde::to_vec(quoting_metrics).unwrap_or_default();
         bytes.extend_from_slice(&serialised_quoting_metrics);
+        bytes.extend_from_slice(serialised_bad_nodes);
         bytes
     }
 
@@ -168,6 +175,7 @@ impl PaymentQuote {
             self.cost,
             self.timestamp,
             &self.quoting_metrics,
+            &self.bad_nodes,
         );
 
         if !pub_key.verify(&bytes, &self.signature) {
@@ -196,6 +204,7 @@ impl PaymentQuote {
             cost,
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
+            bad_nodes: vec![],
             pub_key: vec![],
             signature: vec![],
         }
@@ -294,6 +303,7 @@ mod tests {
             quote.cost,
             quote.timestamp,
             &quote.quoting_metrics,
+            &[],
         );
         let signature = if let Ok(sig) = keypair.sign(&bytes) {
             sig

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-10-22
+
+Unfortunately the entry for this release will not have fully detailed changes. This release is
+special in that it's very large and moves us to a new, EVM-based payments system. The Github Release
+description has a list of all the merged PRs. If you want more detail, consult the PR list. Normal
+service will resume for subsequent releases.
+
+Here is a brief summary of the changes:
+
+- A new `autonomi` CLI that uses EVM payments and replaces the previous `safe` CLI.
+- A new `autonomi` API that replaces `sn_client` with a simpler interface.
+- The node has been changed to use EVM payments.
+- The node runs without a wallet. This increases security and removes the need for forwarding.
+- Data is paid for through an EVM smart contract. Payment proofs are not linked to the original
+  data.
+- Payment royalties have been removed, resulting in less centralization and fees.
+
 ## 2024-10-08
 
 ### Network
@@ -15,14 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Optimize auditor tracking by not to re-attempt fetched spend.
 - Optimize auditor tracking function by using DashMap and stream.
-
-## 2024-10-07
-
-### Network
-
-#### Changed
-
-- The auditor's webservice has new endpoints that allow it to be restarted or terminated
 
 ## 2024-10-07
 

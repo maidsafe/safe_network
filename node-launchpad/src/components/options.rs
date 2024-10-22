@@ -192,10 +192,14 @@ impl Component for Options {
         .style(Style::default().fg(GHOST_WHITE));
 
         // Beta Rewards Program
-        let beta_legend = " Edit Discord Username ";
+        let beta_legend = if self.discord_username.is_empty() {
+            " Add Wallet "
+        } else {
+            " Change Wallet "
+        };
         let beta_key = " [Ctrl+B] ";
         let block2 = Block::default()
-            .title(" Beta Rewards Program ")
+            .title(" Wallet ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
@@ -204,7 +208,7 @@ impl Component for Options {
             vec![Row::new(vec![
                 Cell::from(
                     Line::from(vec![Span::styled(
-                        " Discord Username: ",
+                        " Wallet Address: ",
                         Style::default().fg(LIGHT_PERIWINKLE),
                     )])
                     .alignment(Alignment::Left),

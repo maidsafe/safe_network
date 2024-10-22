@@ -9,37 +9,31 @@
 #![allow(clippy::mutable_key_type)]
 mod common;
 
-use crate::common::{
+use autonomi::Client;
+use bytes::Bytes;
+use common::{
     client::{get_all_rpc_addresses, get_client_and_funded_wallet},
     get_all_peer_ids, get_safenode_rpc_client, NodeRestart,
 };
-use assert_fs::TempDir;
-use common::client::get_wallet;
 use eyre::{eyre, Result};
 use libp2p::{
     kad::{KBucketKey, RecordKey},
     PeerId,
 };
 use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, FilesApi, Uploader, WalletClient};
 use sn_logging::LogBuilder;
-use sn_networking::sort_peers_by_key;
+use sn_networking::{sleep, sort_peers_by_key};
 use sn_protocol::{
     safenode_proto::{NodeInfoRequest, RecordAddressesRequest},
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
-use sn_registers::{Permissions, RegisterAddress};
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
-    fs::File,
-    io::Write,
     net::SocketAddr,
-    path::PathBuf,
     time::{Duration, Instant},
 };
 use tonic::Request;
 use tracing::{debug, error, info};
-use xor_name::XorName;
 
 const CHUNK_SIZE: usize = 1024;
 
@@ -103,16 +97,10 @@ async fn verify_data_location() -> Result<()> {
     let node_rpc_address = get_all_rpc_addresses(true)?;
     let mut all_peers = get_all_peer_ids(&node_rpc_address).await?;
 
-    // Store chunks
-    println!("Creating a client and paying wallet...");
-    debug!("Creating a client and paying wallet...");
+    let (client, wallet) = get_client_and_funded_wallet().await;
 
-    let paying_wallet_dir = TempDir::new()?;
-
-    let (client, _paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
-
-    store_chunks(client.clone(), chunk_count, paying_wallet_dir.to_path_buf()).await?;
-    store_registers(client, register_count, paying_wallet_dir.to_path_buf()).await?;
+    store_chunks(&client, chunk_count, &wallet).await?;
+    store_registers(&client, register_count, &wallet).await?;
 
     // Verify data location initially
     verify_location(&all_peers, &node_rpc_address).await?;
@@ -325,7 +313,11 @@ async fn verify_location(all_peers: &Vec<PeerId>, node_rpc_addresses: &[SocketAd
 }
 
 // Generate random Chunks and store them to the Network
-async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -> Result<()> {
+async fn store_chunks(
+    client: &Client,
+    chunk_count: usize,
+    wallet: &evmlib::wallet::Wallet,
+) -> Result<()> {
     let start = Instant::now();
     let mut rng = OsRng;
 
@@ -335,39 +327,19 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
             break;
         }
 
-        let chunks_dir = TempDir::new()?;
-
         let random_bytes: Vec<u8> = ::std::iter::repeat(())
             .map(|()| rng.gen::<u8>())
             .take(CHUNK_SIZE)
             .collect();
 
-        let file_path = chunks_dir.join("random_content");
-        let mut output_file = File::create(file_path.clone())?;
-        output_file.write_all(&random_bytes)?;
+        let random_bytes = Bytes::from(random_bytes);
 
-        let (head_chunk_addr, _data_map, _file_size, chunks) =
-            FilesApi::chunk_file(&file_path, chunks_dir.path(), true)?;
-
-        debug!(
-            "Paying storage for ({}) new Chunk/s of file ({} bytes) at {head_chunk_addr:?}",
-            chunks.len(),
-            random_bytes.len()
-        );
-
-        let key =
-            PrettyPrintRecordKey::from(&RecordKey::new(&head_chunk_addr.xorname())).into_owned();
-
-        let mut uploader = Uploader::new(client.clone(), wallet_dir.clone());
-        uploader.set_show_holders(true);
-        uploader.set_verify_store(false);
-        uploader.insert_chunk_paths(chunks);
-        let _upload_stats = uploader.start_upload().await?;
+        client.data_put(random_bytes, wallet).await?;
 
         uploaded_chunks_count += 1;
 
-        println!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
-        info!("Stored Chunk with {head_chunk_addr:?} / {key:?}");
+        println!("Stored Chunk with len {CHUNK_SIZE}");
+        info!("Stored Chunk with len {CHUNK_SIZE}");
     }
 
     println!(
@@ -385,30 +357,42 @@ async fn store_chunks(client: Client, chunk_count: usize, wallet_dir: PathBuf) -
     Ok(())
 }
 
-async fn store_registers(client: Client, register_count: usize, wallet_dir: PathBuf) -> Result<()> {
+async fn store_registers(
+    client: &Client,
+    register_count: usize,
+    wallet: &evmlib::wallet::Wallet,
+) -> Result<()> {
     let start = Instant::now();
-    let paying_wallet = get_wallet(&wallet_dir);
-    let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
     let mut uploaded_registers_count = 0;
     loop {
         if uploaded_registers_count >= register_count {
             break;
         }
-        let meta = XorName(rand::random());
-        let owner = client.signer_pk();
+        // Owner key of the register.
+        let key = bls::SecretKey::random();
 
-        let addr = RegisterAddress::new(meta, owner);
-        println!("Creating Register at {addr:?}");
-        debug!("Creating Register at {addr:?}");
-
-        let (mut register, ..) = client
-            .create_and_pay_for_register(meta, &mut wallet_client, true, Permissions::default())
+        // Create a register with the value [1, 2, 3, 4]
+        let rand_name: String = rand::thread_rng()
+            .sample_iter(&rand::distributions::Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
+        let register = client
+            .register_create(vec![1, 2, 3, 4].into(), &rand_name, key.clone(), wallet)
             .await?;
 
-        println!("Editing Register at {addr:?}");
-        debug!("Editing Register at {addr:?}");
-        register.write_online("entry".as_bytes(), true).await?;
+        println!("Created Register at {:?}", register.address());
+        debug!("Created Register at {:?}", register.address());
+        sleep(Duration::from_secs(5)).await;
+
+        // Update the register with the value [5, 6, 7, 8]
+        client
+            .register_update(register.clone(), vec![5, 6, 7, 8].into(), key)
+            .await?;
+
+        println!("Updated Register at {:?}", register.address());
+        debug!("Updated Register at {:?}", register.address());
 
         uploaded_registers_count += 1;
     }
@@ -422,6 +406,6 @@ async fn store_registers(client: Client, register_count: usize, wallet_dir: Path
     );
 
     // to make sure the last register was stored
-    tokio::time::sleep(Duration::from_secs(10)).await;
+    sleep(Duration::from_secs(10)).await;
     Ok(())
 }

@@ -1,25 +1,34 @@
-use std::time::Duration;
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+#![cfg(feature = "data")]
 
 use autonomi::Client;
+use eyre::Result;
+use sn_logging::LogBuilder;
+use std::time::Duration;
+use test_utils::{evm::get_funded_wallet, gen_random_data, peers_from_env};
 use tokio::time::sleep;
 
-mod common;
-
-#[cfg(feature = "data")]
 #[tokio::test]
-async fn put() {
-    common::enable_logging();
+async fn put() -> Result<()> {
+    let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("put", false);
 
-    let mut client = Client::connect(&[]).await.unwrap();
-    let mut wallet = common::load_hot_wallet_from_faucet();
-    let data = common::gen_random_data(1024 * 1024 * 10);
+    let client = Client::connect(&peers_from_env()?).await?;
+    let wallet = get_funded_wallet();
+    let data = gen_random_data(1024 * 1024 * 10);
 
-    // let quote = client.quote(data.clone()).await.unwrap();
-    // let payment = client.pay(quote, &mut wallet).await.unwrap();
-    let addr = client.put(data.clone(), &mut wallet).await.unwrap();
+    let addr = client.data_put(data.clone(), &wallet).await?;
 
-    sleep(Duration::from_secs(2)).await;
+    sleep(Duration::from_secs(10)).await;
 
-    let data_fetched = client.get(addr).await.unwrap();
+    let data_fetched = client.data_get(addr).await?;
     assert_eq!(data, data_fetched, "data fetched should match data put");
+
+    Ok(())
 }

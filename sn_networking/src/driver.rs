@@ -6,10 +6,6 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-#[cfg(feature = "open-metrics")]
-use crate::metrics::NetworkMetricsRecorder;
-#[cfg(feature = "open-metrics")]
-use crate::metrics_service::run_metrics_server;
 use crate::{
     bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
     circular_vec::CircularVec,
@@ -27,10 +23,14 @@ use crate::{
     target_arch::{interval, spawn, Instant},
     GetRecordError, Network, CLOSE_GROUP_SIZE,
 };
+#[cfg(feature = "open-metrics")]
+use crate::{
+    metrics::service::run_metrics_server, metrics::NetworkMetricsRecorder, MetricsRegistries,
+};
 use crate::{transport, NodeIssue};
 use futures::future::Either;
 use futures::StreamExt;
-#[cfg(feature = "local-discovery")]
+#[cfg(feature = "local")]
 use libp2p::mdns;
 use libp2p::Transport as _;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
@@ -46,17 +46,18 @@ use libp2p::{
     Multiaddr, PeerId,
 };
 #[cfg(feature = "open-metrics")]
-use prometheus_client::{metrics::info::Info, registry::Registry};
+use prometheus_client::metrics::info::Info;
+use sn_evm::PaymentQuote;
 use sn_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
-    storage::RetryStrategy,
+    storage::{try_deserialize_record, RetryStrategy},
     version::{
         IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR,
         REQ_RESPONSE_VERSION_STR,
     },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
-use sn_transfers::PaymentQuote;
+use sn_registers::SignedRegister;
 use std::{
     collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
     fmt::Debug,
@@ -75,6 +76,8 @@ pub(crate) const CLOSET_RECORD_CHECK_INTERVAL: Duration = Duration::from_secs(15
 
 /// Interval over which we query relay manager to check if we can make any more reservations.
 pub(crate) const RELAY_MANAGER_RESERVATION_INTERVAL: Duration = Duration::from_secs(30);
+
+const KAD_STREAM_PROTOCOL_ID: StreamProtocol = StreamProtocol::new("/autonomi/kad/1.0.0");
 
 /// The ways in which the Get Closest queries are used.
 pub(crate) enum PendingGetClosestType {
@@ -138,11 +141,41 @@ pub struct GetRecordCfg {
     pub target_record: Option<Record>,
     /// Logs if the record was not fetched from the provided set of peers.
     pub expected_holders: HashSet<PeerId>,
+    /// For register record, only root value shall be checked, not the entire content.
+    pub is_register: bool,
 }
 
 impl GetRecordCfg {
     pub fn does_target_match(&self, record: &Record) -> bool {
-        self.target_record.as_ref().is_some_and(|t| t == record)
+        if let Some(ref target_record) = self.target_record {
+            if self.is_register {
+                let pretty_key = PrettyPrintRecordKey::from(&target_record.key);
+
+                let fetched_register = match try_deserialize_record::<SignedRegister>(record) {
+                    Ok(fetched_register) => fetched_register,
+                    Err(err) => {
+                        error!("When try to deserialize register from fetched record {pretty_key:?}, have error {err:?}");
+                        return false;
+                    }
+                };
+                let target_register = match try_deserialize_record::<SignedRegister>(target_record)
+                {
+                    Ok(target_register) => target_register,
+                    Err(err) => {
+                        error!("When try to deserialize register from target record {pretty_key:?}, have error {err:?}");
+                        return false;
+                    }
+                };
+
+                target_register.base_register() == fetched_register.base_register()
+                    && target_register.ops() == fetched_register.ops()
+            } else {
+                target_record == record
+            }
+        } else {
+            // Not have target_record to check with
+            true
+        }
     }
 }
 
@@ -203,7 +236,7 @@ pub(super) struct NodeBehaviour {
     pub(super) blocklist:
         libp2p::allow_block_list::Behaviour<libp2p::allow_block_list::BlockedPeers>,
     pub(super) identify: libp2p::identify::Behaviour,
-    #[cfg(feature = "local-discovery")]
+    #[cfg(feature = "local")]
     pub(super) mdns: mdns::tokio::Behaviour,
     #[cfg(feature = "upnp")]
     pub(super) upnp: libp2p::swarm::behaviour::toggle::Toggle<libp2p::upnp::tokio::Behaviour>,
@@ -218,15 +251,12 @@ pub struct NetworkBuilder {
     is_behind_home_network: bool,
     keypair: Keypair,
     local: bool,
-    root_dir: PathBuf,
     listen_addr: Option<SocketAddr>,
     request_timeout: Option<Duration>,
     concurrency_limit: Option<usize>,
     initial_peers: Vec<Multiaddr>,
     #[cfg(feature = "open-metrics")]
-    metrics_metadata_registry: Option<Registry>,
-    #[cfg(feature = "open-metrics")]
-    metrics_registry: Option<Registry>,
+    metrics_registries: Option<MetricsRegistries>,
     #[cfg(feature = "open-metrics")]
     metrics_server_port: Option<u16>,
     #[cfg(feature = "upnp")]
@@ -234,20 +264,17 @@ pub struct NetworkBuilder {
 }
 
 impl NetworkBuilder {
-    pub fn new(keypair: Keypair, local: bool, root_dir: PathBuf) -> Self {
+    pub fn new(keypair: Keypair, local: bool) -> Self {
         Self {
             is_behind_home_network: false,
             keypair,
             local,
-            root_dir,
             listen_addr: None,
             request_timeout: None,
             concurrency_limit: None,
             initial_peers: Default::default(),
             #[cfg(feature = "open-metrics")]
-            metrics_metadata_registry: None,
-            #[cfg(feature = "open-metrics")]
-            metrics_registry: None,
+            metrics_registries: None,
             #[cfg(feature = "open-metrics")]
             metrics_server_port: None,
             #[cfg(feature = "upnp")]
@@ -275,18 +302,11 @@ impl NetworkBuilder {
         self.initial_peers = initial_peers;
     }
 
-    /// Set the Registry that will be served at the `/metadata` endpoint. This Registry should contain only the static
-    /// info about the peer. Configure the `metrics_server_port` to enable the metrics server.
-    #[cfg(feature = "open-metrics")]
-    pub fn metrics_metadata_registry(&mut self, metrics_metadata_registry: Registry) {
-        self.metrics_metadata_registry = Some(metrics_metadata_registry);
-    }
-
-    /// Set the Registry that will be served at the `/metrics` endpoint.
+    /// Set the registries used inside the metrics server.
     /// Configure the `metrics_server_port` to enable the metrics server.
     #[cfg(feature = "open-metrics")]
-    pub fn metrics_registry(&mut self, metrics_registry: Registry) {
-        self.metrics_registry = Some(metrics_registry);
+    pub fn metrics_registries(&mut self, registries: MetricsRegistries) {
+        self.metrics_registries = Some(registries);
     }
 
     #[cfg(feature = "open-metrics")]
@@ -313,8 +333,11 @@ impl NetworkBuilder {
     /// # Errors
     ///
     /// Returns an error if there is a problem initializing the mDNS behaviour.
-    pub fn build_node(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
-        let mut kad_cfg = kad::Config::default();
+    pub fn build_node(
+        self,
+        root_dir: PathBuf,
+    ) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
+        let mut kad_cfg = kad::Config::new(KAD_STREAM_PROTOCOL_ID);
         let _ = kad_cfg
             .set_kbucket_inserts(libp2p::kad::BucketInserts::Manual)
             // how often a node will replicate records that it has stored, aka copying the key-value pair to other nodes
@@ -341,7 +364,7 @@ impl NetworkBuilder {
 
         let store_cfg = {
             // Configures the disk_store to store records under the provided path and increase the max record size
-            let storage_dir_path = self.root_dir.join("record_store");
+            let storage_dir_path = root_dir.join("record_store");
             if let Err(error) = std::fs::create_dir_all(&storage_dir_path) {
                 return Err(NetworkError::FailedToCreateRecordStoreDir {
                     path: storage_dir_path,
@@ -351,7 +374,7 @@ impl NetworkBuilder {
             NodeRecordStoreConfig {
                 max_value_bytes: MAX_PACKET_SIZE, // TODO, does this need to be _less_ than MAX_PACKET_SIZE
                 storage_dir: storage_dir_path,
-                historic_quote_dir: self.root_dir.clone(),
+                historic_quote_dir: root_dir.clone(),
                 ..Default::default()
             }
         };
@@ -399,7 +422,7 @@ impl NetworkBuilder {
     pub fn build_client(self) -> Result<(Network, mpsc::Receiver<NetworkEvent>, SwarmDriver)> {
         // Create a Kademlia behaviour for client mode, i.e. set req/resp protocol
         // to outbound-only mode and don't listen on any address
-        let mut kad_cfg = kad::Config::default(); // default query timeout is 60 secs
+        let mut kad_cfg = kad::Config::new(KAD_STREAM_PROTOCOL_ID); // default query timeout is 60 secs
 
         // 1mb packet size
         let _ = kad_cfg
@@ -446,11 +469,11 @@ impl NetworkBuilder {
         );
 
         #[cfg(feature = "open-metrics")]
-        let mut metrics_registry = self.metrics_registry.unwrap_or_default();
+        let mut metrics_registries = self.metrics_registries.unwrap_or_default();
 
         // ==== Transport ====
         #[cfg(feature = "open-metrics")]
-        let main_transport = transport::build_transport(&self.keypair, &mut metrics_registry);
+        let main_transport = transport::build_transport(&self.keypair, &mut metrics_registries);
         #[cfg(not(feature = "open-metrics"))]
         let main_transport = transport::build_transport(&self.keypair);
         let transport = if !self.local {
@@ -480,18 +503,18 @@ impl NetworkBuilder {
             .boxed();
 
         #[cfg(feature = "open-metrics")]
-        let network_metrics = if let Some(port) = self.metrics_server_port {
-            let network_metrics = NetworkMetricsRecorder::new(&mut metrics_registry);
-            let mut metadata_registry = self.metrics_metadata_registry.unwrap_or_default();
-            let network_metadata_sub_registry =
-                metadata_registry.sub_registry_with_prefix("sn_networking");
+        let metrics_recorder = if let Some(port) = self.metrics_server_port {
+            let metrics_recorder = NetworkMetricsRecorder::new(&mut metrics_registries);
+            let metadata_sub_reg = metrics_registries
+                .metadata
+                .sub_registry_with_prefix("sn_networking");
 
-            network_metadata_sub_registry.register(
+            metadata_sub_reg.register(
                 "peer_id",
                 "Identifier of a peer of the network",
                 Info::new(vec![("peer_id".to_string(), peer_id.to_string())]),
             );
-            network_metadata_sub_registry.register(
+            metadata_sub_reg.register(
                 "identify_protocol_str",
                 "The protocol version string that is used to connect to the correct network",
                 Info::new(vec![(
@@ -500,8 +523,8 @@ impl NetworkBuilder {
                 )]),
             );
 
-            run_metrics_server(metrics_registry, metadata_registry, port);
-            Some(network_metrics)
+            run_metrics_server(metrics_registries, port);
+            Some(metrics_recorder)
         } else {
             None
         };
@@ -543,9 +566,9 @@ impl NetworkBuilder {
                     #[cfg(feature = "open-metrics")]
                     let mut node_record_store = node_record_store;
                     #[cfg(feature = "open-metrics")]
-                    if let Some(metrics) = &network_metrics {
+                    if let Some(metrics_recorder) = &metrics_recorder {
                         node_record_store = node_record_store
-                            .set_record_count_metric(metrics.records_stored.clone());
+                            .set_record_count_metric(metrics_recorder.records_stored.clone());
                     }
 
                     let store = UnifiedRecordStore::Node(node_record_store);
@@ -561,7 +584,7 @@ impl NetworkBuilder {
             }
         };
 
-        #[cfg(feature = "local-discovery")]
+        #[cfg(feature = "local")]
         let mdns_config = mdns::Config {
             // lower query interval to speed up peer discovery
             // this increases traffic, but means we no longer have clients unable to connect
@@ -570,7 +593,7 @@ impl NetworkBuilder {
             ..Default::default()
         };
 
-        #[cfg(feature = "local-discovery")]
+        #[cfg(feature = "local")]
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
         // Identify Behaviour
@@ -616,7 +639,7 @@ impl NetworkBuilder {
             request_response,
             kademlia,
             identify,
-            #[cfg(feature = "local-discovery")]
+            #[cfg(feature = "local")]
             mdns,
         };
 
@@ -643,13 +666,15 @@ impl NetworkBuilder {
             local: self.local,
             is_client,
             is_behind_home_network: self.is_behind_home_network,
+            #[cfg(feature = "open-metrics")]
+            close_group: Vec::with_capacity(CLOSE_GROUP_SIZE),
             peers_in_rt: 0,
             bootstrap,
             relay_manager,
             external_address_manager,
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
-            network_metrics,
+            metrics_recorder,
             // kept here to ensure we can push messages to the channel
             // and not block the processing thread unintentionally
             network_cmd_sender: network_swarm_cmd_sender.clone(),
@@ -678,7 +703,6 @@ impl NetworkBuilder {
             network_swarm_cmd_sender,
             local_swarm_cmd_sender,
             peer_id,
-            self.root_dir,
             self.keypair,
         );
 
@@ -693,6 +717,8 @@ pub struct SwarmDriver {
     pub(crate) local: bool,
     pub(crate) is_client: bool,
     pub(crate) is_behind_home_network: bool,
+    #[cfg(feature = "open-metrics")]
+    pub(crate) close_group: Vec<PeerId>,
     pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousBootstrap,
     pub(crate) external_address_manager: ExternalAddressManager,
@@ -700,7 +726,7 @@ pub struct SwarmDriver {
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
-    pub(crate) network_metrics: Option<NetworkMetricsRecorder>,
+    pub(crate) metrics_recorder: Option<NetworkMetricsRecorder>,
 
     network_cmd_sender: mpsc::Sender<NetworkSwarmCmd>,
     pub(crate) local_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
@@ -965,8 +991,15 @@ impl SwarmDriver {
     pub(crate) fn record_metrics(&self, marker: Marker) {
         marker.log();
         #[cfg(feature = "open-metrics")]
-        if let Some(network_metrics) = self.network_metrics.as_ref() {
-            network_metrics.record_from_marker(marker)
+        if let Some(metrics_recorder) = self.metrics_recorder.as_ref() {
+            metrics_recorder.record_from_marker(marker)
+        }
+    }
+    #[cfg(feature = "open-metrics")]
+    /// Updates metrics that rely on our current close group.
+    pub(crate) fn record_change_in_close_group(&self, new_close_group: Vec<PeerId>) {
+        if let Some(metrics_recorder) = self.metrics_recorder.as_ref() {
+            metrics_recorder.record_change_in_close_group(new_close_group);
         }
     }
 

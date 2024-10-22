@@ -6,9 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+mod subcommands;
+
+use crate::subcommands::evm_network::EvmNetworkCommand;
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
 use libp2p::Multiaddr;
+use sn_evm::RewardsAddress;
 use sn_logging::{LogBuilder, LogFormat};
 use sn_node_manager::{
     add_services::config::PortRange,
@@ -22,22 +26,35 @@ use tracing::Level;
 const DEFAULT_NODE_COUNT: u16 = 25;
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(disable_version_flag = true)]
 pub(crate) struct Cmd {
     /// Available sub commands.
     #[clap(subcommand)]
-    pub cmd: SubCmd,
+    pub cmd: Option<SubCmd>,
 
-    #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
-    verbose: u8,
+    /// Print the crate version.
+    #[clap(long)]
+    pub crate_version: bool,
 
     /// Output debug-level logging to stderr.
     #[clap(long, conflicts_with = "trace")]
     debug: bool,
 
+    /// Print the package version.
+    #[cfg(not(feature = "nightly"))]
+    #[clap(long)]
+    pub package_version: bool,
+
     /// Output trace-level logging to stderr.
     #[clap(long, conflicts_with = "debug")]
     trace: bool,
+
+    #[clap(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
+    verbose: u8,
+
+    /// Print version information.
+    #[clap(long)]
+    version: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -106,6 +123,9 @@ pub enum SubCmd {
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
+        /// Specify what EVM network to use for payments.
+        #[command(subcommand)]
+        evm_network: EvmNetworkCommand,
         /// Set this flag to use the safenode '--home-network' feature.
         ///
         /// This enables the use of safenode services from a home network with a router.
@@ -171,13 +191,6 @@ pub enum SubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         node_port: Option<PortRange>,
-        /// Provide a path for the safenode binary to be used by the service.
-        ///
-        /// Useful for creating the service using a custom built binary.
-        #[clap(long)]
-        path: Option<PathBuf>,
-        #[command(flatten)]
-        peers: PeersArgs,
         /// Specify the owner for the node service.
         ///
         /// This is mainly used for the 'Beta Rewards' programme, for linking your Discord username
@@ -187,6 +200,16 @@ pub enum SubCmd {
         /// run as normal.
         #[clap(long)]
         owner: Option<String>,
+        /// Provide a path for the safenode binary to be used by the service.
+        ///
+        /// Useful for creating the service using a custom built binary.
+        #[clap(long)]
+        path: Option<PathBuf>,
+        #[command(flatten)]
+        peers: PeersArgs,
+        /// Specify the wallet address that will receive the node's earnings.
+        #[clap(long)]
+        rewards_address: RewardsAddress,
         /// Specify an Ipv4Addr for the node's RPC server to run on.
         ///
         /// Useful if you want to expose the RPC server pubilcly. Ports are assigned automatically.
@@ -823,7 +846,7 @@ pub enum LocalSubCmd {
         metrics_port: Option<PortRange>,
         /// Path to a safenode binary.
         ///
-        /// Make sure to enable the local-discovery feature flag on the safenode when compiling the binary.
+        /// Make sure to enable the local feature flag on the safenode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version")]
@@ -868,6 +891,12 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         rpc_port: Option<PortRange>,
+        /// Specify the wallet address that will receive the node's earnings.
+        #[clap(long)]
+        rewards_address: RewardsAddress,
+        /// Optionally specify what EVM network to use for payments.
+        #[command(subcommand)]
+        evm_network: Option<EvmNetworkCommand>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -941,7 +970,7 @@ pub enum LocalSubCmd {
         metrics_port: Option<PortRange>,
         /// Path to a safenode binary
         ///
-        /// Make sure to enable the local-discovery feature flag on the safenode when compiling the binary.
+        /// Make sure to enable the local feature flag on the safenode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version", conflicts_with = "build")]
@@ -985,6 +1014,12 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         rpc_port: Option<PortRange>,
+        /// Specify the wallet address that will receive the node's earnings.
+        #[clap(long)]
+        rewards_address: RewardsAddress,
+        /// Optionally specify what EVM network to use for payments.
+        #[command(subcommand)]
+        evm_network: Option<EvmNetworkCommand>,
         /// Set to skip the network validation process
         #[clap(long)]
         skip_validation: bool,
@@ -1008,6 +1043,26 @@ pub enum LocalSubCmd {
 async fn main() -> Result<()> {
     color_eyre::install()?;
     let args = Cmd::parse();
+
+    if args.version {
+        println!(
+            "{}",
+            sn_build_info::version_string("Autonomi Node Manager", env!("CARGO_PKG_VERSION"), None)
+        );
+        return Ok(());
+    }
+
+    if args.crate_version {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    #[cfg(not(feature = "nightly"))]
+    if args.package_version {
+        println!("{}", sn_build_info::package_version());
+        return Ok(());
+    }
+
     let verbosity = VerbosityLevel::from(args.verbose);
 
     let _log_handle = if args.debug || args.trace {
@@ -1026,13 +1081,14 @@ async fn main() -> Result<()> {
     tracing::info!("Executing cmd: {:?}", args.cmd);
 
     match args.cmd {
-        SubCmd::Add {
+        Some(SubCmd::Add {
             auto_restart,
             auto_set_nat_flags,
             count,
             data_dir_path,
             enable_metrics_server,
             env_variables,
+            evm_network,
             home_network,
             local,
             log_dir_path,
@@ -1045,20 +1101,22 @@ async fn main() -> Result<()> {
             owner,
             path,
             peers,
+            rewards_address,
             rpc_address,
             rpc_port,
             url,
             upnp,
             user,
             version,
-        } => {
-            let _ = cmd::node::add(
+        }) => {
+            cmd::node::add(
                 auto_restart,
                 auto_set_nat_flags,
                 count,
                 data_dir_path,
                 enable_metrics_server,
                 env_variables,
+                Some(evm_network.try_into()?),
                 home_network,
                 local,
                 log_dir_path,
@@ -1070,6 +1128,7 @@ async fn main() -> Result<()> {
                 node_port,
                 owner,
                 peers,
+                rewards_address,
                 rpc_address,
                 rpc_port,
                 path,
@@ -1082,7 +1141,7 @@ async fn main() -> Result<()> {
             .await?;
             Ok(())
         }
-        SubCmd::Auditor(AuditorSubCmd::Add {
+        Some(SubCmd::Auditor(AuditorSubCmd::Add {
             beta_encryption_key,
             env_variables,
             log_dir_path,
@@ -1090,7 +1149,7 @@ async fn main() -> Result<()> {
             peers,
             url,
             version,
-        }) => {
+        })) => {
             cmd::auditor::add(
                 beta_encryption_key,
                 env_variables,
@@ -1103,32 +1162,32 @@ async fn main() -> Result<()> {
             )
             .await
         }
-        SubCmd::Auditor(AuditorSubCmd::Start {}) => cmd::auditor::start(verbosity).await,
-        SubCmd::Auditor(AuditorSubCmd::Stop {}) => cmd::auditor::stop(verbosity).await,
-        SubCmd::Auditor(AuditorSubCmd::Upgrade {
+        Some(SubCmd::Auditor(AuditorSubCmd::Start {})) => cmd::auditor::start(verbosity).await,
+        Some(SubCmd::Auditor(AuditorSubCmd::Stop {})) => cmd::auditor::stop(verbosity).await,
+        Some(SubCmd::Auditor(AuditorSubCmd::Upgrade {
             do_not_start,
             force,
             env_variables,
             url,
             version,
-        }) => {
+        })) => {
             cmd::auditor::upgrade(do_not_start, force, env_variables, url, version, verbosity).await
         }
-        SubCmd::Balance {
+        Some(SubCmd::Balance {
             peer_id: peer_ids,
             service_name: service_names,
-        } => cmd::node::balance(peer_ids, service_names, verbosity).await,
-        SubCmd::Daemon(DaemonSubCmd::Add {
+        }) => cmd::node::balance(peer_ids, service_names, verbosity).await,
+        Some(SubCmd::Daemon(DaemonSubCmd::Add {
             address,
             env_variables,
             port,
             path,
             url,
             version,
-        }) => cmd::daemon::add(address, env_variables, port, path, url, version, verbosity).await,
-        SubCmd::Daemon(DaemonSubCmd::Start {}) => cmd::daemon::start(verbosity).await,
-        SubCmd::Daemon(DaemonSubCmd::Stop {}) => cmd::daemon::stop(verbosity).await,
-        SubCmd::Faucet(faucet_command) => match faucet_command {
+        })) => cmd::daemon::add(address, env_variables, port, path, url, version, verbosity).await,
+        Some(SubCmd::Daemon(DaemonSubCmd::Start {})) => cmd::daemon::start(verbosity).await,
+        Some(SubCmd::Daemon(DaemonSubCmd::Stop {})) => cmd::daemon::stop(verbosity).await,
+        Some(SubCmd::Faucet(faucet_command)) => match faucet_command {
             FaucetSubCmd::Add {
                 env_variables,
                 log_dir_path,
@@ -1168,7 +1227,7 @@ async fn main() -> Result<()> {
                 .await
             }
         },
-        SubCmd::Local(local_command) => match local_command {
+        Some(SubCmd::Local(local_command)) => match local_command {
             LocalSubCmd::Join {
                 build,
                 count,
@@ -1185,8 +1244,15 @@ async fn main() -> Result<()> {
                 owner_prefix,
                 peers,
                 rpc_port,
+                rewards_address,
+                evm_network,
                 skip_validation: _,
             } => {
+                let evm_network = if let Some(evm_network) = evm_network {
+                    Some(evm_network.try_into()?)
+                } else {
+                    None
+                };
                 cmd::local::join(
                     build,
                     count,
@@ -1203,6 +1269,8 @@ async fn main() -> Result<()> {
                     owner_prefix,
                     peers,
                     rpc_port,
+                    rewards_address,
+                    evm_network,
                     true,
                     verbosity,
                 )
@@ -1225,8 +1293,15 @@ async fn main() -> Result<()> {
                 owner,
                 owner_prefix,
                 rpc_port,
+                rewards_address,
+                evm_network,
                 skip_validation: _,
             } => {
+                let evm_network = if let Some(evm_network) = evm_network {
+                    Some(evm_network.try_into()?)
+                } else {
+                    None
+                };
                 cmd::local::run(
                     build,
                     clean,
@@ -1243,6 +1318,8 @@ async fn main() -> Result<()> {
                     owner,
                     owner_prefix,
                     rpc_port,
+                    rewards_address,
+                    evm_network,
                     true,
                     verbosity,
                 )
@@ -1254,27 +1331,27 @@ async fn main() -> Result<()> {
                 json,
             } => cmd::local::status(details, fail, json).await,
         },
-        SubCmd::NatDetection(NatDetectionSubCmd::Run {
+        Some(SubCmd::NatDetection(NatDetectionSubCmd::Run {
             path,
             servers,
             url,
             version,
-        }) => {
+        })) => {
             cmd::nat_detection::run_nat_detection(servers, true, path, url, version, verbosity)
                 .await
         }
-        SubCmd::Remove {
+        Some(SubCmd::Remove {
             keep_directories,
             peer_id: peer_ids,
             service_name: service_names,
-        } => cmd::node::remove(keep_directories, peer_ids, service_names, verbosity).await,
-        SubCmd::Reset { force } => cmd::node::reset(force, verbosity).await,
-        SubCmd::Start {
+        }) => cmd::node::remove(keep_directories, peer_ids, service_names, verbosity).await,
+        Some(SubCmd::Reset { force }) => cmd::node::reset(force, verbosity).await,
+        Some(SubCmd::Start {
             connection_timeout,
             interval,
             peer_id: peer_ids,
             service_name: service_names,
-        } => {
+        }) => {
             cmd::node::start(
                 connection_timeout,
                 interval,
@@ -1284,16 +1361,16 @@ async fn main() -> Result<()> {
             )
             .await
         }
-        SubCmd::Status {
+        Some(SubCmd::Status {
             details,
             fail,
             json,
-        } => cmd::node::status(details, fail, json).await,
-        SubCmd::Stop {
+        }) => cmd::node::status(details, fail, json).await,
+        Some(SubCmd::Stop {
             peer_id: peer_ids,
             service_name: service_names,
-        } => cmd::node::stop(peer_ids, service_names, verbosity).await,
-        SubCmd::Upgrade {
+        }) => cmd::node::stop(peer_ids, service_names, verbosity).await,
+        Some(SubCmd::Upgrade {
             connection_timeout,
             do_not_start,
             force,
@@ -1304,7 +1381,7 @@ async fn main() -> Result<()> {
             env_variables: provided_env_variable,
             url,
             version,
-        } => {
+        }) => {
             cmd::node::upgrade(
                 connection_timeout,
                 do_not_start,
@@ -1320,11 +1397,14 @@ async fn main() -> Result<()> {
             )
             .await
         }
+        None => Ok(()),
     }
 }
 
 fn get_log_builder(level: Level) -> Result<LogBuilder> {
     let logging_targets = vec![
+        ("evmlib".to_string(), level),
+        ("evm_testnet".to_string(), level),
         ("sn_peers_acquisition".to_string(), level),
         ("sn_node_manager".to_string(), level),
         ("safenode_manager".to_string(), level),

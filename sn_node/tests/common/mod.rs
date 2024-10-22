@@ -9,67 +9,50 @@
 
 pub mod client;
 
-use self::client::{Droplet, NonDroplet};
-use bytes::Bytes;
+use self::client::LocalNetwork;
 use eyre::{bail, eyre, OptionExt, Result};
 use itertools::Either;
 use libp2p::PeerId;
-use rand::{
-    distributions::{Distribution, Standard},
-    Rng,
-};
-use self_encryption::MIN_ENCRYPTABLE_BYTES;
-use sn_client::{Client, FilesApi};
-use sn_protocol::{
-    safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest},
-    storage::ChunkAddress,
-};
+use sn_protocol::safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest};
 use sn_service_management::{
     get_local_node_registry_path,
     safenode_manager_proto::safe_node_manager_client::SafeNodeManagerClient, NodeRegistry,
 };
-use std::{
-    fs::File,
-    io::Write,
-    net::SocketAddr,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::{net::SocketAddr, time::Duration};
 use test_utils::testnet::DeploymentInventory;
 use tonic::Request;
 use tracing::{debug, error, warn};
-use xor_name::XorName;
 
-type ResultRandomContent = Result<(FilesApi, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
+// type ResultRandomContent = Result<(FilesApi, Bytes, ChunkAddress, Vec<(XorName, PathBuf)>)>;
 
-pub fn random_content(
-    client: &Client,
-    wallet_dir: PathBuf,
-    chunk_dir: &Path,
-) -> ResultRandomContent {
-    let mut rng = rand::thread_rng();
+// pub fn random_content(
+//     client: &Client,
+//     wallet_dir: PathBuf,
+//     chunk_dir: &Path,
+// ) -> ResultRandomContent {
+//     let mut rng = rand::thread_rng();
 
-    let random_len = rng.gen_range(MIN_ENCRYPTABLE_BYTES..1024 * MIN_ENCRYPTABLE_BYTES);
-    let random_length_content: Vec<u8> =
-        <Standard as Distribution<u8>>::sample_iter(Standard, &mut rng)
-            .take(random_len)
-            .collect();
+//     let random_len = rng.gen_range(MIN_ENCRYPTABLE_BYTES..1024 * MIN_ENCRYPTABLE_BYTES);
+//     let random_length_content: Vec<u8> =
+//         <Standard as Distribution<u8>>::sample_iter(Standard, &mut rng)
+//             .take(random_len)
+//             .collect();
 
-    let file_path = chunk_dir.join("random_content");
-    let mut output_file = File::create(file_path.clone())?;
-    output_file.write_all(&random_length_content)?;
+//     let file_path = chunk_dir.join("random_content");
+//     let mut output_file = File::create(file_path.clone())?;
+//     output_file.write_all(&random_length_content)?;
 
-    let files_api = FilesApi::new(client.clone(), wallet_dir);
-    let (head_chunk_address, _data_map, _file_size, chunks) =
-        FilesApi::chunk_file(&file_path, chunk_dir, true)?;
+//     let files_api = FilesApi::new(client.clone(), wallet_dir);
+//     let (head_chunk_address, _data_map, _file_size, chunks) =
+//         FilesApi::chunk_file(&file_path, chunk_dir, true)?;
 
-    Ok((
-        files_api,
-        random_length_content.into(),
-        head_chunk_address,
-        chunks,
-    ))
-}
+//     Ok((
+//         files_api,
+//         random_length_content.into(),
+//         head_chunk_address,
+//         chunks,
+//     ))
+// }
 
 // Connect to a RPC socket addr with retry
 pub async fn get_safenode_rpc_client(
@@ -237,22 +220,23 @@ impl NodeRestart {
     ) -> Result<()> {
         match &self.inventory_file {
             Either::Left(_inv) =>  {
-                match Droplet::restart_node(&peer_id, endpoint, self.retain_peer_id)
-                        .await
-                        .map_err(|err| eyre!("Failed to restart peer {peer_id:} on daemon endpoint: {endpoint:?} with err {err:?}")) {
-                            Ok(_) => {
-                                self.next_to_restart_idx += 1;
-                            },
-                            Err(err) => {
-                                if progress_on_error {
-                                    self.next_to_restart_idx += 1;
-                                }
-                                return Err(err);
-                            },
-                        }
+                todo!("Not implemented yet for WanNetwork");
+                // match WanNetwork::restart_node(&peer_id, endpoint, self.retain_peer_id)
+                //         .await
+                //         .map_err(|err| eyre!("Failed to restart peer {peer_id:} on daemon endpoint: {endpoint:?} with err {err:?}")) {
+                //             Ok(_) => {
+                //                 self.next_to_restart_idx += 1;
+                //             },
+                //             Err(err) => {
+                //                 if progress_on_error {
+                //                     self.next_to_restart_idx += 1;
+                //                 }
+                //                 return Err(err);
+                //             },
+                //         }
             },
             Either::Right(_reg) => {
-                match NonDroplet::restart_node(endpoint, self.retain_peer_id).await
+                match LocalNetwork::restart_node(endpoint, self.retain_peer_id).await
                 .map_err(|err| eyre!("Failed to restart peer {peer_id:?} on safenode RPC endpoint: {endpoint:?} with err {err:?}")) {
                     Ok(_) => {
                         self.next_to_restart_idx += 1;

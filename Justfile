@@ -1,75 +1,11 @@
 #!/usr/bin/env just --justfile
 
-release_repo := "maidsafe/safe_network"
-
-droplet-testbed:
-  #!/usr/bin/env bash
-
-  DROPLET_NAME="node-manager-testbed"
-  REGION="lon1"
-  SIZE="s-1vcpu-1gb"
-  IMAGE="ubuntu-20-04-x64"
-  SSH_KEY_ID="30878672"
-
-  droplet_ip=$(doctl compute droplet list \
-    --format Name,PublicIPv4 --no-header | grep "^$DROPLET_NAME " | awk '{ print $2 }')
-
-  if [ -z "$droplet_ip" ]; then
-    droplet_id=$(doctl compute droplet create $DROPLET_NAME \
-      --region $REGION \
-      --size $SIZE \
-      --image $IMAGE \
-      --ssh-keys $SSH_KEY_ID \
-      --format ID \
-      --no-header \
-      --wait)
-    if [ -z "$droplet_id" ]; then
-      echo "Failed to obtain droplet ID"
-      exit 1
-    fi
-
-    echo "Droplet ID: $droplet_id"
-    echo "Waiting for droplet IP address..."
-    droplet_ip=$(doctl compute droplet get $droplet_id --format PublicIPv4 --no-header)
-    while [ -z "$droplet_ip" ]; do
-      echo "Still waiting to obtain droplet IP address..."
-      sleep 5
-      droplet_ip=$(doctl compute droplet get $droplet_id --format PublicIPv4 --no-header)
-    done
-  fi
-  echo "Droplet IP address: $droplet_ip"
-
-  nc -zw1 $droplet_ip 22
-  exit_code=$?
-  while [ $exit_code -ne 0 ]; do
-    echo "Waiting on SSH to become available..."
-    sleep 5
-    nc -zw1 $droplet_ip 22
-    exit_code=$?
-  done
-
-  cargo build --release --target x86_64-unknown-linux-musl
-  scp -r ./target/x86_64-unknown-linux-musl/release/safenode-manager \
-    root@$droplet_ip:/root/safenode-manager
-
-kill-testbed:
-  #!/usr/bin/env bash
-
-  DROPLET_NAME="node-manager-testbed"
-
-  droplet_id=$(doctl compute droplet list \
-    --format Name,ID --no-header | grep "^$DROPLET_NAME " | awk '{ print $2 }')
-
-  if [ -z "$droplet_ip" ]; then
-    echo "Deleting droplet with ID $droplet_id"
-    doctl compute droplet delete $droplet_id
-  fi
-
-build-release-artifacts arch:
+build-release-artifacts arch nightly="false":
   #!/usr/bin/env bash
   set -e
 
   arch="{{arch}}"
+  nightly="{{nightly}}"
   supported_archs=(
     "x86_64-pc-windows-msvc"
     "x86_64-apple-darwin"
@@ -122,28 +58,29 @@ build-release-artifacts arch:
   cross_container_opts="--env \"GENESIS_PK=$GENESIS_PK\" --env \"GENESIS_SK=$GENESIS_SK\" --env \"FOUNDATION_PK=$FOUNDATION_PK\" --env \"NETWORK_ROYALTIES_PK=$NETWORK_ROYALTIES_PK\" --env \"PAYMENT_FORWARD_PK=$PAYMENT_FORWARD_PK\""
   export CROSS_CONTAINER_OPTS=$cross_container_opts
 
+  nightly_feature=""
+  if [[ "$nightly" == "true" ]]; then
+    nightly_feature="--features nightly"
+  fi
+
   if [[ $arch == arm* || $arch == armv7* || $arch == aarch64* ]]; then
     echo "Passing to cross CROSS_CONTAINER_OPTS=$CROSS_CONTAINER_OPTS"
     cargo binstall --no-confirm cross
-    cross build --release --target $arch --bin faucet --features=distribution
-    cross build --release --target $arch --bin nat-detection
-    cross build --release --target $arch --bin node-launchpad
-    cross build --release --features="network-contacts,distribution" --target $arch --bin safe
-    cross build --release --features=network-contacts --target $arch --bin safenode
-    cross build --release --target $arch --bin safenode-manager
-    cross build --release --target $arch --bin safenodemand
-    cross build --release --target $arch --bin safenode_rpc_client
-    cross build --release --target $arch --bin sn_auditor
+    cross build --release --target $arch --bin nat-detection $nightly_feature
+    cross build --release --target $arch --bin node-launchpad $nightly_feature
+    cross build --release --features=network-contacts --target $arch --bin autonomi $nightly_feature
+    cross build --release --features=network-contacts,websockets --target $arch --bin safenode $nightly_feature
+    cross build --release --target $arch --bin safenode-manager $nightly_feature
+    cross build --release --target $arch --bin safenodemand $nightly_feature
+    cross build --release --target $arch --bin safenode_rpc_client $nightly_feature
   else
-    cargo build --release --target $arch --bin faucet --features=distribution
-    cargo build --release --target $arch --bin nat-detection
-    cargo build --release --target $arch --bin node-launchpad
-    cargo build --release --features="network-contacts,distribution" --target $arch --bin safe
-    cargo build --release --features=network-contacts --target $arch --bin safenode
-    cargo build --release --target $arch --bin safenode-manager
-    cargo build --release --target $arch --bin safenodemand
-    cargo build --release --target $arch --bin safenode_rpc_client
-    cargo build --release --target $arch --bin sn_auditor
+    cargo build --release --target $arch --bin nat-detection $nightly_feature
+    cargo build --release --target $arch --bin node-launchpad $nightly_feature
+    cargo build --release --features=network-contacts --target $arch --bin autonomi $nightly_feature
+    cargo build --release --features=network-contacts,websockets --target $arch --bin safenode $nightly_feature
+    cargo build --release --target $arch --bin safenode-manager $nightly_feature
+    cargo build --release --target $arch --bin safenodemand $nightly_feature
+    cargo build --release --target $arch --bin safenode_rpc_client $nightly_feature
   fi
 
   find target/$arch/release -maxdepth 1 -type f -exec cp '{}' artifacts \;
@@ -176,15 +113,13 @@ make-artifacts-directory:
 package-all-bins:
   #!/usr/bin/env bash
   set -e
-  just package-bin "faucet"
   just package-bin "nat-detection"
   just package-bin "node-launchpad"
-  just package-bin "safe"
+  just package-bin "autonomi"
   just package-bin "safenode"
-  just package-bin "safenode_rpc_client"
   just package-bin "safenode-manager"
   just package-bin "safenodemand"
-  just package-bin "sn_auditor"
+  just package-bin "safenode_rpc_client"
 
 package-bin bin version="":
   #!/usr/bin/env bash
@@ -203,32 +138,27 @@ package-bin bin version="":
   bin="{{bin}}"
 
   supported_bins=(\
-    "faucet" \
     "nat-detection" \
     "node-launchpad" \
-    "safe" \
+    "autonomi" \
     "safenode" \
     "safenode-manager" \
     "safenodemand" \
-    "safenode_rpc_client" \
-    "sn_auditor")
+    "safenode_rpc_client")
   crate_dir_name=""
 
   # In the case of the node manager, the actual name of the crate is `sn-node-manager`, but the
   # directory it's in is `sn_node_manager`.
   bin="{{bin}}"
   case "$bin" in
-    faucet)
-      crate_dir_name="sn_faucet"
-      ;;
     nat-detection)
       crate_dir_name="nat-detection"
       ;;
     node-launchpad)
       crate_dir_name="node-launchpad"
       ;;
-    safe)
-      crate_dir_name="sn_cli"
+    autonomi)
+      crate_dir_name="autonomi-cli"
       ;;
     safenode)
       crate_dir_name="sn_node"
@@ -241,9 +171,6 @@ package-bin bin version="":
       ;;
     safenode_rpc_client)
       crate_dir_name="sn_node_rpc_client"
-      ;;
-    sn_auditor)
-      crate_dir_name="sn_auditor"
       ;;
     *)
       echo "The $bin binary is not supported"
@@ -281,15 +208,13 @@ upload-all-packaged-bins-to-s3:
   set -e
 
   binaries=(
-    faucet
     nat-detection
     node-launchpad
-    safe
+    autonomi
     safenode
     safenode-manager
     safenode_rpc_client
     safenodemand
-    sn_auditor
   )
   for binary in "${binaries[@]}"; do
     just upload-packaged-bin-to-s3 "$binary"
@@ -300,17 +225,14 @@ upload-packaged-bin-to-s3 bin_name:
   set -e
 
   case "{{bin_name}}" in
-    faucet)
-      bucket="sn-faucet"
-      ;;
     nat-detection)
       bucket="nat-detection"
       ;;
     node-launchpad)
       bucket="node-launchpad"
       ;;
-    safe)
-      bucket="sn-cli"
+    autonomi)
+      bucket="autonomi-cli"
       ;;
     safenode)
       bucket="sn-node"
@@ -323,9 +245,6 @@ upload-packaged-bin-to-s3 bin_name:
       ;;
     safenode_rpc_client)
       bucket="sn-node-rpc-client"
-      ;;
-    sn_auditor)
-      bucket="sn-auditor"
       ;;
     *)
       echo "The {{bin_name}} binary is not supported"
@@ -349,6 +268,59 @@ upload-packaged-bin-to-s3 bin_name:
         echo "$dest uploaded"
       fi
     fi
+  done
+
+delete-s3-bin bin_name version:
+  #!/usr/bin/env bash
+  set -e
+
+  case "{{bin_name}}" in
+    nat-detection)
+      bucket="nat-detection"
+      ;;
+    node-launchpad)
+      bucket="node-launchpad"
+      ;;
+    autonomi)
+      bucket="autonomi-cli"
+      ;;
+    safenode)
+      bucket="sn-node"
+      ;;
+    safenode-manager)
+      bucket="sn-node-manager"
+      ;;
+    safenodemand)
+      bucket="sn-node-manager"
+      ;;
+    safenode_rpc_client)
+      bucket="sn-node-rpc-client"
+      ;;
+    *)
+      echo "The {{bin_name}} binary is not supported"
+      exit 1
+      ;;
+  esac
+
+  architectures=(
+    "x86_64-pc-windows-msvc"
+    "x86_64-apple-darwin"
+    "aarch64-apple-darwin"
+    "x86_64-unknown-linux-musl"
+    "arm-unknown-linux-musleabi"
+    "armv7-unknown-linux-musleabihf"
+    "aarch64-unknown-linux-musl"
+  )
+
+  for arch in "${architectures[@]}"; do
+    zip_filename="{{bin_name}}-{{version}}-${arch}.zip"
+    tar_filename="{{bin_name}}-{{version}}-${arch}.tar.gz"
+    s3_zip_path="s3://$bucket/$zip_filename"
+    s3_tar_path="s3://$bucket/$tar_filename"
+    aws s3 rm "$s3_zip_path"
+    echo "deleted $s3_zip_path"
+    aws s3 rm "$s3_tar_path"
+    echo "deleted $s3_tar_path"
   done
 
 package-all-architectures:
@@ -391,15 +363,13 @@ package-arch arch:
   cd artifacts/$architecture/release
 
   binaries=(
-    faucet
     nat-detection
     node-launchpad
-    safe
+    autonomi
     safenode
     safenode-manager
     safenode_rpc_client
     safenodemand
-    sn_auditor
   )
 
   if [[ "$architecture" == *"windows"* ]]; then
@@ -412,16 +382,3 @@ package-arch arch:
   fi
 
   cd ../../..
-
-node-man-integration-tests:
-  #!/usr/bin/env bash
-  set -e
-
-  cargo build --release --bin safenode --bin faucet --bin safenode-manager
-  cargo run --release --bin safenode-manager -- local run \
-    --node-path target/release/safenode \
-    --faucet-path target/release/faucet
-  peer=$(cargo run --release --bin safenode-manager -- local status \
-    --json | jq -r .nodes[-1].listen_addr[0])
-  export SAFE_PEERS=$peer
-  cargo test --release --package sn-node-manager --test e2e -- --nocapture

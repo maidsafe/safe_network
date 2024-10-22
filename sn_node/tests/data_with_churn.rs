@@ -8,44 +8,38 @@
 
 mod common;
 
-use crate::common::client::{add_funds_to_wallet, get_client_and_funded_wallet};
-use assert_fs::TempDir;
-use common::{
-    client::{get_node_count, get_wallet},
+use crate::common::{
+    client::{get_client_and_funded_wallet, get_node_count},
     NodeRestart,
 };
-use eyre::{bail, eyre, Result};
-use rand::{rngs::OsRng, Rng};
-use sn_client::{Client, Error, FilesApi, FilesDownload, Uploader, WalletClient};
+use autonomi::{Client, Wallet};
+use common::client::transfer_to_new_wallet;
+use eyre::{bail, ErrReport, Result};
+use rand::Rng;
+use self_encryption::MAX_CHUNK_SIZE;
 use sn_logging::LogBuilder;
-use sn_protocol::{
-    storage::{ChunkAddress, RegisterAddress, SpendAddress},
-    NetworkAddress,
-};
-use sn_registers::Permissions;
-use sn_transfers::HotWallet;
-use sn_transfers::{CashNote, MainSecretKey, NanoTokens};
+use sn_protocol::{storage::ChunkAddress, NetworkAddress};
 use std::{
     collections::{BTreeMap, VecDeque},
     fmt,
-    fs::{create_dir_all, File},
-    io::Write,
-    path::{Path, PathBuf},
-    sync::Arc,
+    fs::create_dir_all,
+    sync::{Arc, LazyLock},
     time::{Duration, Instant},
 };
 use tempfile::tempdir;
+use test_utils::gen_random_data;
 use tokio::{sync::RwLock, task::JoinHandle, time::sleep};
 use tracing::{debug, error, info, trace, warn};
 use xor_name::XorName;
+
+const TOKENS_TO_TRANSFER: usize = 10000000;
 
 const EXTRA_CHURN_COUNT: u32 = 5;
 const CHURN_CYCLES: u32 = 2;
 const CHUNK_CREATION_RATIO_TO_CHURN: u32 = 15;
 const REGISTER_CREATION_RATIO_TO_CHURN: u32 = 15;
-const CASHNOTE_CREATION_RATIO_TO_CHURN: u32 = 15;
 
-const CHUNKS_SIZE: usize = 1024 * 1024;
+static DATA_SIZE: LazyLock<usize> = LazyLock::new(|| *MAX_CHUNK_SIZE / 3);
 
 const CONTENT_QUERY_RATIO_TO_CHURN: u32 = 40;
 const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
@@ -55,12 +49,11 @@ const MAX_NUM_OF_QUERY_ATTEMPTS: u8 = 5;
 const TEST_DURATION: Duration = Duration::from_secs(60 * 60); // 1hr
 
 type ContentList = Arc<RwLock<VecDeque<NetworkAddress>>>;
-type CashNoteMap = Arc<RwLock<BTreeMap<SpendAddress, CashNote>>>;
 
 struct ContentError {
     net_addr: NetworkAddress,
     attempts: u8,
-    last_err: Error,
+    last_err: ErrReport,
 }
 
 impl fmt::Debug for ContentError {
@@ -118,64 +111,41 @@ async fn data_availability_during_churn() -> Result<()> {
         if chunks_only { " (Chunks only)" } else { "" }
     );
 
-    // The testnet will create a `faucet` at last. To avoid mess up with that,
-    // wait for a while to ensure the spends of that got settled.
-    sleep(std::time::Duration::from_secs(10)).await;
-
-    info!("Creating a client and paying wallet...");
-    let paying_wallet_dir = TempDir::new()?;
-    let (client, _paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
-
-    // Waiting for the paying_wallet funded.
-    sleep(std::time::Duration::from_secs(10)).await;
+    let (client, main_wallet) = get_client_and_funded_wallet().await;
 
     info!(
-        "Client and paying_wallet created with signing key: {:?}",
-        client.signer_pk()
+        "Client and wallet created. Main wallet address: {:?}",
+        main_wallet.address()
     );
 
     // Shared bucket where we keep track of content created/stored on the network
     let content = ContentList::default();
 
-    // Shared bucket where we keep track of CashNotes created/stored on the network
-    let cash_notes = CashNoteMap::default();
-
     // Spawn a task to create Registers and CashNotes at random locations,
     // at a higher frequency than the churning events
-    if !chunks_only {
-        info!("Creating transfer wallet taking balance from the payment wallet");
-        let transfers_wallet_dir = TempDir::new()?;
-        let transfers_wallet = add_funds_to_wallet(&client, transfers_wallet_dir.path()).await?;
-        info!("Transfer wallet created");
-
-        // Waiting for the transfers_wallet funded.
-        sleep(std::time::Duration::from_secs(10)).await;
-
-        create_registers_task(
+    let create_register_handle = if !chunks_only {
+        let register_wallet = transfer_to_new_wallet(&main_wallet, TOKENS_TO_TRANSFER).await?;
+        let create_register_handle = create_registers_task(
             client.clone(),
+            register_wallet,
             Arc::clone(&content),
             churn_period,
-            paying_wallet_dir.path().to_path_buf(),
         );
-
-        create_cash_note_task(
-            client.clone(),
-            transfers_wallet,
-            Arc::clone(&content),
-            Arc::clone(&cash_notes),
-            churn_period,
-        );
-    }
+        Some(create_register_handle)
+    } else {
+        None
+    };
 
     println!("Uploading some chunks before carry out node churning");
     info!("Uploading some chunks before carry out node churning");
 
+    let chunk_wallet = transfer_to_new_wallet(&main_wallet, TOKENS_TO_TRANSFER).await?;
     // Spawn a task to store Chunks at random locations, at a higher frequency than the churning events
-    store_chunks_task(
+    let store_chunks_handle = store_chunks_task(
         client.clone(),
+        chunk_wallet,
         Arc::clone(&content),
         churn_period,
-        paying_wallet_dir.path().to_path_buf(),
     );
 
     // Spawn a task to churn nodes
@@ -194,9 +164,7 @@ async fn data_availability_during_churn() -> Result<()> {
         client.clone(),
         Arc::clone(&content),
         Arc::clone(&content_erred),
-        Arc::clone(&cash_notes),
         churn_period,
-        paying_wallet_dir.path().to_path_buf(),
     );
 
     // Spawn a task to retry querying the content that failed, up to 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
@@ -205,9 +173,7 @@ async fn data_availability_during_churn() -> Result<()> {
         client.clone(),
         Arc::clone(&content_erred),
         Arc::clone(&failures),
-        Arc::clone(&cash_notes),
         churn_period,
-        paying_wallet_dir.path().to_path_buf(),
     );
 
     info!("All tasks have been spawned. The test is now running...");
@@ -215,14 +181,32 @@ async fn data_availability_during_churn() -> Result<()> {
 
     let start_time = Instant::now();
     while start_time.elapsed() < test_duration {
+        if store_chunks_handle.is_finished() {
+            bail!("Store chunks task has finished before the test duration. Probably due to an error.");
+        }
+        if let Some(handle) = &create_register_handle {
+            if handle.is_finished() {
+                bail!("Create registers task has finished before the test duration. Probably due to an error.");
+            }
+        }
+
         let failed = failures.read().await;
-        info!(
-            "Current failures after {:?} ({}): {:?}",
-            start_time.elapsed(),
-            failed.len(),
-            failed.values()
-        );
-        sleep(churn_period).await;
+        if start_time.elapsed().as_secs() % 10 == 0 {
+            println!(
+                "Current failures after {:?} ({}): {:?}",
+                start_time.elapsed(),
+                failed.len(),
+                failed.values()
+            );
+            info!(
+                "Current failures after {:?} ({}): {:?}",
+                start_time.elapsed(),
+                failed.len(),
+                failed.values()
+            );
+        }
+
+        sleep(Duration::from_secs(3)).await;
     }
 
     println!();
@@ -249,20 +233,10 @@ async fn data_availability_during_churn() -> Result<()> {
     for net_addr in content.iter() {
         let client = client.clone();
         let net_addr = net_addr.clone();
-        let cash_notes = Arc::clone(&cash_notes);
 
         let failures = Arc::clone(&failures);
-        let wallet_dir = paying_wallet_dir.to_path_buf().clone();
         let handle = tokio::spawn(async move {
-            final_retry_query_content(
-                &client,
-                &net_addr,
-                cash_notes,
-                churn_period,
-                failures,
-                &wallet_dir,
-            )
-            .await
+            final_retry_query_content(&client, &net_addr, churn_period, failures).await
         });
         handles.push(handle);
     }
@@ -290,85 +264,64 @@ async fn data_availability_during_churn() -> Result<()> {
     Ok(())
 }
 
-// Spawns a task which periodically creates CashNotes at random locations.
-fn create_cash_note_task(
-    client: Client,
-    transfers_wallet: HotWallet,
-    content: ContentList,
-    cash_notes: CashNoteMap,
-    churn_period: Duration,
-) {
-    let _handle = tokio::spawn(async move {
-        // Create CashNote at a higher frequency than the churning events
-        let delay = churn_period / CASHNOTE_CREATION_RATIO_TO_CHURN;
-
-        let mut wallet_client = WalletClient::new(client.clone(), transfers_wallet);
-
-        loop {
-            sleep(delay).await;
-
-            let dest_pk = MainSecretKey::random().main_pubkey();
-            let cash_note = wallet_client
-                .send_cash_note(NanoTokens::from(10), dest_pk, true)
-                .await
-                .unwrap_or_else(|_| panic!("Failed to send CashNote to {dest_pk:?}"));
-
-            let cash_note_addr = SpendAddress::from_unique_pubkey(&cash_note.unique_pubkey());
-            let net_addr = NetworkAddress::SpendAddress(cash_note_addr);
-            println!("Created CashNote at {cash_note_addr:?} after {delay:?}");
-            debug!("Created CashNote at {cash_note_addr:?} after {delay:?}");
-            content.write().await.push_back(net_addr);
-            let _ = cash_notes.write().await.insert(cash_note_addr, cash_note);
-        }
-    });
-}
-
 // Spawns a task which periodically creates Registers at random locations.
 fn create_registers_task(
     client: Client,
+    wallet: Wallet,
     content: ContentList,
     churn_period: Duration,
-    paying_wallet_dir: PathBuf,
-) {
-    let _handle = tokio::spawn(async move {
+) -> JoinHandle<Result<()>> {
+    let handle: JoinHandle<Result<()>> = tokio::spawn(async move {
         // Create Registers at a higher frequency than the churning events
         let delay = churn_period / REGISTER_CREATION_RATIO_TO_CHURN;
 
-        let paying_wallet = get_wallet(&paying_wallet_dir);
-
-        let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
-
         loop {
-            let meta = XorName(rand::random());
-            let owner = client.signer_pk();
+            let owner = Client::register_generate_key();
+            let random_name = XorName(rand::random()).to_string();
+            let random_data = gen_random_data(*DATA_SIZE);
 
-            let addr = RegisterAddress::new(meta, owner);
-            println!("Creating Register at {addr:?} in {delay:?}");
-            debug!("Creating Register at {addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match client
-                .create_and_pay_for_register(meta, &mut wallet_client, true, Permissions::default())
-                .await
-            {
-                Ok(_) => content
-                    .write()
+            let mut retries = 1;
+            loop {
+                match client
+                    .register_create(random_data.clone(), &random_name, owner.clone(), &wallet)
                     .await
-                    .push_back(NetworkAddress::RegisterAddress(addr)),
-                Err(err) => println!("Discarding new Register ({addr:?}) due to error: {err:?}"),
+                {
+                    Ok(register) => {
+                        let addr = register.address();
+                        println!("Created new Register ({addr:?}) after a delay of: {delay:?}");
+                        content
+                            .write()
+                            .await
+                            .push_back(NetworkAddress::RegisterAddress(*addr));
+                        break;
+                    }
+                    Err(err) => {
+                        println!("Failed to create register: {err:?}. Retrying ...");
+                        error!("Failed to create register: {err:?}. Retrying ...");
+                        if retries >= 3 {
+                            println!("Failed to create register after 3 retries: {err}");
+                            error!("Failed to create register after 3 retries: {err}");
+                            bail!("Failed to create register after 3 retries: {err}");
+                        }
+                        retries += 1;
+                    }
+                }
             }
         }
     });
+    handle
 }
 
 // Spawns a task which periodically stores Chunks at random locations.
 fn store_chunks_task(
     client: Client,
+    wallet: Wallet,
     content: ContentList,
     churn_period: Duration,
-    paying_wallet_dir: PathBuf,
-) {
-    let _handle: JoinHandle<Result<()>> = tokio::spawn(async move {
+) -> JoinHandle<Result<()>> {
+    let handle: JoinHandle<Result<()>> = tokio::spawn(async move {
         let temp_dir = tempdir().expect("Can not create a temp directory for store_chunks_task!");
         let output_dir = temp_dir.path().join("chunk_path");
         create_dir_all(output_dir.clone())
@@ -377,67 +330,47 @@ fn store_chunks_task(
         // Store Chunks at a higher frequency than the churning events
         let delay = churn_period / CHUNK_CREATION_RATIO_TO_CHURN;
 
-        let mut rng = OsRng;
-
         loop {
-            let random_bytes: Vec<u8> = ::std::iter::repeat(())
-                .map(|()| rng.gen::<u8>())
-                .take(CHUNKS_SIZE)
-                .collect();
-            let chunk_size = random_bytes.len();
+            let random_data = gen_random_data(*DATA_SIZE);
 
-            let chunk_name = XorName::from_content(&random_bytes);
-
-            let file_path = temp_dir.path().join(hex::encode(chunk_name));
-            let mut chunk_file =
-                File::create(&file_path).expect("failed to create temp chunk file");
-            chunk_file
-                .write_all(&random_bytes)
-                .expect("failed to write to temp chunk file");
-
-            let (addr, _data_map, _file_size, chunks) =
-                FilesApi::chunk_file(&file_path, &output_dir, true).expect("Failed to chunk bytes");
-
-            info!(
-                "Paying storage for ({}) new Chunk/s of file ({} bytes) at {addr:?} in {delay:?}",
-                chunks.len(),
-                chunk_size
-            );
-            sleep(delay).await;
-
-            let chunks_len = chunks.len();
-            let chunks_name = chunks.iter().map(|(name, _)| *name).collect::<Vec<_>>();
-
-            let mut uploader = Uploader::new(client.clone(), paying_wallet_dir.clone());
-            uploader.set_show_holders(true);
-            uploader.insert_chunk_paths(chunks);
-
-            let cost = match uploader.start_upload().await {
-                Ok(stats) => stats
-                    .royalty_fees
-                    .checked_add(stats.storage_cost)
-                    .ok_or(eyre!("Total storage cost exceed possible token amount"))?,
-                Err(err) => {
-                    bail!("Bailing w/ new Chunk ({addr:?}) due to error: {err:?}");
-                }
-            };
-
-            println!(
-                "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
-            );
-            info!(
-                "Stored ({chunks_len}) Chunk/s at cost: {cost:?} of file ({chunk_size} bytes) at {addr:?} in {delay:?}"
-            );
-            sleep(delay).await;
-
-            for chunk_name in chunks_name {
-                content
-                    .write()
+            // FIXME: The client does not have the retry repay to different payee feature yet.
+            // Retry here for now
+            let mut retries = 1;
+            loop {
+                match client
+                    .data_put(random_data.clone(), &wallet)
                     .await
-                    .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(chunk_name)));
+                    .inspect_err(|err| {
+                        println!("Error to put chunk: {err:?}");
+                        error!("Error to put chunk: {err:?}")
+                    }) {
+                    Ok(data_map) => {
+                        println!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
+                        info!("Stored Chunk/s at {data_map:?} after a delay of: {delay:?}");
+
+                        content
+                            .write()
+                            .await
+                            .push_back(NetworkAddress::ChunkAddress(ChunkAddress::new(data_map)));
+                        break;
+                    }
+                    Err(err) => {
+                        println!("Failed to store chunk: {err:?}. Retrying ...");
+                        error!("Failed to store chunk: {err:?}. Retrying ...");
+                        if retries >= 3 {
+                            println!("Failed to store chunk after 3 retries: {err}");
+                            error!("Failed to store chunk after 3 retries: {err}");
+                            bail!("Failed to store chunk after 3 retries: {err}");
+                        }
+                        retries += 1;
+                    }
+                }
             }
+
+            sleep(delay).await;
         }
     });
+    handle
 }
 
 // Spawns a task which periodically queries a content by randomly choosing it from the list
@@ -446,9 +379,7 @@ fn query_content_task(
     client: Client,
     content: ContentList,
     content_erred: ContentErredList,
-    cash_notes: CashNoteMap,
     churn_period: Duration,
-    root_dir: PathBuf,
 ) {
     let _handle = tokio::spawn(async move {
         let delay = churn_period / CONTENT_QUERY_RATIO_TO_CHURN;
@@ -467,7 +398,7 @@ fn query_content_task(
             trace!("Querying content (bucket index: {index}) at {net_addr:?} in {delay:?}");
             sleep(delay).await;
 
-            match query_content(&client, &root_dir, &net_addr, Arc::clone(&cash_notes)).await {
+            match query_content(&client, &net_addr).await {
                 Ok(_) => {
                     let _ = content_erred.write().await.remove(&net_addr);
                 }
@@ -530,9 +461,7 @@ fn retry_query_content_task(
     client: Client,
     content_erred: ContentErredList,
     failures: ContentErredList,
-    cash_notes: CashNoteMap,
     churn_period: Duration,
-    wallet_dir: PathBuf,
 ) {
     let _handle = tokio::spawn(async move {
         let delay = 2 * churn_period;
@@ -547,9 +476,7 @@ fn retry_query_content_task(
 
                 println!("Querying erred content at {net_addr}, attempt: #{attempts} ...");
                 info!("Querying erred content at {net_addr}, attempt: #{attempts} ...");
-                if let Err(last_err) =
-                    query_content(&client, &wallet_dir, &net_addr, Arc::clone(&cash_notes)).await
-                {
+                if let Err(last_err) = query_content(&client, &net_addr).await {
                     println!("Erred content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                     warn!("Erred content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                     // We only keep it to retry 'MAX_NUM_OF_QUERY_ATTEMPTS' times,
@@ -575,19 +502,15 @@ fn retry_query_content_task(
 async fn final_retry_query_content(
     client: &Client,
     net_addr: &NetworkAddress,
-    cash_notes: CashNoteMap,
     churn_period: Duration,
     failures: ContentErredList,
-    wallet_dir: &Path,
 ) -> Result<()> {
     let mut attempts = 1;
     let net_addr = net_addr.clone();
     loop {
         println!("Final querying content at {net_addr}, attempt: #{attempts} ...");
         debug!("Final querying content at {net_addr}, attempt: #{attempts} ...");
-        if let Err(last_err) =
-            query_content(client, wallet_dir, &net_addr, Arc::clone(&cash_notes)).await
-        {
+        if let Err(last_err) = query_content(client, &net_addr).await {
             if attempts == MAX_NUM_OF_QUERY_ATTEMPTS {
                 println!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
                 error!("Final check: Content is still not retrievable at {net_addr} after {attempts} attempts: {last_err:?}");
@@ -607,36 +530,14 @@ async fn final_retry_query_content(
     }
 }
 
-async fn query_content(
-    client: &Client,
-    wallet_dir: &Path,
-    net_addr: &NetworkAddress,
-    cash_notes: CashNoteMap,
-) -> Result<(), Error> {
+async fn query_content(client: &Client, net_addr: &NetworkAddress) -> Result<()> {
     match net_addr {
-        NetworkAddress::SpendAddress(addr) => {
-            if let Some(cash_note) = cash_notes.read().await.get(addr) {
-                match client.verify_cashnote(cash_note).await {
-                    Ok(_) => Ok(()),
-                    Err(err) => Err(Error::CouldNotVerifyTransfer(format!(
-                        "Verification of cash_note {addr:?} failed with error: {err:?}"
-                    ))),
-                }
-            } else {
-                Err(Error::CouldNotVerifyTransfer(format!(
-                    "Do not have the CashNote: {addr:?}"
-                )))
-            }
-        }
         NetworkAddress::RegisterAddress(addr) => {
-            let _ = client.get_register(*addr).await?;
+            let _ = client.register_get(*addr).await?;
             Ok(())
         }
         NetworkAddress::ChunkAddress(addr) => {
-            let files_api = FilesApi::new(client.clone(), wallet_dir.to_path_buf());
-            let mut file_download = FilesDownload::new(files_api);
-            let _ = file_download.download_file(*addr, None).await?;
-
+            client.data_get(*addr.xorname()).await?;
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet
