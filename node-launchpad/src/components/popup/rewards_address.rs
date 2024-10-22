@@ -27,7 +27,7 @@ pub struct RewardsAddress {
     /// Whether the component is active right now, capturing keystrokes + draw things.
     active: bool,
     state: RewardsAddressState,
-    discord_input_field: Input,
+    rewards_address_input_field: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
     back_to: Scene,
@@ -51,7 +51,7 @@ impl RewardsAddress {
         Self {
             active: false,
             state,
-            discord_input_field: Input::default().with_value(username),
+            rewards_address_input_field: Input::default().with_value(username),
             old_value: Default::default(),
             back_to: Scene::Status,
             can_save: false,
@@ -59,11 +59,11 @@ impl RewardsAddress {
     }
 
     pub fn validate(&mut self) {
-        if self.discord_input_field.value().is_empty() {
+        if self.rewards_address_input_field.value().is_empty() {
             self.can_save = false;
         } else {
             let re = Regex::new(r"^0x[a-fA-F0-9]{40}$").expect("Failed to compile regex");
-            self.can_save = re.is_match(self.discord_input_field.value());
+            self.can_save = re.is_match(self.rewards_address_input_field.value());
         }
     }
 
@@ -72,8 +72,12 @@ impl RewardsAddress {
             KeyCode::Enter => {
                 self.validate();
                 if self.can_save {
-                    let username = self.discord_input_field.value().to_string().to_lowercase();
-                    self.discord_input_field = username.clone().into();
+                    let username = self
+                        .rewards_address_input_field
+                        .value()
+                        .to_string()
+                        .to_lowercase();
+                    self.rewards_address_input_field = username.clone().into();
 
                     debug!(
                         "Got Enter, saving the discord username {username:?}  and switching to DiscordIdAlreadySet, and Home Scene",
@@ -93,8 +97,8 @@ impl RewardsAddress {
                     self.old_value
                 );
                 // reset to old value
-                self.discord_input_field = self
-                    .discord_input_field
+                self.rewards_address_input_field = self
+                    .rewards_address_input_field
                     .clone()
                     .with_value(self.old_value.clone());
                 vec![Action::SwitchScene(self.back_to)]
@@ -102,13 +106,17 @@ impl RewardsAddress {
             KeyCode::Char(' ') => vec![],
             KeyCode::Backspace => {
                 // if max limit reached, we should allow Backspace to work.
-                self.discord_input_field.handle_event(&Event::Key(key));
+                self.rewards_address_input_field
+                    .handle_event(&Event::Key(key));
                 self.validate();
                 vec![]
             }
             _ => {
-                if self.discord_input_field.value().chars().count() < INPUT_SIZE_USERNAME as usize {
-                    self.discord_input_field.handle_event(&Event::Key(key));
+                if self.rewards_address_input_field.value().chars().count()
+                    < INPUT_SIZE_USERNAME as usize
+                {
+                    self.rewards_address_input_field
+                        .handle_event(&Event::Key(key));
                     self.validate();
                 }
                 vec![]
@@ -128,7 +136,7 @@ impl Component for RewardsAddress {
             RewardsAddressState::DiscordIdAlreadySet => self.capture_inputs(key),
             RewardsAddressState::ShowTCs => match key.code {
                 KeyCode::Char('y') | KeyCode::Char('Y') => {
-                    let is_discord_id_set = !self.discord_input_field.value().is_empty();
+                    let is_discord_id_set = !self.rewards_address_input_field.value().is_empty();
                     if is_discord_id_set {
                         debug!("User accepted the TCs, but discord id already set, moving to DiscordIdAlreadySet");
                         self.state = RewardsAddressState::DiscordIdAlreadySet;
@@ -157,7 +165,7 @@ impl Component for RewardsAddress {
             Action::SwitchScene(scene) => match scene {
                 Scene::StatusRewardsAddressPopUp | Scene::OptionsRewardsAddressPopUp => {
                     self.active = true;
-                    self.old_value = self.discord_input_field.value().to_string();
+                    self.old_value = self.rewards_address_input_field.value().to_string();
                     if scene == Scene::StatusRewardsAddressPopUp {
                         self.back_to = Scene::Status;
                     } else if scene == Scene::OptionsRewardsAddressPopUp {
@@ -241,10 +249,11 @@ impl Component for RewardsAddress {
                 f.render_widget(prompt_text, layer_two[0]);
 
                 let spaces = " ".repeat(
-                    (INPUT_AREA_USERNAME - 1) as usize - self.discord_input_field.value().len(),
+                    (INPUT_AREA_USERNAME - 1) as usize
+                        - self.rewards_address_input_field.value().len(),
                 );
                 let input = Paragraph::new(Span::styled(
-                    format!("{}{} ", spaces, self.discord_input_field.value()),
+                    format!("{}{} ", spaces, self.rewards_address_input_field.value()),
                     Style::default()
                         .fg(if self.can_save { VIVID_SKY_BLUE } else { RED })
                         .bg(INDIGO)
@@ -394,10 +403,11 @@ impl Component for RewardsAddress {
                 f.render_widget(prompt.fg(GHOST_WHITE), layer_two[0]);
 
                 let spaces = " ".repeat(
-                    (INPUT_AREA_USERNAME - 1) as usize - self.discord_input_field.value().len(),
+                    (INPUT_AREA_USERNAME - 1) as usize
+                        - self.rewards_address_input_field.value().len(),
                 );
                 let input = Paragraph::new(Span::styled(
-                    format!("{}{} ", spaces, self.discord_input_field.value()),
+                    format!("{}{} ", spaces, self.rewards_address_input_field.value()),
                     Style::default().fg(VIVID_SKY_BLUE).bg(INDIGO).underlined(),
                 ))
                 .alignment(Alignment::Center);
