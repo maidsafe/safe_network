@@ -36,21 +36,22 @@ pub enum GetRecordError {
         got: usize,
         range: u32,
     },
-
+    #[error("Network query timed out")]
+    QueryTimeout,
+    #[error("Record retrieved from the network does not match the provided target record.")]
+    RecordDoesNotMatch(Record),
+    #[error("The record kind for the split records did not match")]
+    RecordKindMismatch,
     #[error("Record not found in the network")]
     RecordNotFound,
-
-    // Avoid logging the whole `Record` content by accident
+    // Avoid logging the whole `Record` content by accident.
+    /// The split record error will be handled at the network layer.
+    /// For spends, it accumulates the spends and returns a double spend error if more than one.
+    /// For registers, it merges the registers and returns the merged record.
     #[error("Split Record has {} different copies", result_map.len())]
     SplitRecord {
         result_map: HashMap<XorName, (Record, HashSet<PeerId>)>,
     },
-
-    #[error("Network query timed out")]
-    QueryTimeout,
-
-    #[error("Record retrieved from the network does not match the provided target record.")]
-    RecordDoesNotMatch(Record),
 }
 
 impl Debug for GetRecordError {
@@ -70,11 +71,6 @@ impl Debug for GetRecordError {
                     .field("range", &range)
                     .finish()
             }
-            Self::RecordNotFound => write!(f, "RecordNotFound"),
-            Self::SplitRecord { result_map } => f
-                .debug_struct("SplitRecord")
-                .field("result_map_count", &result_map.len())
-                .finish(),
             Self::QueryTimeout => write!(f, "QueryTimeout"),
             Self::RecordDoesNotMatch(record) => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
@@ -82,6 +78,12 @@ impl Debug for GetRecordError {
                     .field(&pretty_key)
                     .finish()
             }
+            Self::RecordKindMismatch => write!(f, "RecordKindMismatch"),
+            Self::RecordNotFound => write!(f, "RecordNotFound"),
+            Self::SplitRecord { result_map } => f
+                .debug_struct("SplitRecord")
+                .field("result_map_count", &result_map.len())
+                .finish(),
         }
     }
 }
