@@ -486,128 +486,149 @@ impl SwarmDriver {
     /// SplitRecord if there are multiple content hash versions.
     fn handle_get_record_finished(&mut self, query_id: QueryId, step: ProgressStep) -> Result<()> {
         // return error if the entry cannot be found
-        if let Some((_key, senders, result_map, cfg)) = self.pending_get_record.remove(&query_id) {
+        if let Some((r_key, senders, result_map, cfg)) = self.pending_get_record.remove(&query_id) {
             let num_of_versions = result_map.len();
-            let (result, log_string) = if let Some((record, from_peers)) =
-                result_map.values().next()
-            {
-                let data_key_address = NetworkAddress::from_record_key(&record.key);
-                let expected_get_range = self.get_request_range();
+            let data_key_address = NetworkAddress::from_record_key(&r_key);
+            let expected_get_range = self.get_request_range();
+            let all_seen_peers: HashSet<_> = result_map
+                .values()
+                .flat_map(|(_, peers)| peers)
+                .cloned()
+                .collect();
+            let we_have_searched_thoroughly = Self::have_we_have_searched_thoroughly_for_quorum(
+                expected_get_range,
+                &all_seen_peers,
+                &data_key_address,
+                &cfg.get_quorum,
+            );
 
-                let we_have_searched_thoroughly = Self::have_we_have_searched_thoroughly_for_quorum(
-                    expected_get_range,
-                    from_peers,
-                    &data_key_address,
-                    &cfg.get_quorum,
-                );
+            // we have a split record, return it
+            if num_of_versions > 1 {
+                warn!("RANGE: Multiple versions found over range");
+                for sender in senders {
+                    sender
+                        .send(Err(GetRecordError::SplitRecord {
+                            result_map: result_map.clone(),
+                        }))
+                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                }
 
-                let pretty_key = PrettyPrintRecordKey::from(&record.key);
-                info!("RANGE: {pretty_key:?} we_have_searched_far_enough: {we_have_searched_thoroughly:?}");
+                for (record, _peers) in result_map.values() {
+                    self.reput_data_to_range(&record, &data_key_address, &all_seen_peers)?;
+                }
 
-                let result = if num_of_versions > 1 {
-                    warn!("RANGE: more than one version found!");
-                    Err(GetRecordError::SplitRecord {
-                        result_map: result_map.clone(),
-                    })
-                } else if we_have_searched_thoroughly {
-                    warn!("RANGE: Get record finished: {pretty_key:?} Enough of the network has responded or it's not sensitive data... and we only have one copy...");
-
-                    Ok(record.clone())
-                } else {
-                    // We have not searched enough of the network range.
-                    let result = Err(GetRecordError::NotEnoughCopiesInRange {
-                        record: record.clone(),
-                        expected: get_quorum_value(&cfg.get_quorum),
-                        got: from_peers.len(),
-                        range: expected_get_range.ilog2().unwrap_or(0),
-                    });
-
-                    // This should be a backstop...  Quorum::All is the only one that enforces
-                    // a full search of the network range.
-                    if matches!(cfg.get_quorum, Quorum::All) {
-                        warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need to extend the range and PUT the data. {result:?}");
-
-                        warn!("Reputting data to network {pretty_key:?}...");
-
-                        // let's ensure we have an updated network view
-                        self.trigger_network_discovery();
-
-                        warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need PUT the data back into nodes in that range.");
-
-                        let record_type = get_type_from_record(record)?;
-
-                        let replicate_targets: HashSet<_> = self
-                            .get_filtered_peers_exceeding_range_or_closest_nodes(&data_key_address)
-                            .iter()
-                            .cloned()
-                            .collect();
-
-                        if from_peers == &replicate_targets {
-                            warn!("RANGE: {pretty_key:?} We asked everyone we know of in that range already!");
-                        }
-
-                        // set holder to someone that has the data
-                        let holder = NetworkAddress::from_peer(
-                            from_peers
-                                .iter()
-                                .next()
-                                .cloned()
-                                .unwrap_or(self.self_peer_id),
-                        );
-
-                        for peer in replicate_targets {
-                            warn!("Reputting data to {peer:?} for {pretty_key:?} if needed...");
-                            // Do not send to any peer that has already informed us
-                            if from_peers.contains(&peer) {
-                                continue;
-                            }
-
-                            debug!("RANGE: (insufficient, so ) Sending data to unresponded peer: {peer:?} for {pretty_key:?}");
-
-                            // nodes will try/fail to trplicate it from us, but grab from the network thereafter
-                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
-                                req: Request::Cmd(Cmd::Replicate {
-                                    holder: holder.clone(),
-                                    keys: vec![(data_key_address.clone(), record_type.clone())],
-                                }),
-                                peer,
-                                sender: None,
-                            });
-                        }
-                    }
-
-                    result
-                };
-
-                (
-                result,
-                format!("Getting record {:?} completed with only {:?} copies received, and {num_of_versions} versions.",
-                    PrettyPrintRecordKey::from(&record.key), usize::from(step.count) - 1)
-                )
-            } else {
-                (
-                Err(GetRecordError::RecordNotFound),
-                format!("Getting record task {query_id:?} completed with step count {:?}, but no copy found.", step.count),
-                )
-            };
-
-            if cfg.expected_holders.is_empty() {
-                debug!("{log_string}");
-            } else {
-                debug!(
-                    "{log_string}, and {:?} expected holders not responded",
-                    cfg.expected_holders
-                );
+                return Ok(());
             }
 
-            for sender in senders {
-                sender
-                    .send(result.clone())
-                    .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+            // we have no results, bail
+            if num_of_versions == 0 {
+                warn!("RANGE: No versions found!");
+                for sender in senders {
+                    sender
+                        .send(Err(GetRecordError::RecordNotFound))
+                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                }
+                return Ok(());
+            }
+
+            // if we have searched thoroughly, we can return the record
+            if num_of_versions == 1 {
+                let result = if let Some((record, peers)) = result_map.values().next() {
+                    warn!("RANGE: one version found!");
+
+                    if we_have_searched_thoroughly {
+                        Ok(record.clone())
+                    } else {
+                        self.reput_data_to_range(record, &data_key_address, &all_seen_peers)?;
+                        Err(GetRecordError::NotEnoughCopiesInRange {
+                            record: record.clone(),
+                            expected: get_quorum_value(&cfg.get_quorum),
+                            got: peers.len(),
+                            range: expected_get_range.ilog2().unwrap_or(0),
+                        })
+                    }
+                } else {
+                    debug!("Getting record task {query_id:?} completed with step count {:?}, but no copy found.", step.count);
+                    Err(GetRecordError::RecordNotFound)
+                };
+                for sender in senders {
+                    sender
+                        .send(result.clone())
+                        .map_err(|_| NetworkError::InternalMsgChannelDropped)?;
+                }
+
+                #[cfg(feature = "open-metrics")]
+                if self.metrics_recorder.is_some() {
+                    self.check_for_change_in_our_close_group();
+                }
             }
         } else {
             debug!("Can't locate query task {query_id:?} during GetRecord finished. We might have already returned the result to the sender.");
         }
+        Ok(())
+    }
+
+    /// Repost data to the network if we didn't get enough responses.
+    fn reput_data_to_range(
+        &mut self,
+        record: &Record,
+        data_key_address: &NetworkAddress,
+        // all peers who responded with any version of the record
+        from_peers: &HashSet<PeerId>,
+    ) -> Result<()> {
+        let pretty_key = PrettyPrintRecordKey::from(&record.key);
+        // This should be a backstop...  Quorum::All is the only one that enforces
+        // a full search of the network range.
+        info!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has the record, or same state, we need to extend the range and PUT the data.");
+
+        info!("Reputting data to network {pretty_key:?}...");
+
+        // let's ensure we have an updated network view
+        self.trigger_network_discovery();
+
+        warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need PUT the data back into nodes in that range.");
+
+        let record_type = get_type_from_record(&record)?;
+
+        let replicate_targets: HashSet<_> = self
+            .get_filtered_peers_exceeding_range_or_closest_nodes(&data_key_address)
+            .iter()
+            .cloned()
+            .collect();
+
+        if from_peers == &replicate_targets {
+            warn!("RANGE: {pretty_key:?} We asked everyone we know of in that range already!");
+        }
+
+        // set holder to someone that has the data
+        let holder = NetworkAddress::from_peer(
+            from_peers
+                .iter()
+                .next()
+                .cloned()
+                .unwrap_or(self.self_peer_id),
+        );
+
+        for peer in replicate_targets {
+            warn!("Reputting data to {peer:?} for {pretty_key:?} if needed...");
+            // Do not send to any peer that has already informed us
+            if from_peers.contains(&peer) {
+                continue;
+            }
+
+            debug!("RANGE: (insufficient, so ) Sending data to unresponded peer: {peer:?} for {pretty_key:?}");
+
+            // nodes will try/fail to trplicate it from us, but grab from the network thereafter
+            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendRequest {
+                req: Request::Cmd(Cmd::Replicate {
+                    holder: holder.clone(),
+                    keys: vec![(data_key_address.clone(), record_type.clone())],
+                }),
+                peer,
+                sender: None,
+            });
+        }
+
         Ok(())
     }
 
