@@ -7,7 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
-use crate::record_store::{ClientRecordStore, NodeRecordStore};
+use crate::{
+    record_store::{ClientRecordStore, NodeRecordStore},
+    RefRecord,
+};
 use libp2p::kad::{
     store::{RecordStore, Result},
     KBucketDistance, ProviderRecord, Record, RecordKey,
@@ -104,7 +107,7 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
+    pub(crate) fn put_verified(&mut self, r: RefRecord, record_type: RecordType) -> Result<()> {
         match self {
             Self::Client(store) => store.put_verified(r, record_type),
             Self::Node(store) => store.put_verified(r, record_type),

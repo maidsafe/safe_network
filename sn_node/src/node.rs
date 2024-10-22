@@ -668,6 +668,8 @@ impl Node {
 
                 if let Some(record_key) = record_key {
                     if let Ok(Some(record)) = network.get_local_record(&record_key).await {
+                        // if let actual_record =
+
                         result = Ok((our_address, Bytes::from(record.value)));
                     }
                 }

@@ -6,6 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use std::sync::Arc;
+
 use crate::{
     error::{Error, Result},
     node::Node,
@@ -68,7 +70,7 @@ impl Node {
                 };
 
                 let record = if let Some(record_content) = record_opt {
-                    Record::new(key, record_content.to_vec())
+                    Arc::new(Record::new(key, record_content.to_vec()))
                 } else {
                     debug!(
                         "Can not fetch record {pretty_key:?} from node {holder:?}, fetching from the network"
@@ -94,12 +96,12 @@ impl Node {
 
                                 let bytes = try_serialize_record(&spends, RecordKind::Spend)?;
 
-                                Record {
+                                Arc::new(Record {
                                     key,
                                     value: bytes.to_vec(),
                                     publisher: None,
                                     expires: None,
-                                }
+                                })
                             }
                             other_error => return Err(other_error.into()),
                         },

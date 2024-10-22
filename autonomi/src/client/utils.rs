@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{collections::HashMap, num::NonZero};
+use std::{collections::HashMap, num::NonZero, sync::Arc};
 
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
@@ -97,7 +97,7 @@ impl Client {
         let key = chunk.network_address().to_record_key();
 
         let record_kind = RecordKind::ChunkWithPayment;
-        let record = Record {
+        let record = Arc::new(Record {
             key: key.clone(),
             value: try_serialize_record(&(payment, chunk.clone()), record_kind)
                 .map_err(|e| {
@@ -108,7 +108,7 @@ impl Client {
                 .to_vec(),
             publisher: None,
             expires: None,
-        };
+        });
 
         let verification = {
             let verification_cfg = GetRecordCfg {

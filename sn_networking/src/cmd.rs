@@ -13,7 +13,7 @@ use crate::{
     event::TerminateNodeReason,
     log_markers::Marker,
     multiaddr_pop_p2p, sort_peers_by_address_and_limit, GetRecordCfg, GetRecordError, MsgResponder,
-    NetworkEvent, CLOSE_GROUP_SIZE,
+    NetworkEvent, RefRecord, CLOSE_GROUP_SIZE,
 };
 use libp2p::{
     kad::{
@@ -29,9 +29,11 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
+    borrow::Cow,
     cmp::Ordering,
     collections::{BTreeMap, HashMap},
     fmt::Debug,
+    sync::Arc,
     time::Duration,
 };
 use tokio::sync::oneshot;
@@ -105,7 +107,7 @@ pub enum LocalSwarmCmd {
     PaymentReceived,
     /// Put record to the local RecordStore
     PutLocalRecord {
-        record: Record,
+        record: RefRecord,
     },
     /// Remove a local record from the RecordStore
     /// Typically because the write failed
@@ -178,20 +180,20 @@ pub enum NetworkSwarmCmd {
     /// Get Record from the Kad network
     GetNetworkRecord {
         key: RecordKey,
-        sender: oneshot::Sender<std::result::Result<Record, GetRecordError>>,
+        sender: oneshot::Sender<std::result::Result<RefRecord, GetRecordError>>,
         cfg: GetRecordCfg,
     },
 
     /// Put record to network
     PutRecord {
-        record: Record,
+        record: RefRecord,
         sender: oneshot::Sender<Result<()>>,
         quorum: Quorum,
     },
     /// Put record to specific node
     PutRecordTo {
         peers: Vec<PeerId>,
-        record: Record,
+        record: RefRecord,
         sender: oneshot::Sender<Result<()>>,
         quorum: Quorum,
     },
@@ -417,7 +419,7 @@ impl SwarmDriver {
                     .swarm
                     .behaviour_mut()
                     .kademlia
-                    .put_record(record, quorum)
+                    .put_record((*record).clone(), quorum)
                 {
                     Ok(request_id) => {
                         debug!("Sent record {record_key:?} to network. Request id: {request_id:?} to network");
@@ -447,7 +449,7 @@ impl SwarmDriver {
                 );
                 let peers_count = peers.len();
                 let request_id = self.swarm.behaviour_mut().kademlia.put_record_to(
-                    record,
+                    (*record).clone(),
                     peers.into_iter(),
                     quorum,
                 );
@@ -629,7 +631,8 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .get(&key)
-                    .map(|rec| rec.into_owned());
+                    .map(Cow::into_owned);
+
                 let _ = sender.send(record);
             }
 
@@ -645,7 +648,7 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .put_verified(record, record_type.clone());
+                    .put_verified(Arc::clone(&record), record_type.clone());
 
                 match result {
                     Ok(_) => {

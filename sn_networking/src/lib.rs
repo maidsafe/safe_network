@@ -75,6 +75,18 @@ use tokio::sync::{
 };
 use tokio::time::Duration;
 
+/// Wrapped libp2p Record allowing cheap clones.
+///
+/// Down the line, once Records are Bytes in libp2p, we can remove this
+/// indirection.
+pub type RefRecord = Arc<Record>;
+/// PeerRecord with internal record wrapped in an arc to allow for cloning.
+#[derive(Clone)]
+pub(crate) struct RefPeerRecord {
+    record: RefRecord,
+    peer: Option<PeerId>,
+}
+
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
 
@@ -649,7 +661,7 @@ impl Network {
         &self,
         key: RecordKey,
         cfg: &GetRecordCfg,
-    ) -> Result<Record> {
+    ) -> Result<RefRecord> {
         let pretty_key = PrettyPrintRecordKey::from(&key);
         info!("Getting record from network of {pretty_key:?}. with cfg {cfg:?}",);
         let (sender, receiver) = oneshot::channel();
@@ -676,7 +688,7 @@ impl Network {
         &self,
         key: RecordKey,
         cfg: &GetRecordCfg,
-    ) -> Result<Record> {
+    ) -> Result<RefRecord> {
         use std::collections::BTreeSet;
 
         use sn_transfers::SignedSpend;
@@ -826,14 +838,14 @@ impl Network {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
 
         info!("Attempting to PUT record with key: {pretty_key:?} to network, with cfg {cfg:?}");
-        self.put_record_once(record.clone(), cfg).await
+        self.put_record_once(Arc::clone(&record), cfg).await
     }
 
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
     /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
     #[cfg(not(target_arch = "wasm32"))]
-    pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
+    pub async fn put_record(&self, record: RefRecord, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
 
         // Here we only retry after a failed validation.
@@ -850,7 +862,7 @@ impl Network {
             info!(
                 "Attempting to PUT record with key: {pretty_key:?} to network, with cfg {cfg:?}, retrying via backoff..."
             );
-            self.put_record_once(record.clone(), cfg).await.map_err(|err|
+            self.put_record_once(Arc::clone(&record), cfg).await.map_err(|err|
             {
                 warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
@@ -864,7 +876,7 @@ impl Network {
         }).await
     }
 
-    async fn put_record_once(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
+    async fn put_record_once(&self, record: RefRecord, cfg: &PutRecordCfg) -> Result<()> {
         let record_key = record.key.clone();
         let pretty_key = PrettyPrintRecordKey::from(&record_key);
         info!(
@@ -878,13 +890,13 @@ impl Network {
         if let Some(put_record_to_peers) = &cfg.use_put_record_to {
             self.send_network_swarm_cmd(NetworkSwarmCmd::PutRecordTo {
                 peers: put_record_to_peers.clone(),
-                record: record.clone(),
+                record: Arc::clone(&record),
                 sender,
                 quorum: cfg.put_quorum,
             });
         } else {
             self.send_network_swarm_cmd(NetworkSwarmCmd::PutRecord {
-                record: record.clone(),
+                record: Arc::clone(&record),
                 sender,
                 quorum: cfg.put_quorum,
             });
@@ -949,7 +961,7 @@ impl Network {
 
     /// Put `Record` to the local RecordStore
     /// Must be called after the validations are performed on the Record
-    pub fn put_local_record(&self, record: Record) {
+    pub fn put_local_record(&self, record: RefRecord) {
         debug!(
             "Writing Record locally, for {:?} - length {:?}",
             PrettyPrintRecordKey::from(&record.key),
