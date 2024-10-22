@@ -25,3 +25,11 @@ Options:
   -V, --version
           Print version
 ```
+
+## License
+
+This Safe Network repository is licensed under the General Public License (GPL), version 3 ([LICENSE](LICENSE) http://www.gnu.org/licenses/gpl-3.0.en.html).
+
+---
+
+Feel free to modify or expand upon this README as needed. Would you like to add or change anything else?
