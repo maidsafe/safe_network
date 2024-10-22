@@ -412,6 +412,7 @@ impl SwarmDriver {
 
             let expected_answers = get_quorum_value(&cfg.get_quorum);
             trace!("Expecting {expected_answers:?} answers to exceed {expected_get_range:?} for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
+        } else {
             // return error if the entry cannot be found
             return Err(NetworkError::ReceivedKademliaEventDropped {
                 query_id,
