@@ -81,9 +81,7 @@ impl RewardsAddress {
                     self.state = RewardsAddressState::DiscordIdAlreadySet;
                     return vec![
                         Action::StoreDiscordUserName(username.clone()),
-                        Action::OptionsActions(OptionsActions::UpdateBetaProgrammeUsername(
-                            username,
-                        )), // FIXME: Change OptionsActions::UpdateBetaProgrammeUsername name
+                        Action::OptionsActions(OptionsActions::UpdateRewardsAddress(username)),
                         Action::SwitchScene(Scene::Status),
                     ];
                 }
@@ -157,12 +155,12 @@ impl Component for RewardsAddress {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::StatusBetaProgrammePopUp | Scene::OptionsBetaProgrammePopUp => {
+                Scene::StatusRewardsAddressPopUp | Scene::OptionsRewardsAddressPopUp => {
                     self.active = true;
                     self.old_value = self.discord_input_field.value().to_string();
-                    if scene == Scene::StatusBetaProgrammePopUp {
+                    if scene == Scene::StatusRewardsAddressPopUp {
                         self.back_to = Scene::Status;
-                    } else if scene == Scene::OptionsBetaProgrammePopUp {
+                    } else if scene == Scene::OptionsRewardsAddressPopUp {
                         self.back_to = Scene::Options;
                     }
                     // Set to InputMode::Entry as we want to handle everything within our handle_key_events

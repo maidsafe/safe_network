@@ -354,7 +354,7 @@ impl Component for Options {
                 | Scene::ChangeDrivePopUp
                 | Scene::ChangeConnectionModePopUp
                 | Scene::ChangePortsPopUp { .. }
-                | Scene::OptionsBetaProgrammePopUp
+                | Scene::OptionsRewardsAddressPopUp
                 | Scene::ResetNodesPopUp => {
                     self.active = true;
                     // make sure we're in navigation mode
@@ -385,10 +385,10 @@ impl Component for Options {
                     self.port_from = Some(from);
                     self.port_to = Some(to);
                 }
-                OptionsActions::TriggerBetaProgramme => {
-                    return Ok(Some(Action::SwitchScene(Scene::OptionsBetaProgrammePopUp)));
+                OptionsActions::TriggerRewardsAddress => {
+                    return Ok(Some(Action::SwitchScene(Scene::OptionsRewardsAddressPopUp)));
                 }
-                OptionsActions::UpdateBetaProgrammeUsername(username) => {
+                OptionsActions::UpdateRewardsAddress(username) => {
                     self.discord_username = username;
                 }
                 OptionsActions::TriggerAccessLogs => {
