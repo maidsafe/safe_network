@@ -90,20 +90,28 @@ pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>
 
     let address = register.address();
 
-    println!("✅ Register created at address: {address}");
-    println!("With name: {name}");
-    println!("And initial value: [{value}]");
-    info!("✅ Register created at address: {address} with name: {name}");
-
-    if let Ok(()) = upload_completed_tx.send(()) {
-        let summary = upload_summary_thread.await?;
-        if summary.record_count == 0 {
-            println!("The register was already created on the network. No tokens were spent.");
-        } else {
-            println!("Total cost: {} AttoTokens", summary.tokens_spent);
-        }
-        info!("Summary of register creation: {summary:?}");
+    if let Err(e) = upload_completed_tx.send(()) {
+        error!("Failed to send upload completed event: {e:?}");
+        eprintln!("Failed to send upload completed event: {e:?}");
     }
+
+    let summary = upload_summary_thread.await?;
+    if summary.record_count == 0 {
+        println!("✅ The register already exists on the network at address: {address}.");
+        println!("No tokens were spent.");
+    } else {
+        println!("✅ Register created at address: {address}");
+        println!("With name: {name}");
+        println!("And initial value: [{value}]");
+        info!("Register created at address: {address} with name: {name}");
+        println!("Total cost: {} AttoTokens", summary.tokens_spent);
+    }
+    info!("Summary of register creation: {summary:?}");
+
+    crate::user_data::write_local_register(address, name)
+        .wrap_err("Failed to save register to local user data")
+        .with_suggestion(|| "Local user data saves the register address above to disk, without it you need to keep track of the address yourself")?;
+    info!("Saved register to local user data");
 
     Ok(())
 }
@@ -183,7 +191,12 @@ pub async fn get(address: String, name: bool, peers: Vec<Multiaddr>) -> Result<(
     Ok(())
 }
 
-pub fn list(_peers: Vec<Multiaddr>) -> Result<()> {
-    println!("The register feature is coming soon!");
+pub fn list() -> Result<()> {
+    println!("Retrieving local user data...");
+    let registers = crate::user_data::get_local_registers()?;
+    println!("✅ You have {} register(s):", registers.len());
+    for (addr, name) in registers {
+        println!("{}: {}", name, addr.to_hex());
+    }
     Ok(())
 }

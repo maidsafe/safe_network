@@ -140,7 +140,7 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
             FileCmd::Download { addr, dest_file } => {
                 file::download(&addr, &dest_file, peers.await?).await
             }
-            FileCmd::List => file::list(peers.await?),
+            FileCmd::List => file::list(),
         },
         SubCmd::Register { command } => match command {
             RegisterCmd::GenerateKey { overwrite } => register::generate_key(overwrite),
@@ -156,7 +156,7 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
                 value,
             } => register::edit(address, name, &value, peers.await?).await,
             RegisterCmd::Get { address, name } => register::get(address, name, peers.await?).await,
-            RegisterCmd::List => register::list(peers.await?),
+            RegisterCmd::List => register::list(),
         },
         SubCmd::Vault { command } => match command {
             VaultCmd::Cost => vault::cost(peers.await?),

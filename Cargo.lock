@@ -1138,6 +1138,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tracing",
+ "walkdir",
 ]
 
 [[package]]
