@@ -11,6 +11,7 @@ use crate::client::data::CostError;
 use crate::client::Client;
 use bytes::Bytes;
 use sn_evm::EvmWallet;
+use sn_networking::target_arch::{Duration, SystemTime};
 use std::path::PathBuf;
 
 use super::archive::{Archive, ArchiveAddr};
@@ -110,7 +111,9 @@ impl Client {
             println!("Uploading file: {path:?}");
             let file = self.file_upload(path.clone(), wallet).await?;
 
-            archive.add_file(path, file, Metadata::new());
+            let metadata = metadata_from_entry(&entry);
+
+            archive.add_file(path, file, metadata);
         }
 
         let archive_serialized = archive.into_bytes()?;
@@ -172,4 +175,45 @@ impl Client {
         total_cost += archive_cost.as_atto();
         Ok(total_cost.into())
     }
+}
+
+// Get metadata from directory entry. Defaults to `0` for creation and modification times if
+// any error is encountered. Logs errors upon error.
+fn metadata_from_entry(entry: &walkdir::DirEntry) -> Metadata {
+    let fs_metadata = match entry.metadata() {
+        Ok(metadata) => metadata,
+        Err(err) => {
+            tracing::warn!(
+                "Failed to get metadata for `{}`: {err}",
+                entry.path().display()
+            );
+            return Metadata {
+                created: 0,
+                modified: 0,
+            };
+        }
+    };
+
+    let unix_time = |property: &'static str, time: std::io::Result<SystemTime>| {
+        time.inspect_err(|err| {
+            tracing::warn!(
+                "Failed to get '{property}' metadata for `{}`: {err}",
+                entry.path().display()
+            );
+        })
+        .unwrap_or(SystemTime::UNIX_EPOCH)
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .inspect_err(|err| {
+            tracing::warn!(
+                "'{property}' metadata of `{}` is before UNIX epoch: {err}",
+                entry.path().display()
+            );
+        })
+        .unwrap_or(Duration::from_secs(0))
+        .as_secs()
+    };
+    let created = unix_time("created", fs_metadata.created());
+    let modified = unix_time("modified", fs_metadata.modified());
+
+    Metadata { created, modified }
 }
