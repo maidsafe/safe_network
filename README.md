@@ -32,6 +32,10 @@ You should build from the `stable` branch, as follows:
 
 ```
 git checkout stable
+export FOUNDATION_PK=88a82d718d16dccc839188eddc9a46cb216667c940cd46285199458c919a170a55490db09763ae216ed25e9db78c3576
+export GENESIS_PK=aa3526db2dbc43998e0b541b8455e2ce9dd4f1cad80090e671da16e3cd11cd5e3550f74c3cefd09ad253d93cacae2320
+export NETWORK_ROYALTIES_PK=8b5463a2c8142959a7b7cfd9295587812eb07ccbe13a85865503c8004eeeb6889ccace3588dcf9f7396784d9ee48f4d5
+export PAYMENT_FORWARD_PK=87d5b511a497183c945df63ab8790a4b94cfe452d00bfbdb39e41ee861384fe0de716a224da1c6fd11356de49877dfc2
 cargo build --release --features=network-contacts --bin safenode
 ```
 
