@@ -14,9 +14,9 @@ use crate::{
         help::Help,
         options::Options,
         popup::{
-            beta_programme::BetaProgramme, change_drive::ChangeDrivePopup,
-            connection_mode::ChangeConnectionModePopUp, manage_nodes::ManageNodes,
-            port_range::PortRangePopUp, reset_nodes::ResetNodesPopup,
+            change_drive::ChangeDrivePopup, connection_mode::ChangeConnectionModePopUp,
+            manage_nodes::ManageNodes, port_range::PortRangePopUp, reset_nodes::ResetNodesPopup,
+            rewards_address::RewardsAddress,
         },
         status::{Status, StatusConfig},
         Component,
@@ -119,7 +119,7 @@ impl App {
             ChangeDrivePopup::new(storage_mountpoint.clone(), app_data.nodes_to_start)?;
         let change_connection_mode = ChangeConnectionModePopUp::new(connection_mode)?;
         let port_range = PortRangePopUp::new(connection_mode, port_from, port_to);
-        let beta_programme = BetaProgramme::new(app_data.discord_username.clone());
+        let rewards_address = RewardsAddress::new(app_data.discord_username.clone());
 
         Ok(Self {
             config,
@@ -143,7 +143,7 @@ impl App {
                 Box::new(change_drive),
                 Box::new(change_connection_mode),
                 Box::new(port_range),
-                Box::new(beta_programme),
+                Box::new(rewards_address),
                 Box::new(reset_nodes),
                 Box::new(manage_nodes),
             ],
