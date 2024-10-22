@@ -356,7 +356,7 @@ impl Component for Status<'_> {
                 let _ = self.update_node_items();
             }
             Action::SwitchScene(scene) => match scene {
-                Scene::Status | Scene::StatusBetaProgrammePopUp => {
+                Scene::Status | Scene::StatusRewardsAddressPopUp => {
                     self.active = true;
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
@@ -561,9 +561,9 @@ impl Component for Status<'_> {
 
                     stop_nodes(running_nodes, action_sender);
                 }
-                StatusActions::TriggerBetaProgramme => {
+                StatusActions::TriggerRewardsAddress => {
                     if self.discord_username.is_empty() {
-                        return Ok(Some(Action::SwitchScene(Scene::StatusBetaProgrammePopUp)));
+                        return Ok(Some(Action::SwitchScene(Scene::StatusRewardsAddressPopUp)));
                     } else {
                         return Ok(None);
                     }
