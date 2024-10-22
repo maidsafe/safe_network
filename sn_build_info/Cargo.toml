@@ -10,6 +10,7 @@ readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
 version = "0.1.16"
 build = "build.rs"
+include = ["Cargo.toml", "src/**/*", "build.rs"]
 
 [build-dependencies]
 vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
