@@ -38,7 +38,6 @@ pub struct BetaProgramme {
 enum BetaProgrammeState {
     DiscordIdAlreadySet,
     ShowTCs,
-    RejectTCs,
     AcceptTCsAndEnterDiscordId,
 }
 
@@ -150,13 +149,6 @@ impl Component for BetaProgramme {
                     vec![]
                 }
             },
-            BetaProgrammeState::RejectTCs => {
-                if let KeyCode::Esc = key.code {
-                    debug!("RejectTCs msg closed. Switching to Status scene.");
-                    self.state = BetaProgrammeState::ShowTCs;
-                }
-                vec![Action::SwitchScene(self.back_to)]
-            }
             BetaProgrammeState::AcceptTCsAndEnterDiscordId => self.capture_inputs(key),
         };
         Ok(send_back)
@@ -373,44 +365,6 @@ impl Component for BetaProgramme {
                 )]))
                 .alignment(Alignment::Right);
                 f.render_widget(button_yes, buttons_layer[1]);
-            }
-            BetaProgrammeState::RejectTCs => {
-                // split the area into 3 parts, for the lines, hypertext,  buttons
-                let layer_two = Layout::new(
-                    Direction::Vertical,
-                    [
-                        // for the text
-                        Constraint::Length(7),
-                        // gap
-                        Constraint::Length(5),
-                        // for the buttons
-                        Constraint::Length(1),
-                    ],
-                )
-                .split(layer_one[1]);
-
-                let text = Paragraph::new(vec![
-                    Line::from(Span::styled("Terms and conditions not accepted.",Style::default())),
-                    Line::from(Span::styled("\n\n",Style::default())),
-                    Line::from(Span::styled("Beta Rewards Program entry not approved.",Style::default())),
-                    Line::from(Span::styled("\n\n",Style::default())),
-                    Line::from(Span::styled("You can still run nodes on the network, but you will not be part of the Beta Rewards Program.",Style::default())),
-                    ]
-                )
-                .block(Block::default().padding(Padding::horizontal(2)))
-                .wrap(Wrap { trim: false });
-
-                f.render_widget(text.fg(GHOST_WHITE), layer_two[0]);
-
-                let dash = Block::new()
-                    .borders(Borders::BOTTOM)
-                    .border_style(Style::new().fg(GHOST_WHITE));
-                f.render_widget(dash, layer_two[1]);
-                let line = Line::from(vec![Span::styled(
-                    "  Close [Esc]",
-                    Style::default().fg(LIGHT_PERIWINKLE),
-                )]);
-                f.render_widget(line, layer_two[2]);
             }
             BetaProgrammeState::AcceptTCsAndEnterDiscordId => {
                 // split into 4 parts, for the prompt, input, text, dash , and buttons
