@@ -23,10 +23,10 @@ use tui_input::{backend::crossterm::EventHandler, Input};
 const INPUT_SIZE_USERNAME: u16 = 42; // Etherum address plus 0x
 const INPUT_AREA_USERNAME: u16 = INPUT_SIZE_USERNAME + 2; // +2 for the padding
 
-pub struct BetaProgramme {
+pub struct RewardsAddress {
     /// Whether the component is active right now, capturing keystrokes + draw things.
     active: bool,
-    state: BetaProgrammeState,
+    state: RewardsAddressState,
     discord_input_field: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
@@ -35,18 +35,18 @@ pub struct BetaProgramme {
 }
 
 #[allow(dead_code)]
-enum BetaProgrammeState {
+enum RewardsAddressState {
     DiscordIdAlreadySet,
     ShowTCs,
     AcceptTCsAndEnterDiscordId,
 }
 
-impl BetaProgramme {
+impl RewardsAddress {
     pub fn new(username: String) -> Self {
         let state = if username.is_empty() {
-            BetaProgrammeState::ShowTCs
+            RewardsAddressState::ShowTCs
         } else {
-            BetaProgrammeState::DiscordIdAlreadySet
+            RewardsAddressState::DiscordIdAlreadySet
         };
         Self {
             active: false,
@@ -78,7 +78,7 @@ impl BetaProgramme {
                     debug!(
                         "Got Enter, saving the discord username {username:?}  and switching to DiscordIdAlreadySet, and Home Scene",
                     );
-                    self.state = BetaProgrammeState::DiscordIdAlreadySet;
+                    self.state = RewardsAddressState::DiscordIdAlreadySet;
                     return vec![
                         Action::StoreDiscordUserName(username.clone()),
                         Action::OptionsActions(OptionsActions::UpdateBetaProgrammeUsername(
@@ -120,36 +120,36 @@ impl BetaProgramme {
     }
 }
 
-impl Component for BetaProgramme {
+impl Component for RewardsAddress {
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         if !self.active {
             return Ok(vec![]);
         }
         // while in entry mode, keybinds are not captured, so gotta exit entry mode from here
         let send_back = match &self.state {
-            BetaProgrammeState::DiscordIdAlreadySet => self.capture_inputs(key),
-            BetaProgrammeState::ShowTCs => match key.code {
+            RewardsAddressState::DiscordIdAlreadySet => self.capture_inputs(key),
+            RewardsAddressState::ShowTCs => match key.code {
                 KeyCode::Char('y') | KeyCode::Char('Y') => {
                     let is_discord_id_set = !self.discord_input_field.value().is_empty();
                     if is_discord_id_set {
                         debug!("User accepted the TCs, but discord id already set, moving to DiscordIdAlreadySet");
-                        self.state = BetaProgrammeState::DiscordIdAlreadySet;
+                        self.state = RewardsAddressState::DiscordIdAlreadySet;
                     } else {
                         debug!("User accepted the TCs, but no discord id set, moving to AcceptTCsAndEnterDiscordId");
-                        self.state = BetaProgrammeState::AcceptTCsAndEnterDiscordId;
+                        self.state = RewardsAddressState::AcceptTCsAndEnterDiscordId;
                     }
                     vec![]
                 }
                 KeyCode::Esc => {
                     debug!("User rejected the TCs, moving to original screen");
-                    self.state = BetaProgrammeState::ShowTCs;
+                    self.state = RewardsAddressState::ShowTCs;
                     vec![Action::SwitchScene(self.back_to)]
                 }
                 _ => {
                     vec![]
                 }
             },
-            BetaProgrammeState::AcceptTCsAndEnterDiscordId => self.capture_inputs(key),
+            RewardsAddressState::AcceptTCsAndEnterDiscordId => self.capture_inputs(key),
         };
         Ok(send_back)
     }
@@ -212,7 +212,7 @@ impl Component for BetaProgramme {
         clear_area(f, layer_zero);
 
         match self.state {
-            BetaProgrammeState::DiscordIdAlreadySet => {
+            RewardsAddressState::DiscordIdAlreadySet => {
                 self.validate(); // FIXME: maybe this should be somewhere else
                                  // split into 4 parts, for the prompt, input, text, dash , and buttons
                 let layer_two = Layout::new(
@@ -303,7 +303,7 @@ impl Component for BetaProgramme {
                 )]);
                 f.render_widget(button_yes, buttons_layer[1]);
             }
-            BetaProgrammeState::ShowTCs => {
+            RewardsAddressState::ShowTCs => {
                 // split the area into 3 parts, for the lines, hypertext,  buttons
                 let layer_two = Layout::new(
                     Direction::Vertical,
@@ -366,7 +366,7 @@ impl Component for BetaProgramme {
                 .alignment(Alignment::Right);
                 f.render_widget(button_yes, buttons_layer[1]);
             }
-            BetaProgrammeState::AcceptTCsAndEnterDiscordId => {
+            RewardsAddressState::AcceptTCsAndEnterDiscordId => {
                 // split into 4 parts, for the prompt, input, text, dash , and buttons
                 let layer_two = Layout::new(
                     Direction::Vertical,
