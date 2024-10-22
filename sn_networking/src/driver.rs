@@ -22,7 +22,7 @@ use crate::{
     replication_fetcher::ReplicationFetcher,
     sort_peers_by_distance_to,
     target_arch::{interval, spawn, Instant},
-    GetRecordError, Network, CLOSE_GROUP_SIZE,
+    GetRecordError, Network, RefRecord, CLOSE_GROUP_SIZE,
 };
 #[cfg(feature = "open-metrics")]
 use crate::{
@@ -98,12 +98,12 @@ pub(crate) enum PendingGetClosestType {
 type PendingGetClosest = HashMap<QueryId, (NetworkAddress, PendingGetClosestType, Vec<PeerId>)>;
 
 /// Using XorName to differentiate different record content under the same key.
-type GetRecordResultMap = HashMap<XorName, (Record, HashSet<PeerId>)>;
+type GetRecordResultMap = HashMap<XorName, (RefRecord, HashSet<PeerId>)>;
 pub(crate) type PendingGetRecord = HashMap<
     QueryId,
     (
         RecordKey, // record we're fetching, to dedupe repeat requests
-        Vec<oneshot::Sender<std::result::Result<Record, GetRecordError>>>, // vec of senders waiting for this record
+        Vec<oneshot::Sender<std::result::Result<RefRecord, GetRecordError>>>, // vec of senders waiting for this record
         GetRecordResultMap,
         GetRecordCfg,
     ),
@@ -146,7 +146,7 @@ pub struct GetRecordCfg {
     /// If enabled, the provided `RetryStrategy` is used to retry if a GET attempt fails.
     pub retry_strategy: Option<RetryStrategy>,
     /// Only return if we fetch the provided record.
-    pub target_record: Option<Record>,
+    pub target_record: Option<RefRecord>,
     /// Logs if the record was not fetched from the provided set of peers.
     pub expected_holders: HashSet<PeerId>,
     /// For register record, only root value shall be checked, not the entire content.
@@ -178,7 +178,7 @@ impl GetRecordCfg {
                 target_register.base_register() == fetched_register.base_register()
                     && target_register.ops() == fetched_register.ops()
             } else {
-                target_record == record
+                **target_record == *record
             }
         } else {
             // Not have target_record to check with

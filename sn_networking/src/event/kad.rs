@@ -8,13 +8,14 @@
 
 use crate::{
     cmd::NetworkSwarmCmd, driver::PendingGetClosestType, get_quorum_value, target_arch::Instant,
-    GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver, CLOSE_GROUP_SIZE,
+    GetRecordCfg, GetRecordError, NetworkError, RefPeerRecord, RefRecord, Result, SwarmDriver,
+    CLOSE_GROUP_SIZE,
 };
 use itertools::Itertools;
 use libp2p::{
     kad::{
-        self, GetClosestPeersError, InboundRequest, KBucketDistance, PeerRecord, ProgressStep,
-        QueryId, QueryResult, QueryStats, Quorum, Record, K_VALUE,
+        self, GetClosestPeersError, InboundRequest, KBucketDistance, ProgressStep, QueryId,
+        QueryResult, QueryStats, Quorum, Record, K_VALUE,
     },
     PeerId,
 };
@@ -23,7 +24,10 @@ use sn_protocol::{
     storage::get_type_from_record,
     NetworkAddress, PrettyPrintRecordKey,
 };
-use std::collections::{hash_map::Entry, HashSet};
+use std::{
+    collections::{hash_map::Entry, HashSet},
+    sync::Arc,
+};
 use tokio::sync::oneshot;
 use xor_name::XorName;
 
@@ -138,13 +142,18 @@ impl SwarmDriver {
                 stats,
                 step,
             } => {
+                let peer_ref_record = RefPeerRecord {
+                    record: Arc::new(peer_record.record),
+                    peer: peer_record.peer,
+                };
+
                 event_string = "kad_event::get_record::found";
                 debug!(
                     "Query task {id:?} returned with record {:?} from peer {:?}, {stats:?} - {step:?}",
-                    PrettyPrintRecordKey::from(&peer_record.record.key),
+                    PrettyPrintRecordKey::from(&peer_ref_record.record.key),
                     peer_record.peer
                 );
-                self.accumulate_get_record_found(id, peer_record)?;
+                self.accumulate_get_record_found(id, peer_ref_record)?;
             }
             kad::Event::OutboundQueryProgressed {
                 id,
@@ -365,7 +374,7 @@ impl SwarmDriver {
     fn accumulate_get_record_found(
         &mut self,
         query_id: QueryId,
-        peer_record: PeerRecord,
+        peer_record: RefPeerRecord,
     ) -> Result<()> {
         let expected_get_range = self.get_request_range();
         let key = peer_record.record.key.clone();
@@ -514,7 +523,7 @@ impl SwarmDriver {
                 }
 
                 for (record, _peers) in result_map.values() {
-                    self.reput_data_to_range(&record, &data_key_address, &all_seen_peers)?;
+                    self.reput_data_to_range(record, &data_key_address, &all_seen_peers)?;
                 }
 
                 return Ok(());
@@ -537,11 +546,11 @@ impl SwarmDriver {
                     warn!("RANGE: one version found!");
 
                     if we_have_searched_thoroughly {
-                        Ok(record.clone())
+                        Ok(Arc::clone(record))
                     } else {
                         self.reput_data_to_range(record, &data_key_address, &all_seen_peers)?;
                         Err(GetRecordError::NotEnoughCopiesInRange {
-                            record: record.clone(),
+                            record: Arc::clone(record),
                             expected: get_quorum_value(&cfg.get_quorum),
                             got: peers.len(),
                             range: expected_get_range.ilog2().unwrap_or(0),
@@ -588,10 +597,10 @@ impl SwarmDriver {
 
         warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need PUT the data back into nodes in that range.");
 
-        let record_type = get_type_from_record(&record)?;
+        let record_type = get_type_from_record(record)?;
 
         let replicate_targets: HashSet<_> = self
-            .get_filtered_peers_exceeding_range_or_closest_nodes(&data_key_address)
+            .get_filtered_peers_exceeding_range_or_closest_nodes(data_key_address)
             .iter()
             .cloned()
             .collect();
@@ -704,7 +713,7 @@ impl SwarmDriver {
                 // if we have enough responses here, we can return the record
                 if let Some((record, peers)) = result_map.values().next() {
                     if peers.len() >= required_response_count {
-                        Self::send_record_after_checking_target(senders, record.clone(), &cfg)?;
+                        Self::send_record_after_checking_target(senders, Arc::clone(record), &cfg)?;
                         return Ok(());
                     }
                 }
@@ -723,8 +732,8 @@ impl SwarmDriver {
     }
 
     fn send_record_after_checking_target(
-        senders: Vec<oneshot::Sender<std::result::Result<Record, GetRecordError>>>,
-        record: Record,
+        senders: Vec<oneshot::Sender<std::result::Result<RefRecord, GetRecordError>>>,
+        record: RefRecord,
         cfg: &GetRecordCfg,
     ) -> Result<()> {
         let res = if cfg.does_target_match(&record) {

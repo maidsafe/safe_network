@@ -9,7 +9,7 @@
 use crate::{node::Node, Error, Marker, Result};
 use libp2p::kad::{Record, RecordKey};
 use sn_evm::ProofOfPayment;
-use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError};
+use sn_networking::{get_raw_signed_spends_from_record, GetRecordError, NetworkError, RefRecord};
 use sn_protocol::{
     storage::{
         try_deserialize_record, try_serialize_record, Chunk, RecordHeader, RecordKind, RecordType,
@@ -19,8 +19,8 @@ use sn_protocol::{
 };
 use sn_registers::SignedRegister;
 use sn_transfers::{SignedSpend, TransferError, UniquePubkey, QUOTE_EXPIRATION_SECS};
-use std::collections::BTreeSet;
 use std::time::{Duration, UNIX_EPOCH};
+use std::{collections::BTreeSet, sync::Arc};
 use tokio::task::JoinSet;
 use xor_name::XorName;
 
@@ -257,7 +257,7 @@ impl Node {
     }
 
     /// Store a pre-validated, and already paid record to the RecordStore
-    pub(crate) async fn store_replicated_in_record(&self, record: Record) -> Result<()> {
+    pub(crate) async fn store_replicated_in_record(&self, record: RefRecord) -> Result<()> {
         debug!("Storing record which was replicated to us {:?}", record.key);
         let record_header = RecordHeader::from_record(&record)?;
         match record_header.kind {
@@ -361,12 +361,12 @@ impl Node {
         let key = NetworkAddress::from_chunk_address(*chunk.address()).to_record_key();
         let pretty_key = PrettyPrintRecordKey::from(&key).into_owned();
 
-        let record = Record {
+        let record = Arc::new(Record {
             key,
             value: try_serialize_record(&chunk, RecordKind::Chunk)?.to_vec(),
             publisher: None,
             expires: None,
-        };
+        });
 
         // finally store the Record directly into the local storage
         debug!("Storing chunk {chunk_name:?} as Record locally");
@@ -425,12 +425,12 @@ impl Node {
             scratchpad.encrypted_data_hash()
         );
 
-        let record = Record {
+        let record = Arc::new(Record {
             key: scratchpad_key.clone(),
             value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)?.to_vec(),
             publisher: None,
             expires: None,
-        };
+        });
         self.network().put_local_record(record);
 
         let pretty_key = PrettyPrintRecordKey::from(&scratchpad_key);
@@ -470,12 +470,12 @@ impl Node {
         };
 
         // store in kad
-        let record = Record {
+        let record = Arc::new(Record {
             key: key.clone(),
             value: try_serialize_record(&updated_register, RecordKind::Register)?.to_vec(),
             publisher: None,
             expires: None,
-        };
+        });
         let content_hash = XorName::from_content(&record.value);
 
         info!("Storing register {reg_addr:?} with content of {content_hash:?} as Record locally");
@@ -557,12 +557,12 @@ impl Node {
         );
 
         // store the record into the local storage
-        let record = Record {
+        let record = Arc::new(Record {
             key: record_key.clone(),
             value: try_serialize_record(&validated_spends, RecordKind::Spend)?.to_vec(),
             publisher: None,
             expires: None,
-        };
+        });
         self.network().put_local_record(record);
         debug!("Successfully stored spends with key: {unique_pubkey:?} at {pretty_key:?}");
 

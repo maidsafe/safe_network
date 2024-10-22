@@ -8,6 +8,7 @@
 
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::sync::Arc;
 
 use crate::client::data::PutError;
 use crate::client::Client;
@@ -149,7 +150,7 @@ impl Client {
             // Should always be there, else it would have failed on the payment step.
             let proof = payment_proofs.get(&scratch_xor).expect("Missing proof");
 
-            Record {
+            Arc::new(Record {
                 key: scratch_key,
                 value: try_serialize_record(&(proof, scratch), RecordKind::ScratchpadWithPayment)
                     .map_err(|_| {
@@ -160,9 +161,9 @@ impl Client {
                     .to_vec(),
                 publisher: None,
                 expires: None,
-            }
+            })
         } else {
-            Record {
+            Arc::new(Record {
                 key: scratch_key,
                 value: try_serialize_record(&scratch, RecordKind::Scratchpad)
                     .map_err(|_| {
@@ -171,7 +172,7 @@ impl Client {
                     .to_vec(),
                 publisher: None,
                 expires: None,
-            }
+            })
         };
 
         let put_cfg = PutRecordCfg {

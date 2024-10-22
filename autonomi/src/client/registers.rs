@@ -30,6 +30,7 @@ use sn_protocol::NetworkAddress;
 use sn_registers::Register as BaseRegister;
 use sn_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use std::collections::BTreeSet;
+use std::sync::Arc;
 use xor_name::XorName;
 
 use super::data::CostError;
@@ -189,14 +190,14 @@ impl Client {
         let signed_register = register.signed_reg.clone();
 
         // Prepare the record for network storage
-        let record = Record {
+        let record = Arc::new(Record {
             key: NetworkAddress::from_register_address(*register.address()).to_record_key(),
             value: try_serialize_record(&signed_register, RecordKind::Register)
                 .map_err(|_| RegisterError::Serialization)?
                 .to_vec(),
             publisher: None,
             expires: None,
-        };
+        });
 
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,
@@ -317,7 +318,7 @@ impl Client {
             .inspect_err(|err| error!("Failed to get payee from payment proof: {err}"))?;
         let signed_register = register.signed_reg.clone();
 
-        let record = Record {
+        let record = Arc::new(Record {
             key: NetworkAddress::from_register_address(*address).to_record_key(),
             value: try_serialize_record(
                 &(proof, &signed_register),
@@ -327,7 +328,7 @@ impl Client {
             .to_vec(),
             publisher: None,
             expires: None,
-        };
+        });
 
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::Majority,

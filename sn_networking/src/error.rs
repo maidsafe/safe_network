@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use libp2p::{
-    kad::{self, QueryId, Record},
+    kad::{self, QueryId},
     request_response::{OutboundFailure, OutboundRequestId},
     swarm::DialError,
     PeerId, TransportError,
@@ -24,6 +24,8 @@ use thiserror::Error;
 use tokio::sync::oneshot;
 use xor_name::XorName;
 
+use crate::RefRecord;
+
 pub(super) type Result<T, E = NetworkError> = std::result::Result<T, E>;
 
 /// GetRecord Query errors
@@ -31,7 +33,7 @@ pub(super) type Result<T, E = NetworkError> = std::result::Result<T, E>;
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
     NotEnoughCopiesInRange {
-        record: Record,
+        record: RefRecord,
         expected: usize,
         got: usize,
         range: u32,
@@ -39,7 +41,7 @@ pub enum GetRecordError {
     #[error("Network query timed out")]
     QueryTimeout,
     #[error("Record retrieved from the network does not match the provided target record.")]
-    RecordDoesNotMatch(Record),
+    RecordDoesNotMatch(RefRecord),
     #[error("The record kind for the split records did not match")]
     RecordKindMismatch,
     #[error("Record not found in the network")]
@@ -50,7 +52,7 @@ pub enum GetRecordError {
     /// For registers, it merges the registers and returns the merged record.
     #[error("Split Record has {} different copies", result_map.len())]
     SplitRecord {
-        result_map: HashMap<XorName, (Record, HashSet<PeerId>)>,
+        result_map: HashMap<XorName, (RefRecord, HashSet<PeerId>)>,
     },
 }
 

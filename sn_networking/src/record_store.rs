@@ -9,9 +9,9 @@
 
 use crate::cmd::LocalSwarmCmd;
 use crate::driver::MAX_PACKET_SIZE;
-use crate::send_local_swarm_cmd;
 use crate::target_arch::{spawn, Instant};
 use crate::{event::NetworkEvent, log_markers::Marker};
+use crate::{send_local_swarm_cmd, RefRecord};
 use aes_gcm_siv::{
     aead::{Aead, KeyInit, OsRng},
     Aes256GcmSiv, Nonce,
@@ -36,6 +36,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::collections::VecDeque;
+use std::sync::Arc;
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -79,7 +80,7 @@ pub struct NodeRecordStore {
     /// A set of keys, each corresponding to a data `Record` stored on disk.
     records: HashMap<Key, (NetworkAddress, RecordType)>,
     /// FIFO simple cache of records to reduce read times
-    records_cache: VecDeque<Record>,
+    records_cache: VecDeque<RefRecord>,
     /// A map from record keys to their indices in the cache
     /// allowing for more efficient cache management
     records_cache_map: HashMap<Key, usize>,
@@ -534,11 +535,11 @@ impl NodeRecordStore {
     /// Prepare record bytes for storage
     /// If feats are enabled, this will eg, encrypt the record for storage
     fn prepare_record_bytes(
-        record: Record,
+        record: RefRecord,
         encryption_details: (Aes256GcmSiv, [u8; 4]),
     ) -> Option<Vec<u8>> {
         if !cfg!(feature = "encrypt-records") {
-            return Some(record.value);
+            return Some(record.value.clone());
         }
 
         let (cipher, nonce_starter) = encryption_details;
@@ -561,7 +562,7 @@ impl NodeRecordStore {
     ///
     /// The record is marked as written to disk once `mark_as_stored` is called,
     /// this avoids us returning half-written data or registering it as stored before it is.
-    pub(crate) fn put_verified(&mut self, r: Record, record_type: RecordType) -> Result<()> {
+    pub(crate) fn put_verified(&mut self, r: RefRecord, record_type: RecordType) -> Result<()> {
         let key = &r.key;
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         debug!("PUTting a verified Record: {record_key:?}");
@@ -592,7 +593,7 @@ impl NodeRecordStore {
         }
 
         // Push the new record to the back of the cache
-        self.records_cache.push_back(r.clone());
+        self.records_cache.push_back(Arc::clone(&r));
         self.records_cache_map
             .insert(key.clone(), self.records_cache.len() - 1);
 
@@ -880,7 +881,7 @@ impl ClientRecordStore {
         &self.empty_record_addresses
     }
 
-    pub(crate) fn put_verified(&mut self, _r: Record, _record_type: RecordType) -> Result<()> {
+    pub(crate) fn put_verified(&mut self, _r: RefRecord, _record_type: RecordType) -> Result<()> {
         Ok(())
     }
 
@@ -1114,7 +1115,7 @@ mod tests {
         let returned_record_key = returned_record.key.clone();
 
         assert!(store
-            .put_verified(returned_record, RecordType::Chunk)
+            .put_verified(Arc::new(returned_record), RecordType::Chunk)
             .is_ok());
 
         // We must also mark the record as stored (which would be triggered after the async write in nodes
@@ -1175,16 +1176,16 @@ mod tests {
         let chunk_address = *chunk.address();
 
         // Create a record from the chunk
-        let record = Record {
+        let record = Arc::new(Record {
             key: NetworkAddress::ChunkAddress(chunk_address).to_record_key(),
             value: chunk_data.to_vec(),
             expires: None,
             publisher: None,
-        };
+        });
 
         // Store the chunk using put_verified
         assert!(store
-            .put_verified(record.clone(), RecordType::Chunk)
+            .put_verified(Arc::clone(&record), RecordType::Chunk)
             .is_ok());
 
         // Mark as stored (simulating the CompletedWrite event)
@@ -1246,17 +1247,17 @@ mod tests {
         let scratchpad_address = *scratchpad.address();
 
         // Create a record from the scratchpad
-        let record = Record {
+        let record = Arc::new(Record {
             key: NetworkAddress::ScratchpadAddress(scratchpad_address).to_record_key(),
             value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)?.to_vec(),
             expires: None,
             publisher: None,
-        };
+        });
 
         // Store the scratchpad using put_verified
         assert!(store
             .put_verified(
-                record.clone(),
+                Arc::clone(&record),
                 RecordType::NonChunk(XorName::from_content(&record.value))
             )
             .is_ok());
@@ -1343,12 +1344,12 @@ mod tests {
                 Ok(value) => value.to_vec(),
                 Err(err) => panic!("Cannot generate record value {err:?}"),
             };
-            let record = Record {
+            let record = Arc::new(Record {
                 key: record_key.clone(),
                 value,
                 publisher: None,
                 expires: None,
-            };
+            });
 
             // Will be stored anyway.
             let succeeded = store.put_verified(record, RecordType::Chunk).is_ok();
@@ -1466,12 +1467,12 @@ mod tests {
                 Ok(value) => value.to_vec(),
                 Err(err) => panic!("Cannot generate record value {err:?}"),
             };
-            let record = Record {
+            let record = Arc::new(Record {
                 key: record_key.clone(),
                 value,
                 publisher: None,
                 expires: None,
-            };
+            });
             // The new entry is closer, it shall replace the existing one
             assert!(store.put_verified(record, RecordType::Chunk).is_ok());
             // We must also mark the record as stored (which would be triggered after the async write in nodes
