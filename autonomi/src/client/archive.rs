@@ -68,19 +68,12 @@ impl Default for Metadata {
 }
 
 impl Archive {
-    /// Deserialize from bytes.
-    pub fn from_bytes(data: Bytes) -> Result<Archive, rmp_serde::decode::Error> {
-        let root: Archive = rmp_serde::from_slice(&data[..])?;
-
-        Ok(root)
-    }
-
-    /// Serialize to bytes.
-    pub fn into_bytes(&self) -> Result<Bytes, rmp_serde::encode::Error> {
-        let root_serialized = rmp_serde::to_vec(&self)?;
-        let root_serialized = Bytes::from(root_serialized);
-
-        Ok(root_serialized)
+    /// Create a new emtpy local archive
+    /// Note that this does not upload the archive to the network
+    pub fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+        }
     }
 
     /// Rename a file in an archive
@@ -97,14 +90,6 @@ impl Archive {
         meta.modified = now;
         self.map.insert(new_path.to_path_buf(), (data_addr, meta));
         Ok(())
-    }
-
-    /// Create a new emtpy local archive
-    /// Note that this does not upload the archive to the network
-    pub fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-        }
     }
 
     /// Add a file to a local archive
@@ -143,6 +128,21 @@ impl Archive {
     /// Get the underlying map
     pub fn map(&self) -> &HashMap<PathBuf, (DataAddr, Metadata)> {
         &self.map
+    }
+
+    /// Deserialize from bytes.
+    pub fn from_bytes(data: Bytes) -> Result<Archive, rmp_serde::decode::Error> {
+        let root: Archive = rmp_serde::from_slice(&data[..])?;
+
+        Ok(root)
+    }
+
+    /// Serialize to bytes.
+    pub fn into_bytes(&self) -> Result<Bytes, rmp_serde::encode::Error> {
+        let root_serialized = rmp_serde::to_vec(&self)?;
+        let root_serialized = Bytes::from(root_serialized);
+
+        Ok(root_serialized)
     }
 }
 

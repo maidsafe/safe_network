@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use std::collections::HashMap;
-use std::collections::HashSet;
 
 use super::archive::ArchiveAddr;
 use super::data::GetError;
@@ -35,15 +34,10 @@ pub static USER_DATA_VAULT_CONTENT_IDENTIFIER: LazyLock<VaultContentType> =
 pub struct UserData {
     /// The register secret key hex encoded
     pub register_sk: Option<String>,
-    /// Owned register addresses
-    pub registers: HashSet<RegisterAddress>,
-    /// Owned file archive addresses
-    pub file_archives: HashSet<ArchiveAddr>,
-
-    /// Owner register names, providing it is optional
-    pub register_names: HashMap<String, RegisterAddress>,
-    /// Owned file archive addresses along with a name for that archive providing it is optional
-    pub file_archive_names: HashMap<String, ArchiveAddr>,
+    /// Owned register addresses, along with their names (can be empty)
+    pub registers: HashMap<RegisterAddress, String>,
+    /// Owned file archive addresses, along with their names (can be empty)
+    pub file_archives: HashMap<ArchiveAddr, String>,
 }
 
 /// Errors that can occur during the get operation.
@@ -63,6 +57,25 @@ impl UserData {
     /// Create a new empty UserData
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Add an archive. Returning `Option::Some` with the old name if the archive was already in the set.
+    pub fn add_file_archive(&mut self, archive: ArchiveAddr) -> Option<String> {
+        self.file_archives.insert(archive, "".into())
+    }
+
+    /// Add an archive. Returning `Option::Some` with the old name if the archive was already in the set.
+    pub fn add_file_archive_with_name(
+        &mut self,
+        archive: ArchiveAddr,
+        name: String,
+    ) -> Option<String> {
+        self.file_archives.insert(archive, name)
+    }
+
+    /// Remove an archive. Returning `Option::Some` with the old name if the archive was already in the set.
+    pub fn remove_file_archive(&mut self, archive: ArchiveAddr) -> Option<String> {
+        self.file_archives.remove(&archive)
     }
 
     /// To bytes
