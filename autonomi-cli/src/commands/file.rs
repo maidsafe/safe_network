@@ -39,8 +39,13 @@ pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     println!("Uploading data to network...");
     info!("Uploading file: {file}");
 
+    let dir_path = PathBuf::from(file);
+    let name = dir_path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or(file.to_string());
     let xor_name = client
-        .dir_upload(PathBuf::from(file), &wallet)
+        .dir_upload(dir_path, &wallet)
         .await
         .wrap_err("Failed to upload file")?;
     let addr = addr_to_str(xor_name);
@@ -62,7 +67,7 @@ pub async fn upload(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
     }
     info!("Summary for upload of file {file} at {addr:?}: {summary:?}");
 
-    crate::user_data::write_local_file_archive(&xor_name, file)
+    crate::user_data::write_local_file_archive(&xor_name, &name)
         .wrap_err("Failed to save file to local user data")
         .with_suggestion(|| "Local user data saves the file address above to disk, without it you need to keep track of the address yourself")?;
     info!("Saved file to local user data");

@@ -11,12 +11,15 @@ use std::collections::HashMap;
 use autonomi::client::{
     address::{addr_to_str, str_to_addr},
     archive::ArchiveAddr,
-    registers::RegisterAddress,
-    vault_user_data::UserData,
+    registers::{RegisterAddress, RegisterSecretKey},
+    vault::UserData,
 };
 use color_eyre::eyre::Result;
 
-use super::{data_dir::get_client_data_dir_path, keys::get_register_signing_key};
+use super::{
+    data_dir::get_client_data_dir_path,
+    keys::{create_register_signing_key_file, get_register_signing_key},
+};
 
 pub fn get_local_user_data() -> Result<UserData> {
     let register_key = get_register_signing_key()?;
@@ -70,6 +73,22 @@ pub fn get_local_file_archives() -> Result<HashMap<ArchiveAddr, String>> {
         file_archives.insert(file_archive_address, file_archive_name);
     }
     Ok(file_archives)
+}
+
+pub fn write_local_user_data(user_data: &UserData) -> Result<()> {
+    if let Some(register_key) = &user_data.register_sk {
+        let sk = RegisterSecretKey::from_hex(register_key)?;
+        create_register_signing_key_file(sk)?;
+    }
+
+    for (register, name) in user_data.registers.iter() {
+        write_local_register(register, name)?;
+    }
+
+    for (archive, name) in user_data.file_archives.iter() {
+        write_local_file_archive(archive, name)?;
+    }
+    Ok(())
 }
 
 pub fn write_local_register(register: &RegisterAddress, name: &str) -> Result<()> {

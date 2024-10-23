@@ -6,21 +6,27 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::collections::HashSet;
-use std::hash::{DefaultHasher, Hash, Hasher};
+pub mod key;
+pub mod user_data;
+
+pub use key::{derive_vault_key, VaultSecretKey};
+pub use user_data::UserData;
 
 use crate::client::data::PutError;
 use crate::client::Client;
-use bls::SecretKey;
 use libp2p::kad::{Quorum, Record};
-use sn_evm::EvmWallet;
+use sn_evm::{Amount, AttoTokens, EvmWallet};
 use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg, VerificationKind};
 use sn_protocol::storage::{
     try_serialize_record, RecordKind, RetryStrategy, Scratchpad, ScratchpadAddress,
 };
 use sn_protocol::Bytes;
 use sn_protocol::{storage::try_deserialize_record, NetworkAddress};
+use std::collections::HashSet;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use tracing::info;
+
+use super::data::CostError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum VaultError {
@@ -53,7 +59,7 @@ impl Client {
     /// Returns the content type of the bytes in the vault
     pub async fn fetch_and_decrypt_vault(
         &self,
-        secret_key: &SecretKey,
+        secret_key: &VaultSecretKey,
     ) -> Result<(Bytes, VaultContentType), VaultError> {
         info!("Fetching and decrypting vault");
         let pad = self.get_vault_from_network(secret_key).await?;
@@ -65,7 +71,7 @@ impl Client {
     /// Gets the vault Scratchpad from a provided client public key
     async fn get_vault_from_network(
         &self,
-        secret_key: &SecretKey,
+        secret_key: &VaultSecretKey,
     ) -> Result<Scratchpad, VaultError> {
         let client_pk = secret_key.public_key();
 
@@ -96,6 +102,26 @@ impl Client {
         Ok(pad)
     }
 
+    /// Get the cost of creating a new vault
+    pub async fn vault_cost(&self, owner: &VaultSecretKey) -> Result<AttoTokens, CostError> {
+        info!("Getting cost for vault");
+        let client_pk = owner.public_key();
+        let content_type = Default::default();
+        let scratch = Scratchpad::new(client_pk, content_type);
+        let vault_xor = scratch.network_address().as_xorname().unwrap_or_default();
+
+        // NB TODO: vault should be priced differently from other data
+        let cost_map = self.get_store_quotes(std::iter::once(vault_xor)).await?;
+        let total_cost = AttoTokens::from_atto(
+            cost_map
+                .values()
+                .map(|quote| quote.2.cost.as_atto())
+                .sum::<Amount>(),
+        );
+
+        Ok(total_cost)
+    }
+
     /// Put data into the client's VaultPacket
     ///
     /// Pays for a new VaultPacket if none yet created for the client.
@@ -105,9 +131,10 @@ impl Client {
         &self,
         data: Bytes,
         wallet: &EvmWallet,
-        secret_key: &SecretKey,
+        secret_key: &VaultSecretKey,
         content_type: VaultContentType,
-    ) -> Result<(), PutError> {
+    ) -> Result<AttoTokens, PutError> {
+        let mut total_cost = AttoTokens::zero();
         let client_pk = secret_key.public_key();
 
         let pad_res = self.get_vault_from_network(secret_key).await;
@@ -148,6 +175,7 @@ impl Client {
             let (payment_proofs, _) = self.pay(std::iter::once(scratch_xor), wallet).await?;
             // Should always be there, else it would have failed on the payment step.
             let proof = payment_proofs.get(&scratch_xor).expect("Missing proof");
+            total_cost = proof.quote.cost;
 
             Record {
                 key: scratch_key,
@@ -200,6 +228,6 @@ impl Client {
                 )
             })?;
 
-        Ok(())
+        Ok(total_cost)
     }
 }
