@@ -31,6 +31,10 @@ tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
 ring = "0.17.8"
 tempfile = "3.10.1"
+tokio = { version = "1", features = ["full"] }
+rpassword = "7.0"
+color-eyre = "~0.6"
+dirs-next = "~2.0.0"
 
 [dev-dependencies]
 tokio = { version = "1.32.0", features = ["macros", "rt"] }

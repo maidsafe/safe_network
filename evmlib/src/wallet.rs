@@ -180,6 +180,11 @@ pub fn wallet_address(wallet: &EthereumWallet) -> Address {
     <EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
 }
 
+pub fn get_random_private_key_for_wallet() -> String {
+    let signer: PrivateKeySigner = LocalSigner::random();
+    signer.to_bytes().to_string()
+}
+
 /// Returns the raw balance of payment tokens for this wallet.
 pub async fn balance_of_tokens(
     account: Address,

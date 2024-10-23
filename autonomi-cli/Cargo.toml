@@ -27,6 +27,7 @@ autonomi = { path = "../autonomi", version = "0.1.0", features = [
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "~0.6"
 dirs-next = "~2.0.0"
+thiserror = "1.0"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 tokio = { version = "1.32.0", features = [
     "io-util",
@@ -41,6 +42,7 @@ tracing = { version = "~0.1.26" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.0" }
 sn_build_info = { path = "../sn_build_info", version = "0.1.11" }
 sn_logging = { path = "../sn_logging", version = "0.2.33" }
+rpassword = "7.0"
 
 [dev-dependencies]
 autonomi = { path = "../autonomi", version = "0.1.0", features = [
@@ -52,6 +54,7 @@ criterion = "0.5.1"
 tempfile = "3.6.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
+
 
 [lints]
 workspace = true
