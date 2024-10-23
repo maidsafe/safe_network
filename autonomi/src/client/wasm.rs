@@ -306,16 +306,22 @@ pub struct JsWallet(evmlib::wallet::Wallet);
 /// Get a funded wallet for testing. This either uses a default private key or the `EVM_PRIVATE_KEY`
 /// environment variable that was used during the build process of this library.
 #[wasm_bindgen(js_name = getFundedWallet)]
-pub fn funded_wallet() -> JsWallet {
-    JsWallet(test_utils::evm::get_funded_wallet())
-}
+pub fn funded_wallet() -> Wallet {
+    let network = evmlib::utils::get_evm_network_from_env()
+        .expect("Failed to get EVM network from environment variables");
+    if matches!(network, evmlib::Network::ArbitrumOne) {
+        panic!("You're trying to use ArbitrumOne network. Use a custom network for testing.");
+    }
+    // Default deployer wallet of the testnet.
+    const DEFAULT_WALLET_PRIVATE_KEY: &str =
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-/// Get the current `EvmNetwork` that was set using environment variables that were used during the build process of this library.
-#[wasm_bindgen(js_name = getEvmNetwork)]
-pub fn evm_network() -> Result<JsValue, JsError> {
-    let evm_network = evmlib::utils::get_evm_network_from_env()?;
-    let js_value = serde_wasm_bindgen::to_value(&evm_network)?;
-    Ok(js_value)
+    let private_key = std::env::var("SECRET_KEY").unwrap_or(DEFAULT_WALLET_PRIVATE_KEY.to_string());
+
+    let wallet = evmlib::wallet::Wallet::new_from_private_key(network, &private_key)
+        .expect("Invalid private key");
+
+    Wallet(wallet)
 }
 
 /// Enable tracing logging in the console.
