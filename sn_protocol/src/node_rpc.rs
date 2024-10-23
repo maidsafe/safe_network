@@ -15,7 +15,7 @@ pub enum NodeCtrl {
     /// Request to stop the execution of the safenode app, providing an error as a reason for it.
     Stop {
         delay: Duration,
-        cause: Error,
+        result: StopResult,
     },
     /// Request to restart the execution of the safenode app, retrying to join the network, after the requested delay.
     /// Set `retain_peer_id` to `true` if you want to re-use the same root dir/secret keys/PeerId.
@@ -25,4 +25,10 @@ pub enum NodeCtrl {
     },
     // Request to update the safenode app, and restart it, after the requested delay.
     Update(Duration),
+}
+
+#[derive(Debug)]
+pub enum StopResult {
+    Success(String),
+    Error(Error),
 }

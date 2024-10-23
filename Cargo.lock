@@ -1069,7 +1069,7 @@ checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
 
 [[package]]
 name = "autonomi"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "alloy",
  "bip39",
@@ -1114,7 +1114,7 @@ dependencies = [
 
 [[package]]
 name = "autonomi-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "autonomi",
  "clap",
@@ -1477,7 +1477,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40723b8fb387abc38f4f4a37c09073622e41dd12327033091ef8950659e6dc0c"
 dependencies = [
  "memchr",
- "regex-automata 0.4.7",
+ "regex-automata 0.4.8",
  "serde",
 ]
 
@@ -2748,7 +2748,7 @@ dependencies = [
 
 [[package]]
 name = "evm_testnet"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "dirs-next",
@@ -2759,7 +2759,7 @@ dependencies = [
 
 [[package]]
 name = "evmlib"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "alloy",
  "dirs-next",
@@ -3725,8 +3725,8 @@ dependencies = [
  "aho-corasick",
  "bstr",
  "log",
- "regex-automata 0.4.7",
- "regex-syntax 0.8.4",
+ "regex-automata 0.4.8",
+ "regex-syntax 0.8.5",
 ]
 
 [[package]]
@@ -4307,7 +4307,7 @@ dependencies = [
  "globset",
  "log",
  "memchr",
- "regex-automata 0.4.7",
+ "regex-automata 0.4.8",
  "same-file",
  "walkdir",
  "winapi-util",
@@ -5566,7 +5566,7 @@ dependencies = [
 
 [[package]]
 name = "nat-detection"
-version = "0.2.7"
+version = "0.2.8"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
@@ -5683,7 +5683,7 @@ dependencies = [
 
 [[package]]
 name = "node-launchpad"
-version = "0.3.19"
+version = "0.4.0"
 dependencies = [
  "atty",
  "better-panic",
@@ -5706,6 +5706,7 @@ dependencies = [
  "pretty_assertions",
  "prometheus-parse",
  "ratatui",
+ "regex",
  "reqwest 0.12.7",
  "serde",
  "serde_json",
@@ -6589,7 +6590,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rand_xorshift 0.3.0",
- "regex-syntax 0.8.4",
+ "regex-syntax 0.8.5",
  "rusty-fork",
  "tempfile",
  "unarray",
@@ -7086,14 +7087,14 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.10.6"
+version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4219d74c6b67a3654a9fbebc4b419e22126d13d2f3c4a07ee0cb61ff79a79619"
+checksum = "38200e5ee88914975b69f657f0801b6f6dccafd44fd9326302a4aaeecfacb1d8"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-automata 0.4.7",
- "regex-syntax 0.8.4",
+ "regex-automata 0.4.8",
+ "regex-syntax 0.8.5",
 ]
 
 [[package]]
@@ -7107,13 +7108,13 @@ dependencies = [
 
 [[package]]
 name = "regex-automata"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38caf58cc5ef2fed281f89292ef23f6365465ed9a41b7a7754eb4e26496c92df"
+checksum = "368758f23274712b504848e9d5a6f010445cc8b87a7cdb4d7cbee666c1288da3"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-syntax 0.8.4",
+ "regex-syntax 0.8.5",
 ]
 
 [[package]]
@@ -7124,9 +7125,9 @@ checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "regex-syntax"
-version = "0.8.4"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
+checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
 name = "reqwest"
@@ -8027,7 +8028,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.10.6"
+version = "0.11.0"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -8103,7 +8104,7 @@ dependencies = [
 
 [[package]]
 name = "sn_build_info"
-version = "0.1.15"
+version = "0.1.16"
 dependencies = [
  "chrono",
  "tracing",
@@ -8145,7 +8146,7 @@ dependencies = [
 
 [[package]]
 name = "sn_evm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "custom_debug",
  "evmlib",
@@ -8168,7 +8169,7 @@ dependencies = [
 
 [[package]]
 name = "sn_logging"
-version = "0.2.36"
+version = "0.2.37"
 dependencies = [
  "chrono",
  "color-eyre",
@@ -8193,7 +8194,7 @@ dependencies = [
 
 [[package]]
 name = "sn_metrics"
-version = "0.1.16"
+version = "0.1.17"
 dependencies = [
  "clap",
  "color-eyre",
@@ -8207,7 +8208,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.18.4"
+version = "0.19.0"
 dependencies = [
  "aes-gcm-siv",
  "async-trait",
@@ -8252,7 +8253,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.111.4"
+version = "0.112.0"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -8292,6 +8293,7 @@ dependencies = [
  "sn_service_management",
  "sn_transfers",
  "strum",
+ "sysinfo",
  "tempfile",
  "test_utils",
  "thiserror",
@@ -8308,7 +8310,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.6.31"
+version = "0.6.32"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -8335,7 +8337,7 @@ dependencies = [
 
 [[package]]
 name = "sn_peers_acquisition"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "clap",
  "lazy_static",
@@ -8351,7 +8353,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.17.11"
+version = "0.17.12"
 dependencies = [
  "blsttc",
  "bytes",
@@ -8381,7 +8383,7 @@ dependencies = [
 
 [[package]]
 name = "sn_registers"
-version = "0.3.21"
+version = "0.4.0"
 dependencies = [
  "blsttc",
  "crdts",
@@ -8398,7 +8400,7 @@ dependencies = [
 
 [[package]]
 name = "sn_service_management"
-version = "0.3.14"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "dirs-next",
@@ -8424,7 +8426,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.19.3"
+version = "0.20.0"
 dependencies = [
  "assert_fs",
  "blsttc",
@@ -8757,7 +8759,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "test_utils"
-version = "0.4.7"
+version = "0.4.8"
 dependencies = [
  "bytes",
  "color-eyre",
@@ -8901,7 +8903,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token_supplies"
-version = "0.1.54"
+version = "0.1.55"
 dependencies = [
  "dirs-next",
  "reqwest 0.11.27",
@@ -9898,7 +9900,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

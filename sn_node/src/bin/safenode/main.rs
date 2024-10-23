@@ -24,7 +24,9 @@ use sn_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use sn_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use sn_peers_acquisition::PeersArgs;
 use sn_protocol::{
-    node::get_safenode_root_dir, node_rpc::NodeCtrl, version::IDENTIFY_PROTOCOL_STR,
+    node::get_safenode_root_dir,
+    node_rpc::{NodeCtrl, StopResult},
+    version::IDENTIFY_PROTOCOL_STR,
 };
 use std::{
     env,
@@ -34,6 +36,7 @@ use std::{
     process::Command,
     time::Duration,
 };
+use sysinfo::{self, System};
 use tokio::{
     runtime::Runtime,
     sync::{broadcast::error::RecvError, mpsc},
@@ -380,11 +383,63 @@ You can check your reward balance by running:
         if let Err(err) = ctrl_tx_clone
             .send(NodeCtrl::Stop {
                 delay: Duration::from_secs(1),
-                cause: eyre!("Ctrl-C received!"),
+                result: StopResult::Error(eyre!("Ctrl-C received!")),
             })
             .await
         {
             error!("Failed to send node control msg to safenode bin main thread: {err}");
+        }
+    });
+    let ctrl_tx_clone_cpu = ctrl_tx.clone();
+    // Monitor host CPU usage
+    tokio::spawn(async move {
+        use rand::{thread_rng, Rng};
+
+        const CPU_CHECK_INTERVAL: Duration = Duration::from_secs(60);
+        const CPU_USAGE_THRESHOLD: f32 = 50.0;
+        const HIGH_CPU_CONSECUTIVE_LIMIT: u8 = 5;
+        const NODE_STOP_DELAY: Duration = Duration::from_secs(1);
+        const INITIAL_DELAY_MIN_S: u64 = 10;
+        const INITIAL_DELAY_MAX_S: u64 =
+            HIGH_CPU_CONSECUTIVE_LIMIT as u64 * CPU_CHECK_INTERVAL.as_secs();
+        const JITTER_MIN_S: u64 = 1;
+        const JITTER_MAX_S: u64 = 15;
+
+        let mut sys = System::new_all();
+
+        let mut high_cpu_count: u8 = 0;
+
+        // Random initial delay between 1 and 5 minutes
+        let initial_delay =
+            Duration::from_secs(thread_rng().gen_range(INITIAL_DELAY_MIN_S..=INITIAL_DELAY_MAX_S));
+        tokio::time::sleep(initial_delay).await;
+
+        loop {
+            sys.refresh_cpu();
+            let cpu_usage = sys.global_cpu_info().cpu_usage();
+
+            if cpu_usage > CPU_USAGE_THRESHOLD {
+                high_cpu_count += 1;
+            } else {
+                high_cpu_count = 0;
+            }
+
+            if high_cpu_count >= HIGH_CPU_CONSECUTIVE_LIMIT {
+                if let Err(err) = ctrl_tx_clone_cpu
+                    .send(NodeCtrl::Stop {
+                        delay: NODE_STOP_DELAY,
+                        result: StopResult::Success(format!("Excess host CPU %{CPU_USAGE_THRESHOLD} detected for {HIGH_CPU_CONSECUTIVE_LIMIT} consecutive minutes!")),
+                    })
+                    .await
+                {
+                    error!("Failed to send node control msg to safenode bin main thread: {err}");
+                }
+                break;
+            }
+
+            // Add jitter to the interval
+            let jitter = Duration::from_secs(thread_rng().gen_range(JITTER_MIN_S..=JITTER_MAX_S));
+            tokio::time::sleep(CPU_CHECK_INTERVAL + jitter).await;
         }
     });
 
@@ -422,12 +477,21 @@ You can check your reward balance by running:
 
                 break Ok(res);
             }
-            Some(NodeCtrl::Stop { delay, cause }) => {
+            Some(NodeCtrl::Stop { delay, result }) => {
                 let msg = format!("Node is stopping in {delay:?}...");
                 info!("{msg}");
                 println!("{msg} Node log path: {log_output_dest}");
                 sleep(delay).await;
-                return Err(cause);
+                match result {
+                    StopResult::Success(message) => {
+                        info!("Node stopped successfully: {}", message);
+                        return Ok(None);
+                    }
+                    StopResult::Error(cause) => {
+                        error!("Node stopped with error: {}", cause);
+                        return Err(cause);
+                    }
+                }
             }
             Some(NodeCtrl::Update(_delay)) => {
                 // TODO: implement self-update once safenode app releases are published again
@@ -450,7 +514,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {
                             delay: Duration::from_secs(1),
-                            cause: eyre!("Node events channel closed!"),
+                            result: StopResult::Error(eyre!("Node events channel closed!")),
                         })
                         .await
                     {
@@ -464,7 +528,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                     if let Err(err) = ctrl_tx
                         .send(NodeCtrl::Stop {
                             delay: Duration::from_secs(1),
-                            cause: eyre!("Node terminated due to: {reason:?}"),
+                            result: StopResult::Error(eyre!("Node terminated due to: {reason:?}")),
                         })
                         .await
                     {

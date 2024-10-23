@@ -9,7 +9,7 @@
 use eyre::{ErrReport, Result};
 use sn_logging::ReloadHandle;
 use sn_node::RunningNode;
-use sn_protocol::node_rpc::NodeCtrl;
+use sn_protocol::node_rpc::{NodeCtrl, StopResult};
 use sn_protocol::safenode_proto::{
     k_buckets_response,
     safe_node_server::{SafeNode, SafeNodeServer},
@@ -202,7 +202,14 @@ impl SafeNode for SafeNodeRpcService {
         };
 
         let delay = Duration::from_millis(request.get_ref().delay_millis);
-        match self.ctrl_tx.send(NodeCtrl::Stop { delay, cause }).await {
+        match self
+            .ctrl_tx
+            .send(NodeCtrl::Stop {
+                delay,
+                result: StopResult::Success(cause.to_string()),
+            })
+            .await
+        {
             Ok(()) => Ok(Response::new(StopResponse {})),
             Err(err) => Err(Status::new(
                 Code::Internal,
