@@ -62,8 +62,8 @@ impl Behaviour {
                     PROTOCOL_VERSION.to_string(),
                     local_public_key.clone(),
                 )
-                // Exchange information every 5 minutes.
-                .with_interval(Duration::from_secs(5 * 60)),
+                // Exchange information every 15 minutes.
+                .with_interval(Duration::from_secs(15 * 60)),
             ),
             upnp: upnp.then(libp2p::upnp::tokio::Behaviour::default).into(),
         }
