@@ -10,6 +10,7 @@
 extern crate tracing;
 
 pub use evmlib::common::Address as RewardsAddress;
+pub use evmlib::common::Address as EvmAddress;
 pub use evmlib::common::QuotePayment;
 pub use evmlib::common::{QuoteHash, TxHash};
 #[cfg(feature = "external-signer")]
