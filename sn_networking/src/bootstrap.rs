@@ -13,7 +13,7 @@ use crate::target_arch::Instant;
 
 /// The default interval at which NetworkDiscovery is triggered. The interval is increased as more peers are added to the
 /// routing table.
-pub(crate) const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(15);
+pub(crate) const BOOTSTRAP_INTERVAL: Duration = Duration::from_secs(60);
 
 impl SwarmDriver {
     /// This functions triggers network discovery based on when the last peer was added to the RT and the number of
