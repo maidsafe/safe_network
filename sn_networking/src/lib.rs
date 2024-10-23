@@ -761,6 +761,7 @@ impl Network {
     /// Handle the split record error.
     /// Spend: Accumulate spends and return error if more than one.
     /// Register: Merge registers and return the merged record.
+    #[cfg(not(target_arch = "wasm32"))]
     fn handle_split_record_error(
         result_map: &HashMap<XorName, (Record, HashSet<PeerId>)>,
         key: &RecordKey,

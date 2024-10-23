@@ -136,7 +136,6 @@ mod archive {
 #[cfg(feature = "vault")]
 mod vault {
     use super::*;
-    use bls::SecretKey;
 
     #[wasm_bindgen(js_name = UserData)]
     pub struct JsUserData(UserData);
@@ -306,7 +305,7 @@ pub struct JsWallet(evmlib::wallet::Wallet);
 /// Get a funded wallet for testing. This either uses a default private key or the `EVM_PRIVATE_KEY`
 /// environment variable that was used during the build process of this library.
 #[wasm_bindgen(js_name = getFundedWallet)]
-pub fn funded_wallet() -> Wallet {
+pub fn funded_wallet() -> JsWallet {
     let network = evmlib::utils::get_evm_network_from_env()
         .expect("Failed to get EVM network from environment variables");
     if matches!(network, evmlib::Network::ArbitrumOne) {
@@ -321,7 +320,7 @@ pub fn funded_wallet() -> Wallet {
     let wallet = evmlib::wallet::Wallet::new_from_private_key(network, &private_key)
         .expect("Invalid private key");
 
-    Wallet(wallet)
+    JsWallet(wallet)
 }
 
 /// Enable tracing logging in the console.
