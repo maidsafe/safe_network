@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::NetworkSwarmCmd, event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p,
-    relay_manager::is_a_relayed_peer, target_arch::Instant, NetworkEvent, Result, SwarmDriver,
+    event::NodeEvent, multiaddr_is_global, multiaddr_strip_p2p, relay_manager::is_a_relayed_peer,
+    target_arch::Instant, NetworkEvent, Result, SwarmDriver,
 };
 #[cfg(feature = "local")]
 use libp2p::mdns;
@@ -25,7 +25,7 @@ use libp2p::{
 };
 use sn_protocol::version::{IDENTIFY_NODE_VERSION_STR, IDENTIFY_PROTOCOL_STR};
 use std::collections::HashSet;
-use tokio::{sync::oneshot, time::Duration};
+use tokio::time::Duration;
 
 impl SwarmDriver {
     /// Handle `SwarmEvents`
@@ -512,15 +512,6 @@ impl SwarmDriver {
                         .remove_peer(&failed_peer_id)
                     {
                         self.update_on_peer_removal(*dead_peer.node.key.preimage());
-                    }
-                }
-
-                if !should_clean_peer {
-                    // lets try and redial.
-                    for addr in failed_peer_addresses {
-                        let (sender, _recv) = oneshot::channel();
-
-                        self.queue_network_swarm_cmd(NetworkSwarmCmd::Dial { addr, sender });
                     }
                 }
             }
