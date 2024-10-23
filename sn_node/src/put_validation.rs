@@ -396,7 +396,8 @@ impl Node {
     ) -> Result<()> {
         // owner PK is defined herein, so as long as record key and this match, we're good
         let addr = scratchpad.address();
-        debug!("Validating and storing scratchpad {addr:?}");
+        let count = scratchpad.count();
+        debug!("Validating and storing scratchpad {addr:?} with count {count}");
 
         // check if the deserialized value's RegisterAddress matches the record's key
         let scratchpad_key = NetworkAddress::ScratchpadAddress(*addr).to_record_key();

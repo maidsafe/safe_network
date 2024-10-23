@@ -149,6 +149,11 @@ impl Client {
             );
 
             is_new = false;
+
+            if existing_data.owner() != &client_pk {
+                return Err(PutError::VaultBadOwner);
+            }
+
             existing_data
         } else {
             trace!("new scratchpad creation");
@@ -156,6 +161,8 @@ impl Client {
         };
 
         let _next_count = scratch.update_and_sign(data, secret_key);
+        debug_assert!(scratch.is_valid(), "Must be valid after being signed. This is a bug, please report it by opening an issue on our github");
+
         let scratch_address = scratch.network_address();
         let scratch_key = scratch_address.to_record_key();
 

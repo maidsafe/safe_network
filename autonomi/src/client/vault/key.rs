@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use blst::min_pk::SecretKey as BlstSecretKey;
 use sha2::{Digest, Sha256};
 
 /// Secret key to decrypt vault content
@@ -17,6 +18,10 @@ pub enum VaultKeyError {
     FailedToSignMessage(#[from] sn_evm::cryptography::SignError),
     #[error("Failed to generate vault secret key: {0}")]
     FailedToGenerateVaultSecretKey(String),
+    #[error("Failed to convert blst secret key to blsttc secret key: {0}")]
+    BlsConversionError(#[from] bls::Error),
+    #[error("Failed to generate blst secret key")]
+    KeyGenerationError,
 }
 
 /// Message used to generate the vault secret key from the EVM secret key
@@ -28,16 +33,24 @@ const VAULT_SECRET_KEY_SEED: &[u8] = b"Massive Array of Internet Disks Secure Ac
 pub fn derive_vault_key(evm_sk_hex: &str) -> Result<VaultSecretKey, VaultKeyError> {
     let signature = sn_evm::cryptography::sign_message(evm_sk_hex, VAULT_SECRET_KEY_SEED)
         .map_err(VaultKeyError::FailedToSignMessage)?;
-    let hash = hash_to_32b(&signature);
 
-    // NB TODO: not sure this is safe, we should ask Mav or find a better way to do this!
-    let root_sk = bls::SecretKey::default();
-    let unique_key = root_sk.derive_child(&hash);
-    Ok(unique_key)
+    let blst_key = derive_secret_key_from_seed(&signature)?;
+    let vault_sk = blst_to_blsttc(&blst_key)?;
+    Ok(vault_sk)
 }
 
-fn hash_to_32b(msg: &[u8]) -> [u8; 32] {
-    let mut sha = Sha256::new();
-    sha.update(msg);
-    sha.finalize().into()
+/// Convert a blst secret key to a blsttc secret key and pray that endianness is the same
+fn blst_to_blsttc(sk: &BlstSecretKey) -> Result<bls::SecretKey, VaultKeyError> {
+    let sk_bytes = sk.to_bytes();
+    let sk = bls::SecretKey::from_bytes(sk_bytes).map_err(VaultKeyError::BlsConversionError)?;
+    Ok(sk)
+}
+
+fn derive_secret_key_from_seed(seed: &[u8]) -> Result<BlstSecretKey, VaultKeyError> {
+    let mut hasher = Sha256::new();
+    hasher.update(seed);
+    let hashed_seed = hasher.finalize();
+    let sk =
+        BlstSecretKey::key_gen(&hashed_seed, &[]).map_err(|_| VaultKeyError::KeyGenerationError)?;
+    Ok(sk)
 }

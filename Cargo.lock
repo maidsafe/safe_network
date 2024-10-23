@@ -1080,6 +1080,8 @@ version = "0.2.0"
 dependencies = [
  "alloy",
  "bip39",
+ "blst",
+ "blstrs 0.7.1",
  "blsttc",
  "bytes",
  "console_error_panic_hook",
@@ -1421,7 +1423,23 @@ dependencies = [
  "byte-slice-cast",
  "ff 0.12.1",
  "group 0.12.1",
- "pairing",
+ "pairing 0.22.0",
+ "rand_core 0.6.4",
+ "serde",
+ "subtle",
+]
+
+[[package]]
+name = "blstrs"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a8a8ed6fefbeef4a8c7b460e4110e12c5e22a5b7cf32621aae6ad650c4dcf29"
+dependencies = [
+ "blst",
+ "byte-slice-cast",
+ "ff 0.13.0",
+ "group 0.13.0",
+ "pairing 0.23.0",
  "rand_core 0.6.4",
  "serde",
  "subtle",
@@ -1434,12 +1452,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1186a39763321a0b73d1a10aa4fc067c5d042308509e8f6cc31d2c2a7ac61ac2"
 dependencies = [
  "blst",
- "blstrs",
+ "blstrs 0.6.2",
  "ff 0.12.1",
  "group 0.12.1",
  "hex 0.4.3",
  "hex_fmt",
- "pairing",
+ "pairing 0.22.0",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "serde",
@@ -2847,6 +2865,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
 dependencies = [
+ "bitvec",
  "rand_core 0.6.4",
  "subtle",
 ]
@@ -3780,7 +3799,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
 dependencies = [
  "ff 0.13.0",
+ "rand 0.8.5",
  "rand_core 0.6.4",
+ "rand_xorshift 0.3.0",
  "subtle",
 ]
 
@@ -6081,6 +6102,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "135590d8bdba2b31346f9cd1fb2a912329f5135e832a4f422942eb6ead8b6b3b"
 dependencies = [
  "group 0.12.1",
+]
+
+[[package]]
+name = "pairing"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81fec4625e73cf41ef4bb6846cafa6d44736525f442ba45e407c4a000a13996f"
+dependencies = [
+ "group 0.13.0",
 ]
 
 [[package]]

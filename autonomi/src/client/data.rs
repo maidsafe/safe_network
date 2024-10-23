@@ -45,6 +45,8 @@ pub enum PutError {
     Serialization(String),
     #[error("A wallet error occurred.")]
     Wallet(#[from] sn_evm::EvmError),
+    #[error("The vault owner key does not match the client's public key")]
+    VaultBadOwner,
 }
 
 /// Errors that can occur during the pay operation.
