@@ -40,10 +40,14 @@ pub struct Archive {
     map: HashMap<PathBuf, (DataAddr, Metadata)>,
 }
 
-/// Metadata for a file in an archive
+/// Metadata for a file in an archive. Time values are UNIX timestamps.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Metadata {
+    /// When the file was (last) uploaded to the network.
+    pub uploaded: u64,
+    /// File creation time on local file system. See [`std::fs::Metadata::created`] for details per OS.
     pub created: u64,
+    /// Last file modification time taken from local file system. See [`std::fs::Metadata::modified`] for details per OS.
     pub modified: u64,
 }
 
@@ -55,6 +59,7 @@ impl Metadata {
             .unwrap_or(Duration::from_secs(0))
             .as_secs();
         Self {
+            uploaded: now,
             created: now,
             modified: now,
         }

@@ -188,6 +188,7 @@ fn metadata_from_entry(entry: &walkdir::DirEntry) -> Metadata {
                 entry.path().display()
             );
             return Metadata {
+                uploaded: 0,
                 created: 0,
                 modified: 0,
             };
@@ -215,5 +216,12 @@ fn metadata_from_entry(entry: &walkdir::DirEntry) -> Metadata {
     let created = unix_time("created", fs_metadata.created());
     let modified = unix_time("modified", fs_metadata.modified());
 
-    Metadata { created, modified }
+    Metadata {
+        uploaded: SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_secs(),
+        created,
+        modified,
+    }
 }
