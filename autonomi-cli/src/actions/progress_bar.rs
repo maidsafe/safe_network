@@ -10,7 +10,6 @@ use color_eyre::eyre::Result;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
 
-#[allow(dead_code)]
 pub fn get_progress_bar(length: u64) -> Result<ProgressBar> {
     let progress_bar = ProgressBar::new(length);
     progress_bar.set_style(

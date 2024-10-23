@@ -7,6 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 mod connect;
+mod download;
 mod progress_bar;
 
 pub use connect::connect_to_network;
+pub use download::download;
+
+pub use progress_bar::get_progress_bar;
