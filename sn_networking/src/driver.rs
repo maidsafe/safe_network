@@ -922,7 +922,7 @@ impl SwarmDriver {
         let farthest_peer_to_check = self
             .get_all_local_peers_excluding_self()
             .len()
-            .checked_div(3 * CLOSE_GROUP_SIZE)
+            .checked_div(5 * CLOSE_GROUP_SIZE)
             .unwrap_or(1);
 
         info!("Farthest peer we'll check: {:?}", farthest_peer_to_check);
