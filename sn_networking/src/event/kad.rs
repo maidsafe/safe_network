@@ -467,7 +467,7 @@ impl SwarmDriver {
             let dist = max_distance_to_data_from_responded_nodes.ilog2();
             let expected_dist = expected_get_range.ilog2();
 
-            warn!("RANGE: {data_key_address:?} Insufficient GetRange searched. {dist:?} {expected_dist:?} {max_distance_to_data_from_responded_nodes:?} is less than expcted GetRange of {expected_get_range:?}");
+            info!("RANGE: {data_key_address:?} Insufficient GetRange searched. {dist:?} {expected_dist:?} {max_distance_to_data_from_responded_nodes:?} is less than expcted GetRange of {expected_get_range:?}");
 
             false
         } else {
