@@ -27,6 +27,7 @@ harness = false
 autonomi = { path = "../autonomi", version = "0.2.0", features = [
     "data",
     "fs",
+    "vault",
     "registers",
     "loud",
 ] }
