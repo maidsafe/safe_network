@@ -137,10 +137,22 @@ impl Node {
                 store_scratchpad_result
             }
             RecordKind::Scratchpad => {
-                error!("Scratchpad should not be validated at this point");
-                Err(Error::InvalidPutWithoutPayment(
-                    PrettyPrintRecordKey::from(&record.key).into_owned(),
-                ))
+                // make sure we already have this scratchpad locally, else reject it as first time upload needs payment
+                let key = record.key.clone();
+                let scratchpad = try_deserialize_record::<Scratchpad>(&record)?;
+                let net_addr = NetworkAddress::ScratchpadAddress(*scratchpad.address());
+                let pretty_key = PrettyPrintRecordKey::from(&key);
+                trace!("Got record to store without payment for scratchpad at {pretty_key:?}");
+                if !self.validate_key_and_existence(&net_addr, &key).await? {
+                    warn!("Ignore store without payment for scratchpad at {pretty_key:?}");
+                    return Err(Error::InvalidPutWithoutPayment(
+                        PrettyPrintRecordKey::from(&record.key).into_owned(),
+                    ));
+                }
+
+                // store the scratchpad
+                self.validate_and_store_scratchpad_record(scratchpad, key, false)
+                    .await
             }
             RecordKind::Spend => {
                 let record_key = record.key.clone();
@@ -387,7 +399,6 @@ impl Node {
     /// Check Counter: It MUST ensure that the new counter value is strictly greater than the currently stored value to prevent replay attacks.
     /// Verify Signature: It MUST use the public key to verify the BLS12-381 signature against the content hash and the counter.
     /// Accept or Reject: If all verifications succeed, the node MUST accept the packet and replace any previous version. Otherwise, it MUST reject the update.
-
     pub(crate) async fn validate_and_store_scratchpad_record(
         &self,
         scratchpad: Scratchpad,
@@ -396,7 +407,8 @@ impl Node {
     ) -> Result<()> {
         // owner PK is defined herein, so as long as record key and this match, we're good
         let addr = scratchpad.address();
-        debug!("Validating and storing scratchpad {addr:?}");
+        let count = scratchpad.count();
+        debug!("Validating and storing scratchpad {addr:?} with count {count}");
 
         // check if the deserialized value's RegisterAddress matches the record's key
         let scratchpad_key = NetworkAddress::ScratchpadAddress(*addr).to_record_key();

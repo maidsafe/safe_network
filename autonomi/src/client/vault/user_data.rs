@@ -8,18 +8,17 @@
 
 use std::collections::HashMap;
 
-use super::archive::ArchiveAddr;
-use super::data::GetError;
-use super::data::PutError;
-use super::registers::RegisterAddress;
-use super::vault::VaultError;
-use super::Client;
-use crate::client::vault::{app_name_to_vault_content_type, VaultContentType};
-use bls::SecretKey;
+use crate::client::archive::ArchiveAddr;
+use crate::client::data::GetError;
+use crate::client::data::PutError;
+use crate::client::registers::RegisterAddress;
+use crate::client::vault::VaultError;
+use crate::client::vault::{app_name_to_vault_content_type, VaultContentType, VaultSecretKey};
+use crate::client::Client;
 use serde::{Deserialize, Serialize};
+use sn_evm::AttoTokens;
 use sn_evm::EvmWallet;
 use sn_protocol::Bytes;
-
 use std::sync::LazyLock;
 
 /// Vault content type for UserDataVault
@@ -95,7 +94,7 @@ impl Client {
     /// Get the user data from the vault
     pub async fn get_user_data_from_vault(
         &self,
-        secret_key: &SecretKey,
+        secret_key: &VaultSecretKey,
     ) -> Result<UserData, UserDataVaultGetError> {
         let (bytes, content_type) = self.fetch_and_decrypt_vault(secret_key).await?;
 
@@ -115,22 +114,24 @@ impl Client {
     }
 
     /// Put the user data to the vault
+    /// Returns the total cost of the put operation
     pub async fn put_user_data_to_vault(
         &self,
-        secret_key: &SecretKey,
+        secret_key: &VaultSecretKey,
         wallet: &EvmWallet,
         user_data: UserData,
-    ) -> Result<(), PutError> {
+    ) -> Result<AttoTokens, PutError> {
         let bytes = user_data
             .to_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize user data: {e}")))?;
-        self.write_bytes_to_vault(
-            bytes,
-            wallet,
-            secret_key,
-            *USER_DATA_VAULT_CONTENT_IDENTIFIER,
-        )
-        .await?;
-        Ok(())
+        let total_cost = self
+            .write_bytes_to_vault(
+                bytes,
+                wallet,
+                secret_key,
+                *USER_DATA_VAULT_CONTENT_IDENTIFIER,
+            )
+            .await?;
+        Ok(total_cost)
     }
 }

@@ -18,6 +18,7 @@ mod utils;
 pub use access::data_dir;
 pub use access::keys;
 pub use access::network;
+pub use access::user_data;
 
 use clap::Parser;
 use color_eyre::Result;

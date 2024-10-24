@@ -6,7 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use color_eyre::eyre::{eyre, Context, Result};
+use color_eyre::{
+    eyre::{eyre, Context, Result},
+    Section,
+};
 use std::path::PathBuf;
 
 pub fn get_client_data_dir_path() -> Result<PathBuf> {
@@ -14,6 +17,12 @@ pub fn get_client_data_dir_path() -> Result<PathBuf> {
         .ok_or_else(|| eyre!("Failed to obtain data dir, your OS might not be supported."))?;
     home_dirs.push("safe");
     home_dirs.push("autonomi");
-    std::fs::create_dir_all(home_dirs.as_path()).wrap_err("Failed to create data dir")?;
+    std::fs::create_dir_all(home_dirs.as_path())
+        .wrap_err("Failed to create data dir")
+        .with_suggestion(|| {
+            format!(
+                "make sure you have the correct permissions to access the data dir: {home_dirs:?}"
+            )
+        })?;
     Ok(home_dirs)
 }

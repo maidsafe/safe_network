@@ -123,10 +123,23 @@ pub enum VaultCmd {
     Cost,
 
     /// Create a vault at a deterministic address based on your `SECRET_KEY`.
+    /// Pushing an encrypted backup of your local user data to the network
     Create,
 
+    /// Load an existing vault from the network.
+    /// Use this when loading your user data to a new device.
+    /// You need to have your original `SECRET_KEY` to load the vault.
+    Load,
+
     /// Sync vault with the network, including registers and files.
-    Sync,
+    /// Loads existing user data from the network and merges it with your local user data.
+    /// Pushes your local user data to the network.
+    Sync {
+        /// Force push your local user data to the network.
+        /// This will overwrite any existing data in your vault.
+        #[arg(short, long)]
+        force: bool,
+    },
 }
 
 pub async fn handle_subcommand(opt: Opt) -> Result<()> {
@@ -140,7 +153,7 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
             FileCmd::Download { addr, dest_file } => {
                 file::download(&addr, &dest_file, peers.await?).await
             }
-            FileCmd::List => file::list(peers.await?),
+            FileCmd::List => file::list(),
         },
         SubCmd::Register { command } => match command {
             RegisterCmd::GenerateKey { overwrite } => register::generate_key(overwrite),
@@ -156,12 +169,13 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
                 value,
             } => register::edit(address, name, &value, peers.await?).await,
             RegisterCmd::Get { address, name } => register::get(address, name, peers.await?).await,
-            RegisterCmd::List => register::list(peers.await?),
+            RegisterCmd::List => register::list(),
         },
         SubCmd::Vault { command } => match command {
-            VaultCmd::Cost => vault::cost(peers.await?),
-            VaultCmd::Create => vault::create(peers.await?),
-            VaultCmd::Sync => vault::sync(peers.await?),
+            VaultCmd::Cost => vault::cost(peers.await?).await,
+            VaultCmd::Create => vault::create(peers.await?).await,
+            VaultCmd::Load => vault::load(peers.await?).await,
+            VaultCmd::Sync { force } => vault::sync(peers.await?, force).await,
         },
     }
 }

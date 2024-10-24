@@ -141,3 +141,17 @@ impl Scratchpad {
         self.encrypted_data.len()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_scratchpad_is_valid() {
+        let sk = SecretKey::random();
+        let pk = sk.public_key();
+        let mut scratchpad = Scratchpad::new(pk, 42);
+        scratchpad.update_and_sign(Bytes::from_static(b"data to be encrypted"), &sk);
+        assert!(scratchpad.is_valid());
+    }
+}

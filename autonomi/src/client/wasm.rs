@@ -2,7 +2,9 @@ use libp2p::Multiaddr;
 use wasm_bindgen::prelude::*;
 
 use super::address::{addr_to_str, str_to_addr};
-use super::vault_user_data::UserData;
+
+#[cfg(feature = "vault")]
+use super::vault::UserData;
 
 #[wasm_bindgen(js_name = Client)]
 pub struct JsClient(super::Client);

@@ -20,8 +20,6 @@ pub mod fs;
 pub mod registers;
 #[cfg(feature = "vault")]
 pub mod vault;
-#[cfg(feature = "vault")]
-pub mod vault_user_data;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;

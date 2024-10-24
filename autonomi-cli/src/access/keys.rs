@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use autonomi::client::registers::RegisterSecretKey;
+use autonomi::client::vault::VaultSecretKey;
 use autonomi::{get_evm_network_from_env, Wallet};
 use color_eyre::eyre::{Context, Result};
 use color_eyre::Section;
@@ -49,6 +50,12 @@ pub fn get_secret_key() -> Result<String> {
         .wrap_err("Failed to read secret key from file")
         .with_suggestion(|| format!("make sure you've provided the {SECRET_KEY_ENV} env var or have the key in a file at {key_path:?}"))
         .with_suggestion(|| "the secret key should be a hex encoded string of your evm wallet private key")
+}
+
+pub fn get_vault_secret_key() -> Result<VaultSecretKey> {
+    let secret_key = get_secret_key()?;
+    autonomi::client::vault::derive_vault_key(&secret_key)
+        .wrap_err("Failed to derive vault secret key from EVM secret key")
 }
 
 pub fn create_register_signing_key_file(key: RegisterSecretKey) -> Result<PathBuf> {
