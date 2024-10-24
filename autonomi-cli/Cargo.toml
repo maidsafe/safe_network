@@ -24,7 +24,7 @@ name = "files"
 harness = false
 
 [dependencies]
-autonomi = { path = "../autonomi", version = "0.2.0", features = [
+autonomi = { path = "../autonomi", version = "0.2.1", features = [
     "data",
     "fs",
     "vault",
@@ -51,7 +51,7 @@ sn_logging = { path = "../sn_logging", version = "0.2.37" }
 walkdir = "2.5.0"
 
 [dev-dependencies]
-autonomi = { path = "../autonomi", version = "0.2.0", features = [
+autonomi = { path = "../autonomi", version = "0.2.1", features = [
     "data",
     "fs",
 ] }
