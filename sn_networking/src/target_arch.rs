@@ -19,12 +19,33 @@ pub use tokio::{
 
 #[cfg(target_arch = "wasm32")]
 pub use std::time::Duration;
-
+#[cfg(target_arch = "wasm32")]
+pub use wasm_bindgen_futures::spawn_local as spawn;
 #[cfg(target_arch = "wasm32")]
 pub use wasmtimer::{
     std::{Instant, SystemTime, UNIX_EPOCH},
     tokio::{interval, sleep, timeout, Interval},
 };
 
+/// === Channels ====
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use tokio::sync::mpsc;
+#[cfg(not(target_arch = "wasm32"))]
+pub use tokio::sync::mpsc::channel as mpsc_channel;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub async fn mpsc_recv<T>(mpsc: &mut mpsc::Receiver<T>) -> Option<T> {
+    mpsc.recv().await
+}
+
+// futures crate has different function signatures than tokio, so instead we use async_channel here.
 #[cfg(target_arch = "wasm32")]
-pub use wasm_bindgen_futures::spawn_local as spawn;
+pub use async_channel as mpsc;
+#[cfg(target_arch = "wasm32")]
+pub use async_channel::bounded as mpsc_channel;
+
+#[cfg(target_arch = "wasm32")]
+pub async fn mpsc_recv<T>(mpsc: &mut mpsc::Receiver<T>) -> Option<T> {
+    mpsc.recv().await.ok()
+}
