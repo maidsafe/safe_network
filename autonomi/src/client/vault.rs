@@ -11,12 +11,13 @@ pub mod user_data;
 
 pub use key::{derive_vault_key, VaultSecretKey};
 pub use user_data::UserData;
+use xor_name::XorName;
 
 use crate::client::data::PutError;
 use crate::client::Client;
 use libp2p::kad::{Quorum, Record};
 use sn_evm::{Amount, AttoTokens, EvmWallet};
-use sn_networking::{GetRecordCfg, NetworkError, PutRecordCfg, VerificationKind};
+use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg, VerificationKind};
 use sn_protocol::storage::{
     try_serialize_record, RecordKind, RetryStrategy, Scratchpad, ScratchpadAddress,
 };
@@ -38,6 +39,8 @@ pub enum VaultError {
     Protocol(#[from] sn_protocol::Error),
     #[error("Network: {0}")]
     Network(#[from] NetworkError),
+    #[error("Vault not found")]
+    Missing,
 }
 
 /// The content type of the vault data
@@ -88,16 +91,54 @@ impl Client {
             is_register: false,
         };
 
-        let record = self
+        let pad = match self
             .network
-            .get_record_from_network(scratch_key, &get_cfg)
+            .get_record_from_network(scratch_key.clone(), &get_cfg)
             .await
-            .inspect_err(|err| {
-                debug!("Failed to fetch vault {network_address:?} from network: {err}");
-            })?;
+        {
+            Ok(record) => {
+                debug!("Got scratchpad for {scratch_key:?}");
+                try_deserialize_record::<Scratchpad>(&record)
+                    .map_err(|_| VaultError::CouldNotDeserializeVaultScratchPad(scratch_address))?
+            }
+            Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
+                debug!("Got multiple scratchpads for {scratch_key:?}");
+                let mut pads = result_map
+                    .values()
+                    .map(|(record, _)| try_deserialize_record::<Scratchpad>(&record))
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| VaultError::CouldNotDeserializeVaultScratchPad(scratch_address))?;
 
-        let pad = try_deserialize_record::<Scratchpad>(&record)
-            .map_err(|_| VaultError::CouldNotDeserializeVaultScratchPad(scratch_address))?;
+                // take the latest versions
+                pads.sort_by_key(|s| s.count());
+                let max_version = pads.last().map(|p| p.count()).unwrap_or_else(|| {
+                    error!("Got empty scratchpad vector for {scratch_key:?}");
+                    u64::MAX
+                });
+                let latest_pads: Vec<_> = pads
+                    .into_iter()
+                    .filter(|s| s.count() == max_version)
+                    .collect();
+
+                // make sure we only have one of latest version
+                let pad = match &latest_pads[..] {
+                    [one] => one,
+                    [multi, ..] => {
+                        error!("Got multiple conflicting scratchpads for {scratch_key:?} with the latest version, returning the first one");
+                        multi
+                    }
+                    [] => {
+                        error!("Got empty scratchpad vector for {scratch_key:?}");
+                        return Err(VaultError::Missing);
+                    }
+                };
+                pad.to_owned()
+            }
+            Err(e) => {
+                warn!("Failed to fetch vault {network_address:?} from network: {e}");
+                return Err(e)?;
+            }
+        };
 
         Ok(pad)
     }
@@ -160,7 +201,7 @@ impl Client {
             Scratchpad::new(client_pk, content_type)
         };
 
-        let _next_count = scratch.update_and_sign(data, secret_key);
+        let _ = scratch.update_and_sign(data, secret_key);
         debug_assert!(scratch.is_valid(), "Must be valid after being signed. This is a bug, please report it by opening an issue on our github");
 
         let scratch_address = scratch.network_address();
@@ -169,19 +210,21 @@ impl Client {
         info!("Writing to vault at {scratch_address:?}",);
 
         let record = if is_new {
-            self.pay(
-                [&scratch_address].iter().filter_map(|f| f.as_xorname()),
-                wallet,
-            )
-            .await
-            .inspect_err(|err| {
-                error!("Failed to pay for new vault at addr: {scratch_address:?} : {err}");
-            })?;
+            let scratch_xor = [&scratch_address]
+                .iter()
+                .filter_map(|f| f.as_xorname())
+                .collect::<Vec<XorName>>();
+            let (payment_proofs, _) = self
+                .pay(scratch_xor.iter().cloned(), wallet)
+                .await
+                .inspect_err(|err| {
+                    error!("Failed to pay for new vault at addr: {scratch_address:?} : {err}");
+                })?;
 
-            let scratch_xor = scratch_address.as_xorname().ok_or(PutError::VaultXorName)?;
-            let (payment_proofs, _) = self.pay(std::iter::once(scratch_xor), wallet).await?;
-            // Should always be there, else it would have failed on the payment step.
-            let proof = payment_proofs.get(&scratch_xor).expect("Missing proof");
+            let proof = match payment_proofs.values().next() {
+                Some(proof) => proof,
+                None => return Err(PutError::PaymentUnexpectedlyInvalid(scratch_address)),
+            };
             total_cost = proof.quote.cost;
 
             Record {

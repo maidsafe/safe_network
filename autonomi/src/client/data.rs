@@ -33,8 +33,6 @@ pub type ChunkAddr = XorName;
 pub enum PutError {
     #[error("Failed to self-encrypt data.")]
     SelfEncryption(#[from] crate::self_encryption::Error),
-    #[error("Error getting Vault XorName data.")]
-    VaultXorName,
     #[error("A network error occurred.")]
     Network(#[from] NetworkError),
     #[error("Error occurred during cost estimation.")]
@@ -47,6 +45,8 @@ pub enum PutError {
     Wallet(#[from] sn_evm::EvmError),
     #[error("The vault owner key does not match the client's public key")]
     VaultBadOwner,
+    #[error("Payment unexpectedly invalid for {0:?}")]
+    PaymentUnexpectedlyInvalid(NetworkAddress),
 }
 
 /// Errors that can occur during the pay operation.

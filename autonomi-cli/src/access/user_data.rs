@@ -22,12 +22,12 @@ use super::{
 };
 
 pub fn get_local_user_data() -> Result<UserData> {
-    let register_key = get_register_signing_key()?;
+    let register_sk = get_register_signing_key().map(|k| k.to_hex()).ok();
     let registers = get_local_registers()?;
     let file_archives = get_local_file_archives()?;
 
     let user_data = UserData {
-        register_sk: Some(register_key.to_hex()),
+        register_sk,
         registers,
         file_archives,
     };

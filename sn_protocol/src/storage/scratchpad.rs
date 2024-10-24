@@ -52,6 +52,11 @@ impl Scratchpad {
         self.counter
     }
 
+    /// Set counter manually
+    pub fn set_count(&mut self, c: u64) {
+        self.counter = c;
+    }
+
     /// Return the current data encoding
     pub fn data_encoding(&self) -> u64 {
         self.data_encoding
