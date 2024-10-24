@@ -9,386 +9,374 @@ env:
   NODE_DATA_PATH: /home/runner/.local/share/safe/node
 
 jobs:
-  # benchmark-cli:
-  #   name: Compare sn_cli benchmarks to main
-  #   # right now only ubuntu, running on multiple systems would require many pushes...\
-  #   # perhaps this can be done with one consolidation action in the future, pulling down all results and pushing
-  #   # once to the branch..
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
+  benchmark-cli:
+    name: Compare autonomi_cli benchmarks to main
+    # right now only ubuntu, running on multiple systems would require many pushes...\
+    # perhaps this can be done with one consolidation action in the future, pulling down all results and pushing
+    # once to the branch..
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         components: rustfmt, clippy
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
-  #     - uses: Swatinem/rust-cache@v2
-  #       continue-on-error: true
+      - uses: Swatinem/rust-cache@v2
+        continue-on-error: true
 
-  #     ########################
-  #     ### Setup            ###
-  #     ########################
-  #     - run: cargo install cargo-criterion
+      ########################
+      ### Setup            ###
+      ########################
+      - run: cargo install cargo-criterion
 
-  #     - name: install ripgrep
-  #       run: sudo apt-get -y install ripgrep
+      - name: install ripgrep
+        run: sudo apt-get -y install ripgrep
 
-  #     - name: Download 95mb file to be uploaded with the safe client
-  #       shell: bash
-  #       run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
+      - name: Download 95mb file to be uploaded with the safe client
+        shell: bash
+        run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
 
-  #     # As normal user won't care much about initial client startup,
-  #     # but be more alerted on communication speed during transmission.
-  #     # Meanwhile the criterion testing code includes the client startup as well,
-  #     # it will be better to execute bench test with `local`,
-  #     # to make the measurement results reflect speed improvement or regression more accurately.
-  #     - name: Build sn bins
-  #       run: cargo build --release --bin safe --bin safenode --features local
-  #       timeout-minutes: 30
+      # As normal user won't care much about initial client startup,
+      # but be more alerted on communication speed during transmission.
+      # Meanwhile the criterion testing code includes the client startup as well,
+      # it will be better to execute bench test with `local`,
+      # to make the measurement results reflect speed improvement or regression more accurately.
+      - name: Build binaries
+        run: cargo build --release --features local --bin safenode --bin autonomi
+        timeout-minutes: 30
 
-  #     - name: Build faucet bin
-  #       run: cargo build --release --bin faucet --features local --features gifting --no-default-features
-  #       timeout-minutes: 30
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        env:
+          SN_LOG: "all"
+        with:
+          action: start
+          enable-evm-testnet: true
+          node-path: target/release/safenode
+          platform: ubuntu-latest
+          build: true
 
-  #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
-  #       env:
-  #         SN_LOG: "all"
-  #       with:
-  #         action: start
-  #         interval: 2000
-  #         node-path: target/release/safenode
-  #         faucet-path: target/release/faucet
-  #         platform: ubuntu-latest
-  #         build: true
+      - name: Check SAFE_PEERS was set
+        shell: bash
+        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
 
-  #     - name: Check SAFE_PEERS was set
-  #       shell: bash
-  #       run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
+      - name: export default secret key
+        run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" >> $GITHUB_ENV
+        shell: bash
 
-  #     #########################
-  #     ### Upload large file ###
-  #     #########################
+      #########################
+      ### Upload large file ###
+      #########################
 
-  #     - name: Fund cli wallet
-  #       shell: bash
-  #       run: target/release/safe --log-output-dest=data-dir wallet get-faucet 127.0.0.1:8000
-  #       env:
-  #         SN_LOG: "all"
+      - name: Start a client instance to compare memory usage
+        shell: bash
+        run: ./target/release/autonomi --log-output-dest=data-dir file upload "./the-test-data.zip"
+        env:
+          SN_LOG: "all"
+        timeout-minutes: 5
 
-  #     - name: Start a client instance to compare memory usage
-  #       shell: bash
-  #       run: target/release/safe --log-output-dest=data-dir files upload the-test-data.zip --retry-strategy quick
-  #       env:
-  #         SN_LOG: "all"
+      - name: Cleanup uploaded_files folder to avoid pollute download benchmark
+        shell: bash
+        run: |
+          ls -l $CLIENT_DATA_PATH
+          rm -rf $CLIENT_DATA_PATH/uploaded_files
 
-  #     - name: Cleanup uploaded_files folder to avoid pollute download benchmark
-  #       shell: bash
-  #       run: rm -rf $CLIENT_DATA_PATH/uploaded_files
+      ###########################
+      ### Client Mem Analysis ###
+      ###########################
 
-  #     ###########################
-  #     ### Client Mem Analysis ###
-  #     ###########################
+      - name: Check client memory usage
+        shell: bash
+        run: |
+          client_peak_mem_limit_mb="1024" # mb
+          client_avg_mem_limit_mb="512" # mb
 
-  #     - name: Check client memory usage
-  #       shell: bash
-  #       run: |
-  #         client_peak_mem_limit_mb="1024" # mb
-  #         client_avg_mem_limit_mb="512" # mb
+          peak_mem_usage=$(
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob autonomi.* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/{print $2}' |
+            sort -n |
+            tail -n 1
+          )
+          echo "Peak memory usage: $peak_mem_usage MB"
+          if (( $(echo "$peak_mem_usage > $client_peak_mem_limit_mb" | bc -l) )); then
+            echo "Client peak memory usage exceeded threshold: $client_peak_mem_limit_mb MB"
+            exit 1
+          fi
 
-  #         peak_mem_usage=$(
-  #           rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
-  #           awk -F':' '/"memory_used_mb":/{print $2}' |
-  #           sort -n |
-  #           tail -n 1
-  #         )
-  #         echo "Peak memory usage: $peak_mem_usage MB"
-  #         if (( $(echo "$peak_mem_usage > $client_peak_mem_limit_mb" | bc -l) )); then
-  #           echo "Client peak memory usage exceeded threshold: $client_peak_mem_limit_mb MB"
-  #           exit 1
-  #         fi
+          total_mem=$(
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob autonomi.* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
+          )
+          num_of_times=$(
+            rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs --glob autonomi.* -c --stats |
+            rg "(\d+) matches" |
+            rg "\d+" -o
+          )
+          echo "num_of_times: $num_of_times"
+          echo "Total memory is: $total_mem"
+          average_mem=$(($total_mem/$(($num_of_times))))
+          echo "Average memory is: $average_mem"
 
-  #         total_mem=$(
-  #           rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob safe.* -o --no-line-number --no-filename |
-  #           awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
-  #         )
-  #         num_of_times=$(
-  #           rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs --glob safe.* -c --stats |
-  #           rg "(\d+) matches" |
-  #           rg "\d+" -o
-  #         )
-  #         echo "num_of_times: $num_of_times"
-  #         echo "Total memory is: $total_mem"
-  #         average_mem=$(($total_mem/$(($num_of_times))))
-  #         echo "Average memory is: $average_mem"
+          if (( $(echo "$average_mem > $client_avg_mem_limit_mb" | bc -l) )); then
+            echo "Client average memory usage exceeded threshold: $client_avg_mem_limit_mb MB"
+            exit 1
+          fi
+          # Write the client memory usage to a file
+          echo '[
+              {
+                  "name": "client-peak-memory-usage-during-upload",
+                  "value": '$peak_mem_usage',
+                  "unit": "MB"
+              },
+              {
+                  "name": "client-average-memory-usage-during-upload",
+                  "value": '$average_mem',
+                  "unit": "MB"
+              }
+          ]' > client_memory_usage.json
 
-  #         if (( $(echo "$average_mem > $client_avg_mem_limit_mb" | bc -l) )); then
-  #           echo "Client average memory usage exceeded threshold: $client_avg_mem_limit_mb MB"
-  #           exit 1
-  #         fi
-  #         # Write the client memory usage to a file
-  #         echo '[
-  #             {
-  #                 "name": "client-peak-memory-usage-during-upload",
-  #                 "value": '$peak_mem_usage',
-  #                 "unit": "MB"
-  #             },
-  #             {
-  #                 "name": "client-average-memory-usage-during-upload",
-  #                 "value": '$average_mem',
-  #                 "unit": "MB"
-  #             }
-  #         ]' > client_memory_usage.json
+      - name: check client_memory_usage.json
+        shell: bash
+        run: cat client_memory_usage.json
 
-  #     - name: check client_memory_usage.json
-  #       shell: bash
-  #       run: cat client_memory_usage.json
+      - name: Alert for client memory usage
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: "Memory Usage of Client during uploading large file"
+          tool: "customSmallerIsBetter"
+          output-file-path: client_memory_usage.json
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/client-mem-usage.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-on-alert: true
+          # 200% regression will result in alert
+          alert-threshold: "200%"
+          # Enable Job Summary for PRs
+          summary-always: true
 
-  #     - name: Alert for client memory usage
-  #       uses: benchmark-action/github-action-benchmark@v1
-  #       with:
-  #         name: "Memory Usage of Client during uploading large file"
-  #         tool: "customSmallerIsBetter"
-  #         output-file-path: client_memory_usage.json
-  #         # Where the previous data file is stored
-  #         external-data-json-path: ./cache/client-mem-usage.json
-  #         # Workflow will fail when an alert happens
-  #         fail-on-alert: true
-  #         # GitHub API token to make a commit comment
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         # Enable alert commit comment
-  #         comment-on-alert: true
-  #         # 200% regression will result in alert
-  #         alert-threshold: "200%"
-  #         # Enable Job Summary for PRs
-  #         summary-always: true
+      # ########################
+      # ### Benchmark        ###
+      # ########################
+      # - name: Bench `safe` cli
+      #   shell: bash
+      #   # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
+      #   # passes to tee which displays it in the terminal and writes to output.txt
+      #   run: |
+      #     cargo criterion --features=local --message-format=json 2>&1 -p sn_cli | tee -a output.txt
+      #     cat output.txt | rg benchmark-complete | jq -s 'map({
+      #     name: (.id | split("/"))[-1],
+      #     unit: "MiB/s",
+      #     value: ((if .throughput[0].unit == "KiB/s" then (.throughput[0].per_iteration / (1024*1024*1024)) else (.throughput[0].per_iteration / (1024*1024)) end) / (.mean.estimate / 1e9))
+      #     })' > files-benchmark.json
+      #   timeout-minutes: 15
 
-  #     ########################
-  #     ### Benchmark        ###
-  #     ########################
-  #     - name: Bench `safe` cli
-  #       shell: bash
-  #       # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
-  #       # passes to tee which displays it in the terminal and writes to output.txt
-  #       run: |
-  #         cargo criterion --features=local --message-format=json 2>&1 -p sn_cli | tee -a output.txt
-  #         cat output.txt | rg benchmark-complete | jq -s 'map({
-  #         name: (.id | split("/"))[-1],
-  #         unit: "MiB/s",
-  #         value: ((if .throughput[0].unit == "KiB/s" then (.throughput[0].per_iteration / (1024*1024*1024)) else (.throughput[0].per_iteration / (1024*1024)) end) / (.mean.estimate / 1e9))
-  #         })' > files-benchmark.json
-  #       timeout-minutes: 15
+      # - name: Confirming the number of files uploaded and downloaded during the benchmark test
+      #   shell: bash
+      #   run: |
+      #     ls -l $CLIENT_DATA_PATH
+      #     ls -l $CLIENT_DATA_PATH/uploaded_files
+      #     ls -l $CLIENT_DATA_PATH/safe_files
 
-  #     - name: Confirming the number of files uploaded and downloaded during the benchmark test
-  #       shell: bash
-  #       run: |
-  #         ls -l $CLIENT_DATA_PATH
-  #         ls -l $CLIENT_DATA_PATH/uploaded_files
-  #         ls -l $CLIENT_DATA_PATH/safe_files
+      # - name: Store benchmark result
+      #   uses: benchmark-action/github-action-benchmark@v1
+      #   with:
+      #     # What benchmark tool the output.txt came from
+      #     tool: "customBiggerIsBetter"
+      #     output-file-path: files-benchmark.json
+      #     # Where the previous data file is stored
+      #     external-data-json-path: ./cache/benchmark-data.json
+      #     # Workflow will fail when an alert happens
+      #     fail-on-alert: true
+      #     # GitHub API token to make a commit comment
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     # Enable alert commit comment
+      #     comment-on-alert: true
+      #     # 200% regression will result in alert
+      #     alert-threshold: "200%"
+      #     # Enable Job Summary for PRs
+      #     summary-always: true
 
-  #     - name: Store benchmark result
-  #       uses: benchmark-action/github-action-benchmark@v1
-  #       with:
-  #         # What benchmark tool the output.txt came from
-  #         tool: "customBiggerIsBetter"
-  #         output-file-path: files-benchmark.json
-  #         # Where the previous data file is stored
-  #         external-data-json-path: ./cache/benchmark-data.json
-  #         # Workflow will fail when an alert happens
-  #         fail-on-alert: true
-  #         # GitHub API token to make a commit comment
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         # Enable alert commit comment
-  #         comment-on-alert: true
-  #         # 200% regression will result in alert
-  #         alert-threshold: "200%"
-  #         # Enable Job Summary for PRs
-  #         summary-always: true
+      # - name: Start a client to carry out download to output the logs
+      #   shell: bash
+      #   run: target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
 
-  #     - name: Start a client to carry out download to output the logs
-  #       shell: bash
-  #       run: target/release/safe --log-output-dest=data-dir files download --retry-strategy quick
+      # - name: Start a client to simulate criterion upload
+      #   shell: bash
+      #   run: |
+      #     ls -l target/release
+      #     target/release/safe --log-output-dest=data-dir files upload target/release/faucet --retry-strategy quick
 
-  #     - name: Start a client to simulate criterion upload
-  #       shell: bash
-  #       run: |
-  #         ls -l target/release
-  #         target/release/safe --log-output-dest=data-dir files upload target/release/faucet --retry-strategy quick
+      #########################
+      ### Stop Network      ###
+      #########################
 
-  #     #########################
-  #     ### Stop Network      ###
-  #     #########################
+      - name: Stop the local network
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_benchmark
+          platform: ubuntu-latest
+          build: true
 
-  #     - name: Stop the local network
-  #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
-  #       with:
-  #         action: stop
-  #         log_file_prefix: safe_test_logs_benchmark
-  #         platform: ubuntu-latest
-  #         build: true
+      #########################
+      ### Node Mem Analysis ###
+      #########################
 
-  #     - name: Upload Faucet folder
-  #       uses: actions/upload-artifact@main
-  #       with:
-  #         name: faucet_folder
-  #         path: /home/runner/.local/share/safe/test_faucet
-  #       continue-on-error: true
-  #       if: always()
+      # The large file uploaded will increase node's peak mem usage a lot
+      - name: Check node memory usage
+        shell: bash
+        run: |
+          node_peak_mem_limit_mb="250" # mb
+          peak_mem_usage=$(
+            rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename |
+            awk -F':' '/"memory_used_mb":/{print $2}' |
+            sort -n |
+            tail -n 1
+          )
 
-  #     #########################
-  #     ### Node Mem Analysis ###
-  #     #########################
+          echo "Memory usage: $peak_mem_usage MB"
+          if (( $(echo "$peak_mem_usage > $node_peak_mem_limit_mb" | bc -l) )); then
+            echo "Node memory usage exceeded threshold: $peak_mem_usage MB"
+            exit 1
+          fi
+          # Write the node memory usage to a file
+          echo '[
+              {
+                  "name": "node-memory-usage-through-safe-benchmark",
+                  "value": '$peak_mem_usage',
+                  "unit": "MB"
+              }
+          ]' > node_memory_usage.json
 
-  #     # The large file uploaded will increase node's peak mem usage a lot
-  #     - name: Check node memory usage
-  #       shell: bash
-  #       run: |
-  #         node_peak_mem_limit_mb="250" # mb
-  #         peak_mem_usage=$(
-  #           rg '"memory_used_mb":[^,]*' $NODE_DATA_PATH/*/logs/* -o --no-line-number --no-filename |
-  #           awk -F':' '/"memory_used_mb":/{print $2}' |
-  #           sort -n |
-  #           tail -n 1
-  #         )
+      - name: check node_memory_usage.json
+        shell: bash
+        run: cat node_memory_usage.json
 
-  #         echo "Memory usage: $peak_mem_usage MB"
-  #         if (( $(echo "$peak_mem_usage > $node_peak_mem_limit_mb" | bc -l) )); then
-  #           echo "Node memory usage exceeded threshold: $peak_mem_usage MB"
-  #           exit 1
-  #         fi
-  #         # Write the node memory usage to a file
-  #         echo '[
-  #             {
-  #                 "name": "node-memory-usage-through-safe-benchmark",
-  #                 "value": '$peak_mem_usage',
-  #                 "unit": "MB"
-  #             }
-  #         ]' > node_memory_usage.json
+      - name: Alert for node memory usage
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: "customSmallerIsBetter"
+          output-file-path: node_memory_usage.json
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/node-mem-usage.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-on-alert: true
+          # Comment on the PR
+          comment-always: true
+          # 200% regression will result in alert
+          alert-threshold: "200%"
+          # Enable Job Summary for PRs
+          summary-always: true
 
-  #     - name: check node_memory_usage.json
-  #       shell: bash
-  #       run: cat node_memory_usage.json
+      ###########################################
+      ### Swarm_driver handling time Analysis ###
+      ###########################################
 
-  #     - name: Alert for node memory usage
-  #       uses: benchmark-action/github-action-benchmark@v1
-  #       with:
-  #         tool: "customSmallerIsBetter"
-  #         output-file-path: node_memory_usage.json
-  #         # Where the previous data file is stored
-  #         external-data-json-path: ./cache/node-mem-usage.json
-  #         # Workflow will fail when an alert happens
-  #         fail-on-alert: true
-  #         # GitHub API token to make a commit comment
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         # Enable alert commit comment
-  #         comment-on-alert: true
-  #         # Comment on the PR
-  #         comment-always: true
-  #         # 200% regression will result in alert
-  #         alert-threshold: "200%"
-  #         # Enable Job Summary for PRs
-  #         summary-always: true
+      - name: Check swarm_driver handling time
+        shell: bash
+        run: |
+          num_of_times=$(
+            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats |
+            rg "(\d+) matches" |
+            rg "\d+" -o
+          )
+          echo "Number of long cmd handling times: $num_of_times"
+          total_long_handling_ms=$(
+            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -o --no-line-number --no-filename |
+            awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
+          )
+          echo "Total cmd long handling time is: $total_long_handling_ms ms"
+          average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
+          echo "Average cmd long handling time is: $average_handling_ms ms"
+          total_long_handling=$(($total_long_handling_ms))
+          total_num_of_times=$(($num_of_times))
+          num_of_times=$(
+            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats |
+            rg "(\d+) matches" |
+            rg "\d+" -o
+          )
+          echo "Number of long event handling times: $num_of_times"
+          total_long_handling_ms=$(
+            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -o --no-line-number --no-filename |
+            awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
+          )
+          echo "Total event long handling time is: $total_long_handling_ms ms"
+          average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
+          echo "Average event long handling time is: $average_handling_ms ms"
+          total_long_handling=$(($total_long_handling_ms+$total_long_handling))
+          total_num_of_times=$(($num_of_times+$total_num_of_times))
+          average_handling_ms=$(($total_long_handling/$(($total_num_of_times))))
+          echo "Total swarm_driver long handling times is: $total_num_of_times"
+          echo "Total swarm_driver long handling duration is: $total_long_handling ms"
+          echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
+          total_num_of_times_limit_hits="30000" # hits
+          total_long_handling_limit_ms="400000" # ms
+          average_handling_limit_ms="20" # ms
+          if (( $(echo "$total_num_of_times > $total_num_of_times_limit_hits" | bc -l) )); then
+            echo "Swarm_driver long handling times exceeded threshold: $total_num_of_times hits"
+            exit 1
+          fi
+          if (( $(echo "$total_long_handling > $total_long_handling_limit_ms" | bc -l) )); then
+            echo "Swarm_driver total long handling duration exceeded threshold: $total_long_handling ms"
+            exit 1
+          fi
+          if (( $(echo "$average_handling_ms > $average_handling_limit_ms" | bc -l) )); then
+            echo "Swarm_driver average long handling time exceeded threshold: $average_handling_ms ms"
+            exit 1
+          fi
 
-  #     ###########################################
-  #     ### Swarm_driver handling time Analysis ###
-  #     ###########################################
+          # Write the node memory usage to a file
+          echo '[
+              {
+                  "name": "swarm_driver long handling times",
+                  "value": '$total_num_of_times',
+                  "unit": "hits"
+              },
+              {
+                  "name": "swarm_driver long handling total_time",
+                  "value": '$total_long_handling',
+                  "unit": "ms"
+              },
+              {
+                  "name": "swarm_driver average long handling time",
+                  "value": '$average_handling_ms',
+                  "unit": "ms"
+              }
+          ]' > swarm_driver_long_handlings.json
 
-  #     - name: Check swarm_driver handling time
-  #       shell: bash
-  #       run: |
-  #         num_of_times=$(
-  #           rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
-  #           rg "(\d+) matches" |
-  #           rg "\d+" -o
-  #         )
-  #         echo "Number of long cmd handling times: $num_of_times"
-  #         total_long_handling_ms=$(
-  #           rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
-  #           awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
-  #         )
-  #         echo "Total cmd long handling time is: $total_long_handling_ms ms"
-  #         average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
-  #         echo "Average cmd long handling time is: $average_handling_ms ms"
-  #         total_long_handling=$(($total_long_handling_ms))
-  #         total_num_of_times=$(($num_of_times))
-  #         num_of_times=$(
-  #           rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -c --stats |
-  #           rg "(\d+) matches" |
-  #           rg "\d+" -o
-  #         )
-  #         echo "Number of long event handling times: $num_of_times"
-  #         total_long_handling_ms=$(
-  #           rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safe.* -o --no-line-number --no-filename |
-  #           awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
-  #         )
-  #         echo "Total event long handling time is: $total_long_handling_ms ms"
-  #         average_handling_ms=$(($total_long_handling_ms/$(($num_of_times))))
-  #         echo "Average event long handling time is: $average_handling_ms ms"
-  #         total_long_handling=$(($total_long_handling_ms+$total_long_handling))
-  #         total_num_of_times=$(($num_of_times+$total_num_of_times))
-  #         average_handling_ms=$(($total_long_handling/$(($total_num_of_times))))
-  #         echo "Total swarm_driver long handling times is: $total_num_of_times"
-  #         echo "Total swarm_driver long handling duration is: $total_long_handling ms"
-  #         echo "Total average swarm_driver long handling duration is: $average_handling_ms ms"
-  #         total_num_of_times_limit_hits="30000" # hits
-  #         total_long_handling_limit_ms="400000" # ms
-  #         average_handling_limit_ms="20" # ms
-  #         if (( $(echo "$total_num_of_times > $total_num_of_times_limit_hits" | bc -l) )); then
-  #           echo "Swarm_driver long handling times exceeded threshold: $total_num_of_times hits"
-  #           exit 1
-  #         fi
-  #         if (( $(echo "$total_long_handling > $total_long_handling_limit_ms" | bc -l) )); then
-  #           echo "Swarm_driver total long handling duration exceeded threshold: $total_long_handling ms"
-  #           exit 1
-  #         fi
-  #         if (( $(echo "$average_handling_ms > $average_handling_limit_ms" | bc -l) )); then
-  #           echo "Swarm_driver average long handling time exceeded threshold: $average_handling_ms ms"
-  #           exit 1
-  #         fi
+      - name: check swarm_driver_long_handlings.json
+        shell: bash
+        run: cat swarm_driver_long_handlings.json
 
-  #         # Write the node memory usage to a file
-  #         echo '[
-  #             {
-  #                 "name": "swarm_driver long handling times",
-  #                 "value": '$total_num_of_times',
-  #                 "unit": "hits"
-  #             },
-  #             {
-  #                 "name": "swarm_driver long handling total_time",
-  #                 "value": '$total_long_handling',
-  #                 "unit": "ms"
-  #             },
-  #             {
-  #                 "name": "swarm_driver average long handling time",
-  #                 "value": '$average_handling_ms',
-  #                 "unit": "ms"
-  #             }
-  #         ]' > swarm_driver_long_handlings.json
-
-  #     - name: check swarm_driver_long_handlings.json
-  #       shell: bash
-  #       run: cat swarm_driver_long_handlings.json
-
-  #     - name: Alert for swarm_driver long handlings
-  #       uses: benchmark-action/github-action-benchmark@v1
-  #       with:
-  #         tool: "customSmallerIsBetter"
-  #         output-file-path: swarm_driver_long_handlings.json
-  #         # Where the previous data file is stored
-  #         external-data-json-path: ./cache/swarm_driver_long_handlings.json
-  #         # Workflow will fail when an alert happens
-  #         fail-on-alert: true
-  #         # GitHub API token to make a commit comment
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         # Enable alert commit comment
-  #         comment-on-alert: true
-  #         # Comment on the PR
-  #         comment-always: true
-  #         # 200% regression will result in alert
-  #         alert-threshold: "200%"
-  #         # Enable Job Summary for PRs
-  #         summary-always: true
+      - name: Alert for swarm_driver long handlings
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: "customSmallerIsBetter"
+          output-file-path: swarm_driver_long_handlings.json
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/swarm_driver_long_handlings.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-on-alert: true
+          # Comment on the PR
+          comment-always: true
+          # 200% regression will result in alert
+          alert-threshold: "200%"
+          # Enable Job Summary for PRs
+          summary-always: true
 
   benchmark-cash:
     name: Compare sn_transfer benchmarks to main
