@@ -196,6 +196,7 @@ impl SwarmDriver {
     ) {
         let peers = self.get_all_local_peers_excluding_self();
         let our_peer_id = self.self_peer_id;
+        let more_than_one_key = incoming_keys.len() > 1;
 
         let holder = if let Some(peer_id) = sender.as_peer_id() {
             peer_id
@@ -241,7 +242,7 @@ impl SwarmDriver {
         }
 
         let event_sender = self.event_sender.clone();
-        if OsRng.gen_bool(0.01) {
+        if more_than_one_key && OsRng.gen_bool(0.1) {
             let _handle = tokio::spawn(async move {
                 // Only run 10% of the time
                 let keys_to_verify =
