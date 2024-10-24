@@ -133,8 +133,7 @@ pub(super) async fn start_upload(
                     })?;
             }
 
-            #[cfg(test)]
-            trace!("UPLOADER STATE: finished uploading all items {uploader:?}");
+            debug!("UPLOADER STATE: finished uploading all items {uploader:?}");
             let summary = UploadSummary {
                 storage_cost: uploader.tokens_spent,
                 final_balance: uploader.upload_final_balance,
@@ -157,11 +156,11 @@ pub(super) async fn start_upload(
             return Ok(summary);
         }
 
-        // try to GET register if we have enough buffer.
-        // The results of the get & push register steps are used to fill up `pending_to_get_store` cost
-        // Since the get store cost list is the init state, we don't have to check if it is not full.
         #[cfg(feature = "registers")]
         {
+            // try to GET register if we have enough buffer.
+            // The results of the get & push register steps are used to fill up `pending_to_get_store` cost
+            // Since the get store cost list is the init state, we don't have to check if it is not full.
             while !uploader.pending_to_get_register.is_empty()
                 && uploader.on_going_get_register.len() < uploader.cfg.batch_size
             {
@@ -175,12 +174,10 @@ pub(super) async fn start_upload(
                     );
                 }
             }
-        }
 
-        // try to push register if we have enough buffer.
-        // No other checks for the same reason as the above step.
-        #[cfg(feature = "registers")]
-        {
+            // try to push register if we have enough buffer.
+            // No other checks for the same reason as the above step.
+
             while !uploader.pending_to_push_register.is_empty()
                 && uploader.on_going_get_register.len() < uploader.cfg.batch_size
             {

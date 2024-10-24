@@ -312,7 +312,7 @@ impl Client {
 
         let mut uploader = Uploader::new(self.clone(), wallet.clone());
         uploader.insert_register(vec![register]);
-        uploader.set_collect_registers(true);
+        uploader.collect_registers(true);
 
         let summary = uploader.start_upload().await?;
 

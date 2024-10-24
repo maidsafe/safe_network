@@ -330,7 +330,7 @@ impl Uploader {
     ///
     /// By default, this option is set to `False`
     #[cfg(feature = "registers")]
-    pub fn set_collect_registers(&mut self, collect_registers: bool) {
+    pub fn collect_registers(&mut self, collect_registers: bool) {
         self.inner
             .as_mut()
             .expect("Uploader::new makes sure inner is present")
@@ -346,7 +346,9 @@ impl Uploader {
             .get_event_receiver()
     }
 
-    /// Insert a list of chunk paths to upload to upload.
+    /// Insert a list of chunk paths into the uploader.
+    ///
+    /// Use `start_upload` to start the upload process.
     #[cfg(feature = "fs")]
     pub fn insert_chunk_paths(&mut self, chunks: impl IntoIterator<Item = (XorName, PathBuf)>) {
         self.inner
@@ -355,7 +357,9 @@ impl Uploader {
             .insert_chunk_paths(chunks);
     }
 
-    /// Insert a list of chunks to upload to upload.
+    /// Insert a list of chunks into the uploader.
+    ///
+    /// Use `start_upload` to start the upload process.
     #[cfg(feature = "data")]
     pub fn insert_chunks(&mut self, chunks: impl IntoIterator<Item = Chunk>) {
         self.inner
@@ -364,7 +368,9 @@ impl Uploader {
             .insert_chunks(chunks);
     }
 
-    /// Insert a list of registers to upload.
+    /// Insert a list of registers into the uploader. To get the updated registers, set `collect_registers` to true.
+    ///
+    /// Use `start_upload` to start the upload process.
     #[cfg(feature = "registers")]
     pub fn insert_register(&mut self, registers: impl IntoIterator<Item = Register>) {
         self.inner
