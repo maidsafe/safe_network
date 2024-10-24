@@ -33,7 +33,6 @@ use std::{
     io::Write,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::{Path, PathBuf},
-    process::Command,
     time::Duration,
 };
 use sysinfo::{self, System};
@@ -293,7 +292,7 @@ fn main() -> Result<()> {
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
     debug!("Node's owner set to: {:?}", opt.owner);
-    let restart_options = rt.block_on(async move {
+    rt.block_on(async move {
         let mut node_builder = NodeBuilder::new(
             keypair,
             rewards_address,
@@ -323,15 +322,8 @@ fn main() -> Result<()> {
         Ok::<_, eyre::Report>(restart_options)
     })?;
 
-    // actively shut down the runtime
     rt.shutdown_timeout(Duration::from_secs(2));
 
-    // we got this far without error, which means (so far) the only thing we should be doing
-    // is restarting the node
-    start_new_node_process(restart_options);
-
-    // Command was successful, so we shut down the process
-    println!("A new node process has been started successfully.");
     Ok(())
 }
 
@@ -684,65 +676,4 @@ fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keyp
             Ok((dir, keypair))
         }
     }
-}
-
-/// Starts a new process running the binary with the same args as
-/// the current process
-/// Optionally provide the node's root dir and listen port to retain it's PeerId
-fn start_new_node_process(retain_peer_id: Option<(PathBuf, u16)>) {
-    // Retrieve the current executable's path
-    let current_exe = env::current_exe().expect("could not get current executable path");
-
-    // Retrieve the command-line arguments passed to this process
-    let args: Vec<String> = env::args().collect();
-
-    info!("Original args are: {args:?}");
-    info!("Current exe is: {current_exe:?}");
-
-    // Convert current exe path to string, log an error and return if it fails
-    let current_exe = match current_exe.to_str() {
-        Some(s) => {
-            // remove "(deleted)" string from current exe path
-            if s.contains(" (deleted)") {
-                warn!("The current executable path contains ' (deleted)', which may lead to unexpected behavior. This has been removed from the exe location string");
-                s.replace(" (deleted)", "")
-            } else {
-                s.to_string()
-            }
-        }
-        None => {
-            error!("Failed to convert current executable path to string");
-            return;
-        }
-    };
-
-    // Create a new Command instance to run the current executable
-    let mut cmd = Command::new(current_exe);
-
-    // Set the arguments for the new Command
-    cmd.args(&args[1..]); // Exclude the first argument (binary path)
-
-    if let Some((root_dir, port)) = retain_peer_id {
-        cmd.arg("--root-dir");
-        cmd.arg(format!("{root_dir:?}"));
-        cmd.arg("--port");
-        cmd.arg(port.to_string());
-    }
-
-    warn!(
-        "Attempting to start a new process as node process loop has been broken: {:?}",
-        cmd
-    );
-    // Execute the command
-    let _handle = match cmd.spawn() {
-        Ok(status) => status,
-        Err(e) => {
-            // Do not return an error as this isn't a critical failure.
-            // The current node can continue.
-            eprintln!("Failed to execute hard-restart command: {e:?}");
-            error!("Failed to execute hard-restart command: {e:?}");
-
-            return;
-        }
-    };
 }
