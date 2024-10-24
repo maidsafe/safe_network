@@ -627,6 +627,10 @@ jobs:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 30
 
+      # Sleep for a while to allow restarted nodes can be detected by others
+      - name: Sleep a while
+        run: sleep 300
+
       - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
@@ -653,6 +657,10 @@ jobs:
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Restarted $restart_count nodes"
 
+      # `PeerRemovedFromRoutingTable` now only happens when a peer reported as `BadNode`.
+      # Otherwise kad will remove a `dropped out node` directly from RT.
+      # So, the detection of the removal explicity will now have much less chance,
+      # due to the removal of connection_issue tracking.
       - name: Get peers removed from nodes using rg
         shell: bash
         timeout-minutes: 1
@@ -664,24 +672,6 @@ jobs:
             exit 1
           fi
           echo "PeerRemovedFromRoutingTable $peer_removed times"
-
-      - name: Verify peers removed exceed restarted node counts
-        shell: bash
-        timeout-minutes: 1
-        # get the counts, then the specific line, and then the digit count only
-        # then check we have an expected level of restarts
-        # TODO: make this use an env var, or relate to testnet size
-        run: |
-          restart_count=$(rg "Node is restarting in" "${{ matrix.node_data_path }}" -c --stats | \
-            rg "(\d+) matches" | rg "\d+" -o)
-          echo "Restart $restart_count nodes"
-          peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.node_data_path }}" -c --stats | \
-            rg "(\d+) matches" | rg "\d+" -o)
-          echo "PeerRemovedFromRoutingTable $peer_removed times"
-          if [ $peer_removed -lt $restart_count ]; then
-            echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
-            exit 1
-          fi
 
         # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
         # if [ $restart_count -lt $node_count ]; then
@@ -795,6 +785,10 @@ jobs:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
+      # Sleep for a while to allow restarted nodes can be detected by others
+      - name: Sleep a while
+        run: sleep 300
+
       - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
@@ -808,7 +802,11 @@ jobs:
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only
         # then check we have an expected level of restarts
-        # TODO: make this use an env var, or relate to testnet size
+        #
+        # `PeerRemovedFromRoutingTable` now only happens when a peer reported as `BadNode`.
+        # Otherwise kad will remove a `dropped out node` directly from RT.
+        # So, the detection of the removal explicity will now have much less chance,
+        # due to the removal of connection_issue tracking.
         run: |
           restart_count=$(rg "Node is restarting in" "${{ matrix.node_data_path }}" -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
@@ -816,8 +814,8 @@ jobs:
           peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.node_data_path }}" -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "PeerRemovedFromRoutingTable $peer_removed times"
-          if [ $peer_removed -lt $restart_count ]; then
-            echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
+          if [ -z "$peer_removed" ]; then
+            echo "No peer removal count found"
             exit 1
           fi
           node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)

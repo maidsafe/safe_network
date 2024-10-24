@@ -65,6 +65,7 @@ use std::{
     fs,
     io::{Read, Write},
     net::SocketAddr,
+    num::NonZeroUsize,
     path::PathBuf,
 };
 use tokio::sync::{mpsc, oneshot};
@@ -129,6 +130,13 @@ const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 
 /// Time before a Kad query times out if no response is received
 const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(10);
+
+// Init during compilation, instead of runtime error that should never happen
+// Option<T>::expect will be stabilised as const in the future (https://github.com/rust-lang/rust/issues/67441)
+const REPLICATION_FACTOR: NonZeroUsize = match NonZeroUsize::new(CLOSE_GROUP_SIZE) {
+    Some(v) => v,
+    None => panic!("CLOSE_GROUP_SIZE should not be zero"),
+};
 
 /// The various settings to apply to when fetching a record from network
 #[derive(Clone)]
@@ -354,6 +362,7 @@ impl NetworkBuilder {
             .disjoint_query_paths(true)
             // Records never expire
             .set_record_ttl(None)
+            .set_replication_factor(REPLICATION_FACTOR)
             // Emit PUT events for validation prior to insertion into the RecordStore.
             // This is no longer needed as the record_storage::put now can carry out validation.
             // .set_record_filtering(KademliaStoreInserts::FilterBoth)
@@ -437,6 +446,7 @@ impl NetworkBuilder {
         let _ = kad_cfg
             .set_kbucket_inserts(libp2p::kad::BucketInserts::Manual)
             .set_max_packet_size(MAX_PACKET_SIZE)
+            .set_replication_factor(REPLICATION_FACTOR)
             // Require iterative queries to use disjoint paths for increased resiliency in the presence of potentially adversarial nodes.
             .disjoint_query_paths(true);
 
@@ -912,7 +922,7 @@ impl SwarmDriver {
         let farthest_peer_to_check = self
             .get_all_local_peers_excluding_self()
             .len()
-            .checked_div(3 * CLOSE_GROUP_SIZE)
+            .checked_div(5 * CLOSE_GROUP_SIZE)
             .unwrap_or(1);
 
         info!("Farthest peer we'll check: {:?}", farthest_peer_to_check);
@@ -947,7 +957,7 @@ impl SwarmDriver {
 
         sorted_distances.sort_unstable();
 
-        let median_index = sorted_distances.len() / 2;
+        let median_index = sorted_distances.len() / 8;
 
         let default = KBucketDistance::default();
         let median = sorted_distances.get(median_index).cloned();
