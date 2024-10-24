@@ -957,7 +957,7 @@ impl SwarmDriver {
 
         sorted_distances.sort_unstable();
 
-        let median_index = sorted_distances.len() / 2;
+        let median_index = sorted_distances.len() / 8;
 
         let default = KBucketDistance::default();
         let median = sorted_distances.get(median_index).cloned();
