@@ -15,26 +15,22 @@ architectures=(
   "x86_64-unknown-linux-musl"
 )
 declare -A binary_crate_dir_mappings=(
-  ["faucet"]="sn_faucet"
   ["nat-detection"]="nat-detection"
   ["node-launchpad"]="node-launchpad"
-  ["safe"]="sn_cli"
+  ["autonomi"]="autonomi-cli"
   ["safenode"]="sn_node"
   ["safenode-manager"]="sn_node_manager"
   ["safenode_rpc_client"]="sn_node_rpc_client"
   ["safenodemand"]="sn_node_manager"
-  ["sn_auditor"]="sn_auditor"
 )
 declare -A binary_s3_bucket_mappings=(
-  ["faucet"]="sn-faucet"
   ["nat-detection"]="nat-detection"
   ["node-launchpad"]="node-launchpad"
-  ["safe"]="sn-cli"
+  ["autonomi"]="autonomi-cli"
   ["safenode"]="sn-node"
   ["safenode-manager"]="sn-node-manager"
   ["safenode_rpc_client"]="sn-node-rpc-client"
   ["safenodemand"]="sn-node-manager"
-  ["sn_auditor"]="sn-auditor"
 )
 
 for arch in "${architectures[@]}"; do
