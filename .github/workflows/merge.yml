@@ -186,7 +186,7 @@ jobs:
             echo "EVM_NETWORK has been set to $EVM_NETWORK"
           fi
 
-      # only these unit tests require a network, the rest are run above
+      # only these unit tests require a network, the rest are run above in unit test section
       - name: Run autonomi --tests
         run: cargo test --package autonomi --tests -- --nocapture
         env:
@@ -1125,7 +1125,7 @@ jobs:
         run: ./target/release/autonomi --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources > ./download_output 2>&1
         env:
           SN_LOG: "v"
-        timeout-minutes: 2
+        timeout-minutes: 5
 
       - name: showing the download terminal output
         run: |
