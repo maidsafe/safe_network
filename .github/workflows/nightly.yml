@@ -15,7 +15,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            safe_path: /home/runner/.local/share/safe
+          - os: windows-latest
+            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+          - os: macos-latest
+            safe_path: /Users/runner/Library/Application\ Support/safe
     steps:
       - uses: actions/checkout@v4
 
@@ -26,77 +32,181 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --bin safenode --bin safe --bin faucet
+        run: cargo build --release --features local --bin safenode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
-          interval: 2000
+          enable-evm-testnet: true
           node-path: target/release/safenode
-          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
           build: true
 
-      - name: Check contact peer
+      - name: Check if SAFE_PEERS and EVM_NETWORK are set
         shell: bash
-        run: echo "Peer is $SAFE_PEERS"
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+              echo "The SAFE_PEERS variable has not been set"
+              exit 1
+          elif [[ -z "$EVM_NETWORK" ]]; then
+              echo "The EVM_NETWORK variable has not been set"
+              exit 1
+          else
+              echo "SAFE_PEERS has been set to $SAFE_PEERS"
+              echo "EVM_NETWORK has been set to $EVM_NETWORK"
+          fi
 
       # only these unit tests require a network, the rest are run above in unit test section
-      - name: Run sn_client --tests
-        run: cargo test --package sn_client --release --tests
+      - name: Run autonomi --tests
+        run: cargo test --package autonomi --tests -- --nocapture
         env:
-          SN_LOG: "all"
+          SN_LOG: "v"
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 15
 
-      - name: Create and fund a wallet to pay for files storage
+
+      # FIXME: do this in a generic way for localtestnets
+      - name: export default secret key
+        if: matrix.os != 'windows-latest'
+        run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" >> $GITHUB_ENV
+        shell: bash
+      - name: Set secret key for Windows
+        if: matrix.os == 'windows-latest'
+        run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        shell: pwsh
+
+      - name: Get file cost
+        run: ./target/release/autonomi --log-output-dest=data-dir file cost "./resources"
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 15
+
+      - name: File upload
+        run: ./target/release/autonomi --log-output-dest=data-dir file upload "./resources" > ./upload_output 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 15
+
+      - name: parse address (unix)
+        if: matrix.os != 'windows-latest'
         run: |
-          cargo run --bin faucet --release -- --log-output-dest=data-dir send 1000000 $(cargo run --bin safe --release -- --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
-          cargo run --bin safe --release -- --log-output-dest=data-dir wallet receive --file transfer_hex
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+          UPLOAD_ADDRESS=$(rg "At address: ([0-9a-f]*)" -o -r '$1' ./upload_output)
+          echo "UPLOAD_ADDRESS=$UPLOAD_ADDRESS" >> $GITHUB_ENV
+        shell: bash
 
-      - name: Start a client to carry out chunk actions
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
-        env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+      - name: parse address (win)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $UPLOAD_ADDRESS = rg "At address: ([0-9a-f]*)" -o -r '$1' ./upload_output
+          echo "UPLOAD_ADDRESS=$UPLOAD_ADDRESS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        shell: pwsh
 
-      # Client FoldersApi tests against local network
-      - name: Client FoldersApi tests against local network
-        run: cargo test --release --package sn_client --test folders_api
+      - name: File Download
+        run: ./target/release/autonomi --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
         env:
-          SN_LOG: "all"
+          SN_LOG: "v"
+        timeout-minutes: 5
+
+      - name: Generate register signing key
+        run: ./target/release/autonomi --log-output-dest=data-dir register generate-key
+
+      - name: Create register (writeable by owner)
+        run: ./target/release/autonomi --log-output-dest=data-dir register create baobao 123 > ./register_create_output 2>&1
+        env:
+          SN_LOG: "v"
         timeout-minutes: 10
 
-      # CLI Acc-Packet files and folders tests against local network
-      - name: CLI Acc-Packet files and folders tests
-        run: cargo test --release -p sn_cli test_acc_packet -- --nocapture
+      - name: parse register address (unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          REGISTER_ADDRESS=$(rg "Register created at address: ([0-9a-f]*)" -o -r '$1' ./register_create_output)
+          echo "REGISTER_ADDRESS=$REGISTER_ADDRESS" >> $GITHUB_ENV
+        shell: bash
+
+      - name: parse register address (win)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $REGISTER_ADDRESS = rg "Register created at address: ([0-9a-f]*)" -o -r '$1' ./register_create_output
+          echo "REGISTER_ADDRESS=$REGISTER_ADDRESS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        shell: pwsh
+
+      - name: Get register
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
         env:
-          SN_LOG: "all"
+          SN_LOG: "v"
+        timeout-minutes: 5
+
+      - name: Edit register
+        run: ./target/release/autonomi --log-output-dest=data-dir register edit ${{ env.REGISTER_ADDRESS }} 456
+        env:
+          SN_LOG: "v"
         timeout-minutes: 10
 
-      - name: Start a client to create a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
+      - name: Get register (after edit)
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
         env:
-          SN_LOG: "all"
+          SN_LOG: "v"
+        timeout-minutes: 5
+
+      - name: Create Public Register (writeable by anyone)
+        run: ./target/release/autonomi --log-output-dest=data-dir register create bao 111 --public > ./register_public_create_output 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 5
+
+      - name: parse public register address (unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          PUBLIC_REGISTER_ADDRESS=$(rg "Register created at address: ([0-9a-f]*)" -o -r '$1' ./register_public_create_output)
+          echo "PUBLIC_REGISTER_ADDRESS=$PUBLIC_REGISTER_ADDRESS" >> $GITHUB_ENV
+        shell: bash
+
+      - name: parse public register address (win)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $PUBLIC_REGISTER_ADDRESS = rg "Register created at address: ([0-9a-f]*)" -o -r '$1' ./register_public_create_output
+          echo "PUBLIC_REGISTER_ADDRESS=$PUBLIC_REGISTER_ADDRESS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        shell: pwsh
+
+      - name: Get Public Register (current key is the owner)
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 5
+
+      - name: Edit Public Register (current key is the owner)
+        run: ./target/release/autonomi --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 222
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 10
+
+      - name: Delete current register signing key
+        shell: bash
+        run: rm -rf ${{ matrix.safe_path }}/autonomi
+
+      - name: Generate new register signing key
+        run: ./target/release/autonomi --log-output-dest=data-dir register generate-key
+
+      - name: Get Public Register (new signing key is not the owner)
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        env:
+          SN_LOG: "v"
         timeout-minutes: 2
 
-      - name: Start a client to get a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
+      - name: Edit Public Register (new signing key is not the owner)
+        run: ./target/release/autonomi --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 333
         env:
-          SN_LOG: "all"
-        timeout-minutes: 2
+          SN_LOG: "v"
+        timeout-minutes: 10
 
-      - name: Start a client to edit a register
-        run: cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
+      - name: Get Public Register (new signing key is not the owner)
+        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
-          SN_LOG: "all"
+          SN_LOG: "v"
         timeout-minutes: 2
 
       - name: Stop the local network and upload logs
@@ -134,31 +244,17 @@ jobs:
         run: cargo test --release --lib --bins --no-run
         timeout-minutes: 30
 
-      - name: Run CLI tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_cli -- --skip test_acc_packet_
-
-      - name: Run client tests
-        timeout-minutes: 25
-        # we do not run the `--tests` here are they are run in the e2e job
-        # as they rquire a network
-        run: |
-          cargo test --release --package sn_client --doc
-          cargo test --release --package sn_client --lib
-          cargo test --release --package sn_client --bins
-          cargo test --release --package sn_client --examples
-
       - name: Run node tests
         timeout-minutes: 25
         run: cargo test --release --package sn_node --lib
 
       - name: Run network tests
         timeout-minutes: 25
-        run: cargo test --release -p sn_networking --features="open-metrics"
+        run: cargo test --release --package sn_networking --features="open-metrics"
 
       - name: Run protocol tests
         timeout-minutes: 25
-        run: cargo test --release -p sn_protocol
+        run: cargo test --release --package sn_protocol
 
       - name: Run transfers tests
         timeout-minutes: 25
@@ -167,13 +263,12 @@ jobs:
       - name: Run logging tests
         timeout-minutes: 25
         run: cargo test --release --package sn_logging
-
+  
       - name: Run register tests
-        shell: bash
         timeout-minutes: 50
+        run: cargo test --release --package sn_registers
         env:
           PROPTEST_CASES: 512
-        run: cargo test --release -p sn_registers
 
       - name: post notification to slack on failure
         if: ${{ failure() }}
@@ -182,210 +277,6 @@ jobs:
           SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly Unit Test Run Failed"
-
-  spend_test:
-    name: spend tests against network
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        continue-on-error: true
-
-      - name: Build binaries
-        run: cargo build --release --features=local --bin safenode --bin faucet
-        timeout-minutes: 30
-
-      - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local --test sequential_transfers --test storage_payments --test double_spend --no-run
-        env:
-          # only set the target dir for windows to bypass the linker issue.
-          # happens if we build the node manager via testnet action
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 30
-
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
-
-      - name: execute the sequential transfers test
-        run: cargo test --release -p sn_node --features="local" --test sequential_transfers -- --nocapture --test-threads=1
-        env:
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-          SN_LOG: "all"
-        timeout-minutes: 10
-
-      - name: execute the storage payment tests
-        run: cargo test --release -p sn_node --features="local" --test storage_payments -- --nocapture --test-threads=1
-        env:
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-          SN_LOG: "all"
-        timeout-minutes: 10
-
-      - name: execute the double spend tests
-        run: cargo test --release -p sn_node --features="local" --test double_spend -- --nocapture --test-threads=1
-        env:
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
-
-      - name: Small wait to allow reward receipt
-        run: sleep 30
-        timeout-minutes: 1
-
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_spend
-          platform: ${{ matrix.os }}
-
-      - name: post notification to slack on failure
-        if: ${{ failure() }}
-        uses: bryannice/gitactions-slack-notification@2.0.0
-        env:
-          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-          SLACK_TITLE: "Nightly Spend Test Run Failed"
-
-  # runs with increased node count
-  spend_simulation:
-    name: spend simulation
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        continue-on-error: true
-
-      - name: Build binaries
-        run: cargo build --release --features=local --bin safenode --bin faucet
-        timeout-minutes: 30
-
-      - name: Build testing executable
-        run: cargo test --release -p sn_node --features=local --test spend_simulation --no-run
-        env:
-          # only set the target dir for windows to bypass the linker issue.
-          # happens if we build the node manager via testnet action
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 30
-
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-count: 50
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
-
-      - name: execute the spend simulation test
-        run: cargo test --release -p sn_node --features="local" --test spend_simulation -- --nocapture
-        env:
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
-
-      - name: Small wait to allow reward receipt
-        run: sleep 30
-        timeout-minutes: 1
-
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_spend_simulation
-          platform: ${{ matrix.os }}
-
-      - name: post notification to slack on failure
-        if: ${{ failure() }}
-        uses: bryannice/gitactions-slack-notification@2.0.0
-        env:
-          SLACK_INCOMING_WEBHOOK: ${{ secrets.SLACK_GH_ACTIONS_WEBHOOK_URL }}
-          SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
-          SLACK_TITLE: "Nightly Spend Test Run Failed"
-
-  token_distribution_test:
-    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-    name: token distribution test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Build binaries
-        run: cargo build --release --features=local,distribution --bin safenode --bin faucet
-        timeout-minutes: 30
-
-      - name: Build testing executable
-        run: cargo test --release --features=local,distribution --no-run
-        env:
-          # only set the target dir for windows to bypass the linker issue.
-          # happens if we build the node manager via testnet action
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 30
-
-      - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: start
-          interval: 2000
-          node-path: target/release/safenode
-          faucet-path: target/release/faucet
-          platform: ${{ matrix.os }}
-          build: true
-
-      - name: Check SAFE_PEERS was set
-        shell: bash
-        run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
-            exit 1
-          else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
-          fi
-
-      - name: execute token_distribution tests
-        run: cargo test --release --features=local,distribution token_distribution -- --nocapture --test-threads=1
-        env:
-          SN_LOG: "all"
-          CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-        timeout-minutes: 25
-
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_token_distribution
-          platform: ${{ matrix.os }}
 
   churn:
     name: Network churning tests
@@ -412,7 +303,7 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin faucet
+        run: cargo build --release --features local --bin safenode
         timeout-minutes: 30
 
       - name: Build churn tests
@@ -427,14 +318,13 @@ jobs:
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
-          interval: 2000
+          enable-evm-testnet: true
           node-path: target/release/safenode
-          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
           build: true
 
       - name: Chunks data integrity during nodes churn (during 10min) (in theory)
-        run: cargo test --release -p sn_node --features="local" --test data_with_churn -- --nocapture
+        run: cargo test --release -p sn_node --features=local --test data_with_churn -- --nocapture
         env:
           TEST_DURATION_MINS: 60
           TEST_CHURN_CYCLES: 6
@@ -442,7 +332,46 @@ jobs:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 90
 
-      - name: Verify restart of nodes using rg
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_churn
+          platform: ${{ matrix.os }}
+
+
+      - name: Get total node count
+        shell: bash
+        timeout-minutes: 1
+        run: |
+          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
+          echo "Node dir count is $node_count"
+
+      - name: Get restart of nodes using rg
+        shell: bash
+        timeout-minutes: 1
+        # get the counts, then the specific line, and then the digit count only
+        # then check we have an expected level of restarts
+        # TODO: make this use an env var, or relate to testnet size
+        run: |
+          restart_count=$(rg "Node is restarting in" "${{ matrix.node_data_path }}" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o)
+          echo "Restarted $restart_count nodes"
+
+      - name: Get peers removed from nodes using rg
+        shell: bash
+        timeout-minutes: 1
+        run: |
+          peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.node_data_path }}" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to extract peer removal count"; exit 1; }
+          if [ -z "$peer_removed" ]; then
+            echo "No peer removal count found"
+            exit 1
+          fi
+          echo "PeerRemovedFromRoutingTable $peer_removed times"
+
+      - name: Verify peers removed exceed restarted node counts
         shell: bash
         timeout-minutes: 1
         # get the counts, then the specific line, and then the digit count only
@@ -459,8 +388,6 @@ jobs:
             echo "PeerRemovedFromRoutingTable times of: $peer_removed is less than the restart count of: $restart_count"
             exit 1
           fi
-          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
-          echo "Node dir count is $node_count"
 
         # TODO: reenable this once the testnet dir creation is tidied up to avoid a large count here
         # if [ $restart_count -lt $node_count ]; then
@@ -483,14 +410,6 @@ jobs:
             echo "Replication fetching attempts of: $fetching_attempt_count is less than the node count of: $node_count"
             exit 1
           fi
-
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_churn
-          platform: ${{ matrix.os }}
 
       - name: post notification to slack on failure
         if: ${{ failure() }}
@@ -537,7 +456,7 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin faucet
+        run: cargo build --release --features local --bin safenode
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
@@ -552,30 +471,37 @@ jobs:
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: start
-          interval: 2000
+          enable-evm-testnet: true
           node-path: target/release/safenode
-          faucet-path: target/release/faucet
           platform: ${{ matrix.os }}
           build: true
 
       - name: Verify the Routing table of the nodes
-        run: cargo test --release -p sn_node --features="local" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p sn_node --features=local --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
       - name: Verify the location of the data on the network
-        run: cargo test --release -p sn_node --features="local" --test verify_data_location -- --nocapture
+        run: cargo test --release -p sn_node --features=local --test verify_data_location -- --nocapture
         env:
           SN_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 90
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --features="local" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p sn_node --features=local --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          log_file_prefix: safe_test_logs_data_location
+          platform: ${{ matrix.os }}
 
       - name: Verify restart of nodes using rg
         shell: bash
@@ -596,14 +522,6 @@ jobs:
           fi
           node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
           echo "Node dir count is $node_count"
-
-      - name: Stop the local network and upload logs
-        if: always()
-        uses: maidsafe/sn-local-testnet-action@main
-        with:
-          action: stop
-          log_file_prefix: safe_test_logs_data_location
-          platform: ${{ matrix.os }}
 
       - name: post notification to slack on failure
         if: ${{ failure() }}
