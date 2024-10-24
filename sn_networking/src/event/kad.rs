@@ -591,7 +591,7 @@ impl SwarmDriver {
         info!("Reputting data to network {pretty_key:?}...");
 
         // let's ensure we have an updated network view
-        self.trigger_network_discovery();
+        // self.trigger_network_discovery();
 
         warn!("RANGE: {pretty_key:?} Query Finished: Not enough of the network has responded, we need PUT the data back into nodes in that range.");
 
