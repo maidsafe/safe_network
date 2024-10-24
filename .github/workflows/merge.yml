@@ -336,6 +336,30 @@ jobs:
           SN_LOG: "v"
         timeout-minutes: 2
 
+      - name: Estimate cost to create a vault
+        run: ./target/release autonomi --log-output-dest=data-dir vault cost
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: create a vault with existing user data as above
+        run: ./target/release autonomi --log-output-dest=data-dir vault create
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: sync the created vault with the network
+        run: ./target/release autonomi --log-output-dest=data-dir vault sync
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: load an existing vault from the network
+        run: ./target/release autonomi --log-output-dest=data-dir vault load
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
       - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
