@@ -23,7 +23,7 @@ use sn_networking::{
 use sn_protocol::{
     messages::ChunkProof,
     storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind, RetryStrategy},
-    NetworkAddress,
+    NetworkAddress, CLOSE_GROUP_SIZE,
 };
 use std::{collections::HashMap, num::NonZero};
 use xor_name::XorName;
@@ -114,7 +114,9 @@ impl Client {
         } else {
             let verification = {
                 let verification_cfg = GetRecordCfg {
-                    get_quorum: Quorum::N(NonZero::new(2).expect("2 is non-zero")),
+                    get_quorum: Quorum::N(
+                        NonZero::new(CLOSE_GROUP_SIZE / 2).expect("2 is non-zero"),
+                    ),
                     retry_strategy: Some(RetryStrategy::Quick),
                     target_record: None,
                     expected_holders: Default::default(),
