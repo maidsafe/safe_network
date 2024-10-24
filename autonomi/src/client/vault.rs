@@ -105,7 +105,7 @@ impl Client {
                 debug!("Got multiple scratchpads for {scratch_key:?}");
                 let mut pads = result_map
                     .values()
-                    .map(|(record, _)| try_deserialize_record::<Scratchpad>(&record))
+                    .map(|(record, _)| try_deserialize_record::<Scratchpad>(record))
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(|_| VaultError::CouldNotDeserializeVaultScratchPad(scratch_address))?;
 
