@@ -20,14 +20,14 @@ use ratatui::{prelude::*, widgets::*};
 use regex::Regex;
 use tui_input::{backend::crossterm::EventHandler, Input};
 
-const INPUT_SIZE_USERNAME: u16 = 42; // Etherum address plus 0x
-const INPUT_AREA_USERNAME: u16 = INPUT_SIZE_USERNAME + 2; // +2 for the padding
+const INPUT_SIZE_REWARDS_ADDRESS: u16 = 42; // Etherum address plus 0x
+const INPUT_AREA_REWARDS_ADDRESS: u16 = INPUT_SIZE_REWARDS_ADDRESS + 2; // +2 for the padding
 
-pub struct BetaProgramme {
+pub struct RewardsAddress {
     /// Whether the component is active right now, capturing keystrokes + draw things.
     active: bool,
-    state: BetaProgrammeState,
-    discord_input_field: Input,
+    state: RewardsAddressState,
+    rewards_address_input_field: Input,
     // cache the old value incase user presses Esc.
     old_value: String,
     back_to: Scene,
@@ -35,24 +35,23 @@ pub struct BetaProgramme {
 }
 
 #[allow(dead_code)]
-enum BetaProgrammeState {
-    DiscordIdAlreadySet,
+enum RewardsAddressState {
+    RewardsAddressAlreadySet,
     ShowTCs,
-    RejectTCs,
-    AcceptTCsAndEnterDiscordId,
+    AcceptTCsAndEnterRewardsAddress,
 }
 
-impl BetaProgramme {
-    pub fn new(username: String) -> Self {
-        let state = if username.is_empty() {
-            BetaProgrammeState::ShowTCs
+impl RewardsAddress {
+    pub fn new(rewards_address: String) -> Self {
+        let state = if rewards_address.is_empty() {
+            RewardsAddressState::ShowTCs
         } else {
-            BetaProgrammeState::DiscordIdAlreadySet
+            RewardsAddressState::RewardsAddressAlreadySet
         };
         Self {
             active: false,
             state,
-            discord_input_field: Input::default().with_value(username),
+            rewards_address_input_field: Input::default().with_value(rewards_address),
             old_value: Default::default(),
             back_to: Scene::Status,
             can_save: false,
@@ -60,11 +59,11 @@ impl BetaProgramme {
     }
 
     pub fn validate(&mut self) {
-        if self.discord_input_field.value().is_empty() {
+        if self.rewards_address_input_field.value().is_empty() {
             self.can_save = false;
         } else {
             let re = Regex::new(r"^0x[a-fA-F0-9]{40}$").expect("Failed to compile regex");
-            self.can_save = re.is_match(self.discord_input_field.value());
+            self.can_save = re.is_match(self.rewards_address_input_field.value());
         }
     }
 
@@ -73,18 +72,22 @@ impl BetaProgramme {
             KeyCode::Enter => {
                 self.validate();
                 if self.can_save {
-                    let username = self.discord_input_field.value().to_string().to_lowercase();
-                    self.discord_input_field = username.clone().into();
+                    let rewards_address = self
+                        .rewards_address_input_field
+                        .value()
+                        .to_string()
+                        .to_lowercase();
+                    self.rewards_address_input_field = rewards_address.clone().into();
 
                     debug!(
-                        "Got Enter, saving the discord username {username:?}  and switching to DiscordIdAlreadySet, and Home Scene",
+                        "Got Enter, saving the rewards address {rewards_address:?}  and switching to RewardsAddressAlreadySet, and Home Scene",
                     );
-                    self.state = BetaProgrammeState::DiscordIdAlreadySet;
+                    self.state = RewardsAddressState::RewardsAddressAlreadySet;
                     return vec![
-                        Action::StoreDiscordUserName(username.clone()),
-                        Action::OptionsActions(OptionsActions::UpdateBetaProgrammeUsername(
-                            username,
-                        )), // FIXME: Change OptionsActions::UpdateBetaProgrammeUsername name
+                        Action::StoreRewardsAddress(rewards_address.clone()),
+                        Action::OptionsActions(OptionsActions::UpdateRewardsAddress(
+                            rewards_address,
+                        )),
                         Action::SwitchScene(Scene::Status),
                     ];
                 }
@@ -96,8 +99,8 @@ impl BetaProgramme {
                     self.old_value
                 );
                 // reset to old value
-                self.discord_input_field = self
-                    .discord_input_field
+                self.rewards_address_input_field = self
+                    .rewards_address_input_field
                     .clone()
                     .with_value(self.old_value.clone());
                 vec![Action::SwitchScene(self.back_to)]
@@ -105,13 +108,17 @@ impl BetaProgramme {
             KeyCode::Char(' ') => vec![],
             KeyCode::Backspace => {
                 // if max limit reached, we should allow Backspace to work.
-                self.discord_input_field.handle_event(&Event::Key(key));
+                self.rewards_address_input_field
+                    .handle_event(&Event::Key(key));
                 self.validate();
                 vec![]
             }
             _ => {
-                if self.discord_input_field.value().chars().count() < INPUT_SIZE_USERNAME as usize {
-                    self.discord_input_field.handle_event(&Event::Key(key));
+                if self.rewards_address_input_field.value().chars().count()
+                    < INPUT_SIZE_REWARDS_ADDRESS as usize
+                {
+                    self.rewards_address_input_field
+                        .handle_event(&Event::Key(key));
                     self.validate();
                 }
                 vec![]
@@ -121,43 +128,35 @@ impl BetaProgramme {
     }
 }
 
-impl Component for BetaProgramme {
+impl Component for RewardsAddress {
     fn handle_key_events(&mut self, key: KeyEvent) -> Result<Vec<Action>> {
         if !self.active {
             return Ok(vec![]);
         }
         // while in entry mode, keybinds are not captured, so gotta exit entry mode from here
         let send_back = match &self.state {
-            BetaProgrammeState::DiscordIdAlreadySet => self.capture_inputs(key),
-            BetaProgrammeState::ShowTCs => match key.code {
+            RewardsAddressState::RewardsAddressAlreadySet => self.capture_inputs(key),
+            RewardsAddressState::ShowTCs => match key.code {
                 KeyCode::Char('y') | KeyCode::Char('Y') => {
-                    let is_discord_id_set = !self.discord_input_field.value().is_empty();
-                    if is_discord_id_set {
-                        debug!("User accepted the TCs, but discord id already set, moving to DiscordIdAlreadySet");
-                        self.state = BetaProgrammeState::DiscordIdAlreadySet;
+                    if !self.rewards_address_input_field.value().is_empty() {
+                        debug!("User accepted the TCs, but rewards address already set, moving to RewardsAddressAlreadySet");
+                        self.state = RewardsAddressState::RewardsAddressAlreadySet;
                     } else {
-                        debug!("User accepted the TCs, but no discord id set, moving to AcceptTCsAndEnterDiscordId");
-                        self.state = BetaProgrammeState::AcceptTCsAndEnterDiscordId;
+                        debug!("User accepted the TCs, but no rewards address set, moving to AcceptTCsAndEnterRewardsAddress");
+                        self.state = RewardsAddressState::AcceptTCsAndEnterRewardsAddress;
                     }
                     vec![]
                 }
                 KeyCode::Esc => {
                     debug!("User rejected the TCs, moving to original screen");
-                    self.state = BetaProgrammeState::ShowTCs;
+                    self.state = RewardsAddressState::ShowTCs;
                     vec![Action::SwitchScene(self.back_to)]
                 }
                 _ => {
                     vec![]
                 }
             },
-            BetaProgrammeState::RejectTCs => {
-                if let KeyCode::Esc = key.code {
-                    debug!("RejectTCs msg closed. Switching to Status scene.");
-                    self.state = BetaProgrammeState::ShowTCs;
-                }
-                vec![Action::SwitchScene(self.back_to)]
-            }
-            BetaProgrammeState::AcceptTCsAndEnterDiscordId => self.capture_inputs(key),
+            RewardsAddressState::AcceptTCsAndEnterRewardsAddress => self.capture_inputs(key),
         };
         Ok(send_back)
     }
@@ -165,12 +164,12 @@ impl Component for BetaProgramme {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         let send_back = match action {
             Action::SwitchScene(scene) => match scene {
-                Scene::StatusBetaProgrammePopUp | Scene::OptionsBetaProgrammePopUp => {
+                Scene::StatusRewardsAddressPopUp | Scene::OptionsRewardsAddressPopUp => {
                     self.active = true;
-                    self.old_value = self.discord_input_field.value().to_string();
-                    if scene == Scene::StatusBetaProgrammePopUp {
+                    self.old_value = self.rewards_address_input_field.value().to_string();
+                    if scene == Scene::StatusRewardsAddressPopUp {
                         self.back_to = Scene::Status;
-                    } else if scene == Scene::OptionsBetaProgrammePopUp {
+                    } else if scene == Scene::OptionsRewardsAddressPopUp {
                         self.back_to = Scene::Options;
                     }
                     // Set to InputMode::Entry as we want to handle everything within our handle_key_events
@@ -220,7 +219,7 @@ impl Component for BetaProgramme {
         clear_area(f, layer_zero);
 
         match self.state {
-            BetaProgrammeState::DiscordIdAlreadySet => {
+            RewardsAddressState::RewardsAddressAlreadySet => {
                 self.validate(); // FIXME: maybe this should be somewhere else
                                  // split into 4 parts, for the prompt, input, text, dash , and buttons
                 let layer_two = Layout::new(
@@ -251,10 +250,11 @@ impl Component for BetaProgramme {
                 f.render_widget(prompt_text, layer_two[0]);
 
                 let spaces = " ".repeat(
-                    (INPUT_AREA_USERNAME - 1) as usize - self.discord_input_field.value().len(),
+                    (INPUT_AREA_REWARDS_ADDRESS - 1) as usize
+                        - self.rewards_address_input_field.value().len(),
                 );
                 let input = Paragraph::new(Span::styled(
-                    format!("{}{} ", spaces, self.discord_input_field.value()),
+                    format!("{}{} ", spaces, self.rewards_address_input_field.value()),
                     Style::default()
                         .fg(if self.can_save { VIVID_SKY_BLUE } else { RED })
                         .bg(INDIGO)
@@ -311,7 +311,7 @@ impl Component for BetaProgramme {
                 )]);
                 f.render_widget(button_yes, buttons_layer[1]);
             }
-            BetaProgrammeState::ShowTCs => {
+            RewardsAddressState::ShowTCs => {
                 // split the area into 3 parts, for the lines, hypertext,  buttons
                 let layer_two = Layout::new(
                     Direction::Vertical,
@@ -374,45 +374,7 @@ impl Component for BetaProgramme {
                 .alignment(Alignment::Right);
                 f.render_widget(button_yes, buttons_layer[1]);
             }
-            BetaProgrammeState::RejectTCs => {
-                // split the area into 3 parts, for the lines, hypertext,  buttons
-                let layer_two = Layout::new(
-                    Direction::Vertical,
-                    [
-                        // for the text
-                        Constraint::Length(7),
-                        // gap
-                        Constraint::Length(5),
-                        // for the buttons
-                        Constraint::Length(1),
-                    ],
-                )
-                .split(layer_one[1]);
-
-                let text = Paragraph::new(vec![
-                    Line::from(Span::styled("Terms and conditions not accepted.",Style::default())),
-                    Line::from(Span::styled("\n\n",Style::default())),
-                    Line::from(Span::styled("Beta Rewards Program entry not approved.",Style::default())),
-                    Line::from(Span::styled("\n\n",Style::default())),
-                    Line::from(Span::styled("You can still run nodes on the network, but you will not be part of the Beta Rewards Program.",Style::default())),
-                    ]
-                )
-                .block(Block::default().padding(Padding::horizontal(2)))
-                .wrap(Wrap { trim: false });
-
-                f.render_widget(text.fg(GHOST_WHITE), layer_two[0]);
-
-                let dash = Block::new()
-                    .borders(Borders::BOTTOM)
-                    .border_style(Style::new().fg(GHOST_WHITE));
-                f.render_widget(dash, layer_two[1]);
-                let line = Line::from(vec![Span::styled(
-                    "  Close [Esc]",
-                    Style::default().fg(LIGHT_PERIWINKLE),
-                )]);
-                f.render_widget(line, layer_two[2]);
-            }
-            BetaProgrammeState::AcceptTCsAndEnterDiscordId => {
+            RewardsAddressState::AcceptTCsAndEnterRewardsAddress => {
                 // split into 4 parts, for the prompt, input, text, dash , and buttons
                 let layer_two = Layout::new(
                     Direction::Vertical,
@@ -442,10 +404,11 @@ impl Component for BetaProgramme {
                 f.render_widget(prompt.fg(GHOST_WHITE), layer_two[0]);
 
                 let spaces = " ".repeat(
-                    (INPUT_AREA_USERNAME - 1) as usize - self.discord_input_field.value().len(),
+                    (INPUT_AREA_REWARDS_ADDRESS - 1) as usize
+                        - self.rewards_address_input_field.value().len(),
                 );
                 let input = Paragraph::new(Span::styled(
-                    format!("{}{} ", spaces, self.discord_input_field.value()),
+                    format!("{}{} ", spaces, self.rewards_address_input_field.value()),
                     Style::default().fg(VIVID_SKY_BLUE).bg(INDIGO).underlined(),
                 ))
                 .alignment(Alignment::Center);

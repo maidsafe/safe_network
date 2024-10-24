@@ -28,7 +28,7 @@ use sn_node_manager::config::get_service_log_dir_path;
 pub struct Options {
     pub storage_mountpoint: PathBuf,
     pub storage_drive: String,
-    pub discord_username: String,
+    pub rewards_address: String,
     pub connection_mode: ConnectionMode,
     pub port_edit: bool,
     pub port_from: Option<u32>,
@@ -41,7 +41,7 @@ impl Options {
     pub async fn new(
         storage_mountpoint: PathBuf,
         storage_drive: String,
-        discord_username: String,
+        rewards_address: String,
         connection_mode: ConnectionMode,
         port_from: Option<u32>,
         port_to: Option<u32>,
@@ -49,7 +49,7 @@ impl Options {
         Ok(Self {
             storage_mountpoint,
             storage_drive,
-            discord_username,
+            rewards_address,
             connection_mode,
             port_edit: false,
             port_from,
@@ -192,7 +192,7 @@ impl Component for Options {
         .style(Style::default().fg(GHOST_WHITE));
 
         // Beta Rewards Program
-        let beta_legend = if self.discord_username.is_empty() {
+        let beta_legend = if self.rewards_address.is_empty() {
             " Add Wallet "
         } else {
             " Change Wallet "
@@ -215,7 +215,7 @@ impl Component for Options {
                 ),
                 Cell::from(
                     Line::from(vec![Span::styled(
-                        format!(" {} ", self.discord_username),
+                        format!(" {} ", self.rewards_address),
                         Style::default().fg(VIVID_SKY_BLUE),
                     )])
                     .alignment(Alignment::Left),
@@ -354,7 +354,7 @@ impl Component for Options {
                 | Scene::ChangeDrivePopUp
                 | Scene::ChangeConnectionModePopUp
                 | Scene::ChangePortsPopUp { .. }
-                | Scene::OptionsBetaProgrammePopUp
+                | Scene::OptionsRewardsAddressPopUp
                 | Scene::ResetNodesPopUp => {
                     self.active = true;
                     // make sure we're in navigation mode
@@ -385,11 +385,11 @@ impl Component for Options {
                     self.port_from = Some(from);
                     self.port_to = Some(to);
                 }
-                OptionsActions::TriggerBetaProgramme => {
-                    return Ok(Some(Action::SwitchScene(Scene::OptionsBetaProgrammePopUp)));
+                OptionsActions::TriggerRewardsAddress => {
+                    return Ok(Some(Action::SwitchScene(Scene::OptionsRewardsAddressPopUp)));
                 }
-                OptionsActions::UpdateBetaProgrammeUsername(username) => {
-                    self.discord_username = username;
+                OptionsActions::UpdateRewardsAddress(rewards_address) => {
+                    self.rewards_address = rewards_address;
                 }
                 OptionsActions::TriggerAccessLogs => {
                     if let Err(e) = system::open_folder(

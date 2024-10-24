@@ -10,7 +10,7 @@ use crate::client::Client;
 use bytes::Bytes;
 use sn_evm::EvmWallet;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::PathBuf;
 
 use super::archive::{Archive, ArchiveAddr};
 use super::data::{DataAddr, GetError, PutError};
@@ -48,7 +48,7 @@ impl Client {
     pub async fn file_download(
         &self,
         data_addr: DataAddr,
-        to_dest: &Path,
+        to_dest: PathBuf,
     ) -> Result<(), DownloadError> {
         let data = self.data_get(data_addr).await?;
         if let Some(parent) = to_dest.parent() {
@@ -62,44 +62,12 @@ impl Client {
     pub async fn dir_download(
         &self,
         archive_addr: ArchiveAddr,
-        to_dest: &Path,
+        to_dest: PathBuf,
     ) -> Result<(), DownloadError> {
         let archive = self.archive_get(archive_addr).await?;
         for (path, addr) in archive.map {
-            self.file_download(addr, &to_dest.join(path)).await?;
+            self.file_download(addr, to_dest.join(path)).await?;
         }
-        Ok(())
-    }
-
-    /// Download either a file or a directory depending on the data present at the provided address.
-    pub async fn download_file_or_dir(
-        &self,
-        address: DataAddr,
-        to_dest: &Path,
-    ) -> Result<(), DownloadError> {
-        let data = self.data_get(address).await?;
-
-        if let Ok(archive) = Archive::from_bytes(&data) {
-            info!("Got an Archive from bytes, unpacking directory to {to_dest:?}");
-            for (path, addr) in archive.map {
-                let dest = to_dest.join(path);
-
-                #[cfg(feature = "loud")]
-                println!("Downloading file: {addr:?} to {dest:?}");
-
-                debug!("Downloading archived file: {addr:?} to {dest:?}");
-                self.file_download(addr, &dest).await?;
-            }
-        } else {
-            info!("The downloaded data is not an Archive, saving it as a file.");
-            #[cfg(feature = "loud")]
-            println!("Downloading file: {address:?} to {to_dest:?}");
-            if let Some(parent) = to_dest.parent() {
-                tokio::fs::create_dir_all(parent).await?;
-            }
-            tokio::fs::write(to_dest, data).await?;
-        }
-
         Ok(())
     }
 
@@ -107,7 +75,7 @@ impl Client {
     /// Reads all files, splits into chunks, uploads chunks, uploads datamaps, uploads archive, returns ArchiveAddr (pointing to the archive)
     pub async fn dir_upload(
         &self,
-        dir_path: &Path,
+        dir_path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, UploadError> {
         let mut map = HashMap::new();
@@ -119,13 +87,13 @@ impl Client {
                 continue;
             }
 
-            let path = entry.path();
+            let path = entry.path().to_path_buf();
             tracing::info!("Uploading file: {path:?}");
             #[cfg(feature = "loud")]
             println!("Uploading file: {path:?}");
-            let file = self.file_upload(path, wallet).await?;
+            let file = self.file_upload(path.clone(), wallet).await?;
 
-            map.insert(path.to_path_buf(), file);
+            map.insert(path, file);
         }
 
         let archive = Archive { map };
@@ -138,9 +106,9 @@ impl Client {
 
     /// Upload a file to the network.
     /// Reads file, splits into chunks, uploads chunks, uploads datamap, returns DataAddr (pointing to the datamap)
-    pub async fn file_upload(
+    async fn file_upload(
         &self,
-        path: &Path,
+        path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<DataAddr, UploadError> {
         let data = tokio::fs::read(path).await?;
@@ -151,7 +119,7 @@ impl Client {
 
     /// Get the cost to upload a file/dir to the network.
     /// quick and dirty implementation, please refactor once files are cleanly implemented
-    pub async fn file_cost(&self, path: &Path) -> Result<sn_evm::AttoTokens, UploadError> {
+    pub async fn file_cost(&self, path: &PathBuf) -> Result<sn_evm::AttoTokens, UploadError> {
         let mut map = HashMap::new();
         let mut total_cost = sn_evm::Amount::ZERO;
 

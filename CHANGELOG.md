@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-10-24
+
+### Network
+
+#### Changed
+
+- The `websockets` feature is removed because it was observed to cause instability.
+
+### Client
+
+#### Changed
+
+- PR #2281 was reverted to restore prior behaviour.
+
+### Launchpad
+
+#### Changed
+
+- The Discord username was replaced with the rewards address.
+- Remove the reject terms and conditions pop-up screen.
+
 ## 2024-10-22
 
 Unfortunately the entry for this release will not have fully detailed changes. This release is
