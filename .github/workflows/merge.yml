@@ -138,6 +138,13 @@ jobs:
           # of proptesting
           # we do many more runs on the nightly run
           PROPTEST_CASES: 50
+  
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
@@ -332,6 +339,107 @@ jobs:
 
       - name: Get Public Register (new signing key is not the owner)
         run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: Estimate cost to create a vault
+        run: |
+          echo "test-file" > upload-test.txt
+          ./target/release/autonomi --log-output-dest=data-dir file upload ./upload-test.txt
+          ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register 1234
+          ./target/release/autonomi --log-output-dest=data-dir vault cost
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: create a vault with existing user data as above
+        run: |
+          NUM_OF_PUBLIC_FILES=`./target/release/autonomi --log-output-dest=data-dir file list | grep "public" | grep -o '[0-9]\+'`
+          NUM_OF_PRIVATE_FILES=`./target/release/autonomi --log-output-dest=data-dir file list | grep "private" | grep -o '[0-9]\+'`
+          NUM_OF_REGISTERS=`./target/release/autonomi --log-output-dest=data-dir register list | grep "register" | grep -o '[0-9]\+'`
+          
+          echo "num of public files in the userdata $NUM_OF_PUBLIC_FILES"
+          echo "num of private files in the userdata $NUM_OF_PRIVATE_FILES"
+          echo "num of registers in the userdata $NUM_OF_REGISTERS"
+
+          ./target/release/autonomi --log-output-dest=data-dir vault create
+
+          NUM_OF_PUBLIC_FILES_IN_VAULT=`./target/release/autonomi --log-output-dest=data-dir vault load  | grep "public" | grep -o '[0-9]\+'`
+          NUM_OF_PRIVATE_FILES_IN_VAULT=`./target/release/autonomi --log-output-dest=data-dir vault load | grep "private" | grep -o '[0-9]\+'`
+          NUM_OF_REGISTERS_IN_VAULT=`./target/release/autonomi --log-output-dest=data-dir register list| grep "register" | grep -o '[0-9]\+'`
+
+          echo "num of public files in the vault $NUM_OF_PUBLIC_FILES_IN_VAULT"
+          echo "num of private files in the vault $NUM_OF_PRIVATE_FILES_IN_VAULT"
+          echo "num of registers in the vault $NUM_OF_REGISTERS_IN_VAULT"
+
+          if [ "$NUM_OF_PUBLIC_FILES" -ne "$NUM_OF_PUBLIC_FILES_IN_VAULT" ]; then
+            echo "Error: public File count mismatch"
+            exit 1  # Signals an error
+          fi
+
+          if [ "$NUM_OF_PRIVATE_FILES" -ne "$NUM_OF_PRIVATE_FILES_IN_VAULT" ]; then
+            echo "Error: Private File count mismatch"
+            exit 1  # Signals an error
+          fi
+
+          if [ "$NUM_OF_REGISTERS" -ne "$NUM_OF_REGISTERS_IN_VAULT" ]; then
+            echo "Error: Register count mismatch"
+            exit 1  # Signals an error
+          fi
+
+          echo "vault loaded successfully!"
+
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: sync the created vault with the network
+        run: |
+          echo "testing-file2" > sync-test.txt
+          ./target/release/autonomi --log-output-dest=data-dir file upload ./sync-test.txt
+          ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register_2 12345
+
+          NUM_OF_PUBLIC_FILES=`./target/release/autonomi --log-output-dest=data-dir file list | grep "public" | grep -o '[0-9]\+'`
+          NUM_OF_PRIVATE_FILES=`./target/release/autonomi --log-output-dest=data-dir file list | grep "private" | grep -o '[0-9]\+'`
+          NUM_OF_REGISTERS=`./target/release/autonomi --log-output-dest=data-dir register list | grep "register" | grep -o '[0-9]\+'`
+
+          echo "num of files in the userdata $NUM_OF_PUBLIC_FILES"
+          echo "num of files in the userdata $NUM_OF_PRIVATE_FILES"
+          echo "num of registers in the userdata $NUM_OF_REGISTERS"
+
+          ./target/release/autonomi --log-output-dest=data-dir vault sync
+          NUM_OF_PUBLIC_FILES_IN_VAULT=`./target/release/autonomi --log-output-dest=data-dir vault load  | grep "public" | grep -o '[0-9]\+'`
+          NUM_OF_PRIVATE_FILES_IN_VAULT=`./target/release/autonomi --log-output-dest=data-dir vault load | grep "private" | grep -o '[0-9]\+'`
+          NUM_OF_REGISTERS_IN_VAULT=`./target/release/autonomi --log-output-dest=data-dir register list| grep "register" | grep -o '[0-9]\+'`
+          
+          echo "num of public files in the vault $NUM_OF_PUBLIC_FILES_IN_VAULT"
+          echo "num of private files in the vault $NUM_OF_PRIVATE_FILES_IN_VAULT"
+          echo "num of registers in the vault $NUM_OF_REGISTERS_IN_VAULT"
+
+          if [ "$NUM_OF_PUBLIC_FILES" -ne "$NUM_OF_PUBLIC_FILES_IN_VAULT" ]; then
+            echo "Error: public File count mismatch"
+            exit 1
+          fi
+
+          if [ "$NUM_OF_PRIVATE_FILES" -ne "$NUM_OF_PRIVATE_FILES_IN_VAULT" ]; then
+            echo "Error: Private File count mismatch"
+            exit 1  # Signals an error
+          fi
+
+          if [ "$NUM_OF_REGISTERS" -ne "$NUM_OF_REGISTERS_IN_VAULT" ]; then
+              echo "Error: Register count mismatch"
+              exit 1  # Signals an error
+          fi
+
+          echo "vault synced successfully"
+
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: load an existing vault from the network
+        run: ./target/release/autonomi --log-output-dest=data-dir vault load
         env:
           SN_LOG: "v"
         timeout-minutes: 2
