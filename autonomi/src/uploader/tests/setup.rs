@@ -47,7 +47,7 @@ struct TestUploader {
 
 impl UploaderInterface for TestUploader {
     fn take_inner_uploader(&mut self) -> InnerUploader {
-        self.inner.take().unwrap()
+        self.inner.take().expect("InnerUploader already taken")
     }
 
     fn submit_get_register_task(

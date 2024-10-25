@@ -22,7 +22,8 @@
 //! Also the `max_repayments_for_failed_data` option determines the maximum number of repayments to make if the
 //! initial payment fails.
 
-#[cfg(test)]
+// FIXME: Tests disabled on wasm as it makes use of join handles, for which there is no support in wasm.
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests;
 mod upload;
 
