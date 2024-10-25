@@ -123,6 +123,9 @@ const NETWORKING_CHANNEL_SIZE: usize = 10_000;
 /// Time before a Kad query times out if no response is received
 const KAD_QUERY_TIMEOUT_S: Duration = Duration::from_secs(10);
 
+/// Periodic bootstrap interval
+const KAD_PERIODIC_BOOTSTRAP_INTERVAL_S: Duration = Duration::from_secs(180 * 60);
+
 // Init during compilation, instead of runtime error that should never happen
 // Option<T>::expect will be stabilised as const in the future (https://github.com/rust-lang/rust/issues/67441)
 const REPLICATION_FACTOR: NonZeroUsize = match NonZeroUsize::new(CLOSE_GROUP_SIZE) {
@@ -356,6 +359,7 @@ impl NetworkBuilder {
             .disjoint_query_paths(true)
             // Records never expire
             .set_record_ttl(None)
+            .set_periodic_bootstrap_interval(Some(KAD_PERIODIC_BOOTSTRAP_INTERVAL_S))
             // Emit PUT events for validation prior to insertion into the RecordStore.
             // This is no longer needed as the record_storage::put now can carry out validation.
             // .set_record_filtering(KademliaStoreInserts::FilterBoth)
