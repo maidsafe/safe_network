@@ -301,6 +301,14 @@ pub fn gen_secret_key() -> SecretKeyJs {
     SecretKeyJs(secret_key)
 }
 
+/// Get the current `EvmNetwork` that was set using environment variables that were used during the build process of this library.
+#[wasm_bindgen(js_name = getEvmNetwork)]
+pub fn evm_network() -> Result<JsValue, JsError> {
+    let evm_network = evmlib::utils::get_evm_network_from_env()?;
+    let js_value = serde_wasm_bindgen::to_value(&evm_network)?;
+    Ok(js_value)
+}
+
 #[wasm_bindgen(js_name = Wallet)]
 pub struct JsWallet(evmlib::wallet::Wallet);
 

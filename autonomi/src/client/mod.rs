@@ -11,11 +11,17 @@ pub mod address;
 #[cfg(feature = "data")]
 pub mod archive;
 #[cfg(feature = "data")]
+pub mod archive_private;
+#[cfg(feature = "data")]
 pub mod data;
+#[cfg(feature = "data")]
+pub mod data_private;
 #[cfg(feature = "external-signer")]
 pub mod external_signer;
 #[cfg(feature = "fs")]
 pub mod fs;
+#[cfg(feature = "fs")]
+pub mod fs_private;
 #[cfg(feature = "registers")]
 pub mod registers;
 #[cfg(feature = "vault")]
@@ -25,7 +31,7 @@ pub mod vault;
 pub mod wasm;
 
 // private module with utility functions
-mod utils;
+pub(crate) mod utils;
 
 pub use sn_evm::Amount;
 
@@ -201,12 +207,8 @@ async fn handle_event_receiver(
 /// Events that can be broadcasted by the client.
 #[derive(Debug, Clone)]
 pub enum ClientEvent {
-    UploadComplete(UploadSummary),
-}
-
-/// Summary of an upload operation.
-#[derive(Debug, Clone)]
-pub struct UploadSummary {
-    pub record_count: usize,
-    pub tokens_spent: Amount,
+    UploadComplete {
+        record_count: usize,
+        tokens_spent: Amount,
+    },
 }
