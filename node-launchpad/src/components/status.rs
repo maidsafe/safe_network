@@ -507,6 +507,13 @@ impl Component for Status<'_> {
                 StatusActions::StartNodes => {
                     debug!("Got action to start nodes");
 
+                    if self.rewards_address.is_empty() {
+                        info!("Rewards address is not set. Ask for input.");
+                        return Ok(Some(Action::StatusActions(
+                            StatusActions::TriggerRewardsAddress,
+                        )));
+                    }
+
                     if self.nodes_to_start == 0 {
                         info!("Nodes to start not set. Ask for input.");
                         return Ok(Some(Action::StatusActions(
@@ -720,7 +727,7 @@ impl Component for Status<'_> {
 
         // No nodes. Empty Table.
         if let Some(ref items) = self.items {
-            if items.items.is_empty() {
+            if items.items.is_empty() || self.rewards_address.is_empty() {
                 let line1 = Line::from(vec![
                     Span::styled("Press ", Style::default().fg(LIGHT_PERIWINKLE)),
                     Span::styled("[Ctrl+G] ", Style::default().fg(GHOST_WHITE).bold()),
@@ -833,7 +840,7 @@ impl Component for Status<'_> {
 
         let footer = Footer::default();
         let footer_state = if let Some(ref items) = self.items {
-            if !items.items.is_empty() {
+            if !items.items.is_empty() || self.rewards_address.is_empty() {
                 if !self.get_running_nodes().is_empty() {
                     &mut NodesToStart::Running
                 } else {
