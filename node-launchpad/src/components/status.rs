@@ -46,6 +46,7 @@ use std::{
     time::{Duration, Instant},
     vec,
 };
+use strum::Display;
 use tokio::sync::mpsc::UnboundedSender;
 
 use super::super::node_mgmt::{maintain_n_running_nodes, reset_nodes, stop_nodes};
@@ -105,7 +106,7 @@ pub struct Status<'a> {
     error_popup: Option<ErrorPopup>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Display, Debug)]
 pub enum LockRegistryState {
     StartingNodes,
     StoppingNodes,
@@ -273,6 +274,14 @@ impl Status<'_> {
         Ok(())
     }
 
+    fn clear_node_items(&mut self) {
+        debug!("Cleaning items on Status page");
+        if let Some(items) = self.items.as_mut() {
+            items.items.clear();
+            debug!("Cleared the items on status page");
+        }
+    }
+
     /// Tries to trigger the update of node stats if the last update was more than `NODE_STAT_UPDATE_INTERVAL` ago.
     /// The result is sent via the StatusActions::NodesStatsObtained action.
     fn try_update_node_stats(&mut self, force_update: bool) -> Result<()> {
@@ -426,6 +435,7 @@ impl Component for Status<'_> {
                 StatusActions::ResetNodesCompleted { trigger_start_node } => {
                     self.lock_registry = None;
                     self.load_node_registry_and_update_states()?;
+                    self.clear_node_items();
 
                     if trigger_start_node {
                         debug!("Reset nodes completed. Triggering start nodes.");
@@ -522,7 +532,10 @@ impl Component for Status<'_> {
                     }
 
                     if self.lock_registry.is_some() {
-                        error!("Registry is locked. Cannot start node now.");
+                        error!(
+                            "Registry is locked ({:?}) Cannot Start nodes now.",
+                            self.lock_registry
+                        );
                         return Ok(None);
                     }
 
@@ -556,7 +569,10 @@ impl Component for Status<'_> {
                 StatusActions::StopNodes => {
                     debug!("Got action to stop nodes");
                     if self.lock_registry.is_some() {
-                        error!("Registry is locked. Cannot stop node now.");
+                        error!(
+                            "Registry is locked ({:?}) Cannot Stop nodes now.",
+                            self.lock_registry
+                        );
                         return Ok(None);
                     }
 
@@ -579,7 +595,10 @@ impl Component for Status<'_> {
             Action::OptionsActions(OptionsActions::ResetNodes) => {
                 debug!("Got action to reset nodes");
                 if self.lock_registry.is_some() {
-                    error!("Registry is locked. Cannot reset nodes now.");
+                    error!(
+                        "Registry is locked ({:?}) Cannot Reset nodes now.",
+                        self.lock_registry
+                    );
                     return Ok(None);
                 }
 
