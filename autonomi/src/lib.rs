@@ -44,7 +44,7 @@ pub use sn_evm::EvmNetwork;
 pub use sn_evm::EvmWallet as Wallet;
 pub use sn_evm::RewardsAddress;
 #[cfg(feature = "external-signer")]
-pub use utils::payment_proof_from_quotes_and_payments;
+pub use utils::receipt_from_quotes_and_payments;
 
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;

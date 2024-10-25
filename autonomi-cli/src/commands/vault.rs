@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use autonomi::client::payments::PaymentOption;
 use autonomi::Multiaddr;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
@@ -39,7 +40,7 @@ pub async fn create(peers: Vec<Multiaddr>) -> Result<()> {
 
     println!("Pushing to network vault...");
     let total_cost = client
-        .put_user_data_to_vault(&vault_sk, &wallet, local_user_data)
+        .put_user_data_to_vault(&vault_sk, PaymentOption::from(&wallet), local_user_data)
         .await?;
 
     if total_cost.is_zero() {
@@ -81,7 +82,7 @@ pub async fn sync(peers: Vec<Multiaddr>, force: bool) -> Result<()> {
     let private_file_archives_len = local_user_data.private_file_archives.len();
     let registers_len = local_user_data.registers.len();
     client
-        .put_user_data_to_vault(&vault_sk, &wallet, local_user_data)
+        .put_user_data_to_vault(&vault_sk, PaymentOption::from(&wallet), local_user_data)
         .await?;
 
     println!("✅ Successfully synced vault");

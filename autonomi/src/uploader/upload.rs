@@ -10,9 +10,11 @@ use super::{
     GetStoreCostStrategy, TaskResult, UploadCfg, UploadEvent, UploadItem, UploadSummary, Uploader,
     UploaderInterface, PAYMENT_BATCH_SIZE,
 };
+use crate::client::payments::PaymentOption;
 #[cfg(feature = "registers")]
 use crate::client::registers::Register;
-use crate::{uploader::UploadError, utils::payment_proof_from_quotes_and_payments, Client};
+use crate::utils::receipt_from_cost_map_and_payments;
+use crate::{uploader::UploadError, Client};
 use bytes::Bytes;
 use itertools::Either;
 use libp2p::{kad::Quorum, PeerId};
@@ -75,13 +77,26 @@ pub(super) async fn start_upload(
             // 6 because of the 6 pipelines, 1 for redundancy.
             mpsc_channel(uploader.cfg.batch_size * 6 + 1)
         };
+
     let (make_payment_sender, make_payment_receiver) = mpsc_channel(uploader.cfg.batch_size);
 
-    uploader.start_payment_processing_thread(
-        make_payment_receiver,
-        task_result_sender.clone(),
-        uploader.cfg.payment_batch_size,
-    )?;
+    match &uploader.payment_option {
+        PaymentOption::Wallet(wallet) => {
+            InnerUploader::start_payment_processing_thread(
+                wallet.clone(),
+                make_payment_receiver,
+                task_result_sender.clone(),
+                uploader.cfg.payment_batch_size,
+            )?;
+        }
+        PaymentOption::Receipt(receipt) => {
+            let _ = task_result_sender
+                .send(TaskResult::MakePaymentsOk {
+                    payment_proofs: receipt.clone(),
+                })
+                .await;
+        }
+    }
 
     // chunks can be pushed to pending_get_store_cost directly
     #[cfg(feature = "data")]
@@ -124,13 +139,12 @@ pub(super) async fn start_upload(
             // To avoid empty final_balance when all items are skipped. Skip for tests.
             #[cfg(not(test))]
             {
-                uploader.upload_final_balance = uploader
-                    .wallet
-                    .balance_of_tokens()
-                    .await
-                    .inspect_err(|err| {
-                        error!("Failed to get wallet balance: {err:?}");
-                    })?;
+                if let PaymentOption::Wallet(wallet) = &uploader.payment_option {
+                    uploader.upload_final_balance =
+                        wallet.balance_of_tokens().await.inspect_err(|err| {
+                            error!("Failed to get wallet balance: {err:?}");
+                        })?;
+                }
             }
 
             debug!("UPLOADER STATE: finished uploading all items {uploader:?}");
@@ -725,7 +739,7 @@ pub(super) struct InnerUploader {
     #[debug(skip)]
     pub(super) client: Client,
     #[debug(skip)]
-    pub(super) wallet: EvmWallet,
+    pub(super) payment_option: PaymentOption,
 
     // states
     pub(super) all_upload_items: HashMap<XorName, UploadItem>,
@@ -776,11 +790,11 @@ pub(super) struct InnerUploader {
 }
 
 impl InnerUploader {
-    pub(super) fn new(client: Client, wallet: EvmWallet) -> Self {
+    pub(super) fn new(client: Client, payment_option: PaymentOption) -> Self {
         Self {
             cfg: Default::default(),
             client,
-            wallet,
+            payment_option,
 
             all_upload_items: Default::default(),
             #[cfg(feature = "registers")]
@@ -889,20 +903,18 @@ impl InnerUploader {
     // This is spawned as a long running task to prevent us from reading the wallet files
     // each time we have to make a payment.
     fn start_payment_processing_thread(
-        &self,
+        wallet: EvmWallet,
         mut make_payment_receiver: mpsc::Receiver<Option<(UploadItem, Box<PayeeQuote>)>>,
         task_result_sender: mpsc::Sender<TaskResult>,
         payment_batch_size: usize,
     ) -> Result<()> {
-        let wallet = self.wallet.clone();
-
         let _handle = spawn(async move {
             debug!("Spawning the long running make payment processing loop.");
 
             let mut to_be_paid_list = Vec::new();
             let mut cost_map = HashMap::new();
-
             let mut got_a_previous_force_payment = false;
+
             while let Some(payment) = mpsc_recv(&mut make_payment_receiver).await {
                 let make_payments = if let Some((item, quote)) = payment {
                     to_be_paid_list.push((
@@ -950,7 +962,7 @@ impl InnerUploader {
                             trace!("Made payments for {} records.", payments.len());
 
                             let payment_proofs =
-                                payment_proof_from_quotes_and_payments(&cost_map, &payments);
+                                receipt_from_cost_map_and_payments(cost_map, &payments);
 
                             TaskResult::MakePaymentsOk { payment_proofs }
                         }
@@ -968,7 +980,9 @@ impl InnerUploader {
                             }
                         }
                     };
+
                     let result_sender = task_result_sender.clone();
+
                     let _handle = spawn(async move {
                         let _ = result_sender.send(result).await;
                     });

@@ -310,7 +310,7 @@ impl Client {
         let register = Register::new(Some(value), name, owner, permissions)?;
         let address = *register.address();
 
-        let mut uploader = Uploader::new(self.clone(), wallet.clone());
+        let mut uploader = Uploader::new(self.clone(), wallet.into());
         uploader.insert_register(vec![register]);
         uploader.collect_registers(true);
 

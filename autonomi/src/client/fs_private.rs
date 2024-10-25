@@ -81,7 +81,9 @@ impl Client {
 
         let archive_serialized = archive.into_bytes()?;
 
-        let arch_addr = self.private_data_put(archive_serialized, wallet).await?;
+        let arch_addr = self
+            .private_data_put(archive_serialized, wallet.into())
+            .await?;
 
         Ok(arch_addr)
     }
@@ -95,7 +97,7 @@ impl Client {
     ) -> Result<PrivateDataAccess, FileUploadError> {
         let data = tokio::fs::read(path).await?;
         let data = Bytes::from(data);
-        let addr = self.private_data_put(data, wallet).await?;
+        let addr = self.private_data_put(data, wallet.into()).await?;
         Ok(addr)
     }
 }

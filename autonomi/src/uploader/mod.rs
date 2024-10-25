@@ -26,11 +26,11 @@
 mod tests;
 mod upload;
 
+use crate::client::payments::{PaymentOption, Receipt};
 #[cfg(feature = "registers")]
 use crate::client::registers::{Register, RegisterError};
 use crate::Client;
 use itertools::Either;
-use sn_evm::EvmWallet;
 use sn_evm::{Amount, EvmNetworkTokenError, ProofOfPayment};
 use sn_networking::target_arch::{mpsc, mpsc_channel};
 use sn_networking::{NetworkError, PayeeQuote};
@@ -240,9 +240,9 @@ impl Uploader {
     /// Creates a new instance of `Uploader` with the default configuration.
     /// To modify the configuration, use the provided setter methods (`set_...` functions).
     // NOTE: Self has to be constructed only using this method. We expect `Self::inner` is present everywhere.
-    pub fn new(client: Client, wallet: EvmWallet) -> Self {
+    pub fn new(client: Client, payment_option: PaymentOption) -> Self {
         Self {
-            inner: Some(InnerUploader::new(client, wallet)),
+            inner: Some(InnerUploader::new(client, payment_option)),
         }
     }
 
@@ -569,7 +569,7 @@ enum TaskResult {
         max_repayments_reached: bool,
     },
     MakePaymentsOk {
-        payment_proofs: HashMap<XorName, ProofOfPayment>,
+        payment_proofs: Receipt,
     },
     MakePaymentsErr {
         failed_xornames: Vec<(XorName, Box<PayeeQuote>)>,

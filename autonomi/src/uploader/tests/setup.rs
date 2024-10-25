@@ -398,7 +398,8 @@ pub fn get_inner_uploader() -> Result<(InnerUploader, mpsc::Sender<TaskResult>)>
             "http://localhost:63319/",
             "0x5FbDB2315678afecb367f032d93F642f64180aa3",
             "0x8464135c8F25Da09e49BC8782676a84730C318bC",
-        )),
+        ))
+        .into(),
     );
     let (task_result_sender, task_result_receiver) = mpsc::channel(100);
     inner.testing_task_channels = Some((task_result_sender.clone(), task_result_receiver));

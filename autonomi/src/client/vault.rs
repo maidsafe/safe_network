@@ -13,10 +13,12 @@ pub use key::{derive_vault_key, VaultSecretKey};
 pub use user_data::UserData;
 use xor_name::XorName;
 
+use super::data::CostError;
 use crate::client::data::PutError;
+use crate::client::payments::PaymentOption;
 use crate::client::Client;
 use libp2p::kad::{Quorum, Record};
-use sn_evm::{Amount, AttoTokens, EvmWallet};
+use sn_evm::{Amount, AttoTokens};
 use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg, VerificationKind};
 use sn_protocol::storage::{
     try_serialize_record, RecordKind, RetryStrategy, Scratchpad, ScratchpadAddress,
@@ -26,8 +28,6 @@ use sn_protocol::{storage::try_deserialize_record, NetworkAddress};
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use tracing::info;
-
-use super::data::CostError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum VaultError {
@@ -171,7 +171,7 @@ impl Client {
     pub async fn write_bytes_to_vault(
         &self,
         data: Bytes,
-        wallet: &EvmWallet,
+        payment_option: PaymentOption,
         secret_key: &VaultSecretKey,
         content_type: VaultContentType,
     ) -> Result<AttoTokens, PutError> {
@@ -214,8 +214,9 @@ impl Client {
                 .iter()
                 .filter_map(|f| f.as_xorname())
                 .collect::<Vec<XorName>>();
-            let (payment_proofs, _) = self
-                .pay(scratch_xor.iter().cloned(), wallet)
+
+            let payment_proofs = self
+                .pay_for_content_addrs(payment_option, scratch_xor.iter().cloned())
                 .await
                 .inspect_err(|err| {
                     error!("Failed to pay for new vault at addr: {scratch_address:?} : {err}");
@@ -225,6 +226,7 @@ impl Client {
                 Some(proof) => proof,
                 None => return Err(PutError::PaymentUnexpectedlyInvalid(scratch_address)),
             };
+
             total_cost = proof.quote.cost;
 
             Record {

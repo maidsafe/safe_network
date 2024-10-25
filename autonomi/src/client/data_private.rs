@@ -7,12 +7,12 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::data::{GetError, PutError};
+use crate::client::payments::PaymentOption;
 use crate::client::ClientEvent;
 use crate::uploader::Uploader;
 use crate::{self_encryption::encrypt, Client};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::EvmWallet;
 use sn_protocol::storage::Chunk;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -61,14 +61,14 @@ impl Client {
     pub async fn private_data_put(
         &self,
         data: Bytes,
-        wallet: &EvmWallet,
+        payment_option: PaymentOption,
     ) -> Result<PrivateDataAccess, PutError> {
         let now = sn_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
         debug!("Encryption took: {:.2?}", now.elapsed());
 
         // Upload the chunks with the payments
-        let mut uploader = Uploader::new(self.clone(), wallet.clone());
+        let mut uploader = Uploader::new(self.clone(), payment_option);
         uploader.insert_chunks(chunks);
         uploader.insert_chunks(vec![data_map_chunk.clone()]);
 

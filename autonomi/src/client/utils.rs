@@ -10,7 +10,7 @@ use super::{
     data::{CostError, GetError, PayError},
     Client,
 };
-use crate::utils::payment_proof_from_quotes_and_payments;
+use crate::utils::receipt_from_cost_map_and_payments;
 use crate::{self_encryption::DataMapLevel, uploader::UploadError};
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
@@ -166,7 +166,7 @@ impl Client {
             .await
             .map_err(|err| PayError::from(err.0))?;
 
-        let proofs = payment_proof_from_quotes_and_payments(&cost_map, &payments);
+        let proofs = receipt_from_cost_map_and_payments(cost_map, &payments);
 
         trace!(
             "Chunk payments of {} chunks completed. {} chunks were free / already paid for",

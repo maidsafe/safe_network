@@ -12,13 +12,13 @@ use crate::client::archive::ArchiveAddr;
 use crate::client::archive_private::PrivateArchiveAccess;
 use crate::client::data::GetError;
 use crate::client::data::PutError;
+use crate::client::payments::PaymentOption;
 use crate::client::registers::RegisterAddress;
 use crate::client::vault::VaultError;
 use crate::client::vault::{app_name_to_vault_content_type, VaultContentType, VaultSecretKey};
 use crate::client::Client;
 use serde::{Deserialize, Serialize};
 use sn_evm::AttoTokens;
-use sn_evm::EvmWallet;
 use sn_protocol::Bytes;
 use std::sync::LazyLock;
 
@@ -121,7 +121,7 @@ impl Client {
     pub async fn put_user_data_to_vault(
         &self,
         secret_key: &VaultSecretKey,
-        wallet: &EvmWallet,
+        payment_option: PaymentOption,
         user_data: UserData,
     ) -> Result<AttoTokens, PutError> {
         let bytes = user_data
@@ -130,7 +130,7 @@ impl Client {
         let total_cost = self
             .write_bytes_to_vault(
                 bytes,
-                wallet,
+                payment_option,
                 secret_key,
                 *USER_DATA_VAULT_CONTENT_IDENTIFIER,
             )

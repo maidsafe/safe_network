@@ -115,7 +115,7 @@ impl Client {
 
         let map_xor_name = *data_map_chunk.address().xorname();
 
-        let mut uploader = Uploader::new(self.clone(), wallet.clone());
+        let mut uploader = Uploader::new(self.clone(), wallet.into());
         uploader.insert_chunks(chunks);
         uploader.insert_chunks(vec![data_map_chunk]);
 

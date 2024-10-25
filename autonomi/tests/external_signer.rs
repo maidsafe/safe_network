@@ -76,7 +76,7 @@ async fn external_signer_put() -> eyre::Result<()> {
     }
 
     // Payment proofs
-    let proofs = autonomi::payment_proof_from_quotes_and_payments(&quotes, &payments);
+    let proofs = autonomi::receipt_from_quotes_and_payments(&quotes, &payments);
 
     let addr = client
         .data_put_with_proof_of_payment(data.clone(), proofs)

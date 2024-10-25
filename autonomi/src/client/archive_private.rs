@@ -135,6 +135,6 @@ impl Client {
         let bytes = archive
             .into_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
-        self.private_data_put(bytes, wallet).await
+        self.private_data_put(bytes, wallet.into()).await
     }
 }
