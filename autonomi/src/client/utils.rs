@@ -6,29 +6,27 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{collections::HashMap, num::NonZero};
-
+use super::{
+    data::{CostError, GetError, PayError},
+    Client,
+};
+use crate::utils::payment_proof_from_quotes_and_payments;
+use crate::{self_encryption::DataMapLevel, uploader::UploadError};
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_evm::{EvmWallet, PaymentQuote, ProofOfPayment, QuotePayment};
+use sn_evm::{EvmWallet, ProofOfPayment, QuotePayment};
 use sn_networking::{
     GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
 };
 use sn_protocol::{
     messages::ChunkProof,
     storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind, RetryStrategy},
-    NetworkAddress,
+    NetworkAddress, CLOSE_GROUP_SIZE,
 };
+use std::{collections::HashMap, num::NonZero};
 use xor_name::XorName;
-
-use super::{
-    data::{CostError, GetError, PayError, PutError},
-    Client,
-};
-use crate::self_encryption::DataMapLevel;
-use crate::utils::payment_proof_from_quotes_and_payments;
 
 impl Client {
     /// Fetch and decrypt all chunks in the data map.
@@ -89,7 +87,8 @@ impl Client {
         &self,
         chunk: Chunk,
         payment: ProofOfPayment,
-    ) -> Result<(), PutError> {
+        cfg: Option<PutRecordCfg>,
+    ) -> Result<(), UploadError> {
         let storing_node = payment.to_peer_id_payee().expect("Missing node Peer ID");
 
         debug!("Storing chunk: {chunk:?} to {:?}", storing_node);
@@ -101,7 +100,7 @@ impl Client {
             key: key.clone(),
             value: try_serialize_record(&(payment, chunk.clone()), record_kind)
                 .map_err(|e| {
-                    PutError::Serialization(format!(
+                    UploadError::Serialization(format!(
                         "Failed to serialize chunk with payment: {e:?}"
                     ))
                 })?
@@ -110,35 +109,41 @@ impl Client {
             expires: None,
         };
 
-        let verification = {
-            let verification_cfg = GetRecordCfg {
-                get_quorum: Quorum::N(NonZero::new(2).expect("2 is non-zero")),
-                retry_strategy: Some(RetryStrategy::Quick),
-                target_record: None,
-                expected_holders: Default::default(),
-                is_register: false,
+        let put_cfg = if let Some(cfg) = cfg {
+            cfg
+        } else {
+            let verification = {
+                let verification_cfg = GetRecordCfg {
+                    get_quorum: Quorum::N(
+                        NonZero::new(CLOSE_GROUP_SIZE / 2).expect("2 is non-zero"),
+                    ),
+                    retry_strategy: Some(RetryStrategy::Quick),
+                    target_record: None,
+                    expected_holders: Default::default(),
+                    is_register: false,
+                };
+
+                let random_nonce = thread_rng().gen::<u64>();
+                let expected_proof =
+                    ChunkProof::from_chunk(&chunk, random_nonce).map_err(|err| {
+                        UploadError::Serialization(format!("Failed to obtain chunk proof: {err:?}"))
+                    })?;
+
+                Some((
+                    VerificationKind::ChunkProof {
+                        expected_proof,
+                        nonce: random_nonce,
+                    },
+                    verification_cfg,
+                ))
             };
 
-            let stored_on_node = try_serialize_record(&chunk, RecordKind::Chunk)
-                .map_err(|e| PutError::Serialization(format!("Failed to serialize chunk: {e:?}")))?
-                .to_vec();
-            let random_nonce = thread_rng().gen::<u64>();
-            let expected_proof = ChunkProof::new(&stored_on_node, random_nonce);
-
-            Some((
-                VerificationKind::ChunkProof {
-                    expected_proof,
-                    nonce: random_nonce,
-                },
-                verification_cfg,
-            ))
-        };
-
-        let put_cfg = PutRecordCfg {
-            put_quorum: Quorum::One,
-            retry_strategy: Some(RetryStrategy::Balanced),
-            use_put_record_to: Some(vec![storing_node]),
-            verification,
+            PutRecordCfg {
+                put_quorum: Quorum::One,
+                retry_strategy: Some(RetryStrategy::Balanced),
+                use_put_record_to: Some(vec![storing_node]),
+                verification,
+            }
         };
         Ok(self.network.put_record(record, &put_cfg).await?)
     }
@@ -149,12 +154,7 @@ impl Client {
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &EvmWallet,
     ) -> Result<(HashMap<XorName, ProofOfPayment>, Vec<XorName>), PayError> {
-        let cost_map = self
-            .get_store_quotes(content_addrs)
-            .await?
-            .into_iter()
-            .map(|(name, (_, _, q))| (name, q))
-            .collect();
+        let cost_map = self.get_store_quotes(content_addrs).await?;
 
         let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
 
@@ -233,12 +233,12 @@ async fn fetch_store_quote(
 
 /// Form to be executed payments and already executed payments from a cost map.
 pub(crate) fn extract_quote_payments(
-    cost_map: &HashMap<XorName, PaymentQuote>,
+    cost_map: &HashMap<XorName, PayeeQuote>,
 ) -> (Vec<QuotePayment>, Vec<XorName>) {
     let mut to_be_paid = vec![];
     let mut already_paid = vec![];
 
-    for (chunk_address, quote) in cost_map.iter() {
+    for (chunk_address, (_, _, quote)) in cost_map.iter() {
         if quote.cost.is_zero() {
             already_paid.push(*chunk_address);
         } else {

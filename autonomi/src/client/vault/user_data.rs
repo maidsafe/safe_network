@@ -9,6 +9,7 @@
 use std::collections::HashMap;
 
 use crate::client::archive::ArchiveAddr;
+use crate::client::archive_private::PrivateArchiveAccess;
 use crate::client::data::GetError;
 use crate::client::data::PutError;
 use crate::client::registers::RegisterAddress;
@@ -37,6 +38,8 @@ pub struct UserData {
     pub registers: HashMap<RegisterAddress, String>,
     /// Owned file archive addresses, along with their names (can be empty)
     pub file_archives: HashMap<ArchiveAddr, String>,
+    /// Owned private file archives, along with their names (can be empty)
+    pub private_file_archives: HashMap<PrivateArchiveAccess, String>,
 }
 
 /// Errors that can occur during the get operation.
