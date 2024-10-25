@@ -1088,7 +1088,7 @@ checksum = "0c4b4d0bd25bd0b74681c0ad21497610ce1b7c91b1022cd21c80c6fbdd9476b0"
 
 [[package]]
 name = "autonomi"
-version = "0.2.1"
+version = "0.2.2-rc.1"
 dependencies = [
  "alloy",
  "assert_matches",
@@ -1139,7 +1139,7 @@ dependencies = [
 
 [[package]]
 name = "autonomi-cli"
-version = "0.1.2"
+version = "0.1.3-rc.1"
 dependencies = [
  "autonomi",
  "clap",
@@ -2792,7 +2792,7 @@ dependencies = [
 
 [[package]]
 name = "evm_testnet"
-version = "0.1.1"
+version = "0.1.2-rc.1"
 dependencies = [
  "clap",
  "dirs-next",
@@ -2803,7 +2803,7 @@ dependencies = [
 
 [[package]]
 name = "evmlib"
-version = "0.1.1"
+version = "0.1.2-rc.1"
 dependencies = [
  "alloy",
  "dirs-next",
@@ -5613,7 +5613,7 @@ dependencies = [
 
 [[package]]
 name = "nat-detection"
-version = "0.2.8"
+version = "0.2.9-rc.1"
 dependencies = [
  "clap",
  "clap-verbosity-flag",
@@ -5730,7 +5730,7 @@ dependencies = [
 
 [[package]]
 name = "node-launchpad"
-version = "0.4.1"
+version = "0.4.2-rc.1"
 dependencies = [
  "atty",
  "better-panic",
@@ -8095,7 +8095,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "sn-node-manager"
-version = "0.11.0"
+version = "0.11.1-rc.1"
 dependencies = [
  "assert_cmd",
  "assert_fs",
@@ -8171,7 +8171,7 @@ dependencies = [
 
 [[package]]
 name = "sn_build_info"
-version = "0.1.16"
+version = "0.1.17-rc.1"
 dependencies = [
  "chrono",
  "tracing",
@@ -8213,7 +8213,7 @@ dependencies = [
 
 [[package]]
 name = "sn_evm"
-version = "0.1.1"
+version = "0.1.2-rc.1"
 dependencies = [
  "custom_debug",
  "evmlib",
@@ -8236,7 +8236,7 @@ dependencies = [
 
 [[package]]
 name = "sn_logging"
-version = "0.2.37"
+version = "0.2.38-rc.1"
 dependencies = [
  "chrono",
  "color-eyre",
@@ -8261,7 +8261,7 @@ dependencies = [
 
 [[package]]
 name = "sn_metrics"
-version = "0.1.17"
+version = "0.1.18-rc.1"
 dependencies = [
  "clap",
  "color-eyre",
@@ -8275,7 +8275,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.19.0"
+version = "0.19.1-rc.1"
 dependencies = [
  "aes-gcm-siv",
  "async-channel",
@@ -8321,7 +8321,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.112.1"
+version = "0.112.2-rc.1"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -8378,7 +8378,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.6.32"
+version = "0.6.33-rc.1"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -8405,7 +8405,7 @@ dependencies = [
 
 [[package]]
 name = "sn_peers_acquisition"
-version = "0.5.4"
+version = "0.5.5-rc.1"
 dependencies = [
  "clap",
  "lazy_static",
@@ -8421,7 +8421,7 @@ dependencies = [
 
 [[package]]
 name = "sn_protocol"
-version = "0.17.12"
+version = "0.17.13-rc.1"
 dependencies = [
  "blsttc",
  "bytes",
@@ -8451,7 +8451,7 @@ dependencies = [
 
 [[package]]
 name = "sn_registers"
-version = "0.4.0"
+version = "0.4.1-rc.1"
 dependencies = [
  "blsttc",
  "crdts",
@@ -8468,7 +8468,7 @@ dependencies = [
 
 [[package]]
 name = "sn_service_management"
-version = "0.4.0"
+version = "0.4.1-rc.1"
 dependencies = [
  "async-trait",
  "dirs-next",
@@ -8494,7 +8494,7 @@ dependencies = [
 
 [[package]]
 name = "sn_transfers"
-version = "0.20.0"
+version = "0.20.1-rc.1"
 dependencies = [
  "assert_fs",
  "blsttc",
@@ -8827,7 +8827,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 
 [[package]]
 name = "test_utils"
-version = "0.4.8"
+version = "0.4.9-rc.1"
 dependencies = [
  "bytes",
  "color-eyre",
@@ -8971,7 +8971,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "token_supplies"
-version = "0.1.55"
+version = "0.1.56-rc.1"
 dependencies = [
  "dirs-next",
  "reqwest 0.11.27",
