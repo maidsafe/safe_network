@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use autonomi::client::{
     address::{addr_to_str, str_to_addr},
     archive::ArchiveAddr,
+    archive_private::PrivateArchiveAccess,
     registers::{RegisterAddress, RegisterSecretKey},
     vault::UserData,
 };
@@ -21,17 +22,60 @@ use super::{
     keys::{create_register_signing_key_file, get_register_signing_key},
 };
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+struct PrivateFileArchive {
+    name: String,
+    secret_access: String,
+}
+
 pub fn get_local_user_data() -> Result<UserData> {
     let register_sk = get_register_signing_key().map(|k| k.to_hex()).ok();
     let registers = get_local_registers()?;
-    let file_archives = get_local_file_archives()?;
+    let file_archives = get_local_public_file_archives()?;
+    let private_file_archives = get_local_private_file_archives()?;
 
     let user_data = UserData {
         register_sk,
         registers,
         file_archives,
+        private_file_archives,
     };
     Ok(user_data)
+}
+
+pub fn get_local_private_file_archives() -> Result<HashMap<PrivateArchiveAccess, String>> {
+    let data_dir = get_client_data_dir_path()?;
+    let user_data_path = data_dir.join("user_data");
+    let private_file_archives_path = user_data_path.join("private_file_archives");
+    std::fs::create_dir_all(&private_file_archives_path)?;
+
+    let mut private_file_archives = HashMap::new();
+    for entry in walkdir::WalkDir::new(private_file_archives_path)
+        .min_depth(1)
+        .max_depth(1)
+    {
+        let entry = entry?;
+        let file_content = std::fs::read_to_string(entry.path())?;
+        let private_file_archive: PrivateFileArchive = serde_json::from_str(&file_content)?;
+        let private_file_archive_access =
+            PrivateArchiveAccess::from_hex(&private_file_archive.secret_access)?;
+        private_file_archives.insert(private_file_archive_access, private_file_archive.name);
+    }
+    Ok(private_file_archives)
+}
+
+pub fn get_local_private_archive_access(local_addr: &str) -> Result<PrivateArchiveAccess> {
+    let data_dir = get_client_data_dir_path()?;
+    let user_data_path = data_dir.join("user_data");
+    let private_file_archives_path = user_data_path.join("private_file_archives");
+    let file_path = private_file_archives_path.join(local_addr);
+    let file_content = std::fs::read_to_string(file_path)?;
+    let private_file_archive: PrivateFileArchive = serde_json::from_str(&file_content)?;
+    let private_file_archive_access =
+        PrivateArchiveAccess::from_hex(&private_file_archive.secret_access)?;
+    Ok(private_file_archive_access)
 }
 
 pub fn get_local_registers() -> Result<HashMap<RegisterAddress, String>> {
@@ -55,7 +99,7 @@ pub fn get_local_registers() -> Result<HashMap<RegisterAddress, String>> {
     Ok(registers)
 }
 
-pub fn get_local_file_archives() -> Result<HashMap<ArchiveAddr, String>> {
+pub fn get_local_public_file_archives() -> Result<HashMap<ArchiveAddr, String>> {
     let data_dir = get_client_data_dir_path()?;
     let user_data_path = data_dir.join("user_data");
     let file_archives_path = user_data_path.join("file_archives");
@@ -86,8 +130,13 @@ pub fn write_local_user_data(user_data: &UserData) -> Result<()> {
     }
 
     for (archive, name) in user_data.file_archives.iter() {
-        write_local_file_archive(archive, name)?;
+        write_local_public_file_archive(addr_to_str(*archive), name)?;
     }
+
+    for (archive, name) in user_data.private_file_archives.iter() {
+        write_local_private_file_archive(archive.to_hex(), archive.address(), name)?;
+    }
+
     Ok(())
 }
 
@@ -100,11 +149,29 @@ pub fn write_local_register(register: &RegisterAddress, name: &str) -> Result<()
     Ok(())
 }
 
-pub fn write_local_file_archive(archive: &ArchiveAddr, name: &str) -> Result<()> {
+pub fn write_local_public_file_archive(archive: String, name: &str) -> Result<()> {
     let data_dir = get_client_data_dir_path()?;
     let user_data_path = data_dir.join("user_data");
     let file_archives_path = user_data_path.join("file_archives");
     std::fs::create_dir_all(&file_archives_path)?;
-    std::fs::write(file_archives_path.join(addr_to_str(*archive)), name)?;
+    std::fs::write(file_archives_path.join(archive), name)?;
+    Ok(())
+}
+
+pub fn write_local_private_file_archive(
+    archive: String,
+    local_addr: String,
+    name: &str,
+) -> Result<()> {
+    let data_dir = get_client_data_dir_path()?;
+    let user_data_path = data_dir.join("user_data");
+    let private_file_archives_path = user_data_path.join("private_file_archives");
+    std::fs::create_dir_all(&private_file_archives_path)?;
+    let file_name = local_addr;
+    let content = serde_json::to_string(&PrivateFileArchive {
+        name: name.to_string(),
+        secret_access: archive,
+    })?;
+    std::fs::write(private_file_archives_path.join(file_name), content)?;
     Ok(())
 }

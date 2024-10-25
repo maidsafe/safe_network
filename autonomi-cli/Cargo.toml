@@ -49,6 +49,8 @@ sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.4" }
 sn_build_info = { path = "../sn_build_info", version = "0.1.16" }
 sn_logging = { path = "../sn_logging", version = "0.2.37" }
 walkdir = "2.5.0"
+serde_json = "1.0.132"
+serde = "1.0.210"
 
 [dev-dependencies]
 autonomi = { path = "../autonomi", version = "0.2.1", features = [

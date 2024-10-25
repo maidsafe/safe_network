@@ -70,7 +70,7 @@ jobs:
         shell: bash
 
       - name: File upload
-        run: ./target/release/autonomi --log-output-dest=data-dir file upload "./the-test-data.zip" > ./upload_output 2>&1
+        run: ./target/release/autonomi --log-output-dest=data-dir file upload --public "./the-test-data.zip" > ./upload_output 2>&1
         env:
           SN_LOG: "v"
         timeout-minutes: 5

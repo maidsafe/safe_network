@@ -11,11 +11,17 @@ pub mod address;
 #[cfg(feature = "data")]
 pub mod archive;
 #[cfg(feature = "data")]
+pub mod archive_private;
+#[cfg(feature = "data")]
 pub mod data;
+#[cfg(feature = "data")]
+pub mod data_private;
 #[cfg(feature = "external-signer")]
 pub mod external_signer;
 #[cfg(feature = "fs")]
 pub mod fs;
+#[cfg(feature = "fs")]
+pub mod fs_private;
 #[cfg(feature = "registers")]
 pub mod registers;
 #[cfg(feature = "vault")]
