@@ -26,7 +26,7 @@ pub async fn download(addr: &str, dest_path: &str, client: &mut Client) -> Resul
     match (public_address, private_address) {
         (Some(public_address), _) => download_public(addr, public_address, dest_path, client).await,
         (_, Some(private_address)) => download_private(addr, private_address, dest_path, client).await,
-        _ => Err(eyre!("Failed to parse data address"))
+        _ => Err(eyre!("Failed to parse data address {addr}"))
             .with_suggestion(|| "Public addresses look like this: 0037cfa13eae4393841cbc00c3a33cade0f98b8c1f20826e5c51f8269e7b09d7")
             .with_suggestion(|| "Private addresses look like this: 1358645341480028172")
             .with_suggestion(|| "Try the `file list` command to get addresses you have access to"),
