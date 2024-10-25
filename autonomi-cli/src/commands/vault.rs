@@ -34,6 +34,7 @@ pub async fn create(peers: Vec<Multiaddr>) -> Result<()> {
     println!("Retrieving local user data...");
     let local_user_data = crate::user_data::get_local_user_data()?;
     let file_archives_len = local_user_data.file_archives.len();
+    let private_file_archives_len = local_user_data.private_file_archives.len();
     let registers_len = local_user_data.registers.len();
 
     println!("Pushing to network vault...");
@@ -48,7 +49,10 @@ pub async fn create(peers: Vec<Multiaddr>) -> Result<()> {
     }
 
     println!("Total cost: {total_cost} AttoTokens");
-    println!("Vault contains {file_archives_len} file archive(s) and {registers_len} register(s)");
+    println!("Vault contains:");
+    println!("{file_archives_len} public file archive(s)");
+    println!("{private_file_archives_len} private file archive(s)");
+    println!("{registers_len} register(s)");
     Ok(())
 }
 
@@ -74,13 +78,17 @@ pub async fn sync(peers: Vec<Multiaddr>, force: bool) -> Result<()> {
     println!("Pushing local user data to network vault...");
     let local_user_data = crate::user_data::get_local_user_data()?;
     let file_archives_len = local_user_data.file_archives.len();
+    let private_file_archives_len = local_user_data.private_file_archives.len();
     let registers_len = local_user_data.registers.len();
     client
         .put_user_data_to_vault(&vault_sk, &wallet, local_user_data)
         .await?;
 
     println!("✅ Successfully synced vault");
-    println!("Vault contains {file_archives_len} file archive(s) and {registers_len} register(s)");
+    println!("Vault contains:");
+    println!("{file_archives_len} public file archive(s)");
+    println!("{private_file_archives_len} private file archive(s)");
+    println!("{registers_len} register(s)");
     Ok(())
 }
 
@@ -93,10 +101,12 @@ pub async fn load(peers: Vec<Multiaddr>) -> Result<()> {
     println!("Writing user data to disk...");
     crate::user_data::write_local_user_data(&user_data)?;
 
+    println!("✅ Successfully loaded vault with:");
+    println!("{} public file archive(s)", user_data.file_archives.len());
     println!(
-        "✅ Successfully loaded vault with {} file archive(s) and {} register(s)",
-        user_data.file_archives.len(),
-        user_data.registers.len()
+        "{} private file archive(s)",
+        user_data.private_file_archives.len()
     );
+    println!("{} register(s)", user_data.registers.len());
     Ok(())
 }

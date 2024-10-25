@@ -8,7 +8,7 @@
 
 use bytes::Bytes;
 use libp2p::kad::Quorum;
-use tokio::task::JoinError;
+use tokio::task::{JoinError, JoinSet};
 
 use std::collections::HashSet;
 use xor_name::XorName;
@@ -47,6 +47,8 @@ pub enum PutError {
     VaultBadOwner,
     #[error("Payment unexpectedly invalid for {0:?}")]
     PaymentUnexpectedlyInvalid(NetworkAddress),
+    #[error("Could not simultaneously upload chunks: {0:?}")]
+    JoinError(tokio::task::JoinError),
 }
 
 /// Errors that can occur during the pay operation.
@@ -102,8 +104,9 @@ impl Client {
         Ok(data)
     }
 
-    /// Upload a piece of data to the network. This data will be self-encrypted.
+    /// Upload a piece of data to the network.
     /// Returns the Data Address at which the data was stored.
+    /// This data is publicly accessible.
     pub async fn data_put(&self, data: Bytes, wallet: &EvmWallet) -> Result<DataAddr, PutError> {
         let now = sn_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
@@ -130,25 +133,30 @@ impl Client {
 
         let mut record_count = 0;
 
-        // Upload data map
-        if let Some(proof) = payment_proofs.get(&map_xor_name) {
-            debug!("Uploading data map chunk: {map_xor_name:?}");
-            self.chunk_upload_with_payment(data_map_chunk.clone(), proof.clone())
-                .await
-                .inspect_err(|err| error!("Error uploading data map chunk: {err:?}"))?;
-            record_count += 1;
-        }
-
-        // Upload the rest of the chunks
+        // Upload all the chunks in parallel including the data map chunk
         debug!("Uploading {} chunks", chunks.len());
-        for chunk in chunks {
+        let mut tasks = JoinSet::new();
+        for chunk in chunks.into_iter().chain(std::iter::once(data_map_chunk)) {
+            let self_clone = self.clone();
+            let address = *chunk.address();
             if let Some(proof) = payment_proofs.get(chunk.name()) {
-                let address = *chunk.address();
-                self.chunk_upload_with_payment(chunk, proof.clone())
-                    .await
-                    .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))?;
-                record_count += 1;
+                let proof_clone = proof.clone();
+                tasks.spawn(async move {
+                    self_clone
+                        .chunk_upload_with_payment(chunk, proof_clone)
+                        .await
+                        .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))
+                });
+            } else {
+                debug!("Chunk at {address:?} was already paid for so skipping");
             }
+        }
+        while let Some(result) = tasks.join_next().await {
+            result
+                .inspect_err(|err| error!("Join error uploading chunk: {err:?}"))
+                .map_err(PutError::JoinError)?
+                .inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
+            record_count += 1;
         }
 
         if let Some(channel) = self.client_event_sender.as_ref() {

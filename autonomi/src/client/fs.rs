@@ -179,7 +179,7 @@ impl Client {
 
 // Get metadata from directory entry. Defaults to `0` for creation and modification times if
 // any error is encountered. Logs errors upon error.
-fn metadata_from_entry(entry: &walkdir::DirEntry) -> Metadata {
+pub(crate) fn metadata_from_entry(entry: &walkdir::DirEntry) -> Metadata {
     let fs_metadata = match entry.metadata() {
         Ok(metadata) => metadata,
         Err(err) => {
