@@ -52,7 +52,7 @@ where
     pub async fn deploy(provider: P) -> Self {
         let contract = NetworkTokenContract::deploy(provider)
             .await
-            .expect("Could not deploy contract");
+            .expect("Could not deploy contract, update anvil by running `foundryup` and try again");
         NetworkToken { contract }
     }
 

@@ -35,6 +35,7 @@ pub enum RenameError {
 
 /// An archive of files that containing file paths, their metadata and the files data addresses
 /// Using archives is useful for uploading entire directories to the network, only needing to keep track of a single address.
+/// Archives are public meaning anyone can read the data in the archive. For private archives use [`crate::client::archive_private::PrivateArchive`].
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct Archive {
     map: HashMap<PathBuf, (DataAddr, Metadata)>,
