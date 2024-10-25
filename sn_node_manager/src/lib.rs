@@ -424,12 +424,7 @@ pub async fn status_report(
                 node.reward_balance
                     .map_or("-".to_string(), |b| b.to_string())
             );
-            println!(
-                "Owner: {}",
-                node.owner
-                    .as_ref()
-                    .map_or("-".to_string(), |o| o.to_string())
-            );
+            println!("Rewards address: {}", node.rewards_address);
             println!();
         }
 
