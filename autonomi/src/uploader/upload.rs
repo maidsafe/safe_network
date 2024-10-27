@@ -90,6 +90,25 @@ pub(super) async fn start_upload(
             )?;
         }
         PaymentOption::Receipt(receipt) => {
+            // make sure we have all the upload items mentioned in the receipt.
+            let missing_items = receipt
+                .keys()
+                .filter_map(|xorname| {
+                    if uploader.all_upload_items.contains_key(xorname) {
+                        None
+                    } else {
+                        Some(*xorname)
+                    }
+                })
+                .collect::<HashSet<_>>();
+            if !missing_items.is_empty() {
+                error!(
+                    "Receipt contains items that are not present in the upload items: {:?}",
+                    missing_items
+                );
+                return Err(UploadError::MissingItemsFromReceipt { missing_items });
+            }
+
             let _ = task_result_sender
                 .send(TaskResult::MakePaymentsOk {
                     payment_proofs: receipt.clone(),
@@ -526,6 +545,12 @@ pub(super) async fn start_upload(
 
                 // if quote has expired, don't retry the upload again. Instead get the cheapest quote again.
                 if *n_errors > UPLOAD_FAILURES_BEFORE_SELECTING_DIFFERENT_PAYEE {
+                    if let PaymentOption::Receipt(_) = uploader.payment_option {
+                        // if we are using receipt, then we can't make repayments. So, error out.
+                        error!("Max error during upload reached for {xorname:?}. Selecting a different payee is not possible with receipt payment option.");
+                        return Err(UploadError::SequentialUploadError);
+                    }
+
                     // if error > threshold, then select different payee. else retry again
                     // Also reset n_errors as we want to enable retries for the new payee.
                     *n_errors = 0;

@@ -72,10 +72,10 @@ export async function externalSignerPut(peerAddr) {
         }
 
         // Generate payment proof
-        const proof = autonomi.getPaymentProofFromQuotesAndPayments(quotes, payments);
+        const receipt = autonomi.getReceiptFromQuotesAndPayments(quotes, payments);
 
         // Submit the data with proof of payment
-        const addr = await client.dataPutWithProof(data, proof);
+        const privateDataAccess = await client.putPrivateDataWithReceipt(data, receipt);
 
         // Wait for a few seconds to allow data to propagate
         await new Promise(resolve => setTimeout(resolve, 10000));

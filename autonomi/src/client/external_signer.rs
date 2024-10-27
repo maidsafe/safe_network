@@ -13,11 +13,11 @@ use crate::utils::cost_map_to_quotes;
 pub use sn_evm::external_signer::*;
 
 impl Client {
-    /// Get quotes for data.
+    /// Get quotes for content addresses.
     /// Returns a cost map, data payments to be executed and a list of free (already paid for) chunks.
-    pub async fn get_quotes_for_data(
+    pub async fn get_quotes_for_content_addresses(
         &self,
-        data: Bytes,
+        content_addrs: impl Iterator<Item = XorName>,
     ) -> Result<
         (
             HashMap<XorName, PaymentQuote>,
@@ -26,9 +26,7 @@ impl Client {
         ),
         PutError,
     > {
-        // Encrypt the data as chunks
-        let (_data_map_chunk, _chunks, xor_names) = encrypt_data(data)?;
-        let cost_map = self.get_store_quotes(xor_names.into_iter()).await?;
+        let cost_map = self.get_store_quotes(content_addrs).await?;
         let (quote_payments, free_chunks) = extract_quote_payments(&cost_map);
         let quotes = cost_map_to_quotes(cost_map);
 
@@ -39,7 +37,7 @@ impl Client {
 /// Encrypts data as chunks.
 ///
 /// Returns the data map chunk, file chunks and a list of all content addresses including the data map.
-fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>, Vec<XorName>), PutError> {
+pub fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>, Vec<XorName>), PutError> {
     let now = sn_networking::target_arch::Instant::now();
     let result = encrypt(data)?;
 

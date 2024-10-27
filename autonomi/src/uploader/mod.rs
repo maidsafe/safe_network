@@ -74,6 +74,8 @@ pub enum UploadError {
     Io(#[from] std::io::Error),
     #[error("The upload failed with maximum repayments reached for multiple items: {items:?}")]
     MaximumRepaymentsReached { items: Vec<XorName> },
+    #[error("The uploader does not have the following items to upload: {missing_items:?}")]
+    MissingItemsFromReceipt { missing_items: HashSet<XorName> },
     #[error("Network error: {0:?}")]
     Network(#[from] NetworkError),
     #[cfg(feature = "registers")]
@@ -89,6 +91,8 @@ pub enum UploadError {
     SequentialNetworkErrors,
     #[error("Too many sequential payment errors reported during upload")]
     SequentialUploadPaymentError,
+    #[error("Too many sequential upload errors reported during upload")]
+    SequentialUploadError,
     #[error("Failed to serialize {0}")]
     Serialization(String),
 }
@@ -239,6 +243,9 @@ impl Uploader {
 
     /// Creates a new instance of `Uploader` with the default configuration.
     /// To modify the configuration, use the provided setter methods (`set_...` functions).
+    ///
+    /// If `PaymentOption::Receipt` is provided, make sure to add all the items in the receipt to the uploader, using
+    /// `insert_chunks` or `insert_register` etc., methods.
     // NOTE: Self has to be constructed only using this method. We expect `Self::inner` is present everywhere.
     pub fn new(client: Client, payment_option: PaymentOption) -> Self {
         Self {

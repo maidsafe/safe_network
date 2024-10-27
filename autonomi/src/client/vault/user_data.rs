@@ -75,9 +75,28 @@ impl UserData {
         self.file_archives.insert(archive, name)
     }
 
+    /// Add a private archive. Returning `Option::Some` with the old name if the archive was already in the set.
+    pub fn add_private_file_archive(&mut self, archive: PrivateArchiveAccess) -> Option<String> {
+        self.private_file_archives.insert(archive, "".into())
+    }
+
+    /// Add a private archive with a name. Returning `Option::Some` with the old name if the archive was already in the set.
+    pub fn add_private_file_archive_with_name(
+        &mut self,
+        archive: PrivateArchiveAccess,
+        name: String,
+    ) -> Option<String> {
+        self.private_file_archives.insert(archive, name)
+    }
+
     /// Remove an archive. Returning `Option::Some` with the old name if the archive was already in the set.
     pub fn remove_file_archive(&mut self, archive: ArchiveAddr) -> Option<String> {
         self.file_archives.remove(&archive)
+    }
+
+    /// Remove a private archive. Returning `Option::Some` with the old name if the archive was already in the set.
+    pub fn remove_private_file_archive(&mut self, archive: PrivateArchiveAccess) -> Option<String> {
+        self.private_file_archives.remove(&archive)
     }
 
     /// To bytes

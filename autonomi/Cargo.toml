@@ -59,7 +59,7 @@ blst = "0.3.13"
 blstrs = "0.7.1"
 
 [dev-dependencies]
-alloy = { version = "0.5.3", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
+alloy = { version = "0.5.3", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network", "providers"] }
 assert_matches = "1.5.0"
 eyre = "0.6.5"
 sha2 = "0.10.6"
