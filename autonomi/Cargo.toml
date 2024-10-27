@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["data", "vault"]
-full = ["data", "registers", "vault"]
+full = ["data", "registers", "vault", "fs"]
 data = []
 vault = ["data", "registers"]
 fs = ["tokio/fs", "data"]
