@@ -14,12 +14,19 @@ use bytes::Bytes;
 use sn_evm::EvmWallet;
 use sn_networking::target_arch::{Duration, SystemTime};
 use std::path::PathBuf;
+use std::sync::LazyLock;
 use tokio::task::JoinError;
 
 use super::archive::{Archive, ArchiveAddr};
 use super::data::{DataAddr, GetError, PutError};
 
-pub(crate) const FILE_UPLOAD_BATCH_SIZE: usize = 128;
+/// Number of files to upload in parallel.
+pub static FILE_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
+    std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(1)
+        * 16
+});
 
 /// Errors that can occur during the file upload operation.
 #[cfg(feature = "fs")]
@@ -123,7 +130,7 @@ impl Client {
 
         // wait for all files to be uploaded
         let uploads =
-            process_tasks_with_max_concurrency(upload_tasks, FILE_UPLOAD_BATCH_SIZE).await?;
+            process_tasks_with_max_concurrency(upload_tasks, *FILE_UPLOAD_BATCH_SIZE).await?;
         info!(
             "Upload of {} files completed in {:?}",
             uploads.len(),
