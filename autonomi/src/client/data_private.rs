@@ -9,10 +9,10 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 use bytes::Bytes;
+use futures::StreamExt as _;
 use serde::{Deserialize, Serialize};
 use sn_evm::{Amount, EvmWallet};
 use sn_protocol::storage::Chunk;
-use tokio::task::JoinSet;
 
 use super::data::{GetError, PutError};
 use crate::client::{ClientEvent, UploadSummary};
@@ -80,13 +80,13 @@ impl Client {
         // Upload the chunks with the payments
         let mut record_count = 0;
         debug!("Uploading {} chunks", chunks.len());
-        let mut tasks = JoinSet::new();
+        let mut tasks = futures::stream::FuturesUnordered::new();
         for chunk in chunks {
             let self_clone = self.clone();
             let address = *chunk.address();
             if let Some(proof) = payment_proofs.get(chunk.name()) {
                 let proof_clone = proof.clone();
-                tasks.spawn(async move {
+                tasks.push(async move {
                     self_clone
                         .chunk_upload_with_payment(chunk, proof_clone)
                         .await
@@ -96,11 +96,8 @@ impl Client {
                 debug!("Chunk at {address:?} was already paid for so skipping");
             }
         }
-        while let Some(result) = tasks.join_next().await {
-            result
-                .inspect_err(|err| error!("Join error uploading chunk: {err:?}"))
-                .map_err(PutError::JoinError)?
-                .inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
+        while let Some(result) = tasks.next().await {
+            result.inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
             record_count += 1;
         }
 
