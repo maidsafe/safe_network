@@ -33,8 +33,6 @@
 extern crate tracing;
 
 pub mod client;
-pub mod uploader;
-
 #[cfg(feature = "data")]
 mod self_encryption;
 mod utils;
