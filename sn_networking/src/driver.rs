@@ -721,6 +721,7 @@ impl NetworkBuilder {
             range_distances: VecDeque::with_capacity(GET_RANGE_STORAGE_LIMIT),
             first_contact_made: false,
             last_replication: None,
+            last_connection_pruning_time: Instant::now(),
         };
 
         let network = Network::new(
@@ -828,6 +829,8 @@ pub struct SwarmDriver {
     pub(crate) range_distances: VecDeque<KBucketDistance>,
     // have we found out initial peer
     pub(crate) first_contact_made: bool,
+    /// when was the last outdated connection prunning undertaken.
+    pub(crate) last_connection_pruning_time: Instant,
 }
 
 impl SwarmDriver {
