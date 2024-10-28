@@ -1152,8 +1152,8 @@ impl Network {
         self.send_local_swarm_cmd(LocalSwarmCmd::QuoteVerification { quotes });
     }
 
-    pub fn trigger_unrelevant_record_cleanup(&self) {
-        self.send_local_swarm_cmd(LocalSwarmCmd::TriggerUnrelevantRecordCleanup)
+    pub fn trigger_irrelevant_record_cleanup(&self) {
+        self.send_local_swarm_cmd(LocalSwarmCmd::TriggerIrrelevantRecordCleanup)
     }
 
     /// Helper to send NetworkSwarmCmd
