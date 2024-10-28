@@ -14,6 +14,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::Client;
 use bytes::Bytes;
 use sn_evm::EvmWallet;
@@ -22,6 +23,8 @@ use std::path::PathBuf;
 use super::archive_private::{PrivateArchive, PrivateArchiveAccess};
 use super::data_private::PrivateDataAccess;
 use super::fs::{DownloadError, UploadError};
+
+use super::fs::FILE_UPLOAD_BATCH_SIZE;
 
 impl Client {
     /// Download a private file from network to local file system
@@ -59,30 +62,54 @@ impl Client {
         dir_path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<PrivateArchiveAccess, UploadError> {
-        let mut archive = PrivateArchive::new();
+        info!("Uploading directory as private: {dir_path:?}");
+        let start = tokio::time::Instant::now();
 
+        // start upload of file in parallel
+        let mut upload_tasks = Vec::new();
         for entry in walkdir::WalkDir::new(dir_path) {
             let entry = entry?;
-
             if !entry.file_type().is_file() {
                 continue;
             }
 
-            let path = entry.path().to_path_buf();
-            tracing::info!("Uploading file: {path:?}");
-            #[cfg(feature = "loud")]
-            println!("Uploading file: {path:?}");
-            let file = self.private_file_upload(path.clone(), wallet).await?;
-
             let metadata = super::fs::metadata_from_entry(&entry);
-
-            archive.add_file(path, file, metadata);
+            let path = entry.path().to_path_buf();
+            upload_tasks.push(async move {
+                let file = self.private_file_upload(path.clone(), wallet).await;
+                (path, metadata, file)
+            });
         }
 
-        let archive_serialized = archive.into_bytes()?;
+        // wait for all files to be uploaded
+        let uploads =
+            process_tasks_with_max_concurrency(upload_tasks, FILE_UPLOAD_BATCH_SIZE).await?;
+        info!(
+            "Upload of {} files completed in {:?}",
+            uploads.len(),
+            start.elapsed()
+        );
+        let mut archive = PrivateArchive::new();
+        for (path, metadata, maybe_file) in uploads.into_iter() {
+            match maybe_file {
+                Ok(file) => archive.add_file(path, file, metadata),
+                Err(err) => {
+                    error!("Failed to upload file: {path:?}: {err:?}");
+                    return Err(err);
+                }
+            }
+        }
 
+        // upload archive
+        let archive_serialized = archive.into_bytes()?;
         let arch_addr = self.private_data_put(archive_serialized, wallet).await?;
 
+        info!(
+            "Complete private archive upload completed in {:?}",
+            start.elapsed()
+        );
+        #[cfg(feature = "loud")]
+        println!("Upload completed in {:?}", start.elapsed());
         Ok(arch_addr)
     }
 
@@ -93,6 +120,10 @@ impl Client {
         path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<PrivateDataAccess, UploadError> {
+        info!("Uploading file: {path:?}");
+        #[cfg(feature = "loud")]
+        println!("Uploading file: {path:?}");
+
         let data = tokio::fs::read(path).await?;
         let data = Bytes::from(data);
         let addr = self.private_data_put(data, wallet).await?;

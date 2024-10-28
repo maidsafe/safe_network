@@ -6,9 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{collections::HashMap, num::NonZero};
-
 use bytes::Bytes;
+use futures::stream::{FuturesUnordered, StreamExt};
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
@@ -21,6 +20,8 @@ use sn_protocol::{
     storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind, RetryStrategy},
     NetworkAddress,
 };
+use std::{collections::HashMap, future::Future, num::NonZero};
+use tokio::task::JoinError;
 use xor_name::XorName;
 
 use super::{
@@ -247,4 +248,34 @@ pub(crate) fn extract_quote_payments(
     }
 
     (to_be_paid, already_paid)
+}
+
+pub(crate) async fn process_tasks_with_max_concurrency<I, R>(
+    tasks: I,
+    batch_size: usize,
+) -> Result<Vec<R>, JoinError>
+where
+    I: IntoIterator,
+    I::Item: Future<Output = R> + Send,
+    R: Send,
+{
+    let mut futures = FuturesUnordered::new();
+    let mut results = Vec::new();
+
+    for task in tasks.into_iter() {
+        futures.push(task);
+
+        if futures.len() >= batch_size {
+            if let Some(result) = futures.next().await {
+                results.push(result);
+            }
+        }
+    }
+
+    // Process remaining tasks
+    while let Some(result) = futures.next().await {
+        results.push(result);
+    }
+
+    Ok(results)
 }
