@@ -6,23 +6,20 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-
 use autonomi::wallet::*;
 use color_eyre::Result;
 use rpassword::read_password;
 
-
 pub fn process_password(encryption: Option<String>, password: Option<String>) -> Option<String> {
     match encryption {
         Some(value) => {
-            if !(value == "Y" || value == "y" || value == "Yes" || value == "YES" || value == "yes") {
-                println!("value: {}", value);
+            if !(value == "Y" || value == "y" || value == "Yes" || value == "YES" || value == "yes")
+            {
+                println!("value: {value}");
                 return None;
             }
             match password {
-                Some(passw) => {
-                    return Some(passw);
-                } 
+                Some(passw) => Some(passw),
                 None => {
                     //prompt for the password
                     println!("Please enter the Password");
@@ -30,7 +27,7 @@ pub fn process_password(encryption: Option<String>, password: Option<String>) ->
                     let pwd = match input_password {
                         Ok(pwd) => pwd,
                         Err(e) => {
-                            eprintln!("Failed to read password: {}",e);
+                            eprintln!("Failed to read password: {e}");
                             println!("Try again...");
                             panic!("issue with password");
                         }
@@ -43,15 +40,15 @@ pub fn process_password(encryption: Option<String>, password: Option<String>) ->
     }
 }
 
-
-
-pub fn create(encryption: Option<String>, password: Option<String>, private_key: Option<String>) -> Result<()>{
+pub fn create(
+    encryption: Option<String>,
+    password: Option<String>,
+    private_key: Option<String>,
+) -> Result<()> {
     let pass = process_password(encryption, password);
 
     match private_key {
-        Some(priv_key) => {
-            import_new_wallet(priv_key, pass)
-        },
+        Some(priv_key) => import_new_wallet(priv_key, pass),
         None => create_new_wallet(pass),
     }
 }
@@ -81,10 +78,10 @@ pub fn balance() -> Result<()> {
     // list_available_public_wallets
     // Call the function to get numbered file names as a HashMap
     let get_client_data_dir_path = get_wallet_directory();
-    
+
     let files = get_numbered_files(get_client_data_dir_path)?;
 
-    let mut sorted_files: Vec<(&u32, &(String,String))> = files.iter().collect();
+    let mut sorted_files: Vec<(&u32, &(String, String))> = files.iter().collect();
     sorted_files.sort_by_key(|&(key, _)| key);
     // Print the HashMap
     for (key, value) in sorted_files {
@@ -93,7 +90,7 @@ pub fn balance() -> Result<()> {
 
     let key = prompt_for_key()?;
 
-    if let Ok(private_key) = get_private_key_from_wallet(key, files){
+    if let Ok(private_key) = get_private_key_from_wallet(key, files) {
         get_wallet_information(private_key);
     }
     Ok(())

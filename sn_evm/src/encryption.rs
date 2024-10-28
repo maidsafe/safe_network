@@ -1,16 +1,19 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+use crate::EvmError;
 use rand::Rng;
-use std::num::NonZeroU32;
 use ring::aead::{BoundKey, Nonce, NonceSequence};
 use ring::error::Unspecified;
-use crate::EvmError;
-struct NonceSeq([u8; 12]);
+use std::num::NonZeroU32;
 
-impl NonceSequence for NonceSeq {
-    fn advance(&mut self) -> std::result::Result<Nonce, Unspecified> {
-        Nonce::try_assume_unique_for_key(&self.0)
-    }
-}
-
+const SALT_LENGTH: usize = 8;
+const NONCE_LENGTH: usize = 12;
 
 /// Number of iterations for pbkdf2.
 const ITERATIONS: NonZeroU32 = match NonZeroU32::new(100_000) {
@@ -18,13 +21,15 @@ const ITERATIONS: NonZeroU32 = match NonZeroU32::new(100_000) {
     None => panic!("`100_000` is not be zero"),
 };
 
-const SALT_LENGTH: usize = 8;
-const NONCE_LENGTH: usize = 12;
+struct NonceSeq([u8; 12]);
 
-pub fn encrypt_secret_key(
-    secret_key: &str,
-    password: &str,
-) -> Result<String,EvmError> {
+impl NonceSequence for NonceSeq {
+    fn advance(&mut self) -> Result<Nonce, Unspecified> {
+        Nonce::try_assume_unique_for_key(&self.0)
+    }
+}
+
+pub fn encrypt_secret_key(secret_key: &str, password: &str) -> Result<String, EvmError> {
     // Generate a random salt
     // Salt is used to ensure unique derived keys even for identical passwords
     let mut salt = [0u8; SALT_LENGTH];
@@ -72,25 +77,27 @@ pub fn encrypt_secret_key(
     encrypted_data.extend_from_slice(&salt);
     encrypted_data.extend_from_slice(&nonce);
     encrypted_data.extend_from_slice(&encrypted_secret_key);
-    
+
     // Return the encrypted secret key along with salt and nonce encoded as hex strings
     Ok(hex::encode(encrypted_data))
 }
 
-
-pub fn decrypt_secret_key(
-    encrypted_data: &str, 
-    password: &str
-    ) -> Result<String, EvmError> {
-
+pub fn decrypt_secret_key(encrypted_data: &str, password: &str) -> Result<String, EvmError> {
     let encrypted_data = hex::decode(encrypted_data)
-                                .map_err(|_| EvmError::FailedToDecryptKey(String::from("Could not seal sealing key.")))?;
-    let salt: [u8; SALT_LENGTH]  = encrypted_data[..SALT_LENGTH]
-                                .try_into().map_err(|_| EvmError::FailedToDecryptKey(String::from("could not process the hashed data.")))?;
-    let nonce:[u8; NONCE_LENGTH]  = encrypted_data[SALT_LENGTH..SALT_LENGTH+NONCE_LENGTH]
-                                .try_into().map_err(|_| EvmError::FailedToDecryptKey(String::from("Could not process the hashed data")))?;
-    let encrypted_secretkey = &encrypted_data[SALT_LENGTH+ NONCE_LENGTH ..];
-    
+        .map_err(|_| EvmError::FailedToDecryptKey(String::from("Could not seal sealing key.")))?;
+
+    let salt: [u8; SALT_LENGTH] = encrypted_data[..SALT_LENGTH].try_into().map_err(|_| {
+        EvmError::FailedToDecryptKey(String::from("could not process the hashed data."))
+    })?;
+
+    let nonce: [u8; NONCE_LENGTH] = encrypted_data[SALT_LENGTH..SALT_LENGTH + NONCE_LENGTH]
+        .try_into()
+        .map_err(|_| {
+            EvmError::FailedToDecryptKey(String::from("Could not process the hashed data"))
+        })?;
+
+    let encrypted_secretkey = &encrypted_data[SALT_LENGTH + NONCE_LENGTH..];
+
     let mut key = [0; 32];
 
     // Reconstruct the key from salt and password
@@ -104,10 +111,7 @@ pub fn decrypt_secret_key(
 
     // Create an unbound key from the previously reconstructed key
     let unbound_key = ring::aead::UnboundKey::new(&ring::aead::CHACHA20_POLY1305, &key)
-        .map_err(|_| {
-            EvmError::FailedToDecryptKey(String::from("Could not create unbound key."))
-        })?;
-
+        .map_err(|_| EvmError::FailedToDecryptKey(String::from("Could not create unbound key.")))?;
 
     // Create an opening key using the unbound key and original nonce
     let mut opening_key = ring::aead::OpeningKey::new(unbound_key, NonceSeq(nonce));
@@ -119,16 +123,19 @@ pub fn decrypt_secret_key(
     // }).expect("error");
 
     let mut encrypted_secret_key = encrypted_secretkey.to_vec();
+
     // Decrypt the encrypted secret key bytes
     let decrypted_data = opening_key
         .open_in_place(aad, &mut encrypted_secret_key)
-        .map_err(|_| EvmError::FailedToDecryptKey(String::from("Could not open encrypted key, please check the password")))?;
+        .map_err(|_| {
+            EvmError::FailedToDecryptKey(String::from(
+                "Could not open encrypted key, please check the password",
+            ))
+        })?;
 
     let mut secret_key_bytes = [0u8; 66];
     secret_key_bytes.copy_from_slice(&decrypted_data[0..66]);
 
     // Create secret key from decrypted byte
-
     Ok(String::from_utf8(secret_key_bytes.to_vec()).expect("not able to convert private key"))
-    
 }
