@@ -127,7 +127,7 @@ jobs:
         run: rg "Existing record found" $RESTART_TEST_NODE_DATA_PATH
 
       - name: Wait at least 1min for replication to happen # it is throttled to once/30s.
-        run: sleep 30
+        run: sleep 60
 
       - name: Verify data replication using rg
         shell: bash
