@@ -6,6 +6,22 @@ use super::address::{addr_to_str, str_to_addr};
 #[cfg(feature = "vault")]
 use super::vault::UserData;
 
+/// The `Client` object allows interaction with the network to store and retrieve data.
+///
+/// To connect to the network, see {@link Client.connect}.
+///
+/// # Example
+///
+/// ```js
+/// let client = await Client.connect(["/ip4/127.0.0.1/tcp/36075/ws/p2p/12D3KooWALb...BhDAfJY"]);
+/// const dataAddr = await client.dataPut(new Uint8Array([0, 1, 2, 3]), wallet);
+///
+/// const archive = new Archive();
+/// archive.addNewFile("foo", dataAddr);
+///
+/// const archiveAddr = await client.archivePut(archive, wallet);
+/// const archiveFetched = await client.archiveGet(archiveAddr);
+/// ```
 #[wasm_bindgen(js_name = Client)]
 pub struct JsClient(super::Client);
 
@@ -21,6 +37,13 @@ impl AttoTokens {
 
 #[wasm_bindgen(js_class = Client)]
 impl JsClient {
+    /// Connect to the network via the given peers.
+    ///
+    /// # Example
+    ///
+    /// ```js
+    /// let client = await Client.connect(["/ip4/127.0.0.1/tcp/36075/ws/p2p/12D3KooWALb...BhDAfJY"]);
+    /// ```
     #[wasm_bindgen]
     pub async fn connect(peers: Vec<String>) -> Result<JsClient, JsError> {
         let peers = peers
@@ -33,11 +56,17 @@ impl JsClient {
         Ok(JsClient(client))
     }
 
+    /// Upload a chunk to the network.
+    ///
+    /// Returns the hex encoded address of the chunk.
+    ///
+    /// This is not yet implemented.
     #[wasm_bindgen(js_name = chunkPut)]
     pub async fn chunk_put(&self, _data: Vec<u8>, _wallet: &JsWallet) -> Result<String, JsError> {
         async { unimplemented!() }.await
     }
 
+    /// Fetch the chunk from the network.
     #[wasm_bindgen(js_name = chunkGet)]
     pub async fn chunk_get(&self, addr: String) -> Result<Vec<u8>, JsError> {
         let addr = str_to_addr(&addr)?;
@@ -46,6 +75,9 @@ impl JsClient {
         Ok(chunk.value().to_vec())
     }
 
+    /// Upload data to the network.
+    ///
+    /// Returns the hex encoded address of the data.
     #[wasm_bindgen(js_name = dataPut)]
     pub async fn data_put(&self, data: Vec<u8>, wallet: &JsWallet) -> Result<String, JsError> {
         let data = crate::Bytes::from(data);
@@ -54,6 +86,7 @@ impl JsClient {
         Ok(addr_to_str(xorname))
     }
 
+    /// Fetch the data from the network.
     #[wasm_bindgen(js_name = dataGet)]
     pub async fn data_get(&self, addr: String) -> Result<Vec<u8>, JsError> {
         let addr = str_to_addr(&addr)?;
@@ -62,6 +95,7 @@ impl JsClient {
         Ok(data.to_vec())
     }
 
+    /// Get the cost of uploading data to the network.
     #[wasm_bindgen(js_name = dataCost)]
     pub async fn data_cost(&self, data: Vec<u8>) -> Result<AttoTokens, JsValue> {
         let data = crate::Bytes::from(data);
@@ -76,16 +110,19 @@ mod archive {
     use crate::client::{address::str_to_addr, archive::Archive};
     use std::path::PathBuf;
 
+    /// Structure mapping paths to data addresses.
     #[wasm_bindgen(js_name = Archive)]
     pub struct JsArchive(Archive);
 
     #[wasm_bindgen(js_class = Archive)]
     impl JsArchive {
+        /// Create a new archive.
         #[wasm_bindgen(constructor)]
         pub fn new() -> Self {
             Self(Archive::new())
         }
 
+        /// Add a new file to the archive.
         #[wasm_bindgen(js_name = addNewFile)]
         pub fn add_new_file(&mut self, path: String, data_addr: String) -> Result<(), JsError> {
             let path = PathBuf::from(path);
@@ -113,6 +150,7 @@ mod archive {
 
     #[wasm_bindgen(js_class = Client)]
     impl JsClient {
+        /// Fetch an archive from the network.
         #[wasm_bindgen(js_name = archiveGet)]
         pub async fn archive_get(&self, addr: String) -> Result<JsArchive, JsError> {
             let addr = str_to_addr(&addr)?;
@@ -122,6 +160,9 @@ mod archive {
             Ok(archive)
         }
 
+        /// Upload an archive to the network.
+        ///
+        /// Returns the hex encoded address of the archive.
         #[wasm_bindgen(js_name = archivePut)]
         pub async fn archive_put(
             &self,
@@ -139,16 +180,25 @@ mod archive {
 mod vault {
     use super::*;
 
+    /// Structure to keep track of uploaded archives, registers and other data.
     #[wasm_bindgen(js_name = UserData)]
     pub struct JsUserData(UserData);
 
     #[wasm_bindgen(js_class = UserData)]
     impl JsUserData {
+        /// Create a new user data structure.
         #[wasm_bindgen(constructor)]
         pub fn new() -> Self {
             Self(UserData::new())
         }
 
+        /// Store an archive address in the user data with an optional name.
+        ///
+        /// # Example
+        ///
+        /// ```js
+        /// userData.addFileArchive(archiveAddr, "foo");
+        /// ```
         #[wasm_bindgen(js_name = addFileArchive)]
         pub fn add_file_archive(
             &mut self,
@@ -189,6 +239,14 @@ mod vault {
 
     #[wasm_bindgen(js_class = Client)]
     impl JsClient {
+        /// Fetch the user data from the vault.
+        ///
+        /// # Example
+        ///
+        /// ```js
+        /// const secretKey = genSecretKey();
+        /// const userData = await client.getUserDataFromVault(secretKey);
+        /// ```
         #[wasm_bindgen(js_name = getUserDataFromVault)]
         pub async fn get_user_data_from_vault(
             &self,
@@ -199,6 +257,14 @@ mod vault {
             Ok(JsUserData(user_data))
         }
 
+        /// Put the user data to the vault.
+        ///
+        /// # Example
+        ///
+        /// ```js
+        /// const secretKey = genSecretKey();
+        /// await client.putUserDataToVault(userData, wallet, secretKey);
+        /// ```
         #[wasm_bindgen(js_name = putUserDataToVault)]
         pub async fn put_user_data_to_vault(
             &self,
@@ -232,6 +298,13 @@ mod external_signer {
 
     #[wasm_bindgen(js_class = Client)]
     impl JsClient {
+        /// Get quotes for given data.
+        ///
+        /// # Example
+        ///
+        /// ```js
+        /// const [quotes, quotePayments, free_chunks] = await client.getQuotes(data);
+        /// ``
         #[wasm_bindgen(js_name = getQuotes)]
         pub async fn get_quotes_for_data(&self, data: Vec<u8>) -> Result<JsValue, JsError> {
             let data = crate::Bytes::from(data);
@@ -240,6 +313,14 @@ mod external_signer {
             Ok(js_value)
         }
 
+        /// Upload data with a proof of payment.
+        ///
+        /// # Example
+        ///
+        /// ```js
+        /// const proof = getPaymentProofFromQuotesAndPayments(quotes, payments);
+        /// const addr = await client.dataPutWithProof(data, proof);
+        /// ```
         #[wasm_bindgen(js_name = dataPutWithProof)]
         pub async fn data_put_with_proof_of_payment(
             &self,
@@ -253,6 +334,14 @@ mod external_signer {
         }
     }
 
+    /// Get the calldata for paying for quotes.
+    ///
+    /// # Example
+    ///
+    /// ```js
+    /// const [quotes, quotePayments, free_chunks] = await client.getQuotes(data);
+    /// const callData = getPayForQuotesCalldata(evmNetwork, quotePayments);
+    /// ```
     #[wasm_bindgen(js_name = getPayForQuotesCalldata)]
     pub fn get_pay_for_quotes_calldata(
         network: JsValue,
@@ -265,6 +354,7 @@ mod external_signer {
         Ok(js_value)
     }
 
+    /// Form approve to spend tokens calldata.
     #[wasm_bindgen(js_name = getApproveToSpendTokensCalldata)]
     pub fn get_approve_to_spend_tokens_calldata(
         network: JsValue,
@@ -279,6 +369,7 @@ mod external_signer {
         Ok(js_value)
     }
 
+    /// Generate payment proof.
     #[wasm_bindgen(js_name = getPaymentProofFromQuotesAndPayments)]
     pub fn get_payment_proof_from_quotes_and_payments(
         quotes: JsValue,
@@ -295,6 +386,13 @@ mod external_signer {
 #[wasm_bindgen(js_name = SecretKey)]
 pub struct SecretKeyJs(bls::SecretKey);
 
+/// # Example
+///
+/// ```js
+/// const secretKey = genSecretKey();
+/// await client.putUserDataToVault(userData, wallet, secretKey);
+/// const userDataFetched = await client.getUserDataFromVault(secretKey);
+/// ```
 #[wasm_bindgen(js_name = genSecretKey)]
 pub fn gen_secret_key() -> SecretKeyJs {
     let secret_key = bls::SecretKey::random();
@@ -337,6 +435,12 @@ pub fn funded_wallet() -> JsWallet {
 ///
 /// A level could be passed like `trace` or `warn`. Or set for a specific module/crate
 /// with `sn_networking=trace,autonomi=info`.
+///
+/// # Example
+///
+/// ```js
+/// logInit("sn_networking=warn,autonomi=trace");
+/// ```
 #[wasm_bindgen(js_name = logInit)]
 pub fn log_init(directive: String) {
     use tracing_subscriber::prelude::*;
