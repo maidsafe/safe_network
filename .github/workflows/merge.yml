@@ -16,6 +16,16 @@ env:
   GENESIS_SK: 5ec88891c1098a0fede5b98b07f8abc931d7247b7aa310d21ab430cc957f9f02
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Display Python version
+        run: python --version
+
   cargo-udeps:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: Unused dependency check
@@ -142,7 +152,6 @@ jobs:
           # of proptesting
           # we do many more runs on the nightly run
           PROPTEST_CASES: 50
-
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: E2E tests
@@ -339,6 +348,129 @@ jobs:
         env:
           SN_LOG: "v"
         timeout-minutes: 2
+
+      - name: Estimate cost to create a vault
+        run: |
+          echo "test-file" > upload-test.txt
+          ./target/release/autonomi --log-output-dest=data-dir file upload ./upload-test.txt
+          ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register 1234
+          ./target/release/autonomi --log-output-dest=data-dir vault cost
+          ./target/release/autonomi --log-output-dest=data-dir file list 2>&1 | tee file_list.txt
+          ./target/release/autonomi --log-output-dest=data-dir register list 2>&1 | tee register_list.txt
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: create a vault with existing user data as above
+        run: |
+          ./target/release/autonomi --log-output-dest=data-dir vault create
+          ./target/release/autonomi --log-output-dest=data-dir vault load 2>&1 | tee vault_data.txt
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: vault create validation
+        run: |
+          NUM_OF_PUBLIC_FILES=`cat file_list.txt | grep "public" | grep -o '[0-9]\+'`
+          NUM_OF_PRIVATE_FILES=`cat file_list.txt | grep "private" | grep -o '[0-9]\+'`
+          NUM_OF_REGISTERS=`cat register_list.txt | grep "register" | grep -o '[0-9]\+'`
+
+          NUM_OF_PUBLIC_FILES_IN_VAULT=`cat vault_data.txt  | grep "public" | grep -o '[0-9]\+'`
+          NUM_OF_PRIVATE_FILES_IN_VAULT=`cat vault_data.txt| grep "private" | grep -o '[0-9]\+'`
+          NUM_OF_REGISTERS_IN_VAULT=`cat vault_data.txt| grep "register" | grep -o '[0-9]\+'`
+
+          rm -rf file_list.txt register_list.txt vault_data.txt
+
+          
+          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
+
+          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
+
+          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_REGISTERS $NUM_OF_REGISTERS_IN_VAULT
+
+          echo "vault created successfully!"
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 4
+
+      - name: add more files and registers
+        run: |
+          echo "testing-file2" > sync-test.txt
+          ./target/release/autonomi --log-output-dest=data-dir file upload ./sync-test.txt
+          ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register_2 12345
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: sync the vault
+        run: ./target/release/autonomi --log-output-dest=data-dir vault sync
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: vault sync validation
+        run: |
+          NUM_OF_PUBLIC_FILES=""
+          NUM_OF_PRIVATE_FILES=""
+          NUM_OF_REGISTERS=""
+          NUM_OF_PUBLIC_FILES_IN_VAULT=""
+          NUM_OF_PRIVATE_FILES_IN_VAULT=""
+          NUM_OF_REGISTERS_IN_VAULT=""
+          
+          ./target/release/autonomi --log-output-dest=data-dir file list 2>&1 | tee file_list.txt
+          ./target/release/autonomi --log-output-dest=data-dir register list 2>&1 | tee register_list.txt
+
+          NUM_OF_PUBLIC_FILES=`cat file_list.txt | grep "public" | grep -o '[0-9]\+'`
+          NUM_OF_PRIVATE_FILES=`cat file_list.txt | grep "private" | grep -o '[0-9]\+'`
+          NUM_OF_REGISTERS=`cat register_list.txt | grep "register" | grep -o '[0-9]\+'`
+
+          ./target/release/autonomi --log-output-dest=data-dir vault load 2>&1 | tee vault_data.txt
+
+          NUM_OF_PUBLIC_FILES_IN_VAULT=`cat vault_data.txt  | grep "public" | grep -o '[0-9]\+'`
+          NUM_OF_PRIVATE_FILES_IN_VAULT=`cat vault_data.txt| grep "private" | grep -o '[0-9]\+'`
+          NUM_OF_REGISTERS_IN_VAULT=`cat vault_data.txt| grep "register" | grep -o '[0-9]\+'`
+
+          rm -rf file_list.txt register_list.txt vault_data.txt
+
+          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
+
+          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
+
+          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_REGISTERS $NUM_OF_REGISTERS_IN_VAULT
+
+          echo "vault synced successfully!"
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: load an existing vault from the network
+        run: ./target/release/autonomi --log-output-dest=data-dir vault load
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: Time profiling for Different files
+        run: |
+          # 1 MB
+          python3 -c "with open('random_1MB.bin', 'wb') as f: f.write(bytearray([0xff] * 1 * 1024 * 1024))"
+          # 10 MB
+          python3 -c "with open('random_10MB.bin', 'wb') as f: f.write(bytearray([0xff] * 10 * 1024 * 1024))"
+          # 100 MB
+          python3 -c "with open('random_100MB.bin', 'wb') as f: f.write(bytearray([0xff] * 100 * 1024 * 1024))"
+          # 1 GB
+          python3 -c "with open('random_1GB.bin', 'wb') as f: f.write(bytearray([0xff] * 1000 * 1024 * 1024))"
+
+          ./target/release/autonomi --log-output-dest=data-dir file list
+          time ./target/release/autonomi --log-output-dest=data-dir file upload random_1MB.bin
+          time ./target/release/autonomi --log-output-dest=data-dir file upload random_10MB.bin
+          time ./target/release/autonomi --log-output-dest=data-dir file upload random_100MB.bin
+          time ./target/release/autonomi --log-output-dest=data-dir file upload random_1GB.bin
+          
+          rm -rf random*.bin
+          
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 10
 
       - name: Stop the local network and upload logs
         if: always()
