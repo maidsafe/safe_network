@@ -166,12 +166,6 @@ impl ReplicationFetcher {
 
         if !out_of_range_keys.is_empty() {
             info!("Among {total_incoming_keys} incoming replications from {holder:?}, found {} out of range", out_of_range_keys.len());
-            if tracing::log::log_enabled!(tracing::log::Level::Debug) {
-                for addr in out_of_range_keys.iter() {
-                    let ilog2_distance = self_address.distance(addr).ilog2();
-                    debug!("The incoming record_key {addr:?} is out of range with ilog2_distance being {ilog2_distance:?}, do not fetch it from {holder:?}");
-                }
-            }
         }
 
         // add in-range AND non existing keys to the fetcher
