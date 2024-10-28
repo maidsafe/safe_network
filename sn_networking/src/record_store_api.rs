@@ -159,12 +159,12 @@ impl UnifiedRecordStore {
         };
     }
 
-    pub(crate) fn cleanup_unrelevant_records(&mut self) {
+    pub(crate) fn cleanup_irrelevant_records(&mut self) {
         match self {
             Self::Client(_store) => {
-                warn!("Calling cleanup_unrelevant_records at Client. This should not happen");
+                warn!("Calling cleanup_irrelevant_records at Client. This should not happen");
             }
-            Self::Node(store) => store.cleanup_unrelevant_records(),
+            Self::Node(store) => store.cleanup_irrelevant_records(),
         }
     }
 }
