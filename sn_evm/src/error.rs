@@ -27,16 +27,6 @@ pub enum EvmError {
     NumericOverflow,
     #[error("Not enough balance, {0} available, {1} required")]
     NotEnoughBalance(AttoTokens, AttoTokens),
-
     #[error("Invalid quote public key")]
     InvalidQuotePublicKey,
-
-    #[error("Failed to encrypt secret key: {0}")]
-    FailedToEncryptKey(String),
-
-    #[error("Failed to decrypt secret key: {0}")]
-    FailedToDecryptKey(String),
-
-    #[error("Failed to process Operation: {0}")]
-    OperationError(String),
 }

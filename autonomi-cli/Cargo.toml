@@ -36,6 +36,7 @@ color-eyre = "~0.6"
 dirs-next = "~2.0.0"
 thiserror = "1.0"
 indicatif = { version = "0.17.5", features = ["tokio"] }
+rand = { version = "~0.8.5", features = ["small_rng"] }
 rpassword = "7.0"
 tokio = { version = "1.32.0", features = [
     "io-util",
@@ -53,6 +54,8 @@ sn_logging = { path = "../sn_logging", version = "0.2.37" }
 walkdir = "2.5.0"
 serde_json = "1.0.132"
 serde = "1.0.210"
+hex = "0.4.3"
+ring = "0.17.8"
 
 [dev-dependencies]
 autonomi = { path = "../autonomi", version = "0.2.1", features = [

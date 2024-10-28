@@ -12,6 +12,7 @@ use crate::contract::network_token::NetworkToken;
 use crate::contract::{data_payments, network_token};
 use crate::utils::http_provider;
 use crate::Network;
+use alloy::hex::ToHexExt;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
 use alloy::providers::fillers::{
     BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
@@ -136,6 +137,12 @@ impl Wallet {
     pub fn to_provider(&self) -> ProviderWithWallet {
         http_provider_with_wallet(self.network.rpc_url().clone(), self.wallet.clone())
     }
+
+    /// Returns a random private key string.
+    pub fn random_private_key() -> String {
+        let signer: PrivateKeySigner = LocalSigner::random();
+        signer.to_bytes().encode_hex_with_prefix()
+    }
 }
 
 /// Generate an EthereumWallet with a random private key.
@@ -178,11 +185,6 @@ fn http_provider_with_wallet(rpc_url: reqwest::Url, wallet: EthereumWallet) -> P
 /// Returns the address of this wallet.
 pub fn wallet_address(wallet: &EthereumWallet) -> Address {
     <EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
-}
-
-pub fn get_random_private_key_for_wallet() -> String {
-    let signer: PrivateKeySigner = LocalSigner::random();
-    signer.to_bytes().to_string()
 }
 
 /// Returns the raw balance of payment tokens for this wallet.

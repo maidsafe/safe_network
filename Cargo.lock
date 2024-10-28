@@ -1131,9 +1131,11 @@ dependencies = [
  "criterion",
  "dirs-next",
  "eyre",
+ "hex 0.4.3",
  "indicatif",
  "rand 0.8.5",
  "rayon",
+ "ring 0.17.8",
  "rpassword",
  "serde",
  "serde_json",
@@ -8222,9 +8224,7 @@ dependencies = [
 name = "sn_evm"
 version = "0.1.1"
 dependencies = [
- "color-eyre",
  "custom_debug",
- "dirs-next",
  "evmlib",
  "hex 0.4.3",
  "lazy_static",
@@ -8232,7 +8232,6 @@ dependencies = [
  "rand 0.8.5",
  "ring 0.17.8",
  "rmp-serde",
- "rpassword",
  "serde",
  "serde_json",
  "tempfile",
