@@ -43,8 +43,8 @@ const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
 // Shall be synced with `sn_node::PERIODIC_REPLICATION_INTERVAL_MAX_S`
 const REPLICATION_TIMEOUT: Duration = Duration::from_secs(45);
 
-// Add this constant at the top of the file with other constants
-const MIN_REPLICATION_INTERVAL: Duration = Duration::from_secs(60); // one minute
+// Throttles replication to at most once every 30 seconds
+const MIN_REPLICATION_INTERVAL_S: Duration = Duration::from_secs(30);
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeIssue {
@@ -1043,7 +1043,7 @@ impl SwarmDriver {
     fn try_interval_replication(&mut self) -> Result<()> {
         // Add a last_replication field to track the last time replication was performed
         if let Some(last_replication) = self.last_replication {
-            if last_replication.elapsed() < MIN_REPLICATION_INTERVAL {
+            if last_replication.elapsed() < MIN_REPLICATION_INTERVAL_S {
                 info!("Skipping replication as minimum interval hasn't elapsed");
                 return Ok(());
             }
