@@ -5,9 +5,9 @@ on:
   # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
   # the merge run checks should show on master and enable this clear test/passing history
   merge_group:
-    branches: [ main, alpha*, beta*, rc* ]
+    branches: [main, alpha*, beta*, rc*]
   pull_request:
-    branches: [ "*" ]
+    branches: ["*"]
 
 env:
   SAFE_DATA_PATH: /home/runner/.local/share/safe
@@ -126,6 +126,9 @@ jobs:
       - name: Assert we've reloaded some chunks
         run: rg "Existing record found" $RESTART_TEST_NODE_DATA_PATH
 
+      - name: Wait at least 1min for replication to happen # it is throttled to once/30s.
+        run: sleep 60
+
       - name: Verify data replication using rg
         shell: bash
         timeout-minutes: 1
@@ -232,7 +235,7 @@ jobs:
 
       # Logging of handling time is on Trace level,
       # meanwhile the local_network startup tool sets the logging level on Debug.
-      # 
+      #
       # - name: Check node swarm_driver handling statistics
       #   shell: bash
       #   # With the latest improvements, swarm_driver will be in high chance
