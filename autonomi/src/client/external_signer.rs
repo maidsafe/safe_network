@@ -3,8 +3,7 @@ use crate::client::utils::extract_quote_payments;
 use crate::self_encryption::encrypt;
 use crate::Client;
 use bytes::Bytes;
-use sn_evm::{ProofOfPayment, QuotePayment};
-use sn_networking::PayeeQuote;
+use sn_evm::{PaymentQuote, ProofOfPayment, QuotePayment};
 use sn_protocol::storage::Chunk;
 use std::collections::HashMap;
 use xor_name::XorName;
@@ -34,7 +33,7 @@ impl Client {
         data: Bytes,
     ) -> Result<
         (
-            HashMap<XorName, PayeeQuote>,
+            HashMap<XorName, PaymentQuote>,
             Vec<QuotePayment>,
             Vec<XorName>,
         ),
@@ -42,9 +41,15 @@ impl Client {
     > {
         // Encrypt the data as chunks
         let (_data_map_chunk, _chunks, xor_names) = encrypt_data(data)?;
-        let cost_map = self.get_store_quotes(xor_names.into_iter()).await?;
-        let (quote_payments, free_chunks) = extract_quote_payments(&cost_map);
 
+        let cost_map: HashMap<XorName, PaymentQuote> = self
+            .get_store_quotes(xor_names.into_iter())
+            .await?
+            .into_iter()
+            .map(|(name, (_, _, q))| (name, q))
+            .collect();
+
+        let (quote_payments, free_chunks) = extract_quote_payments(&cost_map);
         Ok((cost_map, quote_payments, free_chunks))
     }
 
@@ -57,12 +62,12 @@ impl Client {
 
         if let Some(proof) = payment_proofs.get(map_xor_name) {
             debug!("Uploading data map chunk: {map_xor_name:?}");
-            self.chunk_upload_with_payment(data_map_chunk.clone(), proof.clone(), None)
+            self.chunk_upload_with_payment(data_map_chunk.clone(), proof.clone())
                 .await
-                .inspect_err(|err| error!("Error uploading data map chunk: {err:?}"))?;
+                .inspect_err(|err| error!("Error uploading data map chunk: {err:?}"))
+        } else {
+            Ok(())
         }
-
-        Ok(())
     }
 
     async fn upload_chunks(
@@ -74,7 +79,7 @@ impl Client {
         for chunk in chunks {
             if let Some(proof) = payment_proofs.get(chunk.name()) {
                 let address = *chunk.address();
-                self.chunk_upload_with_payment(chunk.clone(), proof.clone(), None)
+                self.chunk_upload_with_payment(chunk.clone(), proof.clone())
                     .await
                     .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))?;
             }

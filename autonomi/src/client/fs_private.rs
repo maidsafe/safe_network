@@ -21,7 +21,7 @@ use std::path::PathBuf;
 
 use super::archive_private::{PrivateArchive, PrivateArchiveAccess};
 use super::data_private::PrivateDataAccess;
-use super::fs::{FileDownloadError, FileUploadError};
+use super::fs::{DownloadError, UploadError};
 
 impl Client {
     /// Download a private file from network to local file system
@@ -29,7 +29,7 @@ impl Client {
         &self,
         data_access: PrivateDataAccess,
         to_dest: PathBuf,
-    ) -> Result<(), FileDownloadError> {
+    ) -> Result<(), DownloadError> {
         let data = self.private_data_get(data_access).await?;
         if let Some(parent) = to_dest.parent() {
             tokio::fs::create_dir_all(parent).await?;
@@ -43,7 +43,7 @@ impl Client {
         &self,
         archive_access: PrivateArchiveAccess,
         to_dest: PathBuf,
-    ) -> Result<(), FileDownloadError> {
+    ) -> Result<(), DownloadError> {
         let archive = self.private_archive_get(archive_access).await?;
         for (path, addr, _meta) in archive.iter() {
             self.private_file_download(addr.clone(), to_dest.join(path))
@@ -58,7 +58,7 @@ impl Client {
         &self,
         dir_path: PathBuf,
         wallet: &EvmWallet,
-    ) -> Result<PrivateArchiveAccess, FileUploadError> {
+    ) -> Result<PrivateArchiveAccess, UploadError> {
         let mut archive = PrivateArchive::new();
 
         for entry in walkdir::WalkDir::new(dir_path) {
@@ -92,7 +92,7 @@ impl Client {
         &self,
         path: PathBuf,
         wallet: &EvmWallet,
-    ) -> Result<PrivateDataAccess, FileUploadError> {
+    ) -> Result<PrivateDataAccess, UploadError> {
         let data = tokio::fs::read(path).await?;
         let data = Bytes::from(data);
         let addr = self.private_data_put(data, wallet).await?;

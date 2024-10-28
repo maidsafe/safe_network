@@ -951,18 +951,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b34d609dfbaf33d6889b2b7106d3ca345eacad44200913df5ba02bfd31d2ba9"
 
 [[package]]
-name = "async-channel"
-version = "2.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89b47800b0be77592da0afd425cc03468052844aff33b84e33cc696f64e77b6a"
-dependencies = [
- "concurrent-queue",
- "event-listener-strategy",
- "futures-core",
- "pin-project-lite",
-]
-
-[[package]]
 name = "async-io"
 version = "2.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1091,7 +1079,6 @@ name = "autonomi"
 version = "0.2.2-rc.2"
 dependencies = [
  "alloy",
- "assert_matches",
  "bip39",
  "blst",
  "blstrs 0.7.1",
@@ -1099,13 +1086,11 @@ dependencies = [
  "bytes",
  "console_error_panic_hook",
  "const-hex",
- "custom_debug",
  "evmlib",
  "eyre",
  "futures",
  "hex 0.4.3",
  "instant",
- "itertools 0.12.1",
  "js-sys",
  "libp2p 0.54.1",
  "rand 0.8.5",
@@ -1122,7 +1107,6 @@ dependencies = [
  "sn_peers_acquisition",
  "sn_protocol",
  "sn_registers",
- "tempfile",
  "test_utils",
  "thiserror",
  "tiny_http",
@@ -8278,7 +8262,6 @@ name = "sn_networking"
 version = "0.19.1-rc.2"
 dependencies = [
  "aes-gcm-siv",
- "async-channel",
  "async-trait",
  "backoff",
  "blsttc",

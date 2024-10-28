@@ -390,6 +390,7 @@ impl SwarmDriver {
 
             // Insert the record and the peer into the result_map.
             let record_content_hash = XorName::from_content(&peer_record.record.value);
+            debug!("For record {pretty_key:?} task {query_id:?}, received a copy {peer_id:?} with content hash {record_content_hash:?}");
 
             let peer_list =
                 if let Entry::Occupied(mut entry) = result_map.entry(record_content_hash) {
@@ -410,7 +411,7 @@ impl SwarmDriver {
 
             let responded_peers = peer_list.len();
 
-            let expected_answers = get_quorum_value(&cfg.get_quorum);
+            let expected_answers = cfg.get_quorum;
             trace!("Expecting {expected_answers:?} answers to exceed {expected_get_range:?} for record {pretty_key:?} task {query_id:?}, received {responded_peers} so far");
         } else {
             // return error if the entry cannot be found
@@ -511,7 +512,7 @@ impl SwarmDriver {
 
             // we have a split record, return it
             if num_of_versions > 1 {
-                warn!("RANGE: Multiple versions found over range");
+                warn!("RANGE: Multiple versions ({num_of_versions}) found over range");
                 for sender in senders {
                     sender
                         .send(Err(GetRecordError::SplitRecord {

@@ -30,11 +30,9 @@ bytes = { version = "1.0.1", features = ["serde"] }
 curv = { version = "0.10.1", package = "sn_curv", default-features = false, features = [
     "num-bigint",
 ] }
-custom_debug = "~0.6.1"
 eip2333 = { version = "0.2.1", package = "sn_bls_ckd" }
 const-hex = "1.12.0"
 hex = "~0.4.3"
-itertools = "~0.12.1"
 libp2p = "0.54.1"
 rand = "0.8.5"
 rmp-serde = "1.1.1"
@@ -60,13 +58,10 @@ blstrs = "0.7.1"
 
 [dev-dependencies]
 alloy = { version = "0.5.3", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
-assert_matches = "1.5.0"
 eyre = "0.6.5"
 sha2 = "0.10.6"
 sn_logging = { path = "../sn_logging", version = "0.2.38-rc.2" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.5-rc.2" }
-sn_registers = { path = "../sn_registers", version = "0.4.1-rc.2", features = ["test-utils"] }
-tempfile = "3.6.0"
 # Do not specify the version field. Release process expects even the local dev deps to be published.
 # Removing the version field is a workaround.
 test_utils = { path = "../test_utils" }
