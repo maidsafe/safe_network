@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use bytes::Bytes;
+use futures::StreamExt as _;
 use libp2p::kad::Quorum;
-use tokio::task::{JoinError, JoinSet};
 
 use std::collections::HashSet;
 use xor_name::XorName;
@@ -47,8 +47,6 @@ pub enum PutError {
     VaultBadOwner,
     #[error("Payment unexpectedly invalid for {0:?}")]
     PaymentUnexpectedlyInvalid(NetworkAddress),
-    #[error("Could not simultaneously upload chunks: {0:?}")]
-    JoinError(tokio::task::JoinError),
 }
 
 /// Errors that can occur during the pay operation.
@@ -80,8 +78,6 @@ pub enum GetError {
 /// Errors that can occur during the cost calculation.
 #[derive(Debug, thiserror::Error)]
 pub enum CostError {
-    #[error("Could not simultaneously fetch store costs: {0:?}")]
-    JoinError(JoinError),
     #[error("Failed to self-encrypt data.")]
     SelfEncryption(#[from] crate::self_encryption::Error),
     #[error("Could not get store quote for: {0:?} after several retries")]
@@ -135,13 +131,14 @@ impl Client {
 
         // Upload all the chunks in parallel including the data map chunk
         debug!("Uploading {} chunks", chunks.len());
-        let mut tasks = JoinSet::new();
+        let mut tasks = futures::stream::FuturesUnordered::new();
+
         for chunk in chunks.into_iter().chain(std::iter::once(data_map_chunk)) {
             let self_clone = self.clone();
             let address = *chunk.address();
             if let Some(proof) = payment_proofs.get(chunk.name()) {
                 let proof_clone = proof.clone();
-                tasks.spawn(async move {
+                tasks.push(async move {
                     self_clone
                         .chunk_upload_with_payment(chunk, proof_clone)
                         .await
@@ -151,11 +148,8 @@ impl Client {
                 debug!("Chunk at {address:?} was already paid for so skipping");
             }
         }
-        while let Some(result) = tasks.join_next().await {
-            result
-                .inspect_err(|err| error!("Join error uploading chunk: {err:?}"))
-                .map_err(PutError::JoinError)?
-                .inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
+        while let Some(result) = tasks.next().await {
+            result.inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
             record_count += 1;
         }
 
