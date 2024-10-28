@@ -700,12 +700,16 @@ impl NodeRecordStore {
             self.records.len()
         );
 
+        // Pre-calculate the local_key distance once
+        let local_key_distance = |key: &&Key| {
+            let kbucket_key = KBucketKey::new(key.to_vec());
+            self.local_key.distance(&kbucket_key)
+        };
+
+        // Use par_iter() for parallel processing and any() to short-circuit
         let relevant_records_len = records
-            .iter()
-            .filter(|key| {
-                let kbucket_key = KBucketKey::new(key.to_vec());
-                distance_range >= self.local_key.distance(&kbucket_key)
-            })
+            .par_iter() // Process in parallel
+            .filter(|key| distance_range >= local_key_distance(key))
             .count();
 
         Marker::CloseRecordsLen(relevant_records_len).log();
