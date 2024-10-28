@@ -454,7 +454,7 @@ impl NodeRecordStore {
     // those `out of range` records shall be cleaned up.
     // This is to avoid `over-quoting` during restart, when RT is not fully populated,
     // result in mis-calculation of relevant records.
-    pub fn cleanup_unrelevant_records(&mut self) {
+    pub fn cleanup_irrelevant_records(&mut self) {
         let accumulated_records = self.records.len();
         if accumulated_records < MAX_RECORDS_COUNT * 6 / 10 {
             return;
