@@ -640,9 +640,13 @@ impl Node {
 
         #[cfg(feature = "open-metrics")]
         if let Some(metrics_recorder) = self.metrics_recorder() {
+            // FIXME: We would reach the MAX if the storecost is scaled up.
+            let current_value = metrics_recorder.current_reward_wallet_balance.get();
+            let new_value =
+                current_value.saturating_add(storecost.as_atto().try_into().unwrap_or(i64::MAX));
             let _ = metrics_recorder
                 .current_reward_wallet_balance
-                .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX)); // TODO maybe metrics should be in u256 too?
+                .set(new_value);
         }
         self.events_channel()
             .broadcast(crate::NodeEvent::RewardReceived(storecost, address.clone()));
