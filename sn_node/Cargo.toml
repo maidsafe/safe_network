@@ -81,6 +81,7 @@ walkdir = "~2.5.0"
 xor_name = "5.0.0"
 strum = { version = "0.26.2", features = ["derive"] }
 color-eyre = "0.6.2"
+mimalloc = "0.1.43"
 
 [dev-dependencies]
 evmlib = { path = "../evmlib", version = "0.1.2-rc.1" }
