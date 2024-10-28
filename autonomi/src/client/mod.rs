@@ -31,7 +31,7 @@ pub mod vault;
 pub mod wasm;
 
 // private module with utility functions
-pub(crate) mod utils;
+mod utils;
 
 pub use sn_evm::Amount;
 
@@ -207,8 +207,12 @@ async fn handle_event_receiver(
 /// Events that can be broadcasted by the client.
 #[derive(Debug, Clone)]
 pub enum ClientEvent {
-    UploadComplete {
-        record_count: usize,
-        tokens_spent: Amount,
-    },
+    UploadComplete(UploadSummary),
+}
+
+/// Summary of an upload operation.
+#[derive(Debug, Clone)]
+pub struct UploadSummary {
+    pub record_count: usize,
+    pub tokens_spent: Amount,
 }

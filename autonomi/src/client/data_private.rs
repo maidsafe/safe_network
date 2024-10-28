@@ -6,15 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use super::data::{GetError, PutError};
-use crate::client::ClientEvent;
-use crate::uploader::Uploader;
-use crate::{self_encryption::encrypt, Client};
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::EvmWallet;
+use sn_evm::{Amount, EvmWallet};
 use sn_protocol::storage::Chunk;
-use std::hash::{DefaultHasher, Hash, Hasher};
+use tokio::task::JoinSet;
+
+use super::data::{GetError, PutError};
+use crate::client::{ClientEvent, UploadSummary};
+use crate::{self_encryption::encrypt, Client};
 
 /// Private data on the network can be accessed with this
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -67,21 +69,53 @@ impl Client {
         let (data_map_chunk, chunks) = encrypt(data)?;
         debug!("Encryption took: {:.2?}", now.elapsed());
 
+        // Pay for all chunks
+        let xor_names: Vec<_> = chunks.iter().map(|chunk| *chunk.name()).collect();
+        info!("Paying for {} addresses", xor_names.len());
+        let (payment_proofs, _free_chunks) = self
+            .pay(xor_names.into_iter(), wallet)
+            .await
+            .inspect_err(|err| error!("Error paying for data: {err:?}"))?;
+
         // Upload the chunks with the payments
-        let mut uploader = Uploader::new(self.clone(), wallet.clone());
-        uploader.insert_chunks(chunks);
-        uploader.insert_chunks(vec![data_map_chunk.clone()]);
+        let mut record_count = 0;
+        debug!("Uploading {} chunks", chunks.len());
+        let mut tasks = JoinSet::new();
+        for chunk in chunks {
+            let self_clone = self.clone();
+            let address = *chunk.address();
+            if let Some(proof) = payment_proofs.get(chunk.name()) {
+                let proof_clone = proof.clone();
+                tasks.spawn(async move {
+                    self_clone
+                        .chunk_upload_with_payment(chunk, proof_clone)
+                        .await
+                        .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))
+                });
+            } else {
+                debug!("Chunk at {address:?} was already paid for so skipping");
+            }
+        }
+        while let Some(result) = tasks.join_next().await {
+            result
+                .inspect_err(|err| error!("Join error uploading chunk: {err:?}"))
+                .map_err(PutError::JoinError)?
+                .inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
+            record_count += 1;
+        }
 
-        let summary = uploader.start_upload().await?;
-
+        // Reporting
         if let Some(channel) = self.client_event_sender.as_ref() {
-            if let Err(err) = channel
-                .send(ClientEvent::UploadComplete {
-                    record_count: summary.uploaded_count,
-                    tokens_spent: summary.storage_cost,
-                })
-                .await
-            {
+            let tokens_spent = payment_proofs
+                .values()
+                .map(|proof| proof.quote.cost.as_atto())
+                .sum::<Amount>();
+
+            let summary = UploadSummary {
+                record_count,
+                tokens_spent,
+            };
+            if let Err(err) = channel.send(ClientEvent::UploadComplete(summary)).await {
                 error!("Failed to send client event: {err:?}");
             }
         }

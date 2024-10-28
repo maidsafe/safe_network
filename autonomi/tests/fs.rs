@@ -97,7 +97,7 @@ async fn file_into_vault() -> Result<()> {
         .await?;
 
     // now assert over the stored account packet
-    let new_client = Client::connect(&peers_from_env()?).await?;
+    let new_client = Client::connect(&[]).await?;
 
     let (ap, got_version) = new_client.fetch_and_decrypt_vault(&client_sk).await?;
     assert_eq!(set_version, got_version);
