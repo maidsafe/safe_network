@@ -40,7 +40,7 @@ pub enum SubCmd {
     Wallet {
         #[command(subcommand)]
         command: WalletCmd,
-    }
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -154,19 +154,20 @@ pub enum VaultCmd {
 
 #[derive(Subcommand, Debug)]
 pub enum WalletCmd {
-    /// Create a wallet
-    // #[command(subcommand)]
+    /// Create a wallet.
     Create {
-        #[arg(long)]
-        encrypt: Option<String>,
-        #[arg(long)]
-        password: Option<String>,
-        #[arg(long)]
+        /// Optional flag to not add a password.
+        #[clap(long, action)]
+        no_password: bool,
+        /// Optional hex-encoded private key.
+        #[clap(long)]
         private_key: Option<String>,
-
+        /// Optional password to encrypt the wallet with.
+        #[clap(long, short)]
+        password: Option<String>,
     },
 
-    /// Check the balance of the wallet
+    /// Check the balance of the wallet.
     Balance,
 }
 
@@ -207,14 +208,11 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
         },
         SubCmd::Wallet { command } => match command {
             WalletCmd::Create {
-                encrypt,
-                password,
+                no_password,
                 private_key,
-
-            } => {
-                wallet::create( encrypt, password,private_key)
-            },
-            WalletCmd::Balance => Ok(wallet::balance()?),
-        }
+                password,
+            } => wallet::create(no_password, private_key, password),
+            WalletCmd::Balance => Ok(wallet::balance().await?),
+        },
     }
 }

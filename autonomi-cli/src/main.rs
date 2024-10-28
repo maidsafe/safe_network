@@ -14,6 +14,7 @@ mod actions;
 mod commands;
 mod opt;
 mod utils;
+mod wallet;
 
 pub use access::data_dir;
 pub use access::keys;
