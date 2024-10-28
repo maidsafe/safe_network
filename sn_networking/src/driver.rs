@@ -720,6 +720,7 @@ impl NetworkBuilder {
             replication_targets: Default::default(),
             range_distances: VecDeque::with_capacity(GET_RANGE_STORAGE_LIMIT),
             first_contact_made: false,
+            last_replication: None,
         };
 
         let network = Network::new(
@@ -818,6 +819,9 @@ pub struct SwarmDriver {
     pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
     pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
 
+    /// when was the last replication event
+    /// This allows us to throttle replication no matter how it is triggered
+    pub(crate) last_replication: Option<Instant>,
     // The recent range_distances calculated by the node
     // Each update is generated when there is a routing table change
     // We use the largest of these X_STORAGE_LIMIT values as our X distance.
