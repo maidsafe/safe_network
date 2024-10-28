@@ -29,6 +29,7 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use std::{
+    cmp::Ordering,
     collections::{BTreeMap, HashMap},
     fmt::Debug,
     time::Duration,
@@ -41,6 +42,9 @@ const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
 
 // Shall be synced with `sn_node::PERIODIC_REPLICATION_INTERVAL_MAX_S`
 const REPLICATION_TIMEOUT: Duration = Duration::from_secs(45);
+
+// Throttles replication to at most once every 30 seconds
+const MIN_REPLICATION_INTERVAL_S: Duration = Duration::from_secs(30);
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum NodeIssue {
@@ -141,7 +145,7 @@ pub enum LocalSwarmCmd {
     /// NOTE: This does result in outgoing messages, but is produced locally
     TriggerIntervalReplication,
     /// Triggers unrelevant record cleanup
-    TriggerUnrelevantRecordCleanup,
+    TriggerIrrelevantRecordCleanup,
 }
 
 /// Commands to send to the Swarm
@@ -292,7 +296,7 @@ impl Debug for LocalSwarmCmd {
             LocalSwarmCmd::TriggerIntervalReplication => {
                 write!(f, "LocalSwarmCmd::TriggerIntervalReplication")
             }
-            LocalSwarmCmd::TriggerUnrelevantRecordCleanup => {
+            LocalSwarmCmd::TriggerIrrelevantRecordCleanup => {
                 write!(f, "LocalSwarmCmd::TriggerUnrelevantRecordCleanup")
             }
         }
@@ -848,13 +852,13 @@ impl SwarmDriver {
                     self.send_event(NetworkEvent::KeysToFetchForReplication(new_keys_to_fetch));
                 }
             }
-            LocalSwarmCmd::TriggerUnrelevantRecordCleanup => {
-                cmd_string = "TriggerUnrelevantRecordCleanup";
+            LocalSwarmCmd::TriggerIrrelevantRecordCleanup => {
+                cmd_string = "TriggerIrrelevantRecordCleanup";
                 self.swarm
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .cleanup_unrelevant_records();
+                    .cleanup_irrelevant_records();
             }
         }
 
@@ -980,26 +984,30 @@ impl SwarmDriver {
         let acceptable_distance_range = self.get_request_range();
         let target_key = target_address.as_kbucket_key();
 
-        let peers = self
+        let sorted_peers: Vec<_> = self
             .swarm
             .behaviour_mut()
             .kademlia
             .get_closest_local_peers(&target_key)
-            .filter_map(|key| {
-                // here we compare _bucket_, not the exact distance.
-                // We want to include peers that are just outside the range
-                // Such that we can and will exceed the range in a search eventually
-                if acceptable_distance_range.ilog2() < target_key.distance(&key).ilog2() {
-                    return None;
+            .collect();
+
+        // Binary search to find the index where we exceed the acceptable range
+        let split_index = sorted_peers
+            .binary_search_by(|key| {
+                let distance = target_key.distance(key);
+                if distance >= acceptable_distance_range {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
                 }
-
-                // Map KBucketKey<PeerId> to PeerId.
-                let peer_id = key.into_preimage();
-                Some(peer_id)
             })
-            .collect::<Vec<_>>();
+            .unwrap_or_else(|x| x);
 
-        peers
+        // Convert KBucketKey<PeerId> to PeerId for all peers within range
+        sorted_peers[..split_index]
+            .iter()
+            .map(|key| key.into_preimage())
+            .collect()
     }
 
     /// From all local peers, returns any within current get_range for a given key
@@ -1033,6 +1041,17 @@ impl SwarmDriver {
     }
 
     fn try_interval_replication(&mut self) -> Result<()> {
+        // Add a last_replication field to track the last time replication was performed
+        if let Some(last_replication) = self.last_replication {
+            if last_replication.elapsed() < MIN_REPLICATION_INTERVAL_S {
+                info!("Skipping replication as minimum interval hasn't elapsed");
+                return Ok(());
+            }
+        }
+
+        // Store the current time as the last replication time
+        self.last_replication = Some(Instant::now());
+
         let our_address = NetworkAddress::from_peer(self.self_peer_id);
 
         let mut replicate_targets =
