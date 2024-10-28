@@ -121,7 +121,7 @@ pub const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so
 // Timeout for requests sent/received through the request_response behaviour.
 const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
 // Sets the keep-alive timeout of idle connections.
-const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(30);
+const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
 
 // Inverval of resending identify to connected peers.
 const RESEND_IDENTIFY_INVERVAL: Duration = Duration::from_secs(3600);
