@@ -66,8 +66,8 @@ pub fn create_file_with_keys(private_key: String, public_key: String) -> Result<
 }
 
 pub fn wallet_encryption_status(root_dir: &Path) -> bool {
-    let wallelt_file_path = root_dir.join(ENCRYPTED_MAIN_SECRET_KEY_FILENAME);
-    wallelt_file_path.is_file()
+    let wallet_file_path = root_dir.join(ENCRYPTED_MAIN_SECRET_KEY_FILENAME);
+    wallet_file_path.is_file()
 }
 
 pub fn wallet_encryption_storage(dir_path: &str, content: &str) -> Result<String, EvmError> {
