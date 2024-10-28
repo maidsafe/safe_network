@@ -272,9 +272,9 @@ impl Node {
                 tokio::time::interval(UPTIME_METRICS_UPDATE_INTERVAL);
             let _ = uptime_metrics_update_interval.tick().await; // first tick completes immediately
 
-            let mut unrelevant_records_cleanup_interval =
+            let mut irrelevant_records_cleanup_interval =
                 tokio::time::interval(UNRELEVANT_RECORDS_CLEANUP_INTERVAL);
-            let _ = unrelevant_records_cleanup_interval.tick().await; // first tick completes immediately
+            let _ = irrelevant_records_cleanup_interval.tick().await; // first tick completes immediately
 
             loop {
                 let peers_connected = &peers_connected;
@@ -333,11 +333,11 @@ impl Node {
                             let _ = metrics_recorder.uptime.set(metrics_recorder.started_instant.elapsed().as_secs() as i64);
                         }
                     }
-                    _ = unrelevant_records_cleanup_interval.tick() => {
+                    _ = irrelevant_records_cleanup_interval.tick() => {
                         let network = self.network().clone();
 
                         let _handle = spawn(async move {
-                            Self::trigger_unrelevant_record_cleanup(network);
+                            Self::trigger_irrelevant_record_cleanup(network);
                         });
                     }
                 }
