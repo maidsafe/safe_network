@@ -10,7 +10,7 @@
 use crate::record_store::{ClientRecordStore, NodeRecordStore};
 use libp2p::kad::{
     store::{RecordStore, Result},
-    ProviderRecord, Record, RecordKey,
+    KBucketDistance, ProviderRecord, Record, RecordKey,
 };
 use sn_evm::{AttoTokens, QuotingMetrics};
 use sn_protocol::{storage::RecordType, NetworkAddress};
@@ -130,17 +130,7 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn get_farthest_replication_distance_bucket(&self) -> Option<u32> {
-        match self {
-            Self::Client(_store) => {
-                warn!("Calling get_distance_range at Client. This should not happen");
-                None
-            }
-            Self::Node(store) => store.get_responsible_distance_range(),
-        }
-    }
-
-    pub(crate) fn set_distance_range(&mut self, distance: u32) {
+    pub(crate) fn set_distance_range(&mut self, distance: KBucketDistance) {
         match self {
             Self::Client(_store) => {
                 warn!("Calling set_distance_range at Client. This should not happen");
@@ -169,12 +159,12 @@ impl UnifiedRecordStore {
         };
     }
 
-    pub(crate) fn cleanup_unrelevant_records(&mut self) {
+    pub(crate) fn cleanup_irrelevant_records(&mut self) {
         match self {
             Self::Client(_store) => {
-                warn!("Calling cleanup_unrelevant_records at Client. This should not happen");
+                warn!("Calling cleanup_irrelevant_records at Client. This should not happen");
             }
-            Self::Node(store) => store.cleanup_unrelevant_records(),
+            Self::Node(store) => store.cleanup_irrelevant_records(),
         }
     }
 }

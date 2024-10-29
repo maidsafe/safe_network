@@ -137,10 +137,22 @@ impl Node {
                 store_scratchpad_result
             }
             RecordKind::Scratchpad => {
-                error!("Scratchpad should not be validated at this point");
-                Err(Error::InvalidPutWithoutPayment(
-                    PrettyPrintRecordKey::from(&record.key).into_owned(),
-                ))
+                // make sure we already have this scratchpad locally, else reject it as first time upload needs payment
+                let key = record.key.clone();
+                let scratchpad = try_deserialize_record::<Scratchpad>(&record)?;
+                let net_addr = NetworkAddress::ScratchpadAddress(*scratchpad.address());
+                let pretty_key = PrettyPrintRecordKey::from(&key);
+                trace!("Got record to store without payment for scratchpad at {pretty_key:?}");
+                if !self.validate_key_and_existence(&net_addr, &key).await? {
+                    warn!("Ignore store without payment for scratchpad at {pretty_key:?}");
+                    return Err(Error::InvalidPutWithoutPayment(
+                        PrettyPrintRecordKey::from(&record.key).into_owned(),
+                    ));
+                }
+
+                // store the scratchpad
+                self.validate_and_store_scratchpad_record(scratchpad, key, false)
+                    .await
             }
             RecordKind::Spend => {
                 let record_key = record.key.clone();
@@ -387,7 +399,6 @@ impl Node {
     /// Check Counter: It MUST ensure that the new counter value is strictly greater than the currently stored value to prevent replay attacks.
     /// Verify Signature: It MUST use the public key to verify the BLS12-381 signature against the content hash and the counter.
     /// Accept or Reject: If all verifications succeed, the node MUST accept the packet and replace any previous version. Otherwise, it MUST reject the update.
-
     pub(crate) async fn validate_and_store_scratchpad_record(
         &self,
         scratchpad: Scratchpad,
@@ -396,7 +407,8 @@ impl Node {
     ) -> Result<()> {
         // owner PK is defined herein, so as long as record key and this match, we're good
         let addr = scratchpad.address();
-        debug!("Validating and storing scratchpad {addr:?}");
+        let count = scratchpad.count();
+        debug!("Validating and storing scratchpad {addr:?} with count {count}");
 
         // check if the deserialized value's RegisterAddress matches the record's key
         let scratchpad_key = NetworkAddress::ScratchpadAddress(*addr).to_record_key();
@@ -552,7 +564,7 @@ impl Node {
         };
 
         debug!(
-            "Got {} validated spends with key: {unique_pubkey:?} at {pretty_key:?}",
+            "Found {} spends with key: {unique_pubkey:?} at {pretty_key:?}",
             validated_spends.len()
         );
 
@@ -564,14 +576,12 @@ impl Node {
             expires: None,
         };
         self.network().put_local_record(record);
-        debug!(
-            "Successfully stored validated spends with key: {unique_pubkey:?} at {pretty_key:?}"
-        );
+        debug!("Successfully stored spends with key: {unique_pubkey:?} at {pretty_key:?}");
 
         // Just log the double spend attempt. DoubleSpend error during PUT is not used and would just lead to
         // RecordRejected marker (which is incorrect, since we store double spends).
         if validated_spends.len() > 1 {
-            warn!("Got double spend(s) of len {} for the Spend PUT with unique_pubkey {unique_pubkey}", validated_spends.len());
+            warn!("Got Burnt SpendAttempts of len {} for the Spend PUT with unique_pubkey {unique_pubkey} at {pretty_key:?}", validated_spends.len());
         }
 
         self.record_metrics(Marker::ValidSpendRecordPutFromNetwork(&pretty_key));
@@ -630,9 +640,13 @@ impl Node {
 
         #[cfg(feature = "open-metrics")]
         if let Some(metrics_recorder) = self.metrics_recorder() {
+            // FIXME: We would reach the MAX if the storecost is scaled up.
+            let current_value = metrics_recorder.current_reward_wallet_balance.get();
+            let new_value =
+                current_value.saturating_add(storecost.as_atto().try_into().unwrap_or(i64::MAX));
             let _ = metrics_recorder
                 .current_reward_wallet_balance
-                .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX)); // TODO maybe metrics should be in u256 too?
+                .set(new_value);
         }
         self.events_channel()
             .broadcast(crate::NodeEvent::RewardReceived(storecost, address.clone()));
@@ -745,6 +759,8 @@ impl Node {
         // get spends from the network at the address for that unique pubkey
         let network_spends = match self.network().get_raw_spends(spend_addr).await {
             Ok(spends) => spends,
+            // Fixme: We don't return SplitRecord Error for spends, instead we return NetworkError::DoubleSpendAttempt.
+            // The fix should also consider/change all the places we try to get spends, for eg `get_raw_signed_spends_from_record` etc.
             Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { result_map })) => {
                 warn!("Got a split record (double spend) for {unique_pubkey:?} from the network");
                 let mut spends = vec![];
@@ -756,13 +772,14 @@ impl Node {
                 }
                 spends
             }
-            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopiesInRange {
                 record,
                 got,
+                range,
                 ..
             })) => {
                 info!(
-                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network"
+                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network in range {range}"
                 );
                 match get_raw_signed_spends_from_record(&record) {
                     Ok(spends) => spends,

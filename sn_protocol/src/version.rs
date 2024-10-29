@@ -58,7 +58,7 @@ fn get_truncate_version_str() -> String {
 /// Get the PKs version string.
 /// If the public key mis-configed via env variable,
 /// it shall result in being rejected to join by the network
-fn get_key_version_str() -> String {
+pub fn get_key_version_str() -> String {
     let mut f_k_str = FOUNDATION_PK.to_hex();
     let _ = f_k_str.split_off(6);
     let mut g_k_str = GENESIS_PK.to_hex();

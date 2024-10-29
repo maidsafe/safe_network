@@ -30,6 +30,7 @@ mod transfers;
 mod transport;
 
 use cmd::LocalSwarmCmd;
+use sn_registers::SignedRegister;
 use xor_name::XorName;
 
 // re-export arch dependent deps for use in the crate, or above
@@ -61,11 +62,15 @@ use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
-    storage::{RecordType, RetryStrategy},
+    storage::{
+        try_deserialize_record, try_serialize_record, RecordHeader, RecordKind, RecordType,
+        RetryStrategy,
+    },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
+use sn_transfers::SignedSpend;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     net::IpAddr,
     sync::Arc,
 };
@@ -77,10 +82,6 @@ use tokio::time::Duration;
 
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
-
-/// The count of peers that will be considered as close to a record target,
-/// that a replication of the record shall be sent/accepted to/by the peer.
-pub const REPLICATION_PEERS_COUNT: usize = CLOSE_GROUP_SIZE + 2;
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -97,17 +98,47 @@ const MIN_WAIT_BEFORE_READING_A_PUT: Duration = Duration::from_millis(300);
 
 /// Sort the provided peers by their distance to the given `NetworkAddress`.
 /// Return with the closest expected number of entries if has.
-pub fn sort_peers_by_address<'a>(
+pub fn sort_peers_by_address_and_limit<'a>(
     peers: &'a Vec<PeerId>,
     address: &NetworkAddress,
     expected_entries: usize,
 ) -> Result<Vec<&'a PeerId>> {
-    sort_peers_by_key(peers, &address.as_kbucket_key(), expected_entries)
+    sort_peers_by_key_and_limit(peers, &address.as_kbucket_key(), expected_entries)
+}
+
+/// Sort the provided peers by their distance to the given `NetworkAddress`.
+/// Return with the closest expected number of entries if has.
+pub fn sort_peers_by_distance_to(
+    peers: &[PeerId],
+    queried_address: NetworkAddress,
+) -> Vec<KBucketDistance> {
+    let mut sorted_distances: Vec<_> = peers
+        .iter()
+        .map(|peer| {
+            let addr = NetworkAddress::from_peer(*peer);
+            queried_address.distance(&addr)
+        })
+        .collect();
+
+    sorted_distances.sort();
+
+    sorted_distances
+}
+
+/// Sort the provided peers by their distance to the given `NetworkAddress`.
+/// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
+pub fn sort_peers_by_address_and_limit_by_distance<'a>(
+    peers: &'a Vec<PeerId>,
+    address: &NetworkAddress,
+    distance: KBucketDistance,
+) -> Result<Vec<&'a PeerId>> {
+    limit_peers_by_distance(peers, &address.as_kbucket_key(), distance)
 }
 
 /// Sort the provided peers by their distance to the given `KBucketKey`.
 /// Return with the closest expected number of entries if has.
-pub fn sort_peers_by_key<'a, T>(
+pub fn sort_peers_by_key_and_limit<'a, T>(
     peers: &'a Vec<PeerId>,
     key: &KBucketKey<T>,
     expected_entries: usize,
@@ -143,6 +174,40 @@ pub fn sort_peers_by_key<'a, T>(
         .collect();
 
     Ok(sorted_peers)
+}
+/// Only return peers closer to key than the provided distance
+/// Their distance is measured by closeness to the given `KBucketKey`.
+/// Return with the closest expected number of entries if has.
+#[allow(clippy::result_large_err)]
+pub fn limit_peers_by_distance<'a, T>(
+    peers: &'a Vec<PeerId>,
+    key: &KBucketKey<T>,
+    distance: KBucketDistance,
+) -> Result<Vec<&'a PeerId>> {
+    // Check if there are enough peers to satisfy the request.
+    // bail early if that's not the case
+    if CLOSE_GROUP_SIZE > peers.len() {
+        warn!("Not enough peers in the k-bucket to satisfy the request");
+        return Err(NetworkError::NotEnoughPeers {
+            found: peers.len(),
+            required: CLOSE_GROUP_SIZE,
+        });
+    }
+
+    // Create a vector of tuples where each tuple is a reference to a peer and its distance to the key.
+    // This avoids multiple computations of the same distance in the sorting process.
+    let mut peers_within_distance: Vec<&PeerId> = Vec::with_capacity(peers.len());
+
+    for peer_id in peers {
+        let addr = NetworkAddress::from_peer(*peer_id);
+        let peer_distance = key.distance(&addr.as_kbucket_key());
+
+        if peer_distance < distance {
+            peers_within_distance.push(peer_id);
+        }
+    }
+
+    Ok(peers_within_distance)
 }
 
 #[derive(Clone, Debug)]
@@ -197,6 +262,13 @@ impl Network {
         &self.inner.local_swarm_cmd_sender
     }
 
+    /// Return the GetRange as determined by the internal SwarmDriver
+    pub async fn get_range(&self) -> Result<KBucketDistance> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetCurrentRequestRange { sender });
+        receiver.await.map_err(NetworkError::from)
+    }
+
     /// Signs the given data with the node's keypair.
     pub fn sign(&self, msg: &[u8]) -> Result<Vec<u8>> {
         self.keypair().sign(msg).map_err(NetworkError::from)
@@ -220,17 +292,123 @@ impl Network {
         receiver.await?
     }
 
-    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
-    /// Excludes the client's `PeerId` while calculating the closest peers.
-    pub async fn client_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
-        self.get_closest_peers(key, true).await
+    /// Replicate a fresh record to its close group peers.
+    /// This should not be triggered by a record we receive via replicaiton fetch
+    pub async fn replicate_valid_fresh_record(&self, paid_key: RecordKey, record_type: RecordType) {
+        let network = self;
+
+        let start = std::time::Instant::now();
+        let pretty_key = PrettyPrintRecordKey::from(&paid_key);
+
+        // first we wait until our own network store can return the record
+        // otherwise it may not be fully written yet
+        let mut retry_count = 0;
+        trace!("Checking we have successfully stored the fresh record {pretty_key:?} in the store before replicating");
+        loop {
+            let record = match network.get_local_record(&paid_key).await {
+                Ok(record) => record,
+                Err(err) => {
+                    error!(
+                            "Replicating fresh record {pretty_key:?} get_record_from_store errored: {err:?}"
+                        );
+                    None
+                }
+            };
+
+            if record.is_some() {
+                break;
+            }
+
+            if retry_count > 10 {
+                error!(
+                        "Could not get record from store for replication: {pretty_key:?} after 10 retries"
+                    );
+                return;
+            }
+
+            retry_count += 1;
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+
+        trace!("Start replication of fresh record {pretty_key:?} from store");
+
+        let all_peers = match network.get_all_local_peers_excluding_self().await {
+            Ok(peers) => peers,
+            Err(err) => {
+                error!(
+                    "Replicating fresh record {pretty_key:?} get_all_local_peers errored: {err:?}"
+                );
+                return;
+            }
+        };
+
+        let data_addr = NetworkAddress::from_record_key(&paid_key);
+        let mut peers_to_replicate_to = match network.get_range().await {
+            Err(error) => {
+                error!("Replicating fresh record {pretty_key:?} get_range errored: {error:?}");
+
+                return;
+            }
+
+            Ok(our_get_range) => {
+                match sort_peers_by_address_and_limit_by_distance(
+                    &all_peers,
+                    &data_addr,
+                    our_get_range,
+                ) {
+                    Ok(result) => result,
+                    Err(err) => {
+                        error!("When replicating fresh record {pretty_key:?}, sort error: {err:?}");
+                        return;
+                    }
+                }
+            }
+        };
+
+        if peers_to_replicate_to.len() < CLOSE_GROUP_SIZE {
+            warn!(
+                "Replicating fresh record {pretty_key:?} current GetRange insufficient for secure replication. Falling back to CLOSE_GROUP_SIZE"
+            );
+
+            peers_to_replicate_to =
+                match sort_peers_by_address_and_limit(&all_peers, &data_addr, CLOSE_GROUP_SIZE) {
+                    Ok(result) => result,
+                    Err(err) => {
+                        error!("When replicating fresh record {pretty_key:?}, sort error: {err:?}");
+                        return;
+                    }
+                };
+        }
+
+        let our_peer_id = network.peer_id();
+        let our_address = NetworkAddress::from_peer(our_peer_id);
+        #[allow(clippy::mutable_key_type)] // for Bytes in NetworkAddress
+        let keys = vec![(data_addr.clone(), record_type.clone())];
+
+        for peer_id in &peers_to_replicate_to {
+            trace!("Replicating fresh record {pretty_key:?} to {peer_id:?}");
+            let request = Request::Cmd(Cmd::Replicate {
+                holder: our_address.clone(),
+                keys: keys.clone(),
+            });
+
+            network.send_req_ignore_reply(request, **peer_id);
+        }
+        trace!(
+            "Completed replicate fresh record {pretty_key:?} to {:?} peers on store, in {:?}",
+            peers_to_replicate_to.len(),
+            start.elapsed()
+        );
     }
 
-    /// Returns the closest peers to the given `NetworkAddress`, sorted by their distance to the key.
-    ///
-    /// Includes our node's `PeerId` while calculating the closest peers.
-    pub async fn node_get_closest_peers(&self, key: &NetworkAddress) -> Result<Vec<PeerId>> {
-        self.get_closest_peers(key, false).await
+    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
+    /// Excludes the client's `PeerId` while calculating the closest peers.
+    pub async fn client_get_all_close_peers_in_range_or_close_group(
+        &self,
+        key: &NetworkAddress,
+    ) -> Result<Vec<PeerId>> {
+        self.get_all_close_peers_in_range_or_close_group(key, true)
+            .await
     }
 
     /// Returns a map where each key is the ilog2 distance of that Kbucket and each value is a vector of peers in that
@@ -245,10 +423,10 @@ impl Network {
     }
 
     /// Returns all the PeerId from all the KBuckets from our local Routing Table
-    /// Also contains our own PeerId.
-    pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {
+    /// Excludes our own PeerId.
+    pub async fn get_all_local_peers_excluding_self(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.send_local_swarm_cmd(LocalSwarmCmd::GetClosestKLocalPeers { sender });
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetAllLocalPeersExcludingSelf { sender });
 
         receiver
             .await
@@ -280,7 +458,9 @@ impl Network {
                 // Do not query the closest_peers during every re-try attempt.
                 // The close_nodes don't change often and the previous set of close_nodes might be taking a while to write
                 // the Chunk, so query them again incase of a failure.
-                close_nodes = self.get_closest_peers(&chunk_address, true).await?;
+                close_nodes = self
+                    .client_get_all_close_peers_in_range_or_close_group(&chunk_address)
+                    .await?;
             }
             retry_attempts += 1;
             info!(
@@ -345,7 +525,9 @@ impl Network {
     ) -> Result<PayeeQuote> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
-        let mut close_nodes = self.get_closest_peers(&record_address, true).await?;
+        let mut close_nodes = self
+            .client_get_all_close_peers_in_range_or_close_group(&record_address)
+            .await?;
         // Filter out results from the ignored peers.
         close_nodes.retain(|peer_id| !ignore_peers.contains(peer_id));
 
@@ -428,7 +610,9 @@ impl Network {
         let record_address = NetworkAddress::from_record_key(&key);
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
-        let close_nodes = self.get_closest_peers(&record_address, true).await?;
+        let close_nodes = self
+            .client_get_all_close_peers_in_range_or_close_group(&record_address)
+            .await?;
 
         let self_address = NetworkAddress::from_peer(self.peer_id());
         let request = Request::Query(Query::GetRegisterRecord {
@@ -492,6 +676,9 @@ impl Network {
     /// In case a target_record is provided, only return when fetched target.
     /// Otherwise count it as a failure when all attempts completed.
     ///
+    /// It also handles the split record error for spends and registers.
+    /// For spends, it accumulates the spends and returns an error if more than one.
+    /// For registers, it merges the registers and returns the merged record.
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn get_record_from_network(
         &self,
@@ -528,7 +715,7 @@ impl Network {
                     Err(GetRecordError::RecordDoesNotMatch(_)) => {
                         warn!("The returned record does not match target {pretty_key:?}.");
                     }
-                    Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
+                    Err(GetRecordError::NotEnoughCopiesInRange { expected, got, .. }) => {
                         warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}.");
                     }
                     // libp2p RecordNotFound does mean no holders answered.
@@ -537,8 +724,16 @@ impl Network {
                     Err(GetRecordError::RecordNotFound) => {
                         warn!("No holder of record '{pretty_key:?}' found.");
                     }
-                    Err(GetRecordError::SplitRecord { .. }) => {
+                    // This is returned during SplitRecordError, we should not get this error here.
+                    Err(GetRecordError::RecordKindMismatch) => {
+                        error!("Record kind mismatch for {pretty_key:?}. This error should not happen here.");
+                    }
+                    Err(GetRecordError::SplitRecord { result_map }) => {
                         error!("Encountered a split record for {pretty_key:?}.");
+                        if let Some(record) = Self::handle_split_record_error(result_map, &key)? {
+                                info!("Merged the split record (register) for {pretty_key:?}, into a single record");
+                                return Ok(record);
+                        }
                     }
                     Err(GetRecordError::QueryTimeout) => {
                         error!("Encountered query timeout for {pretty_key:?}.");
@@ -561,6 +756,112 @@ impl Network {
             },
         )
         .await
+    }
+
+    /// Handle the split record error.
+    /// Spend: Accumulate spends and return error if more than one.
+    /// Register: Merge registers and return the merged record.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn handle_split_record_error(
+        result_map: &HashMap<XorName, (Record, HashSet<PeerId>)>,
+        key: &RecordKey,
+    ) -> std::result::Result<Option<Record>, backoff::Error<NetworkError>> {
+        let pretty_key = PrettyPrintRecordKey::from(key);
+
+        // attempt to deserialise and accumulate any spends or registers
+        let results_count = result_map.len();
+        let mut accumulated_spends = HashSet::new();
+        let mut collected_registers = Vec::new();
+
+        if results_count > 1 {
+            let mut record_kind = None;
+            info!("For record {pretty_key:?}, we have more than one result returned.");
+            for (record, _) in result_map.values() {
+                let Ok(header) = RecordHeader::from_record(record) else {
+                    continue;
+                };
+                let kind = record_kind.get_or_insert(header.kind);
+                if *kind != header.kind {
+                    error!("Encountered a split record for {pretty_key:?} with different RecordHeaders. Expected {kind:?} but got {:?}",header.kind);
+                    return Err(backoff::Error::Permanent(NetworkError::GetRecordError(
+                        GetRecordError::RecordKindMismatch,
+                    )));
+                }
+
+                // Accumulate the spends
+                if kind == &RecordKind::Spend {
+                    info!("For record {pretty_key:?}, we have a split record for a spend attempt. Accumulating spends");
+
+                    match get_raw_signed_spends_from_record(record) {
+                        Ok(spends) => {
+                            accumulated_spends.extend(spends);
+                        }
+                        Err(_) => {
+                            continue;
+                        }
+                    }
+                }
+                // Accumulate the registers
+                else if kind == &RecordKind::Register {
+                    info!("For record {pretty_key:?}, we have a split record for a register. Accumulating registers");
+                    let Ok(register) = try_deserialize_record::<SignedRegister>(record) else {
+                        error!(
+                            "Failed to deserialize register {pretty_key}. Skipping accumulation"
+                        );
+                        continue;
+                    };
+
+                    match register.verify() {
+                        Ok(_) => {
+                            collected_registers.push(register);
+                        }
+                        Err(_) => {
+                            error!(
+                                "Failed to verify register for {pretty_key} at address: {}. Skipping accumulation",
+                                register.address()
+                            );
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Allow for early bail if we've already seen a split SpendAttempt
+        if accumulated_spends.len() > 1 {
+            info!("For record {pretty_key:?} task found split record for a spend, accumulated and sending them as a single record");
+            let accumulated_spends = accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
+
+            return Err(backoff::Error::Permanent(NetworkError::DoubleSpendAttempt(
+                accumulated_spends,
+            )));
+        } else if !collected_registers.is_empty() {
+            info!("For record {pretty_key:?} task found multiple registers, merging them.");
+            let signed_register = collected_registers.iter().fold(collected_registers[0].clone(), |mut acc, x| {
+                if let Err(e) = acc.merge(x) {
+                    warn!("Ignoring forked register as we failed to merge conflicting registers at {}: {e}", x.address());
+                }
+                acc
+            });
+
+            let record_value = try_serialize_record(&signed_register, RecordKind::Register)
+                .map_err(|err| {
+                    error!(
+                        "Error while serializing the merged register for {pretty_key:?}: {err:?}"
+                    );
+                    backoff::Error::Permanent(NetworkError::from(err))
+                })?
+                .to_vec();
+
+            let record = Record {
+                key: key.clone(),
+                value: record_value,
+                publisher: None,
+                expires: None,
+            };
+            return Ok(Some(record));
+        }
+        Ok(None)
     }
 
     /// Get the cost of storing the next record from the network
@@ -638,6 +939,7 @@ impl Network {
             );
             self.put_record_once(record.clone(), cfg).await.map_err(|err|
             {
+                // FIXME: Skip if we get a permanent error during verification, e.g., DoubleSpendAttempt
                 warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
                 if cfg.retry_strategy.is_some() {
@@ -850,8 +1152,8 @@ impl Network {
         self.send_local_swarm_cmd(LocalSwarmCmd::QuoteVerification { quotes });
     }
 
-    pub fn trigger_unrelevant_record_cleanup(&self) {
-        self.send_local_swarm_cmd(LocalSwarmCmd::TriggerUnrelevantRecordCleanup)
+    pub fn trigger_irrelevant_record_cleanup(&self) {
+        self.send_local_swarm_cmd(LocalSwarmCmd::TriggerIrrelevantRecordCleanup)
     }
 
     /// Helper to send NetworkSwarmCmd
@@ -865,7 +1167,7 @@ impl Network {
 
     /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
     /// If `client` is false, then include `self` among the `closest_peers`
-    pub async fn get_closest_peers(
+    pub async fn get_close_group_closest_peers(
         &self,
         key: &NetworkAddress,
         client: bool,
@@ -903,8 +1205,77 @@ impl Network {
             debug!("Network knowledge of close peers to {key:?} are: {close_peers_pretty_print:?}");
         }
 
-        let closest_peers = sort_peers_by_address(&closest_peers, key, CLOSE_GROUP_SIZE)?;
+        let closest_peers = sort_peers_by_address_and_limit(&closest_peers, key, CLOSE_GROUP_SIZE)?;
         Ok(closest_peers.into_iter().cloned().collect())
+    }
+
+    /// Returns the closest peers to the given `XorName`, sorted by their distance to the xor_name.
+    /// If `client` is false, then include `self` among the `closest_peers`
+    /// Returns all peers found inside the range
+    ///
+    /// If less than CLOSE_GROUP_SIZE peers are found, it will return all the peers found up to the CLOSE_GROUP_SIZE
+    pub async fn get_all_close_peers_in_range_or_close_group(
+        &self,
+        key: &NetworkAddress,
+        client: bool,
+    ) -> Result<Vec<PeerId>> {
+        let pretty_key = PrettyPrintKBucketKey(key.as_kbucket_key());
+        debug!("Getting the all closest peers in range of {pretty_key:?}");
+        let (sender, receiver) = oneshot::channel();
+        self.send_network_swarm_cmd(NetworkSwarmCmd::GetClosestPeersToAddressFromNetwork {
+            key: key.clone(),
+            sender,
+        });
+
+        let found_peers = receiver.await?;
+
+        // Count self in if among the CLOSE_GROUP_SIZE closest and sort the result
+        let result_len = found_peers.len();
+        let mut closest_peers = found_peers;
+
+        let expected_range = self.get_range().await?;
+
+        // ensure we're not including self here
+        if client {
+            // remove our peer id from the calculations here:
+            closest_peers.retain(|&x| x != self.peer_id());
+            if result_len != closest_peers.len() {
+                info!("Remove self client from the closest_peers");
+            }
+        }
+
+        if tracing::level_enabled!(tracing::Level::DEBUG) {
+            let close_peers_pretty_print: Vec<_> = closest_peers
+                .iter()
+                .map(|peer_id| {
+                    format!(
+                        "{peer_id:?}({:?})",
+                        PrettyPrintKBucketKey(NetworkAddress::from_peer(*peer_id).as_kbucket_key())
+                    )
+                })
+                .collect();
+
+            debug!(
+                "Network knowledge of closest peers to {pretty_key:?} are: {close_peers_pretty_print:?}"
+            );
+        }
+
+        let mut restricted_closest_peers =
+            sort_peers_by_address_and_limit_by_distance(&closest_peers, key, expected_range)?;
+
+        if restricted_closest_peers.len() < CLOSE_GROUP_SIZE {
+            warn!(
+                    "Getting close peers to {pretty_key:?} current GetRange of {:?} too strict giving insufficient peers... Falling back to all peers found"
+                , expected_range.ilog2());
+
+            restricted_closest_peers =
+                sort_peers_by_address_and_limit(&closest_peers, key, CLOSE_GROUP_SIZE)?;
+        }
+
+        debug!(
+            "Network knowledge of closest peers in range of {:?} to target {pretty_key:?} are: {:?}", expected_range.ilog2(), restricted_closest_peers.len()
+        );
+        Ok(restricted_closest_peers.into_iter().cloned().collect())
     }
 
     /// Send a `Request` to the provided set of peers and wait for their responses concurrently.

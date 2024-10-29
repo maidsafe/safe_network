@@ -6,16 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    num::NonZero,
-};
-
 use bytes::Bytes;
+use futures::stream::{FuturesUnordered, StreamExt};
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_evm::{EvmWallet, ProofOfPayment, QuoteHash, QuotePayment, TxHash};
+use sn_evm::{EvmWallet, PaymentQuote, ProofOfPayment, QuotePayment};
 use sn_networking::{
     GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
 };
@@ -24,14 +20,15 @@ use sn_protocol::{
     storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind, RetryStrategy},
     NetworkAddress,
 };
+use std::{collections::HashMap, future::Future, num::NonZero};
 use xor_name::XorName;
 
-use crate::self_encryption::DataMapLevel;
-
 use super::{
-    data::{GetError, PayError, PutError},
+    data::{CostError, GetError, PayError, PutError},
     Client,
 };
+use crate::self_encryption::DataMapLevel;
+use crate::utils::payment_proof_from_quotes_and_payments;
 
 impl Client {
     /// Fetch and decrypt all chunks in the data map.
@@ -152,8 +149,19 @@ impl Client {
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &EvmWallet,
     ) -> Result<(HashMap<XorName, ProofOfPayment>, Vec<XorName>), PayError> {
-        let cost_map = self.get_store_quotes(content_addrs).await?;
+        let cost_map = self
+            .get_store_quotes(content_addrs)
+            .await?
+            .into_iter()
+            .map(|(name, (_, _, q))| (name, q))
+            .collect();
+
         let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
+
+        // Make sure nobody else can use the wallet while we are paying
+        debug!("Waiting for wallet lock");
+        let lock_guard = wallet.lock().await;
+        debug!("Locked wallet");
 
         // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
         // TODO: retry when it fails?
@@ -163,7 +171,11 @@ impl Client {
             .await
             .map_err(|err| PayError::from(err.0))?;
 
-        let proofs = construct_proofs(&cost_map, &payments);
+        // payment is done, unlock the wallet for other threads
+        drop(lock_guard);
+        debug!("Unlocked wallet");
+
+        let proofs = payment_proof_from_quotes_and_payments(&cost_map, &payments);
 
         trace!(
             "Chunk payments of {} chunks completed. {} chunks were free / already paid for",
@@ -177,7 +189,7 @@ impl Client {
     pub(crate) async fn get_store_quotes(
         &self,
         content_addrs: impl Iterator<Item = XorName>,
-    ) -> Result<HashMap<XorName, PayeeQuote>, PayError> {
+    ) -> Result<HashMap<XorName, PayeeQuote>, CostError> {
         let futures: Vec<_> = content_addrs
             .into_iter()
             .map(|content_addr| fetch_store_quote_with_retries(&self.network, content_addr))
@@ -193,7 +205,7 @@ impl Client {
 async fn fetch_store_quote_with_retries(
     network: &Network,
     content_addr: XorName,
-) -> Result<(XorName, PayeeQuote), PayError> {
+) -> Result<(XorName, PayeeQuote), CostError> {
     let mut retries = 0;
 
     loop {
@@ -209,7 +221,7 @@ async fn fetch_store_quote_with_retries(
                 error!(
                     "Error while fetching store quote: {err:?}, stopping after {retries} retries"
                 );
-                break Err(PayError::CouldNotGetStoreQuote(content_addr));
+                break Err(CostError::CouldNotGetStoreQuote(content_addr));
             }
         }
     }
@@ -229,44 +241,46 @@ async fn fetch_store_quote(
 }
 
 /// Form to be executed payments and already executed payments from a cost map.
-fn extract_quote_payments(
-    cost_map: &HashMap<XorName, PayeeQuote>,
+pub(crate) fn extract_quote_payments(
+    cost_map: &HashMap<XorName, PaymentQuote>,
 ) -> (Vec<QuotePayment>, Vec<XorName>) {
     let mut to_be_paid = vec![];
     let mut already_paid = vec![];
 
     for (chunk_address, quote) in cost_map.iter() {
-        if quote.2.cost.is_zero() {
+        if quote.cost.is_zero() {
             already_paid.push(*chunk_address);
         } else {
-            to_be_paid.push((
-                quote.2.hash(),
-                quote.2.rewards_address,
-                quote.2.cost.as_atto(),
-            ));
+            to_be_paid.push((quote.hash(), quote.rewards_address, quote.cost.as_atto()));
         }
     }
 
     (to_be_paid, already_paid)
 }
 
-/// Construct payment proofs from cost map and payments map.
-fn construct_proofs(
-    cost_map: &HashMap<XorName, PayeeQuote>,
-    payments: &BTreeMap<QuoteHash, TxHash>,
-) -> HashMap<XorName, ProofOfPayment> {
-    cost_map
-        .iter()
-        .filter_map(|(xor_name, (_, _, quote))| {
-            payments.get(&quote.hash()).map(|tx_hash| {
-                (
-                    *xor_name,
-                    ProofOfPayment {
-                        quote: quote.clone(),
-                        tx_hash: *tx_hash,
-                    },
-                )
-            })
-        })
-        .collect()
+pub(crate) async fn process_tasks_with_max_concurrency<I, R>(tasks: I, batch_size: usize) -> Vec<R>
+where
+    I: IntoIterator,
+    I::Item: Future<Output = R> + Send,
+    R: Send,
+{
+    let mut futures = FuturesUnordered::new();
+    let mut results = Vec::new();
+
+    for task in tasks.into_iter() {
+        futures.push(task);
+
+        if futures.len() >= batch_size {
+            if let Some(result) = futures.next().await {
+                results.push(result);
+            }
+        }
+    }
+
+    // Process remaining tasks
+    while let Some(result) = futures.next().await {
+        results.push(result);
+    }
+
+    results
 }

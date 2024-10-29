@@ -11,9 +11,17 @@ pub mod address;
 #[cfg(feature = "data")]
 pub mod archive;
 #[cfg(feature = "data")]
+pub mod archive_private;
+#[cfg(feature = "data")]
 pub mod data;
+#[cfg(feature = "data")]
+pub mod data_private;
+#[cfg(feature = "external-signer")]
+pub mod external_signer;
 #[cfg(feature = "fs")]
 pub mod fs;
+#[cfg(feature = "fs")]
+pub mod fs_private;
 #[cfg(feature = "registers")]
 pub mod registers;
 #[cfg(feature = "vault")]
@@ -34,7 +42,7 @@ use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
 
 /// Time before considering the connection timed out.
-pub const CONNECT_TIMEOUT_SECS: u64 = 20;
+pub const CONNECT_TIMEOUT_SECS: u64 = 10;
 
 const CLIENT_EVENT_CHANNEL_SIZE: usize = 100;
 
@@ -197,11 +205,13 @@ async fn handle_event_receiver(
 }
 
 /// Events that can be broadcasted by the client.
+#[derive(Debug, Clone)]
 pub enum ClientEvent {
     UploadComplete(UploadSummary),
 }
 
 /// Summary of an upload operation.
+#[derive(Debug, Clone)]
 pub struct UploadSummary {
     pub record_count: usize,
     pub tokens_spent: Amount,

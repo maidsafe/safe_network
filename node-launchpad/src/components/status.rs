@@ -46,6 +46,7 @@ use std::{
     time::{Duration, Instant},
     vec,
 };
+use strum::Display;
 use tokio::sync::mpsc::UnboundedSender;
 
 use super::super::node_mgmt::{maintain_n_running_nodes, reset_nodes, stop_nodes};
@@ -105,7 +106,7 @@ pub struct Status<'a> {
     error_popup: Option<ErrorPopup>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Display, Debug)]
 pub enum LockRegistryState {
     StartingNodes,
     StoppingNodes,
@@ -179,8 +180,7 @@ impl Status<'_> {
                     // Update status based on current node status
                     item.status = match node_item.status {
                         ServiceStatus::Running => {
-                            // Call calc_next on the spinner state
-                            item.spinner_state.calc_next();
+                            NodeItem::update_spinner_state(&mut item.spinner_state);
                             NodeStatus::Running
                         }
                         ServiceStatus::Stopped => NodeStatus::Stopped,
@@ -190,7 +190,7 @@ impl Status<'_> {
 
                     // Starting is not part of ServiceStatus so we do it manually
                     if let Some(LockRegistryState::StartingNodes) = self.lock_registry {
-                        item.spinner_state.calc_next();
+                        NodeItem::update_spinner_state(&mut item.spinner_state);
                         item.status = NodeStatus::Starting;
                     }
 
@@ -207,7 +207,7 @@ impl Status<'_> {
                         .iter()
                         .find(|s| s.service_name == node_item.service_name)
                     {
-                        item.attos = stats.forwarded_rewards;
+                        item.attos = stats.rewards_wallet_balance;
                         item.memory = stats.memory_usage_mb;
                         item.mbps = format!(
                             "↓{:06.2} ↑{:06.2}",
@@ -271,6 +271,14 @@ impl Status<'_> {
             self.items = Some(StatefulTable::with_items(node_items));
         }
         Ok(())
+    }
+
+    fn clear_node_items(&mut self) {
+        debug!("Cleaning items on Status page");
+        if let Some(items) = self.items.as_mut() {
+            items.items.clear();
+            debug!("Cleared the items on status page");
+        }
     }
 
     /// Tries to trigger the update of node stats if the last update was more than `NODE_STAT_UPDATE_INTERVAL` ago.
@@ -426,6 +434,7 @@ impl Component for Status<'_> {
                 StatusActions::ResetNodesCompleted { trigger_start_node } => {
                     self.lock_registry = None;
                     self.load_node_registry_and_update_states()?;
+                    self.clear_node_items();
 
                     if trigger_start_node {
                         debug!("Reset nodes completed. Triggering start nodes.");
@@ -507,6 +516,13 @@ impl Component for Status<'_> {
                 StatusActions::StartNodes => {
                     debug!("Got action to start nodes");
 
+                    if self.rewards_address.is_empty() {
+                        info!("Rewards address is not set. Ask for input.");
+                        return Ok(Some(Action::StatusActions(
+                            StatusActions::TriggerRewardsAddress,
+                        )));
+                    }
+
                     if self.nodes_to_start == 0 {
                         info!("Nodes to start not set. Ask for input.");
                         return Ok(Some(Action::StatusActions(
@@ -515,7 +531,10 @@ impl Component for Status<'_> {
                     }
 
                     if self.lock_registry.is_some() {
-                        error!("Registry is locked. Cannot start node now.");
+                        error!(
+                            "Registry is locked ({:?}) Cannot Start nodes now.",
+                            self.lock_registry
+                        );
                         return Ok(None);
                     }
 
@@ -549,7 +568,10 @@ impl Component for Status<'_> {
                 StatusActions::StopNodes => {
                     debug!("Got action to stop nodes");
                     if self.lock_registry.is_some() {
-                        error!("Registry is locked. Cannot stop node now.");
+                        error!(
+                            "Registry is locked ({:?}) Cannot Stop nodes now.",
+                            self.lock_registry
+                        );
                         return Ok(None);
                     }
 
@@ -572,7 +594,10 @@ impl Component for Status<'_> {
             Action::OptionsActions(OptionsActions::ResetNodes) => {
                 debug!("Got action to reset nodes");
                 if self.lock_registry.is_some() {
-                    error!("Registry is locked. Cannot reset nodes now.");
+                    error!(
+                        "Registry is locked ({:?}) Cannot Reset nodes now.",
+                        self.lock_registry
+                    );
                     return Ok(None);
                 }
 
@@ -685,9 +710,12 @@ impl Component for Status<'_> {
 
         let total_attos_earned_and_wallet_row = Row::new(vec![
             Cell::new("Attos Earned".to_string()).fg(VIVID_SKY_BLUE),
-            Cell::new(self.node_stats.total_forwarded_rewards.to_string())
-                .fg(VIVID_SKY_BLUE)
-                .bold(),
+            Cell::new(format!(
+                "{:?}",
+                self.node_stats.total_rewards_wallet_balance
+            ))
+            .fg(VIVID_SKY_BLUE)
+            .bold(),
             Cell::new(Line::from(wallet_not_set).alignment(Alignment::Right)),
         ]);
 
@@ -720,7 +748,7 @@ impl Component for Status<'_> {
 
         // No nodes. Empty Table.
         if let Some(ref items) = self.items {
-            if items.items.is_empty() {
+            if items.items.is_empty() || self.rewards_address.is_empty() {
                 let line1 = Line::from(vec![
                     Span::styled("Press ", Style::default().fg(LIGHT_PERIWINKLE)),
                     Span::styled("[Ctrl+G] ", Style::default().fg(GHOST_WHITE).bold()),
@@ -833,7 +861,7 @@ impl Component for Status<'_> {
 
         let footer = Footer::default();
         let footer_state = if let Some(ref items) = self.items {
-            if !items.items.is_empty() {
+            if !items.items.is_empty() || self.rewards_address.is_empty() {
                 if !self.get_running_nodes().is_empty() {
                     &mut NodesToStart::Running
                 } else {
@@ -1017,7 +1045,7 @@ impl fmt::Display for NodeStatus {
 pub struct NodeItem<'a> {
     name: String,
     version: String,
-    attos: u64,
+    attos: usize,
     memory: usize,
     mbps: String,
     records: usize,
@@ -1029,6 +1057,16 @@ pub struct NodeItem<'a> {
 }
 
 impl NodeItem<'_> {
+    fn update_spinner_state(state: &mut ThrobberState) {
+        // Call calc_next on the spinner state
+        // https://github.com/arkbig/throbber-widgets-tui/issues/19
+        if state.index() == i8::MAX {
+            *state = ThrobberState::default();
+        } else {
+            state.calc_next();
+        }
+    }
+
     fn render_as_row(&mut self, index: usize, area: Rect, f: &mut Frame<'_>) -> Row {
         let mut row_style = Style::default().fg(GHOST_WHITE);
         let mut spinner_state = self.spinner_state.clone();
@@ -1100,7 +1138,7 @@ impl NodeItem<'_> {
             ),
             self.status.to_string(),
         ];
-        let throbber_area = Rect::new(area.width - 2, area.y + 2 + index as u16, 1, 1);
+        let throbber_area = Rect::new(area.width - 3, area.y + 2 + index as u16, 1, 1);
 
         f.render_stateful_widget(self.spinner.clone(), throbber_area, &mut spinner_state);
 

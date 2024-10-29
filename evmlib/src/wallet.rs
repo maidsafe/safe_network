@@ -10,7 +10,9 @@ use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
 use crate::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
 use crate::contract::{data_payments, network_token};
+use crate::utils::http_provider;
 use crate::Network;
+use alloy::hex::ToHexExt;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
 use alloy::providers::fillers::{
     BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
@@ -21,6 +23,7 @@ use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{reqwest, Client, Http};
 use alloy::transports::{RpcError, TransportErrorKind};
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -38,12 +41,17 @@ pub enum Error {
 pub struct Wallet {
     wallet: EthereumWallet,
     network: Network,
+    lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl Wallet {
     /// Creates a new Wallet object with the specific Network and EthereumWallet.
     pub fn new(network: Network, wallet: EthereumWallet) -> Self {
-        Self { wallet, network }
+        Self {
+            wallet,
+            network,
+            lock: Arc::new(tokio::sync::Mutex::new(())),
+        }
     }
 
     /// Convenience function that creates a new Wallet with a random EthereumWallet.
@@ -60,6 +68,11 @@ impl Wallet {
     /// Returns the address of this wallet.
     pub fn address(&self) -> Address {
         wallet_address(&self.wallet)
+    }
+
+    /// Returns the `Network` of this wallet.
+    pub fn network(&self) -> &Network {
+        &self.network
     }
 
     /// Returns the raw balance of payment tokens for this wallet.
@@ -125,6 +138,23 @@ impl Wallet {
     ) -> Result<BTreeMap<QuoteHash, TxHash>, PayForQuotesError> {
         pay_for_quotes(self.wallet.clone(), &self.network, data_payments).await
     }
+
+    /// Build a provider using this wallet.
+    pub fn to_provider(&self) -> ProviderWithWallet {
+        http_provider_with_wallet(self.network.rpc_url().clone(), self.wallet.clone())
+    }
+
+    /// Lock the wallet to prevent concurrent use.
+    /// Drop the guard to unlock the wallet.
+    pub async fn lock(&self) -> tokio::sync::MutexGuard<()> {
+        self.lock.lock().await
+    }
+
+    /// Returns a random private key string.
+    pub fn random_private_key() -> String {
+        let signer: PrivateKeySigner = LocalSigner::random();
+        signer.to_bytes().encode_hex_with_prefix()
+    }
 }
 
 /// Generate an EthereumWallet with a random private key.
@@ -144,28 +174,7 @@ fn from_private_key(private_key: &str) -> Result<EthereumWallet, Error> {
 
 // TODO(optimization): Find a way to reuse/persist contracts and/or a provider without the wallet nonce going out of sync
 
-#[allow(clippy::type_complexity)]
-fn http_provider(
-    rpc_url: reqwest::Url,
-) -> FillProvider<
-    JoinFill<
-        Identity,
-        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
-    >,
-    ReqwestProvider,
-    Http<Client>,
-    Ethereum,
-> {
-    ProviderBuilder::new()
-        .with_recommended_fillers()
-        .on_http(rpc_url)
-}
-
-#[allow(clippy::type_complexity)]
-fn http_provider_with_wallet(
-    rpc_url: reqwest::Url,
-    wallet: EthereumWallet,
-) -> FillProvider<
+pub type ProviderWithWallet = FillProvider<
     JoinFill<
         JoinFill<
             Identity,
@@ -176,7 +185,9 @@ fn http_provider_with_wallet(
     ReqwestProvider,
     Http<Client>,
     Ethereum,
-> {
+>;
+
+fn http_provider_with_wallet(rpc_url: reqwest::Url, wallet: EthereumWallet) -> ProviderWithWallet {
     ProviderBuilder::new()
         .with_recommended_fillers()
         .wallet(wallet)

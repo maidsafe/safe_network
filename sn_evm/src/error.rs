@@ -27,7 +27,6 @@ pub enum EvmError {
     NumericOverflow,
     #[error("Not enough balance, {0} available, {1} required")]
     NotEnoughBalance(AttoTokens, AttoTokens),
-
     #[error("Invalid quote public key")]
     InvalidQuotePublicKey,
 }

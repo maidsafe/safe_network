@@ -14,7 +14,6 @@
 // use libp2p::PeerId;
 // use rand::Rng;
 // use sn_client::{Error as ClientError, FilesDownload, Uploader, WalletClient};
-// use sn_evm::{Amount, AttoTokens, PaymentQuote};
 // use sn_logging::LogBuilder;
 // use sn_networking::{GetRecordError, NetworkError};
 // use sn_protocol::{
@@ -23,6 +22,7 @@
 //     NetworkAddress,
 // };
 // use sn_registers::Permissions;
+// use sn_transfers::{MainPubkey, NanoTokens, PaymentQuote};
 // use std::collections::BTreeMap;
 // use tokio::time::{sleep, Duration};
 // use tracing::info;
@@ -80,7 +80,7 @@
 
 //     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 //     let subset_len = chunks.len() / 3;
-//     let _storage_cost = wallet_client
+//     let res = wallet_client
 //         .pay_for_storage(
 //             chunks
 //                 .clone()
@@ -88,7 +88,15 @@
 //                 .take(subset_len)
 //                 .map(|(name, _)| NetworkAddress::ChunkAddress(ChunkAddress::new(name))),
 //         )
-//         .await?;
+//         .await;
+
+//     // if the payment failed, we can log that
+//     if let Err(error) = res {
+//         tracing::warn!(
+//             "Payment failed, (though that doesn't really break this test): {:?}",
+//             error
+//         );
+//     }
 
 //     // now let's request to upload all addresses, even that we've already paid for a subset of them
 //     let verify_store = false;
@@ -111,7 +119,7 @@
 //     let paying_wallet_dir: TempDir = TempDir::new()?;
 
 //     let (client, paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
-//     let wallet_original_balance = paying_wallet.balance().as_atto();
+//     let wallet_original_balance = paying_wallet.balance().as_nano();
 //     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
 //     // generate a random number (between 50 and 100) of random addresses
@@ -135,10 +143,10 @@
 //         .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
 
 //     // check we've paid only for the subset of addresses, 1 nano per addr
-//     let new_balance = AttoTokens::from_atto(wallet_original_balance - total_cost.as_atto());
+//     let new_balance = NanoTokens::from(wallet_original_balance - total_cost.as_nano());
 //     info!("Verifying new balance on paying wallet is {new_balance} ...");
 //     let paying_wallet = wallet_client.into_wallet();
-//     // assert_eq!(paying_wallet.balance(), new_balance);// TODO adapt to evm
+//     assert_eq!(paying_wallet.balance(), new_balance);
 
 //     // let's verify payment proofs for the subset have been cached in the wallet
 //     assert!(random_content_addrs
@@ -160,13 +168,12 @@
 //         .ok_or(eyre!("Total storage cost exceed possible token amount"))?;
 
 //     // check we've paid only for addresses we haven't previously paid for, 1 nano per addr
-//     let new_balance = AttoTokens::from_atto(
-//         wallet_original_balance - (Amount::from(random_content_addrs.len()) * total_cost.as_atto()),
+//     let new_balance = NanoTokens::from(
+//         wallet_original_balance - (random_content_addrs.len() as u64 * total_cost.as_nano()),
 //     );
 //     println!("Verifying new balance on paying wallet is now {new_balance} ...");
 //     let paying_wallet = wallet_client.into_wallet();
-//     // TODO adapt to evm
-//     // assert_eq!(paying_wallet.balance(), new_balance);
+//     assert_eq!(paying_wallet.balance(), new_balance);
 
 //     // let's verify payment proofs now for all addresses have been cached in the wallet
 //     // assert!(random_content_addrs
@@ -229,18 +236,16 @@
 //         no_data_payments.insert(
 //             *chunk_name,
 //             (
-//                 sn_evm::utils::dummy_address(),
-//                 PaymentQuote::test_dummy(*chunk_name, AttoTokens::from_u64(0)),
+//                 MainPubkey::new(bls::SecretKey::random().public_key()),
+//                 PaymentQuote::test_dummy(*chunk_name, NanoTokens::from(0)),
 //                 PeerId::random().to_bytes(),
 //             ),
 //         );
 //     }
 
-//     // TODO adapt to evm
-//     // let _ = wallet_client
-//     //     .mut_wallet()
-//     //     .send_storage_payment(&no_data_payments)
-//     //     .await?;
+//     let _ = wallet_client
+//         .mut_wallet()
+//         .local_send_storage_payment(&no_data_payments)?;
 
 //     sleep(Duration::from_secs(5)).await;
 
@@ -248,131 +253,131 @@
 //         .upload_test_bytes(content_bytes.clone(), false)
 //         .await?;
 
-//     info!("Reading {content_addr:?} expected to fail");
-//     let mut files_download = FilesDownload::new(files_api);
-//     assert!(
-//         matches!(
-//             files_download.download_file(content_addr, None).await,
-//             Err(ClientError::Network(NetworkError::GetRecordError(
-//                 GetRecordError::RecordNotFound
-//             )))
-//         ),
-//         "read bytes should fail as we didn't store them"
-//     );
+// //     info!("Reading {content_addr:?} expected to fail");
+// //     let mut files_download = FilesDownload::new(files_api);
+// //     assert!(
+// //         matches!(
+// //             files_download.download_file(content_addr, None).await,
+// //             Err(ClientError::Network(NetworkError::GetRecordError(
+// //                 GetRecordError::RecordNotFound
+// //             )))
+// //         ),
+// //         "read bytes should fail as we didn't store them"
+// //     );
 
-//     Ok(())
-// }
+// //     Ok(())
+// // }
 
-// #[tokio::test]
-// async fn storage_payment_register_creation_succeeds() -> Result<()> {
-//     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments", true);
+// // #[tokio::test]
+// // async fn storage_payment_register_creation_succeeds() -> Result<()> {
+// //     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments", true);
 
-//     let paying_wallet_dir = TempDir::new()?;
+// //     let paying_wallet_dir = TempDir::new()?;
 
-//     let (client, paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
-//     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+// //     let (client, paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
+// //     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-//     let mut rng = rand::thread_rng();
-//     let xor_name = XorName::random(&mut rng);
-//     let address = RegisterAddress::new(xor_name, client.signer_pk());
-//     let net_addr = NetworkAddress::from_register_address(address);
-//     info!("Paying for random Register address {net_addr:?} ...");
+// //     let mut rng = rand::thread_rng();
+// //     let xor_name = XorName::random(&mut rng);
+// //     let address = RegisterAddress::new(xor_name, client.signer_pk());
+// //     let net_addr = NetworkAddress::from_register_address(address);
+// //     info!("Paying for random Register address {net_addr:?} ...");
 
-//     let _cost = wallet_client
-//         .pay_for_storage(std::iter::once(net_addr))
-//         .await?;
+// //     let _cost = wallet_client
+// //         .pay_for_storage(std::iter::once(net_addr))
+// //         .await?;
 
-//     let (mut register, _cost, _royalties_fees) = client
-//         .create_and_pay_for_register(xor_name, &mut wallet_client, true, Permissions::default())
-//         .await?;
+// //     let (mut register, _cost, _royalties_fees) = client
+// //         .create_and_pay_for_register(xor_name, &mut wallet_client, true, Permissions::default())
+// //         .await?;
 
-//     println!("Newly created register has {} ops", register.read().len());
+// //     println!("Newly created register has {} ops", register.read().len());
 
-//     let retrieved_reg = client.get_register(address).await?;
+// //     let retrieved_reg = client.get_register(address).await?;
 
-//     assert_eq!(register.read(), retrieved_reg.read());
+// //     assert_eq!(register.read(), retrieved_reg.read());
 
-//     let random_entry = rng.gen::<[u8; 32]>().to_vec();
+// //     let random_entry = rng.gen::<[u8; 32]>().to_vec();
 
-//     register.write(&random_entry)?;
+// //     register.write(&random_entry)?;
 
-//     println!(
-//         "Register has {} ops after first write",
-//         register.read().len()
-//     );
+// //     println!(
+// //         "Register has {} ops after first write",
+// //         register.read().len()
+// //     );
 
-//     register.sync(&mut wallet_client, true, None).await?;
+// //     register.sync(&mut wallet_client, true, None).await?;
 
-//     let retrieved_reg = client.get_register(address).await?;
+// //     let retrieved_reg = client.get_register(address).await?;
 
-//     assert_eq!(retrieved_reg.read().iter().next().unwrap().1, random_entry);
+// //     assert_eq!(retrieved_reg.read().iter().next().unwrap().1, random_entry);
 
-//     assert_eq!(retrieved_reg.read().len(), 1);
+// //     assert_eq!(retrieved_reg.read().len(), 1);
 
-//     for index in 1..10 {
-//         println!("current index is {index}");
-//         let random_entry = rng.gen::<[u8; 32]>().to_vec();
+// //     for index in 1..10 {
+// //         println!("current index is {index}");
+// //         let random_entry = rng.gen::<[u8; 32]>().to_vec();
 
-//         register.write(&random_entry)?;
-//         register.sync(&mut wallet_client, true, None).await?;
+// //         register.write(&random_entry)?;
+// //         register.sync(&mut wallet_client, true, None).await?;
 
-//         let retrieved_reg = client.get_register(address).await?;
+// //         let retrieved_reg = client.get_register(address).await?;
 
-//         println!(
-//             "current retrieved register entry length is {}",
-//             retrieved_reg.read().len()
-//         );
-//         println!("current expected entry length is {}", register.read().len());
+// //         println!(
+// //             "current retrieved register entry length is {}",
+// //             retrieved_reg.read().len()
+// //         );
+// //         println!("current expected entry length is {}", register.read().len());
 
-//         println!(
-//             "current retrieved register ops length is {}",
-//             retrieved_reg.ops.len()
-//         );
-//         println!("current local cached ops length is {}", register.ops.len());
+// //         println!(
+// //             "current retrieved register ops length is {}",
+// //             retrieved_reg.ops.len()
+// //         );
+// //         println!("current local cached ops length is {}", register.ops.len());
 
-//         assert_eq!(retrieved_reg.read().len(), register.read().len());
+// //         assert_eq!(retrieved_reg.read().len(), register.read().len());
 
-//         assert_eq!(retrieved_reg.read().iter().next().unwrap().1, random_entry);
+// //         assert_eq!(retrieved_reg.read().iter().next().unwrap().1, random_entry);
 
-//         println!("Current fetched register is {:?}", retrieved_reg.register);
-//         println!(
-//             "Fetched register has update history of {}",
-//             retrieved_reg.register.log_update_history()
-//         );
+// //         println!("Current fetched register is {:?}", retrieved_reg.register);
+// //         println!(
+// //             "Fetched register has update history of {}",
+// //             retrieved_reg.register.log_update_history()
+// //         );
 
-//         std::thread::sleep(std::time::Duration::from_millis(1000));
-//     }
+// //         std::thread::sleep(std::time::Duration::from_millis(1000));
+// //     }
 
-//     Ok(())
-// }
+// //     Ok(())
+// // }
 
-// #[tokio::test]
-// #[ignore = "Test currently invalid as we always try to pay and upload registers if none found... need to check if this test is valid"]
-// async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
-//     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments", true);
+// // #[tokio::test]
+// // #[ignore = "Test currently invalid as we always try to pay and upload registers if none found... need to check if this test is valid"]
+// // async fn storage_payment_register_creation_and_mutation_fails() -> Result<()> {
+// //     let _log_guards = LogBuilder::init_single_threaded_tokio_test("storage_payments", true);
 
-//     let paying_wallet_dir = TempDir::new()?;
+// //     let paying_wallet_dir = TempDir::new()?;
 
-//     let (client, paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
-//     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
+// //     let (client, paying_wallet) = get_client_and_funded_wallet(paying_wallet_dir.path()).await?;
+// //     let mut wallet_client = WalletClient::new(client.clone(), paying_wallet);
 
-//     let mut rng = rand::thread_rng();
-//     let xor_name = XorName::random(&mut rng);
-//     let address = RegisterAddress::new(xor_name, client.signer_pk());
-//     let net_address =
-//         NetworkAddress::RegisterAddress(RegisterAddress::new(xor_name, client.signer_pk()));
+// //     let mut rng = rand::thread_rng();
+// //     let xor_name = XorName::random(&mut rng);
+// //     let address = RegisterAddress::new(xor_name, client.signer_pk());
+// //     let net_address =
+// //         NetworkAddress::RegisterAddress(RegisterAddress::new(xor_name, client.signer_pk()));
 
-//     let mut no_data_payments = BTreeMap::default();
-//     no_data_payments.insert(
-//         net_address
-//             .as_xorname()
-//             .expect("RegisterAddress should convert to XorName"),
-//         (
-//             sn_evm::utils::dummy_address(),
-//             PaymentQuote::test_dummy(xor_name, AttoTokens::from_u64(0)),
-//             vec![],
-//         ),
-//     );
+// //     let mut no_data_payments = BTreeMap::default();
+// //     no_data_payments.insert(
+// //         net_address
+// //             .as_xorname()
+// //             .expect("RegisterAddress should convert to XorName"),
+// //         (
+// //             sn_evm::utils::dummy_address(),
+// //             PaymentQuote::test_dummy(xor_name, AttoTokens::from_u64(0)),
+// //             vec![],
+// //         ),
+// //     );
 
 //     println!(
 //         "current retrieved register entry length is {}",
@@ -395,16 +400,16 @@
 //     //     .send_storage_payment(&no_data_payments)
 //     //     .await?;
 
-//     // this should fail to store as the amount paid is not enough
-//     let (mut register, _cost, _royalties_fees) = client
-//         .create_and_pay_for_register(xor_name, &mut wallet_client, false, Permissions::default())
-//         .await?;
+// //     // this should fail to store as the amount paid is not enough
+// //     let (mut register, _cost, _royalties_fees) = client
+// //         .create_and_pay_for_register(xor_name, &mut wallet_client, false, Permissions::default())
+// //         .await?;
 
-//     sleep(Duration::from_secs(5)).await;
-//     assert!(matches!(
-//         client.get_register(address).await,
-//         Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
-//     ));
+// //     sleep(Duration::from_secs(5)).await;
+// //     assert!(matches!(
+// //         client.get_register(address).await,
+// //         Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
+// //     ));
 
 //     println!("Current fetched register is {:?}", retrieved_reg.address());
 //     println!(
@@ -415,11 +420,11 @@
 //     let random_entry = rng.gen::<[u8; 32]>().to_vec();
 //     register.write(&random_entry)?;
 
-//     sleep(Duration::from_secs(5)).await;
-//     assert!(matches!(
-//         register.sync(&mut wallet_client, false, None).await,
-//         Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
-//     ));
+// //     sleep(Duration::from_secs(5)).await;
+// //     assert!(matches!(
+// //         register.sync(&mut wallet_client, false, None).await,
+// //         Err(ClientError::Protocol(ProtocolError::RegisterNotFound(addr))) if *addr == address
+// //     ));
 
-//     Ok(())
-// }
+// //     Ok(())
+// // }

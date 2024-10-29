@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_node_rpc_client"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.6.32"
+version = "0.6.33"
 
 [[bin]]
 name = "safenode_rpc_client"
@@ -26,13 +26,13 @@ color-eyre = "0.6.2"
 hex = "~0.4.3"
 libp2p = { version = "0.54.1", features = ["kad"]}
 libp2p-identity = { version="0.2.7", features = ["rand"] }
-sn_build_info = { path = "../sn_build_info", version = "0.1.16" }
-sn_logging = { path = "../sn_logging", version = "0.2.37" }
-sn_node = { path = "../sn_node", version = "0.112.1" }
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.4" }
-sn_protocol = { path = "../sn_protocol", version = "0.17.12", features=["rpc"] }
-sn_service_management = { path = "../sn_service_management", version = "0.4.0" }
-sn_transfers = { path = "../sn_transfers", version = "0.20.0" }
+sn_build_info = { path = "../sn_build_info", version = "0.1.17" }
+sn_logging = { path = "../sn_logging", version = "0.2.38" }
+sn_node = { path = "../sn_node", version = "0.112.2" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.5" }
+sn_protocol = { path = "../sn_protocol", version = "0.17.13", features=["rpc"] }
+sn_service_management = { path = "../sn_service_management", version = "0.4.1" }
+sn_transfers = { path = "../sn_transfers", version = "0.20.1" }
 thiserror = "1.0.23"
 # # watch out updating this, protoc compiler needs to be installed on all build systems
 # # arm builds + musl are very problematic

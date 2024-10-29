@@ -9,6 +9,7 @@
 mod file;
 mod register;
 mod vault;
+mod wallet;
 
 use clap::Subcommand;
 use color_eyre::Result;
@@ -34,6 +35,12 @@ pub enum SubCmd {
         #[command(subcommand)]
         command: VaultCmd,
     },
+
+    /// Operations related to wallet management.
+    Wallet {
+        #[command(subcommand)]
+        command: WalletCmd,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -44,10 +51,13 @@ pub enum FileCmd {
         file: String,
     },
 
-    /// Upload a file and pay for it.
+    /// Upload a file and pay for it. Data on the Network is private by default.
     Upload {
         /// The file to upload.
         file: String,
+        /// Upload the file as public. Everyone can see public data on the Network.
+        #[arg(short, long)]
+        public: bool,
     },
 
     /// Download a file from the given address.
@@ -123,10 +133,42 @@ pub enum VaultCmd {
     Cost,
 
     /// Create a vault at a deterministic address based on your `SECRET_KEY`.
+    /// Pushing an encrypted backup of your local user data to the network
     Create,
 
+    /// Load an existing vault from the network.
+    /// Use this when loading your user data to a new device.
+    /// You need to have your original `SECRET_KEY` to load the vault.
+    Load,
+
     /// Sync vault with the network, including registers and files.
-    Sync,
+    /// Loads existing user data from the network and merges it with your local user data.
+    /// Pushes your local user data to the network.
+    Sync {
+        /// Force push your local user data to the network.
+        /// This will overwrite any existing data in your vault.
+        #[arg(short, long)]
+        force: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum WalletCmd {
+    /// Create a wallet.
+    Create {
+        /// Optional flag to not add a password.
+        #[clap(long, action)]
+        no_password: bool,
+        /// Optional hex-encoded private key.
+        #[clap(long)]
+        private_key: Option<String>,
+        /// Optional password to encrypt the wallet with.
+        #[clap(long, short)]
+        password: Option<String>,
+    },
+
+    /// Check the balance of the wallet.
+    Balance,
 }
 
 pub async fn handle_subcommand(opt: Opt) -> Result<()> {
@@ -136,11 +178,11 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
     match cmd {
         SubCmd::File { command } => match command {
             FileCmd::Cost { file } => file::cost(&file, peers.await?).await,
-            FileCmd::Upload { file } => file::upload(&file, peers.await?).await,
+            FileCmd::Upload { file, public } => file::upload(&file, public, peers.await?).await,
             FileCmd::Download { addr, dest_file } => {
                 file::download(&addr, &dest_file, peers.await?).await
             }
-            FileCmd::List => file::list(peers.await?),
+            FileCmd::List => file::list(),
         },
         SubCmd::Register { command } => match command {
             RegisterCmd::GenerateKey { overwrite } => register::generate_key(overwrite),
@@ -156,12 +198,21 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
                 value,
             } => register::edit(address, name, &value, peers.await?).await,
             RegisterCmd::Get { address, name } => register::get(address, name, peers.await?).await,
-            RegisterCmd::List => register::list(peers.await?),
+            RegisterCmd::List => register::list(),
         },
         SubCmd::Vault { command } => match command {
-            VaultCmd::Cost => vault::cost(peers.await?),
-            VaultCmd::Create => vault::create(peers.await?),
-            VaultCmd::Sync => vault::sync(peers.await?),
+            VaultCmd::Cost => vault::cost(peers.await?).await,
+            VaultCmd::Create => vault::create(peers.await?).await,
+            VaultCmd::Load => vault::load(peers.await?).await,
+            VaultCmd::Sync { force } => vault::sync(peers.await?, force).await,
+        },
+        SubCmd::Wallet { command } => match command {
+            WalletCmd::Create {
+                no_password,
+                private_key,
+                password,
+            } => wallet::create(no_password, private_key, password),
+            WalletCmd::Balance => Ok(wallet::balance().await?),
         },
     }
 }

@@ -51,6 +51,9 @@ pub enum Error {
     /// The provided SecretyKey failed to decrypt the data
     #[error("Failed to derive CipherText from encrypted_data")]
     ScratchpadCipherTextFailed,
+    /// The provided cypher text is invalid
+    #[error("Provided cypher text is invalid")]
+    ScratchpadCipherTextInvalid,
 
     // ---------- payment errors
     #[error("There was an error getting the storecost from kademlia store")]
@@ -78,4 +81,7 @@ pub enum Error {
     // The record already exists at this node
     #[error("The record already exists, so do not charge for it: {0:?}")]
     RecordExists(PrettyPrintRecordKey<'static>),
+
+    #[error("Record header is incorrect")]
+    IncorrectRecordHeader,
 }

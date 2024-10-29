@@ -30,48 +30,47 @@ pub(super) type Result<T, E = NetworkError> = std::result::Result<T, E>;
 #[derive(Error, Clone)]
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
-    NotEnoughCopies {
+    NotEnoughCopiesInRange {
         record: Record,
         expected: usize,
         got: usize,
+        range: u32,
     },
-
+    #[error("Network query timed out")]
+    QueryTimeout,
+    #[error("Record retrieved from the network does not match the provided target record.")]
+    RecordDoesNotMatch(Record),
+    #[error("The record kind for the split records did not match")]
+    RecordKindMismatch,
     #[error("Record not found in the network")]
     RecordNotFound,
-
-    // Avoid logging the whole `Record` content by accident
+    // Avoid logging the whole `Record` content by accident.
+    /// The split record error will be handled at the network layer.
+    /// For spends, it accumulates the spends and returns a double spend error if more than one.
+    /// For registers, it merges the registers and returns the merged record.
     #[error("Split Record has {} different copies", result_map.len())]
     SplitRecord {
         result_map: HashMap<XorName, (Record, HashSet<PeerId>)>,
     },
-
-    #[error("Network query timed out")]
-    QueryTimeout,
-
-    #[error("Record retrieved from the network does not match the provided target record.")]
-    RecordDoesNotMatch(Record),
 }
 
 impl Debug for GetRecordError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NotEnoughCopies {
+            Self::NotEnoughCopiesInRange {
                 record,
                 expected,
                 got,
+                range,
             } => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
-                f.debug_struct("NotEnoughCopies")
+                f.debug_struct("NotEnoughCopiesInRange")
                     .field("record_key", &pretty_key)
                     .field("expected", &expected)
                     .field("got", &got)
+                    .field("range", &range)
                     .finish()
             }
-            Self::RecordNotFound => write!(f, "RecordNotFound"),
-            Self::SplitRecord { result_map } => f
-                .debug_struct("SplitRecord")
-                .field("result_map_count", &result_map.len())
-                .finish(),
             Self::QueryTimeout => write!(f, "QueryTimeout"),
             Self::RecordDoesNotMatch(record) => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
@@ -79,6 +78,12 @@ impl Debug for GetRecordError {
                     .field(&pretty_key)
                     .finish()
             }
+            Self::RecordKindMismatch => write!(f, "RecordKindMismatch"),
+            Self::RecordNotFound => write!(f, "RecordNotFound"),
+            Self::SplitRecord { result_map } => f
+                .debug_struct("SplitRecord")
+                .field("result_map_count", &result_map.len())
+                .finish(),
         }
     }
 }
@@ -122,9 +127,6 @@ pub enum NetworkError {
     #[error("The RecordKind obtained from the Record did not match with the expected kind: {0}")]
     RecordKindMismatch(RecordKind),
 
-    #[error("Record header is incorrect")]
-    InCorrectRecordHeader,
-
     // ---------- Transfer Errors
     #[error("Failed to get spend: {0}")]
     FailedToGetSpend(String),
@@ -138,7 +140,7 @@ pub enum NetworkError {
     // ---------- Spend Errors
     #[error("Spend not found: {0:?}")]
     NoSpendFoundInsideRecord(SpendAddress),
-    #[error("Double spend(s) attempt was detected. The signed spends are: {0:?}")]
+    #[error("Double SpendAttempt was detected. The signed spends are: {0:?}")]
     DoubleSpendAttempt(Vec<SignedSpend>),
 
     // ---------- Store Error

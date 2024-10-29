@@ -8,9 +8,9 @@
 
 use super::ScratchpadAddress;
 use crate::error::{Error, Result};
+use crate::Bytes;
 use crate::NetworkAddress;
 use bls::{Ciphertext, PublicKey, SecretKey, Signature};
-use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 use xor_name::XorName;
@@ -23,6 +23,8 @@ pub struct Scratchpad {
     /// Network address. Omitted when serialising and
     /// calculated from the `encrypted_data` when deserialising.
     address: ScratchpadAddress,
+    /// Data encoding: custom apps using scratchpad should use this so they can identify the type of data they are storing
+    data_encoding: u64,
     /// Contained data. This should be encrypted
     #[debug(skip)]
     encrypted_data: Bytes,
@@ -35,10 +37,11 @@ pub struct Scratchpad {
 
 impl Scratchpad {
     /// Creates a new instance of `Scratchpad`.
-    pub fn new(owner: PublicKey) -> Self {
+    pub fn new(owner: PublicKey, data_encoding: u64) -> Self {
         Self {
             address: ScratchpadAddress::new(owner),
             encrypted_data: Bytes::new(),
+            data_encoding,
             counter: 0,
             signature: None,
         }
@@ -47,6 +50,11 @@ impl Scratchpad {
     /// Return the current count
     pub fn count(&self) -> u64 {
         self.counter
+    }
+
+    /// Return the current data encoding
+    pub fn data_encoding(&self) -> u64 {
+        self.data_encoding
     }
 
     /// Increments the counter value.
@@ -94,13 +102,13 @@ impl Scratchpad {
     }
 
     /// Returns the encrypted_data, decrypted via the passed SecretKey
-    pub fn decrypt_data(&self, sk: &SecretKey) -> Result<Option<Bytes>> {
-        Ok(sk
-            .decrypt(
-                &Ciphertext::from_bytes(&self.encrypted_data)
-                    .map_err(|_| Error::ScratchpadCipherTextFailed)?,
-            )
-            .map(Bytes::from))
+    pub fn decrypt_data(&self, sk: &SecretKey) -> Result<Bytes> {
+        let cipher = Ciphertext::from_bytes(&self.encrypted_data)
+            .map_err(|_| Error::ScratchpadCipherTextFailed)?;
+        let bytes = sk
+            .decrypt(&cipher)
+            .ok_or(Error::ScratchpadCipherTextInvalid)?;
+        Ok(Bytes::from(bytes))
     }
 
     /// Returns the encrypted_data hash
@@ -131,5 +139,19 @@ impl Scratchpad {
     /// Returns size of contained encrypted_data.
     pub fn payload_size(&self) -> usize {
         self.encrypted_data.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_scratchpad_is_valid() {
+        let sk = SecretKey::random();
+        let pk = sk.public_key();
+        let mut scratchpad = Scratchpad::new(pk, 42);
+        scratchpad.update_and_sign(Bytes::from_static(b"data to be encrypted"), &sk);
+        assert!(scratchpad.is_valid());
     }
 }

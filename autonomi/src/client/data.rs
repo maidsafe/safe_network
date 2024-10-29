@@ -8,11 +8,12 @@
 
 use bytes::Bytes;
 use libp2p::kad::Quorum;
-use tokio::task::JoinError;
 
 use std::collections::HashSet;
+use std::sync::LazyLock;
 use xor_name::XorName;
 
+use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
 use sn_evm::{Amount, AttoTokens};
@@ -22,6 +23,22 @@ use sn_protocol::{
     storage::{try_deserialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind},
     NetworkAddress,
 };
+
+/// Number of chunks to upload in parallel.
+/// Can be overridden by the `CHUNK_UPLOAD_BATCH_SIZE` environment variable.
+pub static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
+    let batch_size = std::env::var("CHUNK_UPLOAD_BATCH_SIZE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(
+            std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1)
+                * 8,
+        );
+    info!("Chunk upload batch size: {}", batch_size);
+    batch_size
+});
 
 /// Raw Data Address (points to a DataMap)
 pub type DataAddr = XorName;
@@ -33,31 +50,31 @@ pub type ChunkAddr = XorName;
 pub enum PutError {
     #[error("Failed to self-encrypt data.")]
     SelfEncryption(#[from] crate::self_encryption::Error),
-    #[error("Error getting Vault XorName data.")]
-    VaultXorName,
     #[error("A network error occurred.")]
     Network(#[from] NetworkError),
+    #[error("Error occurred during cost estimation.")]
+    CostError(#[from] CostError),
     #[error("Error occurred during payment.")]
     PayError(#[from] PayError),
-    #[error("Failed to serialize {0}")]
+    #[error("Serialization error: {0}")]
     Serialization(String),
     #[error("A wallet error occurred.")]
     Wallet(#[from] sn_evm::EvmError),
+    #[error("The vault owner key does not match the client's public key")]
+    VaultBadOwner,
+    #[error("Payment unexpectedly invalid for {0:?}")]
+    PaymentUnexpectedlyInvalid(NetworkAddress),
 }
 
 /// Errors that can occur during the pay operation.
 #[derive(Debug, thiserror::Error)]
 pub enum PayError {
-    #[error("Could not get store quote for: {0:?} after several retries")]
-    CouldNotGetStoreQuote(XorName),
-    #[error("Could not get store costs: {0:?}")]
-    CouldNotGetStoreCosts(NetworkError),
-    #[error("Could not simultaneously fetch store costs: {0:?}")]
-    JoinError(JoinError),
     #[error("Wallet error: {0:?}")]
     EvmWalletError(#[from] EvmWalletError),
     #[error("Failed to self-encrypt data.")]
     SelfEncryption(#[from] crate::self_encryption::Error),
+    #[error("Cost error: {0:?}")]
+    Cost(#[from] CostError),
 }
 
 /// Errors that can occur during the get operation.
@@ -75,6 +92,19 @@ pub enum GetError {
     Protocol(#[from] sn_protocol::Error),
 }
 
+/// Errors that can occur during the cost calculation.
+#[derive(Debug, thiserror::Error)]
+pub enum CostError {
+    #[error("Failed to self-encrypt data.")]
+    SelfEncryption(#[from] crate::self_encryption::Error),
+    #[error("Could not get store quote for: {0:?} after several retries")]
+    CouldNotGetStoreQuote(XorName),
+    #[error("Could not get store costs: {0:?}")]
+    CouldNotGetStoreCosts(NetworkError),
+    #[error("Failed to serialize {0}")]
+    Serialization(String),
+}
+
 impl Client {
     /// Fetch a blob of data from the network
     pub async fn data_get(&self, addr: DataAddr) -> Result<Bytes, GetError> {
@@ -87,17 +117,15 @@ impl Client {
         Ok(data)
     }
 
-    /// Upload a piece of data to the network. This data will be self-encrypted.
+    /// Upload a piece of data to the network.
     /// Returns the Data Address at which the data was stored.
+    /// This data is publicly accessible.
     pub async fn data_put(&self, data: Bytes, wallet: &EvmWallet) -> Result<DataAddr, PutError> {
         let now = sn_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
-        info!(
-            "Uploading datamap chunk to the network at: {:?}",
-            data_map_chunk.address()
-        );
-
+        let data_map_addr = data_map_chunk.address();
         debug!("Encryption took: {:.2?}", now.elapsed());
+        info!("Uploading datamap chunk to the network at: {data_map_addr:?}");
 
         let map_xor_name = *data_map_chunk.address().xorname();
         let mut xor_names = vec![map_xor_name];
@@ -113,29 +141,39 @@ impl Client {
             .await
             .inspect_err(|err| error!("Error paying for data: {err:?}"))?;
 
-        let mut record_count = 0;
-
-        // Upload data map
-        if let Some(proof) = payment_proofs.get(&map_xor_name) {
-            debug!("Uploading data map chunk: {map_xor_name:?}");
-            self.chunk_upload_with_payment(data_map_chunk.clone(), proof.clone())
-                .await
-                .inspect_err(|err| error!("Error uploading data map chunk: {err:?}"))?;
-            record_count += 1;
-        }
-
-        // Upload the rest of the chunks
+        // Upload all the chunks in parallel including the data map chunk
         debug!("Uploading {} chunks", chunks.len());
-        for chunk in chunks {
+        let mut upload_tasks = vec![];
+        for chunk in chunks.into_iter().chain(std::iter::once(data_map_chunk)) {
+            let self_clone = self.clone();
+            let address = *chunk.address();
             if let Some(proof) = payment_proofs.get(chunk.name()) {
-                let address = *chunk.address();
-                self.chunk_upload_with_payment(chunk, proof.clone())
-                    .await
-                    .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))?;
-                record_count += 1;
+                let proof_clone = proof.clone();
+                upload_tasks.push(async move {
+                    self_clone
+                        .chunk_upload_with_payment(chunk, proof_clone)
+                        .await
+                        .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))
+                });
+            } else {
+                debug!("Chunk at {address:?} was already paid for so skipping");
             }
         }
+        let uploads =
+            process_tasks_with_max_concurrency(upload_tasks, *CHUNK_UPLOAD_BATCH_SIZE).await;
 
+        // Check for errors
+        let total_uploads = uploads.len();
+        let ok_uploads = uploads
+            .iter()
+            .filter_map(|up| up.is_ok().then_some(()))
+            .count();
+        info!("Uploaded {} chunks out of {}", ok_uploads, total_uploads);
+        let uploads: Result<Vec<_>, _> = uploads.into_iter().collect();
+        uploads.inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
+        let record_count = ok_uploads;
+
+        // Reporting
         if let Some(channel) = self.client_event_sender.as_ref() {
             let tokens_spent = payment_proofs
                 .values()
@@ -184,7 +222,7 @@ impl Client {
     }
 
     /// Get the estimated cost of storing a piece of data.
-    pub async fn data_cost(&self, data: Bytes) -> Result<AttoTokens, PayError> {
+    pub async fn data_cost(&self, data: Bytes) -> Result<AttoTokens, CostError> {
         let now = sn_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
 

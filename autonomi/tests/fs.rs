@@ -81,8 +81,8 @@ fn compute_dir_sha256(dir: &str) -> Result<String> {
 async fn file_into_vault() -> Result<()> {
     let _log_appender_guard = LogBuilder::init_single_threaded_tokio_test("file", false);
 
-    let mut client = Client::connect(&peers_from_env()?).await?;
-    let mut wallet = get_funded_wallet();
+    let client = Client::connect(&peers_from_env()?).await?;
+    let wallet = get_funded_wallet();
     let client_sk = bls::SecretKey::random();
 
     let addr = client
@@ -91,23 +91,22 @@ async fn file_into_vault() -> Result<()> {
     sleep(Duration::from_secs(2)).await;
 
     let archive = client.archive_get(addr).await?;
+    let set_version = 0;
     client
-        .write_bytes_to_vault(archive.into_bytes()?, &mut wallet, &client_sk)
+        .write_bytes_to_vault(archive.into_bytes()?, &wallet, &client_sk, set_version)
         .await?;
 
     // now assert over the stored account packet
     let new_client = Client::connect(&[]).await?;
 
-    if let Some(ap) = new_client.fetch_and_decrypt_vault(&client_sk).await? {
-        let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
+    let (ap, got_version) = new_client.fetch_and_decrypt_vault(&client_sk).await?;
+    assert_eq!(set_version, got_version);
+    let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
 
-        assert_eq!(
-            archive.map, ap_archive_fetched.map,
-            "archive fetched should match archive put"
-        );
-    } else {
-        eyre::bail!("No account packet found");
-    }
+    assert_eq!(
+        archive, ap_archive_fetched,
+        "archive fetched should match archive put"
+    );
 
     Ok(())
 }

@@ -244,7 +244,7 @@ impl SwarmDriver {
                         }
 
                         // If we are not local, we care only for peers that we dialed and thus are reachable.
-                        if self.local || has_dialed {
+                        if !self.local && has_dialed {
                             // A bad node cannot establish a connection with us. So we can add it to the RT directly.
                             self.remove_bootstrap_from_full(peer_id);
 
@@ -254,7 +254,10 @@ impl SwarmDriver {
                                     multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit))
                                 });
                             }
+                        }
 
+                        if self.local || has_dialed {
+                            // If we are not local, we care only for peers that we dialed and thus are reachable.
                             debug!(%peer_id, ?addrs, "identify: attempting to add addresses to routing table");
 
                             // Attempt to add the addresses to the routing table.
@@ -392,6 +395,7 @@ impl SwarmDriver {
                 let _ = self.live_connected_peers.remove(&connection_id);
                 self.record_connection_metrics();
 
+                let mut failed_peer_addresses = vec![];
                 // we need to decide if this was a critical error and the peer should be removed from the routing table
                 let should_clean_peer = match error {
                     DialError::Transport(errors) => {
@@ -401,9 +405,13 @@ impl SwarmDriver {
                         // so we default to it not being a real issue
                         // unless there are _specific_ errors (connection refused eg)
                         error!("Dial errors len : {:?}", errors.len());
-                        let mut there_is_a_serious_issue = false;
-                        for (_addr, err) in errors {
+                        let mut remove_peer_track_peer_issue = false;
+                        for (addr, err) in errors {
                             error!("OutgoingTransport error : {err:?}");
+
+                            if !failed_peer_addresses.contains(&addr) {
+                                failed_peer_addresses.push(addr)
+                            }
 
                             match err {
                                 TransportError::MultiaddrNotSupported(addr) => {
@@ -414,14 +422,13 @@ impl SwarmDriver {
                                         println!("If this was your bootstrap peer, restart your node with a supported multiaddr");
                                     }
                                     // if we can't dial a peer on a given address, we should remove it from the routing table
-                                    there_is_a_serious_issue = true
+                                    remove_peer_track_peer_issue = false
                                 }
                                 TransportError::Other(err) => {
-                                    let problematic_errors = [
-                                        "ConnectionRefused",
-                                        "HostUnreachable",
-                                        "HandshakeTimedOut",
-                                    ];
+                                    let problematic_errors =
+                                        ["ConnectionRefused", "HostUnreachable"];
+
+                                    let intermittent_errors = ["HandshakeTimedOut"];
 
                                     let is_bootstrap_peer = self
                                         .bootstrap_peers
@@ -432,7 +439,7 @@ impl SwarmDriver {
                                         && self.peers_in_rt < self.bootstrap_peers.len()
                                     {
                                         warn!("OutgoingConnectionError: On bootstrap peer {failed_peer_id:?}, while still in bootstrap mode, ignoring");
-                                        there_is_a_serious_issue = false;
+                                        remove_peer_track_peer_issue = false;
                                     } else {
                                         // It is really difficult to match this error, due to being eg:
                                         // Custom { kind: Other, error: Left(Left(Os { code: 61, kind: ConnectionRefused, message: "Connection refused" })) }
@@ -443,13 +450,19 @@ impl SwarmDriver {
                                             .any(|err| error_msg.contains(err))
                                         {
                                             warn!("Problematic error encountered: {error_msg}");
-                                            there_is_a_serious_issue = true;
+                                            remove_peer_track_peer_issue = true;
+                                        } else if intermittent_errors
+                                            .iter()
+                                            .any(|err| error_msg.contains(err))
+                                        {
+                                            warn!("Intermittent error encountered: {error_msg}");
+                                            remove_peer_track_peer_issue = false;
                                         }
                                     }
                                 }
                             }
                         }
-                        there_is_a_serious_issue
+                        remove_peer_track_peer_issue
                     }
                     DialError::NoAddresses => {
                         // We provided no address, and while we can't really blame the peer
@@ -490,7 +503,7 @@ impl SwarmDriver {
                 };
 
                 if should_clean_peer {
-                    warn!("Tracking issue of {failed_peer_id:?}. Clearing it out for now");
+                    warn!("Serious issue with {failed_peer_id:?}. Clearing it out for now");
 
                     if let Some(dead_peer) = self
                         .swarm
@@ -592,6 +605,12 @@ impl SwarmDriver {
     // Remove outdated connection to a peer if it is not in the RT.
     // Optionally force remove all the connections for a provided peer.
     fn remove_outdated_connections(&mut self) {
+        // To avoid this being called too frequenctly, only carry out prunning intervally.
+        if Instant::now() > self.last_connection_pruning_time + Duration::from_secs(30) {
+            return;
+        }
+        self.last_connection_pruning_time = Instant::now();
+
         let mut removed_conns = 0;
         self.live_connected_peers.retain(|connection_id, (peer_id, timeout_time)| {
 

@@ -22,7 +22,7 @@ use libp2p::{
     identity::PeerId,
     kad::{
         store::{Error, RecordStore, Result},
-        KBucketDistance as Distance, KBucketKey, ProviderRecord, Record, RecordKey as Key,
+        KBucketDistance as Distance, ProviderRecord, Record, RecordKey as Key,
     },
 };
 #[cfg(feature = "open-metrics")]
@@ -70,14 +70,14 @@ const MIN_STORE_COST: u64 = 1;
 
 /// A `RecordStore` that stores records on disk.
 pub struct NodeRecordStore {
-    /// The identity of the peer owning the store.
-    local_key: KBucketKey<PeerId>,
     /// The address of the peer owning the store
     local_address: NetworkAddress,
     /// The configuration of the store.
     config: NodeRecordStoreConfig,
-    /// A set of keys, each corresponding to a data `Record` stored on disk.
+    /// Main records store remains unchanged for compatibility
     records: HashMap<Key, (NetworkAddress, RecordType)>,
+    /// Additional index organizing records by distance bucket
+    records_by_bucket: HashMap<u32, HashSet<Key>>,
     /// FIFO simple cache of records to reduce read times
     records_cache: VecDeque<Record>,
     /// A map from record keys to their indices in the cache
@@ -90,7 +90,7 @@ pub struct NodeRecordStore {
     /// ilog2 distance range of responsible records
     /// AKA: how many buckets of data do we consider "close"
     /// None means accept all records.
-    responsible_distance_range: Option<u32>,
+    responsible_distance_range: Option<Distance>,
     #[cfg(feature = "open-metrics")]
     /// Used to report the number of records held by the store to the metrics server.
     record_count_metric: Option<Gauge>,
@@ -284,10 +284,10 @@ impl NodeRecordStore {
 
         let cache_size = config.records_cache_size;
         let mut record_store = NodeRecordStore {
-            local_key: KBucketKey::from(local_id),
             local_address: NetworkAddress::from_peer(local_id),
             config,
             records,
+            records_by_bucket: HashMap::new(),
             records_cache: VecDeque::with_capacity(cache_size),
             records_cache_map: HashMap::with_capacity(cache_size),
             network_event_sender,
@@ -313,11 +313,6 @@ impl NodeRecordStore {
     pub fn set_record_count_metric(mut self, metric: Gauge) -> Self {
         self.record_count_metric = Some(metric);
         self
-    }
-
-    /// Returns the current distance ilog2 (aka bucket) range of CLOSE_GROUP nodes.
-    pub fn get_responsible_distance_range(&self) -> Option<u32> {
-        self.responsible_distance_range
     }
 
     // Converts a Key into a Hex string.
@@ -459,7 +454,7 @@ impl NodeRecordStore {
     // those `out of range` records shall be cleaned up.
     // This is to avoid `over-quoting` during restart, when RT is not fully populated,
     // result in mis-calculation of relevant records.
-    pub fn cleanup_unrelevant_records(&mut self) {
+    pub fn cleanup_irrelevant_records(&mut self) {
         let accumulated_records = self.records.len();
         if accumulated_records < MAX_RECORDS_COUNT * 6 / 10 {
             return;
@@ -471,30 +466,25 @@ impl NodeRecordStore {
             return;
         };
 
-        let mut removed_keys = Vec::new();
-        self.records.retain(|key, _val| {
-            let kbucket_key = KBucketKey::new(key.to_vec());
-            let is_in_range =
-                responsible_range >= self.local_key.distance(&kbucket_key).ilog2().unwrap_or(0);
-            if !is_in_range {
-                removed_keys.push(key.clone());
-            }
-            is_in_range
-        });
+        let max_bucket = responsible_range.ilog2().unwrap_or_default();
 
-        // Each `remove` function call will try to re-calculate furthest
-        // when the key to be removed is the current furthest.
-        // To avoid duplicated calculation, hence reset `furthest` first here.
-        self.farthest_record = self.calculate_farthest();
+        // Collect keys to remove from buckets beyond our range
+        let keys_to_remove: Vec<Key> = self
+            .records_by_bucket
+            .iter()
+            .filter(|(&bucket, _)| bucket > max_bucket)
+            .flat_map(|(_, keys)| keys.iter().cloned())
+            .collect();
 
-        for key in removed_keys.iter() {
-            // Deletion from disk will be undertaken as a spawned task,
-            // hence safe to call this function repeatedly here.
-            self.remove(key);
+        let keys_to_remove_len = keys_to_remove.len();
+
+        // Remove collected keys
+        for key in keys_to_remove {
+            self.remove(&key);
         }
 
         info!("Cleaned up {} unrelevant records, among the original {accumulated_records} accumulated_records",
-            removed_keys.len());
+        keys_to_remove_len);
     }
 }
 
@@ -523,17 +513,26 @@ impl NodeRecordStore {
     /// to return the record as stored.
     pub(crate) fn mark_as_stored(&mut self, key: Key, record_type: RecordType) {
         let addr = NetworkAddress::from_record_key(&key);
-        let _ = self
-            .records
+        let distance = self.local_address.distance(&addr);
+        let bucket = distance.ilog2().unwrap_or_default();
+
+        // Update main records store
+        self.records
             .insert(key.clone(), (addr.clone(), record_type));
 
-        let key_distance = self.local_address.distance(&addr);
+        // Update bucket index
+        self.records_by_bucket
+            .entry(bucket)
+            .or_default()
+            .insert(key.clone());
+
+        // Update farthest record if needed (unchanged)
         if let Some((_farthest_record, farthest_record_distance)) = self.farthest_record.clone() {
-            if key_distance > farthest_record_distance {
-                self.farthest_record = Some((key, key_distance));
+            if distance > farthest_record_distance {
+                self.farthest_record = Some((key, distance));
             }
         } else {
-            self.farthest_record = Some((key, key_distance));
+            self.farthest_record = Some((key, distance));
         }
     }
 
@@ -698,29 +697,26 @@ impl NodeRecordStore {
     /// Calculate how many records are stored within a distance range
     pub fn get_records_within_distance_range(
         &self,
-        records: HashSet<&Key>,
-        distance_range: u32,
+        _records: HashSet<&Key>,
+        max_distance: Distance,
     ) -> usize {
-        debug!(
-            "Total record count is {:?}. Distance is: {distance_range:?}",
-            self.records.len()
-        );
+        let max_bucket = max_distance.ilog2().unwrap_or_default();
 
-        let relevant_records_len = records
+        let within_range = self
+            .records_by_bucket
             .iter()
-            .filter(|key| {
-                let kbucket_key = KBucketKey::new(key.to_vec());
-                distance_range >= self.local_key.distance(&kbucket_key).ilog2().unwrap_or(0)
-            })
-            .count();
+            .filter(|(&bucket, _)| bucket <= max_bucket)
+            .map(|(_, keys)| keys.len())
+            .sum();
 
-        Marker::CloseRecordsLen(relevant_records_len).log();
-        relevant_records_len
+        Marker::CloseRecordsLen(within_range).log();
+
+        within_range
     }
 
     /// Setup the distance range.
-    pub(crate) fn set_responsible_distance_range(&mut self, farthest_responsible_bucket: u32) {
-        self.responsible_distance_range = Some(farthest_responsible_bucket);
+    pub(crate) fn set_responsible_distance_range(&mut self, farthest_distance: Distance) {
+        self.responsible_distance_range = Some(farthest_distance);
     }
 }
 
@@ -813,7 +809,23 @@ impl RecordStore for NodeRecordStore {
     }
 
     fn remove(&mut self, k: &Key) {
-        let _ = self.records.remove(k);
+        // Remove from main store
+        if let Some((addr, _)) = self.records.remove(k) {
+            // Remove from bucket index
+            let bucket = self
+                .local_address
+                .distance(&addr)
+                .ilog2()
+                .unwrap_or_default();
+            if let Some(bucket_keys) = self.records_by_bucket.get_mut(&bucket) {
+                bucket_keys.remove(k);
+                // Clean up empty buckets
+                if bucket_keys.is_empty() {
+                    self.records_by_bucket.remove(&bucket);
+                }
+            }
+        }
+
         self.records_cache.retain(|r| r.key != *k);
 
         #[cfg(feature = "open-metrics")]
@@ -1244,7 +1256,7 @@ mod tests {
         let owner_sk = SecretKey::random();
         let owner_pk = owner_sk.public_key();
 
-        let mut scratchpad = Scratchpad::new(owner_pk);
+        let mut scratchpad = Scratchpad::new(owner_pk, 0);
 
         let _next_version =
             scratchpad.update_and_sign(unencrypted_scratchpad_data.clone(), &owner_sk);
@@ -1289,8 +1301,7 @@ mod tests {
             let decrypted_data = scratchpad.decrypt_data(&owner_sk)?;
 
             assert_eq!(
-                decrypted_data,
-                Some(unencrypted_scratchpad_data),
+                decrypted_data, unencrypted_scratchpad_data,
                 "Stored scratchpad data should match original"
             );
         }
@@ -1500,10 +1511,7 @@ mod tests {
                 .wrap_err("Could not parse record store key")?,
         );
         // get the distance to this record from our local key
-        let distance = self_address
-            .distance(&halfway_record_address)
-            .ilog2()
-            .unwrap_or(0);
+        let distance = self_address.distance(&halfway_record_address);
 
         // must be plus one bucket from the halfway record
         store.set_responsible_distance_range(distance);

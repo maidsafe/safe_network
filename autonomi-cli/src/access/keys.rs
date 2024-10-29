@@ -6,9 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::wallet::load_wallet_private_key;
 use autonomi::client::registers::RegisterSecretKey;
+use autonomi::client::vault::VaultSecretKey;
 use autonomi::{get_evm_network_from_env, Wallet};
-use color_eyre::eyre::{Context, Result};
+use color_eyre::eyre::{eyre, Context, Result};
 use color_eyre::Section;
 use std::env;
 use std::fs;
@@ -17,13 +19,12 @@ use std::path::PathBuf;
 const SECRET_KEY_ENV: &str = "SECRET_KEY";
 const REGISTER_SIGNING_KEY_ENV: &str = "REGISTER_SIGNING_KEY";
 
-const SECRET_KEY_FILE: &str = "secret_key";
 const REGISTER_SIGNING_KEY_FILE: &str = "register_signing_key";
 
 /// EVM wallet
-pub fn load_evm_wallet() -> Result<Wallet> {
+pub fn load_evm_wallet_from_env() -> Result<Wallet> {
     let secret_key =
-        get_secret_key().wrap_err("The secret key is required to perform this action")?;
+        get_secret_key_from_env().wrap_err("The secret key is required to perform this action")?;
     let network = get_evm_network_from_env()?;
     let wallet = Wallet::new_from_private_key(network, &secret_key)
         .wrap_err("Failed to load EVM wallet from key")?;
@@ -31,24 +32,16 @@ pub fn load_evm_wallet() -> Result<Wallet> {
 }
 
 /// EVM wallet private key
-pub fn get_secret_key() -> Result<String> {
-    // try env var first
-    let why_env_failed = match env::var(SECRET_KEY_ENV) {
-        Ok(key) => return Ok(key),
-        Err(e) => e,
-    };
+pub fn get_secret_key_from_env() -> Result<String> {
+    env::var(SECRET_KEY_ENV).wrap_err(eyre!(
+        "make sure you've provided the {SECRET_KEY_ENV} env var"
+    ))
+}
 
-    // try from data dir
-    let dir = super::data_dir::get_client_data_dir_path()
-        .wrap_err(format!("Failed to obtain secret key from env var: {why_env_failed}, reading from disk also failed as couldn't access data dir"))
-        .with_suggestion(|| format!("make sure you've provided the {SECRET_KEY_ENV} env var"))?;
-
-    // load the key from file
-    let key_path = dir.join(SECRET_KEY_FILE);
-    fs::read_to_string(&key_path)
-        .wrap_err("Failed to read secret key from file")
-        .with_suggestion(|| format!("make sure you've provided the {SECRET_KEY_ENV} env var or have the key in a file at {key_path:?}"))
-        .with_suggestion(|| "the secret key should be a hex encoded string of your evm wallet private key")
+pub fn get_vault_secret_key() -> Result<VaultSecretKey> {
+    let secret_key = load_wallet_private_key()?;
+    autonomi::client::vault::derive_vault_key(&secret_key)
+        .wrap_err("Failed to derive vault secret key from EVM secret key")
 }
 
 pub fn create_register_signing_key_file(key: RegisterSecretKey) -> Result<PathBuf> {

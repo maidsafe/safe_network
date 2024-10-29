@@ -7,6 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-10-28
+
+## Autonomi API/CLI
+
+#### Added 
+
+- Private data support.
+- Local user data support.
+- Network Vault containing user data encrypted.
+- Archives with Metadata.
+- Prepaid upload support for data_put using receipts.
+
+#### Changed
+
+- Contract token approval amount set to infinite before doing data payments.
+
+### Client
+
+#### Added
+
+- Expose APIs in WASM (e.g. archives, vault and user data within vault).
+- Uploads are not run in parallel.
+- Support for local wallets.
+- Provide `wallet create` command.
+- Provide `wallet balance` command.
+
+#### Changed
+
+- Take metadata from file system and add `uploaded` field for time of upload.
+
+#### Fixed
+
+- Make sure we use the new client path throughout the codebase
+
+### Network
+
+#### Added
+
+- Get range used for store cost and register queries.
+- Re-enabled large_file_upload, memcheck, benchmark CI tests.
+
+#### Changed
+
+- Scratchpad modifications to support multiple data encodings.
+- Registers are now merged at the network level, preventing failures during update and during
+  replication.
+- Libp2p config and get range tweaks reduce intensity of operations. Brings down CPU usage
+  considerably.
+- Libp2p’s native kad bootstrap interval introduced in 0.54.1 is intensive, and as we roll our own,
+  we significantly reduce the kad period to lighten the CPU load.
+- Wipe node’s storage dir when restarting for new network
+
+#### Fixed
+
+- Fixes in networking code for WASM compatibility (replacing `std::time` with compatible
+  alternative).
+- Event dropped errors should not happen if the event is not dropped.
+- Reduce outdated connection pruning frequency.
+
+### Node Manager
+
+#### Fixed
+
+- Local node register is cleaned up when --clean flag applied (prevents some errors when register
+  changes).
+
+### Launchpad
+
+#### Fixed
+
+- Status screen is updated after nodes have been reset.
+- Rewards Address is required before starting nodes. User input is required.
+- Spinner does not stop spinning after two minutes when nodes are running.
+
 ## 2024-10-24
 
 ### Network

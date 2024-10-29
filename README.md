@@ -16,7 +16,7 @@ Libp2p.<br>
 
 ### For Users
 
-- [CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi_cli/README.md) The Command Line
+- [CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi-cli/README.md) The Command Line
   Interface, allowing users to interact with the network from their terminal.
 - [Node](https://github.com/maidsafe//safe_network/blob/main/sn_node/README.md) The backbone of the
   safe network. Nodes can be run on commodity hardware and provide storage space and validation of
@@ -32,10 +32,10 @@ You should build from the `stable` branch, as follows:
 
 ```
 git checkout stable
-export FOUNDATION_PK=88a82d718d16dccc839188eddc9a46cb216667c940cd46285199458c919a170a55490db09763ae216ed25e9db78c3576
-export GENESIS_PK=aa3526db2dbc43998e0b541b8455e2ce9dd4f1cad80090e671da16e3cd11cd5e3550f74c3cefd09ad253d93cacae2320
-export NETWORK_ROYALTIES_PK=8b5463a2c8142959a7b7cfd9295587812eb07ccbe13a85865503c8004eeeb6889ccace3588dcf9f7396784d9ee48f4d5
-export PAYMENT_FORWARD_PK=87d5b511a497183c945df63ab8790a4b94cfe452d00bfbdb39e41ee861384fe0de716a224da1c6fd11356de49877dfc2
+export FOUNDATION_PK=b20c916c7a28707018292f06dfdb66ab88ebcbad9c78d18135e843a91b1d66b875b24d2c27d8d1ad4637c2d5811896fe
+export GENESIS_PK=93f7355906fa8c1a639bac80f4619dbb4cf5f71c47827d1ff2c30f0d133f6b841859662cbf7e0bbceca0eb0f521f6ebc
+export NETWORK_ROYALTIES_PK=af451aa34a0d16c50eb217b91ab6b2ca75ef43b9c20449384ff1e90dbf8477351499cca985828e33b208805dadc80c63
+export PAYMENT_FORWARD_PK=adc6401588af49c60af6717a60546207abddb4e150014b4ab6c407ef6d7b3d3899b8892a91ab23042378b7b285e655fc
 cargo build --release --features=network-contacts --bin safenode
 ```
 
@@ -69,7 +69,7 @@ cargo build --release --features=network-contacts --bin safenode
 
 - [Autonomi API](https://github.com/maidsafe/safe_network/blob/main/autonomi/README.md) The client APIs
   allowing use of the Autonomi Network to users and developers.
-- [Autonomi CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi_cli/README.md) The Command Line
+- [Autonomi CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi-cli/README.md) The Command Line
   Interface, allowing users to interact with the network from their terminal.
 - [Node](https://github.com/maidsafe/safe_network/blob/main/sn_node/README.md) The backbone of the
   autonomi network. Nodes can be run on commodity hardware and run the Network.
