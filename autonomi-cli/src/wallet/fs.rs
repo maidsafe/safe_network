@@ -2,7 +2,9 @@ use crate::wallet::encryption::{decrypt_private_key, encrypt_private_key};
 use crate::wallet::error::Error;
 use crate::wallet::input::{get_password_input, get_wallet_selection_input};
 use crate::wallet::DUMMY_NETWORK;
-use autonomi::Wallet;
+use autonomi::{get_evm_network_from_env, RewardsAddress, Wallet};
+use const_hex::traits::FromHex;
+use prettytable::{Cell, Row, Table};
 use std::ffi::OsString;
 use std::io::Read;
 use std::path::PathBuf;
@@ -41,13 +43,17 @@ pub(crate) fn store_private_key(
         let encrypted_key = encrypt_private_key(private_key, password)?;
         let file_name = format!("{wallet_address}{ENCRYPTED_PRIVATE_KEY_EXT}");
         let file_path = wallets_folder.join(file_name);
+
         std::fs::write(file_path.clone(), encrypted_key)
             .map_err(|err| Error::FailedToStorePrivateKey(err.to_string()))?;
+
         Ok(file_path.into_os_string())
     } else {
         let file_path = wallets_folder.join(wallet_address);
+
         std::fs::write(file_path.clone(), private_key)
             .map_err(|err| Error::FailedToStorePrivateKey(err.to_string()))?;
+
         Ok(file_path.into_os_string())
     }
 }
@@ -88,44 +94,84 @@ pub(crate) fn load_private_key(wallet_address: &str) -> Result<String, Error> {
     }
 }
 
-/// Lists all wallet files together with an index and let the user select one.
-/// If only one wallet exists, auto select it.
-pub(crate) fn select_wallet() -> Result<String, Error> {
+pub(crate) fn load_wallet_from_address(wallet_address: &str) -> Result<Wallet, Error> {
+    let network = get_evm_network_from_env().expect("Could not load EVM network from environment");
+    let private_key = load_private_key(wallet_address)?;
+    let wallet =
+        Wallet::new_from_private_key(network, &private_key).expect("Could not initialize wallet");
+    Ok(wallet)
+}
+
+pub(crate) fn select_wallet() -> Result<Wallet, Error> {
+    let private_key = select_wallet_private_key()?;
+    load_wallet_from_address(&private_key)
+}
+
+pub(crate) fn select_wallet_private_key() -> Result<String, Error> {
     let wallets_folder = get_client_wallet_dir_path()?;
     let wallet_files = get_wallet_files(&wallets_folder)?;
 
     match wallet_files.len() {
         0 => Err(Error::NoWalletsFound),
-        1 => Ok(wallet_files[0].to_string_lossy().into_owned()),
-        _ => {
-            println!("Select a wallet:");
-
-            for (index, wallet_file) in wallet_files.iter().enumerate() {
-                println!("{}: {}", index + 1, wallet_file.display());
-            }
-
-            let selected_index = get_wallet_selection_input()
-                .parse::<usize>()
-                .map_err(|_| Error::InvalidSelection)?;
-
-            if selected_index >= 1 && selected_index <= wallet_files.len() {
-                Ok(wallet_files[selected_index - 1]
-                    .to_string_lossy()
-                    .into_owned())
-            } else {
-                Err(Error::InvalidSelection)
-            }
-        }
+        1 => Ok(filter_wallet_file_extension(&wallet_files[0])),
+        _ => get_wallet_selection(wallet_files),
     }
 }
 
-fn get_wallet_files(wallets_folder: &PathBuf) -> Result<Vec<PathBuf>, Error> {
+fn get_wallet_selection(wallet_files: Vec<String>) -> Result<String, Error> {
+    list_wallets(&wallet_files);
+
+    let selected_index = get_wallet_selection_input("Select by index:")
+        .parse::<usize>()
+        .map_err(|_| Error::InvalidSelection)?;
+
+    if selected_index < 1 || selected_index > wallet_files.len() {
+        return Err(Error::InvalidSelection);
+    }
+
+    Ok(filter_wallet_file_extension(
+        &wallet_files[selected_index - 1],
+    ))
+}
+
+fn list_wallets(wallet_files: &[String]) {
+    println!("Wallets:");
+
+    let mut table = Table::new();
+
+    table.add_row(Row::new(vec![
+        Cell::new("Index"),
+        Cell::new("Address"),
+        Cell::new("Encrypted"),
+    ]));
+
+    for (index, wallet_file) in wallet_files.iter().enumerate() {
+        let encrypted = wallet_file.contains(ENCRYPTED_PRIVATE_KEY_EXT);
+
+        table.add_row(Row::new(vec![
+            Cell::new(&(index + 1).to_string()),
+            Cell::new(&filter_wallet_file_extension(wallet_file)),
+            Cell::new(&encrypted.to_string()),
+        ]));
+    }
+
+    table.printstd();
+}
+
+fn get_wallet_files(wallets_folder: &PathBuf) -> Result<Vec<String>, Error> {
     let wallet_files = std::fs::read_dir(wallets_folder)
         .map_err(|_| Error::WalletsFolderNotFound)?
         .filter_map(Result::ok)
-        .map(|dir_entry| dir_entry.path())
-        .filter(|path| path.is_file())
+        .filter_map(|dir_entry| dir_entry.file_name().into_string().ok())
+        .filter(|file_name| {
+            let cleaned_file_name = filter_wallet_file_extension(file_name);
+            RewardsAddress::from_hex(cleaned_file_name).is_ok()
+        })
         .collect::<Vec<_>>();
 
     Ok(wallet_files)
+}
+
+fn filter_wallet_file_extension(wallet_file: &str) -> String {
+    wallet_file.replace(ENCRYPTED_PRIVATE_KEY_EXT, "")
 }

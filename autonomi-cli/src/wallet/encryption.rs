@@ -129,3 +129,43 @@ pub fn decrypt_private_key(encrypted_data: &str, password: &str) -> Result<Strin
     // Create secret key from decrypted byte
     Ok(String::from_utf8(private_key_bytes.to_vec()).expect("not able to convert private key"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use autonomi::Wallet;
+
+    #[test]
+    fn test_encrypt_decrypt_private_key() {
+        let key = Wallet::random_private_key();
+        let password = "password123".to_string();
+
+        let encrypted_key =
+            encrypt_private_key(&key, &password).expect("Failed to encrypt the private key");
+
+        let decrypted_key = decrypt_private_key(&encrypted_key, &password)
+            .expect("Failed to decrypt the private key");
+
+        assert_eq!(
+            decrypted_key, key,
+            "Decrypted key does not match the original private key"
+        );
+    }
+
+    #[test]
+    fn test_wrong_password() {
+        let key = Wallet::random_private_key();
+        let password = "password123".to_string();
+
+        let encrypted_key =
+            encrypt_private_key(&key, &password).expect("Failed to encrypt the private key");
+
+        let wrong_password = "password456".to_string();
+        let result = decrypt_private_key(&encrypted_key, &wrong_password);
+
+        assert!(
+            result.is_err(),
+            "Decryption should not succeed with a wrong password"
+        );
+    }
+}

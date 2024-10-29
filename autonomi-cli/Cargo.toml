@@ -33,7 +33,9 @@ autonomi = { path = "../autonomi", version = "0.2.1", features = [
 ] }
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "~0.6"
+const-hex = "1.13.1"
 dirs-next = "~2.0.0"
+prettytable = "0.10.0"
 thiserror = "1.0"
 indicatif = { version = "0.17.5", features = ["tokio"] }
 rand = { version = "~0.8.5", features = ["small_rng"] }

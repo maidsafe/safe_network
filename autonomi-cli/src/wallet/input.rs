@@ -1,11 +1,16 @@
-pub(crate) fn get_wallet_selection_input() -> String {
-    let mut input = String::new();
+pub(crate) fn get_wallet_selection_input(prompt: &str) -> String {
+    println!("{prompt}");
 
-    std::io::stdin()
-        .read_line(&mut input)
-        .expect("Invalid selection");
+    let mut buffer = String::new();
+    let stdin = std::io::stdin();
 
-    input.trim().to_string()
+    if stdin.read_line(&mut buffer).is_err() {
+        // consider if error should process::exit(1) here
+        return "".to_string();
+    };
+
+    // Remove leading and trailing whitespace
+    buffer.trim().to_owned()
 }
 
 pub(crate) fn get_password_input(prompt: &str) -> String {
