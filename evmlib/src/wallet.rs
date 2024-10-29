@@ -59,7 +59,7 @@ impl Wallet {
         Self::new(network, random())
     }
 
-    /// Creates a new Wallet based on the given private_key. It will fail with Error::PrivateKeyInvalid if private_key is invalid.
+    /// Creates a new Wallet based on the given Ethereum private key. It will fail with Error::PrivateKeyInvalid if private_key is invalid.
     pub fn new_from_private_key(network: Network, private_key: &str) -> Result<Self, Error> {
         let wallet = from_private_key(private_key)?;
         Ok(Self::new(network, wallet))
