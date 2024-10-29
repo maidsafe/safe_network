@@ -807,19 +807,24 @@ jobs:
         # Otherwise kad will remove a `dropped out node` directly from RT.
         # So, the detection of the removal explicity will now have much less chance,
         # due to the removal of connection_issue tracking.
+        #
+        # With the further reduction of replication frequency,
+        # it now becomes harder to detect a `dropped out node` as a `failed to replicate` node.
+        # Hence now remove the assertion check and replace with a print out only.
         run: |
+          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
+          echo "Node dir count is $node_count"
           restart_count=$(rg "Node is restarting in" "${{ matrix.node_data_path }}" -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "Restart $restart_count nodes"
+          if ! rg "PeerRemovedFromRoutingTable" "${{ matrix.node_data_path }}" -c --stats
+          then
+            echo "No peer removal count found"
+            exit 0
+          fi
           peer_removed=$(rg "PeerRemovedFromRoutingTable" "${{ matrix.node_data_path }}" -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o)
           echo "PeerRemovedFromRoutingTable $peer_removed times"
-          if [ -z "$peer_removed" ]; then
-            echo "No peer removal count found"
-            exit 1
-          fi
-          node_count=$(ls "${{ matrix.node_data_path }}" | wc -l)
-          echo "Node dir count is $node_count"
 
       # Only error out after uploading the logs
       - name: Don't log raw data
