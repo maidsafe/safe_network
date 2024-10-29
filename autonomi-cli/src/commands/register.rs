@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::utils::collect_upload_summary;
+use crate::wallet::load_wallet;
 use autonomi::client::registers::RegisterAddress;
 use autonomi::client::registers::RegisterPermissions;
 use autonomi::client::registers::RegisterSecretKey;
@@ -51,7 +52,7 @@ pub async fn cost(name: &str, peers: Vec<Multiaddr>) -> Result<()> {
 }
 
 pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>) -> Result<()> {
-    let wallet = crate::keys::load_evm_wallet()?;
+    let wallet = load_wallet()?;
     let register_key = crate::keys::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
     let mut client = crate::actions::connect_to_network(peers).await?;

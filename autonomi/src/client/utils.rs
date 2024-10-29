@@ -6,9 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::{collections::HashMap, num::NonZero};
-
 use bytes::Bytes;
+use futures::stream::{FuturesUnordered, StreamExt};
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
@@ -21,6 +20,7 @@ use sn_protocol::{
     storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind, RetryStrategy},
     NetworkAddress,
 };
+use std::{collections::HashMap, future::Future, num::NonZero};
 use xor_name::XorName;
 
 use super::{
@@ -158,6 +158,11 @@ impl Client {
 
         let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
 
+        // Make sure nobody else can use the wallet while we are paying
+        debug!("Waiting for wallet lock");
+        let lock_guard = wallet.lock().await;
+        debug!("Locked wallet");
+
         // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
         // TODO: retry when it fails?
         // Execute chunk payments
@@ -165,6 +170,10 @@ impl Client {
             .pay_for_quotes(quote_payments)
             .await
             .map_err(|err| PayError::from(err.0))?;
+
+        // payment is done, unlock the wallet for other threads
+        drop(lock_guard);
+        debug!("Unlocked wallet");
 
         let proofs = payment_proof_from_quotes_and_payments(&cost_map, &payments);
 
@@ -247,4 +256,31 @@ pub(crate) fn extract_quote_payments(
     }
 
     (to_be_paid, already_paid)
+}
+
+pub(crate) async fn process_tasks_with_max_concurrency<I, R>(tasks: I, batch_size: usize) -> Vec<R>
+where
+    I: IntoIterator,
+    I::Item: Future<Output = R> + Send,
+    R: Send,
+{
+    let mut futures = FuturesUnordered::new();
+    let mut results = Vec::new();
+
+    for task in tasks.into_iter() {
+        futures.push(task);
+
+        if futures.len() >= batch_size {
+            if let Some(result) = futures.next().await {
+                results.push(result);
+            }
+        }
+    }
+
+    // Process remaining tasks
+    while let Some(result) = futures.next().await {
+        results.push(result);
+    }
+
+    results
 }

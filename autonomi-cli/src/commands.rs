@@ -9,6 +9,7 @@
 mod file;
 mod register;
 mod vault;
+mod wallet;
 
 use clap::Subcommand;
 use color_eyre::Result;
@@ -33,6 +34,12 @@ pub enum SubCmd {
     Vault {
         #[command(subcommand)]
         command: VaultCmd,
+    },
+
+    /// Operations related to wallet management.
+    Wallet {
+        #[command(subcommand)]
+        command: WalletCmd,
     },
 }
 
@@ -145,6 +152,25 @@ pub enum VaultCmd {
     },
 }
 
+#[derive(Subcommand, Debug)]
+pub enum WalletCmd {
+    /// Create a wallet.
+    Create {
+        /// Optional flag to not add a password.
+        #[clap(long, action)]
+        no_password: bool,
+        /// Optional hex-encoded private key.
+        #[clap(long)]
+        private_key: Option<String>,
+        /// Optional password to encrypt the wallet with.
+        #[clap(long, short)]
+        password: Option<String>,
+    },
+
+    /// Check the balance of the wallet.
+    Balance,
+}
+
 pub async fn handle_subcommand(opt: Opt) -> Result<()> {
     let peers = crate::access::network::get_peers(opt.peers);
     let cmd = opt.command;
@@ -179,6 +205,14 @@ pub async fn handle_subcommand(opt: Opt) -> Result<()> {
             VaultCmd::Create => vault::create(peers.await?).await,
             VaultCmd::Load => vault::load(peers.await?).await,
             VaultCmd::Sync { force } => vault::sync(peers.await?, force).await,
+        },
+        SubCmd::Wallet { command } => match command {
+            WalletCmd::Create {
+                no_password,
+                private_key,
+                password,
+            } => wallet::create(no_password, private_key, password),
+            WalletCmd::Balance => Ok(wallet::balance().await?),
         },
     }
 }

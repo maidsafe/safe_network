@@ -8,11 +8,12 @@
 
 use bytes::Bytes;
 use libp2p::kad::Quorum;
-use tokio::task::{JoinError, JoinSet};
 
 use std::collections::HashSet;
+use std::sync::LazyLock;
 use xor_name::XorName;
 
+use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
 use sn_evm::{Amount, AttoTokens};
@@ -22,6 +23,22 @@ use sn_protocol::{
     storage::{try_deserialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind},
     NetworkAddress,
 };
+
+/// Number of chunks to upload in parallel.
+/// Can be overridden by the `CHUNK_UPLOAD_BATCH_SIZE` environment variable.
+pub static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
+    let batch_size = std::env::var("CHUNK_UPLOAD_BATCH_SIZE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(
+            std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1)
+                * 8,
+        );
+    info!("Chunk upload batch size: {}", batch_size);
+    batch_size
+});
 
 /// Raw Data Address (points to a DataMap)
 pub type DataAddr = XorName;
@@ -47,8 +64,6 @@ pub enum PutError {
     VaultBadOwner,
     #[error("Payment unexpectedly invalid for {0:?}")]
     PaymentUnexpectedlyInvalid(NetworkAddress),
-    #[error("Could not simultaneously upload chunks: {0:?}")]
-    JoinError(tokio::task::JoinError),
 }
 
 /// Errors that can occur during the pay operation.
@@ -80,8 +95,6 @@ pub enum GetError {
 /// Errors that can occur during the cost calculation.
 #[derive(Debug, thiserror::Error)]
 pub enum CostError {
-    #[error("Could not simultaneously fetch store costs: {0:?}")]
-    JoinError(JoinError),
     #[error("Failed to self-encrypt data.")]
     SelfEncryption(#[from] crate::self_encryption::Error),
     #[error("Could not get store quote for: {0:?} after several retries")]
@@ -110,12 +123,9 @@ impl Client {
     pub async fn data_put(&self, data: Bytes, wallet: &EvmWallet) -> Result<DataAddr, PutError> {
         let now = sn_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
-        info!(
-            "Uploading datamap chunk to the network at: {:?}",
-            data_map_chunk.address()
-        );
-
+        let data_map_addr = data_map_chunk.address();
         debug!("Encryption took: {:.2?}", now.elapsed());
+        info!("Uploading datamap chunk to the network at: {data_map_addr:?}");
 
         let map_xor_name = *data_map_chunk.address().xorname();
         let mut xor_names = vec![map_xor_name];
@@ -131,17 +141,15 @@ impl Client {
             .await
             .inspect_err(|err| error!("Error paying for data: {err:?}"))?;
 
-        let mut record_count = 0;
-
         // Upload all the chunks in parallel including the data map chunk
         debug!("Uploading {} chunks", chunks.len());
-        let mut tasks = JoinSet::new();
+        let mut upload_tasks = vec![];
         for chunk in chunks.into_iter().chain(std::iter::once(data_map_chunk)) {
             let self_clone = self.clone();
             let address = *chunk.address();
             if let Some(proof) = payment_proofs.get(chunk.name()) {
                 let proof_clone = proof.clone();
-                tasks.spawn(async move {
+                upload_tasks.push(async move {
                     self_clone
                         .chunk_upload_with_payment(chunk, proof_clone)
                         .await
@@ -151,14 +159,21 @@ impl Client {
                 debug!("Chunk at {address:?} was already paid for so skipping");
             }
         }
-        while let Some(result) = tasks.join_next().await {
-            result
-                .inspect_err(|err| error!("Join error uploading chunk: {err:?}"))
-                .map_err(PutError::JoinError)?
-                .inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
-            record_count += 1;
-        }
+        let uploads =
+            process_tasks_with_max_concurrency(upload_tasks, *CHUNK_UPLOAD_BATCH_SIZE).await;
 
+        // Check for errors
+        let total_uploads = uploads.len();
+        let ok_uploads = uploads
+            .iter()
+            .filter_map(|up| up.is_ok().then_some(()))
+            .count();
+        info!("Uploaded {} chunks out of {}", ok_uploads, total_uploads);
+        let uploads: Result<Vec<_>, _> = uploads.into_iter().collect();
+        uploads.inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
+        let record_count = ok_uploads;
+
+        // Reporting
         if let Some(channel) = self.client_event_sender.as_ref() {
             let tokens_spent = payment_proofs
                 .values()

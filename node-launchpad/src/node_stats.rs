@@ -20,7 +20,8 @@ use crate::action::{Action, StatusActions};
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IndividualNodeStats {
     pub service_name: String,
-    pub forwarded_rewards: u64,
+    pub forwarded_rewards: usize,
+    pub rewards_wallet_balance: usize,
     pub memory_usage_mb: usize,
     pub bandwidth_inbound: usize,
     pub bandwidth_outbound: usize,
@@ -33,7 +34,8 @@ pub struct IndividualNodeStats {
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NodeStats {
-    pub total_forwarded_rewards: u64,
+    pub total_forwarded_rewards: usize,
+    pub total_rewards_wallet_balance: usize,
     pub total_memory_usage_mb: usize,
     pub individual_stats: Vec<IndividualNodeStats>,
 }
@@ -41,6 +43,7 @@ pub struct NodeStats {
 impl NodeStats {
     fn merge(&mut self, other: &IndividualNodeStats) {
         self.total_forwarded_rewards += other.forwarded_rewards;
+        self.total_rewards_wallet_balance += other.rewards_wallet_balance;
         self.total_memory_usage_mb += other.memory_usage_mb;
         self.individual_stats.push(other.clone()); // Store individual stats
     }
@@ -135,6 +138,7 @@ impl NodeStats {
                     let individual_stats = IndividualNodeStats {
                         service_name: service_name.clone(),
                         forwarded_rewards: stats.forwarded_rewards,
+                        rewards_wallet_balance: stats.rewards_wallet_balance,
                         memory_usage_mb: stats.memory_usage_mb,
                         bandwidth_inbound: stats.bandwidth_inbound,
                         bandwidth_outbound: stats.bandwidth_outbound,
@@ -181,7 +185,17 @@ impl NodeStats {
                     prometheus_parse::Value::Counter(val)
                     | prometheus_parse::Value::Gauge(val)
                     | prometheus_parse::Value::Untyped(val) => {
-                        stats.forwarded_rewards = val as u64;
+                        stats.forwarded_rewards = val as usize;
+                    }
+                    _ => {}
+                }
+            } else if sample.metric == "sn_node_current_reward_wallet_balance" {
+                // Attos
+                match sample.value {
+                    prometheus_parse::Value::Counter(val)
+                    | prometheus_parse::Value::Gauge(val)
+                    | prometheus_parse::Value::Untyped(val) => {
+                        stats.rewards_wallet_balance = val as usize;
                     }
                     _ => {}
                 }

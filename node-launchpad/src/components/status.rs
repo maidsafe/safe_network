@@ -207,7 +207,7 @@ impl Status<'_> {
                         .iter()
                         .find(|s| s.service_name == node_item.service_name)
                     {
-                        item.attos = stats.forwarded_rewards;
+                        item.attos = stats.rewards_wallet_balance;
                         item.memory = stats.memory_usage_mb;
                         item.mbps = format!(
                             "↓{:06.2} ↑{:06.2}",
@@ -710,9 +710,12 @@ impl Component for Status<'_> {
 
         let total_attos_earned_and_wallet_row = Row::new(vec![
             Cell::new("Attos Earned".to_string()).fg(VIVID_SKY_BLUE),
-            Cell::new(self.node_stats.total_forwarded_rewards.to_string())
-                .fg(VIVID_SKY_BLUE)
-                .bold(),
+            Cell::new(format!(
+                "{:?}",
+                self.node_stats.total_rewards_wallet_balance
+            ))
+            .fg(VIVID_SKY_BLUE)
+            .bold(),
             Cell::new(Line::from(wallet_not_set).alignment(Alignment::Right)),
         ]);
 
@@ -1042,7 +1045,7 @@ impl fmt::Display for NodeStatus {
 pub struct NodeItem<'a> {
     name: String,
     version: String,
-    attos: u64,
+    attos: usize,
     memory: usize,
     mbps: String,
     records: usize,
