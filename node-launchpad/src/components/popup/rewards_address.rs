@@ -329,7 +329,7 @@ impl Component for RewardsAddress {
                 .split(layer_one[1]);
 
                 let text = Paragraph::new(vec![
-                    Line::from(Span::styled("Add your wallet and you can earn a slice of millions of tokens created at the genesis of the Autonomi Network when through running nodes.",Style::default())),
+                    Line::from(Span::styled("Add your wallet to store your node earnings, and we'll pay you rewards to the same wallet after the Network's Token Generation Event.",Style::default())),
                     Line::from(Span::styled("\n\n",Style::default())),
                     Line::from(Span::styled("By continuing you agree to the Terms and Conditions found here:",Style::default())),
                     Line::from(Span::styled("\n\n",Style::default())),
