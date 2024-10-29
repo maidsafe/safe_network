@@ -59,14 +59,14 @@ pub enum PutError {
     PayError(#[from] PayError),
     #[error("Serialization error: {0}")]
     Serialization(String),
+    #[error("Join error uploading chunk.")]
+    JoinError(#[from] JoinError),
     #[error("A wallet error occurred.")]
     Wallet(#[from] sn_evm::EvmError),
     #[error("The vault owner key does not match the client's public key")]
     VaultBadOwner,
     #[error("Payment unexpectedly invalid for {0:?}")]
     PaymentUnexpectedlyInvalid(NetworkAddress),
-    #[error("Could not simultaneously upload chunks: {0:?}")]
-    JoinError(tokio::task::JoinError),
 }
 
 /// Errors that can occur during the pay operation.
@@ -98,8 +98,6 @@ pub enum GetError {
 /// Errors that can occur during the cost calculation.
 #[derive(Debug, thiserror::Error)]
 pub enum CostError {
-    #[error("Could not simultaneously fetch store costs: {0:?}")]
-    JoinError(JoinError),
     #[error("Failed to self-encrypt data.")]
     SelfEncryption(#[from] crate::self_encryption::Error),
     #[error("Could not get store quote for: {0:?} after several retries")]
