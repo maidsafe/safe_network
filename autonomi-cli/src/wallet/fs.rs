@@ -8,8 +8,11 @@ use prettytable::{Cell, Row, Table};
 use std::ffi::OsString;
 use std::io::Read;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 const ENCRYPTED_PRIVATE_KEY_EXT: &str = ".encrypted";
+
+pub static SELECTED_WALLET_ADDRESS: OnceLock<String> = OnceLock::new();
 
 /// Creates the wallets folder if it is missing and returns the folder path.
 pub(crate) fn get_client_wallet_dir_path() -> Result<PathBuf, Error> {
@@ -103,19 +106,33 @@ pub(crate) fn load_wallet_from_address(wallet_address: &str) -> Result<Wallet, E
 }
 
 pub(crate) fn select_wallet() -> Result<Wallet, Error> {
-    let private_key = select_wallet_private_key()?;
-    load_wallet_from_address(&private_key)
+    let wallet_address = select_wallet_address()?;
+    load_wallet_from_address(&wallet_address)
 }
 
 pub(crate) fn select_wallet_private_key() -> Result<String, Error> {
+    let wallet_address = select_wallet_address()?;
+    load_private_key(&wallet_address)
+}
+
+pub(crate) fn select_wallet_address() -> Result<String, Error> {
+    // Try if a wallet address was already selected this session
+    if let Some(wallet_address) = SELECTED_WALLET_ADDRESS.get() {
+        return Ok(wallet_address.clone());
+    }
+
     let wallets_folder = get_client_wallet_dir_path()?;
     let wallet_files = get_wallet_files(&wallets_folder)?;
 
-    match wallet_files.len() {
+    let wallet_address = match wallet_files.len() {
         0 => Err(Error::NoWalletsFound),
         1 => Ok(filter_wallet_file_extension(&wallet_files[0])),
         _ => get_wallet_selection(wallet_files),
-    }
+    }?;
+
+    Ok(SELECTED_WALLET_ADDRESS
+        .get_or_init(|| wallet_address)
+        .to_string())
 }
 
 fn get_wallet_selection(wallet_files: Vec<String>) -> Result<String, Error> {
