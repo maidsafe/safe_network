@@ -29,6 +29,73 @@ use tokio::sync::mpsc::{self, Sender};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Code, Request, Response, Status};
 use tracing::{debug, info};
+use tokio::sync::Mutex;
+use std::num::NonZeroU32;
+use governor::{
+    clock::DefaultClock,
+    middleware::NoOpMiddleware,
+    state::{InMemoryState, NotKeyed},
+    Quota, RateLimiter as Governor,
+};
+
+/// RateLimiter to prevent abuse of the RPC service
+struct RateLimiter {
+    // Per-IP rate limiters
+    per_ip_limiters: Mutex<HashMap<String, Governor<NotKeyed, InMemoryState, DefaultClock>>>,
+    // Global rate limiter
+    global_limiter: Governor<NotKeyed, InMemoryState, DefaultClock>,
+}
+
+impl RateLimiter {
+    fn new() -> Self {
+        // Allow 100 requests per minute globally
+        let global_quota = Quota::per_minute(NonZeroU32::new(100).expect("Valid non-zero value"));
+        // Allow 20 requests per minute per IP
+        let global_limiter = Governor::new(
+            global_quota,
+            InMemoryState::default(),
+            &DefaultClock::default(),
+        );
+
+        Self {
+            per_ip_limiters: Mutex::new(HashMap::new()),
+            global_limiter,
+        }
+    }
+
+    /// Check if a request should be allowed based on rate limits
+    async fn check_rate_limit(&self, remote_addr: Option<SocketAddr>) -> Result<(), Status> {
+        // First check global rate limit
+        if let Err(_) = self.global_limiter.check() {
+            return Err(Status::resource_exhausted(
+                "Global rate limit exceeded. Please try again later.",
+            ));
+        }
+
+        // Then check per-IP rate limit if we have a remote address
+        if let Some(addr) = remote_addr {
+            let ip = addr.ip().to_string();
+            let mut limiters = self.per_ip_limiters.lock().await;
+            
+            let limiter = limiters.entry(ip.clone()).or_insert_with(|| {
+                let quota = Quota::per_minute(NonZeroU32::new(20).expect("Valid non-zero value"));
+                Governor::new(
+                    quota,
+                    InMemoryState::default(),
+                    &DefaultClock::default(),
+                )
+            });
+
+            if let Err(_) = limiter.check() {
+                return Err(Status::resource_exhausted(
+                    "Rate limit exceeded for your IP. Please try again later.",
+                ));
+            }
+        }
+
+        Ok(())
+    }
+}
 
 // Defining a struct to hold information used by our gRPC service backend
 struct SafeNodeRpcService {
@@ -38,6 +105,7 @@ struct SafeNodeRpcService {
     ctrl_tx: Sender<NodeCtrl>,
     started_instant: Instant,
     log_reload_handle: ReloadHandle,
+    rate_limiter: RateLimiter,
 }
 
 // Implementing RPC interface for service defined in .proto
@@ -49,6 +117,9 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<NodeInfoRequest>,
     ) -> Result<Response<NodeInfoResponse>, Status> {
+        // Check rate limit before processing request
+        self.rate_limiter.check_rate_limit(request.remote_addr()).await?;
+
         debug!(
             "RPC request received at {}: {:?}",
             self.addr,
@@ -76,6 +147,8 @@ impl SafeNode for SafeNodeRpcService {
         &self,
         request: Request<NetworkInfoRequest>,
     ) -> Result<Response<NetworkInfoResponse>, Status> {
+        self.rate_limiter.check_rate_limit(request.remote_addr()).await?;
+        
         debug!(
             "RPC request received at {}: {:?}",
             self.addr,
@@ -304,6 +377,7 @@ pub(crate) fn start_rpc_service(
         ctrl_tx,
         started_instant,
         log_reload_handle,
+        rate_limiter: RateLimiter::new(),
     };
     info!("RPC Server listening on {addr}");
     println!("RPC Server listening on {addr}");

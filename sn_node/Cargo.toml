@@ -39,6 +39,7 @@ dirs-next = "~2.0.0"
 eyre = "0.6.8"
 file-rotate = "0.7.3"
 futures = "~0.3.13"
+governor = "0.6.1"
 hex = "~0.4.3"
 itertools = "~0.12.1"
 libp2p = { version = "0.54.1", features = ["tokio", "dns", "kad", "macros"] }

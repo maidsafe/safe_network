@@ -21,6 +21,8 @@ use sn_protocol::{
     NetworkAddress, PrettyPrintRecordKey,
 };
 use tokio::task::spawn;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 impl Node {
     /// Sends _all_ record keys every interval to all peers within the REPLICATE_RANGE.
@@ -134,5 +136,34 @@ impl Node {
                 .replicate_valid_fresh_record(paid_key, record_type)
                 .await;
         });
+    }
+}
+
+pub struct ReplicationManager {
+    max_concurrent_replications: usize,
+    active_replications: Arc<AtomicUsize>,
+}
+
+impl ReplicationManager {
+    pub fn new(max_concurrent: usize) -> Self {
+        Self {
+            max_concurrent_replications: max_concurrent,
+            active_replications: Arc::new(AtomicUsize::new(0)),
+        }
+    }
+
+    pub async fn replicate(&self, record: Record) -> Result<()> {
+        // Prevent too many concurrent operations
+        if self.active_replications.load(Ordering::SeqCst) >= self.max_concurrent_replications {
+            return Err(Error::ResourceExhausted("Too many active replications".into()));
+        }
+        
+        self.active_replications.fetch_add(1, Ordering::SeqCst);
+        
+        // TODO: Implement actual replication logic here
+        // For now we're just tracking concurrency
+        
+        self.active_replications.fetch_sub(1, Ordering::SeqCst);
+        Ok(())
     }
 }

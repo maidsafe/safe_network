@@ -1,5 +1,6 @@
 use clap::Subcommand;
 use sn_evm::EvmNetwork;
+use std::time::Duration;
 
 #[derive(Subcommand, Clone, Debug)]
 #[allow(clippy::enum_variant_names)]
@@ -36,7 +37,13 @@ impl Into<EvmNetwork> for EvmNetworkCommand {
                 rpc_url,
                 payment_token_address,
                 data_payments_address,
-            } => EvmNetwork::new_custom(&rpc_url, &payment_token_address, &data_payments_address),
+            } => {
+                EvmNetwork::new_custom(
+                    &rpc_url,
+                    &payment_token_address,
+                    &data_payments_address,
+                )
+            }
         }
     }
 }

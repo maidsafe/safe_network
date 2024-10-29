@@ -20,6 +20,7 @@ use prometheus_client::{
 use sn_networking::target_arch::Instant;
 #[cfg(feature = "open-metrics")]
 use sn_networking::MetricsRegistries;
+use std::time::Duration;
 
 #[derive(Clone)]
 /// The shared recorders that are used to record metrics.
@@ -43,6 +44,11 @@ pub(crate) struct NodeMetricsRecorder {
     // to track the uptime of the node.
     pub(crate) started_instant: Instant,
     pub(crate) uptime: Gauge,
+
+    // Add sampling rate control
+    sampling_interval: Duration,
+    last_collection: Instant,
+    max_metrics_buffer: usize,
 }
 
 #[derive(EncodeLabelSet, Hash, Clone, Eq, PartialEq, Debug)]
@@ -147,6 +153,9 @@ impl NodeMetricsRecorder {
             _total_forwarded_rewards: total_forwarded_rewards,
             started_instant: Instant::now(),
             uptime,
+            sampling_interval: Duration::from_secs(1),
+            last_collection: Instant::now(),
+            max_metrics_buffer: 100,
         }
     }
 

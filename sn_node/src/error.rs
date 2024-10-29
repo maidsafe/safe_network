@@ -100,4 +100,7 @@ pub enum Error {
     EvmNetwork(String),
     #[error("Invalid quote timestamp: {0}")]
     InvalidQuoteTimestamp(String),
+
+    #[error("Resource exhausted: {0}")]
+    ResourceExhausted(String),
 }
