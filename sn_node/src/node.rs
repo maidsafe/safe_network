@@ -718,10 +718,10 @@ impl Node {
                 // The `rolling_index` is rotating among 0-511,
                 // meanwhile the returned `kbuckets` only holding non-empty buckets.
                 // Hence using the `remainder` calculate to achieve a rolling check.
-                // A further `divide by 2` is used to allow `upper or lower part` index within
-                // a bucket, to further reduce the concurrent queries.
+                // A further `remainder of 2` is used to allow `upper or lower part`
+                // index within a bucket, to further reduce the concurrent queries.
                 let mut bucket_index = (rolling_index / 2) % kbuckets.len();
-                let part_index = rolling_index / 2;
+                let part_index = rolling_index % 2;
 
                 for (distance, peers) in kbuckets.iter() {
                     if bucket_index == 0 {
