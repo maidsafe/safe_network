@@ -8,7 +8,6 @@
 
 use bytes::Bytes;
 use libp2p::kad::Quorum;
-use tokio::task::JoinError;
 
 use std::collections::HashSet;
 use std::sync::LazyLock;
@@ -59,8 +58,6 @@ pub enum PutError {
     PayError(#[from] PayError),
     #[error("Serialization error: {0}")]
     Serialization(String),
-    #[error("Join error uploading chunk.")]
-    JoinError(#[from] JoinError),
     #[error("A wallet error occurred.")]
     Wallet(#[from] sn_evm::EvmError),
     #[error("The vault owner key does not match the client's public key")]
