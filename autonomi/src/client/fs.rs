@@ -25,7 +25,7 @@ pub static FILE_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
     std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(1)
-        * 16
+        * 8
 });
 
 /// Errors that can occur during the file upload operation.
