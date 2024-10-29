@@ -26,11 +26,19 @@ use sn_protocol::{
 };
 
 /// Number of chunks to upload in parallel.
+/// Can be overridden by the `CHUNK_UPLOAD_BATCH_SIZE` environment variable.
 pub static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
-    std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(1)
-        * 8
+    let batch_size = std::env::var("CHUNK_UPLOAD_BATCH_SIZE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(
+            std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1)
+                * 8,
+        );
+    info!("Chunk upload batch size: {}", batch_size);
+    batch_size
 });
 
 /// Raw Data Address (points to a DataMap)

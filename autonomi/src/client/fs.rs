@@ -21,11 +21,19 @@ use super::archive::{Archive, ArchiveAddr};
 use super::data::{DataAddr, GetError, PutError};
 
 /// Number of files to upload in parallel.
+/// Can be overridden by the `FILE_UPLOAD_BATCH_SIZE` environment variable.
 pub static FILE_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
-    std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(1)
-        * 8
+    let batch_size = std::env::var("FILE_UPLOAD_BATCH_SIZE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(
+            std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1)
+                * 8,
+        );
+    info!("File upload batch size: {}", batch_size);
+    batch_size
 });
 
 /// Errors that can occur during the file upload operation.
