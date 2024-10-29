@@ -12,6 +12,7 @@ use crate::contract::network_token::NetworkToken;
 use crate::contract::{data_payments, network_token};
 use crate::utils::http_provider;
 use crate::Network;
+use alloy::hex::ToHexExt;
 use alloy::network::{Ethereum, EthereumWallet, NetworkWallet, TransactionBuilder};
 use alloy::providers::fillers::{
     BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
@@ -147,6 +148,12 @@ impl Wallet {
     /// Drop the guard to unlock the wallet.
     pub async fn lock(&self) -> tokio::sync::MutexGuard<()> {
         self.lock.lock().await
+    }
+
+    /// Returns a random private key string.
+    pub fn random_private_key() -> String {
+        let signer: PrivateKeySigner = LocalSigner::random();
+        signer.to_bytes().encode_hex_with_prefix()
     }
 }
 
