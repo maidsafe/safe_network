@@ -162,10 +162,8 @@ impl Client {
                 debug!("Chunk at {address:?} was already paid for so skipping");
             }
         }
-        let uploads = process_tasks_with_max_concurrency(upload_tasks, *CHUNK_UPLOAD_BATCH_SIZE)
-            .await
-            .inspect_err(|err| error!("Join error uploading chunk: {err:?}"))
-            .map_err(PutError::JoinError)?;
+        let uploads =
+            process_tasks_with_max_concurrency(upload_tasks, *CHUNK_UPLOAD_BATCH_SIZE).await;
 
         // Check for errors
         let total_uploads = uploads.len();

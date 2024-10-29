@@ -21,7 +21,6 @@ use sn_protocol::{
     NetworkAddress,
 };
 use std::{collections::HashMap, future::Future, num::NonZero};
-use tokio::task::JoinError;
 use xor_name::XorName;
 
 use super::{
@@ -259,10 +258,7 @@ pub(crate) fn extract_quote_payments(
     (to_be_paid, already_paid)
 }
 
-pub(crate) async fn process_tasks_with_max_concurrency<I, R>(
-    tasks: I,
-    batch_size: usize,
-) -> Result<Vec<R>, JoinError>
+pub(crate) async fn process_tasks_with_max_concurrency<I, R>(tasks: I, batch_size: usize) -> Vec<R>
 where
     I: IntoIterator,
     I::Item: Future<Output = R> + Send,
@@ -286,5 +282,5 @@ where
         results.push(result);
     }
 
-    Ok(results)
+    results
 }

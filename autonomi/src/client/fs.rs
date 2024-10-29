@@ -15,7 +15,6 @@ use sn_evm::EvmWallet;
 use sn_networking::target_arch::{Duration, SystemTime};
 use std::path::PathBuf;
 use std::sync::LazyLock;
-use tokio::task::JoinError;
 
 use super::archive::{Archive, ArchiveAddr};
 use super::data::{DataAddr, GetError, PutError};
@@ -48,8 +47,6 @@ pub enum UploadError {
     PutError(#[from] PutError),
     #[error("Failed to fetch file")]
     GetError(#[from] GetError),
-    #[error("Error in parralel processing")]
-    JoinError(#[from] JoinError),
     #[error("Failed to serialize")]
     Serialization(#[from] rmp_serde::encode::Error),
     #[error("Failed to deserialize")]
@@ -138,7 +135,7 @@ impl Client {
 
         // wait for all files to be uploaded
         let uploads =
-            process_tasks_with_max_concurrency(upload_tasks, *FILE_UPLOAD_BATCH_SIZE).await?;
+            process_tasks_with_max_concurrency(upload_tasks, *FILE_UPLOAD_BATCH_SIZE).await;
         info!(
             "Upload of {} files completed in {:?}",
             uploads.len(),
