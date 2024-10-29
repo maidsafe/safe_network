@@ -8,14 +8,33 @@
 
 use crate::client::archive::Metadata;
 use crate::client::data::CostError;
+use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::Client;
 use bytes::Bytes;
 use sn_evm::EvmWallet;
 use sn_networking::target_arch::{Duration, SystemTime};
 use std::path::PathBuf;
+use std::sync::LazyLock;
+use tokio::task::JoinError;
 
 use super::archive::{Archive, ArchiveAddr};
 use super::data::{DataAddr, GetError, PutError};
+
+/// Number of files to upload in parallel.
+/// Can be overridden by the `FILE_UPLOAD_BATCH_SIZE` environment variable.
+pub static FILE_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
+    let batch_size = std::env::var("FILE_UPLOAD_BATCH_SIZE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(
+            std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1)
+                * 8,
+        );
+    info!("File upload batch size: {}", batch_size);
+    batch_size
+});
 
 /// Errors that can occur during the file upload operation.
 #[cfg(feature = "fs")]
@@ -29,6 +48,8 @@ pub enum UploadError {
     PutError(#[from] PutError),
     #[error("Failed to fetch file")]
     GetError(#[from] GetError),
+    #[error("Error in parralel processing")]
+    JoinError(#[from] JoinError),
     #[error("Failed to serialize")]
     Serialization(#[from] rmp_serde::encode::Error),
     #[error("Failed to deserialize")]
@@ -96,30 +117,51 @@ impl Client {
         dir_path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, UploadError> {
-        let mut archive = Archive::new();
+        info!("Uploading directory: {dir_path:?}");
+        let start = tokio::time::Instant::now();
 
+        // start upload of files in parallel
+        let mut upload_tasks = Vec::new();
         for entry in walkdir::WalkDir::new(dir_path) {
             let entry = entry?;
-
             if !entry.file_type().is_file() {
                 continue;
             }
 
-            let path = entry.path().to_path_buf();
-            tracing::info!("Uploading file: {path:?}");
-            #[cfg(feature = "loud")]
-            println!("Uploading file: {path:?}");
-            let file = self.file_upload(path.clone(), wallet).await?;
-
             let metadata = metadata_from_entry(&entry);
-
-            archive.add_file(path, file, metadata);
+            let path = entry.path().to_path_buf();
+            upload_tasks.push(async move {
+                let file = self.file_upload(path.clone(), wallet).await;
+                (path, metadata, file)
+            });
         }
 
-        let archive_serialized = archive.into_bytes()?;
+        // wait for all files to be uploaded
+        let uploads =
+            process_tasks_with_max_concurrency(upload_tasks, *FILE_UPLOAD_BATCH_SIZE).await?;
+        info!(
+            "Upload of {} files completed in {:?}",
+            uploads.len(),
+            start.elapsed()
+        );
+        let mut archive = Archive::new();
+        for (path, metadata, maybe_file) in uploads.into_iter() {
+            match maybe_file {
+                Ok(file) => archive.add_file(path, file, metadata),
+                Err(err) => {
+                    error!("Failed to upload file: {path:?}: {err:?}");
+                    return Err(err);
+                }
+            }
+        }
 
+        // upload archive
+        let archive_serialized = archive.into_bytes()?;
         let arch_addr = self.data_put(archive_serialized, wallet).await?;
 
+        info!("Complete archive upload completed in {:?}", start.elapsed());
+        #[cfg(feature = "loud")]
+        println!("Upload completed in {:?}", start.elapsed());
         Ok(arch_addr)
     }
 
@@ -130,6 +172,10 @@ impl Client {
         path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<DataAddr, UploadError> {
+        info!("Uploading file: {path:?}");
+        #[cfg(feature = "loud")]
+        println!("Uploading file: {path:?}");
+
         let data = tokio::fs::read(path).await?;
         let data = Bytes::from(data);
         let addr = self.data_put(data, wallet).await?;

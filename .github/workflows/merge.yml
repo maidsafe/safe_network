@@ -110,6 +110,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: Run autonomi tests
+        timeout-minutes: 25
+        run: cargo test --release --package autonomi --lib --features="full,fs"
+
       - name: Run node tests
         timeout-minutes: 25
         run: cargo test --release --package sn_node --lib
