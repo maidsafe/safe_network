@@ -159,6 +159,11 @@ impl Client {
 
         let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
 
+        // Make sure nobody else can use the wallet while we are paying
+        debug!("Waiting for wallet lock");
+        let lock_guard = wallet.lock().await;
+        debug!("Locked wallet");
+
         // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
         // TODO: retry when it fails?
         // Execute chunk payments
@@ -166,6 +171,10 @@ impl Client {
             .pay_for_quotes(quote_payments)
             .await
             .map_err(|err| PayError::from(err.0))?;
+
+        // payment is done, unlock the wallet for other threads
+        drop(lock_guard);
+        debug!("Unlocked wallet");
 
         let proofs = payment_proof_from_quotes_and_payments(&cost_map, &payments);
 

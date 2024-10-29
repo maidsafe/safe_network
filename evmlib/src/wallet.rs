@@ -22,6 +22,7 @@ use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{reqwest, Client, Http};
 use alloy::transports::{RpcError, TransportErrorKind};
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -39,12 +40,17 @@ pub enum Error {
 pub struct Wallet {
     wallet: EthereumWallet,
     network: Network,
+    lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl Wallet {
     /// Creates a new Wallet object with the specific Network and EthereumWallet.
     pub fn new(network: Network, wallet: EthereumWallet) -> Self {
-        Self { wallet, network }
+        Self {
+            wallet,
+            network,
+            lock: Arc::new(tokio::sync::Mutex::new(())),
+        }
     }
 
     /// Convenience function that creates a new Wallet with a random EthereumWallet.
@@ -135,6 +141,12 @@ impl Wallet {
     /// Build a provider using this wallet.
     pub fn to_provider(&self) -> ProviderWithWallet {
         http_provider_with_wallet(self.network.rpc_url().clone(), self.wallet.clone())
+    }
+
+    /// Lock the wallet to prevent concurrent use.
+    /// Drop the guard to unlock the wallet.
+    pub async fn lock(&self) -> tokio::sync::MutexGuard<()> {
+        self.lock.lock().await
     }
 }
 
