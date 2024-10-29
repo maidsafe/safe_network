@@ -242,7 +242,7 @@ impl SwarmDriver {
         }
 
         let event_sender = self.event_sender.clone();
-        if more_than_one_key && OsRng.gen_bool(0.1) {
+        if more_than_one_key && OsRng.gen_bool(0.2) {
             let _handle = tokio::spawn(async move {
                 // Only run 10% of the time
                 let keys_to_verify =
