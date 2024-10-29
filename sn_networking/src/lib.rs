@@ -30,7 +30,6 @@ mod transfers;
 mod transport;
 
 use cmd::LocalSwarmCmd;
-use sn_registers::SignedRegister;
 use xor_name::XorName;
 
 // re-export arch dependent deps for use in the crate, or above
@@ -62,15 +61,11 @@ use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
-    storage::{
-        try_deserialize_record, try_serialize_record, RecordHeader, RecordKind, RecordType,
-        RetryStrategy,
-    },
+    storage::{RecordType, RetryStrategy},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
-use sn_transfers::SignedSpend;
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     net::IpAddr,
     sync::Arc,
 };
@@ -79,6 +74,15 @@ use tokio::sync::{
     oneshot,
 };
 use tokio::time::Duration;
+#[cfg(not(target_arch = "wasm32"))]
+use {
+    sn_protocol::storage::{
+        try_deserialize_record, try_serialize_record, RecordHeader, RecordKind,
+    },
+    sn_registers::SignedRegister,
+    sn_transfers::SignedSpend,
+    std::collections::HashSet,
+};
 
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
