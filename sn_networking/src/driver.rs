@@ -930,7 +930,7 @@ impl SwarmDriver {
         let farthest_peer_to_check = self
             .get_all_local_peers_excluding_self()
             .len()
-            .checked_div(5 * CLOSE_GROUP_SIZE)
+            .checked_div(3 * CLOSE_GROUP_SIZE)
             .unwrap_or(1);
 
         info!("Farthest peer we'll check: {:?}", farthest_peer_to_check);
@@ -965,7 +965,7 @@ impl SwarmDriver {
 
         sorted_distances.sort_unstable();
 
-        let median_index = sorted_distances.len() / 8;
+        let median_index = sorted_distances.len() / 2;
 
         let default = KBucketDistance::default();
         let median = sorted_distances.get(median_index).cloned();
