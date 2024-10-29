@@ -24,7 +24,7 @@ use std::{collections::HashMap, future::Future, num::NonZero};
 use xor_name::XorName;
 
 use super::{
-    data::{CostError, GetError, PayError, PutError},
+    data::{CostError, GetError, PayError, PutError, CHUNK_DOWNLOAD_BATCH_SIZE},
     Client,
 };
 use crate::self_encryption::DataMapLevel;
@@ -35,16 +35,25 @@ impl Client {
     pub(crate) async fn fetch_from_data_map(&self, data_map: &DataMap) -> Result<Bytes, GetError> {
         let mut encrypted_chunks = vec![];
 
-        for info in data_map.infos() {
-            let chunk = self
-                .chunk_get(info.dst_hash)
-                .await
-                .inspect_err(|err| error!("Error fetching chunk {:?}: {err:?}", info.dst_hash))?;
-            let chunk = EncryptedChunk {
-                index: info.index,
-                content: chunk.value,
-            };
-            encrypted_chunks.push(chunk);
+        let mut stream = futures::stream::iter(data_map.infos().into_iter())
+            .map(|info| {
+                let dst_hash = info.dst_hash;
+                async move {
+                    self.chunk_get(dst_hash)
+                        .await
+                        .inspect_err(move |err| {
+                            error!("Error fetching chunk {:?}: {err:?}", dst_hash)
+                        })
+                        .map(|chunk| EncryptedChunk {
+                            index: info.index,
+                            content: chunk.value,
+                        })
+                }
+            })
+            .buffered(*CHUNK_DOWNLOAD_BATCH_SIZE);
+
+        while let Some(encrypted_chunk_result) = stream.next().await {
+            encrypted_chunks.push(encrypted_chunk_result?);
         }
 
         let data = decrypt_full_set(data_map, &encrypted_chunks).map_err(|e| {
