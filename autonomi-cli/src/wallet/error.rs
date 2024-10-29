@@ -18,5 +18,6 @@ pub enum Error {
     PrivateKeyFileNotFound,
     #[error("No wallets found. Create one using `wallet create`")]
     NoWalletsFound,
+    #[error("Invalid wallet selection input")]
     InvalidSelection,
 }

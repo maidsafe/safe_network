@@ -76,7 +76,7 @@ pub(crate) fn load_private_key(wallet_address: &str) -> Result<String, Error> {
 
     let mut buffer = String::new();
     file.read_to_string(&mut buffer)
-        .map_err(|_| Error::InvalidPrivateKey)?;
+        .map_err(|_| Error::InvalidPrivateKeyFile)?;
 
     // If the file is encrypted, prompt for the password and decrypt the key.
     if is_encrypted {
