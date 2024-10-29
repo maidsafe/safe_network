@@ -23,20 +23,18 @@ pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>)
             sn_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
         {
             error!("Error while stopping services {err:?}");
-            if let Err(err) =
-                action_sender.send(Action::StatusActions(StatusActions::ErrorStoppingNodes {
+            send_action(
+                action_sender,
+                Action::StatusActions(StatusActions::ErrorStoppingNodes {
                     raw_error: err.to_string(),
-                }))
-            {
-                error!("Error while sending action: {err:?}");
-            }
+                }),
+            );
         } else {
             info!("Successfully stopped services");
-        }
-        if let Err(err) =
-            action_sender.send(Action::StatusActions(StatusActions::StopNodesCompleted))
-        {
-            error!("Error while sending action: {err:?}");
+            send_action(
+                action_sender,
+                Action::StatusActions(StatusActions::StopNodesCompleted),
+            );
         }
     });
 }
@@ -94,12 +92,10 @@ pub fn maintain_n_running_nodes(args: MaintainNodesArgs) {
         }
 
         debug!("Finished maintaining {} nodes", args.count);
-        if let Err(err) = args
-            .action_sender
-            .send(Action::StatusActions(StatusActions::StartNodesCompleted))
-        {
-            error!("Error while sending action: {err:?}");
-        }
+        send_action(
+            args.action_sender,
+            Action::StatusActions(StatusActions::StartNodesCompleted),
+        );
     });
 }
 
@@ -108,22 +104,20 @@ pub fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_res
     tokio::task::spawn_local(async move {
         if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
             error!("Error while resetting services {err:?}");
-            if let Err(err) =
-                action_sender.send(Action::StatusActions(StatusActions::ErrorResettingNodes {
+            send_action(
+                action_sender,
+                Action::StatusActions(StatusActions::ErrorResettingNodes {
                     raw_error: err.to_string(),
-                }))
-            {
-                error!("Error while sending action: {err:?}");
-            }
+                }),
+            );
         } else {
             info!("Successfully reset services");
-        }
-        if let Err(err) =
-            action_sender.send(Action::StatusActions(StatusActions::ResetNodesCompleted {
-                trigger_start_node: start_nodes_after_reset,
-            }))
-        {
-            error!("Error while sending action: {err:?}");
+            send_action(
+                action_sender,
+                Action::StatusActions(StatusActions::ResetNodesCompleted {
+                    trigger_start_node: start_nodes_after_reset,
+                }),
+            );
         }
     });
 }
@@ -345,7 +339,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         config.data_dir_path.clone(),
         true,
         None,
-        Some(EvmNetwork::ArbitrumSepolia), //FIXME: should come from an UI element.
+        Some(EvmNetwork::ArbitrumSepolia),
         config.home_network,
         false,
         None,
@@ -398,16 +392,15 @@ async fn add_nodes(
 
         if *current_port > max_port {
             error!("Reached maximum port number. Unable to find an available port.");
-            if let Err(err) =
-                action_sender.send(Action::StatusActions(StatusActions::ErrorScalingUpNodes {
+            send_action(
+                action_sender.clone(),
+                Action::StatusActions(StatusActions::ErrorScalingUpNodes {
                     raw_error: format!(
                         "Reached maximum port number ({}).\nUnable to find an available port.",
                         max_port
                     ),
-                }))
-            {
-                error!("Error while sending action: {err:?}");
-            }
+                }),
+            );
             break;
         }
 
@@ -420,7 +413,7 @@ async fn add_nodes(
             config.data_dir_path.clone(),
             true,
             None,
-            Some(EvmNetwork::ArbitrumSepolia), //FIXME: Should come from an UI element
+            Some(EvmNetwork::ArbitrumSepolia),
             config.home_network,
             false,
             None,
@@ -466,16 +459,29 @@ async fn add_nodes(
                     .contains("Failed to add one or more services")
                     && retry_count >= NODE_ADD_MAX_RETRIES
                 {
-                    if let Err(err) = action_sender.send(Action::StatusActions(
-                        StatusActions::ErrorScalingUpNodes {
+                    send_action(
+                        action_sender.clone(),
+                        Action::StatusActions(StatusActions::ErrorScalingUpNodes {
                             raw_error: "When trying to add a node, we failed.\n\
                                  Maybe you ran out of disk space?\n\
                                  Maybe you need to change the port range?"
                                 .to_string(),
-                        },
-                    )) {
-                        error!("Error while sending action: {err:?}");
-                    }
+                        }),
+                    );
+                } else if err
+                    .to_string()
+                    .contains("contains a virus or potentially unwanted software")
+                    && retry_count >= NODE_ADD_MAX_RETRIES
+                {
+                    send_action(
+                        action_sender.clone(),
+                        Action::StatusActions(StatusActions::ErrorScalingUpNodes {
+                            raw_error: "When trying to add a node, we failed.\n\
+                             You may be running an old version of safenode service?\n\
+                             Did you whitelisted safenode and the launchpad?"
+                                .to_string(),
+                        }),
+                    );
                 } else {
                     error!("Range of ports to be used {:?}", *current_port..max_port);
                     error!("Error while adding node on port {}: {err:?}", current_port);
@@ -487,17 +493,16 @@ async fn add_nodes(
         }
     }
     if retry_count >= NODE_ADD_MAX_RETRIES {
-        if let Err(err) =
-            action_sender.send(Action::StatusActions(StatusActions::ErrorScalingUpNodes {
+        send_action(
+            action_sender.clone(),
+            Action::StatusActions(StatusActions::ErrorScalingUpNodes {
                 raw_error: format!(
                     "When trying run a node, we reached the maximum amount of retries ({}).\n\
                     Could this be a firewall blocking nodes starting?\n\
                     Or ports on your router already in use?",
                     NODE_ADD_MAX_RETRIES
                 ),
-            }))
-        {
-            error!("Error while sending action: {err:?}");
-        }
+            }),
+        );
     }
 }
