@@ -407,6 +407,22 @@ pub fn evm_network() -> Result<JsValue, JsError> {
     Ok(js_value)
 }
 
+/// Create an `EvmNetwork` with custom values.
+/// 
+/// # Example
+///
+/// ```js
+/// const [quotes, quotePayments, free_chunks] = await client.getQuotes(data);
+/// const evmNetwork = getEvmNetworkCustom("http://localhost:4343", "<payment token addr>", "<data payments addr>");
+/// const payForQuotesCalldata = getPayForQuotesCalldata(evmNetwork, quotePayments);
+/// ```
+#[wasm_bindgen(js_name = getEvmNetworkCustom)]
+pub fn evm_network_custom(rpc_url: String, payment_token_address: String, data_payments_address: String) -> Result<JsValue, JsError> {
+    let evm_network = evmlib::utils::get_evm_network(&rpc_url, &payment_token_address, &data_payments_address);
+    let js_value = serde_wasm_bindgen::to_value(&evm_network)?;
+    Ok(js_value)
+}
+
 #[wasm_bindgen(js_name = Wallet)]
 pub struct JsWallet(evmlib::wallet::Wallet);
 
@@ -429,6 +445,14 @@ pub fn funded_wallet() -> JsWallet {
         .expect("Invalid private key");
 
     JsWallet(wallet)
+}
+
+/// Get a funded wallet with a custom network.
+#[wasm_bindgen(js_name = getFundedWalletWithCustomNetwork)]
+pub fn funded_wallet_with_custom_network(network: JsValue, private_key: String) -> Result<JsWallet, JsError> {
+    let network: evmlib::Network = serde_wasm_bindgen::from_value(network)?;
+    let wallet = evmlib::wallet::Wallet::new_from_private_key(network, &private_key)?;
+    Ok(JsWallet(wallet))
 }
 
 /// Enable tracing logging in the console.
