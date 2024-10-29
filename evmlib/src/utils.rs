@@ -58,8 +58,16 @@ pub fn get_evm_testnet_csv_path() -> Result<PathBuf, Error> {
 }
 
 /// Create a custom `Network` from the given values
-pub fn get_evm_network(rpc_url: &str, payment_token_address: &str, data_payments_address: &str) -> Network {
-    Network::Custom(CustomNetwork::new(rpc_url, payment_token_address, data_payments_address))
+pub fn get_evm_network(
+    rpc_url: &str,
+    payment_token_address: &str,
+    data_payments_address: &str,
+) -> Network {
+    Network::Custom(CustomNetwork::new(
+        rpc_url,
+        payment_token_address,
+        data_payments_address,
+    ))
 }
 
 /// Get the `Network` from environment variables
