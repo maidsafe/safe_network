@@ -83,7 +83,7 @@ impl Client {
 
         // wait for all files to be uploaded
         let uploads =
-            process_tasks_with_max_concurrency(upload_tasks, *FILE_UPLOAD_BATCH_SIZE).await?;
+            process_tasks_with_max_concurrency(upload_tasks, *FILE_UPLOAD_BATCH_SIZE).await;
         info!(
             "Upload of {} files completed in {:?}",
             uploads.len(),
