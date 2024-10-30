@@ -326,24 +326,28 @@ fn main() -> Result<()> {
     // actively shut down the runtime
     rt.shutdown_timeout(Duration::from_secs(2));
 
-    // we got this far without error, which means (so far) the only thing we should be doing
-    // is restarting the node
-    start_new_node_process(restart_options);
+    // Restart only if we received a restart command.
+    if let Some((retain_peer_id, root_dir, port)) = restart_options {
+        start_new_node_process(retain_peer_id, root_dir, port);
+        println!("A new node process has been started successfully.");
+    } else {
+        println!("The node process has been stopped.");
+    }
 
-    // Command was successful, so we shut down the process
-    println!("A new node process has been started successfully.");
     Ok(())
 }
 
 /// Start a node with the given configuration.
-/// This function will only return if it receives a Restart NodeCtrl cmd. It optionally contains the node's root dir
-/// and it's listening port if we want to retain_peer_id on restart.
+/// Returns:
+/// - `Ok(Some(_))` if we receive a restart request.
+/// - `Ok(None)` if we want to shutdown the node.
+/// - `Err(_)` if we want to shutdown the node with an error.
 async fn run_node(
     node_builder: NodeBuilder,
     rpc: Option<SocketAddr>,
     log_output_dest: &str,
     log_reload_handle: ReloadHandle,
-) -> Result<Option<(PathBuf, u16)>> {
+) -> Result<Option<(bool, PathBuf, u16)>> {
     let started_instant = std::time::Instant::now();
 
     info!("Starting node ...");
@@ -463,19 +467,15 @@ You can check your reward balance by running:
                 delay,
                 retain_peer_id,
             }) => {
-                let res = if retain_peer_id {
-                    let root_dir = running_node.root_dir_path();
-                    let node_port = running_node.get_node_listening_port().await?;
-                    Some((root_dir, node_port))
-                } else {
-                    None
-                };
+                let root_dir = running_node.root_dir_path();
+                let node_port = running_node.get_node_listening_port().await?;
+
                 let msg = format!("Node is restarting in {delay:?}...");
                 info!("{msg}");
                 println!("{msg} Node path: {log_output_dest}");
                 sleep(delay).await;
 
-                break Ok(res);
+                return Ok(Some((retain_peer_id, root_dir, node_port)));
             }
             Some(NodeCtrl::Stop { delay, result }) => {
                 let msg = format!("Node is stopping in {delay:?}...");
@@ -689,7 +689,7 @@ fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keyp
 /// Starts a new process running the binary with the same args as
 /// the current process
 /// Optionally provide the node's root dir and listen port to retain it's PeerId
-fn start_new_node_process(retain_peer_id: Option<(PathBuf, u16)>) {
+fn start_new_node_process(retain_peer_id: bool, root_dir: PathBuf, port: u16) {
     // Retrieve the current executable's path
     let current_exe = env::current_exe().expect("could not get current executable path");
 
@@ -722,7 +722,7 @@ fn start_new_node_process(retain_peer_id: Option<(PathBuf, u16)>) {
     // Set the arguments for the new Command
     cmd.args(&args[1..]); // Exclude the first argument (binary path)
 
-    if let Some((root_dir, port)) = retain_peer_id {
+    if retain_peer_id {
         cmd.arg("--root-dir");
         cmd.arg(format!("{root_dir:?}"));
         cmd.arg("--port");
