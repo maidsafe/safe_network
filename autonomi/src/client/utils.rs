@@ -33,28 +33,31 @@ use crate::utils::payment_proof_from_quotes_and_payments;
 impl Client {
     /// Fetch and decrypt all chunks in the data map.
     pub(crate) async fn fetch_from_data_map(&self, data_map: &DataMap) -> Result<Bytes, GetError> {
-        let mut encrypted_chunks = vec![];
-
-        let mut stream = futures::stream::iter(data_map.infos().into_iter())
-            .map(|info| {
-                let dst_hash = info.dst_hash;
-                async move {
-                    self.chunk_get(dst_hash)
-                        .await
-                        .inspect_err(move |err| {
-                            error!("Error fetching chunk {:?}: {err:?}", dst_hash)
-                        })
-                        .map(|chunk| EncryptedChunk {
-                            index: info.index,
-                            content: chunk.value,
-                        })
+        let mut download_tasks = vec![];
+        for info in data_map.infos() {
+            download_tasks.push(async move {
+                match self
+                    .chunk_get(info.dst_hash)
+                    .await
+                    .inspect_err(|err| error!("Error fetching chunk {:?}: {err:?}", info.dst_hash))
+                {
+                    Ok(chunk) => Ok(EncryptedChunk {
+                        index: info.index,
+                        content: chunk.value,
+                    }),
+                    Err(err) => {
+                        error!("Error fetching chunk {:?}: {err:?}", info.dst_hash);
+                        Err(err)
+                    }
                 }
-            })
-            .buffered(*CHUNK_DOWNLOAD_BATCH_SIZE);
-
-        while let Some(encrypted_chunk_result) = stream.next().await {
-            encrypted_chunks.push(encrypted_chunk_result?);
+            });
         }
+
+        let encrypted_chunks =
+            process_tasks_with_max_concurrency(download_tasks, *CHUNK_DOWNLOAD_BATCH_SIZE)
+                .await
+                .into_iter()
+                .collect::<Result<Vec<EncryptedChunk>, GetError>>()?;
 
         let data = decrypt_full_set(data_map, &encrypted_chunks).map_err(|e| {
             error!("Error decrypting encrypted_chunks: {e:?}");
