@@ -1,10 +1,10 @@
 use super::address::{addr_to_str, str_to_addr};
-use crate::client::data_private::PrivateDataAccess;
-use libp2p::Multiaddr;
-use wasm_bindgen::prelude::*;
-
 #[cfg(feature = "vault")]
 use super::vault::UserData;
+use crate::client::data_private::PrivateDataAccess;
+use crate::client::payment::Receipt;
+use libp2p::Multiaddr;
+use wasm_bindgen::prelude::*;
 
 /// The `Client` object allows interaction with the network to store and retrieve data.
 ///
@@ -97,6 +97,24 @@ impl JsClient {
     ) -> Result<JsValue, JsError> {
         let data = crate::Bytes::from(data);
         let private_data_access = self.0.private_data_put(data, (&wallet.0).into()).await?;
+        let js_value = serde_wasm_bindgen::to_value(&private_data_access)?;
+
+        Ok(js_value)
+    }
+
+    /// Upload private data to the network.
+    /// Uses a `Receipt` as payment.
+    ///
+    /// Returns the `PrivateDataAccess` chunk of the data.
+    #[wasm_bindgen(js_name = privateDataPutWithReceipt)]
+    pub async fn private_data_put_with_receipt(
+        &self,
+        data: Vec<u8>,
+        receipt: JsValue,
+    ) -> Result<JsValue, JsError> {
+        let data = crate::Bytes::from(data);
+        let receipt: Receipt = serde_wasm_bindgen::from_value(receipt)?;
+        let private_data_access = self.0.private_data_put(data, receipt.into()).await?;
         let js_value = serde_wasm_bindgen::to_value(&private_data_access)?;
 
         Ok(js_value)
@@ -206,6 +224,7 @@ mod archive_private {
     use super::*;
     use crate::client::archive_private::{PrivateArchive, PrivateArchiveAccess};
     use crate::client::data_private::PrivateDataAccess;
+    use crate::client::payment::Receipt;
     use std::path::PathBuf;
     use wasm_bindgen::JsValue;
 
@@ -266,6 +285,28 @@ mod archive_private {
             let private_archive_access = self
                 .0
                 .private_archive_put(archive.0.clone(), (&wallet.0).into())
+                .await?;
+
+            let js_value = serde_wasm_bindgen::to_value(&private_archive_access)?;
+
+            Ok(js_value)
+        }
+
+        /// Upload a private archive to the network.
+        /// Uses a `Receipt` as payment.
+        ///
+        /// Returns the `PrivateArchiveAccess` chunk of the archive.
+        #[wasm_bindgen(js_name = privateArchivePutWithReceipt)]
+        pub async fn private_archive_put_with_receipt(
+            &self,
+            archive: &JsPrivateArchive,
+            receipt: JsValue,
+        ) -> Result<JsValue, JsError> {
+            let receipt: Receipt = serde_wasm_bindgen::from_value(receipt)?;
+
+            let private_archive_access = self
+                .0
+                .private_archive_put(archive.0.clone(), receipt.into())
                 .await?;
 
             let js_value = serde_wasm_bindgen::to_value(&private_archive_access)?;
