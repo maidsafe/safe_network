@@ -45,14 +45,14 @@ const ARBITRUM_ONE_PAYMENT_TOKEN_ADDRESS: Address =
     address!("4bc1aCE0E66170375462cB4E6Af42Ad4D5EC689C");
 
 const ARBITRUM_SEPOLIA_PAYMENT_TOKEN_ADDRESS: Address =
-    address!("4bc1aCE0E66170375462cB4E6Af42Ad4D5EC689C");
+    address!("BE1802c27C324a28aeBcd7eeC7D734246C807194");
 
 // Should be updated when the smart contract changes!
 const ARBITRUM_ONE_DATA_PAYMENTS_ADDRESS: Address =
     address!("887930F30EDEb1B255Cd2273C3F4400919df2EFe");
 
 const ARBITRUM_SEPOLIA_DATA_PAYMENTS_ADDRESS: Address =
-    address!("e6D6bB5Fa796baA8c1ADc439Ac0fd66fd2A1858b");
+    address!("Dd56b03Dae2Ab8594D80269EC4518D13F1A110BD");
 
 #[serde_as]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

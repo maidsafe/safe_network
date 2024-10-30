@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::utils::collect_upload_summary;
+use crate::wallet::load_wallet;
 use autonomi::client::address::addr_to_str;
 use autonomi::Multiaddr;
 use color_eyre::eyre::Context;
@@ -31,7 +32,7 @@ pub async fn cost(file: &str, peers: Vec<Multiaddr>) -> Result<()> {
 }
 
 pub async fn upload(file: &str, public: bool, peers: Vec<Multiaddr>) -> Result<()> {
-    let wallet = crate::keys::load_evm_wallet()?;
+    let wallet = load_wallet()?;
     let mut client = crate::actions::connect_to_network(peers).await?;
     let event_receiver = client.enable_client_events();
     let (upload_summary_thread, upload_completed_tx) = collect_upload_summary(event_receiver);

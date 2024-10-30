@@ -121,7 +121,7 @@ pub const MAX_PACKET_SIZE: usize = 1024 * 1024 * 5; // the chunk size is 1mb, so
 // Timeout for requests sent/received through the request_response behaviour.
 const REQUEST_TIMEOUT_DEFAULT_S: Duration = Duration::from_secs(30);
 // Sets the keep-alive timeout of idle connections.
-const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(30);
+const CONNECTION_KEEP_ALIVE_TIMEOUT: Duration = Duration::from_secs(10);
 
 // Inverval of resending identify to connected peers.
 const RESEND_IDENTIFY_INVERVAL: Duration = Duration::from_secs(3600);
@@ -720,6 +720,8 @@ impl NetworkBuilder {
             replication_targets: Default::default(),
             range_distances: VecDeque::with_capacity(GET_RANGE_STORAGE_LIMIT),
             first_contact_made: false,
+            last_replication: None,
+            last_connection_pruning_time: Instant::now(),
         };
 
         let network = Network::new(
@@ -818,12 +820,17 @@ pub struct SwarmDriver {
     pub(crate) quotes_history: BTreeMap<PeerId, PaymentQuote>,
     pub(crate) replication_targets: BTreeMap<PeerId, Instant>,
 
+    /// when was the last replication event
+    /// This allows us to throttle replication no matter how it is triggered
+    pub(crate) last_replication: Option<Instant>,
     // The recent range_distances calculated by the node
     // Each update is generated when there is a routing table change
     // We use the largest of these X_STORAGE_LIMIT values as our X distance.
     pub(crate) range_distances: VecDeque<KBucketDistance>,
     // have we found out initial peer
     pub(crate) first_contact_made: bool,
+    /// when was the last outdated connection prunning undertaken.
+    pub(crate) last_connection_pruning_time: Instant,
 }
 
 impl SwarmDriver {

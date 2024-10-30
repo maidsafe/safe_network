@@ -57,6 +57,19 @@ pub fn get_evm_testnet_csv_path() -> Result<PathBuf, Error> {
     Ok(file)
 }
 
+/// Create a custom `Network` from the given values
+pub fn get_evm_network(
+    rpc_url: &str,
+    payment_token_address: &str,
+    data_payments_address: &str,
+) -> Network {
+    Network::Custom(CustomNetwork::new(
+        rpc_url,
+        payment_token_address,
+        data_payments_address,
+    ))
+}
+
 /// Get the `Network` from environment variables
 /// Returns an error if we cannot obtain the network from any means.
 pub fn get_evm_network_from_env() -> Result<Network, Error> {
@@ -98,9 +111,7 @@ pub fn get_evm_network_from_env() -> Result<Network, Error> {
         .map(|v| v == "arbitrum-sepolia")
         .unwrap_or(false);
 
-    if use_local_evm {
-        local_evm_network_from_csv()
-    } else if use_arbitrum_one {
+    if use_arbitrum_one {
         info!("Using Arbitrum One EVM network as EVM_NETWORK is set to 'arbitrum-one'");
         Ok(Network::ArbitrumOne)
     } else if use_arbitrum_sepolia {
@@ -113,6 +124,8 @@ pub fn get_evm_network_from_env() -> Result<Network, Error> {
             &evm_vars[1],
             &evm_vars[2],
         )))
+    } else if use_local_evm {
+        local_evm_network_from_csv()
     } else {
         error!("Failed to obtain EVM Network through any means");
         Err(Error::FailedToGetEvmNetwork(

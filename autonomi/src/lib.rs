@@ -24,7 +24,13 @@
 //!
 //! # Features
 //!
+//! - `fs`: Up/download files and directories from filesystem
+//! - `registers`: Operate on register datatype
+//! - `data`: Operate on raw bytes and chunks
+//! - `vault`: Operate on Vault datatype
+//! - `full`: All of above
 //! - `local`: Discover local peers using mDNS. Useful for development.
+//! - `loud`: Print debug information to stdout
 
 // docs.rs generation will enable unstable `doc_cfg` feature
 #![cfg_attr(docsrs, feature(doc_cfg))]

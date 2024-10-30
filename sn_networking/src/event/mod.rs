@@ -146,7 +146,7 @@ pub enum NetworkEvent {
     /// Carry out chunk proof check against the specified record and peer
     ChunkProofVerification {
         peer_id: PeerId,
-        keys_to_verify: Vec<NetworkAddress>,
+        key_to_verify: NetworkAddress,
     },
 }
 
@@ -208,7 +208,7 @@ impl Debug for NetworkEvent {
             }
             NetworkEvent::ChunkProofVerification {
                 peer_id,
-                keys_to_verify,
+                key_to_verify: keys_to_verify,
             } => {
                 write!(
                     f,

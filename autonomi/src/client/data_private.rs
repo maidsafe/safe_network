@@ -12,9 +12,10 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use sn_evm::{Amount, EvmWallet};
 use sn_protocol::storage::Chunk;
-use tokio::task::JoinSet;
 
+use super::data::CHUNK_UPLOAD_BATCH_SIZE;
 use super::data::{GetError, PutError};
+use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
 
@@ -78,15 +79,14 @@ impl Client {
             .inspect_err(|err| error!("Error paying for data: {err:?}"))?;
 
         // Upload the chunks with the payments
-        let mut record_count = 0;
         debug!("Uploading {} chunks", chunks.len());
-        let mut tasks = JoinSet::new();
+        let mut upload_tasks = vec![];
         for chunk in chunks {
             let self_clone = self.clone();
             let address = *chunk.address();
             if let Some(proof) = payment_proofs.get(chunk.name()) {
                 let proof_clone = proof.clone();
-                tasks.spawn(async move {
+                upload_tasks.push(async move {
                     self_clone
                         .chunk_upload_with_payment(chunk, proof_clone)
                         .await
@@ -96,13 +96,19 @@ impl Client {
                 debug!("Chunk at {address:?} was already paid for so skipping");
             }
         }
-        while let Some(result) = tasks.join_next().await {
-            result
-                .inspect_err(|err| error!("Join error uploading chunk: {err:?}"))
-                .map_err(PutError::JoinError)?
-                .inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
-            record_count += 1;
-        }
+        let uploads =
+            process_tasks_with_max_concurrency(upload_tasks, *CHUNK_UPLOAD_BATCH_SIZE).await;
+
+        // Check for errors
+        let total_uploads = uploads.len();
+        let ok_uploads = uploads
+            .iter()
+            .filter_map(|up| up.is_ok().then_some(()))
+            .count();
+        info!("Uploaded {} chunks out of {}", ok_uploads, total_uploads);
+        let uploads: Result<Vec<_>, _> = uploads.into_iter().collect();
+        uploads.inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
+        let record_count = ok_uploads;
 
         // Reporting
         if let Some(channel) = self.client_event_sender.as_ref() {
