@@ -70,13 +70,11 @@ def get_pr_list(pr_numbers):
 
 def main(pr_numbers):
     crate_binary_map = {
-        "sn_faucet": "faucet",
         "nat-detection": "nat-detection",
         "node-launchpad": "node-launchpad",
-        "sn_cli": "safe",
+        "autonomi-cli": "autonomi",
         "sn_node": "safenode",
         "sn_node_manager": "safenode-manager",
-        "sn_auditor": "sn_auditor",
     }
 
     markdown_doc = []

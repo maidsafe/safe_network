@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::wallet::load_wallet;
 use autonomi::Multiaddr;
 use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
@@ -28,7 +29,7 @@ pub async fn cost(peers: Vec<Multiaddr>) -> Result<()> {
 
 pub async fn create(peers: Vec<Multiaddr>) -> Result<()> {
     let client = crate::actions::connect_to_network(peers).await?;
-    let wallet = crate::keys::load_evm_wallet()?;
+    let wallet = load_wallet()?;
     let vault_sk = crate::keys::get_vault_secret_key()?;
 
     println!("Retrieving local user data...");
@@ -59,7 +60,7 @@ pub async fn create(peers: Vec<Multiaddr>) -> Result<()> {
 pub async fn sync(peers: Vec<Multiaddr>, force: bool) -> Result<()> {
     let client = crate::actions::connect_to_network(peers).await?;
     let vault_sk = crate::keys::get_vault_secret_key()?;
-    let wallet = crate::keys::load_evm_wallet()?;
+    let wallet = load_wallet()?;
 
     println!("Fetching vault from network...");
     let net_user_data = client

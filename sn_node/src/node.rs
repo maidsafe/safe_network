@@ -45,7 +45,7 @@ use sn_evm::EvmNetwork;
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any node will be half this
-pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
+pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 180;
 
 /// Interval to trigger bad node detection.
 /// This is the max time it should take. Minimum interval at any node will be half this
@@ -272,9 +272,9 @@ impl Node {
                 tokio::time::interval(UPTIME_METRICS_UPDATE_INTERVAL);
             let _ = uptime_metrics_update_interval.tick().await; // first tick completes immediately
 
-            let mut unrelevant_records_cleanup_interval =
+            let mut irrelevant_records_cleanup_interval =
                 tokio::time::interval(UNRELEVANT_RECORDS_CLEANUP_INTERVAL);
-            let _ = unrelevant_records_cleanup_interval.tick().await; // first tick completes immediately
+            let _ = irrelevant_records_cleanup_interval.tick().await; // first tick completes immediately
 
             loop {
                 let peers_connected = &peers_connected;
@@ -333,11 +333,11 @@ impl Node {
                             let _ = metrics_recorder.uptime.set(metrics_recorder.started_instant.elapsed().as_secs() as i64);
                         }
                     }
-                    _ = unrelevant_records_cleanup_interval.tick() => {
+                    _ = irrelevant_records_cleanup_interval.tick() => {
                         let network = self.network().clone();
 
                         let _handle = spawn(async move {
-                            Self::trigger_unrelevant_record_cleanup(network);
+                            Self::trigger_irrelevant_record_cleanup(network);
                         });
                     }
                 }
@@ -485,12 +485,12 @@ impl Node {
             }
             NetworkEvent::ChunkProofVerification {
                 peer_id,
-                keys_to_verify,
+                key_to_verify,
             } => {
                 event_header = "ChunkProofVerification";
                 let network = self.network().clone();
 
-                debug!("Going to verify chunk {keys_to_verify:?} against peer {peer_id:?}");
+                debug!("Going to verify chunk {key_to_verify} against peer {peer_id:?}");
 
                 let _handle = spawn(async move {
                     // To avoid the peer is in the process of getting the copy via replication,
@@ -498,7 +498,7 @@ impl Node {
                     // Only report the node as bad when ALL the verification attempts failed.
                     let mut attempts = 0;
                     while attempts < MAX_CHUNK_PROOF_VERIFY_ATTEMPTS {
-                        if chunk_proof_verify_peer(&network, peer_id, &keys_to_verify).await {
+                        if chunk_proof_verify_peer(&network, peer_id, &key_to_verify).await {
                             return;
                         }
                         // Replication interval is 22s - 45s.
@@ -718,10 +718,10 @@ impl Node {
                 // The `rolling_index` is rotating among 0-511,
                 // meanwhile the returned `kbuckets` only holding non-empty buckets.
                 // Hence using the `remainder` calculate to achieve a rolling check.
-                // A further `divide by 2` is used to allow `upper or lower part` index within
-                // a bucket, to further reduce the concurrent queries.
+                // A further `remainder of 2` is used to allow `upper or lower part`
+                // index within a bucket, to further reduce the concurrent queries.
                 let mut bucket_index = (rolling_index / 2) % kbuckets.len();
-                let part_index = rolling_index / 2;
+                let part_index = rolling_index % 2;
 
                 for (distance, peers) in kbuckets.iter() {
                     if bucket_index == 0 {
@@ -768,44 +768,36 @@ impl Node {
     }
 }
 
-async fn chunk_proof_verify_peer(
-    network: &Network,
-    peer_id: PeerId,
-    keys: &[NetworkAddress],
-) -> bool {
-    for key in keys.iter() {
-        let check_passed = if let Ok(Some(record)) =
-            network.get_local_record(&key.to_record_key()).await
-        {
-            let nonce = thread_rng().gen::<u64>();
-            let expected_proof = ChunkProof::new(&record.value, nonce);
-            debug!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
+async fn chunk_proof_verify_peer(network: &Network, peer_id: PeerId, key: &NetworkAddress) -> bool {
+    let check_passed = if let Ok(Some(record)) =
+        network.get_local_record(&key.to_record_key()).await
+    {
+        let nonce = thread_rng().gen::<u64>();
+        let expected_proof = ChunkProof::new(&record.value, nonce);
+        debug!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
 
-            let request = Request::Query(Query::GetChunkExistenceProof {
-                key: key.clone(),
-                nonce,
-            });
-            let responses = network
-                .send_and_get_responses(&[peer_id], &request, true)
-                .await;
-            let n_verified = responses
-                .into_iter()
-                .filter_map(|(peer, resp)| {
-                    received_valid_chunk_proof(key, &expected_proof, peer, resp)
-                })
-                .count();
+        let request = Request::Query(Query::GetChunkExistenceProof {
+            key: key.clone(),
+            nonce,
+        });
+        let responses = network
+            .send_and_get_responses(&[peer_id], &request, true)
+            .await;
+        let n_verified = responses
+            .into_iter()
+            .filter_map(|(peer, resp)| received_valid_chunk_proof(key, &expected_proof, peer, resp))
+            .count();
 
-            n_verified >= 1
-        } else {
-            error!(
+        n_verified >= 1
+    } else {
+        error!(
                  "To verify peer {peer_id:?} Could not get ChunkProof for {key:?} as we don't have the record locally."
             );
-            true
-        };
+        true
+    };
 
-        if !check_passed {
-            return false;
-        }
+    if !check_passed {
+        return false;
     }
 
     true
