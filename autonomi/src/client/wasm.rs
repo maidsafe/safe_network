@@ -440,21 +440,6 @@ mod external_signer {
 
     #[wasm_bindgen(js_class = Client)]
     impl JsClient {
-        /// Encrypt data.
-        ///
-        /// # Example
-        ///
-        /// ```js
-        /// const [dataMapChunk, dataChunks, [chunkAddresses]] = await client.encryptData(data);
-        /// ``
-        #[wasm_bindgen(js_name = encryptData)]
-        pub async fn encrypt_data(&self, data: Vec<u8>) -> Result<JsValue, JsError> {
-            let data = crate::Bytes::from(data);
-            let result = encrypt_data(data)?;
-            let js_value = serde_wasm_bindgen::to_value(&result)?;
-            Ok(js_value)
-        }
-
         /// Get quotes for given chunk addresses.
         ///
         /// # Example
@@ -500,6 +485,21 @@ mod external_signer {
             let xorname = self.0.data_put(data, receipt.into()).await?;
             Ok(addr_to_str(xorname))
         }
+    }
+
+    /// Encrypt data.
+    ///
+    /// # Example
+    ///
+    /// ```js
+    /// const [dataMapChunk, dataChunks, [chunkAddresses]] = client.encryptData(data);
+    /// ``
+    #[wasm_bindgen(js_name = encryptData)]
+    pub fn encrypt(data: Vec<u8>) -> Result<JsValue, JsError> {
+        let data = crate::Bytes::from(data);
+        let result = encrypt_data(data)?;
+        let js_value = serde_wasm_bindgen::to_value(&result)?;
+        Ok(js_value)
     }
 
     /// Get the calldata for paying for quotes.
