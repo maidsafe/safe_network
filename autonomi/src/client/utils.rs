@@ -24,7 +24,7 @@ use std::{collections::HashMap, future::Future, num::NonZero};
 use xor_name::XorName;
 
 use super::{
-    data::{CostError, GetError, PayError, PutError},
+    data::{CostError, GetError, PayError, PutError, CHUNK_DOWNLOAD_BATCH_SIZE},
     Client,
 };
 use crate::self_encryption::DataMapLevel;
@@ -33,19 +33,31 @@ use crate::utils::payment_proof_from_quotes_and_payments;
 impl Client {
     /// Fetch and decrypt all chunks in the data map.
     pub(crate) async fn fetch_from_data_map(&self, data_map: &DataMap) -> Result<Bytes, GetError> {
-        let mut encrypted_chunks = vec![];
-
+        let mut download_tasks = vec![];
         for info in data_map.infos() {
-            let chunk = self
-                .chunk_get(info.dst_hash)
-                .await
-                .inspect_err(|err| error!("Error fetching chunk {:?}: {err:?}", info.dst_hash))?;
-            let chunk = EncryptedChunk {
-                index: info.index,
-                content: chunk.value,
-            };
-            encrypted_chunks.push(chunk);
+            download_tasks.push(async move {
+                match self
+                    .chunk_get(info.dst_hash)
+                    .await
+                    .inspect_err(|err| error!("Error fetching chunk {:?}: {err:?}", info.dst_hash))
+                {
+                    Ok(chunk) => Ok(EncryptedChunk {
+                        index: info.index,
+                        content: chunk.value,
+                    }),
+                    Err(err) => {
+                        error!("Error fetching chunk {:?}: {err:?}", info.dst_hash);
+                        Err(err)
+                    }
+                }
+            });
         }
+
+        let encrypted_chunks =
+            process_tasks_with_max_concurrency(download_tasks, *CHUNK_DOWNLOAD_BATCH_SIZE)
+                .await
+                .into_iter()
+                .collect::<Result<Vec<EncryptedChunk>, GetError>>()?;
 
         let data = decrypt_full_set(data_map, &encrypted_chunks).map_err(|e| {
             error!("Error decrypting encrypted_chunks: {e:?}");
