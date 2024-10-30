@@ -81,7 +81,7 @@ impl JsClient {
     #[wasm_bindgen(js_name = dataPut)]
     pub async fn data_put(&self, data: Vec<u8>, wallet: &JsWallet) -> Result<String, JsError> {
         let data = crate::Bytes::from(data);
-        let xorname = self.0.data_put(data, &wallet.0).await?;
+        let xorname = self.0.data_put(data, (&wallet.0).into()).await?;
 
         Ok(addr_to_str(xorname))
     }
@@ -284,7 +284,7 @@ mod vault {
 #[cfg(feature = "external-signer")]
 mod external_signer {
     use super::*;
-    use crate::payment_proof_from_quotes_and_payments;
+    use crate::receipt_from_quotes_and_payments;
     use sn_evm::external_signer::{approve_to_spend_tokens_calldata, pay_for_quotes_calldata};
     use sn_evm::EvmNetwork;
     use sn_evm::ProofOfPayment;
@@ -377,7 +377,7 @@ mod external_signer {
     ) -> Result<JsValue, JsError> {
         let quotes: HashMap<XorName, PaymentQuote> = serde_wasm_bindgen::from_value(quotes)?;
         let payments: BTreeMap<QuoteHash, TxHash> = serde_wasm_bindgen::from_value(payments)?;
-        let proof = payment_proof_from_quotes_and_payments(&quotes, &payments);
+        let proof = receipt_from_quotes_and_payments(&quotes, &payments);
         let js_value = serde_wasm_bindgen::to_value(&proof)?;
         Ok(js_value)
     }

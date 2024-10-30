@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 pub mod address;
+pub mod payment;
 
 #[cfg(feature = "data")]
 pub mod archive;
