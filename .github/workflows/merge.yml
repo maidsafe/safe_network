@@ -350,6 +350,7 @@ jobs:
         timeout-minutes: 2
 
       - name: Estimate cost to create a vault
+        if: matrix.os != 'windows-latest'
         run: |
           echo "test-file" > upload-test.txt
           ./target/release/autonomi --log-output-dest=data-dir file upload ./upload-test.txt
@@ -362,6 +363,7 @@ jobs:
         timeout-minutes: 2
 
       - name: create a vault with existing user data as above
+        if: matrix.os != 'windows-latest'
         run: |
           ./target/release/autonomi --log-output-dest=data-dir vault create
           ./target/release/autonomi --log-output-dest=data-dir vault load 2>&1 | tee vault_data.txt
@@ -369,40 +371,21 @@ jobs:
           SN_LOG: "v"
         timeout-minutes: 2
 
-      - name: vault create validation
+      - name: add more files
+        if: matrix.os != 'windows-latest'
         run: |
-          NUM_OF_PUBLIC_FILES=`cat file_list.txt | grep "public" | grep -o '[0-9]\+'`
-          NUM_OF_PRIVATE_FILES=`cat file_list.txt | grep "private" | grep -o '[0-9]\+'`
-          NUM_OF_REGISTERS=`cat register_list.txt | grep "register" | grep -o '[0-9]\+'`
-
-          NUM_OF_PUBLIC_FILES_IN_VAULT=`cat vault_data.txt  | grep "public" | grep -o '[0-9]\+'`
-          NUM_OF_PRIVATE_FILES_IN_VAULT=`cat vault_data.txt| grep "private" | grep -o '[0-9]\+'`
-          NUM_OF_REGISTERS_IN_VAULT=`cat vault_data.txt| grep "register" | grep -o '[0-9]\+'`
-
-          rm -rf file_list.txt register_list.txt vault_data.txt
-
-          
-          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
-
-          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
-
-          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_REGISTERS $NUM_OF_REGISTERS_IN_VAULT
-
-          echo "vault created successfully!"
-        env:
-          SN_LOG: "v"
-        timeout-minutes: 4
-
-      - name: add more files and registers
-        run: |
-          echo "testing-file2" > sync-test.txt
-          ./target/release/autonomi --log-output-dest=data-dir file upload ./sync-test.txt
-          ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register_2 12345
+          for i in {1..100}; do
+            dd if=/dev/urandom of=random_file_$i.bin bs=1M count=1 status=none
+            ./target/release/autonomi --log-output-dest=data-dir file upload random_file_$i.bin --public
+            ./target/release/autonomi --log-output-dest=data-dir file upload random_file_$i.bin
+            ./target/release/autonomi --log-output-dest=data-dir register create $i random_file_$i.bin
+          done
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: sync the vault
+        if: matrix.os != 'windows-latest'
         run: ./target/release/autonomi --log-output-dest=data-dir vault sync
         env:
           SN_LOG: "v"
@@ -432,18 +415,16 @@ jobs:
 
           rm -rf file_list.txt register_list.txt vault_data.txt
 
-          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
-
-          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
-
-          python3 -c 'import sys; print("Equal" if sys.argv[1] == sys.argv[2] else "Not Equal")' $NUM_OF_REGISTERS $NUM_OF_REGISTERS_IN_VAULT
-
+          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: {sys.argv[1]} and {sys.argv[2]} are Not Equal"' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
+          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: {sys.argv[1]} and {sys.argv[2]} are Not Equal"' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
+          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: {sys.argv[1]} and {sys.argv[2]} are Not Equal"' $NUM_OF_REGISTERS $NUM_OF_REGISTERS_IN_VAULT
           echo "vault synced successfully!"
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: load an existing vault from the network
+        if: matrix.os != 'windows-latest'
         run: ./target/release/autonomi --log-output-dest=data-dir vault load
         env:
           SN_LOG: "v"
@@ -465,8 +446,9 @@ jobs:
           time ./target/release/autonomi --log-output-dest=data-dir file upload random_10MB.bin
           time ./target/release/autonomi --log-output-dest=data-dir file upload random_100MB.bin
           time ./target/release/autonomi --log-output-dest=data-dir file upload random_1GB.bin
-          
+          ./target/release/autonomi --log-output-dest=data-dir vault sync
           rm -rf random*.bin
+          rm -rf ${{ matrix.safe_path }}/autonomi
           
         env:
           SN_LOG: "v"
