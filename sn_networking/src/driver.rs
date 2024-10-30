@@ -950,7 +950,7 @@ impl SwarmDriver {
                 }
             }
 
-            info!("Adding new distance range: {:?}", distance.ilog2());
+            trace!("Adding new distance range: {:?}", distance.ilog2());
 
             self.range_distances.push_back(*distance);
         }
@@ -973,11 +973,15 @@ impl SwarmDriver {
         let default = KBucketDistance::default();
         let median = sorted_distances.get(median_index).cloned();
 
-        if let Some(dist) = median {
+        let range = if let Some(dist) = median {
             *dist
         } else {
             default
-        }
+        };
+
+        info!("Current request range is {:?}", range.ilog2());
+
+        range
     }
 
     /// get all the peers from our local RoutingTable. Excluding self
