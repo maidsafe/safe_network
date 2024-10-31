@@ -300,7 +300,6 @@ impl SwarmDriver {
                     }
                 }
             }
-
             SwarmEvent::NewListenAddr {
                 mut address,
                 listener_id,
@@ -322,7 +321,7 @@ impl SwarmDriver {
                         self.swarm.add_external_address(address.clone());
                     } else {
                         self.external_address_manager
-                            .add_listen_addr_as_external_address(address.clone(), &mut self.swarm);
+                            .on_new_listen_addr(address.clone(), &mut self.swarm);
                     }
                 }
 
@@ -561,6 +560,23 @@ impl SwarmDriver {
             SwarmEvent::ExternalAddrExpired { address } => {
                 event_string = "ExternalAddrExpired";
                 info!(%address, "external address: expired");
+            }
+            SwarmEvent::ExpiredListenAddr {
+                listener_id,
+                address,
+            } => {
+                event_string = "ExpiredListenAddr";
+                info!("Listen address has expired. {listener_id:?} on {address:?}");
+                self.external_address_manager
+                    .on_expired_listen_addr(address, &self.swarm);
+            }
+            SwarmEvent::ListenerError { listener_id, error } => {
+                event_string = "ListenerError";
+                warn!("ListenerError {listener_id:?} with non-fatal error {error:?}");
+            }
+            SwarmEvent::NewExternalAddrOfPeer { peer_id, address } => {
+                event_string = "NewExternalAddrOfPeer";
+                debug!(%peer_id, %address, "New external address of peer");
             }
             other => {
                 event_string = "Other";
