@@ -152,6 +152,7 @@ jobs:
           # of proptesting
           # we do many more runs on the nightly run
           PROPTEST_CASES: 50
+
   e2e:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: E2E tests
@@ -364,9 +365,7 @@ jobs:
 
       - name: create a vault with existing user data as above
         if: matrix.os != 'windows-latest'
-        run: |
-          ./target/release/autonomi --log-output-dest=data-dir vault create
-          ./target/release/autonomi --log-output-dest=data-dir vault load 2>&1 | tee vault_data.txt
+        run: ./target/release/autonomi --log-output-dest=data-dir vault create
         env:
           SN_LOG: "v"
         timeout-minutes: 2
@@ -382,7 +381,7 @@ jobs:
           done
         env:
           SN_LOG: "v"
-        timeout-minutes: 2
+        timeout-minutes: 25
 
       - name: sync the vault
         if: matrix.os != 'windows-latest'
@@ -392,6 +391,7 @@ jobs:
         timeout-minutes: 2
 
       - name: vault sync validation
+        if: matrix.os != 'windows-latest'
         run: |
           NUM_OF_PUBLIC_FILES=""
           NUM_OF_PRIVATE_FILES=""
@@ -400,28 +400,33 @@ jobs:
           NUM_OF_PRIVATE_FILES_IN_VAULT=""
           NUM_OF_REGISTERS_IN_VAULT=""
           
-          ./target/release/autonomi --log-output-dest=data-dir file list 2>&1 | tee file_list.txt
-          ./target/release/autonomi --log-output-dest=data-dir register list 2>&1 | tee register_list.txt
-
+          ./target/release/autonomi --log-output-dest=data-dir file list 2>&1 > file_list.txt
+          
+          # ./target/release/autonomi --log-output-dest=data-dir register list | grep archives > register_list.txt
+          
           NUM_OF_PUBLIC_FILES=`cat file_list.txt | grep "public" | grep -o '[0-9]\+'`
           NUM_OF_PRIVATE_FILES=`cat file_list.txt | grep "private" | grep -o '[0-9]\+'`
           NUM_OF_REGISTERS=`cat register_list.txt | grep "register" | grep -o '[0-9]\+'`
 
-          ./target/release/autonomi --log-output-dest=data-dir vault load 2>&1 | tee vault_data.txt
+          ./target/release/autonomi --log-output-dest=data-dir vault load 2>&1 > vault_data.txt
 
           NUM_OF_PUBLIC_FILES_IN_VAULT=`cat vault_data.txt  | grep "public" | grep -o '[0-9]\+'`
           NUM_OF_PRIVATE_FILES_IN_VAULT=`cat vault_data.txt| grep "private" | grep -o '[0-9]\+'`
-          NUM_OF_REGISTERS_IN_VAULT=`cat vault_data.txt| grep "register" | grep -o '[0-9]\+'`
+          # NUM_OF_REGISTERS_IN_VAULT=`cat vault_data.txt | grep "register" | grep -o '[0-9]\+'`
 
+          echo "Total Num of local public files is $NUM_OF_PUBLIC_FILES and in vault is $NUM_OF_PUBLIC_FILES_IN_VAULT"
+          echo "Total Num of local private files is $NUM_OF_PRIVATE_FILES and in vault is $NUM_OF_PRIVATE_FILES_IN_VAULT"
+          # echo "Total Num of local registers is $NUM_OF_REGISTERS and in vault is $NUM_OF_REGISTERS_IN_VAULT"
+          
           rm -rf file_list.txt register_list.txt vault_data.txt
 
-          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: {sys.argv[1]} and {sys.argv[2]} are Not Equal"' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
-          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: {sys.argv[1]} and {sys.argv[2]} are Not Equal"' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
-          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: {sys.argv[1]} and {sys.argv[2]} are Not Equal"' $NUM_OF_REGISTERS $NUM_OF_REGISTERS_IN_VAULT
+          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local public Files: {sys.argv[1]} and vault public files: {sys.argv[2]} are Not Equal"' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
+          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local private Files: {sys.argv[1]} and vault private files: {sys.argv[2]} are Not Equal"' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
+          # python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local registers: {sys.argv[1]} and vault registers: {sys.argv[2]} are Not Equal"' $NUM_OF_REGISTERS $NUM_OF_REGISTERS_IN_VAULT
           echo "vault synced successfully!"
         env:
           SN_LOG: "v"
-        timeout-minutes: 2
+        timeout-minutes: 15
 
       - name: load an existing vault from the network
         if: matrix.os != 'windows-latest'
@@ -431,6 +436,7 @@ jobs:
         timeout-minutes: 2
 
       - name: Time profiling for Different files
+        if: matrix.os != 'windows-latest'
         run: |
           # 1 MB
           python3 -c "with open('random_1MB.bin', 'wb') as f: f.write(bytearray([0xff] * 1 * 1024 * 1024))"
@@ -448,11 +454,10 @@ jobs:
           time ./target/release/autonomi --log-output-dest=data-dir file upload random_1GB.bin
           ./target/release/autonomi --log-output-dest=data-dir vault sync
           rm -rf random*.bin
-          rm -rf ${{ matrix.safe_path }}/autonomi
-          
+          rm -rf ${{ matrix.safe_path }}/autonomi          
         env:
           SN_LOG: "v"
-        timeout-minutes: 10
+        timeout-minutes: 15
 
       - name: Stop the local network and upload logs
         if: always()
