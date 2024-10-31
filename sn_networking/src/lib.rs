@@ -1286,6 +1286,13 @@ pub(crate) fn multiaddr_get_ip(addr: &Multiaddr) -> Option<IpAddr> {
     })
 }
 
+pub(crate) fn multiaddr_get_port(addr: &Multiaddr) -> Option<u16> {
+    addr.iter().find_map(|p| match p {
+        Protocol::Udp(port) => Some(port),
+        _ => None,
+    })
+}
+
 pub(crate) fn send_local_swarm_cmd(swarm_cmd_sender: Sender<LocalSwarmCmd>, cmd: LocalSwarmCmd) {
     let capacity = swarm_cmd_sender.capacity();
 

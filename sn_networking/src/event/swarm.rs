@@ -15,6 +15,7 @@ use libp2p::mdns;
 #[cfg(feature = "open-metrics")]
 use libp2p::metrics::Recorder;
 use libp2p::{
+    core::ConnectedPoint,
     kad::K_VALUE,
     multiaddr::Protocol,
     swarm::{
@@ -306,6 +307,9 @@ impl SwarmDriver {
             } => {
                 event_string = "new listen addr";
 
+                info!("Local node is listening {listener_id:?} on {address:?}");
+                println!("Local node is listening on {address:?}"); // TODO: make it print only once
+
                 let local_peer_id = *self.swarm.local_peer_id();
                 // Make sure the address ends with `/p2p/<local peer ID>`. In case of relay, `/p2p` is already there.
                 if address.iter().last() != Some(Protocol::P2p(local_peer_id)) {
@@ -326,9 +330,6 @@ impl SwarmDriver {
                 }
 
                 self.send_event(NetworkEvent::NewListenAddr(address.clone()));
-
-                info!("Local node is listening {listener_id:?} on {address:?}");
-                println!("Local node is listening on {address:?}"); // TODO: make it print only once
             }
             SwarmEvent::ListenerClosed {
                 listener_id,
@@ -358,6 +359,10 @@ impl SwarmDriver {
             } => {
                 event_string = "ConnectionEstablished";
                 debug!(%peer_id, num_established, ?concurrent_dial_errors, "ConnectionEstablished ({connection_id:?}) in {established_in:?}: {}", endpoint_str(&endpoint));
+                if let ConnectedPoint::Listener { local_addr, .. } = &endpoint {
+                    self.external_address_manager
+                        .on_established_incoming_connection(local_addr.clone());
+                }
 
                 let _ = self.live_connected_peers.insert(
                     connection_id,
@@ -528,6 +533,8 @@ impl SwarmDriver {
                 } else {
                     debug!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
                 }
+                self.external_address_manager
+                    .on_incoming_connection_error(local_addr.clone(), &mut self.swarm);
                 let _ = self.live_connected_peers.remove(&connection_id);
                 self.record_connection_metrics();
             }

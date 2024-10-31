@@ -6,10 +6,13 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{driver::NodeBehaviour, multiaddr_get_ip, multiaddr_is_global};
+use crate::{driver::NodeBehaviour, multiaddr_get_ip, multiaddr_get_port, multiaddr_is_global};
 use itertools::Itertools;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId, Swarm};
-use std::{collections::HashMap, net::IpAddr};
+use std::{
+    collections::{HashMap, HashSet},
+    net::IpAddr,
+};
 
 /// The maximum number of reports before an candidate address is confirmed
 const MAX_REPORTS_BEFORE_CONFIRMATION: u8 = 3;
@@ -28,9 +31,44 @@ const MAX_CANDIDATES: usize = 50;
 pub struct ExternalAddressManager {
     /// All the external addresses of the node
     address_states: Vec<ExternalAddressState>,
+    /// The current IP address of all the external addresses.
     current_ip_address: Option<IpAddr>,
     /// The peer id of the node
     peer_id: PeerId,
+    // Port -> (ok, error) count
+    connection_stats: HashMap<u16, PortStats>,
+    // Bad ports
+    bad_ports: HashSet<u16>,
+}
+
+#[derive(Debug, Default)]
+struct PortStats {
+    ok: usize,
+    error: usize,
+}
+
+impl PortStats {
+    fn success_rate(&self) -> f64 {
+        if self.ok + self.error == 0 {
+            0.0
+        } else {
+            self.ok as f64 / (self.ok + self.error) as f64
+        }
+    }
+
+    fn is_faulty(&self) -> bool {
+        // Give the address a chance to prove itself
+        if self.ok + self.error < 10 {
+            return false;
+        }
+
+        // Still give the address a chance to prove itself
+        if self.ok + self.error < 100 {
+            return self.success_rate() < 0.5;
+        }
+
+        self.success_rate() < 0.9
+    }
 }
 
 impl ExternalAddressManager {
@@ -39,6 +77,8 @@ impl ExternalAddressManager {
             address_states: Vec::new(),
             current_ip_address: None,
             peer_id,
+            connection_stats: HashMap::new(),
+            bad_ports: HashSet::new(),
         }
     }
 
@@ -74,6 +114,15 @@ impl ExternalAddressManager {
             debug!("Address is ill formed, not added to manager: {address:?}");
             return;
         };
+
+        let Some(port) = multiaddr_get_port(&address) else {
+            return;
+        };
+
+        if self.bad_ports.contains(&port) {
+            debug!("External address had problem earlier, ignoring: {address:?}");
+            return;
+        }
 
         if let Some(state) = self
             .address_states
@@ -278,6 +327,65 @@ impl ExternalAddressManager {
         });
     }
 
+    pub fn on_incoming_connection_error(
+        &mut self,
+        on_address: Multiaddr,
+        swarm: &mut Swarm<NodeBehaviour>,
+    ) {
+        let Some(port) = multiaddr_get_port(&on_address) else {
+            return;
+        };
+
+        let stats = self.connection_stats.entry(port).or_default();
+        stats.error = stats.error.saturating_add(1);
+
+        if stats.is_faulty() {
+            info!("Connection on port {port} is considered as faulty. Removing all addresses with this port");
+            // remove all the addresses with this port
+            let mut removed_confirmed = Vec::new();
+            let mut removed_candidates = Vec::new();
+            let mut to_remove_indices = Vec::new();
+
+            for (idx, state) in &mut self.address_states.iter().enumerate() {
+                if state.is_confirmed() || state.is_candidate() {
+                    let Some(state_port) = multiaddr_get_port(state.multiaddr()) else {
+                        continue;
+                    };
+
+                    if state_port == port {
+                        if state.is_confirmed() {
+                            removed_confirmed.push(state.multiaddr().clone());
+                        } else {
+                            removed_candidates.push(state.multiaddr().clone());
+                        }
+                        to_remove_indices.push(idx);
+                    }
+                }
+            }
+            for idx in to_remove_indices.iter().rev() {
+                swarm.remove_external_address(self.address_states[*idx].multiaddr());
+                self.address_states.remove(*idx);
+            }
+            if !removed_candidates.is_empty() {
+                debug!("Removed external candidates due to connection errors on port {port}: {removed_candidates:?}");
+            }
+            if !removed_confirmed.is_empty() {
+                info!("Removed external addresses due to connection errors on port {port}: {removed_confirmed:?}");
+            }
+            Self::print_swarm_state(swarm);
+        }
+    }
+
+    /// Reset the incoming connection errors for a port
+    pub fn on_established_incoming_connection(&mut self, on_address: Multiaddr) {
+        let Some(port) = multiaddr_get_port(&on_address) else {
+            return;
+        };
+
+        let stats = self.connection_stats.entry(port).or_default();
+        stats.ok = stats.ok.saturating_add(1);
+    }
+
     /// Switch to a new IP address. The old external addresses are removed and the new ones are added.
     /// The new IP address is set as the current IP address.
     fn switch_to_new_ip(&mut self, new_ip: IpAddr, swarm: &mut Swarm<NodeBehaviour>) {
@@ -419,5 +527,9 @@ impl ExternalAddressState {
 
     fn is_candidate(&self) -> bool {
         matches!(self, Self::Candidate { .. })
+    }
+
+    fn is_confirmed(&self) -> bool {
+        matches!(self, Self::Confirmed { .. })
     }
 }
