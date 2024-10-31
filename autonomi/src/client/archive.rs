@@ -168,7 +168,7 @@ impl Client {
         let bytes = archive
             .into_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
-        self.data_put(bytes, wallet).await
+        self.data_put(bytes, wallet.into()).await
     }
 
     /// Get the cost to upload an archive

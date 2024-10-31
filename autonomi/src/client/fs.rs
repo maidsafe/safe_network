@@ -154,7 +154,7 @@ impl Client {
 
         // upload archive
         let archive_serialized = archive.into_bytes()?;
-        let arch_addr = self.data_put(archive_serialized, wallet).await?;
+        let arch_addr = self.data_put(archive_serialized, wallet.into()).await?;
 
         info!("Complete archive upload completed in {:?}", start.elapsed());
         #[cfg(feature = "loud")]
@@ -175,7 +175,7 @@ impl Client {
 
         let data = tokio::fs::read(path).await?;
         let data = Bytes::from(data);
-        let addr = self.data_put(data, wallet).await?;
+        let addr = self.data_put(data, wallet.into()).await?;
         Ok(addr)
     }
 

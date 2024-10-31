@@ -12,13 +12,13 @@ use crate::client::archive::ArchiveAddr;
 use crate::client::archive_private::PrivateArchiveAccess;
 use crate::client::data::GetError;
 use crate::client::data::PutError;
+use crate::client::payment::PaymentOption;
 use crate::client::registers::RegisterAddress;
 use crate::client::vault::VaultError;
 use crate::client::vault::{app_name_to_vault_content_type, VaultContentType, VaultSecretKey};
 use crate::client::Client;
 use serde::{Deserialize, Serialize};
 use sn_evm::AttoTokens;
-use sn_evm::EvmWallet;
 use sn_protocol::Bytes;
 use std::sync::LazyLock;
 
@@ -75,9 +75,28 @@ impl UserData {
         self.file_archives.insert(archive, name)
     }
 
+    /// Add a private archive. Returning `Option::Some` with the old name if the archive was already in the set.
+    pub fn add_private_file_archive(&mut self, archive: PrivateArchiveAccess) -> Option<String> {
+        self.private_file_archives.insert(archive, "".into())
+    }
+
+    /// Add a private archive with a name. Returning `Option::Some` with the old name if the archive was already in the set.
+    pub fn add_private_file_archive_with_name(
+        &mut self,
+        archive: PrivateArchiveAccess,
+        name: String,
+    ) -> Option<String> {
+        self.private_file_archives.insert(archive, name)
+    }
+
     /// Remove an archive. Returning `Option::Some` with the old name if the archive was already in the set.
     pub fn remove_file_archive(&mut self, archive: ArchiveAddr) -> Option<String> {
         self.file_archives.remove(&archive)
+    }
+
+    /// Remove a private archive. Returning `Option::Some` with the old name if the archive was already in the set.
+    pub fn remove_private_file_archive(&mut self, archive: PrivateArchiveAccess) -> Option<String> {
+        self.private_file_archives.remove(&archive)
     }
 
     /// To bytes
@@ -121,7 +140,7 @@ impl Client {
     pub async fn put_user_data_to_vault(
         &self,
         secret_key: &VaultSecretKey,
-        wallet: &EvmWallet,
+        payment_option: PaymentOption,
         user_data: UserData,
     ) -> Result<AttoTokens, PutError> {
         let bytes = user_data
@@ -130,7 +149,7 @@ impl Client {
         let total_cost = self
             .write_bytes_to_vault(
                 bytes,
-                wallet,
+                payment_option,
                 secret_key,
                 *USER_DATA_VAULT_CONTENT_IDENTIFIER,
             )
