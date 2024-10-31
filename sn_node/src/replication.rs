@@ -79,27 +79,12 @@ impl Node {
                         // Hence value of the flag actually doesn't matter.
                         is_register: false,
                     };
-                    match node
-                        .network()
-                        .get_record_from_network(key.clone(), &get_cfg)
-                        .await
-                    {
+                    match node.network().get_record_from_network(key, &get_cfg).await {
                         Ok(record) => record,
-                        Err(error) => match error {
-                            sn_networking::NetworkError::DoubleSpendAttempt(spends) => {
-                                debug!("Failed to fetch record {pretty_key:?} from the network, double spend attempt {spends:?}");
-
-                                let bytes = try_serialize_record(&spends, RecordKind::Spend)?;
-
-                                Record {
-                                    key,
-                                    value: bytes.to_vec(),
-                                    publisher: None,
-                                    expires: None,
-                                }
-                            }
-                            other_error => return Err(other_error.into()),
-                        },
+                        Err(err) => {
+                            error!("During replication fetch of {pretty_key:?}, failed in re-attempt of get from network {err:?}");
+                            return;
+                        }
                     }
                 };
 
@@ -111,7 +96,6 @@ impl Node {
                 } else {
                     debug!("Completed storing Replication Record {pretty_key:?} from network.");
                 }
-                Ok::<(), Error>(())
             });
         }
         Ok(())
