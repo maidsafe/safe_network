@@ -640,13 +640,9 @@ impl Node {
 
         #[cfg(feature = "open-metrics")]
         if let Some(metrics_recorder) = self.metrics_recorder() {
-            // FIXME: We would reach the MAX if the storecost is scaled up.
-            let current_value = metrics_recorder.current_reward_wallet_balance.get();
-            let new_value =
-                current_value.saturating_add(storecost.as_atto().try_into().unwrap_or(i64::MAX));
             let _ = metrics_recorder
                 .current_reward_wallet_balance
-                .set(new_value);
+                .inc_by(storecost.as_atto().try_into().unwrap_or(i64::MAX)); // TODO maybe metrics should be in u256 too?
         }
         self.events_channel()
             .broadcast(crate::NodeEvent::RewardReceived(storecost, address.clone()));
@@ -772,14 +768,13 @@ impl Node {
                 }
                 spends
             }
-            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopiesInRange {
+            Err(NetworkError::GetRecordError(GetRecordError::NotEnoughCopies {
                 record,
                 got,
-                range,
                 ..
             })) => {
                 info!(
-                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network in range {range}"
+                    "Retrieved {got} copies of the record for {unique_pubkey:?} from the network"
                 );
                 match get_raw_signed_spends_from_record(&record) {
                     Ok(spends) => spends,

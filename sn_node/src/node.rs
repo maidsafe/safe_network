@@ -45,7 +45,7 @@ use sn_evm::EvmNetwork;
 
 /// Interval to trigger replication of all records to all peers.
 /// This is the max time it should take. Minimum interval at any node will be half this
-pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 180;
+pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 45;
 
 /// Interval to trigger bad node detection.
 /// This is the max time it should take. Minimum interval at any node will be half this
@@ -498,7 +498,7 @@ impl Node {
                     // Only report the node as bad when ALL the verification attempts failed.
                     let mut attempts = 0;
                     while attempts < MAX_CHUNK_PROOF_VERIFY_ATTEMPTS {
-                        if chunk_proof_verify_peer(&network, peer_id, &key_to_verify).await {
+                        if chunk_proof_verify_peer(&network, peer_id, &keys_to_verify).await {
                             return;
                         }
                         // Replication interval is 22s - 45s.
@@ -528,7 +528,7 @@ impl Node {
     async fn close_nodes_shunning_peer(network: &Network, peer_id: PeerId) -> bool {
         // using `client` to exclude self
         let closest_peers = match network
-            .client_get_all_close_peers_in_range_or_close_group(&NetworkAddress::from_peer(peer_id))
+            .client_get_closest_peers(&NetworkAddress::from_peer(peer_id))
             .await
         {
             Ok(peers) => peers,
@@ -768,36 +768,44 @@ impl Node {
     }
 }
 
-async fn chunk_proof_verify_peer(network: &Network, peer_id: PeerId, key: &NetworkAddress) -> bool {
-    let check_passed = if let Ok(Some(record)) =
-        network.get_local_record(&key.to_record_key()).await
-    {
-        let nonce = thread_rng().gen::<u64>();
-        let expected_proof = ChunkProof::new(&record.value, nonce);
-        debug!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
+async fn chunk_proof_verify_peer(
+    network: &Network,
+    peer_id: PeerId,
+    keys: &[NetworkAddress],
+) -> bool {
+    for key in keys.iter() {
+        let check_passed = if let Ok(Some(record)) =
+            network.get_local_record(&key.to_record_key()).await
+        {
+            let nonce = thread_rng().gen::<u64>();
+            let expected_proof = ChunkProof::new(&record.value, nonce);
+            debug!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
 
-        let request = Request::Query(Query::GetChunkExistenceProof {
-            key: key.clone(),
-            nonce,
-        });
-        let responses = network
-            .send_and_get_responses(&[peer_id], &request, true)
-            .await;
-        let n_verified = responses
-            .into_iter()
-            .filter_map(|(peer, resp)| received_valid_chunk_proof(key, &expected_proof, peer, resp))
-            .count();
+            let request = Request::Query(Query::GetChunkExistenceProof {
+                key: key.clone(),
+                nonce,
+            });
+            let responses = network
+                .send_and_get_responses(&[peer_id], &request, true)
+                .await;
+            let n_verified = responses
+                .into_iter()
+                .filter_map(|(peer, resp)| {
+                    received_valid_chunk_proof(key, &expected_proof, peer, resp)
+                })
+                .count();
 
-        n_verified >= 1
-    } else {
-        error!(
+            n_verified >= 1
+        } else {
+            error!(
                  "To verify peer {peer_id:?} Could not get ChunkProof for {key:?} as we don't have the record locally."
             );
-        true
-    };
+            true
+        };
 
-    if !check_passed {
-        return false;
+        if !check_passed {
+            return false;
+        }
     }
 
     true
