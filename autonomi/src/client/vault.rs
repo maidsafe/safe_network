@@ -233,7 +233,7 @@ impl Client {
             retry_strategy: Some(RetryStrategy::Balanced),
             use_put_record_to: None,
             verification: Some((
-                VerificationKind::Network,
+                VerificationKind::Crdt,
                 GetRecordCfg {
                     get_quorum: Quorum::Majority,
                     retry_strategy: None,
