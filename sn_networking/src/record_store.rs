@@ -183,7 +183,22 @@ impl NodeRecordStore {
                 let record = match fs::read(path) {
                     Ok(bytes) => {
                         // and the stored record
-                        Self::get_record_from_bytes(bytes, &key, encryption_details)?
+                        if let Some(record) =
+                            Self::get_record_from_bytes(bytes, &key, encryption_details)
+                        {
+                            record
+                        } else {
+                            // This will be due to node restart, result in different encrypt_detail.
+                            // Hence need to clean up the old copy.
+                            info!("Failed to decrypt record from file {filename:?}, clean it up.");
+                            if let Err(e) = fs::remove_file(path) {
+                                warn!(
+                                    "Failed to remove outdated record file {filename:?} from storage dir: {:?}",
+                                    e
+                                );
+                            }
+                            return None;
+                        }
                     }
                     Err(err) => {
                         error!("Error while reading file. filename: {filename}, error: {err:?}");
@@ -198,7 +213,18 @@ impl NodeRecordStore {
                         RecordType::NonChunk(xorname_hash)
                     }
                     Err(error) => {
-                        warn!("Failed to parse record type from record: {:?}", error);
+                        warn!(
+                            "Failed to parse record type of record {filename:?}: {:?}",
+                            error
+                        );
+                        // In correct decryption using different key could result in this.
+                        // In that case, a cleanup shall be carried out.
+                        if let Err(e) = fs::remove_file(path) {
+                            warn!(
+                                "Failed to remove invalid record file {filename:?} from storage dir: {:?}",
+                                e
+                            );
+                        }
                         return None;
                     }
                 };
