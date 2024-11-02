@@ -244,17 +244,29 @@ impl PaymentQuote {
             return false;
         }
 
+        // TODO: Double check if this applies, as this will prevent a node restart with same ID
+        if new_quote.quoting_metrics.received_payment_count
+            < old_quote.quoting_metrics.received_payment_count
+        {
+            info!("claimed received_payment_count out of sequence");
+            return false;
+        }
+
         let old_elapsed = if let Ok(elapsed) = old_quote.timestamp.elapsed() {
             elapsed
         } else {
-            info!("timestamp failure");
-            return false;
+            // The elapsed call could fail due to system clock change
+            // hence consider the verification succeeded.
+            info!("old_quote timestamp elapsed call failure");
+            return true;
         };
         let new_elapsed = if let Ok(elapsed) = new_quote.timestamp.elapsed() {
             elapsed
         } else {
-            info!("timestamp failure");
-            return false;
+            // The elapsed call could fail due to system clock change
+            // hence consider the verification succeeded.
+            info!("new_quote timestamp elapsed call failure");
+            return true;
         };
 
         let time_diff = old_elapsed.as_secs().saturating_sub(new_elapsed.as_secs());
@@ -274,14 +286,6 @@ impl PaymentQuote {
             new_quote.quoting_metrics.close_records_stored,
             old_quote.quoting_metrics.close_records_stored
         );
-
-        // TODO: Double check if this applies, as this will prevent a node restart with same ID
-        if new_quote.quoting_metrics.received_payment_count
-            < old_quote.quoting_metrics.received_payment_count
-        {
-            info!("claimed received_payment_count out of sequence");
-            return false;
-        }
 
         true
     }
