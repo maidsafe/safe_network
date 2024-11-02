@@ -126,6 +126,11 @@ impl<'a> ServiceStateActions for NodeService<'a> {
             args.push(OsString::from(peers_str));
         }
 
+        args.push(OsString::from("--rewards-address"));
+        args.push(OsString::from(
+            self.service_data.rewards_address.to_string(),
+        ));
+
         args.push(OsString::from(self.service_data.evm_network.to_string()));
         if let EvmNetwork::Custom(custom_network) = &self.service_data.evm_network {
             args.push(OsString::from("--rpc-url"));
