@@ -31,3 +31,13 @@ metrics/prometheus/prometheus.yml
 *.dot
 
 sn_node_manager/.vagrant
+
+# Python 
+.venv/
+uv.lock
+*.so
+*.pyc
+
+*.pyc
+*.swp
+
