@@ -524,13 +524,15 @@ impl NodeRecordStore {
         Ok(())
     }
 
-    // When the accumulated record copies exceeds the `expotional pricing point` (max_records * 0.6)
+    // When the accumulated record copies exceeds the `expotional pricing point` (max_records * 0.1)
     // those `out of range` records shall be cleaned up.
-    // This is to avoid `over-quoting` during restart, when RT is not fully populated,
-    // result in mis-calculation of relevant records.
+    // This is to avoid :
+    //   * holding too many irrelevant record, which occupies disk space
+    //   * `over-quoting` during restart, when RT is not fully populated,
+    //     result in mis-calculation of relevant records.
     pub fn cleanup_irrelevant_records(&mut self) {
         let accumulated_records = self.records.len();
-        if accumulated_records < MAX_RECORDS_COUNT * 6 / 10 {
+        if accumulated_records < MAX_RECORDS_COUNT / 10 {
             return;
         }
 
