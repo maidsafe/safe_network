@@ -191,7 +191,9 @@ impl Status<'_> {
                     // Starting is not part of ServiceStatus so we do it manually
                     if let Some(LockRegistryState::StartingNodes) = self.lock_registry {
                         item.spinner_state.calc_next();
-                        item.status = NodeStatus::Starting;
+                        if item.status != NodeStatus::Running {
+                            item.status = NodeStatus::Starting;
+                        }
                     }
 
                     // Update peers count
