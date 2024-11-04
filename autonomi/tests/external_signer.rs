@@ -20,7 +20,15 @@ use tokio::time::sleep;
 use xor_name::XorName;
 
 async fn pay_for_data(client: &Client, wallet: &Wallet, data: Bytes) -> eyre::Result<Receipt> {
-    let (_data_map_chunk, _chunks, xor_names) = encrypt_data(data)?;
+    let (data_map_chunk, chunks) = encrypt_data(data)?;
+
+    let map_xor_name = *data_map_chunk.address().xorname();
+    let mut xor_names = vec![map_xor_name];
+
+    for chunk in chunks {
+        xor_names.push(*chunk.name());
+    }
+
     pay_for_content_addresses(client, wallet, xor_names.into_iter()).await
 }
 
@@ -117,7 +125,7 @@ async fn external_signer_put() -> eyre::Result<()> {
     sleep(Duration::from_secs(5)).await;
 
     let private_archive_access = client
-        .private_data_put(archive_serialized, receipt.into())
+        .private_archive_put(private_archive, receipt.into())
         .await?;
 
     let vault_key = VaultSecretKey::random();
