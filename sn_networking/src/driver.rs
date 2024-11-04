@@ -60,6 +60,7 @@ use sn_protocol::{
 use sn_registers::SignedRegister;
 use std::{
     collections::{btree_map::Entry, BTreeMap, HashMap, HashSet},
+    convert::TryInto,
     fmt::Debug,
     fs,
     io::{Read, Write},
@@ -389,10 +390,18 @@ impl NetworkBuilder {
                     source: error,
                 });
             }
+            let peer_id = PeerId::from(self.keypair.public());
+            let encryption_seed: [u8; 16] = peer_id
+                .to_bytes()
+                .get(..16)
+                .expect("Cann't get encryption_seed from keypair")
+                .try_into()
+                .expect("Cann't get 16 bytes from serialised key_pair");
             NodeRecordStoreConfig {
                 max_value_bytes: MAX_PACKET_SIZE, // TODO, does this need to be _less_ than MAX_PACKET_SIZE
                 storage_dir: storage_dir_path,
                 historic_quote_dir: root_dir.clone(),
+                encryption_seed,
                 ..Default::default()
             }
         };

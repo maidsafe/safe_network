@@ -73,11 +73,14 @@ tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
 backoff = { version = "0.4.0", features = ["tokio"] }
 aes-gcm-siv = "0.11.1"
+hkdf = "0.12"
+sha2 = "0.10"
 walkdir = "~2.5.0"
 strum = { version = "0.26.2", features = ["derive"] }
 void = "1.0.2"
 
 [dev-dependencies]
+assert_fs = "1.0.0"
 bls = { package = "blsttc", version = "8.0.1" }
 # add rand to libp2p
 libp2p-identity = { version = "0.2.7", features = ["rand"] }
