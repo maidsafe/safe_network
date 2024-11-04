@@ -8330,6 +8330,7 @@ name = "sn_networking"
 version = "0.19.2-rc.2"
 dependencies = [
  "aes-gcm-siv",
+ "assert_fs",
  "async-trait",
  "backoff",
  "blsttc",
@@ -8339,6 +8340,7 @@ dependencies = [
  "futures",
  "getrandom 0.2.15",
  "hex 0.4.3",
+ "hkdf",
  "hyper 0.14.30",
  "itertools 0.12.1",
  "lazy_static",
@@ -8351,6 +8353,7 @@ dependencies = [
  "rmp-serde",
  "self_encryption",
  "serde",
+ "sha2 0.10.8",
  "sn_build_info",
  "sn_evm",
  "sn_protocol",

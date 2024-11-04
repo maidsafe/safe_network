@@ -250,7 +250,7 @@ jobs:
 
       - name: Run network tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_networking --features="open-metrics"
+        run: cargo test --release --package sn_networking --features="open-metrics, encrypt-records"
 
       - name: Run protocol tests
         timeout-minutes: 25

@@ -13,10 +13,10 @@ use crate::send_local_swarm_cmd;
 use crate::target_arch::{spawn, Instant};
 use crate::{event::NetworkEvent, log_markers::Marker};
 use aes_gcm_siv::{
-    aead::{Aead, KeyInit, OsRng},
-    Aes256GcmSiv, Nonce,
+    aead::{Aead, KeyInit},
+    Aes256GcmSiv, Key as AesKey, Nonce,
 };
-
+use hkdf::Hkdf;
 use itertools::Itertools;
 use libp2p::{
     identity::PeerId,
@@ -27,9 +27,9 @@ use libp2p::{
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::gauge::Gauge;
-use rand::RngCore;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
+use sha2::Sha256;
 use sn_evm::{AttoTokens, QuotingMetrics};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
@@ -66,6 +66,27 @@ const MAX_STORE_COST: u64 = 1_000_000;
 
 // Min store cost for a chunk.
 const MIN_STORE_COST: u64 = 1;
+
+fn derive_aes256gcm_siv_from_seed(seed: &[u8; 16]) -> (Aes256GcmSiv, [u8; 4]) {
+    // shall be unique for purpose.
+    let salt = b"autonomi_record_store";
+
+    let hk = Hkdf::<Sha256>::new(Some(salt), seed);
+
+    let mut okm = [0u8; 32];
+    hk.expand(b"", &mut okm)
+        .expect("32 bytes is a valid length for HKDF output");
+
+    let seeded_key = AesKey::<Aes256GcmSiv>::from_slice(&okm);
+
+    let mut nonce_starter = [0u8; 4];
+    let bytes_to_copy = seed.len().min(nonce_starter.len());
+    nonce_starter[..bytes_to_copy].copy_from_slice(&seed[..bytes_to_copy]);
+
+    trace!("seeded_key is {seeded_key:?}  nonce_starter is {nonce_starter:?}");
+
+    (Aes256GcmSiv::new(seeded_key), nonce_starter)
+}
 
 /// FIFO simple cache of records to reduce read times
 struct RecordCache {
@@ -163,6 +184,8 @@ pub struct NodeRecordStoreConfig {
     pub max_value_bytes: usize,
     /// The maximum number of records to cache in memory.
     pub records_cache_size: usize,
+    /// The seed to generate record_store encryption_details
+    pub encryption_seed: [u8; 16],
 }
 
 impl Default for NodeRecordStoreConfig {
@@ -174,6 +197,7 @@ impl Default for NodeRecordStoreConfig {
             max_records: MAX_RECORDS_COUNT,
             max_value_bytes: MAX_PACKET_SIZE,
             records_cache_size: MAX_RECORDS_CACHE_SIZE,
+            encryption_seed: [0u8; 16],
         }
     }
 }
@@ -330,12 +354,8 @@ impl NodeRecordStore {
         network_event_sender: mpsc::Sender<NetworkEvent>,
         swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     ) -> Self {
-        let key = Aes256GcmSiv::generate_key(&mut OsRng);
-        let cipher = Aes256GcmSiv::new(&key);
-        let mut nonce_starter = [0u8; 4];
-        OsRng.fill_bytes(&mut nonce_starter);
-
-        let encryption_details = (cipher, nonce_starter);
+        info!("Using encryption_seed of {:?}", config.encryption_seed);
+        let encryption_details = derive_aes256gcm_siv_from_seed(&config.encryption_seed);
 
         // Recover the quoting_metrics first, as the historical file will be cleaned by
         // the later on update_records_from_an_existing_store function
@@ -1023,6 +1043,7 @@ mod tests {
     use bls::SecretKey;
     use xor_name::XorName;
 
+    use assert_fs::TempDir;
     use bytes::Bytes;
     use eyre::{bail, ContextCompat};
     use libp2p::kad::K_VALUE;
@@ -1221,6 +1242,102 @@ mod tests {
         store.remove(&r.key);
 
         assert!(store.get(&r.key).is_none());
+    }
+
+    #[tokio::test]
+    async fn can_store_after_restart() -> eyre::Result<()> {
+        let temp_dir = TempDir::new().expect("Should be able to create a temp dir.");
+        let store_config = NodeRecordStoreConfig {
+            storage_dir: temp_dir.to_path_buf(),
+            encryption_seed: [1u8; 16],
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config.clone(),
+            network_event_sender.clone(),
+            swarm_cmd_sender.clone(),
+        );
+
+        // Create a chunk
+        let chunk_data = Bytes::from_static(b"Test chunk data");
+        let chunk = Chunk::new(chunk_data);
+        let chunk_address = *chunk.address();
+
+        // Create a record from the chunk
+        let record = Record {
+            key: NetworkAddress::ChunkAddress(chunk_address).to_record_key(),
+            value: try_serialize_record(&chunk, RecordKind::Chunk)?.to_vec(),
+            expires: None,
+            publisher: None,
+        };
+
+        // Store the chunk using put_verified
+        assert!(store
+            .put_verified(record.clone(), RecordType::Chunk)
+            .is_ok());
+
+        // Mark as stored (simulating the CompletedWrite event)
+        store.mark_as_stored(record.key.clone(), RecordType::Chunk);
+
+        // Verify the chunk is stored
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Chunk should be stored");
+
+        // Sleep a while to let OS completes the flush to disk
+        sleep(Duration::from_secs(1)).await;
+
+        // Restart the store with same encrypt_seed
+        drop(store);
+        let store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender.clone(),
+            swarm_cmd_sender.clone(),
+        );
+
+        // Sleep a lit bit to let OS completes restoring
+        sleep(Duration::from_secs(1)).await;
+
+        // Verify the record still exists
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Chunk should be stored");
+
+        // Restart the store with different encrypt_seed
+        let self_id_diff = PeerId::random();
+        let store_config_diff = NodeRecordStoreConfig {
+            storage_dir: temp_dir.to_path_buf(),
+            encryption_seed: [2u8; 16],
+            ..Default::default()
+        };
+        let store_diff = NodeRecordStore::with_config(
+            self_id_diff,
+            store_config_diff,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
+
+        // Sleep a lit bit to let OS completes restoring (if has)
+        sleep(Duration::from_secs(1)).await;
+
+        // Verify the record existence, shall get removed when encryption enabled
+        if cfg!(feature = "encrypt-records") {
+            assert!(
+                store_diff.get(&record.key).is_none(),
+                "Chunk should be gone"
+            );
+        } else {
+            assert!(
+                store_diff.get(&record.key).is_some(),
+                "Chunk shall persists without encryption"
+            );
+        }
+
+        Ok(())
     }
 
     #[tokio::test]
