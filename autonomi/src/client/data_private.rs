@@ -10,11 +10,12 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::{Amount, EvmWallet};
+use sn_evm::Amount;
 use sn_protocol::storage::Chunk;
 
 use super::data::CHUNK_UPLOAD_BATCH_SIZE;
 use super::data::{GetError, PutError};
+use crate::client::payment::PaymentOption;
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
@@ -64,7 +65,7 @@ impl Client {
     pub async fn private_data_put(
         &self,
         data: Bytes,
-        wallet: &EvmWallet,
+        payment_option: PaymentOption,
     ) -> Result<PrivateDataAccess, PutError> {
         let now = sn_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
@@ -73,8 +74,8 @@ impl Client {
         // Pay for all chunks
         let xor_names: Vec<_> = chunks.iter().map(|chunk| *chunk.name()).collect();
         info!("Paying for {} addresses", xor_names.len());
-        let (payment_proofs, _free_chunks) = self
-            .pay(xor_names.into_iter(), wallet)
+        let receipt = self
+            .pay_for_content_addrs(xor_names.into_iter(), payment_option)
             .await
             .inspect_err(|err| error!("Error paying for data: {err:?}"))?;
 
@@ -84,7 +85,7 @@ impl Client {
         for chunk in chunks {
             let self_clone = self.clone();
             let address = *chunk.address();
-            if let Some(proof) = payment_proofs.get(chunk.name()) {
+            if let Some(proof) = receipt.get(chunk.name()) {
                 let proof_clone = proof.clone();
                 upload_tasks.push(async move {
                     self_clone
@@ -112,7 +113,7 @@ impl Client {
 
         // Reporting
         if let Some(channel) = self.client_event_sender.as_ref() {
-            let tokens_spent = payment_proofs
+            let tokens_spent = receipt
                 .values()
                 .map(|proof| proof.quote.cost.as_atto())
                 .sum::<Amount>();

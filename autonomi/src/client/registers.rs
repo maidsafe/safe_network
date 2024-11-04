@@ -209,7 +209,7 @@ impl Client {
             put_quorum: Quorum::All,
             retry_strategy: None,
             use_put_record_to: None,
-            verification: Some((VerificationKind::Network, get_cfg)),
+            verification: Some((VerificationKind::Crdt, get_cfg)),
         };
 
         // Store the updated register on the network

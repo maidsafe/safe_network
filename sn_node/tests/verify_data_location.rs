@@ -332,7 +332,7 @@ async fn store_chunks(
 
         let random_bytes = Bytes::from(random_bytes);
 
-        client.data_put(random_bytes, wallet).await?;
+        client.data_put(random_bytes, wallet.into()).await?;
 
         uploaded_chunks_count += 1;
 

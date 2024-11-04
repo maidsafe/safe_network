@@ -23,7 +23,7 @@ async fn put() -> Result<()> {
     let wallet = get_funded_wallet();
     let data = gen_random_data(1024 * 1024 * 10);
 
-    let addr = client.data_put(data.clone(), &wallet).await?;
+    let addr = client.data_put(data.clone(), wallet.into()).await?;
 
     sleep(Duration::from_secs(10)).await;
 

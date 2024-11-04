@@ -231,6 +231,8 @@ pub struct PutRecordCfg {
 pub enum VerificationKind {
     /// Uses the default KAD GET to perform verification.
     Network,
+    /// Uses the default KAD GET to perform verification, but don't error out on split records
+    Crdt,
     /// Uses the hash based verification for chunks.
     ChunkProof {
         expected_proof: ChunkProof,
