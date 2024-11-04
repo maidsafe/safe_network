@@ -63,8 +63,10 @@ impl SwarmDriver {
                     relay_peer_id, ..
                 } = *event
                 {
-                    self.relay_manager
-                        .on_successful_reservation_by_client(&relay_peer_id, &mut self.swarm);
+                    if let Some(relay_manager) = self.relay_manager.as_mut() {
+                        relay_manager
+                            .on_successful_reservation_by_client(&relay_peer_id, &mut self.swarm);
+                    }
                 }
             }
             #[cfg(feature = "upnp")]
@@ -98,11 +100,10 @@ impl SwarmDriver {
                         src_peer_id,
                         renewed: _,
                     } => {
-                        self.relay_manager
-                            .on_successful_reservation_by_server(src_peer_id);
+                        self.connected_relay_clients.insert(src_peer_id);
                     }
                     libp2p::relay::Event::ReservationTimedOut { src_peer_id } => {
-                        self.relay_manager.on_reservation_timeout(src_peer_id);
+                        self.connected_relay_clients.remove(&src_peer_id);
                     }
                     _ => {}
                 }
@@ -174,13 +175,15 @@ impl SwarmDriver {
                             .any(|(_ilog2, peers)| peers.contains(&peer_id));
 
                         // Do not use an `already relayed` peer as `potential relay candidate`.
-                        if !has_relayed && !is_bootstrap_peer && !self.is_client {
-                            debug!("Adding candidate relay server {peer_id:?}, it's not a bootstrap node");
-                            self.relay_manager.add_potential_candidates(
-                                &peer_id,
-                                &addrs,
-                                &info.protocols,
-                            );
+                        if !has_relayed && !is_bootstrap_peer {
+                            if let Some(relay_manager) = self.relay_manager.as_mut() {
+                                debug!("Adding candidate relay server {peer_id:?}, it's not a bootstrap node");
+                                relay_manager.add_potential_candidates(
+                                    &peer_id,
+                                    &addrs,
+                                    &info.protocols,
+                                );
+                            }
                         }
 
                         // When received an identify from un-dialed peer, try to dial it
@@ -323,9 +326,13 @@ impl SwarmDriver {
                         // all addresses are effectively external here...
                         // this is needed for Kad Mode::Server
                         self.swarm.add_external_address(address.clone());
+                    } else if let Some(external_add_manager) =
+                        self.external_address_manager.as_mut()
+                    {
+                        external_add_manager.on_new_listen_addr(address.clone(), &mut self.swarm);
                     } else {
-                        self.external_address_manager
-                            .on_new_listen_addr(address.clone(), &mut self.swarm);
+                        // just for future reference.
+                        warn!("External address manager is not enabled for a public node. This should not happen.");
                     }
                 }
 
@@ -338,8 +345,9 @@ impl SwarmDriver {
             } => {
                 event_string = "listener closed";
                 info!("Listener {listener_id:?} with add {addresses:?} has been closed for {reason:?}");
-                self.relay_manager
-                    .on_listener_closed(&listener_id, &mut self.swarm);
+                if let Some(relay_manager) = self.relay_manager.as_mut() {
+                    relay_manager.on_listener_closed(&listener_id, &mut self.swarm);
+                }
             }
             SwarmEvent::IncomingConnection {
                 connection_id,
@@ -359,9 +367,11 @@ impl SwarmDriver {
             } => {
                 event_string = "ConnectionEstablished";
                 debug!(%peer_id, num_established, ?concurrent_dial_errors, "ConnectionEstablished ({connection_id:?}) in {established_in:?}: {}", endpoint_str(&endpoint));
-                if let ConnectedPoint::Listener { local_addr, .. } = &endpoint {
-                    self.external_address_manager
-                        .on_established_incoming_connection(local_addr.clone());
+                if let Some(external_addr_manager) = self.external_address_manager.as_mut() {
+                    if let ConnectedPoint::Listener { local_addr, .. } = &endpoint {
+                        external_addr_manager
+                            .on_established_incoming_connection(local_addr.clone());
+                    }
                 }
 
                 let _ = self.live_connected_peers.insert(
@@ -533,8 +543,10 @@ impl SwarmDriver {
                 } else {
                     debug!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
                 }
-                self.external_address_manager
-                    .on_incoming_connection_error(local_addr.clone(), &mut self.swarm);
+                if let Some(external_addr_manager) = self.external_address_manager.as_mut() {
+                    external_addr_manager
+                        .on_incoming_connection_error(local_addr.clone(), &mut self.swarm);
+                }
                 let _ = self.live_connected_peers.remove(&connection_id);
                 self.record_connection_metrics();
             }
@@ -548,16 +560,8 @@ impl SwarmDriver {
             SwarmEvent::NewExternalAddrCandidate { address } => {
                 event_string = "NewExternalAddrCandidate";
 
-                if !self.is_client
-                    // If we are behind a home network, then our IP is returned here. We should be only having
-                    // relay server as our external address
-                    // todo: can our relay address be reported here? If so, maybe we should add them.
-                    && !self.is_behind_home_network
-                    // When running a local network, we just need the local listen address to work.
-                    && !self.local
-                {
-                    self.external_address_manager
-                        .add_external_address_candidate(address, &mut self.swarm);
+                if let Some(external_addr_manager) = self.external_address_manager.as_mut() {
+                    external_addr_manager.add_external_address_candidate(address, &mut self.swarm);
                 }
             }
             SwarmEvent::ExternalAddrConfirmed { address } => {
@@ -574,16 +578,13 @@ impl SwarmDriver {
             } => {
                 event_string = "ExpiredListenAddr";
                 info!("Listen address has expired. {listener_id:?} on {address:?}");
-                self.external_address_manager
-                    .on_expired_listen_addr(address, &self.swarm);
+                if let Some(external_addr_manager) = self.external_address_manager.as_mut() {
+                    external_addr_manager.on_expired_listen_addr(address, &self.swarm);
+                }
             }
             SwarmEvent::ListenerError { listener_id, error } => {
                 event_string = "ListenerError";
                 warn!("ListenerError {listener_id:?} with non-fatal error {error:?}");
-            }
-            SwarmEvent::NewExternalAddrOfPeer { peer_id, address } => {
-                event_string = "NewExternalAddrOfPeer";
-                debug!(%peer_id, %address, "New external address of peer");
             }
             other => {
                 event_string = "Other";
@@ -659,7 +660,14 @@ impl SwarmDriver {
             }
 
             // skip if the peer is a relay server that we're connected to
-            if self.relay_manager.keep_alive_peer(peer_id) {
+            if let Some(relay_manager) = self.relay_manager.as_ref() {
+                if relay_manager.keep_alive_peer(peer_id) {
+                    return true; // retain peer
+                }
+            }
+
+            // skip if the peer is a node that is being relayed through us
+            if self.connected_relay_clients.contains(peer_id) {
                 return true; // retain peer
             }
 

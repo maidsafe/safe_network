@@ -23,14 +23,11 @@ pub(crate) fn is_a_relayed_peer(addrs: &HashSet<Multiaddr>) -> bool {
         .any(|multiaddr| multiaddr.iter().any(|p| matches!(p, Protocol::P2pCircuit)))
 }
 
-/// To manager relayed connections.
+/// Manage the relay servers that we are connected to.
+/// This is the client side of the relay server protocol.
 #[derive(Debug)]
 pub(crate) struct RelayManager {
     self_peer_id: PeerId,
-    // server states
-    reserved_by: HashSet<PeerId>,
-    // client states
-    enable_client: bool,
     candidates: VecDeque<(PeerId, Multiaddr)>,
     waiting_for_reservation: BTreeMap<PeerId, Multiaddr>,
     connected_relays: BTreeMap<PeerId, Multiaddr>,
@@ -43,8 +40,6 @@ impl RelayManager {
     pub(crate) fn new(self_peer_id: PeerId) -> Self {
         Self {
             self_peer_id,
-            reserved_by: Default::default(),
-            enable_client: false,
             connected_relays: Default::default(),
             waiting_for_reservation: Default::default(),
             candidates: Default::default(),
@@ -52,17 +47,10 @@ impl RelayManager {
         }
     }
 
-    pub(crate) fn enable_hole_punching(&mut self, enable: bool) {
-        info!("Setting relay client mode to {enable:?}");
-        self.enable_client = enable;
-    }
-
     /// Should we keep this peer alive? Closing a connection to that peer would remove that server from the listen addr.
     pub(crate) fn keep_alive_peer(&self, peer_id: &PeerId) -> bool {
         self.connected_relays.contains_key(peer_id)
             || self.waiting_for_reservation.contains_key(peer_id)
-            // but servers provide connections to bad nodes.
-            || self.reserved_by.contains(peer_id)
     }
 
     /// Add a potential candidate to the list if it satisfies all the identify checks and also supports the relay server
@@ -100,10 +88,6 @@ impl RelayManager {
         swarm: &mut Swarm<NodeBehaviour>,
         bad_nodes: &BadNodes,
     ) {
-        if !self.enable_client {
-            return;
-        }
-
         if self.connected_relays.len() >= MAX_CONCURRENT_RELAY_CONNECTIONS
             || self.candidates.is_empty()
         {
@@ -157,16 +141,6 @@ impl RelayManager {
                 break;
             }
         }
-    }
-
-    /// Update relay server state on incoming reservation from a client
-    pub(crate) fn on_successful_reservation_by_server(&mut self, peer_id: PeerId) {
-        self.reserved_by.insert(peer_id);
-    }
-
-    /// Update relay server state on reservation timeout
-    pub(crate) fn on_reservation_timeout(&mut self, peer_id: PeerId) {
-        self.reserved_by.remove(&peer_id);
     }
 
     /// Update client state after we've successfully made reservation with a relay.

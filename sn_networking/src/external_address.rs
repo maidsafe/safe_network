@@ -24,7 +24,7 @@ const MAX_CONFIRMED_ADDRESSES_BEFORE_SWITCHING_IP: u8 = 5;
 const MAX_CANDIDATES: usize = 50;
 
 /// Manages the external addresses of a Public node. For a relayed node, the RelayManager should deal with
-/// adding and removing external addresses. We don't manage "local" addresses here.
+/// adding and removing external addresses. Also, we don't manage "local" addresses here.
 // TODO:
 // 1. if the max candidate is reached, kick out the oldest candidate sorted by # of reports
 #[derive(Debug)]
