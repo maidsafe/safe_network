@@ -184,7 +184,7 @@ impl Status<'_> {
                         // Update status based on current node status
                         item.status = match node_item.status {
                             ServiceStatus::Running => {
-                                NodeItem::update_spinner_state(&mut item.spinner_state);
+                                item.spinner_state.calc_next();
                                 NodeStatus::Running
                             }
                             ServiceStatus::Stopped => NodeStatus::Stopped,
@@ -194,7 +194,7 @@ impl Status<'_> {
 
                         // Starting is not part of ServiceStatus so we do it manually
                         if let Some(LockRegistryState::StartingNodes) = self.lock_registry {
-                            NodeItem::update_spinner_state(&mut item.spinner_state);
+                            item.spinner_state.calc_next();
                             if item.status != NodeStatus::Running {
                                 item.status = NodeStatus::Starting;
                             }
@@ -923,7 +923,7 @@ impl Component for Status<'_> {
                 let table = Table::new(items, node_widths)
                     .header(header_row)
                     .column_spacing(1)
-                    .highlight_style(Style::default().bg(INDIGO))
+                    .row_highlight_style(Style::default().bg(INDIGO))
                     .highlight_spacing(HighlightSpacing::Always);
 
                 f.render_widget(table, inner_area);
@@ -1137,16 +1137,6 @@ pub struct NodeItem<'a> {
 }
 
 impl NodeItem<'_> {
-    fn update_spinner_state(state: &mut ThrobberState) {
-        // Call calc_next on the spinner state
-        // https://github.com/arkbig/throbber-widgets-tui/issues/19
-        if state.index() == i8::MAX {
-            *state = ThrobberState::default();
-        } else {
-            state.calc_next();
-        }
-    }
-
     fn render_as_row(&mut self, index: usize, area: Rect, f: &mut Frame<'_>) -> Row {
         let mut row_style = Style::default().fg(GHOST_WHITE);
         let mut spinner_state = self.spinner_state.clone();
