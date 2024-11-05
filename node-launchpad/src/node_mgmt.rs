@@ -20,7 +20,7 @@ const NODE_ADD_MAX_RETRIES: u32 = 5;
 pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     tokio::task::spawn_local(async move {
         if let Err(err) =
-            sn_node_manager::cmd::node::stop(vec![], services, VerbosityLevel::Minimal).await
+            sn_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
         {
             error!("Error while stopping services {err:?}");
             if let Err(err) =
