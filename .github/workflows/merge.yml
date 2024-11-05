@@ -357,13 +357,18 @@ jobs:
           SN_LOG: "v"
         timeout-minutes: 2
 
-      - name: Estimate cost to create a vault
+      - name: create local user data
         run: |
           # 1 MB
           python3 -c "with open('random.txt', 'wb') as f: f.write(bytearray([0xff] * 1 * 1024 * 1024))"
           ./target/release/autonomi --log-output-dest=data-dir file upload random.txt
           ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register 1234
-          ./target/release/autonomi --log-output-dest=data-dir vault cost
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: Estimate cost to create a vault
+        run: ./target/release/autonomi --log-output-dest=data-dir vault cost
         env:
           SN_LOG: "v"
         timeout-minutes: 2
@@ -377,6 +382,7 @@ jobs:
       - name: add more files - linux/macos
         if: matrix.os != 'windows-latest'
         run: |
+          set -e
           for i in {1..100}; do
             dd if=/dev/urandom of=random_file_$i.bin bs=1M count=1 status=none
             ./target/release/autonomi --log-output-dest=data-dir file upload random_file_$i.bin --public
@@ -391,9 +397,12 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           for ($i = 1; $i -le 100; $i++) {
+              $fileName = "random_file_$i.bin"
+              $byteArray = [byte[]]@(0xFF) * (1MB)  # Create a 1 MB array filled with 0xFF
+              [System.IO.File]::WriteAllBytes($fileName, $byteArray)
 
-              python3 -c "import sys; with open(sys.argv[1], 'wb') as f: f.write(bytearray([0xff] * 1 * 1024 * 1024))" "random_file_$i.bin"
               # Run autonomi commands
               ./target/release/autonomi --log-output-dest=data-dir file upload "random_file_$i.bin" --public
               ./target/release/autonomi --log-output-dest=data-dir file upload "random_file_$i.bin"
@@ -413,6 +422,7 @@ jobs:
         if: matrix.os != 'windows-latest'
         shell: bash
         run: |
+          set -e
           NUM_OF_PUBLIC_FILES=""
           NUM_OF_PRIVATE_FILES=""
           NUM_OF_REGISTERS=""
@@ -450,45 +460,45 @@ jobs:
           SN_LOG: "v"
         timeout-minutes: 15
 
-      # - name: Set up variables - vault sync - windows
-      #   if: matrix.os == 'windows-latest'
-      #   shell: pwsh
-      #   run: |
-      #     # Initialize variables to empty
-      #     $NUM_OF_PUBLIC_FILES = ""
-      #     $NUM_OF_PRIVATE_FILES = ""
-      #     $NUM_OF_REGISTERS = ""
-      #     $NUM_OF_PUBLIC_FILES_IN_VAULT = ""
-      #     $NUM_OF_PRIVATE_FILES_IN_VAULT = ""
-      #     $NUM_OF_REGISTERS_IN_VAULT = ""
+      - name: Set up variables - vault sync - windows
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          # Initialize variables to empty
+          $NUM_OF_PUBLIC_FILES = ""
+          $NUM_OF_PRIVATE_FILES = ""
+          $NUM_OF_REGISTERS = ""
+          $NUM_OF_PUBLIC_FILES_IN_VAULT = ""
+          $NUM_OF_PRIVATE_FILES_IN_VAULT = ""
+          $NUM_OF_REGISTERS_IN_VAULT = ""
 
-      #     # Execute commands and save outputs to files
-      #     ./target/release/autonomi --log-output-dest=data-dir file list > file_list.txt 2>&1
-      #     ./target/release/autonomi register list | Select-String "register" > register_list.txt
-      #     ./target/release/autonomi --log-output-dest=data-dir vault load > vault_data.txt 2>&1
+          # Execute commands and save outputs to files
+          ./target/release/autonomi --log-output-dest=data-dir file list > file_list.txt 2>&1
+          ./target/release/autonomi register list | Select-String "register" > register_list.txt
+          ./target/release/autonomi --log-output-dest=data-dir vault load > vault_data.txt 2>&1
 
-      #     # Parse the files and extract numbers
-      #     $NUM_OF_PUBLIC_FILES = (Select-String "public" file_list.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
-      #     $NUM_OF_PRIVATE_FILES = (Select-String "private" file_list.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
-      #     $NUM_OF_REGISTERS = (Select-String "register" register_list.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
+          # Parse the files and extract numbers
+          $NUM_OF_PUBLIC_FILES = (Select-String "public" file_list.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
+          $NUM_OF_PRIVATE_FILES = (Select-String "private" file_list.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
+          $NUM_OF_REGISTERS = (Select-String "register" register_list.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
 
-      #     # Get the first word only (PowerShell handles this without additional parsing)
-      #     $NUM_OF_REGISTERS_first = $NUM_OF_REGISTERS -split '\s+' | Select-Object -First 1
+          # Get the first word only (PowerShell handles this without additional parsing)
+          $NUM_OF_REGISTERS_first = $NUM_OF_REGISTERS -split '\s+' | Select-Object -First 1
 
-      #     Write-Output "NUM_OF_REGISTERS is $NUM_OF_REGISTERS_first"
+          Write-Output "NUM_OF_REGISTERS is $NUM_OF_REGISTERS_first"
 
-      #     # Continue with vault data parsing
-      #     $NUM_OF_PUBLIC_FILES_IN_VAULT = (Select-String "public" vault_data.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
-      #     $NUM_OF_PRIVATE_FILES_IN_VAULT = (Select-String "private" vault_data.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
-      #     $NUM_OF_REGISTERS_IN_VAULT = (Select-String "register" vault_data.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
+          # Continue with vault data parsing
+          $NUM_OF_PUBLIC_FILES_IN_VAULT = (Select-String "public" vault_data.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
+          $NUM_OF_PRIVATE_FILES_IN_VAULT = (Select-String "private" vault_data.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
+          $NUM_OF_REGISTERS_IN_VAULT = (Select-String "register" vault_data.txt | ForEach-Object { $_ -match "\d+"; $matches[0] })[0]
 
-      #     # Output summary
-      #     Write-Output "Total Num of local public files is $NUM_OF_PUBLIC_FILES and in vault is $NUM_OF_PUBLIC_FILES_IN_VAULT"
-      #     Write-Output "Total Num of local private files is $NUM_OF_PRIVATE_FILES and in vault is $NUM_OF_PRIVATE_FILES_IN_VAULT"
-      #     Write-Output "Total Num of local registers is $NUM_OF_REGISTERS_first and in vault is $NUM_OF_REGISTERS_IN_VAULT"
+          # Output summary
+          Write-Output "Total Num of local public files is $NUM_OF_PUBLIC_FILES and in vault is $NUM_OF_PUBLIC_FILES_IN_VAULT"
+          Write-Output "Total Num of local private files is $NUM_OF_PRIVATE_FILES and in vault is $NUM_OF_PRIVATE_FILES_IN_VAULT"
+          Write-Output "Total Num of local registers is $NUM_OF_REGISTERS_first and in vault is $NUM_OF_REGISTERS_IN_VAULT"
 
-      #     # Clean up temporary files
-      #     Remove-Item -Force file_list.txt, register_list.txt, vault_data.txt
+          # Clean up temporary files
+          Remove-Item -Force file_list.txt, register_list.txt, vault_data.txt
 
       # - name: Vault sync validation
       #   if: matrix.os == 'windows-latest'
@@ -520,6 +530,7 @@ jobs:
       - name: Time profiling for Different files
         if: matrix.os != 'windows-latest'
         run: |
+          set -e
           # 1 MB
           python3 -c "with open('random_1MB.bin', 'wb') as f: f.write(bytearray([0xff] * 1 * 1024 * 1024))"
           # 10 MB
