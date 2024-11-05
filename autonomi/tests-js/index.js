@@ -1,5 +1,5 @@
 import init, * as atnm from '../pkg/autonomi.js';
-import { assert } from './node_modules/chai/chai.js';
+import {assert} from './node_modules/chai/chai.js';
 
 function randomData(len) {
     const array = new Uint8Array(len);
@@ -21,34 +21,34 @@ describe('autonomi', function () {
 
     it('calculates cost', async () => {
         const data = randomData(32);
-        const cost = await client.dataCost(data);
+        const cost = await client.getDataCost(data);
 
         assert.typeOf(Number.parseFloat(cost.toString()), 'number');
     });
 
     it('puts data (32 bytes)', async () => {
         const data = randomData(32);
-        const addr = await client.dataPut(data, wallet);
+        const addr = await client.putData(data, wallet);
 
         assert.typeOf(addr, 'string');
     });
 
     it('puts data and gets it (32 bytes)', async () => {
         const data = randomData(32);
-        const addr = await client.dataPut(data, wallet);
-        const fetchedData = await client.dataGet(addr);
+        const addr = await client.putData(data, wallet);
+        const fetchedData = await client.getData(addr);
 
         assert.deepEqual(Array.from(data), Array.from(fetchedData));
     });
 
     it('puts data, creates archive and retrieves it', async () => {
         const data = randomData(32);
-        const addr = await client.dataPut(data, wallet);
+        const addr = await client.putData(data, wallet);
         const archive = new atnm.Archive();
         archive.addNewFile("foo", addr);
-        const archiveAddr = await client.archivePut(archive, wallet);
+        const archiveAddr = await client.putArchive(archive, wallet);
 
-        const archiveFetched = await client.archiveGet(archiveAddr);
+        const archiveFetched = await client.getArchive(archiveAddr);
 
         assert.deepEqual(archive, archiveFetched);
     });
@@ -60,14 +60,14 @@ describe('autonomi', function () {
 
         const archive = new atnm.Archive();
         archive.addNewFile('foo', addr);
-        const archiveAddr = await client.archivePut(archive, wallet);
-    
+        const archiveAddr = await client.putArchive(archive, wallet);
+
         const userData = new atnm.UserData();
         userData.addFileArchive(archiveAddr, 'foo');
 
         await client.putUserDataToVault(userData, wallet, secretKey);
         const userDataFetched = await client.getUserDataFromVault(secretKey);
-    
+
         assert.deepEqual(userDataFetched.fileArchives(), userData.fileArchives());
     });
 });
