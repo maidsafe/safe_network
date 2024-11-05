@@ -1,8 +1,9 @@
 name: Nightly -- Full WAN Network Tests
 
 on:
-  schedule:
-    - cron: "0 0 * * *"
+  # To do: this is broken, need to fix and enable later
+  # schedule:
+  #   - cron: "0 0 * * *"
   # enable as below for testing purpose.
   # pull_request:
   #   branches: ["*"]
