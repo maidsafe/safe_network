@@ -13,11 +13,12 @@ use std::collections::HashSet;
 use std::sync::LazyLock;
 use xor_name::XorName;
 
+use crate::client::payment::PaymentOption;
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
+use sn_evm::EvmWalletError;
 use sn_evm::{Amount, AttoTokens};
-use sn_evm::{EvmWallet, EvmWalletError};
 use sn_networking::{GetRecordCfg, NetworkError};
 use sn_protocol::{
     storage::{try_deserialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind},
@@ -37,6 +38,22 @@ pub static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
                 * 8,
         );
     info!("Chunk upload batch size: {}", batch_size);
+    batch_size
+});
+
+/// Number of chunks to download in parallel.
+/// Can be overridden by the `CHUNK_DOWNLOAD_BATCH_SIZE` environment variable.
+pub static CHUNK_DOWNLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
+    let batch_size = std::env::var("CHUNK_DOWNLOAD_BATCH_SIZE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(
+            std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1)
+                * 8,
+        );
+    info!("Chunk download batch size: {}", batch_size);
     batch_size
 });
 
@@ -120,7 +137,11 @@ impl Client {
     /// Upload a piece of data to the network.
     /// Returns the Data Address at which the data was stored.
     /// This data is publicly accessible.
-    pub async fn data_put(&self, data: Bytes, wallet: &EvmWallet) -> Result<DataAddr, PutError> {
+    pub async fn data_put(
+        &self,
+        data: Bytes,
+        payment_option: PaymentOption,
+    ) -> Result<DataAddr, PutError> {
         let now = sn_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
         let data_map_addr = data_map_chunk.address();
@@ -136,8 +157,8 @@ impl Client {
 
         // Pay for all chunks + data map chunk
         info!("Paying for {} addresses", xor_names.len());
-        let (payment_proofs, _free_chunks) = self
-            .pay(xor_names.into_iter(), wallet)
+        let receipt = self
+            .pay_for_content_addrs(xor_names.into_iter(), payment_option)
             .await
             .inspect_err(|err| error!("Error paying for data: {err:?}"))?;
 
@@ -147,7 +168,7 @@ impl Client {
         for chunk in chunks.into_iter().chain(std::iter::once(data_map_chunk)) {
             let self_clone = self.clone();
             let address = *chunk.address();
-            if let Some(proof) = payment_proofs.get(chunk.name()) {
+            if let Some(proof) = receipt.get(chunk.name()) {
                 let proof_clone = proof.clone();
                 upload_tasks.push(async move {
                     self_clone
@@ -175,7 +196,7 @@ impl Client {
 
         // Reporting
         if let Some(channel) = self.client_event_sender.as_ref() {
-            let tokens_spent = payment_proofs
+            let tokens_spent = receipt
                 .values()
                 .map(|proof| proof.quote.cost.as_atto())
                 .sum::<Amount>();

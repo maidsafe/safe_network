@@ -11,12 +11,13 @@ pub mod user_data;
 
 pub use key::{derive_vault_key, VaultSecretKey};
 pub use user_data::UserData;
-use xor_name::XorName;
 
+use super::data::CostError;
 use crate::client::data::PutError;
+use crate::client::payment::PaymentOption;
 use crate::client::Client;
 use libp2p::kad::{Quorum, Record};
-use sn_evm::{Amount, AttoTokens, EvmWallet};
+use sn_evm::{Amount, AttoTokens};
 use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg, VerificationKind};
 use sn_protocol::storage::{
     try_serialize_record, RecordKind, RetryStrategy, Scratchpad, ScratchpadAddress,
@@ -26,8 +27,6 @@ use sn_protocol::{storage::try_deserialize_record, NetworkAddress};
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use tracing::info;
-
-use super::data::CostError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum VaultError {
@@ -171,35 +170,15 @@ impl Client {
     pub async fn write_bytes_to_vault(
         &self,
         data: Bytes,
-        wallet: &EvmWallet,
+        payment_option: PaymentOption,
         secret_key: &VaultSecretKey,
         content_type: VaultContentType,
     ) -> Result<AttoTokens, PutError> {
         let mut total_cost = AttoTokens::zero();
-        let client_pk = secret_key.public_key();
 
-        let pad_res = self.get_vault_from_network(secret_key).await;
-        let mut is_new = true;
-
-        let mut scratch = if let Ok(existing_data) = pad_res {
-            info!("Scratchpad already exists, returning existing data");
-
-            info!(
-                "scratch already exists, is version {:?}",
-                existing_data.count()
-            );
-
-            is_new = false;
-
-            if existing_data.owner() != &client_pk {
-                return Err(PutError::VaultBadOwner);
-            }
-
-            existing_data
-        } else {
-            trace!("new scratchpad creation");
-            Scratchpad::new(client_pk, content_type)
-        };
+        let (mut scratch, is_new) = self
+            .get_or_create_scratchpad(secret_key, content_type)
+            .await?;
 
         let _ = scratch.update_and_sign(data, secret_key);
         debug_assert!(scratch.is_valid(), "Must be valid after being signed. This is a bug, please report it by opening an issue on our github");
@@ -210,21 +189,18 @@ impl Client {
         info!("Writing to vault at {scratch_address:?}",);
 
         let record = if is_new {
-            let scratch_xor = [&scratch_address]
-                .iter()
-                .filter_map(|f| f.as_xorname())
-                .collect::<Vec<XorName>>();
-            let (payment_proofs, _) = self
-                .pay(scratch_xor.iter().cloned(), wallet)
+            let receipt = self
+                .pay_for_content_addrs(scratch.to_xor_name_vec().into_iter(), payment_option)
                 .await
                 .inspect_err(|err| {
                     error!("Failed to pay for new vault at addr: {scratch_address:?} : {err}");
                 })?;
 
-            let proof = match payment_proofs.values().next() {
+            let proof = match receipt.values().next() {
                 Some(proof) => proof,
                 None => return Err(PutError::PaymentUnexpectedlyInvalid(scratch_address)),
             };
+
             total_cost = proof.quote.cost;
 
             Record {
@@ -257,7 +233,7 @@ impl Client {
             retry_strategy: Some(RetryStrategy::Balanced),
             use_put_record_to: None,
             verification: Some((
-                VerificationKind::Network,
+                VerificationKind::Crdt,
                 GetRecordCfg {
                     get_quorum: Quorum::Majority,
                     retry_strategy: None,
@@ -279,5 +255,39 @@ impl Client {
             })?;
 
         Ok(total_cost)
+    }
+
+    /// Returns an existing scratchpad or creates a new one if it does not exist.
+    pub async fn get_or_create_scratchpad(
+        &self,
+        secret_key: &VaultSecretKey,
+        content_type: VaultContentType,
+    ) -> Result<(Scratchpad, bool), PutError> {
+        let client_pk = secret_key.public_key();
+
+        let pad_res = self.get_vault_from_network(secret_key).await;
+        let mut is_new = true;
+
+        let scratch = if let Ok(existing_data) = pad_res {
+            info!("Scratchpad already exists, returning existing data");
+
+            info!(
+                "scratch already exists, is version {:?}",
+                existing_data.count()
+            );
+
+            is_new = false;
+
+            if existing_data.owner() != &client_pk {
+                return Err(PutError::VaultBadOwner);
+            }
+
+            existing_data
+        } else {
+            trace!("new scratchpad creation");
+            Scratchpad::new(client_pk, content_type)
+        };
+
+        Ok((scratch, is_new))
     }
 }

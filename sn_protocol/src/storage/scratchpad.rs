@@ -126,9 +126,17 @@ impl Scratchpad {
         &self.address
     }
 
-    /// Returns the NetworkAddress
+    /// Returns the NetworkAddress.
     pub fn network_address(&self) -> NetworkAddress {
         NetworkAddress::ScratchpadAddress(self.address)
+    }
+
+    /// Returns a VEC with the XOR name.
+    pub fn to_xor_name_vec(&self) -> Vec<XorName> {
+        [self.network_address()]
+            .iter()
+            .filter_map(|f| f.as_xorname())
+            .collect::<Vec<XorName>>()
     }
 
     /// Returns the name.

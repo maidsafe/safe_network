@@ -24,7 +24,13 @@
 //!
 //! # Features
 //!
+//! - `fs`: Up/download files and directories from filesystem
+//! - `registers`: Operate on register datatype
+//! - `data`: Operate on raw bytes and chunks
+//! - `vault`: Operate on Vault datatype
+//! - `full`: All of above
 //! - `local`: Discover local peers using mDNS. Useful for development.
+//! - `loud`: Print debug information to stdout
 
 // docs.rs generation will enable unstable `doc_cfg` feature
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -42,7 +48,7 @@ pub use sn_evm::EvmNetwork;
 pub use sn_evm::EvmWallet as Wallet;
 pub use sn_evm::RewardsAddress;
 #[cfg(feature = "external-signer")]
-pub use utils::payment_proof_from_quotes_and_payments;
+pub use utils::receipt_from_quotes_and_payments;
 
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;

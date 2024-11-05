@@ -15,6 +15,19 @@ use libp2p::Multiaddr;
 use rand::Rng;
 use sn_peers_acquisition::parse_peer_addr;
 
+// Get environment variable from runtime or build time, in that order. Returns `None` if not set.
+macro_rules! env_from_runtime_or_compiletime {
+    ($var:literal) => {{
+        if let Ok(val) = std::env::var($var) {
+            Some(val)
+        } else if let Some(val) = option_env!($var) {
+            Some(val.to_string())
+        } else {
+            None
+        }
+    }};
+}
+
 /// Generate random data of the given length.
 pub fn gen_random_data(len: usize) -> Bytes {
     let mut data = vec![0u8; len];
@@ -28,7 +41,7 @@ pub fn gen_random_data(len: usize) -> Bytes {
 pub fn peers_from_env() -> Result<Vec<Multiaddr>> {
     let bootstrap_peers = if cfg!(feature = "local") {
         Ok(vec![])
-    } else if let Ok(peers_str) = std::env::var("SAFE_PEERS") {
+    } else if let Some(peers_str) = env_from_runtime_or_compiletime!("SAFE_PEERS") {
         peers_str.split(',').map(parse_peer_addr).collect()
     } else {
         Ok(vec![])
