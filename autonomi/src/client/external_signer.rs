@@ -36,19 +36,12 @@ impl Client {
 
 /// Encrypts data as chunks.
 ///
-/// Returns the data map chunk, file chunks and a list of all content addresses including the data map.
-pub fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>, Vec<XorName>), PutError> {
+/// Returns the data map chunk and file chunks.
+pub fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>), PutError> {
     let now = sn_networking::target_arch::Instant::now();
     let result = encrypt(data)?;
 
     debug!("Encryption took: {:.2?}", now.elapsed());
 
-    let map_xor_name = *result.0.address().xorname();
-    let mut xor_names = vec![map_xor_name];
-
-    for chunk in &result.1 {
-        xor_names.push(*chunk.name());
-    }
-
-    Ok((result.0, result.1, xor_names))
+    Ok((result.0, result.1))
 }

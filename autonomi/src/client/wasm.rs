@@ -4,6 +4,8 @@ use super::vault::UserData;
 use crate::client::data_private::PrivateDataAccess;
 use crate::client::payment::Receipt;
 use libp2p::Multiaddr;
+use serde_wasm_bindgen::Serializer;
+use sn_protocol::storage::Chunk;
 use wasm_bindgen::prelude::*;
 
 /// The `Client` object allows interaction with the network to store and retrieve data.
@@ -32,6 +34,24 @@ impl AttoTokens {
     #[wasm_bindgen(js_name = toString)]
     pub fn to_string(&self) -> String {
         self.0.to_string()
+    }
+}
+
+#[wasm_bindgen(js_name = Chunk)]
+pub struct JsChunk(Chunk);
+
+#[wasm_bindgen(js_class = Chunk)]
+impl JsChunk {
+    /// Returns the bytes.
+    #[wasm_bindgen]
+    pub fn bytes(&self) -> Vec<u8> {
+        self.0.value.to_vec()
+    }
+
+    /// Returns the XOR name.
+    #[wasm_bindgen]
+    pub fn xor_name(&self) -> String {
+        self.0.address.xorname().to_string()
     }
 }
 
@@ -153,6 +173,7 @@ mod archive {
     use super::*;
     use crate::client::{address::str_to_addr, archive::Archive};
     use std::path::PathBuf;
+    use wasm_bindgen::JsError;
 
     /// Structure mapping paths to data addresses.
     #[wasm_bindgen(js_name = Archive)]
@@ -190,6 +211,13 @@ mod archive {
             let files = serde_wasm_bindgen::to_value(self.0.map())?;
             Ok(files)
         }
+
+        /// Serialize to bytes.
+        #[wasm_bindgen(js_name = bytes)]
+        pub fn into_bytes(&self) -> Result<Vec<u8>, JsError> {
+            let root_serialized = rmp_serde::to_vec(&self.0)?;
+            Ok(root_serialized)
+        }
     }
 
     #[wasm_bindgen(js_class = Client)]
@@ -226,7 +254,7 @@ mod archive_private {
     use crate::client::data_private::PrivateDataAccess;
     use crate::client::payment::Receipt;
     use std::path::PathBuf;
-    use wasm_bindgen::JsValue;
+    use wasm_bindgen::{JsError, JsValue};
 
     /// Structure mapping paths to data addresses.
     #[wasm_bindgen(js_name = PrivateArchive)]
@@ -254,6 +282,13 @@ mod archive_private {
         pub fn map(&self) -> Result<JsValue, JsError> {
             let files = serde_wasm_bindgen::to_value(self.0.map())?;
             Ok(files)
+        }
+
+        /// Serialize to bytes.
+        #[wasm_bindgen(js_name = bytes)]
+        pub fn into_bytes(&self) -> Result<Vec<u8>, JsError> {
+            let root_serialized = rmp_serde::to_vec(&self.0)?;
+            Ok(root_serialized)
         }
     }
 
@@ -319,6 +354,13 @@ mod archive_private {
 #[cfg(feature = "vault")]
 mod vault {
     use super::*;
+    use crate::client::address::addr_to_str;
+    use crate::client::archive_private::PrivateArchiveAccess;
+    use crate::client::payment::Receipt;
+    use crate::client::vault::user_data::USER_DATA_VAULT_CONTENT_IDENTIFIER;
+    use crate::client::vault::VaultContentType;
+    use sn_protocol::storage::Scratchpad;
+    use wasm_bindgen::{JsError, JsValue};
 
     /// Structure to keep track of uploaded archives, registers and other data.
     #[wasm_bindgen(js_name = UserData)]
@@ -362,6 +404,38 @@ mod vault {
             Ok(())
         }
 
+        /// Store a private archive data map in the user data with an optional name.
+        ///
+        /// # Example
+        ///
+        /// ```js
+        /// userData.addPrivateFileArchive(privateArchiveAccess, "foo");
+        /// ```
+        #[wasm_bindgen(js_name = addPrivateFileArchive)]
+        pub fn add_private_file_archive(
+            &mut self,
+            private_archive_access: JsValue,
+            name: Option<String>,
+        ) -> Result<(), JsError> {
+            let private_archive_access: PrivateArchiveAccess =
+                serde_wasm_bindgen::from_value(private_archive_access)?;
+
+            let old_name = if let Some(ref name) = name {
+                self.0
+                    .add_private_file_archive_with_name(private_archive_access, name.clone())
+            } else {
+                self.0.add_private_file_archive(private_archive_access)
+            };
+
+            if let Some(old_name) = old_name {
+                tracing::warn!(
+                    "Changing name of private archive from `{old_name:?}` to `{name:?}`"
+                );
+            }
+
+            Ok(())
+        }
+
         #[wasm_bindgen(js_name = removeFileArchive)]
         pub fn remove_file_archive(&mut self, archive: String) -> Result<(), JsError> {
             let archive = str_to_addr(&archive)?;
@@ -370,10 +444,44 @@ mod vault {
             Ok(())
         }
 
+        #[wasm_bindgen(js_name = removePrivateFileArchive)]
+        pub fn remove_private_file_archive(
+            &mut self,
+            private_archive_access: JsValue,
+        ) -> Result<(), JsError> {
+            let private_archive_access: PrivateArchiveAccess =
+                serde_wasm_bindgen::from_value(private_archive_access)?;
+
+            self.0.remove_private_file_archive(private_archive_access);
+
+            Ok(())
+        }
+
         #[wasm_bindgen(js_name = fileArchives)]
         pub fn file_archives(&self) -> Result<JsValue, JsError> {
             let archives = serde_wasm_bindgen::to_value(&self.0.file_archives)?;
             Ok(archives)
+        }
+
+        #[wasm_bindgen(js_name = privateFileArchives)]
+        pub fn private_file_archives(&self) -> Result<JsValue, JsError> {
+            let archives = serde_wasm_bindgen::to_value(&self.0.private_file_archives)?;
+            Ok(archives)
+        }
+    }
+
+    #[wasm_bindgen(js_name = Scratchpad)]
+    pub struct JsScratchpad(Scratchpad);
+
+    #[wasm_bindgen(js_class = Scratchpad)]
+    impl JsScratchpad {
+        /// Returns a VEC with the XOR name.
+        #[wasm_bindgen(js_name = xorName)]
+        pub fn xor_name(&self) -> Option<String> {
+            self.0
+                .network_address()
+                .as_xorname()
+                .map(|xor_name| addr_to_str(xor_name))
         }
     }
 
@@ -417,6 +525,68 @@ mod vault {
                 .await?;
 
             Ok(())
+        }
+
+        /// Put the user data to the vault.
+        ///
+        /// # Example
+        ///
+        /// ```js
+        /// const secretKey = genSecretKey();
+        /// await client.putUserDataToVaultWithReceipt(userData, receipt, secretKey);
+        /// ```
+        #[wasm_bindgen(js_name = putUserDataToVaultWithReceipt)]
+        pub async fn put_user_data_to_vault_with_receipt(
+            &self,
+            user_data: &JsUserData,
+            receipt: JsValue,
+            secret_key: &SecretKeyJs,
+        ) -> Result<(), JsError> {
+            let receipt: Receipt = serde_wasm_bindgen::from_value(receipt)?;
+
+            self.0
+                .put_user_data_to_vault(&secret_key.0, receipt.into(), user_data.0.clone())
+                .await?;
+
+            Ok(())
+        }
+
+        /// Returns an existing scratchpad or creates a new one if it does not exist.
+        #[wasm_bindgen(js_name = getOrCreateScratchpad)]
+        pub async fn get_or_create_scratchpad(
+            &self,
+            secret_key: &SecretKeyJs,
+            vault_content_type: JsValue,
+        ) -> Result<JsValue, JsError> {
+            let vault_content_type: VaultContentType =
+                serde_wasm_bindgen::from_value(vault_content_type)?;
+
+            let result = self
+                .0
+                .get_or_create_scratchpad(&secret_key.0, vault_content_type)
+                .await?;
+
+            let js_value = serde_wasm_bindgen::to_value(&result)?;
+
+            Ok(js_value)
+        }
+
+        /// Returns an existing user data scratchpad or creates a new one if it does not exist.
+        #[wasm_bindgen(js_name = getOrCreateUserDataScratchpad)]
+        pub async fn get_or_create_user_data_scratchpad(
+            &self,
+            secret_key: &SecretKeyJs,
+        ) -> Result<JsScratchpad, JsError> {
+            let vault_content_type = *USER_DATA_VAULT_CONTENT_IDENTIFIER;
+
+            let (scratchpad, _is_new) = self
+                .0
+                .get_or_create_scratchpad(&secret_key.0, vault_content_type)
+                .await?;
+
+            let js_scratchpad = JsScratchpad(scratchpad);
+
+            Ok(js_scratchpad)
         }
     }
 }
@@ -492,13 +662,22 @@ mod external_signer {
     /// # Example
     ///
     /// ```js
-    /// const [dataMapChunk, dataChunks, [chunkAddresses]] = client.encryptData(data);
+    /// const [dataMapChunk, dataChunks, dataMapChunkAddress, dataChunkAddresses] = client.encryptData(data);
     /// ``
     #[wasm_bindgen(js_name = encryptData)]
     pub fn encrypt(data: Vec<u8>) -> Result<JsValue, JsError> {
         let data = crate::Bytes::from(data);
         let result = encrypt_data(data)?;
+        let map_xor_name = *result.0.address().xorname();
+        let mut xor_names = vec![];
+
+        for chunk in &result.1 {
+            xor_names.push(*chunk.name());
+        }
+
+        let result = (result.0, result.1, map_xor_name, xor_names);
         let js_value = serde_wasm_bindgen::to_value(&result)?;
+
         Ok(js_value)
     }
 
