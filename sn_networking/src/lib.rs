@@ -849,6 +849,11 @@ impl Network {
                             NetworkAddress::from_record_key(&record_key),
                         ));
                     }
+                    Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { .. }))
+                        if matches!(verification_kind, VerificationKind::Crdt) =>
+                    {
+                        warn!("Record {pretty_key:?} is split, which is okay since we're dealing with CRDTs");
+                    }
                     Err(e) => {
                         debug!(
                             "Failed to verify record {pretty_key:?} to be stored with error: {e:?}"

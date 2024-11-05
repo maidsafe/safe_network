@@ -1,6 +1,6 @@
-# JavaScript Autonomi API Documentation
+# Autonomi JS API
 
-Note that this is a first version and will be subject to change.
+Note: the JS API is experimental and will be subject to change.
 
 The entry point for connecting to the network is {@link Client.connect}.
 
@@ -11,6 +11,8 @@ This API is a wrapper around the Rust API, found here: https://docs.rs/autonomi/
 For addresses (chunk, data, archives, etc) we're using hex-encoded strings containing a 256-bit XOR addresse. For example: `abcdefg012345678900000000000000000000000000000000000000000000000`.
 
 ## Example
+
+Note: `getEvmNetwork` will use hardcoded EVM network values that should be set during compilation of this library.
 
 ```javascript
 import init, { Client, Wallet, getEvmNetwork } from 'autonomi';
@@ -27,4 +29,11 @@ console.log("Data stored at:", result);
 
 let fetchedData = await client.get(result);
 console.log("Data retrieved:", fetchedData);
+```
+
+## Funded wallet from custom local network
+
+```js
+const evmNetwork = getEvmNetworkCustom("http://localhost:4343", "<payment token addr>", "<data payments addr>");
+const wallet = getFundedWalletWithCustomNetwork(evmNetwork, "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
 ```

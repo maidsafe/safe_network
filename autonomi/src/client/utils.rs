@@ -6,12 +6,14 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::client::payment::Receipt;
+use crate::utils::receipt_from_cost_map_and_payments;
 use bytes::Bytes;
 use futures::stream::{FuturesUnordered, StreamExt};
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_evm::{EvmWallet, PaymentQuote, ProofOfPayment, QuotePayment};
+use sn_evm::{EvmWallet, ProofOfPayment, QuotePayment};
 use sn_networking::{
     GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
 };
@@ -24,28 +26,39 @@ use std::{collections::HashMap, future::Future, num::NonZero};
 use xor_name::XorName;
 
 use super::{
-    data::{CostError, GetError, PayError, PutError},
+    data::{CostError, GetError, PayError, PutError, CHUNK_DOWNLOAD_BATCH_SIZE},
     Client,
 };
 use crate::self_encryption::DataMapLevel;
-use crate::utils::payment_proof_from_quotes_and_payments;
 
 impl Client {
     /// Fetch and decrypt all chunks in the data map.
     pub(crate) async fn fetch_from_data_map(&self, data_map: &DataMap) -> Result<Bytes, GetError> {
-        let mut encrypted_chunks = vec![];
-
+        let mut download_tasks = vec![];
         for info in data_map.infos() {
-            let chunk = self
-                .chunk_get(info.dst_hash)
-                .await
-                .inspect_err(|err| error!("Error fetching chunk {:?}: {err:?}", info.dst_hash))?;
-            let chunk = EncryptedChunk {
-                index: info.index,
-                content: chunk.value,
-            };
-            encrypted_chunks.push(chunk);
+            download_tasks.push(async move {
+                match self
+                    .chunk_get(info.dst_hash)
+                    .await
+                    .inspect_err(|err| error!("Error fetching chunk {:?}: {err:?}", info.dst_hash))
+                {
+                    Ok(chunk) => Ok(EncryptedChunk {
+                        index: info.index,
+                        content: chunk.value,
+                    }),
+                    Err(err) => {
+                        error!("Error fetching chunk {:?}: {err:?}", info.dst_hash);
+                        Err(err)
+                    }
+                }
+            });
         }
+
+        let encrypted_chunks =
+            process_tasks_with_max_concurrency(download_tasks, *CHUNK_DOWNLOAD_BATCH_SIZE)
+                .await
+                .into_iter()
+                .collect::<Result<Vec<EncryptedChunk>, GetError>>()?;
 
         let data = decrypt_full_set(data_map, &encrypted_chunks).map_err(|e| {
             error!("Error decrypting encrypted_chunks: {e:?}");
@@ -148,13 +161,8 @@ impl Client {
         &self,
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &EvmWallet,
-    ) -> Result<(HashMap<XorName, ProofOfPayment>, Vec<XorName>), PayError> {
-        let cost_map = self
-            .get_store_quotes(content_addrs)
-            .await?
-            .into_iter()
-            .map(|(name, (_, _, q))| (name, q))
-            .collect();
+    ) -> Result<(Receipt, Vec<XorName>), PayError> {
+        let cost_map = self.get_store_quotes(content_addrs).await?;
 
         let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
 
@@ -175,7 +183,7 @@ impl Client {
         drop(lock_guard);
         debug!("Unlocked wallet");
 
-        let proofs = payment_proof_from_quotes_and_payments(&cost_map, &payments);
+        let proofs = receipt_from_cost_map_and_payments(cost_map, &payments);
 
         trace!(
             "Chunk payments of {} chunks completed. {} chunks were free / already paid for",
@@ -242,12 +250,12 @@ async fn fetch_store_quote(
 
 /// Form to be executed payments and already executed payments from a cost map.
 pub(crate) fn extract_quote_payments(
-    cost_map: &HashMap<XorName, PaymentQuote>,
+    cost_map: &HashMap<XorName, PayeeQuote>,
 ) -> (Vec<QuotePayment>, Vec<XorName>) {
     let mut to_be_paid = vec![];
     let mut already_paid = vec![];
 
-    for (chunk_address, quote) in cost_map.iter() {
+    for (chunk_address, (_, _, quote)) in cost_map.iter() {
         if quote.cost.is_zero() {
             already_paid.push(*chunk_address);
         } else {

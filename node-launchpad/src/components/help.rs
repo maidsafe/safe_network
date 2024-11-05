@@ -96,17 +96,17 @@ impl Component for Help {
 
         let quickstart_guide_link = Hyperlink::new(
             Span::styled(
-                "docs.autonomi.com/getstarted",
+                "autonomi.com/getstarted",
                 Style::default().fg(VIVID_SKY_BLUE).underlined(),
             ),
-            "https://docs.autonomi.com/getstarted",
+            "https://autonomi.com/getstarted",
         );
-        let beta_rewards_link = Hyperlink::new(
+        let terms_and_conditions_link = Hyperlink::new(
             Span::styled(
-                "autonomi.com/beta",
+                "autonomi.com/terms",
                 Style::default().fg(VIVID_SKY_BLUE).underlined(),
             ),
-            "https://autonomi.com/beta",
+            "https://autonomi.com/terms",
         );
         let get_direct_support_link = Hyperlink::new(
             Span::styled(
@@ -134,7 +134,7 @@ impl Component for Help {
         // Render hyperlinks in the new area
         f.render_widget(
             Span::styled(
-                "See the quick start guides:",
+                "Read the quick start guides:",
                 Style::default().fg(GHOST_WHITE),
             ),
             left_column[0],
@@ -147,20 +147,17 @@ impl Component for Help {
         f.render_widget_ref(get_direct_support_link, left_column[3]);
         f.render_widget(
             Span::styled(
-                "To join the Beta Rewards Program:",
+                "Download the latest launchpad:",
                 Style::default().fg(GHOST_WHITE),
             ),
             right_column[0],
         );
-        f.render_widget_ref(beta_rewards_link, right_column[1]);
+        f.render_widget_ref(download_latest_link, right_column[1]);
         f.render_widget(
-            Span::styled(
-                "Download the latest launchpad:",
-                Style::default().fg(GHOST_WHITE),
-            ),
+            Span::styled("Terms & Conditions:", Style::default().fg(GHOST_WHITE)),
             right_column[2],
         );
-        f.render_widget_ref(download_latest_link, right_column[3]);
+        f.render_widget_ref(terms_and_conditions_link, right_column[3]);
 
         f.render_widget(block, layout[1]);
 
