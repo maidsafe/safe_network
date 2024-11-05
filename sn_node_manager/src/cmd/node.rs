@@ -593,7 +593,9 @@ pub async fn upgrade(
         }
     }
 
-    print_upgrade_summary(upgrade_summary.clone());
+    if verbosity != VerbosityLevel::Minimal {
+        print_upgrade_summary(upgrade_summary.clone());
+    }
 
     if upgrade_summary.iter().any(|(_, r)| {
         matches!(r, UpgradeResult::Error(_))

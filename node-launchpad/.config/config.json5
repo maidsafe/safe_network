@@ -54,6 +54,8 @@
       "<Ctrl-l>": {"OptionsActions":"TriggerAccessLogs"},
       "<Ctrl-L>": {"OptionsActions":"TriggerAccessLogs"},
       "<Ctrl-Shift-l>": {"OptionsActions":"TriggerAccessLogs"},
+      "<Ctrl-u>": {"OptionsActions":"TriggerUpdateNodes"},
+      "<Ctrl-U>": {"OptionsActions":"TriggerUpdateNodes"},
       "<Ctrl-r>": {"OptionsActions":"TriggerResetNodes"},
       "<Ctrl-R>": {"OptionsActions":"TriggerResetNodes"},
       "<Ctrl-Shift-r>": {"OptionsActions":"TriggerResetNodes"},

@@ -25,6 +25,7 @@ pub enum Scene {
     OptionsRewardsAddressPopUp,
     ManageNodesPopUp,
     ResetNodesPopUp,
+    UpgradeNodesPopUp,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
