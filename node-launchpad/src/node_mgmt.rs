@@ -128,7 +128,61 @@ pub fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_res
     });
 }
 
+pub struct UpgradeNodesArgs {
+    pub action_sender: UnboundedSender<Action>,
+    pub connection_timeout_s: u64,
+    pub do_not_start: bool,
+    pub custom_bin_path: Option<PathBuf>,
+    pub force: bool,
+    pub fixed_interval: Option<u64>,
+    pub peer_ids: Vec<String>,
+    pub provided_env_variables: Option<Vec<(String, String)>>,
+    pub service_names: Vec<String>,
+    pub url: Option<String>,
+    pub version: Option<String>,
+}
+
+pub fn upgrade_nodes(args: UpgradeNodesArgs) {
+    tokio::task::spawn_local(async move {
+        if let Err(err) = sn_node_manager::cmd::node::upgrade(
+            args.connection_timeout_s,
+            args.do_not_start,
+            args.custom_bin_path,
+            args.force,
+            args.fixed_interval,
+            args.peer_ids,
+            args.provided_env_variables,
+            args.service_names,
+            args.url,
+            args.version,
+            VerbosityLevel::Minimal,
+        )
+        .await
+        {
+            error!("Error while updating services {err:?}");
+            send_action(
+                args.action_sender,
+                Action::StatusActions(StatusActions::ErrorUpdatingNodes {
+                    raw_error: err.to_string(),
+                }),
+            );
+        } else {
+            info!("Successfully updated services");
+            send_action(
+                args.action_sender,
+                Action::StatusActions(StatusActions::UpdateNodesCompleted),
+            );
+        }
+    });
+}
+
 // --- Helper functions ---
+
+fn send_action(action_sender: UnboundedSender<Action>, action: Action) {
+    if let Err(err) = action_sender.send(action) {
+        error!("Error while sending action: {err:?}");
+    }
+}
 
 /// Load the node registry and handle errors
 async fn load_node_registry(

@@ -34,7 +34,6 @@ pub struct RewardsAddress {
     can_save: bool,
 }
 
-#[allow(dead_code)]
 enum RewardsAddressState {
     RewardsAddressAlreadySet,
     ShowTCs,
