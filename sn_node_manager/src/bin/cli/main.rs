@@ -376,6 +376,11 @@ pub enum SubCmd {
     /// sudo if you defined system-wide services; otherwise, do not run the command elevated.
     #[clap(name = "stop")]
     Stop {
+        /// An interval applied between stopping each service.
+        ///
+        /// Units are milliseconds.
+        #[clap(long, conflicts_with = "connection-timeout")]
+        interval: Option<u64>,
         /// The peer ID of the service to stop.
         ///
         /// The argument can be used multiple times to stop many services.
@@ -1367,9 +1372,10 @@ async fn main() -> Result<()> {
             json,
         }) => cmd::node::status(details, fail, json).await,
         Some(SubCmd::Stop {
+            interval,
             peer_id: peer_ids,
             service_name: service_names,
-        }) => cmd::node::stop(peer_ids, service_names, verbosity).await,
+        }) => cmd::node::stop(interval, peer_ids, service_names, verbosity).await,
         Some(SubCmd::Upgrade {
             connection_timeout,
             do_not_start,
