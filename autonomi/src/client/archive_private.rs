@@ -19,9 +19,9 @@ use super::{
     data_private::PrivateDataAccess,
     Client,
 };
+use crate::client::payment::PaymentOption;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::EvmWallet;
 
 /// The address of a private archive
 /// Contains the [`PrivateDataAccess`] leading to the [`PrivateArchive`] data
@@ -130,11 +130,11 @@ impl Client {
     pub async fn private_archive_put(
         &self,
         archive: PrivateArchive,
-        wallet: &EvmWallet,
+        payment_option: PaymentOption,
     ) -> Result<PrivateArchiveAccess, PutError> {
         let bytes = archive
             .into_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
-        self.private_data_put(bytes, wallet).await
+        self.private_data_put(bytes, payment_option).await
     }
 }
