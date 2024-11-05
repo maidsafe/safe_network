@@ -11,9 +11,9 @@ mod chunks;
 mod header;
 mod scratchpad;
 
-use crate::error::Error;
 use core::fmt;
-use std::{str::FromStr, time::Duration};
+use exponential_backoff::Backoff;
+use std::{num::NonZeroUsize, time::Duration};
 
 pub use self::{
     address::{ChunkAddress, RegisterAddress, ScratchpadAddress, SpendAddress},
@@ -22,50 +22,48 @@ pub use self::{
     scratchpad::Scratchpad,
 };
 
-/// Represents the strategy for retrying operations. This encapsulates both the duration it may take for an operation to
-/// complete or the retry attempts that it may take. This allows the retry of each operation, e.g., PUT/GET of
-/// Chunk/Registers/Spend to be more flexible.
+/// A strategy that translates into a configuration for exponential backoff.
+/// The first retry is done after 2 seconds, after which the backoff is roughly doubled each time.
+/// The interval does not go beyond 32 seconds. So the intervals increase from 2 to 4, to 8, to 16, to 32 seconds and
+/// all attempts are made at most 32 seconds apart.
 ///
-/// The Duration/Attempts is chosen based on the internal logic.
+/// The exact timings depend on jitter, which is set to 0.2, meaning the intervals can deviate quite a bit
+/// from the ones listed in the docs.
 #[derive(Clone, Debug, Copy, Default)]
 pub enum RetryStrategy {
-    /// Quick: Resolves to a 15-second wait or 1 retry attempt.
+    /// Attempt once (no retries)
+    None,
+    /// Retry 3 times (waits 2s, 4s and lastly 8s; max total time ~14s)
     Quick,
-    /// Balanced: Resolves to a 60-second wait or 3 retry attempt.
+    /// Retry 5 times (waits 2s, 4s, 8s, 16s and lastly 32s; max total time ~62s)
     #[default]
     Balanced,
-    /// Persistent: Resolves to a 180-second wait or 6 retry attempt.
+    /// Retry 9 times (waits 2s, 4s, 8s, 16s, 32s, 32s, 32s, 32s and lastly 32s; max total time ~190s)
     Persistent,
+    /// Attempt a specific number of times
+    N(NonZeroUsize),
 }
 
 impl RetryStrategy {
-    pub fn get_duration(&self) -> Duration {
+    pub fn attempts(&self) -> usize {
         match self {
-            RetryStrategy::Quick => Duration::from_secs(15),
-            RetryStrategy::Balanced => Duration::from_secs(60),
-            RetryStrategy::Persistent => Duration::from_secs(180),
+            RetryStrategy::None => 1,
+            RetryStrategy::Quick => 4,
+            RetryStrategy::Balanced => 6,
+            RetryStrategy::Persistent => 10,
+            RetryStrategy::N(x) => x.get(),
         }
     }
 
-    pub fn get_count(&self) -> usize {
-        match self {
-            RetryStrategy::Quick => 1,
-            RetryStrategy::Balanced => 3,
-            RetryStrategy::Persistent => 6,
-        }
-    }
-}
-
-impl FromStr for RetryStrategy {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "quick" => Ok(RetryStrategy::Quick),
-            "balanced" => Ok(RetryStrategy::Balanced),
-            "persistent" => Ok(RetryStrategy::Persistent),
-            _ => Err(Error::ParseRetryStrategyError),
-        }
+    pub fn backoff(&self) -> Backoff {
+        let mut backoff = Backoff::new(
+            self.attempts() as u32,
+            Duration::from_secs(1), // First interval is double of this (see https://github.com/yoshuawuyts/exponential-backoff/issues/23)
+            Some(Duration::from_secs(32)),
+        );
+        backoff.set_factor(2); // Default.
+        backoff.set_jitter(0.2); // Default is 0.3.
+        backoff
     }
 }
 
@@ -73,4 +71,29 @@ impl fmt::Display for RetryStrategy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{self:?}")
     }
+}
+
+#[test]
+fn verify_retry_strategy_intervals() {
+    let intervals = |strategy: RetryStrategy| -> Vec<u32> {
+        let mut backoff = strategy.backoff();
+        backoff.set_jitter(0.01); // Make intervals deterministic.
+        backoff
+            .into_iter()
+            .flatten()
+            .map(|duration| duration.as_secs_f64().round() as u32)
+            .collect()
+    };
+
+    assert_eq!(intervals(RetryStrategy::None), Vec::<u32>::new());
+    assert_eq!(intervals(RetryStrategy::Quick), vec![2, 4, 8]);
+    assert_eq!(intervals(RetryStrategy::Balanced), vec![2, 4, 8, 16, 32]);
+    assert_eq!(
+        intervals(RetryStrategy::Persistent),
+        vec![2, 4, 8, 16, 32, 32, 32, 32, 32]
+    );
+    assert_eq!(
+        intervals(RetryStrategy::N(NonZeroUsize::new(12).unwrap())),
+        vec![2, 4, 8, 16, 32, 32, 32, 32, 32, 32, 32]
+    );
 }
