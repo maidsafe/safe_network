@@ -40,13 +40,13 @@ pub fn derive_vault_key(evm_sk_hex: &str) -> Result<VaultSecretKey, VaultKeyErro
 }
 
 /// Convert a blst secret key to a blsttc secret key and pray that endianness is the same
-fn blst_to_blsttc(sk: &BlstSecretKey) -> Result<bls::SecretKey, VaultKeyError> {
+pub(crate) fn blst_to_blsttc(sk: &BlstSecretKey) -> Result<bls::SecretKey, VaultKeyError> {
     let sk_bytes = sk.to_bytes();
     let sk = bls::SecretKey::from_bytes(sk_bytes).map_err(VaultKeyError::BlsConversionError)?;
     Ok(sk)
 }
 
-fn derive_secret_key_from_seed(seed: &[u8]) -> Result<BlstSecretKey, VaultKeyError> {
+pub(crate) fn derive_secret_key_from_seed(seed: &[u8]) -> Result<BlstSecretKey, VaultKeyError> {
     let mut hasher = Sha256::new();
     hasher.update(seed);
     let hashed_seed = hasher.finalize();
