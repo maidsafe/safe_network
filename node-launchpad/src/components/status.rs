@@ -14,6 +14,7 @@ use super::{
 };
 use crate::action::OptionsActions;
 use crate::components::popup::port_range::PORT_ALLOCATION;
+use crate::components::utils::open_logs;
 use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::connection_mode::ConnectionMode;
 use crate::error::ErrorPopup;
@@ -549,10 +550,14 @@ impl Component for Status<'_> {
                     return Ok(Some(Action::SwitchScene(Scene::ManageNodesPopUp)));
                 }
                 StatusActions::PreviousTableItem => {
-                    // self.select_previous_table_item();
+                    if let Some(items) = &mut self.items {
+                        items.previous();
+                    }
                 }
                 StatusActions::NextTableItem => {
-                    // self.select_next_table_item();
+                    if let Some(items) = &mut self.items {
+                        items.next();
+                    }
                 }
                 StatusActions::StartNodes => {
                     debug!("Got action to start nodes");
@@ -629,6 +634,15 @@ impl Component for Status<'_> {
                         return Ok(Some(Action::SwitchScene(Scene::StatusRewardsAddressPopUp)));
                     } else {
                         return Ok(None);
+                    }
+                }
+                StatusActions::TriggerNodeLogs => {
+                    if let Some(node) = self.items.as_ref().and_then(|items| items.selected_item())
+                    {
+                        debug!("Got action to open node logs {:?}", node.name);
+                        open_logs(Some(node.name.clone()))?;
+                    } else {
+                        debug!("Got action to open node logs but no node was selected.");
                     }
                 }
             },
@@ -909,15 +923,13 @@ impl Component for Status<'_> {
                 ])
                 .style(Style::default().add_modifier(Modifier::BOLD));
 
-                let items: Vec<Row> = self
-                    .items
-                    .as_mut()
-                    .unwrap()
-                    .items
-                    .iter_mut()
-                    .enumerate()
-                    .map(|(i, node_item)| node_item.render_as_row(i, layout[2], f))
-                    .collect();
+                let mut items: Vec<Row> = Vec::new();
+                if let Some(ref mut items_table) = self.items {
+                    for (i, node_item) in items_table.items.iter_mut().enumerate() {
+                        let is_selected = items_table.state.selected() == Some(i);
+                        items.push(node_item.render_as_row(i, layout[2], f, is_selected));
+                    }
+                }
 
                 // Table items
                 let table = Table::new(items, node_widths)
@@ -1080,6 +1092,7 @@ impl<T> StatefulTable<T> {
             None => self.last_selected.unwrap_or(0),
         };
         self.state.select(Some(i));
+        self.last_selected = Some(i);
     }
 
     fn previous(&mut self) {
@@ -1094,6 +1107,13 @@ impl<T> StatefulTable<T> {
             None => self.last_selected.unwrap_or(0),
         };
         self.state.select(Some(i));
+        self.last_selected = Some(i);
+    }
+
+    fn selected_item(&self) -> Option<&T> {
+        self.state
+            .selected()
+            .and_then(|index| self.items.get(index))
     }
 }
 
@@ -1137,8 +1157,18 @@ pub struct NodeItem<'a> {
 }
 
 impl NodeItem<'_> {
-    fn render_as_row(&mut self, index: usize, area: Rect, f: &mut Frame<'_>) -> Row {
-        let mut row_style = Style::default().fg(GHOST_WHITE);
+    fn render_as_row(
+        &mut self,
+        index: usize,
+        area: Rect,
+        f: &mut Frame<'_>,
+        is_selected: bool,
+    ) -> Row {
+        let mut row_style = if is_selected {
+            Style::default().fg(GHOST_WHITE).bg(INDIGO)
+        } else {
+            Style::default().fg(GHOST_WHITE)
+        };
         let mut spinner_state = self.spinner_state.clone();
         match self.status {
             NodeStatus::Running => {
@@ -1148,7 +1178,11 @@ impl NodeItem<'_> {
                     .throbber_style(Style::default().fg(EUCALYPTUS).add_modifier(Modifier::BOLD))
                     .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
                     .use_type(throbber_widgets_tui::WhichUse::Spin);
-                row_style = Style::default().fg(EUCALYPTUS);
+                row_style = if is_selected {
+                    Style::default().fg(EUCALYPTUS).bg(INDIGO)
+                } else {
+                    Style::default().fg(EUCALYPTUS)
+                };
             }
             NodeStatus::Starting => {
                 self.spinner = self
