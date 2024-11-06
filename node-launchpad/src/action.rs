@@ -61,6 +61,7 @@ pub enum StatusActions {
 
     TriggerManageNodes,
     TriggerRewardsAddress,
+    TriggerNodeLogs,
 
     PreviousTableItem,
     NextTableItem,
