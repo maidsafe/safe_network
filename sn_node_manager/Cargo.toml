@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "sn-node-manager"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.11.2-rc.3"
+version = "0.11.2"
 
 [[bin]]
 name = "safenode-manager"
@@ -46,14 +46,14 @@ semver = "1.0.20"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 service-manager = "0.7.0"
-sn_build_info = { path = "../sn_build_info", version = "0.1.18-rc.3" }
-sn_logging = { path = "../sn_logging", version = "0.2.39-rc.3" }
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.6-rc.3" }
-sn_protocol = { path = "../sn_protocol", version = "0.17.14-rc.3" }
-sn_service_management = { path = "../sn_service_management", version = "0.4.2-rc.3" }
+sn_build_info = { path = "../sn_build_info", version = "0.1.18" }
+sn_logging = { path = "../sn_logging", version = "0.2.39" }
+sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.6" }
+sn_protocol = { path = "../sn_protocol", version = "0.17.14" }
+sn_service_management = { path = "../sn_service_management", version = "0.4.2" }
 sn-releases = "0.2.6"
-sn_evm = { path = "../sn_evm", version = "0.1.3-rc.3" }
-sn_transfers = { path = "../sn_transfers", version = "0.20.2-rc.3" }
+sn_evm = { path = "../sn_evm", version = "0.1.3" }
+sn_transfers = { path = "../sn_transfers", version = "0.20.2" }
 sysinfo = "0.30.12"
 thiserror = "1.0.23"
 tokio = { version = "1.26", features = ["full"] }
