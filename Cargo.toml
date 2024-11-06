@@ -43,8 +43,7 @@ unwrap_used = "warn"
 clone_on_ref_ptr = "warn"
 
 [profile.release]
-debug = 0
-strip = "debuginfo"
+debug = true
 
 [profile.dev]
 debug = 0

@@ -20,7 +20,7 @@ const NODE_ADD_MAX_RETRIES: u32 = 5;
 pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     tokio::task::spawn_local(async move {
         if let Err(err) =
-            sn_node_manager::cmd::node::stop(vec![], services, VerbosityLevel::Minimal).await
+            sn_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
         {
             error!("Error while stopping services {err:?}");
             send_action(
@@ -117,6 +117,54 @@ pub fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_res
                 Action::StatusActions(StatusActions::ResetNodesCompleted {
                     trigger_start_node: start_nodes_after_reset,
                 }),
+            );
+        }
+    });
+}
+
+pub struct UpgradeNodesArgs {
+    pub action_sender: UnboundedSender<Action>,
+    pub connection_timeout_s: u64,
+    pub do_not_start: bool,
+    pub custom_bin_path: Option<PathBuf>,
+    pub force: bool,
+    pub fixed_interval: Option<u64>,
+    pub peer_ids: Vec<String>,
+    pub provided_env_variables: Option<Vec<(String, String)>>,
+    pub service_names: Vec<String>,
+    pub url: Option<String>,
+    pub version: Option<String>,
+}
+
+pub fn upgrade_nodes(args: UpgradeNodesArgs) {
+    tokio::task::spawn_local(async move {
+        if let Err(err) = sn_node_manager::cmd::node::upgrade(
+            args.connection_timeout_s,
+            args.do_not_start,
+            args.custom_bin_path,
+            args.force,
+            args.fixed_interval,
+            args.peer_ids,
+            args.provided_env_variables,
+            args.service_names,
+            args.url,
+            args.version,
+            VerbosityLevel::Minimal,
+        )
+        .await
+        {
+            error!("Error while updating services {err:?}");
+            send_action(
+                args.action_sender,
+                Action::StatusActions(StatusActions::ErrorUpdatingNodes {
+                    raw_error: err.to_string(),
+                }),
+            );
+        } else {
+            info!("Successfully updated services");
+            send_action(
+                args.action_sender,
+                Action::StatusActions(StatusActions::UpdateNodesCompleted),
             );
         }
     });

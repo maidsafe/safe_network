@@ -17,7 +17,7 @@ use crate::components::popup::port_range::PORT_ALLOCATION;
 use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::connection_mode::ConnectionMode;
 use crate::error::ErrorPopup;
-use crate::node_mgmt::MaintainNodesArgs;
+use crate::node_mgmt::{upgrade_nodes, MaintainNodesArgs, UpgradeNodesArgs};
 use crate::node_mgmt::{PORT_MAX, PORT_MIN};
 use crate::style::{COOL_GREY, INDIGO};
 use crate::tui::Event;
@@ -111,6 +111,7 @@ pub enum LockRegistryState {
     StartingNodes,
     StoppingNodes,
     ResettingNodes,
+    UpdatingNodes,
 }
 
 pub struct StatusConfig {
@@ -167,7 +168,7 @@ impl Status<'_> {
         Ok(status)
     }
 
-    fn update_node_items(&mut self) -> Result<()> {
+    fn update_node_items(&mut self, new_status: Option<NodeStatus>) -> Result<()> {
         // Iterate over existing node services and update their corresponding NodeItem
         if let Some(ref mut items) = self.items {
             for node_item in self.node_services.iter() {
@@ -177,22 +178,26 @@ impl Status<'_> {
                     .iter_mut()
                     .find(|i| i.name == node_item.service_name)
                 {
-                    // Update status based on current node status
-                    item.status = match node_item.status {
-                        ServiceStatus::Running => {
-                            item.spinner_state.calc_next();
-                            NodeStatus::Running
-                        }
-                        ServiceStatus::Stopped => NodeStatus::Stopped,
-                        ServiceStatus::Added => NodeStatus::Added,
-                        ServiceStatus::Removed => NodeStatus::Removed,
-                    };
+                    if let Some(status) = new_status {
+                        item.status = status;
+                    } else {
+                        // Update status based on current node status
+                        item.status = match node_item.status {
+                            ServiceStatus::Running => {
+                                item.spinner_state.calc_next();
+                                NodeStatus::Running
+                            }
+                            ServiceStatus::Stopped => NodeStatus::Stopped,
+                            ServiceStatus::Added => NodeStatus::Added,
+                            ServiceStatus::Removed => NodeStatus::Removed,
+                        };
 
-                    // Starting is not part of ServiceStatus so we do it manually
-                    if let Some(LockRegistryState::StartingNodes) = self.lock_registry {
-                        item.spinner_state.calc_next();
-                        if item.status != NodeStatus::Running {
-                            item.status = NodeStatus::Starting;
+                        // Starting is not part of ServiceStatus so we do it manually
+                        if let Some(LockRegistryState::StartingNodes) = self.lock_registry {
+                            item.spinner_state.calc_next();
+                            if item.status != NodeStatus::Running {
+                                item.status = NodeStatus::Starting;
+                            }
                         }
                     }
 
@@ -334,6 +339,21 @@ impl Status<'_> {
             })
             .collect()
     }
+
+    fn get_service_names_and_peer_ids(&self) -> (Vec<String>, Vec<String>) {
+        let mut service_names = Vec::new();
+        let mut peers_ids = Vec::new();
+
+        for node in &self.node_services {
+            // Only include nodes with a valid peer_id
+            if let Some(peer_id) = &node.peer_id {
+                service_names.push(node.service_name.clone());
+                peers_ids.push(peer_id.to_string().clone());
+            }
+        }
+
+        (service_names, peers_ids)
+    }
 }
 
 impl Component for Status<'_> {
@@ -363,7 +383,7 @@ impl Component for Status<'_> {
         match action {
             Action::Tick => {
                 self.try_update_node_stats(false)?;
-                let _ = self.update_node_items();
+                let _ = self.update_node_items(None);
             }
             Action::SwitchScene(scene) => match scene {
                 Scene::Status | Scene::StatusRewardsAddressPopUp => {
@@ -433,6 +453,13 @@ impl Component for Status<'_> {
                     self.lock_registry = None;
                     self.load_node_registry_and_update_states()?;
                 }
+                StatusActions::UpdateNodesCompleted => {
+                    self.lock_registry = None;
+                    self.clear_node_items();
+                    self.load_node_registry_and_update_states()?;
+                    let _ = self.update_node_items(None);
+                    debug!("Update nodes completed");
+                }
                 StatusActions::ResetNodesCompleted { trigger_start_node } => {
                     self.lock_registry = None;
                     self.load_node_registry_and_update_states()?;
@@ -486,6 +513,18 @@ impl Component for Status<'_> {
                     self.error_popup = Some(ErrorPopup::new(
                         "Error".to_string(),
                         "Error stopping nodes".to_string(),
+                        raw_error,
+                    ));
+                    if let Some(error_popup) = &mut self.error_popup {
+                        error_popup.show();
+                    }
+                    // Switch back to entry mode so we can handle key events
+                    return Ok(Some(Action::SwitchInputMode(InputMode::Entry)));
+                }
+                StatusActions::ErrorUpdatingNodes { raw_error } => {
+                    self.error_popup = Some(ErrorPopup::new(
+                        "Error".to_string(),
+                        "Error upgrading nodes".to_string(),
                         raw_error,
                     ));
                     if let Some(error_popup) = &mut self.error_popup {
@@ -593,6 +632,40 @@ impl Component for Status<'_> {
                     }
                 }
             },
+            Action::OptionsActions(OptionsActions::UpdateNodes) => {
+                debug!("Got action to Update Nodes");
+                self.load_node_registry_and_update_states()?;
+                if self.lock_registry.is_some() {
+                    error!(
+                        "Registry is locked ({:?}) Cannot Update nodes now. Stop them first.",
+                        self.lock_registry
+                    );
+                    return Ok(None);
+                } else {
+                    debug!("Lock registry ({:?})", self.lock_registry);
+                };
+                debug!("Setting lock_registry to UpdatingNodes");
+                self.lock_registry = Some(LockRegistryState::UpdatingNodes);
+                let action_sender = self.get_actions_sender()?;
+                info!("Got action to update nodes");
+                let _ = self.update_node_items(Some(NodeStatus::Updating));
+                let (service_names, peer_ids) = self.get_service_names_and_peer_ids();
+
+                let upgrade_nodes_args = UpgradeNodesArgs {
+                    action_sender,
+                    connection_timeout_s: 5,
+                    do_not_start: true,
+                    custom_bin_path: None,
+                    force: false,
+                    fixed_interval: Some(300_000), // 5 mins in millis
+                    peer_ids,
+                    provided_env_variables: None,
+                    service_names,
+                    url: None,
+                    version: None,
+                };
+                upgrade_nodes(upgrade_nodes_args);
+            }
             Action::OptionsActions(OptionsActions::ResetNodes) => {
                 debug!("Got action to reset nodes");
                 if self.lock_registry.is_some() {
@@ -921,6 +994,9 @@ impl Component for Status<'_> {
                         Line::raw("Resetting nodes..."),
                     ]
                 }
+                LockRegistryState::UpdatingNodes => {
+                    return Ok(());
+                }
             };
             if !popup_text.is_empty() {
                 let popup_area = centered_rect_fixed(50, 12, area);
@@ -1029,6 +1105,7 @@ enum NodeStatus {
     Starting,
     Stopped,
     Removed,
+    Updating,
 }
 
 impl fmt::Display for NodeStatus {
@@ -1039,6 +1116,7 @@ impl fmt::Display for NodeStatus {
             NodeStatus::Starting => write!(f, "Starting"),
             NodeStatus::Stopped => write!(f, "Stopped"),
             NodeStatus::Removed => write!(f, "Removed"),
+            NodeStatus::Updating => write!(f, "Updating"),
         }
     }
 }
@@ -1090,6 +1168,18 @@ impl NodeItem<'_> {
                             .add_modifier(Modifier::BOLD),
                     )
                     .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
+                    .use_type(throbber_widgets_tui::WhichUse::Full);
+            }
+            NodeStatus::Updating => {
+                self.spinner = self
+                    .spinner
+                    .clone()
+                    .throbber_style(
+                        Style::default()
+                            .fg(GHOST_WHITE)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                    .throbber_set(throbber_widgets_tui::VERTICAL_BLOCK)
                     .use_type(throbber_widgets_tui::WhichUse::Full);
             }
             _ => {}
