@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for upgrading nodes version
 - Support for Ctrl+V on rewards address
 - More error handling
+- Use 5 minute interval between upgrades
 
 #### Changed
 
