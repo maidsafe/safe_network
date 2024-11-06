@@ -13,10 +13,10 @@ use crate::send_local_swarm_cmd;
 use crate::target_arch::{spawn, Instant};
 use crate::{event::NetworkEvent, log_markers::Marker};
 use aes_gcm_siv::{
-    aead::{Aead, KeyInit, OsRng},
-    Aes256GcmSiv, Nonce,
+    aead::{Aead, KeyInit},
+    Aes256GcmSiv, Key as AesKey, Nonce,
 };
-
+use hkdf::Hkdf;
 use itertools::Itertools;
 use libp2p::{
     identity::PeerId,
@@ -27,15 +27,14 @@ use libp2p::{
 };
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::gauge::Gauge;
-use rand::RngCore;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
+use sha2::Sha256;
 use sn_evm::{AttoTokens, QuotingMetrics};
 use sn_protocol::{
     storage::{RecordHeader, RecordKind, RecordType},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use std::collections::VecDeque;
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -68,6 +67,75 @@ const MAX_STORE_COST: u64 = 1_000_000;
 // Min store cost for a chunk.
 const MIN_STORE_COST: u64 = 1;
 
+fn derive_aes256gcm_siv_from_seed(seed: &[u8; 16]) -> (Aes256GcmSiv, [u8; 4]) {
+    // shall be unique for purpose.
+    let salt = b"autonomi_record_store";
+
+    let hk = Hkdf::<Sha256>::new(Some(salt), seed);
+
+    let mut okm = [0u8; 32];
+    hk.expand(b"", &mut okm)
+        .expect("32 bytes is a valid length for HKDF output");
+
+    let seeded_key = AesKey::<Aes256GcmSiv>::from_slice(&okm);
+
+    let mut nonce_starter = [0u8; 4];
+    let bytes_to_copy = seed.len().min(nonce_starter.len());
+    nonce_starter[..bytes_to_copy].copy_from_slice(&seed[..bytes_to_copy]);
+
+    trace!("seeded_key is {seeded_key:?}  nonce_starter is {nonce_starter:?}");
+
+    (Aes256GcmSiv::new(seeded_key), nonce_starter)
+}
+
+/// FIFO simple cache of records to reduce read times
+struct RecordCache {
+    records_cache: HashMap<Key, (Record, SystemTime)>,
+    cache_size: usize,
+}
+
+impl RecordCache {
+    fn new(cache_size: usize) -> Self {
+        RecordCache {
+            records_cache: HashMap::new(),
+            cache_size,
+        }
+    }
+
+    fn remove(&mut self, key: &Key) -> Option<(Record, SystemTime)> {
+        self.records_cache.remove(key)
+    }
+
+    fn get(&self, key: &Key) -> Option<&(Record, SystemTime)> {
+        self.records_cache.get(key)
+    }
+
+    fn push_back(&mut self, key: Key, record: Record) {
+        self.free_up_space();
+
+        let _ = self.records_cache.insert(key, (record, SystemTime::now()));
+    }
+
+    fn free_up_space(&mut self) {
+        while self.records_cache.len() >= self.cache_size {
+            self.remove_oldest_entry()
+        }
+    }
+
+    fn remove_oldest_entry(&mut self) {
+        let mut oldest_timestamp = SystemTime::now();
+
+        for (_record, timestamp) in self.records_cache.values() {
+            if *timestamp < oldest_timestamp {
+                oldest_timestamp = *timestamp;
+            }
+        }
+
+        self.records_cache
+            .retain(|_key, (_record, timestamp)| *timestamp != oldest_timestamp);
+    }
+}
+
 /// A `RecordStore` that stores records on disk.
 pub struct NodeRecordStore {
     /// The address of the peer owning the store
@@ -79,10 +147,7 @@ pub struct NodeRecordStore {
     /// Additional index organizing records by distance bucket
     records_by_bucket: HashMap<u32, HashSet<Key>>,
     /// FIFO simple cache of records to reduce read times
-    records_cache: VecDeque<Record>,
-    /// A map from record keys to their indices in the cache
-    /// allowing for more efficient cache management
-    records_cache_map: HashMap<Key, usize>,
+    records_cache: RecordCache,
     /// Send network events to the node layer.
     network_event_sender: mpsc::Sender<NetworkEvent>,
     /// Send cmds to the network layer. Used to interact with self in an async fashion.
@@ -90,7 +155,7 @@ pub struct NodeRecordStore {
     /// ilog2 distance range of responsible records
     /// AKA: how many buckets of data do we consider "close"
     /// None means accept all records.
-    responsible_distance_range: Option<Distance>,
+    responsible_distance_range: Option<u32>,
     #[cfg(feature = "open-metrics")]
     /// Used to report the number of records held by the store to the metrics server.
     record_count_metric: Option<Gauge>,
@@ -119,6 +184,8 @@ pub struct NodeRecordStoreConfig {
     pub max_value_bytes: usize,
     /// The maximum number of records to cache in memory.
     pub records_cache_size: usize,
+    /// The seed to generate record_store encryption_details
+    pub encryption_seed: [u8; 16],
 }
 
 impl Default for NodeRecordStoreConfig {
@@ -130,6 +197,7 @@ impl Default for NodeRecordStoreConfig {
             max_records: MAX_RECORDS_COUNT,
             max_value_bytes: MAX_PACKET_SIZE,
             records_cache_size: MAX_RECORDS_CACHE_SIZE,
+            encryption_seed: [0u8; 16],
         }
     }
 }
@@ -183,7 +251,22 @@ impl NodeRecordStore {
                 let record = match fs::read(path) {
                     Ok(bytes) => {
                         // and the stored record
-                        Self::get_record_from_bytes(bytes, &key, encryption_details)?
+                        if let Some(record) =
+                            Self::get_record_from_bytes(bytes, &key, encryption_details)
+                        {
+                            record
+                        } else {
+                            // This will be due to node restart, result in different encrypt_detail.
+                            // Hence need to clean up the old copy.
+                            info!("Failed to decrypt record from file {filename:?}, clean it up.");
+                            if let Err(e) = fs::remove_file(path) {
+                                warn!(
+                                    "Failed to remove outdated record file {filename:?} from storage dir: {:?}",
+                                    e
+                                );
+                            }
+                            return None;
+                        }
                     }
                     Err(err) => {
                         error!("Error while reading file. filename: {filename}, error: {err:?}");
@@ -198,7 +281,18 @@ impl NodeRecordStore {
                         RecordType::NonChunk(xorname_hash)
                     }
                     Err(error) => {
-                        warn!("Failed to parse record type from record: {:?}", error);
+                        warn!(
+                            "Failed to parse record type of record {filename:?}: {:?}",
+                            error
+                        );
+                        // In correct decryption using different key could result in this.
+                        // In that case, a cleanup shall be carried out.
+                        if let Err(e) = fs::remove_file(path) {
+                            warn!(
+                                "Failed to remove invalid record file {filename:?} from storage dir: {:?}",
+                                e
+                            );
+                        }
                         return None;
                     }
                 };
@@ -260,12 +354,8 @@ impl NodeRecordStore {
         network_event_sender: mpsc::Sender<NetworkEvent>,
         swarm_cmd_sender: mpsc::Sender<LocalSwarmCmd>,
     ) -> Self {
-        let key = Aes256GcmSiv::generate_key(&mut OsRng);
-        let cipher = Aes256GcmSiv::new(&key);
-        let mut nonce_starter = [0u8; 4];
-        OsRng.fill_bytes(&mut nonce_starter);
-
-        let encryption_details = (cipher, nonce_starter);
+        info!("Using encryption_seed of {:?}", config.encryption_seed);
+        let encryption_details = derive_aes256gcm_siv_from_seed(&config.encryption_seed);
 
         // Recover the quoting_metrics first, as the historical file will be cleaned by
         // the later on update_records_from_an_existing_store function
@@ -288,8 +378,7 @@ impl NodeRecordStore {
             config,
             records,
             records_by_bucket: HashMap::new(),
-            records_cache: VecDeque::with_capacity(cache_size),
-            records_cache_map: HashMap::with_capacity(cache_size),
+            records_cache: RecordCache::new(cache_size),
             network_event_sender,
             local_swarm_cmd_sender: swarm_cmd_sender,
             responsible_distance_range: None,
@@ -313,6 +402,11 @@ impl NodeRecordStore {
     pub fn set_record_count_metric(mut self, metric: Gauge) -> Self {
         self.record_count_metric = Some(metric);
         self
+    }
+
+    /// Returns the current distance ilog2 (aka bucket) range of CLOSE_GROUP nodes.
+    pub fn get_responsible_distance_range(&self) -> Option<u32> {
+        self.responsible_distance_range
     }
 
     // Converts a Key into a Hex string.
@@ -450,23 +544,27 @@ impl NodeRecordStore {
         Ok(())
     }
 
-    // When the accumulated record copies exceeds the `expotional pricing point` (max_records * 0.6)
+    // When the accumulated record copies exceeds the `expotional pricing point` (max_records * 0.1)
     // those `out of range` records shall be cleaned up.
-    // This is to avoid `over-quoting` during restart, when RT is not fully populated,
-    // result in mis-calculation of relevant records.
+    // This is to avoid :
+    //   * holding too many irrelevant record, which occupies disk space
+    //   * `over-quoting` during restart, when RT is not fully populated,
+    //     result in mis-calculation of relevant records.
     pub fn cleanup_irrelevant_records(&mut self) {
         let accumulated_records = self.records.len();
-        if accumulated_records < MAX_RECORDS_COUNT * 6 / 10 {
+        if accumulated_records < MAX_RECORDS_COUNT / 10 {
             return;
         }
 
-        let responsible_range = if let Some(range) = self.responsible_distance_range {
+        let max_bucket = if let Some(range) = self.responsible_distance_range {
+            // avoid the distance_range is a default value
+            if range == 0 {
+                return;
+            }
             range
         } else {
             return;
         };
-
-        let max_bucket = responsible_range.ilog2().unwrap_or_default();
 
         // Collect keys to remove from buckets beyond our range
         let keys_to_remove: Vec<Key> = self
@@ -571,35 +669,22 @@ impl NodeRecordStore {
         let record_key = PrettyPrintRecordKey::from(&r.key).into_owned();
         debug!("PUTting a verified Record: {record_key:?}");
 
-        // if the cache already has this record in it (eg, a conflicting spend)
-        // remove it from the cache
-        // self.records_cache.retain(|record| record.key != r.key);
-        // Remove from cache if it already exists
-        if let Some(&index) = self.records_cache_map.get(key) {
-            if let Some(existing_record) = self.records_cache.remove(index) {
-                if existing_record.value == r.value {
-                    // we actually just want to keep what we have, and can assume it's been stored properly.
+        // if cache already has the record :
+        //   * if with same content, do nothing and return early
+        //   * if with different content, remove the existing one
+        if let Some((existing_record, _timestamp)) = self.records_cache.remove(key) {
+            if existing_record.value == r.value {
+                // we actually just want to keep what we have, and can assume it's been stored properly.
 
-                    // so we put it back in the cache
-                    self.records_cache.insert(index, existing_record);
-                    // and exit early.
-                    return Ok(());
-                }
-            }
-            self.update_cache_indices(index);
-        }
-
-        // Store in the FIFO records cache, removing the oldest if needed
-        if self.records_cache.len() >= self.config.records_cache_size {
-            if let Some(old_record) = self.records_cache.pop_front() {
-                self.records_cache_map.remove(&old_record.key);
+                // so we put it back in the cache
+                self.records_cache.push_back(key.clone(), existing_record);
+                // and exit early.
+                return Ok(());
             }
         }
 
-        // Push the new record to the back of the cache
-        self.records_cache.push_back(r.clone());
-        self.records_cache_map
-            .insert(key.clone(), self.records_cache.len() - 1);
+        // Store the new record to the cache
+        self.records_cache.push_back(key.clone(), r.clone());
 
         self.prune_records_if_needed(key)?;
 
@@ -638,15 +723,6 @@ impl NodeRecordStore {
         });
 
         Ok(())
-    }
-
-    /// Update the cache indices after removing an element
-    fn update_cache_indices(&mut self, start_index: usize) {
-        for index in start_index..self.records_cache.len() {
-            if let Some(record) = self.records_cache.get(index) {
-                self.records_cache_map.insert(record.key.clone(), index);
-            }
-        }
     }
 
     /// Calculate the cost to store data for our current store state
@@ -698,10 +774,8 @@ impl NodeRecordStore {
     pub fn get_records_within_distance_range(
         &self,
         _records: HashSet<&Key>,
-        max_distance: Distance,
+        max_bucket: u32,
     ) -> usize {
-        let max_bucket = max_distance.ilog2().unwrap_or_default();
-
         let within_range = self
             .records_by_bucket
             .iter()
@@ -715,8 +789,8 @@ impl NodeRecordStore {
     }
 
     /// Setup the distance range.
-    pub(crate) fn set_responsible_distance_range(&mut self, farthest_distance: Distance) {
-        self.responsible_distance_range = Some(farthest_distance);
+    pub(crate) fn set_responsible_distance_range(&mut self, farthest_responsible_bucket: u32) {
+        self.responsible_distance_range = Some(farthest_responsible_bucket);
     }
 }
 
@@ -730,9 +804,9 @@ impl RecordStore for NodeRecordStore {
         // ignored if we don't have the record locally.
         let key = PrettyPrintRecordKey::from(k);
 
-        let cached_record = self.records_cache.iter().find(|r| r.key == *k);
+        let cached_record = self.records_cache.get(k);
         // first return from FIFO cache if existing there
-        if let Some(record) = cached_record {
+        if let Some((record, _timestamp)) = cached_record {
             return Some(Cow::Borrowed(record));
         }
 
@@ -826,7 +900,7 @@ impl RecordStore for NodeRecordStore {
             }
         }
 
-        self.records_cache.retain(|r| r.key != *k);
+        self.records_cache.remove(k);
 
         #[cfg(feature = "open-metrics")]
         if let Some(metric) = &self.record_count_metric {
@@ -969,6 +1043,7 @@ mod tests {
     use bls::SecretKey;
     use xor_name::XorName;
 
+    use assert_fs::TempDir;
     use bytes::Bytes;
     use eyre::{bail, ContextCompat};
     use libp2p::kad::K_VALUE;
@@ -1167,6 +1242,102 @@ mod tests {
         store.remove(&r.key);
 
         assert!(store.get(&r.key).is_none());
+    }
+
+    #[tokio::test]
+    async fn can_store_after_restart() -> eyre::Result<()> {
+        let temp_dir = TempDir::new().expect("Should be able to create a temp dir.");
+        let store_config = NodeRecordStoreConfig {
+            storage_dir: temp_dir.to_path_buf(),
+            encryption_seed: [1u8; 16],
+            ..Default::default()
+        };
+        let self_id = PeerId::random();
+        let (network_event_sender, _) = mpsc::channel(1);
+        let (swarm_cmd_sender, _) = mpsc::channel(1);
+
+        let mut store = NodeRecordStore::with_config(
+            self_id,
+            store_config.clone(),
+            network_event_sender.clone(),
+            swarm_cmd_sender.clone(),
+        );
+
+        // Create a chunk
+        let chunk_data = Bytes::from_static(b"Test chunk data");
+        let chunk = Chunk::new(chunk_data);
+        let chunk_address = *chunk.address();
+
+        // Create a record from the chunk
+        let record = Record {
+            key: NetworkAddress::ChunkAddress(chunk_address).to_record_key(),
+            value: try_serialize_record(&chunk, RecordKind::Chunk)?.to_vec(),
+            expires: None,
+            publisher: None,
+        };
+
+        // Store the chunk using put_verified
+        assert!(store
+            .put_verified(record.clone(), RecordType::Chunk)
+            .is_ok());
+
+        // Mark as stored (simulating the CompletedWrite event)
+        store.mark_as_stored(record.key.clone(), RecordType::Chunk);
+
+        // Verify the chunk is stored
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Chunk should be stored");
+
+        // Sleep a while to let OS completes the flush to disk
+        sleep(Duration::from_secs(1)).await;
+
+        // Restart the store with same encrypt_seed
+        drop(store);
+        let store = NodeRecordStore::with_config(
+            self_id,
+            store_config,
+            network_event_sender.clone(),
+            swarm_cmd_sender.clone(),
+        );
+
+        // Sleep a lit bit to let OS completes restoring
+        sleep(Duration::from_secs(1)).await;
+
+        // Verify the record still exists
+        let stored_record = store.get(&record.key);
+        assert!(stored_record.is_some(), "Chunk should be stored");
+
+        // Restart the store with different encrypt_seed
+        let self_id_diff = PeerId::random();
+        let store_config_diff = NodeRecordStoreConfig {
+            storage_dir: temp_dir.to_path_buf(),
+            encryption_seed: [2u8; 16],
+            ..Default::default()
+        };
+        let store_diff = NodeRecordStore::with_config(
+            self_id_diff,
+            store_config_diff,
+            network_event_sender,
+            swarm_cmd_sender,
+        );
+
+        // Sleep a lit bit to let OS completes restoring (if has)
+        sleep(Duration::from_secs(1)).await;
+
+        // Verify the record existence, shall get removed when encryption enabled
+        if cfg!(feature = "encrypt-records") {
+            assert!(
+                store_diff.get(&record.key).is_none(),
+                "Chunk should be gone"
+            );
+        } else {
+            assert!(
+                store_diff.get(&record.key).is_some(),
+                "Chunk shall persists without encryption"
+            );
+        }
+
+        Ok(())
     }
 
     #[tokio::test]
@@ -1511,7 +1682,10 @@ mod tests {
                 .wrap_err("Could not parse record store key")?,
         );
         // get the distance to this record from our local key
-        let distance = self_address.distance(&halfway_record_address);
+        let distance = self_address
+            .distance(&halfway_record_address)
+            .ilog2()
+            .unwrap_or(0);
 
         // must be plus one bucket from the halfway record
         store.set_responsible_distance_range(distance);

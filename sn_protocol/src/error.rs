@@ -81,7 +81,4 @@ pub enum Error {
     // The record already exists at this node
     #[error("The record already exists, so do not charge for it: {0:?}")]
     RecordExists(PrettyPrintRecordKey<'static>),
-
-    #[error("Record header is incorrect")]
-    IncorrectRecordHeader,
 }

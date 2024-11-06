@@ -73,10 +73,14 @@ pub async fn download_and_get_upgrade_bin_path(
         .await?;
         Ok((upgrade_bin_path, Version::parse(&version)?))
     } else {
-        println!("Retrieving latest version of {release_type}...");
+        if verbosity != VerbosityLevel::Minimal {
+            println!("Retrieving latest version of {release_type}...");
+        }
         debug!("Retrieving latest version of {release_type}...");
         let latest_version = release_repo.get_latest_version(&release_type).await?;
-        println!("Latest version is {latest_version}");
+        if verbosity != VerbosityLevel::Minimal {
+            println!("Latest version is {latest_version}");
+        }
         debug!("Download latest version {latest_version} of {release_type}");
 
         let (upgrade_bin_path, _) = download_and_extract_release(

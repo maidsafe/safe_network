@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::common::{Address, QuoteHash, QuotePayment, TxHash, U256};
+use crate::common::{Address, Amount, QuoteHash, QuotePayment, TxHash, U256};
 use crate::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
 use crate::contract::{data_payments, network_token};
@@ -27,6 +27,8 @@ use std::sync::Arc;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("Insufficient tokens to pay for quotes. Have: {0} atto, need: {1} atto")]
+    InsufficientTokensForQuotes(Amount, Amount),
     #[error("Private key is invalid")]
     PrivateKeyInvalid,
     #[error(transparent)]
@@ -291,21 +293,32 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     let payments: Vec<_> = payments.into_iter().collect();
     info!("Paying for quotes of len: {}", payments.len());
 
-    let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
+    let total_amount_to_be_paid = payments.iter().map(|(_, _, amount)| amount).sum();
 
-    let mut tx_hashes_by_quote = BTreeMap::new();
+    // Get current wallet token balance
+    let wallet_balance = balance_of_tokens(wallet_address(&wallet), network)
+        .await
+        .map_err(|err| PayForQuotesError(Error::from(err), Default::default()))?;
 
-    // Check allowance
+    // Check if wallet contains enough payment tokens to pay for all quotes
+    if wallet_balance < total_amount_to_be_paid {
+        return Err(PayForQuotesError(
+            Error::InsufficientTokensForQuotes(wallet_balance, total_amount_to_be_paid),
+            Default::default(),
+        ));
+    }
+
+    // Get current allowance
     let allowance = token_allowance(
         network,
         wallet_address(&wallet),
         *network.data_payments_address(),
     )
     .await
-    .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
+    .map_err(|err| PayForQuotesError(Error::from(err), Default::default()))?;
 
     // TODO: Get rid of approvals altogether, by using permits or whatever..
-    if allowance < total_amount {
+    if allowance < total_amount_to_be_paid {
         // Approve the contract to spend all the client's tokens.
         approve_to_spend_tokens(
             wallet.clone(),
@@ -314,7 +327,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
             U256::MAX,
         )
         .await
-        .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
+        .map_err(|err| PayForQuotesError(Error::from(err), Default::default()))?;
     }
 
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
@@ -322,6 +335,8 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 
     // Divide transfers over multiple transactions if they exceed the max per transaction.
     let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);
+
+    let mut tx_hashes_by_quote = BTreeMap::new();
 
     for batch in chunks {
         let batch: Vec<QuotePayment> = batch.to_vec();

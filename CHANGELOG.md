@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-11-06
+
+### Network
+
+#### Added
+
+- Remove outdated record copies that cannot be decrypted. This is used when a node is restarted.
+
+#### Changed
+
+- The node will only restart at the end of its process if it has explicitly been requested in the
+  RPC restart command. This removes the potential for creation of undesired new processes.
+- Range search optimization to reduce resource usage.
+- Trigger record_store pruning earlier. The threshold lowered from 90% to 10% to improve the disk
+  usage efficiency.
+
+#### Fixed
+
+- Derive node-side record encryption details from the node's keypair. This ensures data is retained
+  in a restart.
+
+### Client
+
+#### Changed
+
+- When paying for quotes through the API, the contract allowance will be set to ~infinite instead of
+  the specific amount needed. This is to reduce the amount of approval transactions needed for doing
+  quote payments.
+
+### Node Manager
+
+#### Fixed
+
+- The `--rewards-address` argument is retained on an upgrade
+
+### Launchpad
+
+#### Added
+
+- Support for upgrading nodes version
+- Support for Ctrl+V on rewards address
+- More error handling
+- Use 5 minute interval between upgrades
+
+#### Changed
+
+- Help screen after beta
+- New Ratatui version 0.29.0
+
 ## 2024-10-28
 
 ## Autonomi API/CLI

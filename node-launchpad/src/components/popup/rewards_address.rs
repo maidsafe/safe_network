@@ -14,8 +14,9 @@ use crate::{
     style::{clear_area, EUCALYPTUS, GHOST_WHITE, INDIGO, LIGHT_PERIWINKLE, RED, VIVID_SKY_BLUE},
     widgets::hyperlink::Hyperlink,
 };
+use arboard::Clipboard;
 use color_eyre::Result;
-use crossterm::event::{Event, KeyCode, KeyEvent};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{prelude::*, widgets::*};
 use regex::Regex;
 use tui_input::{backend::crossterm::EventHandler, Input};
@@ -34,7 +35,6 @@ pub struct RewardsAddress {
     can_save: bool,
 }
 
-#[allow(dead_code)]
 enum RewardsAddressState {
     RewardsAddressAlreadySet,
     ShowTCs,
@@ -111,6 +111,22 @@ impl RewardsAddress {
                 self.rewards_address_input_field
                     .handle_event(&Event::Key(key));
                 self.validate();
+                vec![]
+            }
+            KeyCode::Char('v') => {
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
+                    let mut clipboard = match Clipboard::new() {
+                        Ok(clipboard) => clipboard,
+                        Err(e) => {
+                            error!("Error reading Clipboard : {:?}", e);
+                            return vec![];
+                        }
+                    };
+                    if let Ok(content) = clipboard.get_text() {
+                        self.rewards_address_input_field =
+                            self.rewards_address_input_field.clone().with_value(content);
+                    }
+                }
                 vec![]
             }
             _ => {

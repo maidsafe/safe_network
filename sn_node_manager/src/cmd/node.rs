@@ -293,7 +293,7 @@ pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
         }
     }
 
-    stop(vec![], vec![], verbosity).await?;
+    stop(None, vec![], vec![], verbosity).await?;
     remove(false, vec![], vec![], verbosity).await?;
 
     // Due the possibility of repeated runs of the `reset` command, we need to check for the
@@ -406,6 +406,7 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
 }
 
 pub async fn stop(
+    interval: Option<u64>,
     peer_ids: Vec<String>,
     service_names: Vec<String>,
     verbosity: VerbosityLevel,
@@ -442,6 +443,13 @@ pub async fn stop(
         let service = NodeService::new(node, Box::new(rpc_client));
         let mut service_manager =
             ServiceManager::new(service, Box::new(ServiceController {}), verbosity);
+
+        if service_manager.service.status() == ServiceStatus::Running {
+            if let Some(interval) = interval {
+                debug!("Sleeping for {} milliseconds", interval);
+                std::thread::sleep(std::time::Duration::from_millis(interval));
+            }
+        }
         match service_manager.stop().await {
             Ok(()) => {
                 debug!("Stopped service {}", node.service_name);
@@ -585,7 +593,9 @@ pub async fn upgrade(
         }
     }
 
-    print_upgrade_summary(upgrade_summary.clone());
+    if verbosity != VerbosityLevel::Minimal {
+        print_upgrade_summary(upgrade_summary.clone());
+    }
 
     if upgrade_summary.iter().any(|(_, r)| {
         matches!(r, UpgradeResult::Error(_))
@@ -662,7 +672,7 @@ pub async fn maintain_n_running_nodes(
                 "Stopping {} excess nodes: {:?}",
                 to_stop_count, services_to_stop
             );
-            stop(vec![], services_to_stop, verbosity).await?;
+            stop(None, vec![], services_to_stop, verbosity).await?;
         }
         Ordering::Less => {
             let to_start_count = target_count - running_count;
