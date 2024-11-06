@@ -657,7 +657,7 @@ impl Component for Status<'_> {
                     do_not_start: true,
                     custom_bin_path: None,
                     force: false,
-                    fixed_interval: None,
+                    fixed_interval: Some(300_000), // 5 mins in millis
                     peer_ids,
                     provided_env_variables: None,
                     service_names,
