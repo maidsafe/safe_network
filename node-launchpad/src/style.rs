@@ -21,7 +21,7 @@ pub const EUCALYPTUS: Color = Color::Indexed(115);
 pub const SIZZLING_RED: Color = Color::Indexed(197);
 pub const SPACE_CADET: Color = Color::Indexed(17);
 pub const DARK_GUNMETAL: Color = Color::Indexed(235); // 266 is incorrect
-pub const INDIGO: Color = Color::Indexed(60);
+pub const INDIGO: Color = Color::Indexed(24);
 pub const VIVID_SKY_BLUE: Color = Color::Indexed(45);
 pub const RED: Color = Color::Indexed(196);
 
