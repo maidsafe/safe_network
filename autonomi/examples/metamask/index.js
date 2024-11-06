@@ -34,7 +34,7 @@ export async function externalSignerPrivateDataPutToVault(peerAddr) {
         await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Upload the data
-        const privateDataAccess = await client.privateDataPutWithReceipt(data, receipt);
+        const privateDataAccess = await client.putPrivateDataWithReceipt(data, receipt);
 
         // Create a private archive
         const privateArchive = new autonomi.PrivateArchive();
@@ -58,7 +58,7 @@ export async function externalSignerPrivateDataPutToVault(peerAddr) {
         await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Upload the private archive
-        const privateArchiveAccess = await client.privateArchivePutWithReceipt(privateArchive, paReceipt);
+        const privateArchiveAccess = await client.putPrivateArchiveWithReceipt(privateArchive, paReceipt);
 
         // Generate a random vault key (should normally be derived from a constant signature)
         const vaultKey = autonomi.genSecretKey();
@@ -102,7 +102,7 @@ export async function externalSignerPrivateDataPutToVault(peerAddr) {
         let fetchedPrivateArchiveAccess = fetchedUserData.privateFileArchives().keys().next().value;
 
         // Get private archive
-        let fetchedPrivateArchive = await client.privateArchiveGet(fetchedPrivateArchiveAccess);
+        let fetchedPrivateArchive = await client.getPrivateArchive(fetchedPrivateArchiveAccess);
 
         // Select first file in private archive
         let [fetchedFilePath, [fetchedPrivateFileAccess, fetchedFileMetadata]] = fetchedPrivateArchive.map().entries().next().value;
@@ -112,7 +112,7 @@ export async function externalSignerPrivateDataPutToVault(peerAddr) {
         console.log(fetchedFileMetadata);
 
         // Fetch private file/data
-        let fetchedPrivateFile = await client.privateDataGet(fetchedPrivateFileAccess);
+        let fetchedPrivateFile = await client.getPrivateData(fetchedPrivateFileAccess);
 
         // Compare to original data
         console.log("Comparing fetched data to original data..");
