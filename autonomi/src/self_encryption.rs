@@ -10,6 +10,10 @@ use bytes::{BufMut, Bytes, BytesMut};
 use self_encryption::{DataMap, MAX_CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
 use sn_protocol::storage::Chunk;
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::task;
+#[cfg(target_arch = "wasm32")]
+use tokio_with_wasm::task;
 use tracing::debug;
 
 #[derive(Debug, thiserror::Error)]
@@ -18,6 +22,8 @@ pub enum Error {
     Encoding(#[from] rmp_serde::encode::Error),
     #[error(transparent)]
     SelfEncryption(#[from] self_encryption::Error),
+    #[error(transparent)]
+    Tokio(#[from] task::JoinError),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -30,8 +36,8 @@ pub(crate) enum DataMapLevel {
     Additional(DataMap),
 }
 
-pub(crate) fn encrypt(data: Bytes) -> Result<(Chunk, Vec<Chunk>), Error> {
-    let (data_map, chunks) = self_encryption::encrypt(data)?;
+pub(crate) async fn encrypt(data: Bytes) -> Result<(Chunk, Vec<Chunk>), Error> {
+    let (data_map, chunks) = task::spawn_blocking(move || self_encryption::encrypt(data)).await??;
     let (data_map_chunk, additional_chunks) = pack_data_map(data_map)?;
 
     // Transform `EncryptedChunk` into `Chunk`
