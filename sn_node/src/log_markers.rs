@@ -62,7 +62,7 @@ pub enum Marker<'a> {
     IntervalBadNodesCheckTriggered,
 }
 
-impl<'a> Marker<'a> {
+impl Marker<'_> {
     /// Returns the string representation of the LogMarker.
     pub fn log(&self) {
         // Down the line, if some logs are noisier than others, we can

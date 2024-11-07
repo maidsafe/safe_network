@@ -44,7 +44,7 @@ impl<'a> DaemonService<'a> {
 }
 
 #[async_trait]
-impl<'a> ServiceStateActions for DaemonService<'a> {
+impl ServiceStateActions for DaemonService<'_> {
     fn bin_path(&self) -> PathBuf {
         self.service_data.daemon_path.clone()
     }

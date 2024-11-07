@@ -18,7 +18,6 @@ use std::path::PathBuf;
 ///
 /// They are assuming the existence of a `safenode` binary produced by the release process, and a
 /// running local network, with SAFE_PEERS set to a local node.
-
 const CI_USER: &str = "runner";
 #[cfg(unix)]
 const SAFENODE_BIN_NAME: &str = "safenode";
