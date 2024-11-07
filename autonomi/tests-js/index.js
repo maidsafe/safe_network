@@ -45,7 +45,7 @@ describe('autonomi', function () {
         const data = randomData(32);
         const addr = await client.putData(data, wallet);
         const archive = new atnm.Archive();
-        archive.addNewFile("foo", addr);
+        archive.addFile("foo", addr, atnm.createMetadata(data.length));
         const archiveAddr = await client.putArchive(archive, wallet);
 
         const archiveFetched = await client.getArchive(archiveAddr);
@@ -59,7 +59,7 @@ describe('autonomi', function () {
         const secretKey = atnm.genSecretKey();
 
         const archive = new atnm.Archive();
-        archive.addNewFile('foo', addr);
+        archive.addFile('foo', addr, atnm.createMetadata(data.length));
         const archiveAddr = await client.putArchive(archive, wallet);
 
         const userData = new atnm.UserData();

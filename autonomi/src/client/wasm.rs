@@ -18,7 +18,7 @@ use wasm_bindgen::prelude::*;
 /// const dataAddr = await client.putData(new Uint8Array([0, 1, 2, 3]), wallet);
 ///
 /// const archive = new Archive();
-/// archive.addNewFile("foo", dataAddr);
+/// archive.addFile("foo", dataAddr, createMetadata(4));
 ///
 /// const archiveAddr = await client.putArchive(archive, wallet);
 /// const archiveFetched = await client.getArchive(archiveAddr);
@@ -178,6 +178,13 @@ mod archive {
     #[wasm_bindgen(js_name = Archive)]
     pub struct JsArchive(Archive);
 
+    /// Create new metadata with the current time as uploaded, created and modified.
+    #[wasm_bindgen(js_name = createMetadata)]
+    pub fn create_metadata(size: u64) -> Result<JsValue, JsError> {
+        let metadata = Metadata::new_with_size(size);
+        Ok(serde_wasm_bindgen::to_value(&metadata)?)
+    }
+
     #[wasm_bindgen(js_class = Archive)]
     impl JsArchive {
         /// Create a new archive.
@@ -187,11 +194,17 @@ mod archive {
         }
 
         /// Add a new file to the archive.
-        #[wasm_bindgen(js_name = addNewFile)]
-        pub fn add_new_file(&mut self, path: String, data_addr: String) -> Result<(), JsError> {
+        #[wasm_bindgen(js_name = addFile)]
+        pub fn add_file(
+            &mut self,
+            path: String,
+            data_addr: String,
+            metadata: JsValue,
+        ) -> Result<(), JsError> {
             let path = PathBuf::from(path);
             let data_addr = str_to_addr(&data_addr)?;
-            self.0.add_new_file(path, data_addr);
+            let metadata: Metadata = serde_wasm_bindgen::from_value(metadata)?;
+            self.0.add_file(path, data_addr, metadata);
 
             Ok(())
         }
@@ -268,11 +281,17 @@ mod archive_private {
         }
 
         /// Add a new file to the private archive.
-        #[wasm_bindgen(js_name = addNewFile)]
-        pub fn add_new_file(&mut self, path: String, data_map: JsValue) -> Result<(), JsError> {
+        #[wasm_bindgen(js_name = addFile)]
+        pub fn add_file(
+            &mut self,
+            path: String,
+            data_map: JsValue,
+            metadata: JsValue,
+        ) -> Result<(), JsError> {
             let path = PathBuf::from(path);
             let data_map: PrivateDataAccess = serde_wasm_bindgen::from_value(data_map)?;
-            self.0.add_new_file(path, data_map);
+            let metadata: Metadata = serde_wasm_bindgen::from_value(metadata)?;
+            self.0.add_file(path, data_map, metadata);
 
             Ok(())
         }
