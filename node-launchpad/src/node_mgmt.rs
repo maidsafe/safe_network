@@ -1,6 +1,7 @@
 use crate::action::{Action, StatusActions};
 use crate::connection_mode::ConnectionMode;
 use color_eyre::eyre::{eyre, Error};
+use color_eyre::Result;
 use sn_evm::{EvmNetwork, RewardsAddress};
 use sn_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
@@ -9,36 +10,117 @@ use sn_peers_acquisition::PeersArgs;
 use sn_releases::{self, ReleaseType, SafeReleaseRepoActions};
 use sn_service_management::NodeRegistry;
 use std::{path::PathBuf, str::FromStr};
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::runtime::Builder;
+use tokio::sync::mpsc::{self, UnboundedSender};
+use tokio::task::LocalSet;
 
 pub const PORT_MAX: u32 = 65535;
 pub const PORT_MIN: u32 = 1024;
 
 const NODE_ADD_MAX_RETRIES: u32 = 5;
 
-/// Stop the specified services
-pub fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
-    tokio::task::spawn_local(async move {
-        if let Err(err) =
-            sn_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
-        {
-            error!("Error while stopping services {err:?}");
-            send_action(
-                action_sender,
-                Action::StatusActions(StatusActions::ErrorStoppingNodes {
-                    raw_error: err.to_string(),
-                }),
-            );
-        } else {
-            info!("Successfully stopped services");
-            send_action(
-                action_sender,
-                Action::StatusActions(StatusActions::StopNodesCompleted),
-            );
-        }
-    });
+#[derive(Debug)]
+pub enum NodeManagementTask {
+    MaintainNodes {
+        args: MaintainNodesArgs,
+    },
+    ResetNodes {
+        start_nodes_after_reset: bool,
+        action_sender: UnboundedSender<Action>,
+    },
+    StopNodes {
+        services: Vec<String>,
+        action_sender: UnboundedSender<Action>,
+    },
+    UpgradeNodes {
+        args: UpgradeNodesArgs,
+    },
 }
 
+#[derive(Clone)]
+pub struct NodeManagement {
+    task_sender: mpsc::UnboundedSender<NodeManagementTask>,
+}
+
+impl NodeManagement {
+    pub fn new() -> Result<Self> {
+        let (send, mut recv) = mpsc::unbounded_channel();
+
+        let rt = Builder::new_current_thread().enable_all().build()?;
+
+        std::thread::spawn(move || {
+            let local = LocalSet::new();
+
+            local.spawn_local(async move {
+                while let Some(new_task) = recv.recv().await {
+                    match new_task {
+                        NodeManagementTask::MaintainNodes { args } => {
+                            maintain_n_running_nodes(args).await;
+                        }
+                        NodeManagementTask::ResetNodes {
+                            start_nodes_after_reset,
+                            action_sender,
+                        } => {
+                            reset_nodes(action_sender, start_nodes_after_reset).await;
+                        }
+                        NodeManagementTask::StopNodes {
+                            services,
+                            action_sender,
+                        } => {
+                            stop_nodes(services, action_sender).await;
+                        }
+                        NodeManagementTask::UpgradeNodes { args } => upgrade_nodes(args).await,
+                    }
+                }
+                // If the while loop returns, then all the LocalSpawner
+                // objects have been dropped.
+            });
+
+            // This will return once all senders are dropped and all
+            // spawned tasks have returned.
+            rt.block_on(local);
+        });
+
+        Ok(Self { task_sender: send })
+    }
+
+    /// Send a task to the NodeManagement local set
+    /// These tasks will be executed on a different thread to avoid blocking the main thread
+    ///
+    /// The results are returned via the standard `UnboundedSender<Action>` that is passed to each task.
+    ///
+    /// If this function returns an error, it means that the task could not be sent to the local set.
+    pub fn send_task(&self, task: NodeManagementTask) -> Result<()> {
+        self.task_sender
+            .send(task)
+            .inspect_err(|err| error!("The node management local set is down {err:?}"))
+            .map_err(|_| eyre!("Failed to send task to the node management local set"))?;
+        Ok(())
+    }
+}
+
+/// Stop the specified services
+async fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
+    if let Err(err) =
+        sn_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
+    {
+        error!("Error while stopping services {err:?}");
+        send_action(
+            action_sender,
+            Action::StatusActions(StatusActions::ErrorStoppingNodes {
+                raw_error: err.to_string(),
+            }),
+        );
+    } else {
+        info!("Successfully stopped services");
+        send_action(
+            action_sender,
+            Action::StatusActions(StatusActions::StopNodesCompleted),
+        );
+    }
+}
+
+#[derive(Debug)]
 pub struct MaintainNodesArgs {
     pub count: u16,
     pub owner: String,
@@ -53,75 +135,72 @@ pub struct MaintainNodesArgs {
 }
 
 /// Maintain the specified number of nodes
-pub fn maintain_n_running_nodes(args: MaintainNodesArgs) {
+async fn maintain_n_running_nodes(args: MaintainNodesArgs) {
     debug!("Maintaining {} nodes", args.count);
-    tokio::task::spawn_local(async move {
-        if args.run_nat_detection {
-            run_nat_detection(&args.action_sender).await;
+    if args.run_nat_detection {
+        run_nat_detection(&args.action_sender).await;
+    }
+
+    let config = prepare_node_config(&args);
+    debug_log_config(&config, &args);
+
+    let node_registry = match load_node_registry(&args.action_sender).await {
+        Ok(registry) => registry,
+        Err(err) => {
+            error!("Failed to load node registry: {:?}", err);
+            return;
         }
+    };
+    let mut used_ports = get_used_ports(&node_registry);
+    let (mut current_port, max_port) = get_port_range(&config.custom_ports);
 
-        let config = prepare_node_config(&args);
-        debug_log_config(&config, &args);
+    let nodes_to_add = args.count as i32 - node_registry.nodes.len() as i32;
 
-        let node_registry = match load_node_registry(&args.action_sender).await {
-            Ok(registry) => registry,
-            Err(err) => {
-                error!("Failed to load node registry: {:?}", err);
-                return;
-            }
-        };
-        let mut used_ports = get_used_ports(&node_registry);
-        let (mut current_port, max_port) = get_port_range(&config.custom_ports);
+    if nodes_to_add <= 0 {
+        debug!("Scaling down nodes to {}", nodes_to_add);
+        scale_down_nodes(&config, args.count).await;
+    } else {
+        debug!("Scaling up nodes to {}", nodes_to_add);
+        add_nodes(
+            &args.action_sender,
+            &config,
+            nodes_to_add,
+            &mut used_ports,
+            &mut current_port,
+            max_port,
+        )
+        .await;
+    }
 
-        let nodes_to_add = args.count as i32 - node_registry.nodes.len() as i32;
-
-        if nodes_to_add <= 0 {
-            debug!("Scaling down nodes to {}", nodes_to_add);
-            scale_down_nodes(&config, args.count).await;
-        } else {
-            debug!("Scaling up nodes to {}", nodes_to_add);
-            add_nodes(
-                &args.action_sender,
-                &config,
-                nodes_to_add,
-                &mut used_ports,
-                &mut current_port,
-                max_port,
-            )
-            .await;
-        }
-
-        debug!("Finished maintaining {} nodes", args.count);
-        send_action(
-            args.action_sender,
-            Action::StatusActions(StatusActions::StartNodesCompleted),
-        );
-    });
+    debug!("Finished maintaining {} nodes", args.count);
+    send_action(
+        args.action_sender,
+        Action::StatusActions(StatusActions::StartNodesCompleted),
+    );
 }
 
 /// Reset all the nodes
-pub fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_reset: bool) {
-    tokio::task::spawn_local(async move {
-        if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
-            error!("Error while resetting services {err:?}");
-            send_action(
-                action_sender,
-                Action::StatusActions(StatusActions::ErrorResettingNodes {
-                    raw_error: err.to_string(),
-                }),
-            );
-        } else {
-            info!("Successfully reset services");
-            send_action(
-                action_sender,
-                Action::StatusActions(StatusActions::ResetNodesCompleted {
-                    trigger_start_node: start_nodes_after_reset,
-                }),
-            );
-        }
-    });
+async fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_reset: bool) {
+    if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
+        error!("Error while resetting services {err:?}");
+        send_action(
+            action_sender,
+            Action::StatusActions(StatusActions::ErrorResettingNodes {
+                raw_error: err.to_string(),
+            }),
+        );
+    } else {
+        info!("Successfully reset services");
+        send_action(
+            action_sender,
+            Action::StatusActions(StatusActions::ResetNodesCompleted {
+                trigger_start_node: start_nodes_after_reset,
+            }),
+        );
+    }
 }
 
+#[derive(Debug)]
 pub struct UpgradeNodesArgs {
     pub action_sender: UnboundedSender<Action>,
     pub connection_timeout_s: u64,
@@ -136,38 +215,36 @@ pub struct UpgradeNodesArgs {
     pub version: Option<String>,
 }
 
-pub fn upgrade_nodes(args: UpgradeNodesArgs) {
-    tokio::task::spawn_local(async move {
-        if let Err(err) = sn_node_manager::cmd::node::upgrade(
-            args.connection_timeout_s,
-            args.do_not_start,
-            args.custom_bin_path,
-            args.force,
-            args.fixed_interval,
-            args.peer_ids,
-            args.provided_env_variables,
-            args.service_names,
-            args.url,
-            args.version,
-            VerbosityLevel::Minimal,
-        )
-        .await
-        {
-            error!("Error while updating services {err:?}");
-            send_action(
-                args.action_sender,
-                Action::StatusActions(StatusActions::ErrorUpdatingNodes {
-                    raw_error: err.to_string(),
-                }),
-            );
-        } else {
-            info!("Successfully updated services");
-            send_action(
-                args.action_sender,
-                Action::StatusActions(StatusActions::UpdateNodesCompleted),
-            );
-        }
-    });
+async fn upgrade_nodes(args: UpgradeNodesArgs) {
+    if let Err(err) = sn_node_manager::cmd::node::upgrade(
+        args.connection_timeout_s,
+        args.do_not_start,
+        args.custom_bin_path,
+        args.force,
+        args.fixed_interval,
+        args.peer_ids,
+        args.provided_env_variables,
+        args.service_names,
+        args.url,
+        args.version,
+        VerbosityLevel::Minimal,
+    )
+    .await
+    {
+        error!("Error while updating services {err:?}");
+        send_action(
+            args.action_sender,
+            Action::StatusActions(StatusActions::ErrorUpdatingNodes {
+                raw_error: err.to_string(),
+            }),
+        );
+    } else {
+        info!("Successfully updated services");
+        send_action(
+            args.action_sender,
+            Action::StatusActions(StatusActions::UpdateNodesCompleted),
+        );
+    }
 }
 
 // --- Helper functions ---

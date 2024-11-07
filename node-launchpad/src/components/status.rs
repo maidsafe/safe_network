@@ -18,7 +18,7 @@ use crate::components::utils::open_logs;
 use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::connection_mode::ConnectionMode;
 use crate::error::ErrorPopup;
-use crate::node_mgmt::{upgrade_nodes, MaintainNodesArgs, UpgradeNodesArgs};
+use crate::node_mgmt::{MaintainNodesArgs, NodeManagement, NodeManagementTask, UpgradeNodesArgs};
 use crate::node_mgmt::{PORT_MAX, PORT_MIN};
 use crate::style::{COOL_GREY, INDIGO};
 use crate::tui::Event;
@@ -48,11 +48,8 @@ use std::{
     vec,
 };
 use strum::Display;
-use tokio::sync::mpsc::UnboundedSender;
-
-use super::super::node_mgmt::{maintain_n_running_nodes, reset_nodes, stop_nodes};
-
 use throbber_widgets_tui::{self, Throbber, ThrobberState};
+use tokio::sync::mpsc::UnboundedSender;
 
 pub const FIXED_INTERVAL: u64 = 60_000;
 pub const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
@@ -86,6 +83,8 @@ pub struct Status<'a> {
     // Nodes
     node_services: Vec<NodeServiceData>,
     items: Option<StatefulTable<NodeItem<'a>>>,
+    // Node Management
+    node_management: NodeManagement,
     // Amount of nodes
     nodes_to_start: usize,
     // Rewards address
@@ -139,6 +138,7 @@ impl Status<'_> {
             node_stats: NodeStats::default(),
             node_stats_last_update: Instant::now(),
             node_services: Default::default(),
+            node_management: NodeManagement::new()?,
             items: None,
             nodes_to_start: config.allocated_disk_space,
             lock_registry: None,
@@ -182,7 +182,9 @@ impl Status<'_> {
                 {
                     if let Some(status) = new_status {
                         item.status = status;
-                    } else {
+                    } else if item.status == NodeStatus::Updating {
+                        item.spinner_state.calc_next();
+                    } else if new_status != Some(NodeStatus::Updating) {
                         // Update status based on current node status
                         item.status = match node_item.status {
                             ServiceStatus::Running => {
@@ -418,7 +420,11 @@ impl Component for Status<'_> {
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
                     info!("Resetting safenode services because the Rewards Address was reset.");
                     let action_sender = self.get_actions_sender()?;
-                    reset_nodes(action_sender, false);
+                    self.node_management
+                        .send_task(NodeManagementTask::ResetNodes {
+                            start_nodes_after_reset: false,
+                            action_sender,
+                        })?;
                 }
             }
             Action::StoreStorageDrive(ref drive_mountpoint, ref _drive_name) => {
@@ -426,7 +432,11 @@ impl Component for Status<'_> {
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 info!("Resetting safenode services because the Storage Drive was changed.");
                 let action_sender = self.get_actions_sender()?;
-                reset_nodes(action_sender, false);
+                self.node_management
+                    .send_task(NodeManagementTask::ResetNodes {
+                        start_nodes_after_reset: false,
+                        action_sender,
+                    })?;
                 self.data_dir_path =
                     get_launchpad_nodes_data_dir_path(&drive_mountpoint.to_path_buf(), false)?;
             }
@@ -436,7 +446,11 @@ impl Component for Status<'_> {
                 self.connection_mode = connection_mode;
                 info!("Resetting safenode services because the Connection Mode range was changed.");
                 let action_sender = self.get_actions_sender()?;
-                reset_nodes(action_sender, false);
+                self.node_management
+                    .send_task(NodeManagementTask::ResetNodes {
+                        start_nodes_after_reset: false,
+                        action_sender,
+                    })?;
             }
             Action::StorePortRange(port_from, port_range) => {
                 debug!("Setting lock_registry to ResettingNodes");
@@ -445,7 +459,11 @@ impl Component for Status<'_> {
                 self.port_to = Some(port_range);
                 info!("Resetting safenode services because the Port Range was changed.");
                 let action_sender = self.get_actions_sender()?;
-                reset_nodes(action_sender, false);
+                self.node_management
+                    .send_task(NodeManagementTask::ResetNodes {
+                        start_nodes_after_reset: false,
+                        action_sender,
+                    })?;
             }
             Action::StatusActions(status_action) => match status_action {
                 StatusActions::NodesStatsObtained(stats) => {
@@ -610,7 +628,10 @@ impl Component for Status<'_> {
 
                     debug!("Calling maintain_n_running_nodes");
 
-                    maintain_n_running_nodes(maintain_nodes_args);
+                    self.node_management
+                        .send_task(NodeManagementTask::MaintainNodes {
+                            args: maintain_nodes_args,
+                        })?;
                 }
                 StatusActions::StopNodes => {
                     debug!("Got action to stop nodes");
@@ -628,7 +649,11 @@ impl Component for Status<'_> {
                     let action_sender = self.get_actions_sender()?;
                     info!("Stopping node service: {running_nodes:?}");
 
-                    stop_nodes(running_nodes, action_sender);
+                    self.node_management
+                        .send_task(NodeManagementTask::StopNodes {
+                            services: running_nodes,
+                            action_sender,
+                        })?;
                 }
                 StatusActions::TriggerRewardsAddress => {
                     if self.rewards_address.is_empty() {
@@ -679,7 +704,10 @@ impl Component for Status<'_> {
                     url: None,
                     version: None,
                 };
-                upgrade_nodes(upgrade_nodes_args);
+                self.node_management
+                    .send_task(NodeManagementTask::UpgradeNodes {
+                        args: upgrade_nodes_args,
+                    })?;
             }
             Action::OptionsActions(OptionsActions::ResetNodes) => {
                 debug!("Got action to reset nodes");
@@ -695,7 +723,11 @@ impl Component for Status<'_> {
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 let action_sender = self.get_actions_sender()?;
                 info!("Got action to reset nodes");
-                reset_nodes(action_sender, false);
+                self.node_management
+                    .send_task(NodeManagementTask::ResetNodes {
+                        start_nodes_after_reset: false,
+                        action_sender,
+                    })?;
             }
             _ => {}
         }
@@ -1214,7 +1246,7 @@ impl NodeItem<'_> {
                             .add_modifier(Modifier::BOLD),
                     )
                     .throbber_set(throbber_widgets_tui::VERTICAL_BLOCK)
-                    .use_type(throbber_widgets_tui::WhichUse::Full);
+                    .use_type(throbber_widgets_tui::WhichUse::Spin);
             }
             _ => {}
         };
