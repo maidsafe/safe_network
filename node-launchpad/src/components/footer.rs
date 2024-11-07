@@ -41,9 +41,12 @@ impl StatefulWidget for Footer {
             Span::styled("[Ctrl+S] ", command_style),
             Span::styled("Start Nodes", text_style),
             Span::styled("  ", Style::default()),
+            Span::styled("[L] ", command_style),
+            Span::styled("Open Logs", Style::default().fg(EUCALYPTUS)),
+            Span::styled("  ", Style::default()),
             Span::styled("[Ctrl+X] ", command_style),
             Span::styled(
-                "Stop Nodes",
+                "Stop All",
                 if matches!(state, NodesToStart::Running) {
                     Style::default().fg(EUCALYPTUS)
                 } else {
