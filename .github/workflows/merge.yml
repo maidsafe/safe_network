@@ -132,7 +132,7 @@ jobs:
         timeout-minutes: 25
         run: cargo test --release --package sn_networking --features="open-metrics, encrypt-records"
 
-        name: Run network tests (without encrypt-records)
+      - name: Run network tests (without encrypt-records)
         timeout-minutes: 25
         run: cargo test --release --package sn_networking --features="open-metrics"
 
