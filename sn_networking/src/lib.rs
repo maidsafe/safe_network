@@ -61,7 +61,7 @@ use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
-    storage::{RecordType, RetryStrategy},
+    storage::{RecordType, RetryStrategy, Scratchpad},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use std::{
@@ -582,6 +582,7 @@ impl Network {
         let results_count = result_map.len();
         let mut accumulated_spends = HashSet::new();
         let mut collected_registers = Vec::new();
+        let mut valid_scratchpad: Option<Scratchpad> = None;
 
         if results_count > 1 {
             let mut record_kind = None;
@@ -591,46 +592,82 @@ impl Network {
                     continue;
                 };
                 let kind = record_kind.get_or_insert(header.kind);
+                // FIXME: the first record dictates the kind, but we should check all records are of the same kind.
+                // And somehow discard the incorrect ones.
                 if *kind != header.kind {
-                    error!("Encountered a split record for {pretty_key:?} with different RecordHeaders. Expected {kind:?} but got {:?}",header.kind);
-                    return Err(NetworkError::GetRecordError(
-                        GetRecordError::RecordKindMismatch,
-                    ));
+                    error!("Encountered a split record for {pretty_key:?} with different RecordHeaders. Expected {kind:?} but got {:?}. Skipping",header.kind);
+                    continue;
                 }
 
-                // Accumulate the spends
-                if kind == &RecordKind::Spend {
-                    info!("For record {pretty_key:?}, we have a split record for a spend attempt. Accumulating spends");
+                match kind {
+                    RecordKind::Chunk
+                    | RecordKind::ChunkWithPayment
+                    | RecordKind::RegisterWithPayment
+                    | RecordKind::ScratchpadWithPayment => {
+                        error!("Encountered a split record for {pretty_key:?} with unexpected RecordKind {kind:?}, skipping.");
+                        continue;
+                    }
+                    RecordKind::Spend => {
+                        info!("For record {pretty_key:?}, we have a split record for a spend attempt. Accumulating spends");
 
-                    match get_raw_signed_spends_from_record(record) {
-                        Ok(spends) => {
-                            accumulated_spends.extend(spends);
-                        }
-                        Err(_) => {
-                            continue;
+                        match get_raw_signed_spends_from_record(record) {
+                            Ok(spends) => {
+                                accumulated_spends.extend(spends);
+                            }
+                            Err(_) => {
+                                continue;
+                            }
                         }
                     }
-                }
-                // Accumulate the registers
-                else if kind == &RecordKind::Register {
-                    info!("For record {pretty_key:?}, we have a split record for a register. Accumulating registers");
-                    let Ok(register) = try_deserialize_record::<SignedRegister>(record) else {
-                        error!(
-                            "Failed to deserialize register {pretty_key}. Skipping accumulation"
-                        );
-                        continue;
-                    };
-
-                    match register.verify() {
-                        Ok(_) => {
-                            collected_registers.push(register);
-                        }
-                        Err(_) => {
+                    RecordKind::Register => {
+                        info!("For record {pretty_key:?}, we have a split record for a register. Accumulating registers");
+                        let Ok(register) = try_deserialize_record::<SignedRegister>(record) else {
                             error!(
-                                "Failed to verify register for {pretty_key} at address: {}. Skipping accumulation",
-                                register.address()
+                                "Failed to deserialize register {pretty_key}. Skipping accumulation"
                             );
                             continue;
+                        };
+
+                        match register.verify() {
+                            Ok(_) => {
+                                collected_registers.push(register);
+                            }
+                            Err(_) => {
+                                error!(
+                                    "Failed to verify register for {pretty_key} at address: {}. Skipping accumulation",
+                                    register.address()
+                                );
+                                continue;
+                            }
+                        }
+                    }
+                    RecordKind::Scratchpad => {
+                        info!("For record {pretty_key:?}, we have a split record for a scratchpad. Selecting the one with the highest count");
+                        let Ok(scratchpad) = try_deserialize_record::<Scratchpad>(record) else {
+                            error!(
+                                "Failed to deserialize scratchpad {pretty_key}. Skipping accumulation"
+                            );
+                            continue;
+                        };
+
+                        if !scratchpad.is_valid() {
+                            warn!(
+                                "Rejecting Scratchpad for {pretty_key} PUT with invalid signature during split record error"
+                            );
+                            continue;
+                        }
+
+                        if let Some(old) = &valid_scratchpad {
+                            if old.count() >= scratchpad.count() {
+                                info!(
+                                    "Rejecting Scratchpad for {pretty_key} with lower count than the previous one"
+                                );
+                                continue;
+                            } else {
+                                valid_scratchpad = Some(scratchpad);
+                            }
+                        } else {
+                            valid_scratchpad = Some(scratchpad);
                         }
                     }
                 }
@@ -664,6 +701,22 @@ impl Network {
             let record = Record {
                 key: key.clone(),
                 value: record_value,
+                publisher: None,
+                expires: None,
+            };
+            return Ok(Some(record));
+        } else if let Some(scratchpad) = valid_scratchpad {
+            info!("Found a valid scratchpad for {pretty_key:?}, returning it");
+            let record = Record {
+                key: key.clone(),
+                value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)
+                    .map_err(|err| {
+                        error!(
+                            "Error while serializing valid scratchpad for {pretty_key:?}: {err:?}"
+                        );
+                        NetworkError::from(err)
+                    })?
+                    .to_vec(),
                 publisher: None,
                 expires: None,
             };
