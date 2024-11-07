@@ -53,6 +53,7 @@ use super::super::node_mgmt::{maintain_n_running_nodes, reset_nodes, stop_nodes}
 
 use throbber_widgets_tui::{self, Throbber, ThrobberState};
 
+pub const FIXED_INTERVAL: u64 = 60_000;
 pub const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 /// If nat detection fails for more than 3 times, we don't want to waste time running during every node start.
 const MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION: usize = 3;
@@ -657,7 +658,7 @@ impl Component for Status<'_> {
                     do_not_start: true,
                     custom_bin_path: None,
                     force: false,
-                    fixed_interval: Some(300_000), // 5 mins in millis
+                    fixed_interval: Some(FIXED_INTERVAL),
                     peer_ids,
                     provided_env_variables: None,
                     service_names,
