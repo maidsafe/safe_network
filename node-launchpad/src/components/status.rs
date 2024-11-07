@@ -180,7 +180,9 @@ impl Status<'_> {
                 {
                     if let Some(status) = new_status {
                         item.status = status;
-                    } else {
+                    } else if item.status == NodeStatus::Updating {
+                        item.spinner_state.calc_next();
+                    } else if new_status != Some(NodeStatus::Updating) {
                         // Update status based on current node status
                         item.status = match node_item.status {
                             ServiceStatus::Running => {
@@ -1210,7 +1212,7 @@ impl NodeItem<'_> {
                             .add_modifier(Modifier::BOLD),
                     )
                     .throbber_set(throbber_widgets_tui::VERTICAL_BLOCK)
-                    .use_type(throbber_widgets_tui::WhichUse::Full);
+                    .use_type(throbber_widgets_tui::WhichUse::Spin);
             }
             _ => {}
         };
