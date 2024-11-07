@@ -17,6 +17,8 @@
       "<Ctrl-b>": {"StatusActions":"TriggerRewardsAddress"},
       "<Ctrl-B>": {"StatusActions":"TriggerRewardsAddress"},
       "<Ctrl-Shift-b>": {"StatusActions":"TriggerRewardsAddress"},
+      "<l>": {"StatusActions":"TriggerNodeLogs"},
+      "<L>": {"StatusActions":"TriggerNodeLogs"},
 
       "up" : {"StatusActions":"PreviousTableItem"},
       "down": {"StatusActions":"NextTableItem"},
