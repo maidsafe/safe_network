@@ -43,7 +43,7 @@ impl<'a> AuditorService<'a> {
 }
 
 #[async_trait]
-impl<'a> ServiceStateActions for AuditorService<'a> {
+impl ServiceStateActions for AuditorService<'_> {
     fn bin_path(&self) -> PathBuf {
         self.service_data.auditor_path.clone()
     }

@@ -307,7 +307,7 @@ pub struct PrettyPrintRecordKey<'a> {
     key: Cow<'a, RecordKey>,
 }
 
-impl<'a> Serialize for PrettyPrintRecordKey<'a> {
+impl Serialize for PrettyPrintRecordKey<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -344,7 +344,7 @@ impl<'a> From<&'a RecordKey> for PrettyPrintRecordKey<'a> {
     }
 }
 
-impl<'a> PrettyPrintRecordKey<'a> {
+impl PrettyPrintRecordKey<'_> {
     /// Creates a owned version that can be then used to pass as error values.
     /// Do not call this if you just want to print/log `PrettyPrintRecordKey`
     pub fn into_owned(self) -> PrettyPrintRecordKey<'static> {
@@ -369,7 +369,7 @@ impl<'a> PrettyPrintRecordKey<'a> {
     }
 }
 
-impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
+impl std::fmt::Display for PrettyPrintRecordKey<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let record_key_bytes = match &self.key {
             Cow::Borrowed(borrowed_key) => borrowed_key.as_ref(),
@@ -388,7 +388,7 @@ impl<'a> std::fmt::Display for PrettyPrintRecordKey<'a> {
     }
 }
 
-impl<'a> std::fmt::Debug for PrettyPrintRecordKey<'a> {
+impl std::fmt::Debug for PrettyPrintRecordKey<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // same as display
         write!(f, "{self}")

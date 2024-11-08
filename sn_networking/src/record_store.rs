@@ -449,7 +449,7 @@ impl NodeRecordStore {
         match cipher.decrypt(&nonce, record.value.as_ref()) {
             Ok(value) => {
                 record.value = value;
-                return Some(Cow::Owned(record));
+                Some(Cow::Owned(record))
             }
             Err(error) => {
                 error!("Error while decrypting record. key: {key:?}: {error:?}");

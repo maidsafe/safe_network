@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 /// Based on https://users.rust-lang.org/t/the-best-ring-buffer-library/58489/7
-
+///
 /// A circular buffer implemented with a VecDeque.
 #[derive(Debug)]
 pub(crate) struct CircularVec<T> {
