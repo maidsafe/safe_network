@@ -170,7 +170,10 @@ impl JsClient {
 
 mod archive {
     use super::*;
-    use crate::client::{address::str_to_addr, archive::Archive};
+    use crate::client::{
+        address::str_to_addr,
+        archive::{Archive, Metadata},
+    };
     use std::path::PathBuf;
     use wasm_bindgen::JsError;
 
