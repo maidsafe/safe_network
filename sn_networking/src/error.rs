@@ -30,11 +30,10 @@ pub(super) type Result<T, E = NetworkError> = std::result::Result<T, E>;
 #[derive(Error, Clone)]
 pub enum GetRecordError {
     #[error("Get Record completed with non enough copies")]
-    NotEnoughCopiesInRange {
+    NotEnoughCopies {
         record: Record,
         expected: usize,
         got: usize,
-        range: u32,
     },
     #[error("Network query timed out")]
     QueryTimeout,
@@ -57,18 +56,16 @@ pub enum GetRecordError {
 impl Debug for GetRecordError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NotEnoughCopiesInRange {
+            Self::NotEnoughCopies {
                 record,
                 expected,
                 got,
-                range,
             } => {
                 let pretty_key = PrettyPrintRecordKey::from(&record.key);
-                f.debug_struct("NotEnoughCopiesInRange")
+                f.debug_struct("NotEnoughCopies")
                     .field("record_key", &pretty_key)
                     .field("expected", &expected)
                     .field("got", &got)
-                    .field("range", &range)
                     .finish()
             }
             Self::QueryTimeout => write!(f, "QueryTimeout"),
@@ -127,6 +124,9 @@ pub enum NetworkError {
     #[error("The RecordKind obtained from the Record did not match with the expected kind: {0}")]
     RecordKindMismatch(RecordKind),
 
+    #[error("Record header is incorrect")]
+    InCorrectRecordHeader,
+
     // ---------- Transfer Errors
     #[error("Failed to get spend: {0}")]
     FailedToGetSpend(String),
@@ -140,7 +140,7 @@ pub enum NetworkError {
     // ---------- Spend Errors
     #[error("Spend not found: {0:?}")]
     NoSpendFoundInsideRecord(SpendAddress),
-    #[error("Double SpendAttempt was detected. The signed spends are: {0:?}")]
+    #[error("Double spend(s) attempt was detected. The signed spends are: {0:?}")]
     DoubleSpendAttempt(Vec<SignedSpend>),
 
     // ---------- Store Error

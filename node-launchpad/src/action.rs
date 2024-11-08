@@ -48,6 +48,7 @@ pub enum StatusActions {
     StartNodesCompleted,
     StopNodesCompleted,
     ResetNodesCompleted { trigger_start_node: bool },
+    UpdateNodesCompleted,
     SuccessfullyDetectedNatStatus,
     ErrorWhileRunningNatDetection,
     ErrorLoadingNodeRegistry { raw_error: String },
@@ -55,10 +56,12 @@ pub enum StatusActions {
     ErrorScalingUpNodes { raw_error: String },
     ErrorStoppingNodes { raw_error: String },
     ErrorResettingNodes { raw_error: String },
+    ErrorUpdatingNodes { raw_error: String },
     NodesStatsObtained(NodeStats),
 
     TriggerManageNodes,
     TriggerRewardsAddress,
+    TriggerNodeLogs,
 
     PreviousTableItem,
     NextTableItem,
@@ -67,11 +70,13 @@ pub enum StatusActions {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
 pub enum OptionsActions {
     ResetNodes,
+    UpdateNodes,
 
     TriggerChangeDrive,
     TriggerChangeConnectionMode,
     TriggerChangePortRange,
     TriggerRewardsAddress,
+    TriggerUpdateNodes,
     TriggerResetNodes,
     TriggerAccessLogs,
     UpdateConnectionMode(ConnectionMode),

@@ -17,6 +17,8 @@
       "<Ctrl-b>": {"StatusActions":"TriggerRewardsAddress"},
       "<Ctrl-B>": {"StatusActions":"TriggerRewardsAddress"},
       "<Ctrl-Shift-b>": {"StatusActions":"TriggerRewardsAddress"},
+      "<l>": {"StatusActions":"TriggerNodeLogs"},
+      "<L>": {"StatusActions":"TriggerNodeLogs"},
 
       "up" : {"StatusActions":"PreviousTableItem"},
       "down": {"StatusActions":"NextTableItem"},
@@ -54,6 +56,8 @@
       "<Ctrl-l>": {"OptionsActions":"TriggerAccessLogs"},
       "<Ctrl-L>": {"OptionsActions":"TriggerAccessLogs"},
       "<Ctrl-Shift-l>": {"OptionsActions":"TriggerAccessLogs"},
+      "<Ctrl-u>": {"OptionsActions":"TriggerUpdateNodes"},
+      "<Ctrl-U>": {"OptionsActions":"TriggerUpdateNodes"},
       "<Ctrl-r>": {"OptionsActions":"TriggerResetNodes"},
       "<Ctrl-R>": {"OptionsActions":"TriggerResetNodes"},
       "<Ctrl-Shift-r>": {"OptionsActions":"TriggerResetNodes"},

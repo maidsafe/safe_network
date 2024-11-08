@@ -1,6 +1,6 @@
-use std::path::PathBuf;
+use std::{cmp::max, path::PathBuf};
 
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::Result;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Style, Stylize},
@@ -8,10 +8,9 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Row, Table},
     Frame,
 };
-use sn_releases::ReleaseType;
 use tokio::sync::mpsc::UnboundedSender;
 
-use super::{header::SelectedMenuItem, Component};
+use super::{header::SelectedMenuItem, utils::open_logs, Component};
 use crate::{
     action::{Action, OptionsActions},
     components::header::Header,
@@ -20,9 +19,7 @@ use crate::{
     style::{
         COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE,
     },
-    system,
 };
-use sn_node_manager::config::get_service_log_dir_path;
 
 #[derive(Clone)]
 pub struct Options {
@@ -74,7 +71,7 @@ impl Component for Options {
                     Constraint::Length(7),
                     Constraint::Length(3),
                     Constraint::Length(3),
-                    Constraint::Length(3),
+                    Constraint::Length(4),
                     Constraint::Length(3),
                 ]
                 .as_ref(),
@@ -271,35 +268,58 @@ impl Component for Options {
         .block(block3)
         .style(Style::default().fg(GHOST_WHITE));
 
-        // Reset All Nodes
+        // Update Nodes
         let reset_legend = " Begin Reset ";
         let reset_key = " [Ctrl+R] ";
+        let upgrade_legend = " Begin Upgrade ";
+        let upgrade_key = " [Ctrl+U] ";
         let block4 = Block::default()
-            .title(" Reset All Nodes ")
+            .title(" Update Nodes ")
             .title_style(Style::default().bold().fg(GHOST_WHITE))
             .style(Style::default().fg(GHOST_WHITE))
             .borders(Borders::ALL)
             .border_style(Style::default().fg(EUCALYPTUS));
         let reset_nodes = Table::new(
-            vec![Row::new(vec![
-                Cell::from(
-                    Line::from(vec![Span::styled(
-                        " Remove and Reset all Nodes on this device ",
-                        Style::default().fg(LIGHT_PERIWINKLE),
-                    )])
-                    .alignment(Alignment::Left),
-                ),
-                Cell::from(
-                    Line::from(vec![
-                        Span::styled(reset_legend, Style::default().fg(EUCALYPTUS)),
-                        Span::styled(reset_key, Style::default().fg(GHOST_WHITE)),
-                    ])
-                    .alignment(Alignment::Right),
-                ),
-            ])],
+            vec![
+                Row::new(vec![
+                    Cell::from(
+                        Line::from(vec![Span::styled(
+                            " Upgrade all Nodes ",
+                            Style::default().fg(LIGHT_PERIWINKLE),
+                        )])
+                        .alignment(Alignment::Left),
+                    ),
+                    Cell::from(
+                        Line::from(vec![
+                            Span::styled(upgrade_legend, Style::default().fg(EUCALYPTUS)),
+                            Span::styled(upgrade_key, Style::default().fg(GHOST_WHITE)),
+                        ])
+                        .alignment(Alignment::Right),
+                    ),
+                ]),
+                Row::new(vec![
+                    Cell::from(
+                        Line::from(vec![Span::styled(
+                            " Reset all Nodes on this device ",
+                            Style::default().fg(LIGHT_PERIWINKLE),
+                        )])
+                        .alignment(Alignment::Left),
+                    ),
+                    Cell::from(
+                        Line::from(vec![
+                            Span::styled(reset_legend, Style::default().fg(EUCALYPTUS)),
+                            Span::styled(reset_key, Style::default().fg(GHOST_WHITE)),
+                        ])
+                        .alignment(Alignment::Right),
+                    ),
+                ]),
+            ],
             &[
                 Constraint::Fill(1),
-                Constraint::Length((reset_legend.len() + reset_key.len()) as u16),
+                Constraint::Length(
+                    (max(reset_legend.len(), upgrade_legend.len())
+                        + max(reset_key.len(), upgrade_key.len())) as u16,
+                ),
             ],
         )
         .block(block4)
@@ -355,7 +375,8 @@ impl Component for Options {
                 | Scene::ChangeConnectionModePopUp
                 | Scene::ChangePortsPopUp { .. }
                 | Scene::OptionsRewardsAddressPopUp
-                | Scene::ResetNodesPopUp => {
+                | Scene::ResetNodesPopUp
+                | Scene::UpgradeNodesPopUp => {
                     self.active = true;
                     // make sure we're in navigation mode
                     return Ok(Some(Action::SwitchInputMode(InputMode::Navigation)));
@@ -392,15 +413,10 @@ impl Component for Options {
                     self.rewards_address = rewards_address;
                 }
                 OptionsActions::TriggerAccessLogs => {
-                    if let Err(e) = system::open_folder(
-                        get_service_log_dir_path(ReleaseType::NodeLaunchpad, None, None)?
-                            .to_str()
-                            .ok_or_else(|| {
-                                eyre!("We cannot get the log dir path for Node-Launchpad")
-                            })?,
-                    ) {
-                        error!("Failed to open folder: {}", e);
-                    }
+                    open_logs(None)?;
+                }
+                OptionsActions::TriggerUpdateNodes => {
+                    return Ok(Some(Action::SwitchScene(Scene::UpgradeNodesPopUp)));
                 }
                 OptionsActions::TriggerResetNodes => {
                     return Ok(Some(Action::SwitchScene(Scene::ResetNodesPopUp)))

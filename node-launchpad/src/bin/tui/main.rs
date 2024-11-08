@@ -22,7 +22,6 @@ use node_launchpad::{
 use sn_node_manager::config::is_running_as_root;
 use sn_peers_acquisition::PeersArgs;
 use std::{env, path::PathBuf};
-use tokio::task::LocalSet;
 
 #[derive(Parser, Debug)]
 #[command(disable_version_flag = true)]
@@ -68,7 +67,36 @@ pub struct Cli {
     version: bool,
 }
 
-async fn tokio_main() -> Result<()> {
+fn is_running_in_terminal() -> bool {
+    atty::is(atty::Stream::Stdout)
+}
+
+#[tokio::main(flavor = "multi_thread")]
+async fn main() -> Result<()> {
+    initialize_logging()?;
+    configure_winsw().await?;
+
+    if !is_running_in_terminal() {
+        info!("Running in non-terminal mode. Launching terminal.");
+        // If we weren't already running in a terminal, this process returns early, having spawned
+        // a new process that launches a terminal.
+        let terminal_type = terminal::detect_and_setup_terminal()?;
+        terminal::launch_terminal(&terminal_type)
+            .inspect_err(|err| error!("Error while launching terminal: {err:?}"))?;
+        return Ok(());
+    } else {
+        // Windows spawns the terminal directly, so the check for root has to happen here as well.
+        debug!("Running inside a terminal!");
+        #[cfg(target_os = "windows")]
+        if !is_running_as_root() {
+            {
+                // TODO: There is no terminal to show this error message when double clicking on the exe.
+                error!("Admin privileges required to run on Windows. Exiting.");
+                color_eyre::eyre::bail!("Admin privileges required to run on Windows. Exiting.");
+            }
+        }
+    }
+
     initialize_panic_handler()?;
     let args = Cli::parse();
 
@@ -107,49 +135,4 @@ async fn tokio_main() -> Result<()> {
     app.run().await?;
 
     Ok(())
-}
-
-fn is_running_in_terminal() -> bool {
-    atty::is(atty::Stream::Stdout)
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    initialize_logging()?;
-    configure_winsw().await?;
-
-    if !is_running_in_terminal() {
-        info!("Running in non-terminal mode. Launching terminal.");
-        // If we weren't already running in a terminal, this process returns early, having spawned
-        // a new process that launches a terminal.
-        let terminal_type = terminal::detect_and_setup_terminal()?;
-        terminal::launch_terminal(&terminal_type)
-            .inspect_err(|err| error!("Error while launching terminal: {err:?}"))?;
-        return Ok(());
-    } else {
-        // Windows spawns the terminal directly, so the check for root has to happen here as well.
-        debug!("Running inside a terminal!");
-        #[cfg(target_os = "windows")]
-        if !is_running_as_root() {
-            {
-                // TODO: There is no terminal to show this error message when double clicking on the exe.
-                error!("Admin privileges required to run on Windows. Exiting.");
-                color_eyre::eyre::bail!("Admin privileges required to run on Windows. Exiting.");
-            }
-        }
-    }
-
-    // Construct a local task set that can run `!Send` futures.
-    let local = LocalSet::new();
-    local
-        .run_until(async {
-            if let Err(e) = tokio_main().await {
-                eprintln!("{} failed:", env!("CARGO_PKG_NAME"));
-
-                Err(e)
-            } else {
-                Ok(())
-            }
-        })
-        .await
 }
