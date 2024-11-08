@@ -387,6 +387,8 @@ mod vault {
     use crate::client::address::addr_to_str;
     use crate::client::archive_private::PrivateArchiveAccess;
     use crate::client::payment::Receipt;
+    use crate::client::vault::key::blst_to_blsttc;
+    use crate::client::vault::key::derive_secret_key_from_seed;
     use crate::client::vault::user_data::USER_DATA_VAULT_CONTENT_IDENTIFIER;
     use crate::client::vault::VaultContentType;
     use sn_protocol::storage::Scratchpad;
@@ -618,6 +620,13 @@ mod vault {
 
             Ok(js_scratchpad)
         }
+    }
+
+    #[wasm_bindgen(js_name = vaultKeyFromSignature)]
+    pub fn vault_key_from_signature(signature: Vec<u8>) -> Result<SecretKeyJs, JsError> {
+        let blst_key = derive_secret_key_from_seed(&signature)?;
+        let vault_sk = blst_to_blsttc(&blst_key)?;
+        Ok(SecretKeyJs(vault_sk))
     }
 }
 

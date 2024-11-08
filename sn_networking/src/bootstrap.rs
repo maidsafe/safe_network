@@ -107,6 +107,7 @@ impl ContinuousBootstrap {
 
     /// Returns `true` if we should carry out the Kademlia Bootstrap process immediately.
     /// Also optionally returns the new interval to re-bootstrap.
+    #[cfg_attr(target_arch = "wasm32", allow(clippy::unused_async))]
     pub(crate) async fn should_we_bootstrap(
         &self,
         peers_in_rt: u32,

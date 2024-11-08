@@ -1,6 +1,6 @@
 use std::{cmp::max, path::PathBuf};
 
-use color_eyre::eyre::{eyre, Ok, Result};
+use color_eyre::eyre::Result;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Style, Stylize},
@@ -8,10 +8,9 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Row, Table},
     Frame,
 };
-use sn_releases::ReleaseType;
 use tokio::sync::mpsc::UnboundedSender;
 
-use super::{header::SelectedMenuItem, Component};
+use super::{header::SelectedMenuItem, utils::open_logs, Component};
 use crate::{
     action::{Action, OptionsActions},
     components::header::Header,
@@ -20,9 +19,7 @@ use crate::{
     style::{
         COOL_GREY, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE,
     },
-    system,
 };
-use sn_node_manager::config::get_service_log_dir_path;
 
 #[derive(Clone)]
 pub struct Options {
@@ -416,15 +413,7 @@ impl Component for Options {
                     self.rewards_address = rewards_address;
                 }
                 OptionsActions::TriggerAccessLogs => {
-                    if let Err(e) = system::open_folder(
-                        get_service_log_dir_path(ReleaseType::NodeLaunchpad, None, None)?
-                            .to_str()
-                            .ok_or_else(|| {
-                                eyre!("We cannot get the log dir path for Node-Launchpad")
-                            })?,
-                    ) {
-                        error!("Failed to open folder: {}", e);
-                    }
+                    open_logs(None)?;
                 }
                 OptionsActions::TriggerUpdateNodes => {
                     return Ok(Some(Action::SwitchScene(Scene::UpgradeNodesPopUp)));

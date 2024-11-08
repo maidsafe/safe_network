@@ -91,7 +91,7 @@ impl NodeStats {
             .collect::<Vec<_>>();
         if !node_details.is_empty() {
             debug!("Fetching stats from {} nodes", node_details.len());
-            tokio::task::spawn_local(async move {
+            tokio::spawn(async move {
                 Self::fetch_all_node_stats_inner(node_details, action_sender).await;
             });
         } else {

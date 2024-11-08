@@ -39,6 +39,7 @@ libp2p = { version = "0.54.1", features = [
 ] }
 async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
+exponential-backoff = "2.0.0"
 futures = "~0.3.13"
 hex = "~0.4.3"
 hyper = { version = "0.14", features = [
@@ -71,7 +72,6 @@ tokio = { version = "1.32.0", features = [
 ] }
 tracing = { version = "~0.1.26" }
 xor_name = "5.0.0"
-backoff = { version = "0.4.0", features = ["tokio"] }
 aes-gcm-siv = "0.11.1"
 hkdf = "0.12"
 sha2 = "0.10"

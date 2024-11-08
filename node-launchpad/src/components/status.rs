@@ -14,10 +14,11 @@ use super::{
 };
 use crate::action::OptionsActions;
 use crate::components::popup::port_range::PORT_ALLOCATION;
+use crate::components::utils::open_logs;
 use crate::config::get_launchpad_nodes_data_dir_path;
 use crate::connection_mode::ConnectionMode;
 use crate::error::ErrorPopup;
-use crate::node_mgmt::{upgrade_nodes, MaintainNodesArgs, UpgradeNodesArgs};
+use crate::node_mgmt::{MaintainNodesArgs, NodeManagement, NodeManagementTask, UpgradeNodesArgs};
 use crate::node_mgmt::{PORT_MAX, PORT_MIN};
 use crate::style::{COOL_GREY, INDIGO};
 use crate::tui::Event;
@@ -47,12 +48,10 @@ use std::{
     vec,
 };
 use strum::Display;
+use throbber_widgets_tui::{self, Throbber, ThrobberState};
 use tokio::sync::mpsc::UnboundedSender;
 
-use super::super::node_mgmt::{maintain_n_running_nodes, reset_nodes, stop_nodes};
-
-use throbber_widgets_tui::{self, Throbber, ThrobberState};
-
+pub const FIXED_INTERVAL: u64 = 60_000;
 pub const NODE_STAT_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 /// If nat detection fails for more than 3 times, we don't want to waste time running during every node start.
 const MAX_ERRORS_WHILE_RUNNING_NAT_DETECTION: usize = 3;
@@ -62,7 +61,7 @@ const NODE_WIDTH: usize = 10;
 const VERSION_WIDTH: usize = 7;
 const ATTOS_WIDTH: usize = 5;
 const MEMORY_WIDTH: usize = 7;
-const MBPS_WIDTH: usize = 15;
+const MB_WIDTH: usize = 15;
 const RECORDS_WIDTH: usize = 4;
 const PEERS_WIDTH: usize = 5;
 const CONNS_WIDTH: usize = 5;
@@ -84,6 +83,8 @@ pub struct Status<'a> {
     // Nodes
     node_services: Vec<NodeServiceData>,
     items: Option<StatefulTable<NodeItem<'a>>>,
+    // Node Management
+    node_management: NodeManagement,
     // Amount of nodes
     nodes_to_start: usize,
     // Rewards address
@@ -137,6 +138,7 @@ impl Status<'_> {
             node_stats: NodeStats::default(),
             node_stats_last_update: Instant::now(),
             node_services: Default::default(),
+            node_management: NodeManagement::new()?,
             items: None,
             nodes_to_start: config.allocated_disk_space,
             lock_registry: None,
@@ -180,7 +182,9 @@ impl Status<'_> {
                 {
                     if let Some(status) = new_status {
                         item.status = status;
-                    } else {
+                    } else if item.status == NodeStatus::Updating {
+                        item.spinner_state.calc_next();
+                    } else if new_status != Some(NodeStatus::Updating) {
                         // Update status based on current node status
                         item.status = match node_item.status {
                             ServiceStatus::Running => {
@@ -216,8 +220,8 @@ impl Status<'_> {
                     {
                         item.attos = stats.rewards_wallet_balance;
                         item.memory = stats.memory_usage_mb;
-                        item.mbps = format!(
-                            "↓{:06.2} ↑{:06.2}",
+                        item.mb = format!(
+                            "↓{:06.02} ↑{:06.02}",
                             stats.bandwidth_inbound as f64 / (1024_f64 * 1024_f64),
                             stats.bandwidth_outbound as f64 / (1024_f64 * 1024_f64)
                         );
@@ -231,7 +235,7 @@ impl Status<'_> {
                         version: node_item.version.to_string(),
                         attos: 0,
                         memory: 0,
-                        mbps: "-".to_string(),
+                        mb: "-".to_string(),
                         records: 0,
                         peers: 0,
                         connections: 0,
@@ -265,7 +269,7 @@ impl Status<'_> {
                         version: node_item.version.to_string(),
                         attos: 0,
                         memory: 0,
-                        mbps: "-".to_string(),
+                        mb: "-".to_string(),
                         records: 0,
                         peers: 0,
                         connections: 0,
@@ -416,7 +420,11 @@ impl Component for Status<'_> {
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
                     info!("Resetting safenode services because the Rewards Address was reset.");
                     let action_sender = self.get_actions_sender()?;
-                    reset_nodes(action_sender, false);
+                    self.node_management
+                        .send_task(NodeManagementTask::ResetNodes {
+                            start_nodes_after_reset: false,
+                            action_sender,
+                        })?;
                 }
             }
             Action::StoreStorageDrive(ref drive_mountpoint, ref _drive_name) => {
@@ -424,7 +432,11 @@ impl Component for Status<'_> {
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 info!("Resetting safenode services because the Storage Drive was changed.");
                 let action_sender = self.get_actions_sender()?;
-                reset_nodes(action_sender, false);
+                self.node_management
+                    .send_task(NodeManagementTask::ResetNodes {
+                        start_nodes_after_reset: false,
+                        action_sender,
+                    })?;
                 self.data_dir_path =
                     get_launchpad_nodes_data_dir_path(&drive_mountpoint.to_path_buf(), false)?;
             }
@@ -434,7 +446,11 @@ impl Component for Status<'_> {
                 self.connection_mode = connection_mode;
                 info!("Resetting safenode services because the Connection Mode range was changed.");
                 let action_sender = self.get_actions_sender()?;
-                reset_nodes(action_sender, false);
+                self.node_management
+                    .send_task(NodeManagementTask::ResetNodes {
+                        start_nodes_after_reset: false,
+                        action_sender,
+                    })?;
             }
             Action::StorePortRange(port_from, port_range) => {
                 debug!("Setting lock_registry to ResettingNodes");
@@ -443,7 +459,11 @@ impl Component for Status<'_> {
                 self.port_to = Some(port_range);
                 info!("Resetting safenode services because the Port Range was changed.");
                 let action_sender = self.get_actions_sender()?;
-                reset_nodes(action_sender, false);
+                self.node_management
+                    .send_task(NodeManagementTask::ResetNodes {
+                        start_nodes_after_reset: false,
+                        action_sender,
+                    })?;
             }
             Action::StatusActions(status_action) => match status_action {
                 StatusActions::NodesStatsObtained(stats) => {
@@ -549,10 +569,14 @@ impl Component for Status<'_> {
                     return Ok(Some(Action::SwitchScene(Scene::ManageNodesPopUp)));
                 }
                 StatusActions::PreviousTableItem => {
-                    // self.select_previous_table_item();
+                    if let Some(items) = &mut self.items {
+                        items.previous();
+                    }
                 }
                 StatusActions::NextTableItem => {
-                    // self.select_next_table_item();
+                    if let Some(items) = &mut self.items {
+                        items.next();
+                    }
                 }
                 StatusActions::StartNodes => {
                     debug!("Got action to start nodes");
@@ -604,7 +628,10 @@ impl Component for Status<'_> {
 
                     debug!("Calling maintain_n_running_nodes");
 
-                    maintain_n_running_nodes(maintain_nodes_args);
+                    self.node_management
+                        .send_task(NodeManagementTask::MaintainNodes {
+                            args: maintain_nodes_args,
+                        })?;
                 }
                 StatusActions::StopNodes => {
                     debug!("Got action to stop nodes");
@@ -622,13 +649,26 @@ impl Component for Status<'_> {
                     let action_sender = self.get_actions_sender()?;
                     info!("Stopping node service: {running_nodes:?}");
 
-                    stop_nodes(running_nodes, action_sender);
+                    self.node_management
+                        .send_task(NodeManagementTask::StopNodes {
+                            services: running_nodes,
+                            action_sender,
+                        })?;
                 }
                 StatusActions::TriggerRewardsAddress => {
                     if self.rewards_address.is_empty() {
                         return Ok(Some(Action::SwitchScene(Scene::StatusRewardsAddressPopUp)));
                     } else {
                         return Ok(None);
+                    }
+                }
+                StatusActions::TriggerNodeLogs => {
+                    if let Some(node) = self.items.as_ref().and_then(|items| items.selected_item())
+                    {
+                        debug!("Got action to open node logs {:?}", node.name);
+                        open_logs(Some(node.name.clone()))?;
+                    } else {
+                        debug!("Got action to open node logs but no node was selected.");
                     }
                 }
             },
@@ -657,14 +697,17 @@ impl Component for Status<'_> {
                     do_not_start: true,
                     custom_bin_path: None,
                     force: false,
-                    fixed_interval: Some(300_000), // 5 mins in millis
+                    fixed_interval: Some(FIXED_INTERVAL),
                     peer_ids,
                     provided_env_variables: None,
                     service_names,
                     url: None,
                     version: None,
                 };
-                upgrade_nodes(upgrade_nodes_args);
+                self.node_management
+                    .send_task(NodeManagementTask::UpgradeNodes {
+                        args: upgrade_nodes_args,
+                    })?;
             }
             Action::OptionsActions(OptionsActions::ResetNodes) => {
                 debug!("Got action to reset nodes");
@@ -680,7 +723,11 @@ impl Component for Status<'_> {
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 let action_sender = self.get_actions_sender()?;
                 info!("Got action to reset nodes");
-                reset_nodes(action_sender, false);
+                self.node_management
+                    .send_task(NodeManagementTask::ResetNodes {
+                        start_nodes_after_reset: false,
+                        action_sender,
+                    })?;
             }
             _ => {}
         }
@@ -883,7 +930,7 @@ impl Component for Status<'_> {
                     Constraint::Min(VERSION_WIDTH as u16),
                     Constraint::Min(ATTOS_WIDTH as u16),
                     Constraint::Min(MEMORY_WIDTH as u16),
-                    Constraint::Min(MBPS_WIDTH as u16),
+                    Constraint::Min(MB_WIDTH as u16),
                     Constraint::Min(RECORDS_WIDTH as u16),
                     Constraint::Min(PEERS_WIDTH as u16),
                     Constraint::Min(CONNS_WIDTH as u16),
@@ -898,8 +945,7 @@ impl Component for Status<'_> {
                     Cell::new("Attos").fg(COOL_GREY),
                     Cell::new("Memory").fg(COOL_GREY),
                     Cell::new(
-                        format!("{}{}", " ".repeat(MBPS_WIDTH - "Mbps".len()), "Mbps")
-                            .fg(COOL_GREY),
+                        format!("{}{}", " ".repeat(MB_WIDTH - "Mb".len()), "Mb").fg(COOL_GREY),
                     ),
                     Cell::new("Recs").fg(COOL_GREY),
                     Cell::new("Peers").fg(COOL_GREY),
@@ -909,15 +955,13 @@ impl Component for Status<'_> {
                 ])
                 .style(Style::default().add_modifier(Modifier::BOLD));
 
-                let items: Vec<Row> = self
-                    .items
-                    .as_mut()
-                    .unwrap()
-                    .items
-                    .iter_mut()
-                    .enumerate()
-                    .map(|(i, node_item)| node_item.render_as_row(i, layout[2], f))
-                    .collect();
+                let mut items: Vec<Row> = Vec::new();
+                if let Some(ref mut items_table) = self.items {
+                    for (i, node_item) in items_table.items.iter_mut().enumerate() {
+                        let is_selected = items_table.state.selected() == Some(i);
+                        items.push(node_item.render_as_row(i, layout[2], f, is_selected));
+                    }
+                }
 
                 // Table items
                 let table = Table::new(items, node_widths)
@@ -1080,6 +1124,7 @@ impl<T> StatefulTable<T> {
             None => self.last_selected.unwrap_or(0),
         };
         self.state.select(Some(i));
+        self.last_selected = Some(i);
     }
 
     fn previous(&mut self) {
@@ -1094,6 +1139,13 @@ impl<T> StatefulTable<T> {
             None => self.last_selected.unwrap_or(0),
         };
         self.state.select(Some(i));
+        self.last_selected = Some(i);
+    }
+
+    fn selected_item(&self) -> Option<&T> {
+        self.state
+            .selected()
+            .and_then(|index| self.items.get(index))
     }
 }
 
@@ -1127,7 +1179,7 @@ pub struct NodeItem<'a> {
     version: String,
     attos: usize,
     memory: usize,
-    mbps: String,
+    mb: String,
     records: usize,
     peers: usize,
     connections: usize,
@@ -1137,8 +1189,18 @@ pub struct NodeItem<'a> {
 }
 
 impl NodeItem<'_> {
-    fn render_as_row(&mut self, index: usize, area: Rect, f: &mut Frame<'_>) -> Row {
-        let mut row_style = Style::default().fg(GHOST_WHITE);
+    fn render_as_row(
+        &mut self,
+        index: usize,
+        area: Rect,
+        f: &mut Frame<'_>,
+        is_selected: bool,
+    ) -> Row {
+        let mut row_style = if is_selected {
+            Style::default().fg(GHOST_WHITE).bg(INDIGO)
+        } else {
+            Style::default().fg(GHOST_WHITE)
+        };
         let mut spinner_state = self.spinner_state.clone();
         match self.status {
             NodeStatus::Running => {
@@ -1148,7 +1210,11 @@ impl NodeItem<'_> {
                     .throbber_style(Style::default().fg(EUCALYPTUS).add_modifier(Modifier::BOLD))
                     .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
                     .use_type(throbber_widgets_tui::WhichUse::Spin);
-                row_style = Style::default().fg(EUCALYPTUS);
+                row_style = if is_selected {
+                    Style::default().fg(EUCALYPTUS).bg(INDIGO)
+                } else {
+                    Style::default().fg(EUCALYPTUS)
+                };
             }
             NodeStatus::Starting => {
                 self.spinner = self
@@ -1180,7 +1246,7 @@ impl NodeItem<'_> {
                             .add_modifier(Modifier::BOLD),
                     )
                     .throbber_set(throbber_widgets_tui::VERTICAL_BLOCK)
-                    .use_type(throbber_widgets_tui::WhichUse::Full);
+                    .use_type(throbber_widgets_tui::WhichUse::Spin);
             }
             _ => {}
         };
@@ -1200,8 +1266,8 @@ impl NodeItem<'_> {
             ),
             format!(
                 "{}{}",
-                " ".repeat(MBPS_WIDTH.saturating_sub(self.mbps.to_string().len())),
-                self.mbps.to_string()
+                " ".repeat(MB_WIDTH.saturating_sub(self.mb.to_string().len())),
+                self.mb.to_string()
             ),
             format!(
                 "{}{}",
