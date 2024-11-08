@@ -265,6 +265,7 @@ mod archive {
 
 mod archive_private {
     use super::*;
+    use crate::client::archive::Metadata;
     use crate::client::archive_private::{PrivateArchive, PrivateArchiveAccess};
     use crate::client::data_private::PrivateDataAccess;
     use crate::client::payment::Receipt;
