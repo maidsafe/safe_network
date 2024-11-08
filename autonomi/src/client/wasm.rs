@@ -182,6 +182,14 @@ mod archive {
     pub struct JsArchive(Archive);
 
     /// Create new metadata with the current time as uploaded, created and modified.
+    ///
+    /// # Example
+    ///
+    /// ```js
+    /// const metadata = createMetadata(BigInt(3));
+    /// const archive = new atnm.Archive();
+    /// archive.addFile("foo", addr, metadata);
+    /// ```
     #[wasm_bindgen(js_name = createMetadata)]
     pub fn create_metadata(size: u64) -> Result<JsValue, JsError> {
         let metadata = Metadata::new_with_size(size);
