@@ -56,3 +56,6 @@ pub use bytes::Bytes;
 pub use libp2p::Multiaddr;
 
 pub use client::Client;
+
+#[cfg(feature = "extension-module")]
+mod python;

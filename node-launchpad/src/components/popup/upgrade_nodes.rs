@@ -10,6 +10,7 @@ use super::super::utils::centered_rect_fixed;
 use super::super::Component;
 use crate::{
     action::{Action, OptionsActions},
+    components::status,
     mode::{InputMode, Scene},
     style::{clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VIVID_SKY_BLUE},
 };
@@ -18,19 +19,17 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, widgets::*};
 
 pub struct UpgradeNodesPopUp {
+    nodes_to_start: usize,
     /// Whether the component is active right now, capturing keystrokes + draw things.
     active: bool,
 }
 
 impl UpgradeNodesPopUp {
-    pub fn new() -> Self {
-        Self { active: false }
-    }
-}
-
-impl Default for UpgradeNodesPopUp {
-    fn default() -> Self {
-        Self::new()
+    pub fn new(nodes_to_start: usize) -> Self {
+        Self {
+            nodes_to_start,
+            active: false,
+        }
     }
 }
 
@@ -69,6 +68,10 @@ impl Component for UpgradeNodesPopUp {
                     None
                 }
             },
+            Action::StoreNodesToStart(ref nodes_to_start) => {
+                self.nodes_to_start = *nodes_to_start;
+                None
+            }
             _ => None,
         };
         Ok(send_back)
@@ -133,7 +136,15 @@ impl Component for UpgradeNodesPopUp {
                 "No data will be lost.",
                 Style::default().fg(LIGHT_PERIWINKLE),
             )),
-            Line::from(Span::styled("\n\n", Style::default())),
+            Line::from(Span::styled(
+                format!(
+                    "Upgrade time ~ {:.1?} mins ({:?} nodes * {:?} secs)",
+                    self.nodes_to_start * (status::FIXED_INTERVAL / 1_000) as usize / 60,
+                    self.nodes_to_start,
+                    status::FIXED_INTERVAL / 1_000,
+                ),
+                Style::default().fg(LIGHT_PERIWINKLE),
+            )),
             Line::from(Span::styled("\n\n", Style::default())),
             Line::from(vec![
                 Span::styled("You’ll need to ", Style::default().fg(LIGHT_PERIWINKLE)),

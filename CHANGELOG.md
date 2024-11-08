@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-11-07
+
+### Launchpad
+
+#### Added
+
+- You can select a node. Pressing L will show its logs.
+- The upgrade screen has an estimated time.
+
+#### Changed
+
+- Launchpad now uses multiple threads. This allows the UI to be functional while nodes are being
+  started, upgraded, and so on.
+- Mbps vs Mb units on status screen.
+
+#### Fixed
+
+- Spinners now move when updating.
+
 ## 2024-11-06
 
 ### Network
