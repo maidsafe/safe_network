@@ -126,7 +126,7 @@ impl Client {
         let verification = {
             let verification_cfg = GetRecordCfg {
                 get_quorum: Quorum::N(NonZero::new(2).expect("2 is non-zero")),
-                retry_strategy: Some(RetryStrategy::Quick),
+                retry_strategy: Some(RetryStrategy::Balanced),
                 target_record: None,
                 expected_holders: Default::default(),
                 is_register: false,
