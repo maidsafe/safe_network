@@ -76,8 +76,11 @@ mod tests {
     #[test]
     fn test_print_version_strings() -> Result<(), Box<dyn std::error::Error>> {
         // Test and print all version strings
-        println!("\nIDENTIFY_CLIENT_VERSION_STR: {}", *IDENTIFY_CLIENT_VERSION_STR);
-        println!("REQ_RESPONSE_VERSION_STR: {}", *REQ_RESPONSE_VERSION_STR); 
+        println!(
+            "\nIDENTIFY_CLIENT_VERSION_STR: {}",
+            *IDENTIFY_CLIENT_VERSION_STR
+        );
+        println!("REQ_RESPONSE_VERSION_STR: {}", *REQ_RESPONSE_VERSION_STR);
         println!("IDENTIFY_PROTOCOL_STR: {}", *IDENTIFY_PROTOCOL_STR);
 
         // Test truncated version string
