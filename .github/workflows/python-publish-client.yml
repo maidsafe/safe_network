@@ -3,7 +3,7 @@ name: Build and Publish Python Package
 on:
   push:
     tags:
-      - 'v*'
+      - '*'
 
 env:
   FOUNDATION_PK: b20c916c7a28707018292f06dfdb66ab88ebcbad9c78d18135e843a91b1d66b875b24d2c27d8d1ad4637c2d5811896fe
@@ -36,10 +36,10 @@ jobs:
           components: rustfmt
       - name: Create Python module structure
         run: |
-          mkdir -p sn_node/python/autonomi_node
-          cat > sn_node/python/autonomi_node/__init__.py << EOL
+          mkdir -p autonomi/python/autonomi_client
+          cat > autonomi/python/autonomi_client/__init__.py << EOL
           from ._autonomi import *
-          __version__ = "${{ github.ref_name }}"
+          __version__ = "0.2.33"
           EOL
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -47,12 +47,12 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist
           sccache: 'true'
-          working-directory: ./sn_node
+          working-directory: ./autonomi
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: sn_node/dist/*.whl
+          path: autonomi/dist/*.whl
           if-no-files-found: error
 
   windows:
@@ -77,20 +77,20 @@ jobs:
       - name: Create Python module structure
         shell: cmd
         run: |
-          mkdir sn_node\python\autonomi_client
-          echo from ._autonomi import * > autonomi\python\autonomi_node\__init__.py
-          echo __version__ = "0.2.33" >> autonomi\python\autonomi_node\__init__.py
+          mkdir autonomi\python\autonomi_client
+          echo from ._autonomi import * > autonomi\python\autonomi_client\__init__.py
+          echo __version__ = "0.2.33" >> autonomi\python\autonomi_client\__init__.py
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           args: --release --out dist
           sccache: 'true'
-          working-directory: ./sn_node
+          working-directory: ./autonomi
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: sn_node/dist/*.whl
+          path: autonomi/dist/*.whl
           if-no-files-found: error
 
   linux:
@@ -119,8 +119,8 @@ jobs:
           rustup component add rustfmt
       - name: Create Python module structure
         run: |
-          mkdir -p sn_node/python/autonomi_sn_node
-          cat > sn_node/python/autonomi_node/__init__.py << EOL
+          mkdir -p autonomi/python/autonomi_client
+          cat > autonomi/python/autonomi_client/__init__.py << EOL
           from ._autonomi import *
           __version__ = "0.2.33"
           EOL
@@ -131,7 +131,7 @@ jobs:
           manylinux: auto
           args: --release --out dist
           sccache: 'true'
-          working-directory: ./sn_node
+          working-directory: ./autonomi
           before-script-linux: |
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
             source $HOME/.cargo/env
@@ -140,7 +140,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: sn_node/dist/*.whl
+          path: autonomi/dist/*.whl
           if-no-files-found: error
 
   sdist:
@@ -156,8 +156,8 @@ jobs:
           components: rustfmt
       - name: Create Python module structure
         run: |
-          mkdir -p sn_node/python/autonomi_node
-          cat > sn_node/python/autonomi_node/__init__.py << EOL
+          mkdir -p autonomi/python/autonomi_client
+          cat > autonomi/python/autonomi_client/__init__.py << EOL
           from ._autonomi import *
           __version__ = "0.2.33"
           EOL
