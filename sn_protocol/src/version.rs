@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use lazy_static::lazy_static;
-use sn_transfers::{FOUNDATION_PK, GENESIS_PK, NETWORK_ROYALTIES_PK};
 
 lazy_static! {
     /// The node version used during Identify Behaviour.
@@ -55,15 +54,40 @@ fn get_truncate_version_str() -> String {
     }
 }
 
+/// FIXME: Remove this once BEFORE next breaking release and fix this whole file
 /// Get the PKs version string.
 /// If the public key mis-configed via env variable,
 /// it shall result in being rejected to join by the network
 pub fn get_key_version_str() -> String {
-    let mut f_k_str = FOUNDATION_PK.to_hex();
-    let _ = f_k_str.split_off(6);
-    let mut g_k_str = GENESIS_PK.to_hex();
-    let _ = g_k_str.split_off(6);
-    let mut n_k_str = NETWORK_ROYALTIES_PK.to_hex();
-    let _ = n_k_str.split_off(6);
-    format!("{f_k_str}_{g_k_str}_{n_k_str}")
+    // let mut f_k_str = FOUNDATION_PK.to_hex();
+    // let _ = f_k_str.split_off(6);
+    // let mut g_k_str = GENESIS_PK.to_hex();
+    // let _ = g_k_str.split_off(6);
+    // let mut n_k_str = NETWORK_ROYALTIES_PK.to_hex();
+    // let _ = n_k_str.split_off(6);
+    // let s = format!("{f_k_str}_{g_k_str}_{n_k_str}");
+    // dbg!(&s);
+    "b20c91_93f735_af451a".to_string()
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_print_version_strings() -> Result<(), Box<dyn std::error::Error>> {
+        // Test and print all version strings
+        println!("\nIDENTIFY_CLIENT_VERSION_STR: {}", *IDENTIFY_CLIENT_VERSION_STR);
+        println!("REQ_RESPONSE_VERSION_STR: {}", *REQ_RESPONSE_VERSION_STR); 
+        println!("IDENTIFY_PROTOCOL_STR: {}", *IDENTIFY_PROTOCOL_STR);
+
+        // Test truncated version string
+        let truncated = get_truncate_version_str();
+        println!("\nTruncated version: {truncated}");
+
+        // Test key version string
+        let key_version = get_key_version_str();
+        println!("\nKey version string: {key_version}");
+
+        Ok(())
+    }
 }
