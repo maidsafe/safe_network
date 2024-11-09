@@ -443,7 +443,10 @@ impl ExternalAddressManager {
         Self::print_swarm_state(swarm);
     }
 
-    /// Craft a proper address to avoid any ill formed addresses
+    /// Craft a proper address Ws or Quic address to avoid any ill formed addresses
+    /// Example:
+    /// /ip4/131.131.131.131/tcp/53620/ws/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5
+    /// /ip4/131.131.131.131/udp/53620/quic-v1/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5
     fn craft_external_address(&self, given_address: &Multiaddr) -> Option<Multiaddr> {
         let mut output_address = Multiaddr::empty();
 
@@ -451,11 +454,28 @@ impl ExternalAddressManager {
             .iter()
             .find(|protocol| matches!(protocol, Protocol::Ip4(_)))?;
         output_address.push(ip);
-        let port = given_address
+
+        if let Some(ws_protocol) = given_address
             .iter()
-            .find(|protocol| matches!(protocol, Protocol::Udp(_)))?;
-        output_address.push(port);
-        output_address.push(Protocol::QuicV1);
+            .find(|protocol| matches!(protocol, Protocol::Ws(_)))
+        {
+            let port = given_address
+                .iter()
+                .find(|protocol| matches!(protocol, Protocol::Tcp(_)))?;
+            output_address.push(port);
+            output_address.push(ws_protocol);
+        } else if given_address
+            .iter()
+            .any(|protocol| matches!(protocol, Protocol::QuicV1))
+        {
+            let port = given_address
+                .iter()
+                .find(|protocol| matches!(protocol, Protocol::Udp(_)))?;
+            output_address.push(port);
+            output_address.push(Protocol::QuicV1);
+        } else {
+            return None;
+        }
 
         output_address.push(Protocol::P2p(self.peer_id));
         Some(output_address)
