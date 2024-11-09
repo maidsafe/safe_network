@@ -7,10 +7,6 @@ name = "safenode"
 version = "0.112.3"
 description = "SAFE Network Node"
 requires-python = ">=3.8"
-dependencies = [
-    "maturin>=1.7.4",
-    "pip>=24.3.1",
-]
 
 [tool.maturin]
 features = ["extension-module"]
