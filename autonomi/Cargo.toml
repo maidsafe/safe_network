@@ -24,6 +24,7 @@ registers = ["data"]
 loud = []
 external-signer = ["sn_evm/external-signer", "data"]
 extension-module = ["pyo3/extension-module"]
+websockets = ["sn_networking/websockets"]
 
 [dependencies]
 bip39 = "2.0.0"
