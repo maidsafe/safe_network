@@ -50,24 +50,26 @@ pub struct Metadata {
     pub created: u64,
     /// Last file modification time taken from local file system. See [`std::fs::Metadata::modified`] for details per OS.
     pub modified: u64,
-    /// File size in bytes
-    pub size: u64,
 }
 
 impl Metadata {
-    /// Create a new metadata struct with the current time as uploaded, created and modified.
-    pub fn new_with_size(size: u64) -> Self {
+    /// Create a new metadata struct
+    pub fn new() -> Self {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or(Duration::from_secs(0))
             .as_secs();
-
         Self {
             uploaded: now,
             created: now,
             modified: now,
-            size,
         }
+    }
+}
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -100,6 +102,12 @@ impl Archive {
     /// Note that this does not upload the archive to the network
     pub fn add_file(&mut self, path: PathBuf, data_addr: DataAddr, meta: Metadata) {
         self.map.insert(path, (data_addr, meta));
+    }
+
+    /// Add a file to a local archive, with default metadata
+    /// Note that this does not upload the archive to the network
+    pub fn add_new_file(&mut self, path: PathBuf, data_addr: DataAddr) {
+        self.map.insert(path, (data_addr, Metadata::new()));
     }
 
     /// List all files in the archive

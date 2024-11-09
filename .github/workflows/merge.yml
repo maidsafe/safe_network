@@ -79,12 +79,9 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -Dwarnings
 
       - name: Check documentation
-        # Deny certain `rustdoc` lints that are unwanted with `RUSTDOCFLAGS`. See
-        # https://doc.rust-lang.org/rustdoc/lints.html for lints that are 'warning' by default.
-        # 
-        # We exclude autonomi-cli because it is not published and conflicts with the `autonomi` crate name,
-        # resulting in an error when building docs.
-        run: RUSTDOCFLAGS="--deny=warnings" cargo doc --no-deps --workspace --exclude=autonomi-cli
+        # Deny certain `rustdoc` lints that are unwanted.
+        # See https://doc.rust-lang.org/rustdoc/lints.html for lints that are 'warning' by default.
+        run: RUSTDOCFLAGS="--deny=warnings" cargo doc --no-deps
 
       - name: Check local is not a default feature
         shell: bash

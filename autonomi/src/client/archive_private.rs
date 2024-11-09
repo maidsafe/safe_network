@@ -65,6 +65,12 @@ impl PrivateArchive {
         self.map.insert(path, (data_map, meta));
     }
 
+    /// Add a file to a local archive, with default metadata
+    /// Note that this does not upload the archive to the network
+    pub fn add_new_file(&mut self, path: PathBuf, data_map: PrivateDataAccess) {
+        self.map.insert(path, (data_map, Metadata::new()));
+    }
+
     /// List all files in the archive
     pub fn files(&self) -> Vec<(PathBuf, Metadata)> {
         self.map

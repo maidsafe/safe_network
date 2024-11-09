@@ -116,11 +116,7 @@ async fn external_signer_put() -> eyre::Result<()> {
         .await?;
 
     let mut private_archive = PrivateArchive::new();
-    private_archive.add_file(
-        "test-file".into(),
-        private_data_access,
-        Metadata::new_with_size(data.len() as u64),
-    );
+    private_archive.add_file("test-file".into(), private_data_access, Metadata::default());
 
     let archive_serialized = private_archive.into_bytes()?;
 

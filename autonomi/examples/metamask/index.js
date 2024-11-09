@@ -40,7 +40,7 @@ export async function externalSignerPrivateDataPutToVault(peerAddr) {
         const privateArchive = new autonomi.PrivateArchive();
 
         // Add our data's data map chunk to the private archive
-        privateArchive.addFile("test", privateDataAccess, autonomi.createMetadata(data.length));
+        privateArchive.addNewFile("test", privateDataAccess);
 
         // Get the private archive's bytes
         const privateArchiveBytes = privateArchive.bytes();

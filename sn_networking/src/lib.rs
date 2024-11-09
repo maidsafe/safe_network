@@ -74,6 +74,7 @@ use tokio::sync::{
     oneshot,
 };
 use tokio::time::Duration;
+#[cfg(not(target_arch = "wasm32"))]
 use {
     sn_protocol::storage::{
         try_deserialize_record, try_serialize_record, RecordHeader, RecordKind,
