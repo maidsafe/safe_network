@@ -3,7 +3,7 @@ name: Build and Publish Python Node Package
 on:
   push:
     tags:
-      - 'v*'
+      - 'xxx*'
 
 permissions:
   id-token: write

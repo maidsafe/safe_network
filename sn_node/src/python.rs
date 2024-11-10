@@ -1,22 +1,24 @@
 use crate::{NodeBuilder, RunningNode};
-use pyo3::{prelude::*, exceptions::PyRuntimeError, exceptions::PyValueError, types::PyModule};
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use const_hex::FromHex;
 use libp2p::{
     identity::{Keypair, PeerId},
-    kad::{Record as KadRecord, Quorum, RecordKey},
+    kad::{Quorum, Record as KadRecord},
     Multiaddr,
 };
+use pyo3::{exceptions::PyRuntimeError, exceptions::PyValueError, prelude::*, types::PyModule};
 use sn_evm::{EvmNetwork, RewardsAddress};
-use std::{net::{IpAddr, SocketAddr}, path::PathBuf};
-use const_hex::FromHex;
+use sn_networking::PutRecordCfg;
 use sn_protocol::{
+    node::get_safenode_root_dir,
     storage::{ChunkAddress, RecordType},
     NetworkAddress,
-    node::get_safenode_root_dir,
 };
-use bytes::Bytes;
-use sn_networking::PutRecordCfg;
+use std::sync::Arc;
+use std::{
+    net::{IpAddr, SocketAddr},
+    path::PathBuf,
+};
+use tokio::sync::Mutex;
 use xor_name::XorName;
 
 /// Python wrapper for the Safe Network Node
@@ -47,6 +49,7 @@ impl SafeNode {
         root_dir = None,
         home_network = false,
     ))]
+    #[allow(clippy::too_many_arguments)]
     fn run(
         &self,
         rewards_address: String,
@@ -64,12 +67,17 @@ impl SafeNode {
         let evm_network = match evm_network.as_str() {
             "arbitrum_one" => EvmNetwork::ArbitrumOne,
             "arbitrum_sepolia" => EvmNetwork::ArbitrumSepolia,
-            _ => return Err(PyValueError::new_err("Invalid EVM network. Must be 'arbitrum_one' or 'arbitrum_sepolia'")),
+            _ => {
+                return Err(PyValueError::new_err(
+                    "Invalid EVM network. Must be 'arbitrum_one' or 'arbitrum_sepolia'",
+                ))
+            }
         };
 
-        let ip: IpAddr = ip.parse()
+        let ip: IpAddr = ip
+            .parse()
             .map_err(|e| PyValueError::new_err(format!("Invalid IP address: {e}")))?;
-        
+
         let node_socket_addr = SocketAddr::new(ip, port);
 
         let initial_peers: Vec<Multiaddr> = initial_peers
@@ -98,16 +106,21 @@ impl SafeNode {
                 false,
             );
             node_builder.is_behind_home_network = home_network;
-            
-            node_builder.build_and_run()
+
+            node_builder
+                .build_and_run()
                 .map_err(|e| PyRuntimeError::new_err(format!("Failed to start node: {e}")))
         })?;
 
-        let mut node_guard = self.node.try_lock()
+        let mut node_guard = self
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
         *node_guard = Some(node);
 
-        let mut rt_guard = self.runtime.try_lock()
+        let mut rt_guard = self
+            .runtime
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire runtime lock"))?;
         *rt_guard = Some(rt);
 
@@ -116,9 +129,11 @@ impl SafeNode {
 
     /// Get the node's PeerId as a string
     fn peer_id(self_: PyRef<Self>) -> PyResult<String> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        
+
         match &*node_guard {
             Some(node) => Ok(node.peer_id().to_string()),
             None => Err(PyRuntimeError::new_err("Node not started")),
@@ -127,17 +142,21 @@ impl SafeNode {
 
     /// Get all record addresses stored by the node
     fn get_all_record_addresses(self_: PyRef<Self>) -> PyResult<Vec<String>> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        let rt_guard = self_.runtime.try_lock()
+        let rt_guard = self_
+            .runtime
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire runtime lock"))?;
 
         match (&*node_guard, &*rt_guard) {
             (Some(node), Some(rt)) => {
                 let addresses = rt.block_on(async {
-                    node.get_all_record_addresses()
-                        .await
-                        .map_err(|e| PyRuntimeError::new_err(format!("Failed to get addresses: {e}")))
+                    node.get_all_record_addresses().await.map_err(|e| {
+                        PyRuntimeError::new_err(format!("Failed to get addresses: {e}"))
+                    })
                 })?;
 
                 Ok(addresses.into_iter().map(|addr| addr.to_string()).collect())
@@ -148,17 +167,21 @@ impl SafeNode {
 
     /// Get the node's kbuckets information
     fn get_kbuckets(self_: PyRef<Self>) -> PyResult<Vec<(u32, Vec<String>)>> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        let rt_guard = self_.runtime.try_lock()
+        let rt_guard = self_
+            .runtime
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire runtime lock"))?;
 
         match (&*node_guard, &*rt_guard) {
             (Some(node), Some(rt)) => {
                 let kbuckets = rt.block_on(async {
-                    node.get_kbuckets()
-                        .await
-                        .map_err(|e| PyRuntimeError::new_err(format!("Failed to get kbuckets: {e}")))
+                    node.get_kbuckets().await.map_err(|e| {
+                        PyRuntimeError::new_err(format!("Failed to get kbuckets: {e}"))
+                    })
                 })?;
 
                 Ok(kbuckets
@@ -174,9 +197,11 @@ impl SafeNode {
 
     /// Get the node's rewards/wallet address as a hex string
     fn get_rewards_address(self_: PyRef<Self>) -> PyResult<String> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        
+
         match &*node_guard {
             Some(node) => Ok(format!("0x{}", hex::encode(node.reward_address()))),
             None => Err(PyRuntimeError::new_err("Node not started")),
@@ -186,12 +211,14 @@ impl SafeNode {
     /// Set a new rewards/wallet address for the node
     /// The address should be a hex string starting with "0x"
     fn set_rewards_address(self_: PyRef<Self>, address: String) -> PyResult<()> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
 
         // Remove "0x" prefix if present
         let address = address.strip_prefix("0x").unwrap_or(&address);
-        
+
         // Validate the address format
         let _new_address = RewardsAddress::from_hex(address)
             .map_err(|e| PyValueError::new_err(format!("Invalid rewards address: {e}")))?;
@@ -205,10 +232,19 @@ impl SafeNode {
     }
 
     /// Store a record in the node's storage
-    fn store_record(self_: PyRef<Self>, key: String, value: Vec<u8>, record_type: String) -> PyResult<()> {
-        let node_guard = self_.node.try_lock()
+    fn store_record(
+        self_: PyRef<Self>,
+        key: String,
+        value: Vec<u8>,
+        record_type: String,
+    ) -> PyResult<()> {
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        let rt_guard = self_.runtime.try_lock()
+        let rt_guard = self_
+            .runtime
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire runtime lock"))?;
 
         let _record_type = match record_type.to_lowercase().as_str() {
@@ -221,16 +257,16 @@ impl SafeNode {
             (Some(node), Some(rt)) => {
                 let xorname = XorName::from_content(
                     &hex::decode(key)
-                        .map_err(|e| PyValueError::new_err(format!("Invalid key format: {e}")))?
+                        .map_err(|e| PyValueError::new_err(format!("Invalid key format: {e}")))?,
                 );
                 let chunk_address = ChunkAddress::new(xorname);
                 let network_address = NetworkAddress::from_chunk_address(chunk_address);
                 let record_key = network_address.to_record_key();
-                
+
                 rt.block_on(async {
                     let record = KadRecord {
                         key: record_key,
-                        value: value.into(),
+                        value,
                         publisher: None,
                         expires: None,
                     };
@@ -240,9 +276,9 @@ impl SafeNode {
                         use_put_record_to: None,
                         verification: None,
                     };
-                    node.network.put_record(record, &cfg)
-                        .await
-                        .map_err(|e| PyRuntimeError::new_err(format!("Failed to store record: {e}")))
+                    node.network.put_record(record, &cfg).await.map_err(|e| {
+                        PyRuntimeError::new_err(format!("Failed to store record: {e}"))
+                    })
                 })?;
 
                 Ok(())
@@ -253,23 +289,28 @@ impl SafeNode {
 
     /// Get a record from the node's storage
     fn get_record(self_: PyRef<Self>, key: String) -> PyResult<Option<Vec<u8>>> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        let rt_guard = self_.runtime.try_lock()
+        let rt_guard = self_
+            .runtime
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire runtime lock"))?;
 
         match (&*node_guard, &*rt_guard) {
             (Some(node), Some(rt)) => {
                 let xorname = XorName::from_content(
                     &hex::decode(key)
-                        .map_err(|e| PyValueError::new_err(format!("Invalid key format: {e}")))?
+                        .map_err(|e| PyValueError::new_err(format!("Invalid key format: {e}")))?,
                 );
                 let chunk_address = ChunkAddress::new(xorname);
                 let network_address = NetworkAddress::from_chunk_address(chunk_address);
                 let record_key = network_address.to_record_key();
 
                 let record = rt.block_on(async {
-                    node.network.get_local_record(&record_key)
+                    node.network
+                        .get_local_record(&record_key)
                         .await
                         .map_err(|e| PyRuntimeError::new_err(format!("Failed to get record: {e}")))
                 })?;
@@ -282,16 +323,20 @@ impl SafeNode {
 
     /// Delete a record from the node's storage
     fn delete_record(self_: PyRef<Self>, key: String) -> PyResult<bool> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        let rt_guard = self_.runtime.try_lock()
+        let rt_guard = self_
+            .runtime
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire runtime lock"))?;
 
         match (&*node_guard, &*rt_guard) {
             (Some(node), Some(rt)) => {
                 let xorname = XorName::from_content(
                     &hex::decode(key)
-                        .map_err(|e| PyValueError::new_err(format!("Invalid key format: {e}")))?
+                        .map_err(|e| PyValueError::new_err(format!("Invalid key format: {e}")))?,
                 );
                 let chunk_address = ChunkAddress::new(xorname);
                 let network_address = NetworkAddress::from_chunk_address(chunk_address);
@@ -314,38 +359,47 @@ impl SafeNode {
 
     /// Get the total size of stored records
     fn get_stored_records_size(self_: PyRef<Self>) -> PyResult<u64> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        let rt_guard = self_.runtime.try_lock()
+        let rt_guard = self_
+            .runtime
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire runtime lock"))?;
 
         match (&*node_guard, &*rt_guard) {
-            (Some(node), Some(rt)) => {
-                rt.block_on(async {
-                    let records = node.network.get_all_local_record_addresses()
-                        .await
-                        .map_err(|e| PyRuntimeError::new_err(format!("Failed to get records: {e}")))?;
-                    
-                    let mut total_size = 0u64;
-                    for (key, _) in records {
-                        if let Ok(Some(record)) = node.network.get_local_record(&key.to_record_key()).await {
-                            total_size += record.value.len() as u64;
-                        }
+            (Some(node), Some(rt)) => rt.block_on(async {
+                let records = node
+                    .network
+                    .get_all_local_record_addresses()
+                    .await
+                    .map_err(|e| PyRuntimeError::new_err(format!("Failed to get records: {e}")))?;
+
+                let mut total_size = 0u64;
+                for (key, _) in records {
+                    if let Ok(Some(record)) =
+                        node.network.get_local_record(&key.to_record_key()).await
+                    {
+                        total_size += record.value.len() as u64;
                     }
-                    Ok(total_size)
-                })
-            }
+                }
+                Ok(total_size)
+            }),
             _ => Err(PyRuntimeError::new_err("Node not started")),
         }
     }
 
     /// Get the current root directory path for node data
     fn get_root_dir(self_: PyRef<Self>) -> PyResult<String> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        
+
         match &*node_guard {
-            Some(node) => Ok(node.root_dir_path()
+            Some(node) => Ok(node
+                .root_dir_path()
                 .to_str()
                 .ok_or_else(|| PyValueError::new_err("Invalid path encoding"))?
                 .to_string()),
@@ -358,29 +412,34 @@ impl SafeNode {
     ///  - Linux: $HOME/.local/share/safe/node/<peer-id>
     ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>
     ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>
+    #[allow(clippy::redundant_closure)]
     #[staticmethod]
     fn get_default_root_dir(peer_id: Option<String>) -> PyResult<String> {
         let peer_id = if let Some(id_str) = peer_id {
-            let id = id_str.parse::<PeerId>()
+            let id = id_str
+                .parse::<PeerId>()
                 .map_err(|e| PyValueError::new_err(format!("Invalid peer ID: {e}")))?;
             Some(id)
         } else {
             None
         };
 
-        let path = get_safenode_root_dir(peer_id.unwrap_or_else(||PeerId::random()))
+        let path = get_safenode_root_dir(peer_id.unwrap_or_else(|| PeerId::random()))
             .map_err(|e| PyRuntimeError::new_err(format!("Failed to get default root dir: {e}")))?;
 
-        Ok(path.to_str()
+        Ok(path
+            .to_str()
             .ok_or_else(|| PyValueError::new_err("Invalid path encoding"))?
             .to_string())
     }
 
     /// Get the logs directory path
     fn get_logs_dir(self_: PyRef<Self>) -> PyResult<String> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        
+
         match &*node_guard {
             Some(node) => {
                 let logs_path = node.root_dir_path().join("logs");
@@ -395,9 +454,11 @@ impl SafeNode {
 
     /// Get the data directory path where records are stored
     fn get_data_dir(self_: PyRef<Self>) -> PyResult<String> {
-        let node_guard = self_.node.try_lock()
+        let node_guard = self_
+            .node
+            .try_lock()
             .map_err(|_| PyRuntimeError::new_err("Failed to acquire node lock"))?;
-        
+
         match &*node_guard {
             Some(node) => {
                 let data_path = node.root_dir_path().join("data");
@@ -417,4 +478,4 @@ impl SafeNode {
 fn init_module(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<SafeNode>()?;
     Ok(())
-} 
+}

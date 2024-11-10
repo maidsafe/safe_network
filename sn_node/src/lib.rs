@@ -16,13 +16,7 @@
     test(attr(deny(warnings)))
 )]
 // Turn on some additional warnings to encourage good style.
-#![warn(
-    missing_docs,
-    unreachable_pub,
-    unused_qualifications,
-    unused_results,
-    clippy::unwrap_used
-)]
+#![warn(missing_docs, unreachable_pub, unused_results, clippy::unwrap_used)]
 
 #[macro_use]
 extern crate tracing;
@@ -34,10 +28,10 @@ mod log_markers;
 mod metrics;
 mod node;
 mod put_validation;
-mod quote;
-mod replication;
 #[cfg(feature = "extension-module")]
 mod python;
+mod quote;
+mod replication;
 
 pub use self::{
     event::{NodeEvent, NodeEventsChannel, NodeEventsReceiver},
