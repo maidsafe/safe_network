@@ -207,23 +207,20 @@ jobs:
       - name: Create dist directory
         run: mkdir -p dist
 
-      - name: Download all wheels
-        uses: actions/download-artifact@v3
+      # Download all wheel artifacts
+      - uses: actions/download-artifact@v3
         with:
-          pattern: wheels-*
-          path: all-wheels
-          merge-multiple: true
+          name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
+          path: dist
 
-      - name: Download sdist
-        uses: actions/download-artifact@v3
+      # Download sdist artifact
+      - uses: actions/download-artifact@v3
         with:
           name: sdist
           path: dist
 
-      - name: Move wheels to dist
-        run: |
-          mv all-wheels/* dist/ || true
-          ls -la dist/
+      - name: Display structure of downloaded files
+        run: ls -R dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
