@@ -207,20 +207,19 @@ jobs:
       - name: Create dist directory
         run: mkdir -p dist
 
-      # Download all wheel artifacts
-      - uses: actions/download-artifact@v3
+      # Download all artifacts at once
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
         with:
-          name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
           path: dist
 
-      # Download sdist artifact
-      - uses: actions/download-artifact@v3
-        with:
-          name: sdist
-          path: dist
-
-      - name: Display structure of downloaded files
-        run: ls -R dist/
+      - name: Prepare dist directory
+        run: |
+          find dist -type f -name "*.whl" -exec mv {} dist/ \;
+          find dist -type f -name "*.tar.gz" -exec mv {} dist/ \;
+          rm -rf dist/*/
+          echo "Final dist directory contents:"
+          ls -la dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
