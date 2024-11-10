@@ -3,7 +3,7 @@ name: Build and Publish Python Client Package
 on:
   push:
     tags:
-      - '*'
+      - 'XXX*'
 
 permissions:
   id-token: write
