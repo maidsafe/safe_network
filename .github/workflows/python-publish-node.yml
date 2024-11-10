@@ -3,7 +3,7 @@ name: Build and Publish Python Node Package
 on:
   push:
     tags:
-      - 'xxx*'
+      - '*'
 
 permissions:
   id-token: write
@@ -45,7 +45,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
           path: sn_node/dist/*.whl
           if-no-files-found: error
           retention-days: 1
@@ -90,7 +90,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
           path: sn_node/dist/*.whl
           if-no-files-found: error
           retention-days: 1
@@ -147,7 +147,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
           path: sn_node/dist/*.whl
           if-no-files-found: error
           retention-days: 1
@@ -185,7 +185,7 @@ jobs:
       - name: Upload sdist
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: sdist
           path: sn_node/dist/*.tar.gz
           if-no-files-found: error
           retention-days: 1
@@ -204,12 +204,27 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/download-artifact@v3
+      - name: Create dist directory
+        run: mkdir -p dist
+
+      - name: Download all wheels
+        uses: actions/download-artifact@v3
         with:
-          name: wheels
+          pattern: wheels-*
+          path: all-wheels
+          merge-multiple: true
+
+      - name: Download sdist
+        uses: actions/download-artifact@v3
+        with:
+          name: sdist
           path: dist
-      - name: Display structure of downloaded files
-        run: ls -R dist
+
+      - name: Move wheels to dist
+        run: |
+          mv all-wheels/* dist/ || true
+          ls -la dist/
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
