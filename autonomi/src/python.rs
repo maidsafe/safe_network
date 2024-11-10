@@ -338,7 +338,8 @@ fn encrypt(data: Vec<u8>) -> PyResult<(Vec<u8>, Vec<Vec<u8>>)> {
 }
 
 #[pymodule]
-fn _autonomi(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+#[pyo3(name = "autonomi_client")]
+fn autonomi_client_module(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyClient>()?;
     m.add_class::<PyWallet>()?;
     m.add_class::<PyPaymentOption>()?;

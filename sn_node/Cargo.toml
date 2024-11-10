@@ -24,6 +24,7 @@ open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 encrypt-records = ["sn_networking/encrypt-records"]
 upnp = ["sn_networking/upnp"]
 loud = ["sn_networking/loud"] # loud mode: print important messages to console
+extension-module = ["pyo3/extension-module"]
 
 [dependencies]
 assert_fs = "1.0.0"
@@ -81,6 +82,7 @@ walkdir = "~2.5.0"
 xor_name = "5.0.0"
 strum = { version = "0.26.2", features = ["derive"] }
 color-eyre = "0.6.2"
+pyo3 = { version = "0.20", features = ["extension-module"], optional = true }
 
 [dev-dependencies]
 evmlib = { path = "../evmlib", version = "0.1.3" }

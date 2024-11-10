@@ -1,4 +1,4 @@
-name: Build and Publish Python Package
+name: Build and Publish Python Client Package
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
           mkdir -p autonomi/python/autonomi_client
           cat > autonomi/python/autonomi_client/__init__.py << EOL
           from ._autonomi import *
-          __version__ = "0.2.33"
+          __version__ = "${{ github.ref_name }}"
           EOL
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -45,9 +45,16 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
           path: autonomi/dist/*.whl
           if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ACTIONS_STEP_DEBUG: true
+          ACTIONS_RUNNER_DEBUG: true
 
   windows:
     runs-on: windows-latest
@@ -71,9 +78,9 @@ jobs:
       - name: Create Python module structure
         shell: cmd
         run: |
-          mkdir autonomi\python\autonomi_client
+          if not exist "autonomi\python\autonomi_client" mkdir autonomi\python\autonomi_client
           echo from ._autonomi import * > autonomi\python\autonomi_client\__init__.py
-          echo __version__ = "0.2.33" >> autonomi\python\autonomi_client\__init__.py
+          echo __version__ = "${{ github.ref_name }}" >> autonomi\python\autonomi_client\__init__.py
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -83,9 +90,16 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
           path: autonomi/dist/*.whl
           if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ACTIONS_STEP_DEBUG: true
+          ACTIONS_RUNNER_DEBUG: true
 
   linux:
     runs-on: ubuntu-latest
@@ -116,7 +130,7 @@ jobs:
           mkdir -p autonomi/python/autonomi_client
           cat > autonomi/python/autonomi_client/__init__.py << EOL
           from ._autonomi import *
-          __version__ = "0.2.33"
+          __version__ = "${{ github.ref_name }}"
           EOL
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -133,9 +147,16 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
           path: autonomi/dist/*.whl
           if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ACTIONS_STEP_DEBUG: true
+          ACTIONS_RUNNER_DEBUG: true
 
   sdist:
     runs-on: ubuntu-latest
@@ -153,7 +174,7 @@ jobs:
           mkdir -p autonomi/python/autonomi_client
           cat > autonomi/python/autonomi_client/__init__.py << EOL
           from ._autonomi import *
-          __version__ = "0.2.33"
+          __version__ = "${{ github.ref_name }}"
           EOL
       - name: Build sdist
         uses: PyO3/maturin-action@v1
@@ -164,9 +185,16 @@ jobs:
       - name: Upload sdist
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: sdist
           path: autonomi/dist/*.tar.gz
           if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ACTIONS_STEP_DEBUG: true
+          ACTIONS_RUNNER_DEBUG: true
 
   release:
     name: Release
@@ -176,12 +204,23 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/download-artifact@v3
+      - name: Create dist directory
+        run: mkdir -p dist
+
+      # Download all artifacts at once
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
         with:
-          name: wheels
           path: dist
-      - name: Display structure of downloaded files
-        run: ls -R dist
+
+      - name: Prepare dist directory
+        run: |
+          find dist -type f -name "*.whl" -exec mv {} dist/ \;
+          find dist -type f -name "*.tar.gz" -exec mv {} dist/ \;
+          rm -rf dist/*/
+          echo "Final dist directory contents:"
+          ls -la dist/
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
