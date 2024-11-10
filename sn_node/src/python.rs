@@ -413,7 +413,8 @@ impl SafeNode {
 
 /// Python module initialization
 #[pymodule]
-fn _safenode(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+#[pyo3(name = "_safenode")]
+fn init_module(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<SafeNode>()?;
     Ok(())
 } 

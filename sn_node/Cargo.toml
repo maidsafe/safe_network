@@ -82,7 +82,7 @@ walkdir = "~2.5.0"
 xor_name = "5.0.0"
 strum = { version = "0.26.2", features = ["derive"] }
 color-eyre = "0.6.2"
-pyo3 = { version = "0.20", optional = true, features = ["extension-module"] }
+pyo3 = { version = "0.20", features = ["extension-module"] }
 
 [dev-dependencies]
 evmlib = { path = "../evmlib", version = "0.1.3" }
