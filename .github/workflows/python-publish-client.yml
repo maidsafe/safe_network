@@ -1,4 +1,4 @@
-name: Build and Publish Python Package
+name: Build and Publish Python Client Package
 
 on:
   push:
@@ -48,6 +48,13 @@ jobs:
           name: wheels
           path: autonomi/dist/*.whl
           if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ACTIONS_STEP_DEBUG: true
+          ACTIONS_RUNNER_DEBUG: true
 
   windows:
     runs-on: windows-latest
@@ -71,7 +78,7 @@ jobs:
       - name: Create Python module structure
         shell: cmd
         run: |
-          mkdir autonomi\python\autonomi_client
+          if not exist "autonomi\python\autonomi_client" mkdir autonomi\python\autonomi_client
           echo from ._autonomi import * > autonomi\python\autonomi_client\__init__.py
           echo __version__ = "${{ github.ref_name }}" >> autonomi\python\autonomi_client\__init__.py
       - name: Build wheels
@@ -86,6 +93,13 @@ jobs:
           name: wheels
           path: autonomi/dist/*.whl
           if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ACTIONS_STEP_DEBUG: true
+          ACTIONS_RUNNER_DEBUG: true
 
   linux:
     runs-on: ubuntu-latest
@@ -136,6 +150,13 @@ jobs:
           name: wheels
           path: autonomi/dist/*.whl
           if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ACTIONS_STEP_DEBUG: true
+          ACTIONS_RUNNER_DEBUG: true
 
   sdist:
     runs-on: ubuntu-latest
@@ -167,6 +188,13 @@ jobs:
           name: wheels
           path: autonomi/dist/*.tar.gz
           if-no-files-found: error
+          retention-days: 1
+          compression-level: 9
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          ACTIONS_STEP_DEBUG: true
+          ACTIONS_RUNNER_DEBUG: true
 
   release:
     name: Release
