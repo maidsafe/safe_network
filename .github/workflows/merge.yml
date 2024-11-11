@@ -357,29 +357,40 @@ jobs:
           SN_LOG: "v"
         timeout-minutes: 2
 
+      - name: create local user file
+        run: echo random > random.txt
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: file upload
+        run: ./target/release/autonomi --log-output-dest=data-dir file upload random.txt
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
+      - name: create a local register
+        run: ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register 1234
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
       - name: Estimate cost to create a vault
-        if: matrix.os != 'windows-latest'
-        run: |
-          echo "test-file" > upload-test.txt
-          ./target/release/autonomi --log-output-dest=data-dir file upload ./upload-test.txt
-          ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register 1234
-          ./target/release/autonomi --log-output-dest=data-dir vault cost
-          ./target/release/autonomi --log-output-dest=data-dir file list 2>&1 | tee file_list.txt
-          ./target/release/autonomi --log-output-dest=data-dir register list 2>&1 | tee register_list.txt
+        run: ./target/release/autonomi --log-output-dest=data-dir vault cost
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: create a vault with existing user data as above
-        if: matrix.os != 'windows-latest'
         run: ./target/release/autonomi --log-output-dest=data-dir vault create
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
-      - name: add more files
+      - name: add more files - linux/macos
         if: matrix.os != 'windows-latest'
         run: |
+          set -e
           for i in {1..100}; do
             dd if=/dev/urandom of=random_file_$i.bin bs=1M count=1 status=none
             ./target/release/autonomi --log-output-dest=data-dir file upload random_file_$i.bin --public
@@ -390,8 +401,26 @@ jobs:
           SN_LOG: "v"
         timeout-minutes: 25
 
+      - name: add more files - windows
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          for ($i = 1; $i -le 100; $i++) {
+              $fileName = "random_file_$i.bin"
+              $byteArray = [byte[]]@(0xFF) * (1MB)  # Create a 1 MB array filled with 0xFF
+              [System.IO.File]::WriteAllBytes($fileName, $byteArray)
+
+              # Run autonomi commands
+              ./target/release/autonomi --log-output-dest=data-dir file upload "random_file_$i.bin" --public
+              ./target/release/autonomi --log-output-dest=data-dir file upload "random_file_$i.bin"
+              ./target/release/autonomi --log-output-dest=data-dir register create $i "random_file_$i.bin"
+          }
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 25
+
       - name: sync the vault
-        if: matrix.os != 'windows-latest'
         run: ./target/release/autonomi --log-output-dest=data-dir vault sync
         env:
           SN_LOG: "v"
@@ -399,7 +428,9 @@ jobs:
 
       - name: vault sync validation
         if: matrix.os != 'windows-latest'
+        shell: bash
         run: |
+          set -e
           NUM_OF_PUBLIC_FILES=""
           NUM_OF_PRIVATE_FILES=""
           NUM_OF_REGISTERS=""
@@ -409,34 +440,93 @@ jobs:
           
           ./target/release/autonomi --log-output-dest=data-dir file list 2>&1 > file_list.txt
           
-          # ./target/release/autonomi --log-output-dest=data-dir register list | grep archives > register_list.txt
+          ./target/release/autonomi register list | grep register > register_list.txt
           
           NUM_OF_PUBLIC_FILES=`cat file_list.txt | grep "public" | grep -o '[0-9]\+'`
           NUM_OF_PRIVATE_FILES=`cat file_list.txt | grep "private" | grep -o '[0-9]\+'`
           NUM_OF_REGISTERS=`cat register_list.txt | grep "register" | grep -o '[0-9]\+'`
-
+          # when obtaining registers we get random garbage, this is the only hack that works.
+          NUM_OF_REGISTERS_first=${NUM_OF_REGISTERS%%[ $'\n']*}
+          echo "NUM_OF_REGISTERS is $NUM_OF_REGISTERS_first"
           ./target/release/autonomi --log-output-dest=data-dir vault load 2>&1 > vault_data.txt
 
           NUM_OF_PUBLIC_FILES_IN_VAULT=`cat vault_data.txt  | grep "public" | grep -o '[0-9]\+'`
           NUM_OF_PRIVATE_FILES_IN_VAULT=`cat vault_data.txt| grep "private" | grep -o '[0-9]\+'`
-          # NUM_OF_REGISTERS_IN_VAULT=`cat vault_data.txt | grep "register" | grep -o '[0-9]\+'`
+          NUM_OF_REGISTERS_IN_VAULT=`cat vault_data.txt | grep "register" | grep -o '[0-9]\+'`
 
           echo "Total Num of local public files is $NUM_OF_PUBLIC_FILES and in vault is $NUM_OF_PUBLIC_FILES_IN_VAULT"
           echo "Total Num of local private files is $NUM_OF_PRIVATE_FILES and in vault is $NUM_OF_PRIVATE_FILES_IN_VAULT"
-          # echo "Total Num of local registers is $NUM_OF_REGISTERS and in vault is $NUM_OF_REGISTERS_IN_VAULT"
+          echo "Total Num of local registers is $NUM_OF_REGISTERS_first and in vault is $NUM_OF_REGISTERS_IN_VAULT"
           
           rm -rf file_list.txt register_list.txt vault_data.txt
 
           python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local public Files: {sys.argv[1]} and vault public files: {sys.argv[2]} are Not Equal"' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
           python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local private Files: {sys.argv[1]} and vault private files: {sys.argv[2]} are Not Equal"' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
-          # python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local registers: {sys.argv[1]} and vault registers: {sys.argv[2]} are Not Equal"' $NUM_OF_REGISTERS $NUM_OF_REGISTERS_IN_VAULT
+          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local registers: {sys.argv[1]} and vault registers: {sys.argv[2]} are Not Equal"' $NUM_OF_REGISTERS_first $NUM_OF_REGISTERS_IN_VAULT
           echo "vault synced successfully!"
         env:
           SN_LOG: "v"
         timeout-minutes: 15
 
+      - name: Set up variables - vault sync - windows
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          ./target/release/autonomi --log-output-dest=data-dir file list > file_list.txt 2>&1
+          ./target/release/autonomi register list > register_list.txt 2>&1
+          ./target/release/autonomi --log-output-dest=data-dir vault load > vault_data.txt 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 15
+
+      - name: Vault sync validation
+        if: matrix.os == 'windows-latest'
+        shell: python
+        run: |
+          import re
+          def find_number_before_word(file_name, search_word):
+              """
+              Reads a file and finds the number immediately preceding a specified word in a line.
+
+              :param file_name: Name of the file to read.
+              :param search_word: Word to search for in the file.
+              :return: The number before the word as an integer, or None if not found.
+              """
+              try:
+                  with open(file_name, 'r') as file:
+                      for line in file:
+                          if search_word in line:
+                              match = re.search(r'(\d+)\s+' + re.escape(search_word), line)
+                              if match:
+                                  return int(match.group(1))  # Convert to integer
+                  return None  # Return None if no match is found
+              except FileNotFoundError:
+                  print(f"Error: File '{file_name}' not found.")
+                  return None
+          NUM_OF_PUBLIC_FILES = find_number_before_word("file_list.txt", "public")
+          print("NUM_OF_PUBLIC_FILES:", NUM_OF_PUBLIC_FILES)
+          NUM_OF_PRIVATE_FILES = find_number_before_word("file_list.txt", "private")
+          print("NUM_OF_PRIVATE_FILES:", NUM_OF_PRIVATE_FILES)
+          NUM_OF_REGISTERS_FILES = find_number_before_word("register_list.txt", "register")
+          print("NUM_OF_REGISTERS_FILES:", NUM_OF_REGISTERS_FILES)
+          NUM_OF_PUBLIC_FILES_IN_VAULT = find_number_before_word("vault_data.txt", "public")
+          print("NUM_OF_PUBLIC_FILES_IN_VAULT:", NUM_OF_PUBLIC_FILES_IN_VAULT)
+          NUM_OF_PRIVATE_FILES_IN_VAULT = find_number_before_word("vault_data.txt", "private")
+          print("NUM_OF_PRIVATE_FILES_IN_VAULT:", NUM_OF_PRIVATE_FILES_IN_VAULT)
+          NUM_OF_REGISTERS_IN_VAULT = find_number_before_word("vault_data.txt", "register")
+          print("NUM_OF_PRIVATE_FILES_IN_VAULT:", NUM_OF_PRIVATE_FILES_IN_VAULT)
+
+          # Assertions
+          assert NUM_OF_PUBLIC_FILES == NUM_OF_PUBLIC_FILES_IN_VAULT, f"Error: Local public Files: {NUM_OF_PUBLIC_FILES} and vault public files: {NUM_OF_PUBLIC_FILES_IN_VAULT} are Not Equal"
+          assert NUM_OF_PRIVATE_FILES == NUM_OF_PRIVATE_FILES_IN_VAULT, f"Error: Local private Files: {NUM_OF_PRIVATE_FILES} and vault private files: {NUM_OF_PRIVATE_FILES_IN_VAULT} are Not Equal"
+          assert NUM_OF_REGISTERS_FILES == NUM_OF_REGISTERS_IN_VAULT, f"Error: Local registers: {NUM_OF_REGISTERS_FILES} and vault registers: {NUM_OF_REGISTERS_IN_VAULT} are Not Equal"
+          print("Vault synced successfully!")
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
       - name: load an existing vault from the network
-        if: matrix.os != 'windows-latest'
         run: ./target/release/autonomi --log-output-dest=data-dir vault load
         env:
           SN_LOG: "v"
@@ -445,6 +535,7 @@ jobs:
       - name: Time profiling for Different files
         if: matrix.os != 'windows-latest'
         run: |
+          set -e
           # 1 MB
           python3 -c "with open('random_1MB.bin', 'wb') as f: f.write(bytearray([0xff] * 1 * 1024 * 1024))"
           # 10 MB
