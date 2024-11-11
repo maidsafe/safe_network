@@ -5,7 +5,7 @@ on:
   # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
   # the merge run checks should show on master and enable this clear test/passing history
   merge_group:
-    branches: [main, evm-dev]
+    branches: [main, alpha*, beta*, rc*]
   pull_request:
     branches: ["*"]
 
@@ -1151,10 +1151,15 @@ jobs:
   #         platform: ubuntu-latest
   #         log_file_prefix: safe_test_logs_faucet
 
-  large_file_upload_test:
+  large_file_upload_test_no_ws:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: Large file upload
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node_data_path: /home/runner/.local/share/safe/node
     steps:
       - uses: actions/checkout@v4
 
@@ -1264,6 +1269,24 @@ jobs:
           ls -l
         shell: bash
         if: always()
+
+      - name: Confirming connection errors
+        shell: bash
+        timeout-minutes: 1
+        run: |
+          incoming_connection_errors=$(rg "IncomingConnectionError" "${{ matrix.node_data_path }}" -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to find IncomingConnectionError error"; exit 0; }
+          if [ -z "$incoming_connection_errors" ]; then
+            echo "Doesn't find any IncomingConnectionError error !"
+          else
+            echo "Found $incoming_connection_errors IncomingConnectionError errors."
+          fi
+          if ! rg "UnexpectedEof" "${{ matrix.node_data_path }}" -c --stats; then
+            echo "Doesn't find any UnexpectedEof error !"
+          else
+            echo "Found errors."
+            exit 1
+          fi
 
       - name: Stop the local network and upload logs
         if: always()
