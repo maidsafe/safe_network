@@ -8,6 +8,7 @@
 
 /// Register Secret Key
 pub use bls::SecretKey as RegisterSecretKey;
+use crdts::merkle_reg::MerkleReg;
 use sn_evm::Amount;
 use sn_evm::AttoTokens;
 use sn_evm::EvmWalletError;
@@ -76,6 +77,12 @@ impl Register {
             .into_iter()
             .map(|(_hash, value)| value.into())
             .collect()
+    }
+
+    /// Get the low-level CRDT of the register
+    pub fn inner_merkle_reg(&self) -> &MerkleReg<Vec<u8>> {
+        // Unstable method according to documentation.
+        self.crdt_reg.merkle_reg()
     }
 
     fn new(

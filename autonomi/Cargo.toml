@@ -29,6 +29,7 @@ extension-module = ["pyo3/extension-module"]
 bip39 = "2.0.0"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
+crdts = { version = "7.3", default-features = false, features = ["merkle"] }
 curv = { version = "0.10.1", package = "sn_curv", default-features = false, features = [
     "num-bigint",
 ] }

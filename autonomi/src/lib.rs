@@ -53,6 +53,8 @@ pub use utils::receipt_from_quotes_and_payments;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
+pub use crdts::merkle_reg::MerkleReg;
+#[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use libp2p::Multiaddr;
 
 pub use client::Client;
