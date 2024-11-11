@@ -39,36 +39,7 @@ def demonstrate_basic_node_operations():
     
     return node, peer_id
 
-def demonstrate_storage_operations(node):
-    print_section("Storage Operations")
-    
-    # Store data
-    key = "1234567890abcdef"  # Example hex key
-    data = b"Hello, Safe Network!"
-    
-    try:
-        # Store a chunk
-        node.store_record(key, data, "chunk")
-        print(f"Successfully stored chunk with key: {key}")
-        
-        # Retrieve the data
-        stored_data = node.get_record(key)
-        if stored_data:
-            print(f"Retrieved data: {stored_data.decode()}")
-        
-        # Get storage stats
-        size = node.get_stored_records_size()
-        print(f"Total storage used: {size} bytes")
-        
-        # List all stored records
-        addresses = node.get_all_record_addresses()
-        print(f"Stored record addresses: {addresses}")
-        
-        # Delete the record
-        if node.delete_record(key):
-            print(f"Successfully deleted record: {key}")
-    except Exception as e:
-        print(f"Storage operation failed: {e}")
+
 
 def demonstrate_network_operations(node):
     print_section("Network Operations")
@@ -128,8 +99,7 @@ def main():
         # Basic setup and node operations
         node, peer_id = demonstrate_basic_node_operations()
         
-        # Storage operations
-        demonstrate_storage_operations(node)
+    
         
         # Network operations
         demonstrate_network_operations(node)

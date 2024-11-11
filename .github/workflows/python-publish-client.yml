@@ -3,7 +3,7 @@ name: Build and Publish Python Client Package
 on:
   push:
     tags:
-      - 'XXX*'
+      - 'xxx'
 
 permissions:
   id-token: write
@@ -32,14 +32,14 @@ jobs:
         run: |
           mkdir -p autonomi/python/autonomi_client
           cat > autonomi/python/autonomi_client/__init__.py << EOL
-          from ._autonomi import *
+          from .autonomi_client import *
           __version__ = "${{ github.ref_name }}"
           EOL
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist
+          args: --release --out dist --find-interpreter --compatibility manylinux2014
           sccache: 'true'
           working-directory: ./autonomi
       - name: Upload wheels
@@ -79,12 +79,12 @@ jobs:
         shell: cmd
         run: |
           if not exist "autonomi\python\autonomi_client" mkdir autonomi\python\autonomi_client
-          echo from ._autonomi import * > autonomi\python\autonomi_client\__init__.py
+          echo from .autonomi_client import * > autonomi\python\autonomi_client\__init__.py
           echo __version__ = "${{ github.ref_name }}" >> autonomi\python\autonomi_client\__init__.py
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          args: --release --out dist
+          args: --release --out dist --find-interpreter --compatibility manylinux2014
           sccache: 'true'
           working-directory: ./autonomi
       - name: Upload wheels
@@ -129,15 +129,15 @@ jobs:
         run: |
           mkdir -p autonomi/python/autonomi_client
           cat > autonomi/python/autonomi_client/__init__.py << EOL
-          from ._autonomi import *
+          from .autonomi_client import *
           __version__ = "${{ github.ref_name }}"
           EOL
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          manylinux: auto
-          args: --release --out dist
+          manylinux: "2014"
+          args: --release --out dist --find-interpreter
           sccache: 'true'
           working-directory: ./autonomi
           before-script-linux: |
@@ -173,7 +173,7 @@ jobs:
         run: |
           mkdir -p autonomi/python/autonomi_client
           cat > autonomi/python/autonomi_client/__init__.py << EOL
-          from ._autonomi import *
+          from .autonomi_client import *
           __version__ = "${{ github.ref_name }}"
           EOL
       - name: Build sdist
@@ -220,6 +220,15 @@ jobs:
           rm -rf dist/*/
           echo "Final dist directory contents:"
           ls -la dist/
+
+      - name: Check if version exists
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"  # Remove 'v' prefix if present
+          if pip index versions autonomi-client | grep -q "${VERSION}"; then
+            echo "Version ${VERSION} already exists on PyPI"
+            exit 1
+          fi
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
