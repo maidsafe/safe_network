@@ -32,7 +32,6 @@ use futures::future::Either;
 use futures::StreamExt;
 #[cfg(feature = "local")]
 use libp2p::mdns;
-use libp2p::Transport as _;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
@@ -45,6 +44,7 @@ use libp2p::{
     },
     Multiaddr, PeerId,
 };
+use libp2p::{swarm::SwarmEvent, Transport as _};
 #[cfg(feature = "open-metrics")]
 use prometheus_client::metrics::info::Info;
 use sn_evm::PaymentQuote;
@@ -721,6 +721,7 @@ impl NetworkBuilder {
             network_discovery: NetworkDiscovery::new(&peer_id),
             bootstrap_peers: Default::default(),
             live_connected_peers: Default::default(),
+            latest_connected_peers: Default::default(),
             handling_statistics: Default::default(),
             handled_times: 0,
             hard_disk_write_error: 0,
@@ -819,6 +820,10 @@ pub struct SwarmDriver {
     // Peers that having live connection to. Any peer got contacted during kad network query
     // will have live connection established. And they may not appear in the RT.
     pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Instant)>,
+    /// The peers that we recently connected to.
+    /// This is a limited list used to prevent log spamming.
+    /// Use `live_connected_peers` for a full list.
+    pub(crate) latest_connected_peers: HashMap<Multiaddr, Instant>,
     // Record the handling time of the recent 10 for each handling kind.
     handling_statistics: BTreeMap<String, Vec<Duration>>,
     handled_times: usize,
@@ -846,6 +851,8 @@ impl SwarmDriver {
         let mut set_farthest_record_interval = interval(CLOSET_RECORD_CHECK_INTERVAL);
         let mut relay_manager_reservation_interval = interval(RELAY_MANAGER_RESERVATION_INTERVAL);
 
+        // temporarily skip processing IncomingConnectionError swarm event to avoid log spamming
+        let mut previous_incoming_connection_error_event = None;
         loop {
             tokio::select! {
                 // polls futures in order they appear here (as opposed to random)
@@ -878,6 +885,19 @@ impl SwarmDriver {
                 },
                 // next take and react to external swarm events
                 swarm_event = self.swarm.select_next_some() => {
+
+                    // Refer to the handle_swarm_events::IncomingConnectionError for more info on why we skip
+                    // processing the event for one round.
+                    if let Some(previous_event) = previous_incoming_connection_error_event.take() {
+                        if let Err(err) = self.handle_swarm_events(previous_event) {
+                            warn!("Error while handling swarm event: {err}");
+                        }
+                    }
+                    if matches!(swarm_event, SwarmEvent::IncomingConnectionError {..}) {
+                        previous_incoming_connection_error_event = Some(swarm_event);
+                        continue;
+                    }
+
                     // logging for handling events happens inside handle_swarm_events
                     // otherwise we're rewriting match statements etc around this anwyay
                     if let Err(err) = self.handle_swarm_events(swarm_event) {
