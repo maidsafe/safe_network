@@ -364,6 +364,7 @@ impl SwarmDriver {
                     connection_id,
                     (peer_id, Instant::now() + Duration::from_secs(60)),
                 );
+                self.insert_latest_connected_peers(endpoint.get_remote_address().clone());
                 self.record_connection_metrics();
 
                 if endpoint.is_dialer() {
@@ -380,6 +381,9 @@ impl SwarmDriver {
                 event_string = "ConnectionClosed";
                 debug!(%peer_id, ?connection_id, ?cause, num_established, "ConnectionClosed: {}", endpoint_str(&endpoint));
                 let _ = self.live_connected_peers.remove(&connection_id);
+                let _ = self
+                    .latest_connected_peers
+                    .remove(endpoint.get_remote_address());
                 self.record_connection_metrics();
             }
             SwarmEvent::OutgoingConnectionError {
@@ -509,7 +513,18 @@ impl SwarmDriver {
                 error,
             } => {
                 event_string = "Incoming ConnErr";
-                error!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
+                // Only log if this for a non-existing connection.
+                // If a peer contains multiple transports/listen addrs, we might try to open multiple connections,
+                // and if the first one passes, we would get error on the rest. We don't want to log these.
+                //
+                // Also sometimes we get the ConnectionEstablished event immediately after this event.
+                // So during tokio::select! of the events, we skip processing IncomingConnectionError for one round,
+                // giving time for ConnectionEstablished to be hopefully processed.
+                // And since we don't do anything critical with this event, the order and time of processing is
+                // not critical.
+                if !self.latest_connected_peers.contains_key(&send_back_addr) {
+                    error!("IncomingConnectionError from local_addr:?{local_addr:?}, send_back_addr {send_back_addr:?} on {connection_id:?} with error {error:?}");
+                }
                 let _ = self.live_connected_peers.remove(&connection_id);
                 self.record_connection_metrics();
             }
@@ -657,6 +672,30 @@ impl SwarmDriver {
             metrics
                 .connected_peers
                 .set(self.swarm.connected_peers().count() as i64);
+        }
+    }
+
+    /// Insert into the latest connected peers list. This list does not contain all the connected peers.
+    /// Older entries are removed if the list exceeds 50.
+    fn insert_latest_connected_peers(&mut self, addr: Multiaddr) {
+        let old_instant = self
+            .latest_connected_peers
+            .entry(addr)
+            .or_insert_with(Instant::now);
+        *old_instant = Instant::now();
+
+        while self.latest_connected_peers.len() >= 50 {
+            // remove the oldest entry
+            let Some(oldest) = self
+                .latest_connected_peers
+                .iter()
+                .min_by_key(|(_, time)| *time)
+                .map(|(addr, _)| addr.clone())
+            else {
+                break;
+            };
+
+            self.latest_connected_peers.remove(&oldest);
         }
     }
 }
