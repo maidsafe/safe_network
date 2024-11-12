@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_evm"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.1.3"
+version = "0.1.4"
 
 [features]
 test-utils = []
@@ -17,7 +17,7 @@ external-signer = ["evmlib/external-signer"]
 
 [dependencies]
 custom_debug = "~0.6.1"
-evmlib = { path = "../evmlib", version = "0.1.3" }
+evmlib = { path = "../evmlib", version = "0.1.4" }
 hex = "~0.4.3"
 lazy_static = "~1.4.0"
 libp2p = { version = "0.53", features = ["identify", "kad"] }

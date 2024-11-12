@@ -68,16 +68,16 @@ build-release-artifacts arch nightly="false":
     cargo binstall --no-confirm cross
     cross build --release --target $arch --bin nat-detection $nightly_feature
     cross build --release --target $arch --bin node-launchpad $nightly_feature
-    cross build --release --features=network-contacts --target $arch --bin autonomi $nightly_feature
-    cross build --release --features=network-contacts --target $arch --bin safenode $nightly_feature
+    cross build --release --features network-contacts,websockets --target $arch --bin autonomi $nightly_feature
+    cross build --release --features network-contacts,websockets --target $arch --bin safenode $nightly_feature
     cross build --release --target $arch --bin safenode-manager $nightly_feature
     cross build --release --target $arch --bin safenodemand $nightly_feature
     cross build --release --target $arch --bin safenode_rpc_client $nightly_feature
   else
     cargo build --release --target $arch --bin nat-detection $nightly_feature
     cargo build --release --target $arch --bin node-launchpad $nightly_feature
-    cargo build --release --features=network-contacts --target $arch --bin autonomi $nightly_feature
-    cargo build --release --features=network-contacts --target $arch --bin safenode $nightly_feature
+    cargo build --release --features network-contacts,websockets --target $arch --bin autonomi $nightly_feature
+    cargo build --release --features network-contacts,websockets --target $arch --bin safenode $nightly_feature
     cargo build --release --target $arch --bin safenode-manager $nightly_feature
     cargo build --release --target $arch --bin safenodemand $nightly_feature
     cargo build --release --target $arch --bin safenode_rpc_client $nightly_feature
