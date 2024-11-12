@@ -64,7 +64,7 @@ use std::{
     fmt::Debug,
     fs,
     io::{Read, Write},
-    net::SocketAddr,
+    net::{IpAddr, SocketAddr},
     num::NonZeroUsize,
     path::PathBuf,
 };
@@ -721,7 +721,7 @@ impl NetworkBuilder {
             network_discovery: NetworkDiscovery::new(&peer_id),
             bootstrap_peers: Default::default(),
             live_connected_peers: Default::default(),
-            latest_connected_peers: Default::default(),
+            latest_established_connection_ids: Default::default(),
             handling_statistics: Default::default(),
             handled_times: 0,
             hard_disk_write_error: 0,
@@ -820,10 +820,9 @@ pub struct SwarmDriver {
     // Peers that having live connection to. Any peer got contacted during kad network query
     // will have live connection established. And they may not appear in the RT.
     pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Instant)>,
-    /// The peers that we recently connected to.
-    /// This is a limited list used to prevent log spamming.
-    /// Use `live_connected_peers` for a full list.
-    pub(crate) latest_connected_peers: HashMap<Multiaddr, Instant>,
+    /// The list of recently established connections ids.
+    /// This is used to prevent log spamming.
+    pub(crate) latest_established_connection_ids: HashMap<usize, (IpAddr, Instant)>,
     // Record the handling time of the recent 10 for each handling kind.
     handling_statistics: BTreeMap<String, Vec<Duration>>,
     handled_times: usize,
@@ -885,13 +884,16 @@ impl SwarmDriver {
                 },
                 // next take and react to external swarm events
                 swarm_event = self.swarm.select_next_some() => {
-
                     // Refer to the handle_swarm_events::IncomingConnectionError for more info on why we skip
                     // processing the event for one round.
                     if let Some(previous_event) = previous_incoming_connection_error_event.take() {
+                        if let Err(err) = self.handle_swarm_events(swarm_event) {
+                            warn!("Error while handling swarm event: {err}");
+                        }
                         if let Err(err) = self.handle_swarm_events(previous_event) {
                             warn!("Error while handling swarm event: {err}");
                         }
+                        continue;
                     }
                     if matches!(swarm_event, SwarmEvent::IncomingConnectionError {..}) {
                         previous_incoming_connection_error_event = Some(swarm_event);
