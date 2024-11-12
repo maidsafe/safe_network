@@ -67,6 +67,7 @@ jobs:
           node-path: target/release/safenode
           platform: ubuntu-latest
           build: true
+          sn-log: ""
 
       - name: Check if SAFE_PEERS and EVM_NETWORK are set
         shell: bash
