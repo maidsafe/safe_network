@@ -5,7 +5,7 @@ on:
   # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
   # the merge run checks should show on master and enable this clear test/passing history
   merge_group:
-    branches: [main, evm-dev]
+    branches: [main, alpha*, beta*, rc*]
   pull_request:
     branches: ["*"]
 
@@ -1356,13 +1356,33 @@ jobs:
         shell: bash
         if: always()
 
+      - name: Confirming connection errors
+        shell: bash
+        timeout-minutes: 1
+        env:
+          NODE_DATA_PATH: /home/runner/.local/share/safe/node
+        run: |
+          incoming_connection_errors=$(rg "IncomingConnectionError" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to find IncomingConnectionError error"; exit 0; }
+          if [ -z "$incoming_connection_errors" ]; then
+            echo "Doesn't find any IncomingConnectionError error !"
+          else
+            echo "Found $incoming_connection_errors IncomingConnectionError errors."
+          fi
+          if ! rg "UnexpectedEof" $NODE_DATA_PATH -c --stats; then
+            echo "Doesn't find any UnexpectedEof error !"
+          else
+            echo "Found errors."
+            exit 1
+          fi
+
       - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main
         with:
           action: stop
           platform: ubuntu-latest
-          log_file_prefix: safe_test_logs_large_file_upload
+          log_file_prefix: safe_test_logs_large_file_upload_no_ws
           build: true
 
   # replication_bench_with_heavy_upload:
