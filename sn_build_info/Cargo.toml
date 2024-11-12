@@ -8,7 +8,7 @@ license = "GPL-3.0"
 name = "sn_build_info"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.1.19-rc.2"
+version = "0.1.19-rc.3"
 build = "build.rs"
 include = ["Cargo.toml", "src/**/*", "build.rs"]
 

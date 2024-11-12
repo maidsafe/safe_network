@@ -1,0 +1,161 @@
+name: Check before merge (websockets)
+
+on:
+  # tests must run for a PR to be valid and pass merge queue muster
+  # on main, we want to know that all commits are passing at a glance, any deviation should help bisecting errors
+  # the merge run checks should show on master and enable this clear test/passing history
+  merge_group:
+    branches: [main, alpha*, beta*, rc*]
+  pull_request:
+    branches: ["*"]
+
+env:
+  CARGO_INCREMENTAL: 0 # bookkeeping for incremental builds has overhead, not useful in CI.
+  WINSW_URL: https://github.com/winsw/winsw/releases/download/v3.0.0-alpha.11/WinSW-x64.exe
+  GENESIS_PK: 9377ab39708a59d02d09bfd3c9bc7548faab9e0c2a2700b9ac7d5c14f0842f0b4bb0df411b6abd3f1a92b9aa1ebf5c3d
+  GENESIS_SK: 5ec88891c1098a0fede5b98b07f8abc931d7247b7aa310d21ab430cc957f9f02
+
+jobs:
+  large_file_upload_test_with_ws:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    name: Large file upload (websockets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: install ripgrep
+        shell: bash
+        run: sudo apt-get install -y ripgrep
+
+      - name: Check the available space
+        run: |
+          df
+          echo "Home dir:"
+          du -sh /home/runner/
+          echo "Home subdirs:"
+          du -sh /home/runner/*/
+          echo "PWD:"
+          du -sh .
+          echo "PWD subdirs:"
+          du -sh */
+
+      - name: Download material (135MB)
+        shell: bash
+        run: |
+          mkdir test_data_1
+          cd test_data_1
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safe-qiWithListeners-x86_64.tar.gz
+          wget https://sn-node.s3.eu-west-2.amazonaws.com/joshuef/Qi930/safenode-qiWithListeners-x86_64.tar.gz
+          ls -l
+          cd ..
+          tar -cvzf test_data_1.tar.gz test_data_1
+          ls -l
+
+      - name: Build binaries
+        run: cargo build --release --features local,websockets --bin safenode --bin autonomi
+        timeout-minutes: 30
+
+      - name: Start a local network
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: start
+          enable-evm-testnet: true
+          node-path: target/release/safenode
+          platform: ubuntu-latest
+          build: true
+
+      - name: Check if SAFE_PEERS and EVM_NETWORK are set
+        shell: bash
+        run: |
+          if [[ -z "$SAFE_PEERS" ]]; then
+            echo "The SAFE_PEERS variable has not been set"
+            exit 1
+          elif [[ -z "$EVM_NETWORK" ]]; then
+            echo "The EVM_NETWORK variable has not been set"
+            exit 1
+          else
+            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+            echo "EVM_NETWORK has been set to $EVM_NETWORK"
+          fi
+
+      - name: Check the available space post download
+        run: |
+          df
+          echo "Home dir:"
+          du -sh /home/runner/
+          echo "Home subdirs:"
+          du -sh /home/runner/*/
+          echo "PWD:"
+          du -sh .
+          echo "PWD subdirs:"
+          du -sh */
+
+      - name: export default secret key
+        run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" >> $GITHUB_ENV
+        shell: bash
+
+      - name: File upload
+        run: ./target/release/autonomi --log-output-dest=data-dir file upload "./test_data_1.tar.gz" > ./upload_output 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 5
+
+      - name: showing the upload terminal output
+        run: cat upload_output
+        shell: bash
+        if: always()
+
+      - name: parse address
+        run: |
+          UPLOAD_ADDRESS=$(rg "At address: ([0-9a-f]*)" -o -r '$1' ./upload_output)
+          echo "UPLOAD_ADDRESS=$UPLOAD_ADDRESS" >> $GITHUB_ENV
+        shell: bash
+
+      - name: File Download
+        run: ./target/release/autonomi --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources > ./download_output 2>&1
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 5
+
+      - name: showing the download terminal output
+        run: |
+          cat download_output
+          ls -l
+          cd downloaded_resources
+          ls -l
+        shell: bash
+        if: always()
+
+      - name: Confirming connection errors
+        shell: bash
+        timeout-minutes: 1
+        env:
+          NODE_DATA_PATH: /home/runner/.local/share/safe/node
+        run: |
+          incoming_connection_errors=$(rg "IncomingConnectionError" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to find IncomingConnectionError error"; exit 0; }
+          if [ -z "$incoming_connection_errors" ]; then
+            echo "Doesn't find any IncomingConnectionError error !"
+          else
+            echo "Found $incoming_connection_errors IncomingConnectionError errors."
+          fi
+          unexpected_eof_errors=$(rg "UnexpectedEof" $NODE_DATA_PATH -c --stats | \
+            rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to find UnexpectedEof error"; exit 0; }
+          if [ -z "$unexpected_eof_errors" ]; then
+            echo "Doesn't find any UnexpectedEof error !"
+          else
+            echo "Found $unexpected_eof_errors UnexpectedEof errors."
+          fi
+
+      - name: Stop the local network and upload logs
+        if: always()
+        uses: maidsafe/sn-local-testnet-action@main
+        with:
+          action: stop
+          platform: ubuntu-latest
+          log_file_prefix: safe_test_logs_large_file_upload_with_ws
+          build: true

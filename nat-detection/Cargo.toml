@@ -7,7 +7,7 @@ license = "GPL-3.0"
 name = "nat-detection"
 readme = "README.md"
 repository = "https://github.com/maidsafe/safe_network"
-version = "0.2.11-rc.2"
+version = "0.2.11-rc.3"
 
 [[bin]]
 name = "nat-detection"
@@ -31,9 +31,9 @@ libp2p = { version = "0.54.1", features = [
     "macros",
     "upnp",
 ] }
-sn_build_info = { path = "../sn_build_info", version = "0.1.19-rc.2" }
-sn_networking = { path = "../sn_networking", version = "0.19.3-rc.2" }
-sn_protocol = { path = "../sn_protocol", version = "0.17.15-rc.2" }
+sn_build_info = { path = "../sn_build_info", version = "0.1.19-rc.3" }
+sn_networking = { path = "../sn_networking", version = "0.19.3-rc.3" }
+sn_protocol = { path = "../sn_protocol", version = "0.17.15-rc.3" }
 tokio = { version = "1.32.0", features = ["full"] }
 tracing = { version = "~0.1.26" }
 tracing-log = "0.2.0"
