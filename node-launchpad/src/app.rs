@@ -15,8 +15,9 @@ use crate::{
         options::Options,
         popup::{
             change_drive::ChangeDrivePopup, connection_mode::ChangeConnectionModePopUp,
-            manage_nodes::ManageNodes, port_range::PortRangePopUp, reset_nodes::ResetNodesPopup,
-            rewards_address::RewardsAddress, upgrade_nodes::UpgradeNodesPopUp,
+            manage_nodes::ManageNodes, port_range::PortRangePopUp, remove_node::RemoveNodePopUp,
+            reset_nodes::ResetNodesPopup, rewards_address::RewardsAddress,
+            upgrade_nodes::UpgradeNodesPopUp,
         },
         status::{Status, StatusConfig},
         Component,
@@ -121,6 +122,7 @@ impl App {
         let port_range = PortRangePopUp::new(connection_mode, port_from, port_to);
         let rewards_address = RewardsAddress::new(app_data.discord_username.clone());
         let upgrade_nodes = UpgradeNodesPopUp::new(app_data.nodes_to_start);
+        let remove_node = RemoveNodePopUp::default();
 
         Ok(Self {
             config,
@@ -148,6 +150,7 @@ impl App {
                 Box::new(reset_nodes),
                 Box::new(manage_nodes),
                 Box::new(upgrade_nodes),
+                Box::new(remove_node),
             ],
             should_quit: false,
             should_suspend: false,

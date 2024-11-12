@@ -43,12 +43,16 @@ pub enum Action {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Display, Deserialize)]
 pub enum StatusActions {
+    AddNode,
     StartNodes,
     StopNodes,
+    RemoveNodes,
+    StartStopNode,
     StartNodesCompleted,
     StopNodesCompleted,
     ResetNodesCompleted { trigger_start_node: bool },
     UpdateNodesCompleted,
+    RemovingNodesCompleted,
     SuccessfullyDetectedNatStatus,
     ErrorWhileRunningNatDetection,
     ErrorLoadingNodeRegistry { raw_error: String },
@@ -57,11 +61,14 @@ pub enum StatusActions {
     ErrorStoppingNodes { raw_error: String },
     ErrorResettingNodes { raw_error: String },
     ErrorUpdatingNodes { raw_error: String },
+    ErrorRemovingNodes { raw_error: String },
+    ErrorStartingNodes { raw_error: String },
     NodesStatsObtained(NodeStats),
 
     TriggerManageNodes,
     TriggerRewardsAddress,
     TriggerNodeLogs,
+    TriggerRemoveNode,
 
     PreviousTableItem,
     NextTableItem,
