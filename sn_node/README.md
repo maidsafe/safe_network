@@ -89,28 +89,6 @@ Directory Management:
 - `get_logs_dir() -> str`: Get logs directory path
 - `get_data_dir() -> str`: Get data storage directory path
 
-#### Storage Example
-
-```python
-# Store some data
-key = "1234567890abcdef"  # Hex string key
-data = b"Hello, Safe Network!"
-node.store_record(key, data, "chunk")
-
-# Retrieve the data
-stored_data = node.get_record(key)
-if stored_data:
-    print(f"Retrieved: {stored_data.decode()}")
-
-# Get storage info
-size = node.get_stored_records_size()
-print(f"Total storage used: {size} bytes")
-
-# Delete data
-if node.delete_record(key):
-    print("Data deleted successfully")
-```
-
 #### Directory Management Example
 
 ```python

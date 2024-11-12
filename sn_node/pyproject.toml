@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "safenode"
-version = "0.112.3"
+dynamic = ["version"]
 description = "SAFE Network Node"
 requires-python = ">=3.8"
 dependencies = [

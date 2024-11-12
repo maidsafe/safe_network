@@ -29,3 +29,6 @@ classifiers = [
     "Programming Language :: Rust",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
 ]
+dependencies = [
+    "pip>=24.3.1",
+]
