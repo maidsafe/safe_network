@@ -426,6 +426,12 @@ jobs:
           SN_LOG: "v"
         timeout-minutes: 2
 
+      - name: load the vault from network
+        run: ./target/release/autonomi --log-output-dest=data-dir vault load
+        env:
+          SN_LOG: "v"
+        timeout-minutes: 2
+
       - name: vault sync validation
         if: matrix.os != 'windows-latest'
         shell: bash
@@ -460,9 +466,9 @@ jobs:
           
           rm -rf file_list.txt register_list.txt vault_data.txt
 
-          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local public Files: {sys.argv[1]} and vault public files: {sys.argv[2]} are Not Equal"' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
-          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local private Files: {sys.argv[1]} and vault private files: {sys.argv[2]} are Not Equal"' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
-          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: Local registers: {sys.argv[1]} and vault registers: {sys.argv[2]} are Not Equal"' $NUM_OF_REGISTERS_first $NUM_OF_REGISTERS_IN_VAULT
+          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: local data and vault in network dont match, Local public Files: {sys.argv[1]} and vault public files: {sys.argv[2]} are Not Equal"' $NUM_OF_PUBLIC_FILES $NUM_OF_PUBLIC_FILES_IN_VAULT
+          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: local data and vault in network dont match, Local private Files: {sys.argv[1]} and vault private files: {sys.argv[2]} are Not Equal"' $NUM_OF_PRIVATE_FILES $NUM_OF_PRIVATE_FILES_IN_VAULT
+          python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: local data and vault in network dont match, Local registers: {sys.argv[1]} and vault registers: {sys.argv[2]} are Not Equal"' $NUM_OF_REGISTERS_first $NUM_OF_REGISTERS_IN_VAULT
           echo "vault synced successfully!"
         env:
           SN_LOG: "v"
@@ -518,9 +524,9 @@ jobs:
           print("NUM_OF_PRIVATE_FILES_IN_VAULT:", NUM_OF_PRIVATE_FILES_IN_VAULT)
 
           # Assertions
-          assert NUM_OF_PUBLIC_FILES == NUM_OF_PUBLIC_FILES_IN_VAULT, f"Error: Local public Files: {NUM_OF_PUBLIC_FILES} and vault public files: {NUM_OF_PUBLIC_FILES_IN_VAULT} are Not Equal"
-          assert NUM_OF_PRIVATE_FILES == NUM_OF_PRIVATE_FILES_IN_VAULT, f"Error: Local private Files: {NUM_OF_PRIVATE_FILES} and vault private files: {NUM_OF_PRIVATE_FILES_IN_VAULT} are Not Equal"
-          assert NUM_OF_REGISTERS_FILES == NUM_OF_REGISTERS_IN_VAULT, f"Error: Local registers: {NUM_OF_REGISTERS_FILES} and vault registers: {NUM_OF_REGISTERS_IN_VAULT} are Not Equal"
+          assert NUM_OF_PUBLIC_FILES == NUM_OF_PUBLIC_FILES_IN_VAULT, f"Error: local data and vault in network dont match, Local public Files: {NUM_OF_PUBLIC_FILES} and vault public files: {NUM_OF_PUBLIC_FILES_IN_VAULT} are Not Equal"
+          assert NUM_OF_PRIVATE_FILES == NUM_OF_PRIVATE_FILES_IN_VAULT, f"Error: local data and vault in network dont match, Local private Files: {NUM_OF_PRIVATE_FILES} and vault private files: {NUM_OF_PRIVATE_FILES_IN_VAULT} are Not Equal"
+          assert NUM_OF_REGISTERS_FILES == NUM_OF_REGISTERS_IN_VAULT, f"Error: local data and vault in network dont match, Local registers: {NUM_OF_REGISTERS_FILES} and vault registers: {NUM_OF_REGISTERS_IN_VAULT} are Not Equal"
           print("Vault synced successfully!")
         env:
           SN_LOG: "v"
