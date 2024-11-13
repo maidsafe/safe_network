@@ -371,13 +371,25 @@ impl NodeRecordStore {
         };
 
         let records = Self::update_records_from_an_existing_store(&config, &encryption_details);
+        let local_address = NetworkAddress::from_peer(local_id);
+
+        // Initialize records_by_bucket
+        let mut records_by_bucket: HashMap<u32, HashSet<Key>> = HashMap::new();
+        for (key, (addr, _record_type)) in records.iter() {
+            let distance = local_address.distance(addr);
+            let bucket = distance.ilog2().unwrap_or_default();
+            records_by_bucket
+                .entry(bucket)
+                .or_default()
+                .insert(key.clone());
+        }
 
         let cache_size = config.records_cache_size;
         let mut record_store = NodeRecordStore {
-            local_address: NetworkAddress::from_peer(local_id),
+            local_address,
             config,
             records,
-            records_by_bucket: HashMap::new(),
+            records_by_bucket,
             records_cache: RecordCache::new(cache_size),
             network_event_sender,
             local_swarm_cmd_sender: swarm_cmd_sender,
