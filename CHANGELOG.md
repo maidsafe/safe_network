@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-11-13
+
+### Network
+
+#### Fixed
+
+- During a restart, the node builds a cache of locally restored records,
+  which is used to improve the speed of the relevant records calculation.
+  The restored records were not being added to the cache.
+  This has now been corrected.
+
 ## 2024-11-12
 
 ### Network
