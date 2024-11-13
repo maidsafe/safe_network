@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-11-12
+
+### Network
+
+#### Added
+
+- Enable the `websockets` connection feature, for compatibility with the webapp.
+
+#### Fixed
+
+- Reduce incorrect logging of connection errors.
+- Fixed verification for crdt operations.
+- Pick chunk-proof verification (for storage confirmation) candidates more equally.
+
+### Launchpad
+
+#### Added
+
+- Display an error when Launchpad is not whitelisted on Windows devices.
+- Ctrl+V can paste rewards address on pop up section.
+
+#### Changed
+
+- Help section copy changed after beta phase.
+- Update ratatui and throbbber library versions.
+
+#### Fixed
+
+- We display starting status when not running nodes
+
+### Client
+
+#### Added
+
+- Support pre-paid put operations.
+- Add the necessary WASM bindings for the webapp to be able to upload private data to a vault
+  and fetch it again.
+
+#### Changed
+
+- Chunks are now downloaded in parallel.
+- Rename some WASM methods to be more conventional for web.
+
 ## 2024-11-07
 
 ### Launchpad
@@ -77,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2024-10-28
 
-## Autonomi API/CLI
+### Autonomi API/CLI
 
 #### Added 
 
