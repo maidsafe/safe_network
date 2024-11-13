@@ -238,6 +238,14 @@ impl RelayManager {
 
     /// The listen addr should be something like /ip4/198.51.100.0/tcp/55555/p2p/QmRelay/p2p-circuit/
     fn craft_relay_address(addr: &Multiaddr, peer_id: Option<PeerId>) -> Option<Multiaddr> {
+        // skip tcp/ws addrs
+        if addr
+            .iter()
+            .any(|protocol| matches!(protocol, Protocol::Ws(_)))
+        {
+            return None;
+        }
+
         let mut output_addr = Multiaddr::empty();
 
         let ip = addr
