@@ -311,7 +311,6 @@ impl SwarmDriver {
                 event_string = "new listen addr";
 
                 info!("Local node is listening {listener_id:?} on {address:?}");
-                println!("Local node is listening on {address:?}"); // TODO: make it print only once
 
                 let local_peer_id = *self.swarm.local_peer_id();
                 // Make sure the address ends with `/p2p/<local peer ID>`. In case of relay, `/p2p` is already there.
