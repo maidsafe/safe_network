@@ -61,7 +61,7 @@ const NODE_WIDTH: usize = 10;
 const VERSION_WIDTH: usize = 7;
 const ATTOS_WIDTH: usize = 5;
 const MEMORY_WIDTH: usize = 7;
-const MB_WIDTH: usize = 15;
+const MBPS_WIDTH: usize = 13;
 const RECORDS_WIDTH: usize = 4;
 const PEERS_WIDTH: usize = 5;
 const CONNS_WIDTH: usize = 5;
@@ -220,10 +220,10 @@ impl Status<'_> {
                     {
                         item.attos = stats.rewards_wallet_balance;
                         item.memory = stats.memory_usage_mb;
-                        item.mb = format!(
-                            "↓{:06.02} ↑{:06.02}",
-                            stats.bandwidth_inbound as f64 / (1024_f64 * 1024_f64),
-                            stats.bandwidth_outbound as f64 / (1024_f64 * 1024_f64)
+                        item.mbps = format!(
+                            "↓{:0>5.0} ↑{:0>5.0}",
+                            (stats.bandwidth_inbound_rate * 8) as f64 / 1_000_000.0,
+                            (stats.bandwidth_outbound_rate * 8) as f64 / 1_000_000.0,
                         );
                         item.records = stats.max_records;
                         item.connections = stats.connections;
@@ -235,7 +235,7 @@ impl Status<'_> {
                         version: node_item.version.to_string(),
                         attos: 0,
                         memory: 0,
-                        mb: "-".to_string(),
+                        mbps: "-".to_string(),
                         records: 0,
                         peers: 0,
                         connections: 0,
@@ -269,7 +269,7 @@ impl Status<'_> {
                         version: node_item.version.to_string(),
                         attos: 0,
                         memory: 0,
-                        mb: "-".to_string(),
+                        mbps: "-".to_string(),
                         records: 0,
                         peers: 0,
                         connections: 0,
@@ -930,7 +930,7 @@ impl Component for Status<'_> {
                     Constraint::Min(VERSION_WIDTH as u16),
                     Constraint::Min(ATTOS_WIDTH as u16),
                     Constraint::Min(MEMORY_WIDTH as u16),
-                    Constraint::Min(MB_WIDTH as u16),
+                    Constraint::Min(MBPS_WIDTH as u16),
                     Constraint::Min(RECORDS_WIDTH as u16),
                     Constraint::Min(PEERS_WIDTH as u16),
                     Constraint::Min(CONNS_WIDTH as u16),
@@ -945,7 +945,8 @@ impl Component for Status<'_> {
                     Cell::new("Attos").fg(COOL_GREY),
                     Cell::new("Memory").fg(COOL_GREY),
                     Cell::new(
-                        format!("{}{}", " ".repeat(MB_WIDTH - "Mb".len()), "Mb").fg(COOL_GREY),
+                        format!("{}{}", " ".repeat(MBPS_WIDTH - "Mbps".len()), "Mbps")
+                            .fg(COOL_GREY),
                     ),
                     Cell::new("Recs").fg(COOL_GREY),
                     Cell::new("Peers").fg(COOL_GREY),
@@ -1179,7 +1180,7 @@ pub struct NodeItem<'a> {
     version: String,
     attos: usize,
     memory: usize,
-    mb: String,
+    mbps: String,
     records: usize,
     peers: usize,
     connections: usize,
@@ -1266,8 +1267,8 @@ impl NodeItem<'_> {
             ),
             format!(
                 "{}{}",
-                " ".repeat(MB_WIDTH.saturating_sub(self.mb.to_string().len())),
-                self.mb.to_string()
+                " ".repeat(MBPS_WIDTH.saturating_sub(self.mbps.to_string().len())),
+                self.mbps.to_string()
             ),
             format!(
                 "{}{}",
