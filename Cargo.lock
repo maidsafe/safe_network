@@ -8590,7 +8590,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.19.3"
+version = "0.19.4"
 dependencies = [
  "aes-gcm-siv",
  "assert_fs",

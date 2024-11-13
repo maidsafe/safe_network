@@ -38,7 +38,7 @@ rand = "0.8.5"
 rmp-serde = "1.1.1"
 self_encryption = "~0.30.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
-sn_networking = { path = "../sn_networking", version = "0.19.3" }
+sn_networking = { path = "../sn_networking", version = "0.19.4" }
 sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.7" }
 sn_protocol = { version = "0.17.15", path = "../sn_protocol" }
 sn_registers = { path = "../sn_registers", version = "0.4.3" }
