@@ -99,6 +99,7 @@ impl App {
             connection_mode,
             port_from: Some(port_from),
             port_to: Some(port_to),
+            storage_mountpoint: storage_mountpoint.clone(),
         };
 
         let status = Status::new(status_config).await?;
