@@ -7,12 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    cmd::NetworkSwarmCmd, log_markers::Marker, sort_peers_by_address, MsgResponder, NetworkError,
-    NetworkEvent, SwarmDriver, CLOSE_GROUP_SIZE,
+    cmd::NetworkSwarmCmd, log_markers::Marker, MsgResponder, NetworkError, NetworkEvent,
+    SwarmDriver,
 };
-use itertools::Itertools;
 use libp2p::request_response::{self, Message};
-use rand::{rngs::OsRng, thread_rng, Rng};
 use sn_protocol::{
     messages::{CmdResponse, Request, Response},
     storage::RecordType,
@@ -207,14 +205,10 @@ impl SwarmDriver {
             return;
         }
 
-        let more_than_one_key = incoming_keys.len() > 1;
-
-        // On receive a replication_list from a close_group peer, we undertake two tasks:
+        // On receive a replication_list from a close_group peer, we undertake:
         //   1, For those keys that we don't have:
         //        fetch them if close enough to us
-        //   2, For those keys that we have and supposed to be held by the sender as well:
-        //        start chunk_proof check against a randomly selected chunk type record to the sender
-        //   3, For those spends that we have that differ in the hash, we fetch the other version
+        //   2, For those spends that we have that differ in the hash, we fetch the other version
         //         and update our local copy.
         let all_keys = self
             .swarm
@@ -229,104 +223,6 @@ impl SwarmDriver {
             debug!("no waiting keys to fetch from the network");
         } else {
             self.send_event(NetworkEvent::KeysToFetchForReplication(keys_to_fetch));
-        }
-
-        // Only trigger chunk_proof check based every X% of the time
-        let mut rng = thread_rng();
-        // 5% probability
-        if more_than_one_key && rng.gen_bool(0.05) {
-            self.verify_peer_storage(sender.clone());
-
-            // In additon to verify the sender, we also verify a random close node.
-            // This is to avoid malicious node escaping the check by never send a replication_list.
-            // With further reduced probability of 1% (5% * 20%)
-            if rng.gen_bool(0.2) {
-                let close_group_peers = self
-                    .swarm
-                    .behaviour_mut()
-                    .kademlia
-                    .get_closest_local_peers(&self.self_peer_id.into())
-                    .map(|peer| peer.into_preimage())
-                    .take(CLOSE_GROUP_SIZE)
-                    .collect_vec();
-                if close_group_peers.len() == CLOSE_GROUP_SIZE {
-                    loop {
-                        let index: usize = OsRng.gen_range(0..close_group_peers.len());
-                        let candidate = NetworkAddress::from_peer(close_group_peers[index]);
-                        if sender != candidate {
-                            self.verify_peer_storage(candidate);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Check among all chunk type records that we have, select those close to the peer,
-    /// and randomly pick one as the verification candidate.
-    fn verify_peer_storage(&mut self, peer: NetworkAddress) {
-        let mut closest_peers = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .get_closest_local_peers(&self.self_peer_id.into())
-            .map(|peer| peer.into_preimage())
-            .take(20)
-            .collect_vec();
-        closest_peers.push(self.self_peer_id);
-
-        let target_peer = if let Some(peer_id) = peer.as_peer_id() {
-            peer_id
-        } else {
-            error!("Target {peer:?} is not a valid PeerId");
-            return;
-        };
-
-        let all_keys = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .store_mut()
-            .record_addresses_ref();
-
-        // Targeted chunk type record shall be expected within the close range from our perspective.
-        let mut verify_candidates: Vec<NetworkAddress> = all_keys
-            .values()
-            .filter_map(|(addr, record_type)| {
-                if RecordType::Chunk == *record_type {
-                    match sort_peers_by_address(&closest_peers, addr, CLOSE_GROUP_SIZE) {
-                        Ok(close_group) => {
-                            if close_group.contains(&&target_peer) {
-                                Some(addr.clone())
-                            } else {
-                                None
-                            }
-                        }
-                        Err(err) => {
-                            warn!("Could not get sorted peers for {addr:?} with error {err:?}");
-                            None
-                        }
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        verify_candidates.sort_by_key(|a| peer.distance(a));
-
-        // To ensure the candidate must have to be held by the peer,
-        // we only carry out check when there are already certain amount of chunks uploaded
-        // AND choose candidate from certain reduced range.
-        if verify_candidates.len() > 50 {
-            let index: usize = OsRng.gen_range(0..(verify_candidates.len() / 2));
-            self.send_event(NetworkEvent::ChunkProofVerification {
-                peer_id: target_peer,
-                key_to_verify: verify_candidates[index].clone(),
-            });
-        } else {
-            debug!("No valid candidate to be checked against peer {peer:?}");
         }
     }
 }

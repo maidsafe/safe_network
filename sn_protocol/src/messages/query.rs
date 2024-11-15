@@ -47,6 +47,10 @@ pub enum Query {
         key: NetworkAddress,
         /// The random nonce that the node uses to produce the Proof (i.e., hash(record+nonce))
         nonce: Nonce,
+        /// Defines the expected number of answers to the challenge.
+        /// For client publish verification, use 1 for efficiency.
+        /// Node shall try their best to fulfill the number, based on their capacity.
+        difficulty: usize,
     },
     /// Queries close_group peers whether the target peer is a bad_node
     CheckNodeInProblem(NetworkAddress),
@@ -78,8 +82,15 @@ impl std::fmt::Display for Query {
             Query::GetRegisterRecord { key, requester } => {
                 write!(f, "Query::GetRegisterRecord({requester:?} {key:?})")
             }
-            Query::GetChunkExistenceProof { key, nonce } => {
-                write!(f, "Query::GetChunkExistenceProof({key:?} {nonce:?})")
+            Query::GetChunkExistenceProof {
+                key,
+                nonce,
+                difficulty,
+            } => {
+                write!(
+                    f,
+                    "Query::GetChunkExistenceProof({key:?} {nonce:?} {difficulty})"
+                )
             }
             Query::CheckNodeInProblem(address) => {
                 write!(f, "Query::CheckNodeInProblem({address:?})")

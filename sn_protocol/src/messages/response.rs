@@ -56,7 +56,7 @@ pub enum QueryResponse {
     /// Response to [`GetChunkExistenceProof`]
     ///
     /// [`GetChunkExistenceProof`]: crate::messages::Query::GetChunkExistenceProof
-    GetChunkExistenceProof(Result<ChunkProof>),
+    GetChunkExistenceProof(Vec<(NetworkAddress, Result<ChunkProof>)>),
 }
 
 // Debug implementation for QueryResponse, to avoid printing Vec<u8>
@@ -109,8 +109,9 @@ impl Debug for QueryResponse {
                     write!(f, "GetRegisterRecord(Err({err:?}))")
                 }
             },
-            QueryResponse::GetChunkExistenceProof(proof) => {
-                write!(f, "GetChunkExistenceProof(proof: {proof:?})")
+            QueryResponse::GetChunkExistenceProof(proofs) => {
+                let addresses: Vec<_> = proofs.iter().map(|(addr, _)| addr.clone()).collect();
+                write!(f, "GetChunkExistenceProof(checked chunks: {addresses:?})")
             }
         }
     }

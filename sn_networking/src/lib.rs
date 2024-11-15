@@ -269,6 +269,7 @@ impl Network {
     }
 
     /// Get the Chunk existence proof from the close nodes to the provided chunk address.
+    /// This is to be used by client only to verify the success of the upload.
     pub async fn verify_chunk_existence(
         &self,
         chunk_address: NetworkAddress,
@@ -304,6 +305,7 @@ impl Network {
             let request = Request::Query(Query::GetChunkExistenceProof {
                 key: chunk_address.clone(),
                 nonce,
+                difficulty: 1,
             });
             let responses = self
                 .send_and_get_responses(&close_nodes, &request, true)
@@ -311,14 +313,22 @@ impl Network {
             let n_verified = responses
                 .into_iter()
                 .filter_map(|(peer, resp)| {
-                    if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(Ok(proof)))) =
+                    if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(proofs))) =
                         resp
                     {
-                        if expected_proof.verify(&proof) {
-                            debug!("Got a valid ChunkProof from {peer:?}");
-                            Some(())
+                        if proofs.is_empty() {
+                            warn!("Failed to verify the ChunkProof from {peer:?}. Returned proof is empty.");
+                            None
+                        } else if let Ok(ref proof) = proofs[0].1 {
+                            if expected_proof.verify(proof) {
+                                debug!("Got a valid ChunkProof from {peer:?}");
+                                Some(())
+                            } else {
+                                warn!("Failed to verify the ChunkProof from {peer:?}. The chunk might have been tampered?");
+                                None
+                            }
                         } else {
-                            warn!("Failed to verify the ChunkProof from {peer:?}. The chunk might have been tampered?");
+                            warn!("Failed to verify the ChunkProof from {peer:?}, returned with error {:?}", proofs[0].1);
                             None
                         }
                     } else {

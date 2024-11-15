@@ -13,17 +13,20 @@ use super::{
 use crate::metrics::NodeMetricsRecorder;
 use crate::RunningNode;
 use bytes::Bytes;
+use itertools::Itertools;
 use libp2p::{identity::Keypair, Multiaddr, PeerId};
-use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
+use rand::{
+    rngs::{OsRng, StdRng},
+    thread_rng, Rng, SeedableRng,
+};
 use sn_evm::{AttoTokens, RewardsAddress};
 #[cfg(feature = "open-metrics")]
 use sn_networking::MetricsRegistries;
-use sn_networking::{
-    Instant, Network, NetworkBuilder, NetworkError, NetworkEvent, NodeIssue, SwarmDriver,
-};
+use sn_networking::{Instant, Network, NetworkBuilder, NetworkEvent, NodeIssue, SwarmDriver};
 use sn_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, CmdResponse, Query, QueryResponse, Request, Response},
+    messages::{ChunkProof, CmdResponse, Nonce, Query, QueryResponse, Request, Response},
+    storage::RecordType,
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use std::{
@@ -43,12 +46,9 @@ use sn_evm::EvmNetwork;
 /// This is the max time it should take. Minimum interval at any node will be half this
 pub const PERIODIC_REPLICATION_INTERVAL_MAX_S: u64 = 180;
 
-/// Max number of attempts that chunk proof verification will be carried out against certain target,
-/// before classifying peer as a bad peer.
-const MAX_CHUNK_PROOF_VERIFY_ATTEMPTS: usize = 3;
-
-/// Interval between chunk proof verification to be retired against the same target.
-const CHUNK_PROOF_VERIFY_RETRY_INTERVAL: Duration = Duration::from_secs(15);
+/// Interval to trigger storage challenge.
+/// This is the max time it should take. Minimum interval at any node will be half this
+const STORE_CHALLENGE_INTERVAL_MAX_S: u64 = 7200;
 
 /// Interval to update the nodes uptime metric
 const UPTIME_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
@@ -256,6 +256,17 @@ impl Node {
                 tokio::time::interval(UNRELEVANT_RECORDS_CLEANUP_INTERVAL);
             let _ = irrelevant_records_cleanup_interval.tick().await; // first tick completes immediately
 
+            // use a random neighbour storege challenge ticker to ensure
+            // neighbour do not carryout challenges at the same time
+            let storage_challenge_interval: u64 =
+                rng.gen_range(STORE_CHALLENGE_INTERVAL_MAX_S / 2..STORE_CHALLENGE_INTERVAL_MAX_S);
+            let storage_challenge_interval_time = Duration::from_secs(storage_challenge_interval);
+            debug!("Storage challenge interval set to {storage_challenge_interval_time:?}");
+
+            let mut storage_challenge_interval =
+                tokio::time::interval(storage_challenge_interval_time);
+            let _ = storage_challenge_interval.tick().await; // first tick completes immediately
+
             loop {
                 let peers_connected = &peers_connected;
 
@@ -300,6 +311,17 @@ impl Node {
 
                         let _handle = spawn(async move {
                             Self::trigger_irrelevant_record_cleanup(network);
+                        });
+                    }
+                    // runs every storage_challenge_interval time
+                    _ = storage_challenge_interval.tick() => {
+                        let start = Instant::now();
+                        debug!("Periodic storage challenge triggered");
+                        let network = self.network().clone();
+
+                        let _handle = spawn(async move {
+                            Self::storage_challenge(network).await;
+                            trace!("Periodic storege challenge took {:?}", start.elapsed());
                         });
                     }
                 }
@@ -452,28 +474,16 @@ impl Node {
                 event_header = "ChunkProofVerification";
                 let network = self.network().clone();
 
-                debug!("Going to verify chunk {key_to_verify} against peer {peer_id:?}");
+                debug!("Going to carry out storage existence check against peer {peer_id:?}");
 
                 let _handle = spawn(async move {
-                    // To avoid the peer is in the process of getting the copy via replication,
-                    // repeat the verification for couple of times (in case of error).
-                    // Only report the node as bad when ALL the verification attempts failed.
-                    let mut attempts = 0;
-                    while attempts < MAX_CHUNK_PROOF_VERIFY_ATTEMPTS {
-                        if chunk_proof_verify_peer(&network, peer_id, &key_to_verify).await {
-                            return;
-                        }
-                        // Replication interval is 22s - 45s.
-                        // Hence some re-try erquired to allow copies to spread out.
-                        tokio::time::sleep(CHUNK_PROOF_VERIFY_RETRY_INTERVAL).await;
-                        attempts += 1;
+                    if chunk_proof_verify_peer(&network, peer_id, &key_to_verify).await {
+                        return;
                     }
-                    // Now ALL attempts failed, hence report the issue.
-                    // Note this won't immediately trigger the node to be considered as BAD.
-                    // Only the same peer accumulated three same issue
-                    // within 5 mins will be considered as BAD.
-                    // As the chunk_proof_check will be triggered every periodical replication,
-                    // a low performed or cheaty peer will raise multiple issue alerts during it.
+                    info!("Peer {peer_id:?} failed storage existence challenge.");
+                    // TODO: shall challenge failure immediately triggers the node to be removed?
+                    //       or to lower connection score once feature introduced.
+                    //       If score falls too low, sever connection.
                     network.record_node_issues(peer_id, NodeIssue::FailedChunkProofCheck);
                 });
             }
@@ -584,21 +594,18 @@ impl Node {
 
                 QueryResponse::GetReplicatedRecord(result)
             }
-            Query::GetChunkExistenceProof { key, nonce } => {
-                debug!("Got GetChunkExistenceProof for chunk {key:?}");
+            Query::GetChunkExistenceProof {
+                key,
+                nonce,
+                difficulty,
+            } => {
+                debug!(
+                    "Got GetChunkExistenceProof targeting chunk {key:?} with {difficulty} answers."
+                );
 
-                let mut result = Err(ProtocolError::ChunkDoesNotExist(key.clone()));
-                if let Ok(Some(record)) = network.get_local_record(&key.to_record_key()).await {
-                    let proof = ChunkProof::new(&record.value, nonce);
-                    debug!("Chunk proof for {key:?} is {proof:?}");
-                    result = Ok(proof)
-                } else {
-                    debug!(
-                        "Could not get ChunkProof for {key:?} as we don't have the record locally."
-                    );
-                }
-
-                QueryResponse::GetChunkExistenceProof(result)
+                QueryResponse::GetChunkExistenceProof(
+                    Self::respond_x_closest_chunk_proof(network, key, nonce, difficulty).await,
+                )
             }
             Query::CheckNodeInProblem(target_address) => {
                 debug!("Got CheckNodeInProblem for peer {target_address:?}");
@@ -620,61 +627,179 @@ impl Node {
         };
         Response::Query(resp)
     }
+
+    async fn respond_x_closest_chunk_proof(
+        network: &Network,
+        key: NetworkAddress,
+        nonce: Nonce,
+        difficulty: usize,
+    ) -> Vec<(NetworkAddress, Result<ChunkProof, ProtocolError>)> {
+        info!("Received StorageChallenge targeting {key:?} with difficulty level of {difficulty}.");
+        let mut results = vec![];
+        if difficulty == 1 {
+            // Client checking existence of published chunk.
+            let mut result = Err(ProtocolError::ChunkDoesNotExist(key.clone()));
+            if let Ok(Some(record)) = network.get_local_record(&key.to_record_key()).await {
+                let proof = ChunkProof::new(&record.value, nonce);
+                debug!("Chunk proof for {key:?} is {proof:?}");
+                result = Ok(proof)
+            } else {
+                debug!("Could not get ChunkProof for {key:?} as we don't have the record locally.");
+            }
+
+            results.push((key.clone(), result));
+        } else {
+            let all_local_records = network.get_all_local_record_addresses().await;
+
+            if let Ok(all_local_records) = all_local_records {
+                // Only `ChunkRecord`s can be consistantly verified
+                let mut all_chunk_addrs: Vec<_> = all_local_records
+                    .iter()
+                    .filter_map(|(addr, record_type)| {
+                        if *record_type == RecordType::Chunk {
+                            Some(addr.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                // Sort by distance and only take first X closest entries
+                all_chunk_addrs.sort_by_key(|addr| key.distance(addr));
+
+                // TODO: this shall be deduced from resource usage dynamically
+                let workload_factor = std::cmp::min(difficulty, CLOSE_GROUP_SIZE);
+
+                for addr in all_chunk_addrs.iter().take(workload_factor) {
+                    if let Ok(Some(record)) = network.get_local_record(&addr.to_record_key()).await
+                    {
+                        let proof = ChunkProof::new(&record.value, nonce);
+                        debug!("Chunk proof for {key:?} is {proof:?}");
+                        results.push((addr.clone(), Ok(proof)));
+                    }
+                }
+            }
+        }
+
+        info!(
+            "Respond with {} answers to the StorageChallenge targeting {key:?}.",
+            results.len()
+        );
+
+        results
+    }
+
+    /// Check among all chunk type records that we have,
+    /// and randomly pick one as the verification candidate.
+    /// This will challenge all closest peers at once.
+    async fn storage_challenge(network: Network) {
+        let closest_peers: Vec<PeerId> =
+            if let Ok(closest_peers) = network.get_closest_k_value_local_peers().await {
+                closest_peers
+                    .into_iter()
+                    .take(CLOSE_GROUP_SIZE)
+                    .collect_vec()
+            } else {
+                error!("Cannot get local neighbours");
+                return;
+            };
+        if closest_peers.len() < CLOSE_GROUP_SIZE {
+            debug!(
+                "Not enough neighbours ({}/{}) to carry out storage challenge.",
+                closest_peers.len(),
+                CLOSE_GROUP_SIZE
+            );
+            return;
+        }
+
+        let verify_candidates: Vec<NetworkAddress> =
+            if let Ok(all_keys) = network.get_all_local_record_addresses().await {
+                all_keys
+                    .iter()
+                    .filter_map(|(addr, record_type)| {
+                        if RecordType::Chunk == *record_type {
+                            Some(addr.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
+            } else {
+                error!("Failed to get local record addresses.");
+                return;
+            };
+        let num_of_targets = verify_candidates.len();
+        if num_of_targets < 50 {
+            debug!("Not enough candidates({num_of_targets}/50) to be checked against neighbours.");
+            return;
+        }
+
+        info!("Starting node StorageChallenge against neighbours!");
+
+        // TODO: launch the challenges parrallely, so that a scoring scheme can be utilized.
+        for peer_id in closest_peers {
+            if peer_id == network.peer_id() {
+                continue;
+            }
+
+            let index: usize = OsRng.gen_range(0..num_of_targets);
+            if !chunk_proof_verify_peer(&network, peer_id, &verify_candidates[index]).await {
+                info!("Peer {peer_id:?} failed storage challenge.");
+                // TODO: shall the challenge failure immediately triggers the node to be removed?
+                network.record_node_issues(peer_id, NodeIssue::FailedChunkProofCheck);
+            }
+        }
+
+        info!("Completed node StorageChallenge against neighbours!");
+    }
 }
 
 async fn chunk_proof_verify_peer(network: &Network, peer_id: PeerId, key: &NetworkAddress) -> bool {
-    let check_passed = if let Ok(Some(record)) =
-        network.get_local_record(&key.to_record_key()).await
+    let nonce: Nonce = thread_rng().gen::<u64>();
+
+    let request = Request::Query(Query::GetChunkExistenceProof {
+        key: key.clone(),
+        nonce,
+        difficulty: CLOSE_GROUP_SIZE,
+    });
+
+    let responses = network
+        .send_and_get_responses(&[peer_id], &request, true)
+        .await;
+
+    // TODO: cross check with local knowledge (i.e. the claimed closest shall match locals)
+    //       this also prevent peer falsely give empty or non-existent answers.
+
+    if let Some(Ok(Response::Query(QueryResponse::GetChunkExistenceProof(answers)))) =
+        responses.get(&peer_id)
     {
-        let nonce = thread_rng().gen::<u64>();
-        let expected_proof = ChunkProof::new(&record.value, nonce);
-        debug!("To verify peer {peer_id:?}, chunk_proof for {key:?} is {expected_proof:?}");
-
-        let request = Request::Query(Query::GetChunkExistenceProof {
-            key: key.clone(),
-            nonce,
-        });
-        let responses = network
-            .send_and_get_responses(&[peer_id], &request, true)
-            .await;
-        let n_verified = responses
-            .into_iter()
-            .filter_map(|(peer, resp)| received_valid_chunk_proof(key, &expected_proof, peer, resp))
-            .count();
-
-        n_verified >= 1
+        if answers.is_empty() {
+            info!("Peer {peer_id:?} didn't answer the ChunkProofChallenge.");
+            return false;
+        }
+        for (addr, proof) in answers {
+            if let Ok(proof) = proof {
+                if let Ok(Some(record)) = network.get_local_record(&addr.to_record_key()).await {
+                    let expected_proof = ChunkProof::new(&record.value, nonce);
+                    // Any wrong answer shall be considered as a failure
+                    if *proof != expected_proof {
+                        return false;
+                    }
+                } else {
+                    debug!(
+                        "Could not get ChunkProof for {addr:?} as we don't have the record locally."
+                    );
+                }
+            } else {
+                debug!(
+                    "Could not verify answer of {addr:?} from {peer_id:?} as responded with {proof:?}"
+                );
+            }
+        }
     } else {
-        error!(
-                 "To verify peer {peer_id:?} Could not get ChunkProof for {key:?} as we don't have the record locally."
-            );
-        true
-    };
-
-    if !check_passed {
+        info!("Peer {peer_id:?} doesn't reply the ChunkProofChallenge, or replied with error.");
         return false;
     }
 
     true
-}
-
-fn received_valid_chunk_proof(
-    key: &NetworkAddress,
-    expected_proof: &ChunkProof,
-    peer: PeerId,
-    resp: Result<Response, NetworkError>,
-) -> Option<()> {
-    if let Ok(Response::Query(QueryResponse::GetChunkExistenceProof(Ok(proof)))) = resp {
-        if expected_proof.verify(&proof) {
-            debug!(
-                "Got a valid ChunkProof of {key:?} from {peer:?}, during peer chunk proof check."
-            );
-            Some(())
-        } else {
-            warn!("When verify {peer:?} with ChunkProof of {key:?}, the chunk might have been tampered?");
-            None
-        }
-    } else {
-        debug!("Did not get a valid response for the ChunkProof from {peer:?}");
-        None
-    }
 }
