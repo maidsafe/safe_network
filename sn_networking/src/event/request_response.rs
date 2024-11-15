@@ -100,9 +100,6 @@ impl SwarmDriver {
                                 self.record_metrics(Marker::FlaggedAsBadNode {
                                     flagged_by: &detected_by,
                                 });
-
-                                // TODO: shall we terminate self after received such notifications
-                                //       from the majority close_group nodes around us?
                             } else {
                                 error!("Received a bad_peer notification from {detected_by:?}, targeting {bad_peer:?}, which is not us.");
                             }
