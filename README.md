@@ -110,7 +110,7 @@ WASM support for the autonomi API is currently under active development. More do
 
 ### Using a Local Network
 
-We can explore the network's features by using multiple node processes to form a local network. e also need to run a
+We can explore the network's features by using multiple node processes to form a local network. We also need to run a
 local EVM network for our nodes and client to connect to.
 
 Follow these steps to create a local network:
