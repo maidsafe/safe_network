@@ -6,8 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use bls::PublicKey;
 /// Register Secret Key
 pub use bls::SecretKey as RegisterSecretKey;
+use crdts::merkle_reg::MerkleReg;
+
 use sn_evm::Amount;
 use sn_evm::AttoTokens;
 use sn_evm::EvmWalletError;
@@ -28,7 +31,7 @@ use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
 use sn_protocol::NetworkAddress;
 use sn_registers::Register as BaseRegister;
-use sn_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
+use sn_registers::{Entry, Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use std::collections::BTreeSet;
 use xor_name::XorName;
 
@@ -260,12 +263,12 @@ impl Client {
         RegisterAddress::new(name, pk)
     }
 
-    /// Creates a new Register with a name and an initial value and uploads it to the network.
+    /// Creates a new Register with a name and optional initial value and uploads it to the network.
     ///
     /// The Register is created with the owner as the only writer.
     pub async fn register_create(
         &self,
-        value: Bytes,
+        value: Option<Bytes>,
         name: &str,
         owner: RegisterSecretKey,
         wallet: &EvmWallet,
@@ -282,7 +285,7 @@ impl Client {
     /// Unlike `register_create`, this function allows you to specify the permissions for the register.
     pub async fn register_create_with_permissions(
         &self,
-        value: Bytes,
+        value: Option<Bytes>,
         name: &str,
         owner: RegisterSecretKey,
         permissions: RegisterPermissions,
@@ -292,7 +295,7 @@ impl Client {
         let name = XorName::from_content_parts(&[name.as_bytes()]);
 
         // Owner can write to the register.
-        let register = Register::new(Some(value), name, owner, permissions)?;
+        let register = Register::new(value, name, owner, permissions)?;
         let address = register.address();
 
         let reg_xor = address.xorname();

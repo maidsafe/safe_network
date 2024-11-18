@@ -55,6 +55,7 @@ serde-wasm-bindgen = "0.6.5"
 sha2 = "0.10.6"
 blst = "0.3.13"
 blstrs = "0.7.1"
+crdts = "7.3.2"
 
 [dev-dependencies]
 alloy = { version = "0.5.3", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
