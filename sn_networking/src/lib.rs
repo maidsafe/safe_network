@@ -30,7 +30,6 @@ mod transfers;
 mod transport;
 
 use cmd::LocalSwarmCmd;
-use sn_registers::SignedRegister;
 use xor_name::XorName;
 
 // re-export arch dependent deps for use in the crate, or above
@@ -62,15 +61,11 @@ use sn_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
 use sn_protocol::{
     error::Error as ProtocolError,
     messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
-    storage::{
-        try_deserialize_record, try_serialize_record, RecordHeader, RecordKind, RecordType,
-        RetryStrategy,
-    },
+    storage::{RecordType, RetryStrategy, Scratchpad},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
-use sn_transfers::SignedSpend;
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     net::IpAddr,
     sync::Arc,
 };
@@ -79,6 +74,14 @@ use tokio::sync::{
     oneshot,
 };
 use tokio::time::Duration;
+use {
+    sn_protocol::storage::{
+        try_deserialize_record, try_serialize_record, RecordHeader, RecordKind,
+    },
+    sn_registers::SignedRegister,
+    sn_transfers::SignedSpend,
+    std::collections::HashSet,
+};
 
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
@@ -274,10 +277,9 @@ impl Network {
         quorum: Quorum,
         retry_strategy: Option<RetryStrategy>,
     ) -> Result<()> {
-        let mut total_attempts = 1;
-        total_attempts += retry_strategy
-            .map(|strategy| strategy.get_count())
-            .unwrap_or(0);
+        let total_attempts = retry_strategy
+            .map(|strategy| strategy.attempts())
+            .unwrap_or(1);
 
         let pretty_key = PrettyPrintRecordKey::from(&chunk_address.to_record_key()).into_owned();
         let expected_n_verified = get_quorum_value(&quorum);
@@ -479,30 +481,6 @@ impl Network {
         Ok(all_register_copies)
     }
 
-    /// Get a record from the network
-    /// This differs from non-wasm32 builds as no retries are applied
-    #[cfg(target_arch = "wasm32")]
-    pub async fn get_record_from_network(
-        &self,
-        key: RecordKey,
-        cfg: &GetRecordCfg,
-    ) -> Result<Record> {
-        let pretty_key = PrettyPrintRecordKey::from(&key);
-        info!("Getting record from network of {pretty_key:?}. with cfg {cfg:?}",);
-        let (sender, receiver) = oneshot::channel();
-        self.send_network_swarm_cmd(NetworkSwarmCmd::GetNetworkRecord {
-            key: key.clone(),
-            sender,
-            cfg: cfg.clone(),
-        });
-        let result = receiver.await.map_err(|e| {
-            error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
-            NetworkError::InternalMsgChannelDropped
-        })?;
-
-        result.map_err(NetworkError::from)
-    }
-
     /// Get the Record from the network
     /// Carry out re-attempts if required
     /// In case a target_record is provided, only return when fetched target.
@@ -511,99 +489,99 @@ impl Network {
     /// It also handles the split record error for spends and registers.
     /// For spends, it accumulates the spends and returns an error if more than one.
     /// For registers, it merges the registers and returns the merged record.
-    #[cfg(not(target_arch = "wasm32"))]
     pub async fn get_record_from_network(
         &self,
         key: RecordKey,
         cfg: &GetRecordCfg,
     ) -> Result<Record> {
-        let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
-        backoff::future::retry(
-            backoff::ExponentialBackoff {
-                // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
-                // be disabled.
-                max_elapsed_time: retry_duration,
-                ..Default::default()
-            },
-            || async {
-                let pretty_key = PrettyPrintRecordKey::from(&key);
-                info!("Getting record from network of {pretty_key:?}. with cfg {cfg:?}",);
-                let (sender, receiver) = oneshot::channel();
-                self.send_network_swarm_cmd(NetworkSwarmCmd::GetNetworkRecord {
-                    key: key.clone(),
-                    sender,
-                    cfg: cfg.clone(),
-                });
-                let result = receiver.await.map_err(|e| {
-                error!("When fetching record {pretty_key:?}, encountered a channel error {e:?}");
-                NetworkError::InternalMsgChannelDropped
-            }).map_err(|err| backoff::Error::Transient { err,  retry_after: None })?;
+        let pretty_key = PrettyPrintRecordKey::from(&key);
+        let mut backoff = cfg
+            .retry_strategy
+            .unwrap_or(RetryStrategy::None)
+            .backoff()
+            .into_iter();
 
-                // log the results
-                match &result {
-                    Ok(_) => {
-                        info!("Record returned: {pretty_key:?}.");
-                    }
-                    Err(GetRecordError::RecordDoesNotMatch(_)) => {
-                        warn!("The returned record does not match target {pretty_key:?}.");
-                    }
-                    Err(GetRecordError::NotEnoughCopies { expected, got, .. }) => {
-                        warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}.");
-                    }
-                    // libp2p RecordNotFound does mean no holders answered.
-                    // it does not actually mean the record does not exist.
-                    // just that those asked did not have it
-                    Err(GetRecordError::RecordNotFound) => {
-                        warn!("No holder of record '{pretty_key:?}' found.");
-                    }
-                    // This is returned during SplitRecordError, we should not get this error here.
-                    Err(GetRecordError::RecordKindMismatch) => {
-                        error!("Record kind mismatch for {pretty_key:?}. This error should not happen here.");
-                    }
-                    Err(GetRecordError::SplitRecord { result_map }) => {
-                        error!("Encountered a split record for {pretty_key:?}.");
-                        if let Some(record) = Self::handle_split_record_error(result_map, &key)? {
-                            info!("Merged the split record (register) for {pretty_key:?}, into a single record");
-                            return Ok(record);
-                        }
-                    }
-                    Err(GetRecordError::QueryTimeout) => {
-                        error!("Encountered query timeout for {pretty_key:?}.");
-                    }
-                };
+        loop {
+            info!("Getting record from network of {pretty_key:?}. with cfg {cfg:?}",);
+            let (sender, receiver) = oneshot::channel();
+            self.send_network_swarm_cmd(NetworkSwarmCmd::GetNetworkRecord {
+                key: key.clone(),
+                sender,
+                cfg: cfg.clone(),
+            });
+            let result = match receiver.await {
+                Ok(result) => result,
+                Err(err) => {
+                    error!(
+                        "When fetching record {pretty_key:?}, encountered a channel error {err:?}"
+                    );
+                    // Do not attempt retries.
+                    return Err(NetworkError::InternalMsgChannelDropped);
+                }
+            };
 
-                // if we don't want to retry, throw permanent error
-                if cfg.retry_strategy.is_none() {
-                    if let Err(e) = result {
-                        return Err(backoff::Error::Permanent(NetworkError::from(e)));
+            let err = match result {
+                Ok(record) => {
+                    info!("Record returned: {pretty_key:?}.");
+                    return Ok(record);
+                }
+                Err(err) => err,
+            };
+
+            // log the results
+            match &err {
+                GetRecordError::RecordDoesNotMatch(_) => {
+                    warn!("The returned record does not match target {pretty_key:?}.");
+                }
+                GetRecordError::NotEnoughCopies { expected, got, .. } => {
+                    warn!("Not enough copies ({got}/{expected}) found yet for {pretty_key:?}.");
+                }
+                // libp2p RecordNotFound does mean no holders answered.
+                // it does not actually mean the record does not exist.
+                // just that those asked did not have it
+                GetRecordError::RecordNotFound => {
+                    warn!("No holder of record '{pretty_key:?}' found.");
+                }
+                // This is returned during SplitRecordError, we should not get this error here.
+                GetRecordError::RecordKindMismatch => {
+                    error!("Record kind mismatch for {pretty_key:?}. This error should not happen here.");
+                }
+                GetRecordError::SplitRecord { result_map } => {
+                    error!("Encountered a split record for {pretty_key:?}.");
+                    if let Some(record) = Self::handle_split_record_error(result_map, &key)? {
+                        info!("Merged the split record (register) for {pretty_key:?}, into a single record");
+                        return Ok(record);
                     }
                 }
-                if result.is_err() {
+                GetRecordError::QueryTimeout => {
+                    error!("Encountered query timeout for {pretty_key:?}.");
+                }
+            }
+
+            match backoff.next() {
+                Some(Some(duration)) => {
+                    crate::target_arch::sleep(duration).await;
                     debug!("Getting record from network of {pretty_key:?} via backoff...");
                 }
-                result.map_err(|err| backoff::Error::Transient {
-                    err: NetworkError::from(err),
-                    retry_after: None,
-                })
-            },
-        )
-        .await
+                _ => break Err(err.into()),
+            }
+        }
     }
 
     /// Handle the split record error.
     /// Spend: Accumulate spends and return error if more than one.
     /// Register: Merge registers and return the merged record.
-    #[cfg(not(target_arch = "wasm32"))]
     fn handle_split_record_error(
         result_map: &HashMap<XorName, (Record, HashSet<PeerId>)>,
         key: &RecordKey,
-    ) -> std::result::Result<Option<Record>, backoff::Error<NetworkError>> {
+    ) -> std::result::Result<Option<Record>, NetworkError> {
         let pretty_key = PrettyPrintRecordKey::from(key);
 
         // attempt to deserialise and accumulate any spends or registers
         let results_count = result_map.len();
         let mut accumulated_spends = HashSet::new();
         let mut collected_registers = Vec::new();
+        let mut valid_scratchpad: Option<Scratchpad> = None;
 
         if results_count > 1 {
             let mut record_kind = None;
@@ -613,46 +591,82 @@ impl Network {
                     continue;
                 };
                 let kind = record_kind.get_or_insert(header.kind);
+                // FIXME: the first record dictates the kind, but we should check all records are of the same kind.
+                // And somehow discard the incorrect ones.
                 if *kind != header.kind {
-                    error!("Encountered a split record for {pretty_key:?} with different RecordHeaders. Expected {kind:?} but got {:?}",header.kind);
-                    return Err(backoff::Error::Permanent(NetworkError::GetRecordError(
-                        GetRecordError::RecordKindMismatch,
-                    )));
+                    error!("Encountered a split record for {pretty_key:?} with different RecordHeaders. Expected {kind:?} but got {:?}. Skipping",header.kind);
+                    continue;
                 }
 
-                // Accumulate the spends
-                if kind == &RecordKind::Spend {
-                    info!("For record {pretty_key:?}, we have a split record for a spend attempt. Accumulating spends");
+                match kind {
+                    RecordKind::Chunk
+                    | RecordKind::ChunkWithPayment
+                    | RecordKind::RegisterWithPayment
+                    | RecordKind::ScratchpadWithPayment => {
+                        error!("Encountered a split record for {pretty_key:?} with unexpected RecordKind {kind:?}, skipping.");
+                        continue;
+                    }
+                    RecordKind::Spend => {
+                        info!("For record {pretty_key:?}, we have a split record for a spend attempt. Accumulating spends");
 
-                    match get_raw_signed_spends_from_record(record) {
-                        Ok(spends) => {
-                            accumulated_spends.extend(spends);
-                        }
-                        Err(_) => {
-                            continue;
+                        match get_raw_signed_spends_from_record(record) {
+                            Ok(spends) => {
+                                accumulated_spends.extend(spends);
+                            }
+                            Err(_) => {
+                                continue;
+                            }
                         }
                     }
-                }
-                // Accumulate the registers
-                else if kind == &RecordKind::Register {
-                    info!("For record {pretty_key:?}, we have a split record for a register. Accumulating registers");
-                    let Ok(register) = try_deserialize_record::<SignedRegister>(record) else {
-                        error!(
-                            "Failed to deserialize register {pretty_key}. Skipping accumulation"
-                        );
-                        continue;
-                    };
-
-                    match register.verify() {
-                        Ok(_) => {
-                            collected_registers.push(register);
-                        }
-                        Err(_) => {
+                    RecordKind::Register => {
+                        info!("For record {pretty_key:?}, we have a split record for a register. Accumulating registers");
+                        let Ok(register) = try_deserialize_record::<SignedRegister>(record) else {
                             error!(
-                                "Failed to verify register for {pretty_key} at address: {}. Skipping accumulation",
-                                register.address()
+                                "Failed to deserialize register {pretty_key}. Skipping accumulation"
                             );
                             continue;
+                        };
+
+                        match register.verify() {
+                            Ok(_) => {
+                                collected_registers.push(register);
+                            }
+                            Err(_) => {
+                                error!(
+                                    "Failed to verify register for {pretty_key} at address: {}. Skipping accumulation",
+                                    register.address()
+                                );
+                                continue;
+                            }
+                        }
+                    }
+                    RecordKind::Scratchpad => {
+                        info!("For record {pretty_key:?}, we have a split record for a scratchpad. Selecting the one with the highest count");
+                        let Ok(scratchpad) = try_deserialize_record::<Scratchpad>(record) else {
+                            error!(
+                                "Failed to deserialize scratchpad {pretty_key}. Skipping accumulation"
+                            );
+                            continue;
+                        };
+
+                        if !scratchpad.is_valid() {
+                            warn!(
+                                "Rejecting Scratchpad for {pretty_key} PUT with invalid signature during split record error"
+                            );
+                            continue;
+                        }
+
+                        if let Some(old) = &valid_scratchpad {
+                            if old.count() >= scratchpad.count() {
+                                info!(
+                                    "Rejecting Scratchpad for {pretty_key} with lower count than the previous one"
+                                );
+                                continue;
+                            } else {
+                                valid_scratchpad = Some(scratchpad);
+                            }
+                        } else {
+                            valid_scratchpad = Some(scratchpad);
                         }
                     }
                 }
@@ -664,9 +678,7 @@ impl Network {
             info!("For record {pretty_key:?} task found split record for a spend, accumulated and sending them as a single record");
             let accumulated_spends = accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
 
-            return Err(backoff::Error::Permanent(NetworkError::DoubleSpendAttempt(
-                accumulated_spends,
-            )));
+            return Err(NetworkError::DoubleSpendAttempt(accumulated_spends));
         } else if !collected_registers.is_empty() {
             info!("For record {pretty_key:?} task found multiple registers, merging them.");
             let signed_register = collected_registers.iter().fold(collected_registers[0].clone(), |mut acc, x| {
@@ -681,13 +693,29 @@ impl Network {
                     error!(
                         "Error while serializing the merged register for {pretty_key:?}: {err:?}"
                     );
-                    backoff::Error::Permanent(NetworkError::from(err))
+                    NetworkError::from(err)
                 })?
                 .to_vec();
 
             let record = Record {
                 key: key.clone(),
                 value: record_value,
+                publisher: None,
+                expires: None,
+            };
+            return Ok(Some(record));
+        } else if let Some(scratchpad) = valid_scratchpad {
+            info!("Found a valid scratchpad for {pretty_key:?}, returning it");
+            let record = Record {
+                key: key.clone(),
+                value: try_serialize_record(&scratchpad, RecordKind::Scratchpad)
+                    .map_err(|err| {
+                        error!(
+                            "Error while serializing valid scratchpad for {pretty_key:?}: {err:?}"
+                        );
+                        NetworkError::from(err)
+                    })?
+                    .to_vec(),
                 publisher: None,
                 expires: None,
             };
@@ -739,49 +767,35 @@ impl Network {
 
     /// Put `Record` to network
     /// Optionally verify the record is stored after putting it to network
-    /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
-    #[cfg(target_arch = "wasm32")]
+    /// If verify is on, we retry.
     pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
         let pretty_key = PrettyPrintRecordKey::from(&record.key);
+        let mut backoff = cfg
+            .retry_strategy
+            .unwrap_or(RetryStrategy::None)
+            .backoff()
+            .into_iter();
 
-        info!("Attempting to PUT record with key: {pretty_key:?} to network, with cfg {cfg:?}");
-        self.put_record_once(record.clone(), cfg).await
-    }
-
-    /// Put `Record` to network
-    /// Optionally verify the record is stored after putting it to network
-    /// If verify is on, retry multiple times within MAX_PUT_RETRY_DURATION duration.
-    #[cfg(not(target_arch = "wasm32"))]
-    pub async fn put_record(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
-        let pretty_key = PrettyPrintRecordKey::from(&record.key);
-
-        // Here we only retry after a failed validation.
-        // So a long validation time will limit the number of PUT retries we attempt here.
-        let retry_duration = cfg.retry_strategy.map(|strategy| strategy.get_duration());
-        backoff::future::retry(
-            backoff::ExponentialBackoff {
-                // None sets a random duration, but we'll be terminating with a BackoffError::Permanent, so retry will
-                // be disabled.
-            max_elapsed_time: retry_duration,
-            ..Default::default()
-        }, || async {
-
+        loop {
             info!(
                 "Attempting to PUT record with key: {pretty_key:?} to network, with cfg {cfg:?}, retrying via backoff..."
             );
-            self.put_record_once(record.clone(), cfg).await.map_err(|err|
-            {
-                // FIXME: Skip if we get a permanent error during verification, e.g., DoubleSpendAttempt
-                warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
 
-                if cfg.retry_strategy.is_some() {
-                    backoff::Error::Transient { err, retry_after: None }
-                } else {
-                    backoff::Error::Permanent(err)
+            let err = match self.put_record_once(record.clone(), cfg).await {
+                Ok(_) => break Ok(()),
+                Err(err) => err,
+            };
+
+            // FIXME: Skip if we get a permanent error during verification, e.g., DoubleSpendAttempt
+            warn!("Failed to PUT record with key: {pretty_key:?} to network (retry via backoff) with error: {err:?}");
+
+            match backoff.next() {
+                Some(Some(duration)) => {
+                    crate::target_arch::sleep(duration).await;
                 }
-
-            })
-        }).await
+                _ => break Err(err),
+            }
+        }
     }
 
     async fn put_record_once(&self, record: Record, cfg: &PutRecordCfg) -> Result<()> {
@@ -848,6 +862,11 @@ impl Network {
                         return Err(NetworkError::RecordNotStoredByNodes(
                             NetworkAddress::from_record_key(&record_key),
                         ));
+                    }
+                    Err(NetworkError::GetRecordError(GetRecordError::SplitRecord { .. }))
+                        if matches!(verification_kind, VerificationKind::Crdt) =>
+                    {
+                        warn!("Record {pretty_key:?} is split, which is okay since we're dealing with CRDTs");
                     }
                     Err(e) => {
                         debug!(

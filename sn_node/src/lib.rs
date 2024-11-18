@@ -16,13 +16,7 @@
     test(attr(deny(warnings)))
 )]
 // Turn on some additional warnings to encourage good style.
-#![warn(
-    missing_docs,
-    unreachable_pub,
-    unused_qualifications,
-    unused_results,
-    clippy::unwrap_used
-)]
+#![warn(missing_docs, unreachable_pub, unused_results, clippy::unwrap_used)]
 
 #[macro_use]
 extern crate tracing;
@@ -34,6 +28,8 @@ mod log_markers;
 mod metrics;
 mod node;
 mod put_validation;
+#[cfg(feature = "extension-module")]
+mod python;
 mod quote;
 mod replication;
 
@@ -53,6 +49,8 @@ use std::{
     path::PathBuf,
 };
 
+use sn_evm::RewardsAddress;
+
 /// Once a node is started and running, the user obtains
 /// a `NodeRunning` object which can be used to interact with it.
 #[derive(Clone)]
@@ -60,6 +58,7 @@ pub struct RunningNode {
     network: Network,
     node_events_channel: NodeEventsChannel,
     root_dir_path: PathBuf,
+    rewards_address: RewardsAddress,
 }
 
 impl RunningNode {
@@ -120,5 +119,10 @@ impl RunningNode {
     pub async fn get_kbuckets(&self) -> Result<BTreeMap<u32, Vec<PeerId>>> {
         let kbuckets = self.network.get_kbuckets().await?;
         Ok(kbuckets)
+    }
+
+    /// Returns the node's reward address
+    pub fn reward_address(&self) -> &RewardsAddress {
+        &self.rewards_address
     }
 }

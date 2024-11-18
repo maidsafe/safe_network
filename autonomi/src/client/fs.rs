@@ -194,7 +194,7 @@ impl Client {
 
         let data = tokio::fs::read(path).await?;
         let data = Bytes::from(data);
-        let addr = self.data_put(data, wallet).await?;
+        let addr = self.data_put(data, wallet.into()).await?;
         Ok(addr)
     }
 
@@ -227,7 +227,8 @@ impl Client {
             tracing::debug!("Encryption took: {:.2?}", now.elapsed());
             let map_xor_name = *data_map_chunk.address().xorname();
 
-            archive.add_file(path, map_xor_name, Metadata::new());
+            let metadata = metadata_from_entry(&entry);
+            archive.add_file(path, map_xor_name, metadata);
         }
 
         let root_serialized = rmp_serde::to_vec(&archive)?;
@@ -253,6 +254,7 @@ pub(crate) fn metadata_from_entry(entry: &walkdir::DirEntry) -> Metadata {
                 uploaded: 0,
                 created: 0,
                 modified: 0,
+                size: 0,
             };
         }
     };
@@ -285,5 +287,6 @@ pub(crate) fn metadata_from_entry(entry: &walkdir::DirEntry) -> Metadata {
             .as_secs(),
         created,
         modified,
+        size: fs_metadata.len(),
     }
 }

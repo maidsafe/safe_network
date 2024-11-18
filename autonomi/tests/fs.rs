@@ -93,7 +93,12 @@ async fn file_into_vault() -> Result<()> {
     let archive = client.archive_get(addr).await?;
     let set_version = 0;
     client
-        .write_bytes_to_vault(archive.into_bytes()?, &wallet, &client_sk, set_version)
+        .write_bytes_to_vault(
+            archive.into_bytes()?,
+            wallet.into(),
+            &client_sk,
+            set_version,
+        )
         .await?;
 
     // now assert over the stored account packet

@@ -50,7 +50,7 @@ impl<'a> NodeService<'a> {
 }
 
 #[async_trait]
-impl<'a> ServiceStateActions for NodeService<'a> {
+impl ServiceStateActions for NodeService<'_> {
     fn bin_path(&self) -> PathBuf {
         self.service_data.safenode_path.clone()
     }

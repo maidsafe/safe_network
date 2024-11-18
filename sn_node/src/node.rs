@@ -174,6 +174,7 @@ impl NodeBuilder {
             network,
             node_events_channel,
             root_dir_path: self.root_dir,
+            rewards_address: self.evm_address,
         };
 
         // Run the node

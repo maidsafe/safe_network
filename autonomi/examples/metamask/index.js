@@ -1,6 +1,6 @@
 import init, * as autonomi from '../../pkg/autonomi.js';
 
-export async function externalSignerPut(peerAddr) {
+export async function externalSignerPrivateDataPutToVault(peerAddr) {
     try {
         // Check if MetaMask (window.ethereum) is available
         if (typeof window.ethereum === 'undefined') {
@@ -21,76 +21,107 @@ export async function externalSignerPut(peerAddr) {
         // Generate 1MB of random bytes in a Uint8Array
         const data = new Uint8Array(1024 * 1024).map(() => Math.floor(Math.random() * 256));
 
-        // Get quotes and payment information (this would need actual implementation)
-        const [quotes, quotePayments, free_chunks] = await client.getQuotes(data);
+        // Encrypt the data to chunks
+        const [dataMapChunk, dataChunks, dataMapChunkAddress, dataChunkAddresses] = autonomi.encryptData(data);
 
-        // Get the EVM network
-        let evmNetwork = autonomi.getEvmNetwork();
+        // Fetch quotes for the chunks
+        const [quotes, quotePayments, _freeChunks] = await client.getQuotes(dataChunkAddresses);
 
-        // Form quotes payment calldata
-        const payForQuotesCalldata = autonomi.getPayForQuotesCalldata(
-            evmNetwork,
-            quotePayments
-        );
+        // Pay for data chunks (not the data map)
+        const receipt = await executeQuotePayments(sender, quotes, quotePayments);
 
-        // Form approve to spend tokens calldata
-        const approveCalldata = autonomi.getApproveToSpendTokensCalldata(
-            evmNetwork,
-            payForQuotesCalldata.approve_spender,
-            payForQuotesCalldata.approve_amount
-        );
+        // Wait for a few seconds to allow tx to confirm
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
-        console.log("Sending approve transaction..");
+        // Upload the data
+        const privateDataAccess = await client.putPrivateDataWithReceipt(data, receipt);
 
-        // Approve to spend tokens
-        let txHash = await sendTransaction({
-            from: sender,
-            to: approveCalldata[1],
-            data: approveCalldata[0]
-        });
+        // Create a private archive
+        const privateArchive = new autonomi.PrivateArchive();
 
-        await waitForTransactionConfirmation(txHash);
+        // Add our data's data map chunk to the private archive
+        privateArchive.addFile("test", privateDataAccess, autonomi.createMetadata(data.length));
 
-        let payments = {};
+        // Get the private archive's bytes
+        const privateArchiveBytes = privateArchive.bytes();
 
-        // Execute batched quote payment transactions
-        for (const [calldata, quoteHashes] of payForQuotesCalldata.batched_calldata_map) {
-            console.log("Sending batched data payment transaction..");
+        // Encrypt the private archive to chunks
+        const [paDataMapChunk, paDataChunks, paDataMapChunkAddress, paDataChunkAddresses] = autonomi.encryptData(privateArchiveBytes);
 
-            let txHash = await sendTransaction({
-                from: sender,
-                to: payForQuotesCalldata.to,
-                data: calldata
-            });
+        // Fetch quotes for the private archive chunks
+        const [paQuotes, paQuotePayments, _paFreeChunks] = await client.getQuotes(paDataChunkAddresses);
 
-            await waitForTransactionConfirmation(txHash);
+        // Pay for the private archive chunks (not the data map)
+        const paReceipt = await executeQuotePayments(sender, paQuotes, paQuotePayments);
 
-            // Record the transaction hashes for each quote
-            quoteHashes.forEach(quoteHash => {
-                payments[quoteHash] = txHash;
-            });
+        // Wait for a few seconds to allow tx to confirm
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        // Upload the private archive
+        const privateArchiveAccess = await client.putPrivateArchiveWithReceipt(privateArchive, paReceipt);
+
+        // Generate a random vault key (should normally be derived from a constant signature)
+        const vaultKey = autonomi.genSecretKey();
+
+        // Fetch user data from vault (won't exist, so will be empty)
+        let userData;
+
+        try {
+            userData = await client.getUserDataFromVault(vaultKey);
+        } catch (err) {
+            userData = new autonomi.UserData();
         }
 
-        // Generate payment proof
-        const proof = autonomi.getPaymentProofFromQuotesAndPayments(quotes, payments);
+        // Add archive to user data
+        userData.addPrivateFileArchive(privateArchiveAccess, "test-archive");
 
-        // Submit the data with proof of payment
-        const addr = await client.dataPutWithProof(data, proof);
+        // Get or create a scratchpad for the user data
+        let scratchpad = await client.getOrCreateUserDataScratchpad(vaultKey);
 
-        // Wait for a few seconds to allow data to propagate
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        // Content address of the scratchpad
+        let scratchPadAddress = scratchpad.xorName();
 
-        // Fetch the data back
-        const fetchedData = await client.dataGet(addr);
+        // Fetch quotes for the scratchpad
+        const [spQuotes, spQuotePayments, _spFreeChunks] = await client.getQuotes(scratchPadAddress ? [scratchPadAddress] : []);
 
-        if (fetchedData.toString() === data.toString()) {
-            console.log("Fetched data matches the original data!");
+        // Pay for the private archive chunks (not the data map)
+        const spReceipt = await executeQuotePayments(sender, spQuotes, spQuotePayments);
+
+        // Wait for a few seconds to allow tx to confirm
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        // Update vault
+        await client.putUserDataToVaultWithReceipt(userData, spReceipt, vaultKey);
+
+        // VERIFY UPLOADED DATA
+
+        // Fetch user data
+        let fetchedUserData = await client.getUserDataFromVault(vaultKey);
+
+        // Get the first key
+        let fetchedPrivateArchiveAccess = fetchedUserData.privateFileArchives().keys().next().value;
+
+        // Get private archive
+        let fetchedPrivateArchive = await client.getPrivateArchive(fetchedPrivateArchiveAccess);
+
+        // Select first file in private archive
+        let [fetchedFilePath, [fetchedPrivateFileAccess, fetchedFileMetadata]] = fetchedPrivateArchive.map().entries().next().value;
+
+        console.log(fetchedFilePath);
+        console.log(fetchedPrivateFileAccess);
+        console.log(fetchedFileMetadata);
+
+        // Fetch private file/data
+        let fetchedPrivateFile = await client.getPrivateData(fetchedPrivateFileAccess);
+
+        // Compare to original data
+        console.log("Comparing fetched data to original data..");
+
+        if (fetchedPrivateFile.toString() === data.toString()) {
+            console.log("Data matches! Private file upload to vault was successful!");
         } else {
-            throw new Error("Fetched data does not match original data!")
+            console.log("Data does not match!! Something went wrong..")
         }
-
-        console.log("Data successfully put and verified!");
-
     } catch (error) {
         console.error("An error occurred:", error);
     }
@@ -146,4 +177,57 @@ async function waitForTransactionConfirmation(txHash) {
         // Wait for 1 second before checking again
         await delay(1000);
     }
+}
+
+const executeQuotePayments = async (sender, quotes, quotePayments) => {
+    // Get the EVM network
+    let evmNetwork = autonomi.getEvmNetwork();
+
+    // Form quotes payment calldata
+    const payForQuotesCalldata = autonomi.getPayForQuotesCalldata(
+        evmNetwork,
+        quotePayments
+    );
+
+    // Form approve to spend tokens calldata
+    const approveCalldata = autonomi.getApproveToSpendTokensCalldata(
+        evmNetwork,
+        payForQuotesCalldata.approve_spender,
+        payForQuotesCalldata.approve_amount
+    );
+
+    console.log("Sending approve transaction..");
+
+    // Approve to spend tokens
+    let hash = await sendTransaction({
+        from: sender,
+        to: approveCalldata[1],
+        data: approveCalldata[0]
+    });
+
+    // Wait for approve tx to confirm
+    await waitForTransactionConfirmation(hash);
+
+    let payments = {};
+
+    // Execute batched quote payment transactions
+    for (const [calldata, quoteHashes] of payForQuotesCalldata.batched_calldata_map) {
+        console.log("Sending batched data payment transaction..");
+
+        let hash = await sendTransaction({
+            from: sender,
+            to: payForQuotesCalldata.to,
+            data: calldata
+        });
+
+        await waitForTransactionConfirmation(hash);
+
+        // Record the transaction hashes for each quote
+        quoteHashes.forEach(quoteHash => {
+            payments[quoteHash] = hash;
+        });
+    }
+
+    // Generate receipt
+    return autonomi.getReceiptFromQuotesAndPayments(quotes, payments);
 }

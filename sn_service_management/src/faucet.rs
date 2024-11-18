@@ -44,7 +44,7 @@ impl<'a> FaucetService<'a> {
 }
 
 #[async_trait]
-impl<'a> ServiceStateActions for FaucetService<'a> {
+impl ServiceStateActions for FaucetService<'_> {
     fn bin_path(&self) -> PathBuf {
         self.service_data.faucet_path.clone()
     }

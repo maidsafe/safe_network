@@ -40,7 +40,7 @@ pub async fn create(peers: Vec<Multiaddr>) -> Result<()> {
 
     println!("Pushing to network vault...");
     let total_cost = client
-        .put_user_data_to_vault(&vault_sk, &wallet, local_user_data)
+        .put_user_data_to_vault(&vault_sk, wallet.into(), local_user_data)
         .await?;
 
     if total_cost.is_zero() {
@@ -82,7 +82,7 @@ pub async fn sync(peers: Vec<Multiaddr>, force: bool) -> Result<()> {
     let private_file_archives_len = local_user_data.private_file_archives.len();
     let registers_len = local_user_data.registers.len();
     client
-        .put_user_data_to_vault(&vault_sk, &wallet, local_user_data)
+        .put_user_data_to_vault(&vault_sk, wallet.into(), local_user_data)
         .await?;
 
     println!("✅ Successfully synced vault");

@@ -521,9 +521,9 @@ pub async fn run_node(
     })
 }
 
-///
-/// Private Helpers
-///
+//
+// Private Helpers
+//
 
 async fn validate_network(node_registry: &mut NodeRegistry, peers: Vec<Multiaddr>) -> Result<()> {
     let mut all_peers = node_registry

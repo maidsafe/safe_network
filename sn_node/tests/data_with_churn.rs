@@ -343,7 +343,7 @@ fn store_chunks_task(
             let mut retries = 1;
             loop {
                 match client
-                    .data_put(random_data.clone(), &wallet)
+                    .data_put(random_data.clone(), (&wallet).into())
                     .await
                     .inspect_err(|err| {
                         println!("Error to put chunk: {err:?}");

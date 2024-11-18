@@ -34,6 +34,11 @@ jobs:
         run: wasm-pack build --dev --target=web autonomi
         timeout-minutes: 30
 
+      - name: Cargo check for WASM
+        # Allow clippy lints (these can be pedantic on WASM), but deny regular Rust warnings
+        run: cargo clippy --target=wasm32-unknown-unknown --package=autonomi --all-targets -- --allow=clippy::all --deny=warnings
+        timeout-minutes: 30
+
   websocket:
     if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
     name: Standard Websocket builds

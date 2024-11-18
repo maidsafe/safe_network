@@ -10,7 +10,6 @@
 pub use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 /// Wasm32 target arch does not support `time` or spawning via tokio
 /// so we shim in alternatives here when building for that architecture
-
 #[cfg(not(target_arch = "wasm32"))]
 pub use tokio::{
     spawn,
