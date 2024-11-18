@@ -1,0 +1,25 @@
+thread 'rustc' panicked at compiler/rustc_serialize/src/opaque.rs:295:9:
+MemDecoder exhausted
+stack backtrace:
+   0:     0x7ffff6948225 - std::backtrace::Backtrace::create::h830740811c52a9b2
+   1:     0x7ffff4e45315 - std::backtrace::Backtrace::force_capture::h39f383d6f7f66dd9
+   2:     0x7ffff3edaadd - std[9380d5930221374f]::panicking::update_hook::<alloc[926503831ae3800]::boxed::Box<rustc_driver_impl[8e7401167f7f949d]::install_ice_hook::{closure#0}>>::{closure#0}
+   3:     0x7ffff4e5ca38 - std::panicking::rust_panic_with_hook::h0d54adfe474bcf89
+   4:     0x7ffff4e5c7d6 - std::panicking::begin_panic_handler::{{closure}}::h2299ba4f19c41831
+   5:     0x7ffff4e5a479 - std::sys::backtrace::__rust_end_short_backtrace::h0b6f5a727883f447
+   6:     0x7ffff4e5c4cc - rust_begin_unwind
+   7:     0x7ffff18caa10 - core::panicking::panic_fmt::hde3e02c671c994c5
+   8:     0x7ffff37ff827 - <rustc_serialize[870235d14f795f45]::opaque::MemDecoder>::decoder_exhausted
+   9:     0x7ffff67c651a - rustc_incremental[aa659fb456e0d29d]::persist::load::setup_dep_graph
+  10:     0x7ffff67cf094 - <rustc_interface[be8961cf52de7aeb]::queries::Queries>::global_ctxt
+  11:     0x7ffff64907b7 - rustc_interface[be8961cf52de7aeb]::interface::run_compiler::<core[2cc023bed8c61b97]::result::Result<(), rustc_span[ae741f722bd54871]::ErrorGuaranteed>, rustc_driver_impl[8e7401167f7f949d]::run_compiler::{closure#0}>::{closure#1}
+  12:     0x7ffff6501bd0 - std[9380d5930221374f]::sys::backtrace::__rust_begin_short_backtrace::<rustc_interface[be8961cf52de7aeb]::util::run_in_thread_with_globals<rustc_interface[be8961cf52de7aeb]::util::run_in_thread_pool_with_globals<rustc_interface[be8961cf52de7aeb]::interface::run_compiler<core[2cc023bed8c61b97]::result::Result<(), rustc_span[ae741f722bd54871]::ErrorGuaranteed>, rustc_driver_impl[8e7401167f7f949d]::run_compiler::{closure#0}>::{closure#1}, core[2cc023bed8c61b97]::result::Result<(), rustc_span[ae741f722bd54871]::ErrorGuaranteed>>::{closure#0}, core[2cc023bed8c61b97]::result::Result<(), rustc_span[ae741f722bd54871]::ErrorGuaranteed>>::{closure#0}::{closure#0}, core[2cc023bed8c61b97]::result::Result<(), rustc_span[ae741f722bd54871]::ErrorGuaranteed>>
+  13:     0x7ffff6501feb - <<std[9380d5930221374f]::thread::Builder>::spawn_unchecked_<rustc_interface[be8961cf52de7aeb]::util::run_in_thread_with_globals<rustc_interface[be8961cf52de7aeb]::util::run_in_thread_pool_with_globals<rustc_interface[be8961cf52de7aeb]::interface::run_compiler<core[2cc023bed8c61b97]::result::Result<(), rustc_span[ae741f722bd54871]::ErrorGuaranteed>, rustc_driver_impl[8e7401167f7f949d]::run_compiler::{closure#0}>::{closure#1}, core[2cc023bed8c61b97]::result::Result<(), rustc_span[ae741f722bd54871]::ErrorGuaranteed>>::{closure#0}, core[2cc023bed8c61b97]::result::Result<(), rustc_span[ae741f722bd54871]::ErrorGuaranteed>>::{closure#0}::{closure#0}, core[2cc023bed8c61b97]::result::Result<(), rustc_span[ae741f722bd54871]::ErrorGuaranteed>>::{closure#1} as core[2cc023bed8c61b97]::ops::function::FnOnce<()>>::call_once::{shim:vtable#0}
+  14:     0x7ffff6502ab9 - std::sys::pal::unix::thread::Thread::new::thread_start::hfcef7f5cf2ae2c29
+  15:     0x7ffff0699a42 - start_thread
+  16:     0x7ffff071905c - clone3
+  17:                0x0 - <unknown>
+
+
+rustc version: 1.84.0-nightly (bc5cf994d 2024-11-05)
+platform: x86_64-unknown-linux-gnu

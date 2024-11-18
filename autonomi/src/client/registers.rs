@@ -85,6 +85,16 @@ impl Register {
         self.crdt_reg.merkle_reg()
     }
 
+    // Owner's PublicKey is used to verify API calls which are signed using the owner's secret key.
+    pub fn owner(&self) -> bls::PublicKey {
+        self.signed_reg.base_register().address().owner()
+    }
+
+    // Permissions determine who can mutate the register.
+    pub fn permissions(&self) -> &RegisterPermissions {
+        self.signed_reg.base_register().permissions()
+    }
+
     fn new(
         initial_value: Option<Bytes>,
         name: XorName,
