@@ -30,7 +30,7 @@ async fn dir_upload_download() -> Result<()> {
     let wallet = get_funded_wallet();
 
     let addr = client
-        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .dir_and_archive_upload("tests/file/test_dir".into(), &wallet)
         .await?;
 
     sleep(Duration::from_secs(10)).await;
@@ -86,7 +86,7 @@ async fn file_into_vault() -> Result<()> {
     let client_sk = bls::SecretKey::random();
 
     let addr = client
-        .dir_upload("tests/file/test_dir".into(), &wallet)
+        .dir_and_archive_upload("tests/file/test_dir".into(), &wallet)
         .await?;
     sleep(Duration::from_secs(2)).await;
 

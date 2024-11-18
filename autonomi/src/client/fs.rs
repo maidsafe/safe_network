@@ -109,11 +109,24 @@ impl Client {
 
     /// Upload a directory to the network. The directory is recursively walked.
     /// Reads all files, splits into chunks, uploads chunks, uploads datamaps, uploads archive, returns ArchiveAddr (pointing to the archive)
-    pub async fn dir_upload(
+    pub async fn dir_and_archive_upload(
         &self,
         dir_path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, UploadError> {
+        match self.dir_upload(dir_path.clone(), wallet).await {
+            Ok(archive) => Ok(self.archive_upload(&archive, wallet).await?),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Upload a directory to the network. The directory is recursively walked.
+    /// Reads all files, splits into chunks, uploads chunks, uploads datamaps, uploads archive, returns Archive but does not upload that to the network.
+    pub async fn dir_upload(
+        &self,
+        dir_path: PathBuf,
+        wallet: &EvmWallet,
+    ) -> Result<Archive, UploadError> {
         info!("Uploading directory: {dir_path:?}");
         let start = tokio::time::Instant::now();
 
@@ -152,14 +165,20 @@ impl Client {
             }
         }
 
-        // upload archive
-        let archive_serialized = archive.into_bytes()?;
-        let arch_addr = self.data_put(archive_serialized, wallet).await?;
-
         info!("Complete archive upload completed in {:?}", start.elapsed());
         #[cfg(feature = "loud")]
         println!("Upload completed in {:?}", start.elapsed());
-        Ok(arch_addr)
+        Ok(archive)
+    }
+
+    /// Upload a directory Archive to the network
+    pub async fn archive_upload(
+        &self,
+        archive: &Archive,
+        wallet: &EvmWallet,
+    ) -> Result<ArchiveAddr, UploadError> {
+        let archive_serialized = archive.into_bytes()?;
+        Ok(self.data_put(archive_serialized, wallet).await?)
     }
 
     /// Upload a file to the network.

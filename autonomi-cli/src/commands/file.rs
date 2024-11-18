@@ -53,7 +53,7 @@ pub async fn upload(file: &str, public: bool, peers: Vec<Multiaddr>) -> Result<(
     let local_addr;
     let archive = if public {
         let xor_name = client
-            .dir_upload(dir_path, &wallet)
+            .dir_and_archive_upload(dir_path, &wallet)
             .await
             .wrap_err("Failed to upload file")?;
         local_addr = addr_to_str(xor_name);
