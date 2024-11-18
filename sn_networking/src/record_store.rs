@@ -1055,7 +1055,10 @@ mod tests {
     use bls::SecretKey;
     use xor_name::XorName;
 
-    use assert_fs::TempDir;
+    use assert_fs::{
+        fixture::{PathChild, PathCreateDir},
+        TempDir,
+    };
     use bytes::Bytes;
     use eyre::{bail, ContextCompat};
     use libp2p::kad::K_VALUE;
@@ -1257,11 +1260,13 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "fails on ci"]
     async fn can_store_after_restart() -> eyre::Result<()> {
-        let temp_dir = TempDir::new().expect("Should be able to create a temp dir.");
+        let tmp_dir = TempDir::new()?;
+        let current_test_dir = tmp_dir.child("can_store_after_restart");
+        current_test_dir.create_dir_all()?;
+
         let store_config = NodeRecordStoreConfig {
-            storage_dir: temp_dir.to_path_buf(),
+            storage_dir: current_test_dir.to_path_buf(),
             encryption_seed: [1u8; 16],
             ..Default::default()
         };
@@ -1302,7 +1307,7 @@ mod tests {
         assert!(stored_record.is_some(), "Chunk should be stored");
 
         // Sleep a while to let OS completes the flush to disk
-        sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_secs(5)).await;
 
         // Restart the store with same encrypt_seed
         drop(store);
@@ -1323,7 +1328,7 @@ mod tests {
         // Restart the store with different encrypt_seed
         let self_id_diff = PeerId::random();
         let store_config_diff = NodeRecordStoreConfig {
-            storage_dir: temp_dir.to_path_buf(),
+            storage_dir: current_test_dir.to_path_buf(),
             encryption_seed: [2u8; 16],
             ..Default::default()
         };
