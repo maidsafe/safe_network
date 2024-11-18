@@ -178,7 +178,7 @@ impl Client {
         wallet: &EvmWallet,
     ) -> Result<ArchiveAddr, UploadError> {
         let archive_serialized = archive.into_bytes()?;
-        Ok(self.data_put(archive_serialized, wallet).await?)
+        Ok(self.data_put(archive_serialized, wallet.into()).await?)
     }
 
     /// Upload a file to the network.

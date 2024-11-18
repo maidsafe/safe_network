@@ -6,10 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use bls::PublicKey;
 /// Register Secret Key
 pub use bls::SecretKey as RegisterSecretKey;
-use crdts::merkle_reg::MerkleReg;
 
 use sn_evm::Amount;
 use sn_evm::AttoTokens;
@@ -31,7 +29,7 @@ use sn_protocol::storage::try_serialize_record;
 use sn_protocol::storage::RecordKind;
 use sn_protocol::NetworkAddress;
 use sn_registers::Register as BaseRegister;
-use sn_registers::{Entry, Permissions, RegisterCrdt, RegisterOp, SignedRegister};
+use sn_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use std::collections::BTreeSet;
 use xor_name::XorName;
 
