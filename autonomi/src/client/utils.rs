@@ -100,7 +100,7 @@ impl Client {
 
     pub(crate) async fn chunk_upload_with_payment(
         &self,
-        chunk: Chunk,
+        chunk: &Chunk,
         payment: ProofOfPayment,
     ) -> Result<(), PutError> {
         let storing_node = payment.to_peer_id_payee().expect("Missing node Peer ID");
