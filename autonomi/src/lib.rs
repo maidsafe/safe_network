@@ -40,7 +40,7 @@ extern crate tracing;
 
 pub mod client;
 #[cfg(feature = "data")]
-mod self_encryption;
+pub mod self_encryption;
 mod utils;
 
 pub use sn_evm::get_evm_network_from_env;

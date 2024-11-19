@@ -68,7 +68,7 @@ impl Client {
         payment_option: PaymentOption,
     ) -> Result<PrivateDataAccess, PutError> {
         let now = sn_networking::target_arch::Instant::now();
-        let (data_map_chunk, chunks) = encrypt(data)?;
+        let (data_map_chunk, chunks) = encrypt(data).await?;
         debug!("Encryption took: {:.2?}", now.elapsed());
 
         // Pay for all chunks
