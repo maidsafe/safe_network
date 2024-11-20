@@ -18,6 +18,7 @@ default = ["metrics"]
 local = ["sn_peers_acquisition/local", "autonomi/local"]
 metrics = ["sn_logging/process-metrics"]
 network-contacts = ["sn_peers_acquisition/network-contacts"]
+websockets = ["autonomi/websockets"]
 
 [[bench]]
 name = "files"

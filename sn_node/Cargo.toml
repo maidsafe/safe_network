@@ -23,6 +23,7 @@ nightly = []
 open-metrics = ["sn_networking/open-metrics", "prometheus-client"]
 encrypt-records = ["sn_networking/encrypt-records"]
 upnp = ["sn_networking/upnp"]
+websockets = ["sn_networking/websockets"]
 loud = ["sn_networking/loud"] # loud mode: print important messages to console
 extension-module = ["pyo3/extension-module"]
 
