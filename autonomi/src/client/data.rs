@@ -41,8 +41,8 @@ pub static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
     batch_size
 });
 
-/// Number of retries to upload chunks.
-pub const RETRY_ATTEMPTS: usize = 3;
+/// Number of attempts to upload chunks.
+pub const PUT_ATTEMPTS: usize = 6;
 
 /// Number of chunks to download in parallel.
 /// Can be overridden by the `CHUNK_DOWNLOAD_BATCH_SIZE` environment variable.
@@ -315,7 +315,7 @@ impl Client {
             }
 
             // Max retries reached.
-            if current_attempt > RETRY_ATTEMPTS {
+            if current_attempt > PUT_ATTEMPTS {
                 return uploads_failed;
             }
 
