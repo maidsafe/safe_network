@@ -75,11 +75,12 @@ where
         // Write level and target
         let level = *event.metadata().level();
         let module = event.metadata().module_path().unwrap_or("<unknown module>");
+        let lno = event.metadata().line().unwrap_or(0);
         let time = SystemTime;
 
         write!(writer, "[")?;
         time.format_time(&mut writer)?;
-        write!(writer, " {level} {module}")?;
+        write!(writer, " {level} {module} {lno}")?;
         ctx.visit_spans(|span| write!(writer, "/{}", span.name()))?;
         write!(writer, "] ")?;
 
