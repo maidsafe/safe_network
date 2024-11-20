@@ -204,7 +204,7 @@ impl Client {
             // re-do encryption to get the correct map xorname here
             // this code needs refactor
             let now = sn_networking::target_arch::Instant::now();
-            let (data_map_chunk, _) = crate::self_encryption::encrypt(file_bytes).await?;
+            let (data_map_chunk, _) = crate::self_encryption::encrypt(file_bytes)?;
             tracing::debug!("Encryption took: {:.2?}", now.elapsed());
             let map_xor_name = *data_map_chunk.address().xorname();
 

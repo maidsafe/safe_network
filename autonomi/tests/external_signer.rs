@@ -20,7 +20,7 @@ use tokio::time::sleep;
 use xor_name::XorName;
 
 async fn pay_for_data(client: &Client, wallet: &Wallet, data: Bytes) -> eyre::Result<Receipt> {
-    let (data_map_chunk, chunks) = encrypt_data(data).await?;
+    let (data_map_chunk, chunks) = encrypt_data(data)?;
 
     let map_xor_name = *data_map_chunk.address().xorname();
     let mut xor_names = vec![map_xor_name];

@@ -62,8 +62,6 @@ RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo t
 
 ### WebAssembly
 
-> Note: compilation requires a nightly Rust compiler which is passed `RUSTFLAGS='-C target-feature=+atomics,+bulk-memory,+mutable-globals'` and `-Z build-std=std,panic_abort`.
-
 To run a WASM test
 
 - Install `wasm-pack`
