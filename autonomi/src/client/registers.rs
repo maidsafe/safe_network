@@ -273,10 +273,11 @@ impl Client {
         let pk = owner.public_key();
         let permissions = Permissions::new_with([pk]);
 
-        let register_created = 
-                    self.register_create_with_permissions(value, name, owner, permissions, wallet).await;
+        let reg_created = self
+            .register_create_with_permissions(value, name, owner, permissions, wallet)
+            .await;
         debug!("Register created successfully");
-        register_created
+        reg_created
     }
 
     /// Creates a new Register with a name and an initial value and uploads it to the network.

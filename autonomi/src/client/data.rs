@@ -221,7 +221,6 @@ impl Client {
 
         let key = NetworkAddress::from_chunk_address(ChunkAddress::new(addr)).to_record_key();
         debug!("Converted chunk address to network record key: {:?}", key);
-        
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
             retry_strategy: None,
@@ -244,7 +243,10 @@ impl Client {
             debug!("Chunk deserialized successfully: {:?}", chunk);
             Ok(chunk)
         } else {
-            error!("Record kind mismatch: expected Chunk, got {:?}", header.kind);
+            error!(
+                "Record kind mismatch: expected Chunk, got {:?}",
+                header.kind
+            );
             Err(NetworkError::RecordKindMismatch(RecordKind::Chunk).into())
         }
     }

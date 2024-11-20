@@ -173,9 +173,9 @@ impl Client {
         path: PathBuf,
         wallet: &EvmWallet,
     ) -> Result<DataAddr, UploadError> {
-        info!("Uploading file: {path:?}");
+        info!("Uploadings file: {path:?}");
         #[cfg(feature = "loud")]
-        println!("Uploading file: {path:?}");
+        println!("Uploadings file: {path:?}");
 
         let data = tokio::fs::read(path).await?;
         let data = Bytes::from(data);

@@ -20,7 +20,6 @@ use alloy::providers::fillers::{
 use alloy::providers::{Identity, ProviderBuilder, ReqwestProvider};
 use alloy::signers::local::PrivateKeySigner;
 use alloy::transports::http::{Client, Http};
-use serde::de;
 
 pub struct Testnet {
     anvil: AnvilInstance,
@@ -150,7 +149,7 @@ pub async fn deploy_data_payments_contract(
         .on_http(rpc_url.clone());
 
     // Deploy the contract.
-    let deployed =  DataPaymentsHandler::deploy(provider, token_address).await;
+    let deployed = DataPaymentsHandler::deploy(provider, token_address).await;
     let address = *deployed.contract.address();
     debug!("Deployed data payments contract at {address}");
     deployed
