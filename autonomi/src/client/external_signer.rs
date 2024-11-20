@@ -37,9 +37,9 @@ impl Client {
 /// Encrypts data as chunks.
 ///
 /// Returns the data map chunk and file chunks.
-pub async fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>), PutError> {
+pub fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>), PutError> {
     let now = sn_networking::target_arch::Instant::now();
-    let result = encrypt(data).await?;
+    let result = encrypt(data)?;
 
     debug!("Encryption took: {:.2?}", now.elapsed());
 
