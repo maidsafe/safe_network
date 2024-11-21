@@ -10,6 +10,7 @@ repository = "https://github.com/maidsafe/autonomi"
 version = "0.5.7"
 
 [features]
+default = ["network-contacts"]
 local = []
 network-contacts = ["ant-protocol"]
 websockets = []
