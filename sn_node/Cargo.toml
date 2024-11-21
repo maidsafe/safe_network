@@ -28,7 +28,6 @@ loud = ["sn_networking/loud"] # loud mode: print important messages to console
 extension-module = ["pyo3/extension-module"]
 
 [dependencies]
-assert_fs = "1.0.0"
 async-trait = "0.1"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
@@ -86,6 +85,7 @@ color-eyre = "0.6.2"
 pyo3 = { version = "0.20", features = ["extension-module"], optional = true }
 
 [dev-dependencies]
+assert_fs = "1.0.0"
 evmlib = { path = "../evmlib", version = "0.1.4" }
 autonomi = { path = "../autonomi", version = "0.2.4", features = ["registers"] }
 reqwest = { version = "0.12.2", default-features = false, features = [
