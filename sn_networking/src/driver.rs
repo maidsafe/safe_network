@@ -13,6 +13,7 @@ use crate::{
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
     external_address::ExternalAddressManager,
+    fifo_register::FifoRegister,
     log_markers::Marker,
     multiaddr_pop_p2p,
     network_discovery::NetworkDiscovery,
@@ -730,6 +731,7 @@ impl NetworkBuilder {
             replication_targets: Default::default(),
             last_replication: None,
             last_connection_pruning_time: Instant::now(),
+            network_density_samples: FifoRegister::new(100),
         };
 
         let network = Network::new(
@@ -835,6 +837,8 @@ pub struct SwarmDriver {
     pub(crate) last_replication: Option<Instant>,
     /// when was the last outdated connection prunning undertaken.
     pub(crate) last_connection_pruning_time: Instant,
+    /// FIFO cache for the network density samples
+    pub(crate) network_density_samples: FifoRegister,
 }
 
 impl SwarmDriver {
@@ -919,7 +923,13 @@ impl SwarmDriver {
                         let closest_k_peers = self.get_closest_k_value_local_peers();
 
                         if let Some(distance) = self.get_responsbile_range_estimate(&closest_k_peers) {
-                            info!("Set responsible range to {distance}");
+                            let network_density = self.network_density_samples.get_median();
+                            let ilog2 = if let Some(distance) = network_density {
+                                distance.ilog2()
+                            } else {
+                                None
+                            };
+                            info!("Set responsible range to {distance}, current sampled network density is {ilog2:?}({network_density:?})");
                             // set any new distance to farthest record in the store
                             self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
                             // the distance range within the replication_fetcher shall be in sync as well

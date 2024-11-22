@@ -17,7 +17,7 @@ use crate::{
 use libp2p::{
     kad::{
         store::{Error as StoreError, RecordStore},
-        Quorum, Record, RecordKey,
+        KBucketDistance as Distance, Quorum, Record, RecordKey,
     },
     Multiaddr, PeerId,
 };
@@ -136,6 +136,10 @@ pub enum LocalSwarmCmd {
     TriggerIntervalReplication,
     /// Triggers unrelevant record cleanup
     TriggerIrrelevantRecordCleanup,
+    /// Add a network density sample
+    AddNetworkDensitySample {
+        distance: Distance,
+    },
 }
 
 /// Commands to send to the Swarm
@@ -286,6 +290,9 @@ impl Debug for LocalSwarmCmd {
             }
             LocalSwarmCmd::TriggerIrrelevantRecordCleanup => {
                 write!(f, "LocalSwarmCmd::TriggerUnrelevantRecordCleanup")
+            }
+            LocalSwarmCmd::AddNetworkDensitySample { distance } => {
+                write!(f, "LocalSwarmCmd::AddNetworkDensitySample({distance:?})")
             }
         }
     }
@@ -867,6 +874,10 @@ impl SwarmDriver {
                     .kademlia
                     .store_mut()
                     .cleanup_irrelevant_records();
+            }
+            LocalSwarmCmd::AddNetworkDensitySample { distance } => {
+                cmd_string = "AddNetworkDensitySample";
+                self.network_density_samples.add(distance);
             }
         }
 

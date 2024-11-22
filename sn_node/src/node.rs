@@ -64,6 +64,9 @@ const UPTIME_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
 /// Interval to clean up unrelevant records
 const UNRELEVANT_RECORDS_CLEANUP_INTERVAL: Duration = Duration::from_secs(3600);
 
+/// Interval to carryout network density sampling
+const NETWORK_DENSITY_SAMPLING_INTERVAL: Duration = Duration::from_secs(113);
+
 /// Helper to build and run a Node
 pub struct NodeBuilder {
     identity_keypair: Keypair,
@@ -277,6 +280,10 @@ impl Node {
                 tokio::time::interval(UNRELEVANT_RECORDS_CLEANUP_INTERVAL);
             let _ = irrelevant_records_cleanup_interval.tick().await; // first tick completes immediately
 
+            let mut network_density_sampling_interval =
+                tokio::time::interval(NETWORK_DENSITY_SAMPLING_INTERVAL);
+            let _ = network_density_sampling_interval.tick().await; // first tick completes immediately
+
             loop {
                 let peers_connected = &peers_connected;
 
@@ -339,6 +346,16 @@ impl Node {
 
                         let _handle = spawn(async move {
                             Self::trigger_irrelevant_record_cleanup(network);
+                        });
+                    }
+                    _ = network_density_sampling_interval.tick() => {
+                        let start = Instant::now();
+                        debug!("Periodic network density sampling triggered");
+                        let network = self.network().clone();
+
+                        let _handle = spawn(async move {
+                            Self::network_density_sampling(network).await;
+                            trace!("Periodic network density sampling took {:?}", start.elapsed());
                         });
                     }
                 }
@@ -710,6 +727,22 @@ impl Node {
             }
         };
         Response::Query(resp)
+    }
+
+    async fn network_density_sampling(network: Network) {
+        for _ in 0..10 {
+            let target = NetworkAddress::from_peer(PeerId::random());
+            // Result is sorted and only return CLOSE_GROUP_SIZE entries
+            let peers = network.node_get_closest_peers(&target).await;
+            if let Ok(peers) = peers {
+                if peers.len() >= CLOSE_GROUP_SIZE {
+                    // Calculate the distance to the farthest.
+                    let distance =
+                        target.distance(&NetworkAddress::from_peer(peers[CLOSE_GROUP_SIZE - 1]));
+                    network.add_network_density_sample(distance);
+                }
+            }
+        }
     }
 
     async fn try_bad_nodes_check(network: Network, rolling_index: usize) {
