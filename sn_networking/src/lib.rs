@@ -16,6 +16,7 @@ mod driver;
 mod error;
 mod event;
 mod external_address;
+mod fifo_register;
 mod log_markers;
 #[cfg(feature = "open-metrics")]
 mod metrics;
@@ -1026,6 +1027,10 @@ impl Network {
 
     pub fn trigger_irrelevant_record_cleanup(&self) {
         self.send_local_swarm_cmd(LocalSwarmCmd::TriggerIrrelevantRecordCleanup)
+    }
+
+    pub fn add_network_density_sample(&self, distance: KBucketDistance) {
+        self.send_local_swarm_cmd(LocalSwarmCmd::AddNetworkDensitySample { distance })
     }
 
     /// Helper to send NetworkSwarmCmd
