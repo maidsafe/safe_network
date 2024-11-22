@@ -424,8 +424,6 @@ impl Network {
             self.send_req_ignore_reply(request, *peer_id);
         }
 
-        filter_out_bad_nodes(&mut all_costs, record_address);
-
         get_fees_from_store_cost_responses(all_costs)
     }
 
@@ -1187,32 +1185,6 @@ fn get_fees_from_store_cost_responses(
         return Err(NetworkError::NoStoreCostResponses);
     };
     Ok((payee_id, payee.1, payee.2))
-}
-
-/// According to the bad_nodes list collected via quotes,
-/// candidate that received majority votes from others shall be ignored.
-fn filter_out_bad_nodes(
-    all_costs: &mut Vec<(NetworkAddress, RewardsAddress, PaymentQuote)>,
-    record_address: NetworkAddress,
-) {
-    let mut bad_node_votes: BTreeMap<NetworkAddress, usize> = BTreeMap::new();
-    for (peer_addr, _reward_addr, quote) in all_costs.iter() {
-        let bad_nodes: Vec<NetworkAddress> = match rmp_serde::from_slice(&quote.bad_nodes) {
-            Ok(bad_nodes) => bad_nodes,
-            Err(err) => {
-                error!("For record {record_address:?}, failed to recover bad_nodes from quote of {peer_addr:?} with error {err:?}");
-                continue;
-            }
-        };
-        for bad_node in bad_nodes {
-            let entry = bad_node_votes.entry(bad_node).or_default();
-            *entry += 1;
-        }
-    }
-    all_costs.retain(|(peer_addr, _, _)| {
-        let entry = bad_node_votes.entry(peer_addr.clone()).or_default();
-        *entry < close_group_majority()
-    });
 }
 
 /// Get the value of the provided Quorum

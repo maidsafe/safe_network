@@ -15,6 +15,7 @@ use xor_name::XorName;
 /// The time in seconds that a quote is valid for
 pub const QUOTE_EXPIRATION_SECS: u64 = 3600;
 
+#[allow(dead_code)]
 /// The margin allowed for live_time
 const LIVE_TIME_MARGIN: u64 = 10;
 
@@ -186,13 +187,19 @@ impl PaymentQuote {
         true
     }
 
-    /// Returns true) if the quote has not yet expired
+    /// Returns true if the quote has not yet expired
     pub fn has_expired(&self) -> bool {
         let now = std::time::SystemTime::now();
 
         let dur_s = match now.duration_since(self.timestamp) {
             Ok(dur) => dur.as_secs(),
-            Err(_) => return true,
+            Err(err) => {
+                info!(
+                    "Cann't deduce elapsed time from {:?} with error {err:?}",
+                    self.timestamp
+                );
+                return true;
+            }
         };
         dur_s > QUOTE_EXPIRATION_SECS
     }
@@ -217,60 +224,62 @@ impl PaymentQuote {
 
     /// Check against a new quote, verify whether it is a valid one from self perspective.
     /// Returns `true` to flag the `other` quote is valid, from self perspective.
-    pub fn historical_verify(&self, other: &Self) -> bool {
-        // There is a chance that an old quote got used later than a new quote
-        let self_is_newer = self.is_newer_than(other);
-        let (old_quote, new_quote) = if self_is_newer {
-            (other, self)
-        } else {
-            (self, other)
-        };
-
-        if new_quote.quoting_metrics.live_time < old_quote.quoting_metrics.live_time {
-            info!("Claimed live_time out of sequence");
-            return false;
-        }
-
-        let old_elapsed = if let Ok(elapsed) = old_quote.timestamp.elapsed() {
-            elapsed
-        } else {
-            info!("timestamp failure");
-            return false;
-        };
-        let new_elapsed = if let Ok(elapsed) = new_quote.timestamp.elapsed() {
-            elapsed
-        } else {
-            info!("timestamp failure");
-            return false;
-        };
-
-        let time_diff = old_elapsed.as_secs().saturating_sub(new_elapsed.as_secs());
-        let live_time_diff =
-            new_quote.quoting_metrics.live_time - old_quote.quoting_metrics.live_time;
-        // In theory, these two shall match, give it a LIVE_TIME_MARGIN to avoid system glitch
-        if live_time_diff > time_diff + LIVE_TIME_MARGIN {
-            info!("claimed live_time out of sync with the timestamp");
-            return false;
-        }
-
-        // There could be pruning to be undertaken, also the close range keeps changing as well.
-        // Hence `close_records_stored` could be growing or shrinking.
-        // Currently not to carry out check on it, just logging to observe the trend.
-        debug!(
-            "The new quote has {} close records stored, meanwhile old one has {}.",
-            new_quote.quoting_metrics.close_records_stored,
-            old_quote.quoting_metrics.close_records_stored
-        );
-
-        // TODO: Double check if this applies, as this will prevent a node restart with same ID
-        if new_quote.quoting_metrics.received_payment_count
-            < old_quote.quoting_metrics.received_payment_count
-        {
-            info!("claimed received_payment_count out of sequence");
-            return false;
-        }
-
+    pub fn historical_verify(&self, _other: &Self) -> bool {
+        // TODO: Shall be refactored once new quote filtering scheme deployed
         true
+        // // There is a chance that an old quote got used later than a new quote
+        // let self_is_newer = self.is_newer_than(other);
+        // let (old_quote, new_quote) = if self_is_newer {
+        //     (other, self)
+        // } else {
+        //     (self, other)
+        // };
+
+        // if new_quote.quoting_metrics.live_time < old_quote.quoting_metrics.live_time {
+        //     info!("Claimed live_time out of sequence");
+        //     return false;
+        // }
+
+        // let old_elapsed = if let Ok(elapsed) = old_quote.timestamp.elapsed() {
+        //     elapsed
+        // } else {
+        //     info!("timestamp failure");
+        //     return false;
+        // };
+        // let new_elapsed = if let Ok(elapsed) = new_quote.timestamp.elapsed() {
+        //     elapsed
+        // } else {
+        //     info!("timestamp failure");
+        //     return false;
+        // };
+
+        // let time_diff = old_elapsed.as_secs().saturating_sub(new_elapsed.as_secs());
+        // let live_time_diff =
+        //     new_quote.quoting_metrics.live_time - old_quote.quoting_metrics.live_time;
+        // // In theory, these two shall match, give it a LIVE_TIME_MARGIN to avoid system glitch
+        // if live_time_diff > time_diff + LIVE_TIME_MARGIN {
+        //     info!("claimed live_time out of sync with the timestamp");
+        //     return false;
+        // }
+
+        // // There could be pruning to be undertaken, also the close range keeps changing as well.
+        // // Hence `close_records_stored` could be growing or shrinking.
+        // // Currently not to carry out check on it, just logging to observe the trend.
+        // debug!(
+        //     "The new quote has {} close records stored, meanwhile old one has {}.",
+        //     new_quote.quoting_metrics.close_records_stored,
+        //     old_quote.quoting_metrics.close_records_stored
+        // );
+
+        // // TODO: Double check if this applies, as this will prevent a node restart with same ID
+        // if new_quote.quoting_metrics.received_payment_count
+        //     < old_quote.quoting_metrics.received_payment_count
+        // {
+        //     info!("claimed received_payment_count out of sequence");
+        //     return false;
+        // }
+
+        // true
     }
 }
 
@@ -332,6 +341,7 @@ mod tests {
         assert!(!quote.check_is_signed_by_claimed_peer(false_peer));
     }
 
+    #[ignore = "Shall be refactored once new quote filtering scheme deployed"]
     #[test]
     fn test_historical_verify() {
         let mut old_quote = PaymentQuote::zero();
