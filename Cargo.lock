@@ -8667,6 +8667,7 @@ name = "sn_networking"
 version = "0.19.4"
 dependencies = [
  "aes-gcm-siv",
+ "alloy",
  "assert_fs",
  "async-trait",
  "blsttc",

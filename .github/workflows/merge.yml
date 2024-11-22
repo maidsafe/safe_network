@@ -1395,6 +1395,10 @@ jobs:
             exit 1
           fi
 
+      # Sleep for a while to allow network density sampling
+      - name: Sleep a while
+        run: sleep 300
+
       - name: Stop the local network and upload logs
         if: always()
         uses: maidsafe/sn-local-testnet-action@main

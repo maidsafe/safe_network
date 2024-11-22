@@ -37,6 +37,7 @@ libp2p = { version = "0.54.1", features = [
     "yamux",
     "websocket",
 ] }
+alloy = { version = "0.5.3", default-features = false, features = ["std", "reqwest-rustls-tls", "provider-anvil-node", "sol-types", "json", "signers", "contract", "signer-local", "network"] }
 async-trait = "0.1"
 bytes = { version = "1.0.1", features = ["serde"] }
 exponential-backoff = "2.0.0"

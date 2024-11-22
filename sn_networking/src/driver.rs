@@ -29,6 +29,7 @@ use crate::{
     metrics::service::run_metrics_server, metrics::NetworkMetricsRecorder, MetricsRegistries,
 };
 use crate::{transport, NodeIssue};
+use alloy::primitives::U256;
 use futures::future::Either;
 use futures::StreamExt;
 #[cfg(feature = "local")]
@@ -923,13 +924,29 @@ impl SwarmDriver {
                         let closest_k_peers = self.get_closest_k_value_local_peers();
 
                         if let Some(distance) = self.get_responsbile_range_estimate(&closest_k_peers) {
-                            let network_density = self.network_density_samples.get_median();
-                            let ilog2 = if let Some(distance) = network_density {
+                            let (
+                                _index,
+                                _total_peers,
+                                peers_in_non_full_buckets,
+                                num_of_full_buckets,
+                                _kbucket_table_stats,
+                            ) = self.kbuckets_status();
+                            let estimated_network_size =
+                                Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
+                            // The entire Distance space is U256
+                            // The density can be estimated as: distance/space
+                            let density = U256::MAX / U256::from(estimated_network_size);
+                            let estimated_distance = density * U256::from(CLOSE_GROUP_SIZE);
+
+                            let sampled_distance = self.network_density_samples.get_median();
+                            let ilog2 = if let Some(distance) = sampled_distance {
                                 distance.ilog2()
                             } else {
                                 None
                             };
-                            info!("Set responsible range to {distance}, current sampled network density is {ilog2:?}({network_density:?})");
+                            info!("Set responsible range to {distance}, current sampled_distance is {ilog2:?}({sampled_distance:?}), \
+                                estimated_distance is {:?}({estimated_distance:?}) with network_size of {estimated_network_size}",
+                                estimated_distance.log2());
                             // set any new distance to farthest record in the store
                             self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
                             // the distance range within the replication_fetcher shall be in sync as well
