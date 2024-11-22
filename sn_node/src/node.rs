@@ -40,7 +40,10 @@ use std::{
     },
     time::Duration,
 };
-use tokio::{sync::mpsc::Receiver, task::{spawn, JoinSet}};
+use tokio::{
+    sync::mpsc::Receiver,
+    task::{spawn, JoinSet},
+};
 
 use sn_evm::EvmNetwork;
 
@@ -63,10 +66,10 @@ const HIGHEST_SCORE: usize = 100;
 
 /// Any nodes bearing a score below this shall be considered as bad.
 /// Max is to be 100 * 100
-const MIN_ACCEPTABLE_HEALTHY_SCORE: usize = 2000;
+const MIN_ACCEPTABLE_HEALTHY_SCORE: usize = 5000;
 
-/// in ms, expecting average StorageChallenge complete time to be around 500ms.
-const TIME_STEP: usize = 100;
+/// in ms, expecting average StorageChallenge complete time to be around 250ms.
+const TIME_STEP: usize = 20;
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
@@ -268,7 +271,7 @@ impl Node {
                 tokio::time::interval(UNRELEVANT_RECORDS_CLEANUP_INTERVAL);
             let _ = irrelevant_records_cleanup_interval.tick().await; // first tick completes immediately
 
-            // use a random neighbour storege challenge ticker to ensure
+            // use a random neighbour storage challenge ticker to ensure
             // neighbour do not carryout challenges at the same time
             let storage_challenge_interval: u64 =
                 rng.gen_range(STORE_CHALLENGE_INTERVAL_MAX_S / 2..STORE_CHALLENGE_INTERVAL_MAX_S);
@@ -333,7 +336,7 @@ impl Node {
 
                         let _handle = spawn(async move {
                             Self::storage_challenge(network).await;
-                            trace!("Periodic storege challenge took {:?}", start.elapsed());
+                            trace!("Periodic storage challenge took {:?}", start.elapsed());
                         });
                     }
                 }
@@ -596,7 +599,8 @@ impl Node {
                 );
 
                 QueryResponse::GetChunkExistenceProof(
-                    Self::respond_x_closest_chunk_proof(network, key, nonce, difficulty).await,
+                    Self::respond_x_closest_record_proof(network, key, nonce, difficulty, true)
+                        .await,
                 )
             }
             Query::CheckNodeInProblem(target_address) => {
@@ -620,11 +624,14 @@ impl Node {
         Response::Query(resp)
     }
 
-    async fn respond_x_closest_chunk_proof(
+    // Nodes only check ChunkProof each other, to avoid `multi-version` issue
+    // Client check proof against all records, as have to fetch from network anyway.
+    async fn respond_x_closest_record_proof(
         network: &Network,
         key: NetworkAddress,
         nonce: Nonce,
         difficulty: usize,
+        chunk_only: bool,
     ) -> Vec<(NetworkAddress, Result<ChunkProof, ProtocolError>)> {
         let start = Instant::now();
         let mut results = vec![];
@@ -644,17 +651,20 @@ impl Node {
             let all_local_records = network.get_all_local_record_addresses().await;
 
             if let Ok(all_local_records) = all_local_records {
-                // Only `ChunkRecord`s can be consistantly verified
-                let mut all_chunk_addrs: Vec<_> = all_local_records
-                    .iter()
-                    .filter_map(|(addr, record_type)| {
-                        if *record_type == RecordType::Chunk {
-                            Some(addr.clone())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
+                let mut all_chunk_addrs: Vec<_> = if chunk_only {
+                    all_local_records
+                        .iter()
+                        .filter_map(|(addr, record_type)| {
+                            if *record_type == RecordType::Chunk {
+                                Some(addr.clone())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
+                } else {
+                    all_local_records.keys().cloned().collect()
+                };
 
                 // Sort by distance and only take first X closest entries
                 all_chunk_addrs.sort_by_key(|addr| key.distance(addr));
@@ -727,7 +737,11 @@ impl Node {
             return;
         }
 
-        let index: usize = OsRng.gen_range(0..num_of_targets);
+        // To ensure the neighbours sharing same knowledge as to us,
+        // The target is choosen to be not far from us.
+        let self_addr = NetworkAddress::from_peer(network.peer_id());
+        verify_candidates.sort_by_key(|addr| self_addr.distance(addr));
+        let index: usize = OsRng.gen_range(0..num_of_targets / 2);
         let target = verify_candidates[index].clone();
         // TODO: workload shall be dynamically deduced from resource usage
         let difficulty = CLOSE_GROUP_SIZE;
