@@ -17,6 +17,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tempfile::NamedTempFile;
 use tokio::sync::RwLock;
+use tracing::{debug, info, warn};
 
 const PEER_EXPIRY_DURATION: Duration = Duration::from_secs(24 * 60 * 60); // 24 hours
 
@@ -150,6 +151,119 @@ impl CacheStore {
 
         tracing::info!("Successfully created CacheStore");
         Ok(store)
+    }
+
+    pub async fn new_without_init(config: crate::BootstrapConfig) -> Result<Self> {
+        tracing::info!("Creating new CacheStore with config: {:?}", config);
+        let cache_path = config.cache_file_path.clone();
+        let config = Arc::new(config);
+
+        // Create cache directory if it doesn't exist
+        if let Some(parent) = cache_path.parent() {
+            tracing::info!("Attempting to create cache directory at {:?}", parent);
+            // Try to create the directory
+            match fs::create_dir_all(parent) {
+                Ok(_) => {
+                    tracing::info!("Successfully created cache directory");
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to create cache directory at {:?}: {}", parent, e);
+                    // Try user's home directory as fallback
+                    if let Some(home) = dirs::home_dir() {
+                        let user_path = home.join(".safe").join("bootstrap_cache.json");
+                        tracing::info!("Falling back to user directory: {:?}", user_path);
+                        if let Some(user_parent) = user_path.parent() {
+                            if let Err(e) = fs::create_dir_all(user_parent) {
+                                tracing::error!("Failed to create user cache directory: {}", e);
+                                return Err(Error::Io(e));
+                            }
+                            tracing::info!("Successfully created user cache directory");
+                        }
+                        let future = Self::new_without_init(crate::BootstrapConfig::with_cache_path(user_path));
+                        return Box::pin(future).await;
+                    }
+                }
+            }
+        }
+
+        let store = Self {
+            cache_path,
+            config,
+            data: Arc::new(RwLock::new(CacheData::default())),
+        };
+
+        tracing::info!("Successfully created CacheStore");
+        Ok(store)
+    }
+
+    pub async fn init(&self) -> Result<()> {
+        let mut data = if self.cache_path.exists() {
+            tracing::info!("Cache file exists at {:?}, attempting to load", self.cache_path);
+            match Self::load_cache_data(&self.cache_path).await {
+                Ok(data) => {
+                    tracing::info!("Successfully loaded cache data with {} peers", data.peers.len());
+                    // If cache data exists but has no peers and file is not read-only,
+                    // fallback to default
+                    let is_readonly = self.cache_path
+                        .metadata()
+                        .map(|m| m.permissions().readonly())
+                        .unwrap_or(false);
+
+                    if data.peers.is_empty() && !is_readonly {
+                        tracing::info!("Cache is empty and not read-only, falling back to default");
+                        Self::fallback_to_default(&self.config).await?
+                    } else {
+                        // Ensure we don't exceed max_peers
+                        let mut filtered_data = data;
+                        if filtered_data.peers.len() > self.config.max_peers {
+                            tracing::info!(
+                                "Trimming cache from {} to {} peers",
+                                filtered_data.peers.len(),
+                                self.config.max_peers
+                            );
+                            let peers: Vec<_> = filtered_data.peers.into_iter().collect();
+                            filtered_data.peers = peers
+                                .into_iter()
+                                .take(self.config.max_peers)
+                                .collect();
+                        }
+                        filtered_data
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to load cache data: {}", e);
+                    // If we can't read or parse the cache file, fallback to default
+                    Self::fallback_to_default(&self.config).await?
+                }
+            }
+        } else {
+            tracing::info!("Cache file does not exist at {:?}, falling back to default", self.cache_path);
+            // If cache file doesn't exist, fallback to default
+            Self::fallback_to_default(&self.config).await?
+        };
+
+        // Only clean up stale peers if the file is not read-only
+        let is_readonly = self.cache_path
+            .metadata()
+            .map(|m| m.permissions().readonly())
+            .unwrap_or(false);
+
+        if !is_readonly {
+            // Clean up stale peers
+            let now = SystemTime::now();
+            data.peers.retain(|_, peer| {
+                if let Ok(duration) = now.duration_since(peer.last_seen) {
+                    duration < PEER_EXPIRY_DURATION
+                } else {
+                    false
+                }
+            });
+        }
+
+        // Update the store's data
+        *self.data.write().await = data;
+
+        Ok(())
     }
 
     async fn fallback_to_default(config: &crate::BootstrapConfig) -> Result<CacheData> {
@@ -313,58 +427,34 @@ impl CacheStore {
     }
 
     pub async fn add_peer(&self, addr: Multiaddr) -> Result<()> {
-        // Check if the cache file is read-only before attempting any modifications
-        let is_readonly = self
-            .cache_path
-            .metadata()
-            .map(|m| m.permissions().readonly())
-            .unwrap_or(false);
-
-        if is_readonly {
-            tracing::warn!("Cannot add peer: cache file is read-only");
-            return Ok(());
-        }
-
         let mut data = self.data.write().await;
         let addr_str = addr.to_string();
 
-        tracing::debug!(
-            "Adding peer {}, current peers: {}",
-            addr_str,
-            data.peers.len()
-        );
-
-        // If the peer already exists, just update its last_seen time
-        if let Some(peer) = data.peers.get_mut(&addr_str) {
-            tracing::debug!("Updating existing peer {}", addr_str);
-            peer.last_seen = SystemTime::now();
-            return self.save_to_disk(&data).await;
+        // Check if we already have this peer
+        if data.peers.contains_key(&addr_str) {
+            debug!("Updating existing peer {}", addr_str);
+            if let Some(peer) = data.peers.get_mut(&addr_str) {
+                peer.last_seen = SystemTime::now();
+            }
+            return Ok(());
         }
 
-        // Only add new peers if we haven't reached max_peers
-        if data.peers.len() < self.config.max_peers {
-            tracing::debug!("Adding new peer {} (under max_peers limit)", addr_str);
-            data.peers
-                .insert(addr_str.clone(), BootstrapPeer::new(addr));
-            self.save_to_disk(&data).await?;
-        } else {
-            // If we're at max_peers, replace the oldest peer
-            if let Some((oldest_addr, oldest_peer)) =
-                data.peers.iter().min_by_key(|(_, peer)| peer.last_seen)
+        // If we're at max peers, remove the oldest peer
+        if data.peers.len() >= self.config.max_peers {
+            debug!("At max peers limit ({}), removing oldest peer", self.config.max_peers);
+            if let Some((oldest_addr, _)) = data.peers
+                .iter()
+                .min_by_key(|(_, peer)| peer.last_seen)
             {
-                tracing::debug!(
-                    "Replacing oldest peer {} (last seen: {:?}) with new peer {}",
-                    oldest_addr,
-                    oldest_peer.last_seen,
-                    addr_str
-                );
                 let oldest_addr = oldest_addr.clone();
                 data.peers.remove(&oldest_addr);
-                data.peers
-                    .insert(addr_str.clone(), BootstrapPeer::new(addr));
-                self.save_to_disk(&data).await?;
             }
         }
+
+        // Add the new peer
+        debug!("Adding new peer {} (under max_peers limit)", addr_str);
+        data.peers.insert(addr_str, BootstrapPeer::new(addr));
+        self.save_to_disk(&data).await?;
 
         Ok(())
     }
@@ -540,6 +630,31 @@ impl CacheStore {
         })?;
 
         // Lock will be automatically released when file is dropped
+        Ok(())
+    }
+
+    /// Clear all peers from the cache
+    pub async fn clear_peers(&self) -> Result<()> {
+        let mut data = self.data.write().await;
+        data.peers.clear();
+        Ok(())
+    }
+
+    /// Save the current cache to disk
+    pub async fn save_cache(&self) -> Result<()> {
+        let data = self.data.read().await;
+        let temp_file = NamedTempFile::new()?;
+        let file = File::create(&temp_file)?;
+        file.lock_exclusive()?;
+
+        serde_json::to_writer_pretty(&file, &*data)?;
+        file.sync_all()?;
+        file.unlock()?;
+
+        // Atomically replace the cache file
+        temp_file.persist(&self.cache_path)?;
+        info!("Successfully wrote cache file at {:?}", self.cache_path);
+
         Ok(())
     }
 }
