@@ -1,10 +1,38 @@
-// Copyright 2024 MaidSafe.net limited.
-//
-// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
-// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
-// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. Please review the Licences for the specific language governing
-// permissions and limitations relating to use of the SAFE Network Software.
+//! Bootstrap Cache for Safe Network
+//!
+//! This crate provides a decentralized peer discovery and caching system for the Safe Network.
+//! It implements a robust peer management system with the following features:
+//!
+//! - Decentralized Design: No dedicated bootstrap nodes required
+//! - Cross-Platform Support: Works on Linux, macOS, and Windows
+//! - Shared Cache: System-wide cache file accessible by both nodes and clients
+//! - Concurrent Access: File locking for safe multi-process access
+//! - Atomic Operations: Safe cache updates using atomic file operations
+//! - Initial Peer Discovery: Fallback web endpoints for new/stale cache scenarios
+//! - Comprehensive Error Handling: Detailed error types and logging
+//! - Circuit Breaker Pattern: Intelligent failure handling
+//!
+//! # Example
+//!
+//! ```no_run
+//! use bootstrap_cache::{CacheStore, BootstrapConfig, PeersArgs};
+//! use url::Url;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let config = BootstrapConfig::default();
+//! let args = PeersArgs {
+//!     first: false,
+//!     peers: vec![],
+//!     network_contacts_url: Some(Url::parse("https://example.com/peers")?),
+//!     local: false,
+//!     test_network: false,
+//! };
+//!
+//! let store = CacheStore::from_args(args, config).await?;
+//! let peers = store.get_peers().await;
+//! # Ok(())
+//! # }
+//! ```
 
 mod cache_store;
 mod circuit_breaker;
@@ -12,15 +40,36 @@ pub mod config;
 mod error;
 mod initial_peer_discovery;
 
-use libp2p::Multiaddr;
+use libp2p::{multiaddr::Protocol, Multiaddr};
 use serde::{Deserialize, Serialize};
-use std::{fmt, time::SystemTime};
+use std::{fmt, net::SocketAddrV4, time::SystemTime};
 use thiserror::Error;
+use std::env;
+use url::Url;
+use tracing::{info, warn};
 
 pub use cache_store::CacheStore;
 pub use config::BootstrapConfig;
 pub use error::{Error, Result};
 pub use initial_peer_discovery::InitialPeerDiscovery;
+
+/// Parse strings like `1.2.3.4:1234` and `/ip4/1.2.3.4/tcp/1234` into a multiaddr.
+/// This matches the behavior of sn_peers_acquisition.
+pub fn parse_peer_addr(addr: &str) -> std::result::Result<Multiaddr, libp2p::multiaddr::Error> {
+    // Parse valid IPv4 socket address, e.g. `1.2.3.4:1234`.
+    if let Ok(addr) = addr.parse::<SocketAddrV4>() {
+        let start_addr = Multiaddr::from(*addr.ip());
+        // Always use UDP and QUIC-v1 for socket addresses
+        let multiaddr = start_addr
+            .with(Protocol::Udp(addr.port()))
+            .with(Protocol::QuicV1);
+
+        return Ok(multiaddr);
+    }
+
+    // Parse any valid multiaddr string
+    addr.parse::<Multiaddr>()
+}
 
 /// Structure representing a list of bootstrap endpoints
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,9 +153,134 @@ impl fmt::Display for BootstrapPeer {
     }
 }
 
+/// Command line arguments for peer configuration
+#[derive(Debug, Clone)]
+pub struct PeersArgs {
+    /// First node in the network
+    pub first: bool,
+    /// List of peer addresses
+    pub peers: Vec<Multiaddr>,
+    /// URL to fetch network contacts from
+    pub network_contacts_url: Option<Url>,
+    /// Use only local discovery (mDNS)
+    pub local: bool,
+    /// Test network mode - only use provided peers
+    pub test_network: bool,
+}
+
+impl Default for PeersArgs {
+    fn default() -> Self {
+        Self {
+            first: false,
+            peers: Vec::new(),
+            network_contacts_url: None,
+            local: false,
+            test_network: false,
+        }
+    }
+}
+
+/// Validates that a multiaddr has all required components for a valid peer address
+pub(crate) fn is_valid_peer_addr(addr: &Multiaddr) -> bool {
+    let mut has_ip = false;
+    let mut has_port = false;
+    let mut has_protocol = false;
+
+    for protocol in addr.iter() {
+        match protocol {
+            Protocol::Ip4(_) | Protocol::Ip6(_) => has_ip = true,
+            Protocol::Tcp(_) | Protocol::Udp(_) => has_port = true,
+            Protocol::QuicV1 => has_protocol = true,
+            _ => {}
+        }
+    }
+
+    has_ip && has_port && has_protocol
+}
+
+impl CacheStore {
+    /// Create a new CacheStore from command line arguments
+    pub async fn from_args(args: PeersArgs, config: BootstrapConfig) -> Result<Self> {
+        // If this is the first node, return empty store with no fallback
+        if args.first {
+            info!("First node in network, returning empty store");
+            let store = Self::new_without_init(config).await?;
+            store.clear_peers().await?;
+            return Ok(store);
+        }
+
+        // If local mode is enabled, return empty store (will use mDNS)
+        if args.local {
+            info!("Local mode enabled, using only local discovery");
+            let store = Self::new_without_init(config).await?;
+            store.clear_peers().await?;
+            return Ok(store);
+        }
+
+        // Create a new store but don't load from cache or fetch from endpoints yet
+        let mut store = Self::new_without_init(config).await?;
+
+        // Add peers from arguments if present
+        let mut has_specific_peers = false;
+        for peer in args.peers {
+            if is_valid_peer_addr(&peer) {
+                info!("Adding peer from arguments: {}", peer);
+                store.add_peer(peer).await?;
+                has_specific_peers = true;
+            } else {
+                warn!("Invalid peer address format from arguments: {}", peer);
+            }
+        }
+
+        // If we have peers and this is a test network, we're done
+        if has_specific_peers && args.test_network {
+            info!("Using test network peers only");
+            return Ok(store);
+        }
+
+        // If we have peers but not test network, update cache and return
+        if has_specific_peers {
+            info!("Using provided peers and updating cache");
+            if !args.test_network {
+                store.save_cache().await?;
+            }
+            return Ok(store);
+        }
+
+        // If no peers specified, try network contacts URL
+        if let Some(url) = args.network_contacts_url {
+            info!("Attempting to fetch peers from network contacts URL: {}", url);
+            let discovery = InitialPeerDiscovery::with_endpoints(vec![url.to_string()]);
+            match discovery.fetch_peers().await {
+                Ok(peers) => {
+                    info!("Successfully fetched {} peers from network contacts", peers.len());
+                    for peer in peers {
+                        if is_valid_peer_addr(&peer.addr) {
+                            store.add_peer(peer.addr).await?;
+                            has_specific_peers = true;
+                        } else {
+                            warn!("Invalid peer address format from network contacts: {}", peer.addr);
+                        }
+                    }
+                }
+                Err(e) => {
+                    warn!("Failed to fetch peers from network contacts: {}", e);
+                }
+            }
+        }
+
+        // If no peers from any source and not test network, initialize from cache and default endpoints
+        if !has_specific_peers && !args.test_network {
+            store.init().await?;
+        }
+
+        Ok(store)
+    }
+}
+
 /// Creates a new bootstrap cache with default configuration
 pub async fn new() -> Result<CacheStore> {
-    CacheStore::new(BootstrapConfig::default()).await
+    CacheStore::new(Default::default()).await
 }
 
 /// Creates a new bootstrap cache with custom configuration

@@ -18,18 +18,16 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("Request error: {0}")]
-    Request(#[from] reqwest::Error),
-    #[error("Failed to acquire or release file lock")]
-    LockError,
-    #[error("Cache file is corrupted: {0}")]
-    CacheCorrupted(serde_json::Error),
+    #[error("HTTP error: {0}")]
+    Http(#[from] reqwest::Error),
     #[error("Timeout error: {0}")]
     Timeout(#[from] tokio::time::error::Elapsed),
+    #[error("Failed to persist file: {0}")]
+    Persist(#[from] tempfile::PersistError),
+    #[error("Failed to acquire or release file lock")]
+    LockError,
     #[error("Circuit breaker open for endpoint: {0}")]
     CircuitBreakerOpen(String),
-    #[error("Endpoint temporarily unavailable: {0}")]
-    EndpointUnavailable(String),
     #[error("Request failed: {0}")]
     RequestFailed(String),
     #[error("Request timed out")]
