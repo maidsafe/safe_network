@@ -18,7 +18,6 @@ A robust peer caching system for the Safe Network that provides persistent stora
 - Exponential backoff retry mechanism for lock acquisition
 
 ### Data Management
-- Peer expiry after 24 hours of inactivity
 - Automatic cleanup of stale and unreliable peers
 - Configurable maximum peer limit
 - Peer reliability tracking (success/failure counts)

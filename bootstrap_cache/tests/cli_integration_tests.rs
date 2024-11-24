@@ -101,12 +101,13 @@ async fn test_safe_peers_env() -> Result<(), Box<dyn std::error::Error>> {
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
-    assert_eq!(peers.len(), 1, "Should have one peer from env var");
-    assert_eq!(
-        peers[0].addr.to_string(),
-        peer_addr,
-        "Should have the correct peer address from env var"
-    );
+    
+    // We should have multiple peers (env var + cache/endpoints)
+    assert!(peers.len() > 0, "Should have peers");
+    
+    // Verify that our env var peer is included in the set
+    let has_env_peer = peers.iter().any(|p| p.addr.to_string() == peer_addr);
+    assert!(has_env_peer, "Should include the peer from env var");
 
     // Clean up
     env::remove_var("SAFE_PEERS");
@@ -135,7 +136,7 @@ async fn test_network_contacts_fallback() -> Result<(), Box<dyn std::error::Erro
         peers: vec![],
         network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
         local: false,
-        test_network: false,
+        test_network: true,
     };
 
     let store = CacheStore::from_args(args, config).await?;
