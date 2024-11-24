@@ -217,11 +217,63 @@ impl CacheStore {
             return Ok(store);
         }
 
+        // If test network mode is enabled, use in-memory store only
+        if args.test_network {
+            info!("Test network mode enabled, using in-memory store only");
+            let mut config = config;
+            config.cache_file_path = "".into(); // Empty path to prevent file operations
+            let store = Self::new_without_init(config).await?;
+
+            // Add peers from arguments if present
+            for peer in args.peers {
+                if is_valid_peer_addr(&peer) {
+                    info!("Adding peer from arguments: {}", peer);
+                    store.add_peer(peer).await?;
+                }
+            }
+
+            // If network contacts URL is provided, fetch peers from there
+            if let Some(url) = args.network_contacts_url {
+                info!("Attempting to fetch peers from network contacts URL: {}", url);
+                let discovery = InitialPeerDiscovery::with_endpoints(vec![url.to_string()]);
+                match discovery.fetch_peers().await {
+                    Ok(peers) => {
+                        info!("Successfully fetched {} peers from network contacts", peers.len());
+                        for peer in peers {
+                            if is_valid_peer_addr(&peer.addr) {
+                                store.add_peer(peer.addr).await?;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        warn!("Failed to fetch peers from network contacts: {}", e);
+                    }
+                }
+            }
+
+            return Ok(store);
+        }
+
         // Create a new store but don't load from cache or fetch from endpoints yet
         let mut store = Self::new_without_init(config).await?;
 
-        // Add peers from arguments if present
+        // Add peers from environment variable if present
         let mut has_specific_peers = false;
+        if let Ok(env_peers) = std::env::var("SAFE_PEERS") {
+            for peer_str in env_peers.split(',') {
+                if let Ok(peer) = peer_str.parse() {
+                    if is_valid_peer_addr(&peer) {
+                        info!("Adding peer from environment: {}", peer);
+                        store.add_peer(peer).await?;
+                        has_specific_peers = true;
+                    } else {
+                        warn!("Invalid peer address format from environment: {}", peer);
+                    }
+                }
+            }
+        }
+
+        // Add peers from arguments if present
         for peer in args.peers {
             if is_valid_peer_addr(&peer) {
                 info!("Adding peer from arguments: {}", peer);
@@ -232,18 +284,10 @@ impl CacheStore {
             }
         }
 
-        // If we have peers and this is a test network, we're done
-        if has_specific_peers && args.test_network {
-            info!("Using test network peers only");
-            return Ok(store);
-        }
-
-        // If we have peers but not test network, update cache and return
+        // If we have peers, update cache and return
         if has_specific_peers {
             info!("Using provided peers and updating cache");
-            if !args.test_network {
-                store.save_cache().await?;
-            }
+            store.save_cache().await?;
             return Ok(store);
         }
 
@@ -262,6 +306,9 @@ impl CacheStore {
                             warn!("Invalid peer address format from network contacts: {}", peer.addr);
                         }
                     }
+                    if has_specific_peers {
+                        info!("Successfully fetched {} peers from network contacts", store.get_peers().await.len());
+                    }
                 }
                 Err(e) => {
                     warn!("Failed to fetch peers from network contacts: {}", e);
@@ -269,8 +316,8 @@ impl CacheStore {
             }
         }
 
-        // If no peers from any source and not test network, initialize from cache and default endpoints
-        if !has_specific_peers && !args.test_network {
+        // If no peers from any source, initialize from cache and default endpoints
+        if !has_specific_peers {
             store.init().await?;
         }
 

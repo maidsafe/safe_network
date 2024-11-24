@@ -22,16 +22,18 @@ pub enum Error {
     Http(#[from] reqwest::Error),
     #[error("Timeout error: {0}")]
     Timeout(#[from] tokio::time::error::Elapsed),
-    #[error("Failed to persist file: {0}")]
+    #[error("Persist error: {0}")]
     Persist(#[from] tempfile::PersistError),
-    #[error("Failed to acquire or release file lock")]
+    #[error("Lock error")]
     LockError,
-    #[error("Circuit breaker open for endpoint: {0}")]
+    #[error("Circuit breaker open: {0}")]
     CircuitBreakerOpen(String),
     #[error("Request failed: {0}")]
     RequestFailed(String),
-    #[error("Request timed out")]
+    #[error("Request timeout")]
     RequestTimeout,
+    #[error("Invalid multiaddr: {0}")]
+    InvalidMultiAddr(#[from] libp2p::multiaddr::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

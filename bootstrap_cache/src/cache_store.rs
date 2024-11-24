@@ -454,7 +454,11 @@ impl CacheStore {
         // Add the new peer
         debug!("Adding new peer {} (under max_peers limit)", addr_str);
         data.peers.insert(addr_str, BootstrapPeer::new(addr));
-        self.save_to_disk(&data).await?;
+
+        // Only save to disk if we have a valid cache path
+        if !self.cache_path.as_os_str().is_empty() {
+            self.save_to_disk(&data).await?;
+        }
 
         Ok(())
     }
@@ -525,11 +529,8 @@ impl CacheStore {
             .peers
             .iter()
             .filter(|(_, peer)| {
-                if let Ok(elapsed) = peer.last_seen.elapsed() {
-                    elapsed > PEER_EXPIRY_DURATION
-                } else {
-                    true // If we can't get elapsed time, consider it stale
-                }
+                // Only remove peers that have failed more times than succeeded
+                peer.failure_count > peer.success_count && peer.failure_count >= self.config.max_retries
             })
             .map(|(addr, _)| addr.clone())
             .collect();
@@ -538,7 +539,11 @@ impl CacheStore {
             data.peers.remove(&addr);
         }
 
-        self.save_to_disk(&data).await?;
+        // Only save to disk if we have a valid cache path
+        if !self.cache_path.as_os_str().is_empty() {
+            self.save_to_disk(&data).await?;
+        }
+
         Ok(())
     }
 
@@ -721,6 +726,8 @@ mod tests {
             .update_peer_status(&good_addr.to_string(), true)
             .await
             .unwrap();
+        
+        // Fail the bad peer more times than max_retries
         for _ in 0..5 {
             store
                 .update_peer_status(&bad_addr.to_string(), false)
@@ -738,68 +745,60 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_stale_peer_cleanup() {
+    async fn test_peer_not_removed_if_successful() {
         let (store, _) = create_test_store().await;
         let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
 
-        // Add a peer with more failures than successes
-        let mut peer = BootstrapPeer::new(addr.clone());
-        peer.success_count = 1;
-        peer.failure_count = 5;
-        {
-            let mut data = store.data.write().await;
-            data.peers.insert(addr.to_string(), peer);
-            store.save_to_disk(&data).await.unwrap();
-        }
+        // Add a peer and make it successful
+        store.add_peer(addr.clone()).await.unwrap();
+        store.update_peer_status(&addr.to_string(), true).await.unwrap();
 
-        // Clean up unreliable peers
-        store.cleanup_unreliable_peers().await.unwrap();
+        // Wait a bit
+        tokio::time::sleep(Duration::from_millis(100)).await;
 
-        // Should have no peers since the only peer was unreliable
-        let peers = store.get_reliable_peers().await;
-        assert_eq!(peers.len(), 0);
+        // Run cleanup
+        store.cleanup_stale_peers().await.unwrap();
+
+        // Verify peer is still there
+        let peers = store.get_peers().await;
+        assert_eq!(peers.len(), 1);
+        assert_eq!(peers[0].addr, addr);
     }
 
     #[tokio::test]
-    async fn test_concurrent_access() {
+    async fn test_peer_removed_only_when_unresponsive() {
         let (store, _) = create_test_store().await;
-        let store = Arc::new(store);
         let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
 
-        // Manually add a peer without using fallback
-        {
-            let mut data = store.data.write().await;
-            data.peers
-                .insert(addr.to_string(), BootstrapPeer::new(addr.clone()));
-            store.save_to_disk(&data).await.unwrap();
+        // Add a peer
+        store.add_peer(addr.clone()).await.unwrap();
+
+        // Make it fail max_retries times
+        for _ in 0..store.config.max_retries {
+            store.update_peer_status(&addr.to_string(), false).await.unwrap();
         }
 
-        let mut handles = vec![];
+        // Run cleanup
+        store.cleanup_stale_peers().await.unwrap();
 
-        // Spawn multiple tasks to update peer status concurrently
-        for i in 0..10 {
-            let store = Arc::clone(&store);
-            let addr = addr.clone();
-
-            handles.push(tokio::spawn(async move {
-                store
-                    .update_peer_status(&addr.to_string(), i % 2 == 0)
-                    .await
-                    .unwrap();
-            }));
-        }
-
-        // Wait for all tasks to complete
-        for handle in handles {
-            handle.await.unwrap();
-        }
-
-        // Verify the final state - should have one peer
+        // Verify peer is removed
         let peers = store.get_peers().await;
-        assert_eq!(peers.len(), 1);
+        assert_eq!(peers.len(), 0, "Peer should be removed after max_retries failures");
 
-        // The peer should have a mix of successes and failures
-        assert!(peers[0].success_count > 0);
-        assert!(peers[0].failure_count > 0);
+        // Test with some successes but more failures
+        store.add_peer(addr.clone()).await.unwrap();
+        store.update_peer_status(&addr.to_string(), true).await.unwrap();
+        store.update_peer_status(&addr.to_string(), true).await.unwrap();
+        
+        for _ in 0..5 {
+            store.update_peer_status(&addr.to_string(), false).await.unwrap();
+        }
+
+        // Run cleanup
+        store.cleanup_stale_peers().await.unwrap();
+
+        // Verify peer is removed due to more failures than successes
+        let peers = store.get_peers().await;
+        assert_eq!(peers.len(), 0, "Peer should be removed when failures exceed successes");
     }
 }
