@@ -380,7 +380,12 @@ impl Network {
             return Err(NetworkError::NoStoreCostResponses);
         }
 
-        let request = Request::Query(Query::GetStoreCost(record_address.clone()));
+        // Client shall decide whether to carry out storage verification or not.
+        let request = Request::Query(Query::GetStoreCost {
+            key: record_address.clone(),
+            nonce: None,
+            difficulty: 0,
+        });
         let responses = self
             .send_and_get_responses(&close_nodes, &request, true)
             .await;
@@ -398,7 +403,11 @@ impl Network {
                     quote: Ok(quote),
                     payment_address,
                     peer_address,
+                    storage_proofs,
                 }) => {
+                    if !storage_proofs.is_empty() {
+                        debug!("Storage proofing during GetStoreCost to be implemented.");
+                    }
                     // Check the quote itself is valid.
                     if quote.cost
                         != AttoTokens::from_u64(calculate_cost_for_records(
@@ -416,7 +425,11 @@ impl Network {
                     quote: Err(ProtocolError::RecordExists(_)),
                     payment_address,
                     peer_address,
+                    storage_proofs,
                 }) => {
+                    if !storage_proofs.is_empty() {
+                        debug!("Storage proofing during GetStoreCost to be implemented.");
+                    }
                     all_costs.push((peer_address, payment_address, PaymentQuote::zero()));
                 }
                 _ => {

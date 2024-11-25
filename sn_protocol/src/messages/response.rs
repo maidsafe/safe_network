@@ -30,6 +30,8 @@ pub enum QueryResponse {
         payment_address: RewardsAddress,
         /// Node's Peer Address
         peer_address: NetworkAddress,
+        /// Storage proofs based on requested target address and difficulty
+        storage_proofs: Vec<(NetworkAddress, Result<ChunkProof>)>,
     },
     CheckNodeInProblem {
         /// Address of the peer that queried
@@ -67,10 +69,12 @@ impl Debug for QueryResponse {
                 quote,
                 payment_address,
                 peer_address,
+                storage_proofs,
             } => {
                 write!(
                     f,
-                    "GetStoreCost(quote: {quote:?}, from {peer_address:?} w/ payment_address: {payment_address:?})"
+                    "GetStoreCost(quote: {quote:?}, from {peer_address:?} w/ payment_address: {payment_address:?}, and {} storage proofs)",
+                    storage_proofs.len()
                 )
             }
             QueryResponse::CheckNodeInProblem {

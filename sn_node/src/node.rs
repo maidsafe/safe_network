@@ -514,12 +514,29 @@ impl Node {
         payment_address: RewardsAddress,
     ) -> Response {
         let resp: QueryResponse = match query {
-            Query::GetStoreCost(address) => {
-                debug!("Got GetStoreCost request for {address:?}");
-                let record_key = address.to_record_key();
+            Query::GetStoreCost {
+                key,
+                nonce,
+                difficulty,
+            } => {
+                debug!("Got GetStoreCost request for {key:?} with difficulty {difficulty}");
+                let record_key = key.to_record_key();
                 let self_id = network.peer_id();
 
                 let store_cost = network.get_local_storecost(record_key.clone()).await;
+
+                let storage_proofs = if let Some(nonce) = nonce {
+                    Self::respond_x_closest_record_proof(
+                        network,
+                        key.clone(),
+                        nonce,
+                        difficulty,
+                        false,
+                    )
+                    .await
+                } else {
+                    vec![]
+                };
 
                 match store_cost {
                     Ok((cost, quoting_metrics, bad_nodes)) => {
@@ -530,19 +547,21 @@ impl Node {
                                 )),
                                 payment_address,
                                 peer_address: NetworkAddress::from_peer(self_id),
+                                storage_proofs,
                             }
                         } else {
                             QueryResponse::GetStoreCost {
                                 quote: Self::create_quote_for_storecost(
                                     network,
                                     cost,
-                                    &address,
+                                    &key,
                                     &quoting_metrics,
                                     bad_nodes,
                                     &payment_address,
                                 ),
                                 payment_address,
                                 peer_address: NetworkAddress::from_peer(self_id),
+                                storage_proofs,
                             }
                         }
                     }
@@ -550,6 +569,7 @@ impl Node {
                         quote: Err(ProtocolError::GetStoreCostFailed),
                         payment_address,
                         peer_address: NetworkAddress::from_peer(self_id),
+                        storage_proofs,
                     },
                 }
             }
