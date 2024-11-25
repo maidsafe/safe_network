@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *When editing this file, please respect a line length of 100.*
 
+## 2024-11-25
+
+### Network
+
+#### Fixed
+
+- Make native kad bootstrap interval more random. So that when running multiple nodes
+  on one machine, there is no resource usage spike appears with fixed interval.
+
 ## 2024-11-13
 
 ### Network
