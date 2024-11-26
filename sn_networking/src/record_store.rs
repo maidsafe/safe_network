@@ -37,7 +37,7 @@ use sn_protocol::{
 };
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap},
     fs,
     path::{Path, PathBuf},
     time::SystemTime,
@@ -727,7 +727,6 @@ impl NodeRecordStore {
     /// Calculate the cost to store data for our current store state
     pub(crate) fn store_cost(&self, key: &Key) -> (AttoTokens, QuotingMetrics) {
         let records_stored = self.records.len();
-        let record_keys_as_hashset: HashSet<&Key> = self.records.keys().collect();
 
         let live_time = if let Ok(elapsed) = self.timestamp.elapsed() {
             elapsed.as_secs()
@@ -743,8 +742,7 @@ impl NodeRecordStore {
         };
 
         if let Some(distance_range) = self.responsible_distance_range {
-            let relevant_records =
-                self.get_records_within_distance_range(record_keys_as_hashset, distance_range);
+            let relevant_records = self.get_records_within_distance_range(distance_range);
 
             quoting_metrics.close_records_stored = relevant_records;
         } else {
@@ -770,11 +768,7 @@ impl NodeRecordStore {
     }
 
     /// Calculate how many records are stored within a distance range
-    pub fn get_records_within_distance_range(
-        &self,
-        _records: HashSet<&Key>,
-        range: Distance,
-    ) -> usize {
+    pub fn get_records_within_distance_range(&self, range: Distance) -> usize {
         let within_range = self
             .records_by_distance
             .range(..range)
@@ -1609,7 +1603,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_records_within_bucket_range() -> eyre::Result<()> {
+    async fn get_records_within_range() -> eyre::Result<()> {
         let max_records = 50;
 
         let temp_dir = std::env::temp_dir();
@@ -1654,7 +1648,6 @@ mod tests {
                 publisher: None,
                 expires: None,
             };
-            // The new entry is closer, it shall replace the existing one
             assert!(store.put_verified(record, RecordType::Chunk).is_ok());
             // We must also mark the record as stored (which would be triggered after the async write in nodes
             // via NetworkEvent::CompletedWrite)
@@ -1671,7 +1664,7 @@ mod tests {
         // get a record halfway through the list
         let halfway_record_address = NetworkAddress::from_record_key(
             stored_records
-                .get((stored_records.len() / 2) - 1)
+                .get(max_records / 2)
                 .wrap_err("Could not parse record store key")?,
         );
         // get the distance to this record from our local key
@@ -1680,13 +1673,14 @@ mod tests {
         // must be plus one bucket from the halfway record
         store.set_responsible_distance_range(distance);
 
-        let record_keys = store.records.keys().collect();
+        let records_in_range = store.get_records_within_distance_range(distance);
 
         // check that the number of records returned is larger than half our records
         // (ie, that we cover _at least_ all the records within our distance range)
         assert!(
-            store.get_records_within_distance_range(record_keys, distance)
-                >= stored_records.len() / 2
+            records_in_range >= max_records / 2,
+            "Not enough records in range {records_in_range}/{}",
+            max_records / 2
         );
 
         Ok(())

@@ -11,7 +11,7 @@ use libp2p::{
     kad::{Quorum, Record, RecordKey},
     PeerId,
 };
-use sn_networking::{sort_peers_by_address, GetRecordCfg, Network, REPLICATION_PEERS_COUNT};
+use sn_networking::{GetRecordCfg, Network};
 use sn_protocol::{
     messages::{Cmd, Query, QueryResponse, Request, Response},
     storage::RecordType,
@@ -146,46 +146,30 @@ impl Node {
 
             debug!("Start replication of fresh record {pretty_key:?} from store");
 
-            // Already contains self_peer_id
-            let mut closest_k_peers = match network.get_closest_k_value_local_peers().await {
+            let data_addr = NetworkAddress::from_record_key(&paid_key);
+            let replicate_candidates = match network
+                .get_replicate_candidates(data_addr.clone())
+                .await
+            {
                 Ok(peers) => peers,
                 Err(err) => {
-                    error!("Replicating fresh record {pretty_key:?} get_closest_local_peers errored: {err:?}");
-                    return;
-                }
-            };
-
-            // remove ourself from these calculations
-            closest_k_peers.retain(|peer_id| peer_id != &network.peer_id());
-
-            let data_addr = NetworkAddress::from_record_key(&paid_key);
-
-            let sorted_based_on_addr = match sort_peers_by_address(
-                &closest_k_peers,
-                &data_addr,
-                REPLICATION_PEERS_COUNT,
-            ) {
-                Ok(result) => result,
-                Err(err) => {
-                    error!(
-                            "When replicating fresh record {pretty_key:?}, having error when sort {err:?}"
-                        );
+                    error!("Replicating fresh record {pretty_key:?} get_replicate_candidates errored: {err:?}");
                     return;
                 }
             };
 
             let our_peer_id = network.peer_id();
             let our_address = NetworkAddress::from_peer(our_peer_id);
-            let keys = vec![(data_addr.clone(), record_type.clone())];
+            let keys = vec![(data_addr, record_type.clone())];
 
-            for peer_id in sorted_based_on_addr {
+            for peer_id in replicate_candidates {
                 debug!("Replicating fresh record {pretty_key:?} to {peer_id:?}");
                 let request = Request::Cmd(Cmd::Replicate {
                     holder: our_address.clone(),
                     keys: keys.clone(),
                 });
 
-                network.send_req_ignore_reply(request, *peer_id);
+                network.send_req_ignore_reply(request, peer_id);
             }
             debug!(
                 "Completed replicate fresh record {pretty_key:?} on store, in {:?}",

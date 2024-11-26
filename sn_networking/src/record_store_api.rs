@@ -130,7 +130,7 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn get_farthest_replication_distance_bucket(&self) -> Option<Distance> {
+    pub(crate) fn get_farthest_replication_distance(&self) -> Option<Distance> {
         match self {
             Self::Client(_store) => {
                 warn!("Calling get_distance_range at Client. This should not happen");

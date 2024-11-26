@@ -12,7 +12,6 @@ use crate::{
     event::TerminateNodeReason,
     log_markers::Marker,
     multiaddr_pop_p2p, GetRecordCfg, GetRecordError, MsgResponder, NetworkEvent, CLOSE_GROUP_SIZE,
-    REPLICATION_PEERS_COUNT,
 };
 use libp2p::{
     kad::{
@@ -63,6 +62,12 @@ pub enum LocalSwarmCmd {
     /// bucket.
     GetKBuckets {
         sender: oneshot::Sender<BTreeMap<u32, Vec<PeerId>>>,
+    },
+    /// Returns the replicate candidates in range.
+    /// In case the range is too narrow, returns at lease CLOSE_GROUP_SIZE peers.
+    GetReplicateCandidates {
+        data_addr: NetworkAddress,
+        sender: oneshot::Sender<Vec<PeerId>>,
     },
     // Returns up to K_VALUE peers from all the k-buckets from the local Routing Table.
     // And our PeerId as well.
@@ -220,7 +225,9 @@ impl Debug for LocalSwarmCmd {
                     PrettyPrintRecordKey::from(key)
                 )
             }
-
+            LocalSwarmCmd::GetReplicateCandidates { .. } => {
+                write!(f, "LocalSwarmCmd::GetReplicateCandidates")
+            }
             LocalSwarmCmd::GetClosestKLocalPeers { .. } => {
                 write!(f, "LocalSwarmCmd::GetClosestKLocalPeers")
             }
@@ -709,7 +716,7 @@ impl SwarmDriver {
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .get_farthest_replication_distance_bucket()
+                    .get_farthest_replication_distance()
                 {
                     self.replication_fetcher
                         .set_replication_distance_range(distance);
@@ -809,7 +816,10 @@ impl SwarmDriver {
                 cmd_string = "GetClosestKLocalPeers";
                 let _ = sender.send(self.get_closest_k_value_local_peers());
             }
-
+            LocalSwarmCmd::GetReplicateCandidates { data_addr, sender } => {
+                cmd_string = "GetReplicateCandidates";
+                let _ = sender.send(self.get_replicate_candidates(&data_addr));
+            }
             LocalSwarmCmd::GetSwarmLocalState(sender) => {
                 cmd_string = "GetSwarmLocalState";
                 let current_state = SwarmLocalState {
@@ -1006,22 +1016,8 @@ impl SwarmDriver {
         // Store the current time as the last replication time
         self.last_replication = Some(Instant::now());
 
-        // get closest peers from buckets, sorted by increasing distance to us
-        let our_peer_id = self.self_peer_id.into();
-        let closest_k_peers = self
-            .swarm
-            .behaviour_mut()
-            .kademlia
-            .get_closest_local_peers(&our_peer_id)
-            // Map KBucketKey<PeerId> to PeerId.
-            .map(|key| key.into_preimage());
-
-        // Only grab the closest nodes within the REPLICATE_RANGE
-        let mut replicate_targets = closest_k_peers
-            .into_iter()
-            // add some leeway to allow for divergent knowledge
-            .take(REPLICATION_PEERS_COUNT)
-            .collect::<Vec<_>>();
+        let self_addr = NetworkAddress::from_peer(self.self_peer_id);
+        let mut replicate_targets = self.get_replicate_candidates(&self_addr);
 
         let now = Instant::now();
         self.replication_targets
@@ -1066,4 +1062,58 @@ impl SwarmDriver {
 
         Ok(())
     }
+
+    // Replies with in-range replicate candidates
+    // Fall back to CLOSE_GROUP_SIZE peers if range is too narrow.
+    // Note that:
+    //   * For general replication, replicate candidates shall be the closest to self
+    //   * For replicate fresh records, the replicate candidates shall be the closest to data
+    pub(crate) fn get_replicate_candidates(&mut self, target: &NetworkAddress) -> Vec<PeerId> {
+        // get closest peers from buckets, sorted by increasing distance to the target
+        let kbucket_key = target.as_kbucket_key();
+        let closest_k_peers: Vec<PeerId> = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .get_closest_local_peers(&kbucket_key)
+            // Map KBucketKey<PeerId> to PeerId.
+            .map(|key| key.into_preimage())
+            .collect();
+
+        if let Some(responsible_range) = self
+            .swarm
+            .behaviour_mut()
+            .kademlia
+            .store_mut()
+            .get_farthest_replication_distance()
+        {
+            let peers_in_range = get_peers_in_range(&closest_k_peers, target, responsible_range);
+
+            if peers_in_range.len() >= CLOSE_GROUP_SIZE {
+                return peers_in_range;
+            }
+        }
+
+        // In case the range is too narrow, fall back to at least CLOSE_GROUP_SIZE peers.
+        closest_k_peers
+            .iter()
+            .take(CLOSE_GROUP_SIZE)
+            .cloned()
+            .collect()
+    }
+}
+
+/// Returns the nodes that within the defined distance.
+fn get_peers_in_range(peers: &[PeerId], address: &NetworkAddress, range: Distance) -> Vec<PeerId> {
+    peers
+        .iter()
+        .filter_map(|peer_id| {
+            let distance = address.distance(&NetworkAddress::from_peer(*peer_id));
+            if distance <= range {
+                Some(*peer_id)
+            } else {
+                None
+            }
+        })
+        .collect()
 }

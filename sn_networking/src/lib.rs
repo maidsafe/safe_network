@@ -87,10 +87,6 @@ use {
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
 
-/// The count of peers that will be considered as close to a record target,
-/// that a replication of the record shall be sent/accepted to/by the peer.
-pub const REPLICATION_PEERS_COUNT: usize = CLOSE_GROUP_SIZE + 2;
-
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
 pub const fn close_group_majority() -> usize {
@@ -263,6 +259,16 @@ impl Network {
     pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetClosestKLocalPeers { sender });
+
+        receiver
+            .await
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
+    }
+
+    /// Returns the replicate candidates in range.
+    pub async fn get_replicate_candidates(&self, data_addr: NetworkAddress) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetReplicateCandidates { data_addr, sender });
 
         receiver
             .await
