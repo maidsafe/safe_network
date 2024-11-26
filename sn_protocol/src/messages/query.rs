@@ -18,7 +18,18 @@ use serde::{Deserialize, Serialize};
 #[derive(Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
 pub enum Query {
     /// Retrieve the cost of storing a record at the given address.
-    GetStoreCost(NetworkAddress),
+    /// The storage verification is optional to be undertaken
+    GetStoreCost {
+        /// The Address of the record to be stored.
+        key: NetworkAddress,
+        /// The random nonce that nodes use to produce the Proof (i.e., hash(record+nonce))
+        /// Set to None if no need to carry out storage check.
+        nonce: Option<Nonce>,
+        /// Defines the expected number of answers to the challenge.
+        /// Node shall try their best to fulfill the number, based on their capacity.
+        /// Set to 0 to indicate not carry out any verification.
+        difficulty: usize,
+    },
     /// Retrieve a specific record from a specific peer.
     ///
     /// This should eventually lead to a [`GetReplicatedRecord`] response.
@@ -47,6 +58,10 @@ pub enum Query {
         key: NetworkAddress,
         /// The random nonce that the node uses to produce the Proof (i.e., hash(record+nonce))
         nonce: Nonce,
+        /// Defines the expected number of answers to the challenge.
+        /// For client publish verification, use 1 for efficiency.
+        /// Node shall try their best to fulfill the number, based on their capacity.
+        difficulty: usize,
     },
     /// Queries close_group peers whether the target peer is a bad_node
     CheckNodeInProblem(NetworkAddress),
@@ -56,10 +71,11 @@ impl Query {
     /// Used to send a query to the close group of the address.
     pub fn dst(&self) -> NetworkAddress {
         match self {
-            Query::GetStoreCost(address) | Query::CheckNodeInProblem(address) => address.clone(),
+            Query::CheckNodeInProblem(address) => address.clone(),
             // Shall not be called for this, as this is a `one-to-one` message,
             // and the destination shall be decided by the requester already.
-            Query::GetReplicatedRecord { key, .. }
+            Query::GetStoreCost { key, .. }
+            | Query::GetReplicatedRecord { key, .. }
             | Query::GetRegisterRecord { key, .. }
             | Query::GetChunkExistenceProof { key, .. } => key.clone(),
         }
@@ -69,8 +85,12 @@ impl Query {
 impl std::fmt::Display for Query {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Query::GetStoreCost(address) => {
-                write!(f, "Query::GetStoreCost({address:?})")
+            Query::GetStoreCost {
+                key,
+                nonce,
+                difficulty,
+            } => {
+                write!(f, "Query::GetStoreCost({key:?} {nonce:?} {difficulty})")
             }
             Query::GetReplicatedRecord { key, requester } => {
                 write!(f, "Query::GetReplicatedRecord({requester:?} {key:?})")
@@ -78,8 +98,15 @@ impl std::fmt::Display for Query {
             Query::GetRegisterRecord { key, requester } => {
                 write!(f, "Query::GetRegisterRecord({requester:?} {key:?})")
             }
-            Query::GetChunkExistenceProof { key, nonce } => {
-                write!(f, "Query::GetChunkExistenceProof({key:?} {nonce:?})")
+            Query::GetChunkExistenceProof {
+                key,
+                nonce,
+                difficulty,
+            } => {
+                write!(
+                    f,
+                    "Query::GetChunkExistenceProof({key:?} {nonce:?} {difficulty})"
+                )
             }
             Query::CheckNodeInProblem(address) => {
                 write!(f, "Query::CheckNodeInProblem({address:?})")

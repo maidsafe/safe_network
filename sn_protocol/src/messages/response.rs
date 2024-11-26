@@ -30,6 +30,8 @@ pub enum QueryResponse {
         payment_address: RewardsAddress,
         /// Node's Peer Address
         peer_address: NetworkAddress,
+        /// Storage proofs based on requested target address and difficulty
+        storage_proofs: Vec<(NetworkAddress, Result<ChunkProof>)>,
     },
     CheckNodeInProblem {
         /// Address of the peer that queried
@@ -56,7 +58,7 @@ pub enum QueryResponse {
     /// Response to [`GetChunkExistenceProof`]
     ///
     /// [`GetChunkExistenceProof`]: crate::messages::Query::GetChunkExistenceProof
-    GetChunkExistenceProof(Result<ChunkProof>),
+    GetChunkExistenceProof(Vec<(NetworkAddress, Result<ChunkProof>)>),
 }
 
 // Debug implementation for QueryResponse, to avoid printing Vec<u8>
@@ -67,10 +69,12 @@ impl Debug for QueryResponse {
                 quote,
                 payment_address,
                 peer_address,
+                storage_proofs,
             } => {
                 write!(
                     f,
-                    "GetStoreCost(quote: {quote:?}, from {peer_address:?} w/ payment_address: {payment_address:?})"
+                    "GetStoreCost(quote: {quote:?}, from {peer_address:?} w/ payment_address: {payment_address:?}, and {} storage proofs)",
+                    storage_proofs.len()
                 )
             }
             QueryResponse::CheckNodeInProblem {
@@ -109,8 +113,9 @@ impl Debug for QueryResponse {
                     write!(f, "GetRegisterRecord(Err({err:?}))")
                 }
             },
-            QueryResponse::GetChunkExistenceProof(proof) => {
-                write!(f, "GetChunkExistenceProof(proof: {proof:?})")
+            QueryResponse::GetChunkExistenceProof(proofs) => {
+                let addresses: Vec<_> = proofs.iter().map(|(addr, _)| addr.clone()).collect();
+                write!(f, "GetChunkExistenceProof(checked chunks: {addresses:?})")
             }
         }
     }

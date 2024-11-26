@@ -768,7 +768,7 @@ fn check_and_wipe_storage_dir_if_necessary(
     //   * the storage_dir shall be wiped out
     //   * the version file shall be updated
     if cur_version_str != prev_version_str {
-        warn!("Trying to wipe out storege dir {storage_dir_path:?}, as cur_version {cur_version_str:?} doesn't match prev_version {prev_version_str:?}");
+        warn!("Trying to wipe out storage dir {storage_dir_path:?}, as cur_version {cur_version_str:?} doesn't match prev_version {prev_version_str:?}");
         let _ = fs::remove_dir_all(storage_dir_path);
 
         let mut file = fs::OpenOptions::new()

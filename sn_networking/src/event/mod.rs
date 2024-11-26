@@ -143,11 +143,6 @@ pub enum NetworkEvent {
     FailedToFetchHolders(BTreeSet<PeerId>),
     /// Quotes to be verified
     QuoteVerification { quotes: Vec<(PeerId, PaymentQuote)> },
-    /// Carry out chunk proof check against the specified record and peer
-    ChunkProofVerification {
-        peer_id: PeerId,
-        key_to_verify: NetworkAddress,
-    },
 }
 
 /// Terminate node for the following reason
@@ -204,15 +199,6 @@ impl Debug for NetworkEvent {
                     f,
                     "NetworkEvent::QuoteVerification({} quotes)",
                     quotes.len()
-                )
-            }
-            NetworkEvent::ChunkProofVerification {
-                peer_id,
-                key_to_verify: keys_to_verify,
-            } => {
-                write!(
-                    f,
-                    "NetworkEvent::ChunkProofVerification({peer_id:?} {keys_to_verify:?})"
                 )
             }
         }
