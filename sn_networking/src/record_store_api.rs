@@ -10,7 +10,7 @@
 use crate::record_store::{ClientRecordStore, NodeRecordStore};
 use libp2p::kad::{
     store::{RecordStore, Result},
-    ProviderRecord, Record, RecordKey,
+    KBucketDistance as Distance, ProviderRecord, Record, RecordKey,
 };
 use sn_evm::{AttoTokens, QuotingMetrics};
 use sn_protocol::{storage::RecordType, NetworkAddress};
@@ -130,7 +130,7 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn get_farthest_replication_distance_bucket(&self) -> Option<u32> {
+    pub(crate) fn get_farthest_replication_distance_bucket(&self) -> Option<Distance> {
         match self {
             Self::Client(_store) => {
                 warn!("Calling get_distance_range at Client. This should not happen");
@@ -140,7 +140,7 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn set_distance_range(&mut self, distance: u32) {
+    pub(crate) fn set_distance_range(&mut self, distance: Distance) {
         match self {
             Self::Client(_store) => {
                 warn!("Calling set_distance_range at Client. This should not happen");

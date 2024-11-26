@@ -926,21 +926,28 @@ impl SwarmDriver {
                 }
                 _ = set_farthest_record_interval.tick() => {
                     if !self.is_client {
-                        let closest_k_peers = self.get_closest_k_value_local_peers();
+                        let distance = if let Some(distance) = self.network_density_samples.get_median() {
+                            distance
+                        } else {
+                            // In case sampling not triggered or yet,
+                            // fall back to use the distance to CLOSE_GROUP_SIZEth closest
+                            let closest_k_peers = self.get_closest_k_value_local_peers();
+                            if closest_k_peers.len() <= CLOSE_GROUP_SIZE + 1 {
+                                continue;
+                            }
+                            // Results are sorted, hence can calculate distance directly
+                            // Note: self is included
+                            let self_addr = NetworkAddress::from_peer(self.self_peer_id);
+                            self_addr.distance(&NetworkAddress::from_peer(closest_k_peers[CLOSE_GROUP_SIZE]))
 
-                        if let Some(distance) = self.get_responsbile_range_estimate(&closest_k_peers) {
-                            let network_density = self.network_density_samples.get_median();
-                            let ilog2 = if let Some(distance) = network_density {
-                                distance.ilog2()
-                            } else {
-                                None
-                            };
-                            info!("Set responsible range to {distance}, current sampled network density is {ilog2:?}({network_density:?})");
-                            // set any new distance to farthest record in the store
-                            self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
-                            // the distance range within the replication_fetcher shall be in sync as well
-                            self.replication_fetcher.set_replication_distance_range(distance);
-                        }
+                        };
+
+                        info!("Set responsible range to {distance:?}({:?})", distance.ilog2());
+
+                        // set any new distance to farthest record in the store
+                        self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+                        // the distance range within the replication_fetcher shall be in sync as well
+                        self.replication_fetcher.set_replication_distance_range(distance);
                     }
                 }
                 _ = relay_manager_reservation_interval.tick() => self.relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes),
@@ -951,34 +958,6 @@ impl SwarmDriver {
     // --------------------------------------------
     // ---------- Crate helpers -------------------
     // --------------------------------------------
-
-    /// Uses the closest k peers to estimate the farthest address as
-    /// `K_VALUE / 2`th peer's bucket.
-    fn get_responsbile_range_estimate(
-        &mut self,
-        // Sorted list of closest k peers to our peer id.
-        closest_k_peers: &[PeerId],
-    ) -> Option<u32> {
-        // if we don't have enough peers we don't set the distance range yet.
-        let mut farthest_distance = None;
-
-        if closest_k_peers.is_empty() {
-            return farthest_distance;
-        }
-
-        let our_address = NetworkAddress::from_peer(self.self_peer_id);
-
-        // get `K_VALUE / 2`th peer's address distance
-        // This is a rough estimate of the farthest address we might be responsible for.
-        // We want this to be higher than actually necessary, so we retain more data
-        // and can be sure to pass bad node checks
-        let target_index = std::cmp::min(K_VALUE.get() / 2, closest_k_peers.len()) - 1;
-
-        let address = NetworkAddress::from_peer(closest_k_peers[target_index]);
-        farthest_distance = our_address.distance(&address).ilog2();
-
-        farthest_distance
-    }
 
     /// Pushes NetworkSwarmCmd off thread so as to be non-blocking
     /// this is a wrapper around the `mpsc::Sender::send` call
