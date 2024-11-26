@@ -8664,7 +8664,7 @@ dependencies = [
 
 [[package]]
 name = "sn_networking"
-version = "0.19.4"
+version = "0.19.5"
 dependencies = [
  "aes-gcm-siv",
  "assert_fs",
