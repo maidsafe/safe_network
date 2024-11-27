@@ -73,7 +73,7 @@ const TIME_STEP: usize = 20;
 
 /// Interval to carryout network density sampling
 /// This is the max time it should take. Minimum interval at any node will be half this
-const NETWORK_DENSITY_SAMPLING_INTERVAL_MAX_S: u64 = 180;
+const NETWORK_DENSITY_SAMPLING_INTERVAL_MAX_S: u64 = 200;
 
 /// Helper to build and run a Node
 pub struct NodeBuilder {
@@ -863,6 +863,8 @@ impl Node {
                     network.add_network_density_sample(distance);
                 }
             }
+            // Sleep a short while to avoid causing a spike on resource usage.
+            std::thread::sleep(std::time::Duration::from_secs(10));
         }
     }
 }

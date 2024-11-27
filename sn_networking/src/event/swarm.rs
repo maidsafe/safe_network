@@ -612,7 +612,7 @@ impl SwarmDriver {
     // Optionally force remove all the connections for a provided peer.
     fn remove_outdated_connections(&mut self) {
         // To avoid this being called too frequenctly, only carry out prunning intervally.
-        if Instant::now() > self.last_connection_pruning_time + Duration::from_secs(30) {
+        if Instant::now() < self.last_connection_pruning_time + Duration::from_secs(30) {
             return;
         }
         self.last_connection_pruning_time = Instant::now();
