@@ -8712,7 +8712,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node"
-version = "0.112.5"
+version = "0.112.6"
 dependencies = [
  "assert_fs",
  "async-trait",
@@ -8771,7 +8771,7 @@ dependencies = [
 
 [[package]]
 name = "sn_node_rpc_client"
-version = "0.6.35"
+version = "0.6.36"
 dependencies = [
  "async-trait",
  "blsttc",
