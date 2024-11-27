@@ -8773,7 +8773,6 @@ dependencies = [
 name = "sn_node_rpc_client"
 version = "0.6.35"
 dependencies = [
- "assert_fs",
  "async-trait",
  "blsttc",
  "clap",
