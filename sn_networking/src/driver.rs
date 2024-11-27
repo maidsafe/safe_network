@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    bootstrap::{ContinuousBootstrap, BOOTSTRAP_INTERVAL},
+    bootstrap::{ContinuousNetworkDiscover, NETWORK_DISCOVER_INTERVAL},
     circular_vec::CircularVec,
     cmd::{LocalSwarmCmd, NetworkSwarmCmd},
     error::{NetworkError, Result},
@@ -688,7 +688,7 @@ impl NetworkBuilder {
 
         let swarm = Swarm::new(transport, behaviour, peer_id, swarm_config);
 
-        let bootstrap = ContinuousBootstrap::new();
+        let bootstrap = ContinuousNetworkDiscover::new();
         let replication_fetcher = ReplicationFetcher::new(peer_id, network_event_sender.clone());
         let mut relay_manager = RelayManager::new(peer_id);
         if !is_client {
@@ -798,7 +798,7 @@ pub struct SwarmDriver {
     #[cfg(feature = "open-metrics")]
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) peers_in_rt: usize,
-    pub(crate) bootstrap: ContinuousBootstrap,
+    pub(crate) bootstrap: ContinuousNetworkDiscover,
     pub(crate) external_address_manager: ExternalAddressManager,
     pub(crate) relay_manager: RelayManager,
     /// The peers that are closer to our PeerId. Includes self.
@@ -852,7 +852,7 @@ impl SwarmDriver {
     /// and command receiver messages, ensuring efficient handling of multiple
     /// asynchronous tasks.
     pub async fn run(mut self) {
-        let mut bootstrap_interval = interval(BOOTSTRAP_INTERVAL);
+        let mut network_discover_interval = interval(NETWORK_DISCOVER_INTERVAL);
         let mut set_farthest_record_interval = interval(CLOSET_RECORD_CHECK_INTERVAL);
         let mut relay_manager_reservation_interval = interval(RELAY_MANAGER_RESERVATION_INTERVAL);
 
@@ -915,9 +915,9 @@ impl SwarmDriver {
                 // thereafter we can check our intervals
 
                 // runs every bootstrap_interval time
-                _ = bootstrap_interval.tick() => {
-                    if let Some(new_interval) = self.run_bootstrap_continuously(bootstrap_interval.period()).await {
-                        bootstrap_interval = new_interval;
+                _ = network_discover_interval.tick() => {
+                    if let Some(new_interval) = self.run_network_discover_continuously(network_discover_interval.period()).await {
+                        network_discover_interval = new_interval;
                     }
                 }
                 _ = set_farthest_record_interval.tick() => {
