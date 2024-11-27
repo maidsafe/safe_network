@@ -82,7 +82,7 @@ pub enum ConnectError {
 impl Client {
     /// Connect to the network.
     ///
-    /// This will timeout after 20 seconds. (See [`CONNECT_TIMEOUT_SECS`].)
+    /// This will timeout after [`CONNECT_TIMEOUT_SECS`] secs.
     ///
     /// ```no_run
     /// # use autonomi::client::Client;
