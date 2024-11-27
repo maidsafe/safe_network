@@ -42,9 +42,6 @@ unused_async = "warn"
 unwrap_used = "warn"
 clone_on_ref_ptr = "warn"
 
-[profile.release]
-debug = true
-
 [profile.dev]
 debug = 0
 strip = "debuginfo"
