@@ -6,9 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use bootstrap_cache::{BootstrapConfig, CacheStore, PeersArgs};
+use ant_bootstrap_cache::{BootstrapConfig, CacheStore, PeersArgs};
 use libp2p::{multiaddr::Protocol, Multiaddr};
-use std::{net::SocketAddrV4, time::Duration};
+use std::net::SocketAddrV4;
 use tempfile::TempDir;
 use wiremock::{
     matchers::{method, path},
@@ -26,16 +26,14 @@ fn init_logging() {
 async fn setup() -> (TempDir, BootstrapConfig) {
     let temp_dir = TempDir::new().unwrap();
     let cache_path = temp_dir.path().join("cache.json");
-    
+
     let config = BootstrapConfig {
         cache_file_path: cache_path,
-        endpoints: vec![],  // Empty endpoints to avoid fetching from network
+        endpoints: vec![], // Empty endpoints to avoid fetching from network
         max_peers: 50,
-        max_retries: 3,
-        request_timeout: Duration::from_secs(10),
-        update_interval: Duration::from_secs(300),
+        disable_cache_writing: false,
     };
-    
+
     (temp_dir, config)
 }
 
@@ -56,7 +54,6 @@ async fn test_ipv4_socket_address_parsing() -> Result<(), Box<dyn std::error::Er
         peers: vec![expected_addr.clone()],
         network_contacts_url: None,
         local: false,
-        test_network: true,  // Use test network mode to avoid fetching from default endpoints
     };
 
     let store = CacheStore::from_args(args, config).await?;
@@ -77,19 +74,18 @@ async fn test_multiaddr_format_parsing() -> Result<(), Box<dyn std::error::Error
         "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE",
         // Without peer ID
         "/ip4/127.0.0.1/udp/8080/quic-v1",
-        // With TCP instead of UDP (should still work)
-        "/ip4/127.0.0.1/tcp/8080/quic-v1",
+        // With ws
+        "/ip4/127.0.0.1/tcp/8080/ws",
     ];
 
     for addr_str in addrs {
-        let (_temp_dir, config) = setup().await;  // Fresh config for each test case
+        let (_temp_dir, config) = setup().await; // Fresh config for each test case
         let addr = addr_str.parse::<Multiaddr>()?;
         let args = PeersArgs {
             first: false,
             peers: vec![addr.clone()],
             network_contacts_url: None,
             local: false,
-            test_network: true,  // Use test network mode to avoid fetching from default endpoints
         };
 
         let store = CacheStore::from_args(args, config).await?;
@@ -122,12 +118,15 @@ async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>
         peers: vec![],
         network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
         local: false,
-        test_network: false,  // Allow fetching from network contacts
     };
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
-    assert_eq!(peers.len(), 2, "Should have two peers from network contacts");
+    assert_eq!(
+        peers.len(),
+        2,
+        "Should have two peers from network contacts"
+    );
 
     // Verify address formats
     for peer in peers {
@@ -148,19 +147,18 @@ async fn test_invalid_address_handling() -> Result<(), Box<dyn std::error::Error
     // Test various invalid address formats
     let invalid_addrs = vec![
         "not-a-multiaddr",
-        "127.0.0.1", // IP only
+        "127.0.0.1",            // IP only
         "127.0.0.1:8080:extra", // Invalid socket addr
-        "/ip4/127.0.0.1", // Incomplete multiaddr
+        "/ip4/127.0.0.1",       // Incomplete multiaddr
     ];
 
     for addr_str in invalid_addrs {
-        let (_temp_dir, config) = setup().await;  // Fresh config for each test case
+        let (_temp_dir, config) = setup().await; // Fresh config for each test case
         let args = PeersArgs {
             first: false,
             peers: vec![],
             network_contacts_url: None,
-            local: true,  // Use local mode to avoid fetching from default endpoints
-            test_network: false,
+            local: true, // Use local mode to avoid fetching from default endpoints
         };
 
         let store = CacheStore::from_args(args.clone(), config.clone()).await?;
@@ -179,7 +177,6 @@ async fn test_invalid_address_handling() -> Result<(), Box<dyn std::error::Error
                 peers: vec![addr],
                 network_contacts_url: None,
                 local: false,
-                test_network: true,  // Use test network mode to avoid fetching from default endpoints
             };
             let store = CacheStore::from_args(args_with_peer, config).await?;
             let peers = store.get_peers().await;
@@ -205,14 +202,10 @@ async fn test_socket_addr_format() -> Result<(), Box<dyn std::error::Error>> {
         first: false,
         peers: vec![],
         network_contacts_url: None,
-        local: true,  // Use local mode to avoid getting peers from default endpoints
-        test_network: false,
+        local: true, // Use local mode to avoid getting peers from default endpoints
     };
 
-    let config = BootstrapConfig {
-        cache_file_path: cache_path,
-        ..Default::default()
-    };
+    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
@@ -231,14 +224,10 @@ async fn test_multiaddr_format() -> Result<(), Box<dyn std::error::Error>> {
         first: false,
         peers: vec![],
         network_contacts_url: None,
-        local: true,  // Use local mode to avoid getting peers from default endpoints
-        test_network: false,
+        local: true, // Use local mode to avoid getting peers from default endpoints
     };
 
-    let config = BootstrapConfig {
-        cache_file_path: cache_path,
-        ..Default::default()
-    };
+    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
@@ -257,14 +246,10 @@ async fn test_invalid_addr_format() -> Result<(), Box<dyn std::error::Error>> {
         first: false,
         peers: vec![],
         network_contacts_url: None,
-        local: true,  // Use local mode to avoid getting peers from default endpoints
-        test_network: false,
+        local: true, // Use local mode to avoid getting peers from default endpoints
     };
 
-    let config = BootstrapConfig {
-        cache_file_path: cache_path,
-        ..Default::default()
-    };
+    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
@@ -283,14 +268,10 @@ async fn test_mixed_addr_formats() -> Result<(), Box<dyn std::error::Error>> {
         first: false,
         peers: vec![],
         network_contacts_url: None,
-        local: true,  // Use local mode to avoid getting peers from default endpoints
-        test_network: false,
+        local: true, // Use local mode to avoid getting peers from default endpoints
     };
 
-    let config = BootstrapConfig {
-        cache_file_path: cache_path,
-        ..Default::default()
-    };
+    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
@@ -309,14 +290,10 @@ async fn test_socket_addr_conversion() -> Result<(), Box<dyn std::error::Error>>
         first: false,
         peers: vec![],
         network_contacts_url: None,
-        local: true,  // Use local mode to avoid getting peers from default endpoints
-        test_network: false,
+        local: true, // Use local mode to avoid getting peers from default endpoints
     };
 
-    let config = BootstrapConfig {
-        cache_file_path: cache_path,
-        ..Default::default()
-    };
+    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
@@ -335,14 +312,10 @@ async fn test_invalid_socket_addr() -> Result<(), Box<dyn std::error::Error>> {
         first: false,
         peers: vec![],
         network_contacts_url: None,
-        local: true,  // Use local mode to avoid getting peers from default endpoints
-        test_network: false,
+        local: true, // Use local mode to avoid getting peers from default endpoints
     };
 
-    let config = BootstrapConfig {
-        cache_file_path: cache_path,
-        ..Default::default()
-    };
+    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
@@ -361,14 +334,10 @@ async fn test_invalid_multiaddr() -> Result<(), Box<dyn std::error::Error>> {
         first: false,
         peers: vec![],
         network_contacts_url: None,
-        local: true,  // Use local mode to avoid getting peers from default endpoints
-        test_network: false,
+        local: true, // Use local mode to avoid getting peers from default endpoints
     };
 
-    let config = BootstrapConfig {
-        cache_file_path: cache_path,
-        ..Default::default()
-    };
+    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
@@ -387,18 +356,14 @@ async fn test_mixed_valid_invalid_addrs() -> Result<(), Box<dyn std::error::Erro
         first: false,
         peers: vec![],
         network_contacts_url: None,
-        local: true,  // Use local mode to avoid getting peers from default endpoints
-        test_network: false,
+        local: true, // Use local mode to avoid getting peers from default endpoints
     };
 
-    let config = BootstrapConfig {
-        cache_file_path: cache_path,
-        ..Default::default()
-    };
+    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
 
     let store = CacheStore::from_args(args, config).await?;
     let peers = store.get_peers().await;
     assert!(peers.is_empty(), "Should have no peers in local mode");
 
     Ok(())
-} 
+}

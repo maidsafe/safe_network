@@ -6,9 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use bootstrap_cache::{BootstrapEndpoints, InitialPeerDiscovery};
+use ant_bootstrap_cache::{BootstrapEndpoints, InitialPeerDiscovery};
 use libp2p::Multiaddr;
 use tracing_subscriber::{fmt, EnvFilter};
+use url::Url;
 use wiremock::{
     matchers::{method, path},
     Mock, MockServer, ResponseTemplate,
@@ -24,7 +25,7 @@ fn init_logging() {
 #[tokio::test]
 async fn test_fetch_from_amazon_s3() {
     init_logging();
-    let discovery = InitialPeerDiscovery::new();
+    let discovery = InitialPeerDiscovery::new().unwrap();
     let peers = discovery.fetch_peers().await.unwrap();
 
     // We should get some peers
@@ -59,8 +60,10 @@ async fn test_individual_s3_endpoints() {
         .mount(&mock_server)
         .await;
 
-    let endpoint = format!("{}/peers", mock_server.uri());
-    let discovery = InitialPeerDiscovery::with_endpoints(vec![endpoint.clone()]);
+    let endpoint = format!("{}/peers", mock_server.uri())
+        .parse::<Url>()
+        .unwrap();
+    let discovery = InitialPeerDiscovery::with_endpoints(vec![endpoint.clone()]).unwrap();
 
     match discovery.fetch_peers().await {
         Ok(peers) => {
@@ -100,7 +103,7 @@ async fn test_individual_s3_endpoints() {
 #[tokio::test]
 async fn test_response_format() {
     init_logging();
-    let discovery = InitialPeerDiscovery::new();
+    let discovery = InitialPeerDiscovery::new().unwrap();
     let peers = discovery.fetch_peers().await.unwrap();
 
     // Get the first peer to check format
@@ -151,8 +154,8 @@ async fn test_json_endpoint_format() {
         .mount(&mock_server)
         .await;
 
-    let endpoint = mock_server.uri().to_string();
-    let discovery = InitialPeerDiscovery::with_endpoints(vec![endpoint.clone()]);
+    let endpoint = mock_server.uri().parse::<Url>().unwrap();
+    let discovery = InitialPeerDiscovery::with_endpoints(vec![endpoint.clone()]).unwrap();
 
     let peers = discovery.fetch_peers().await.unwrap();
     assert_eq!(peers.len(), 2);

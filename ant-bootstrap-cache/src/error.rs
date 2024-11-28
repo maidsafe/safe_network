@@ -10,6 +10,12 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Failed to parse cache data")]
+    FailedToParseCacheData,
+    #[error("Could not obtain data directory")]
+    CouldNotObtainDataDir,
+    #[error("Could not obtain bootstrap peers from {0} after {1} retries")]
+    FailedToObtainPeersFromUrl(String, usize),
     #[error("No peers found: {0}")]
     NoPeersFound(String),
     #[error("Invalid response: {0}")]
