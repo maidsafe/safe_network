@@ -36,6 +36,9 @@ use std::{
 };
 use tokio::sync::oneshot;
 
+// (total_buckets, total_peers, peers_in_non_full_buckets, num_of_full_buckets, kbucket_table_stats)
+type KBucketStatus = (usize, usize, usize, usize, Vec<(usize, usize, u32)>);
+
 /// NodeEvent enum
 #[derive(CustomDebug)]
 pub(super) enum NodeEvent {
@@ -281,12 +284,8 @@ impl SwarmDriver {
         }
     }
 
-    /// Logs the kbuckets also records the bucket info.
-    pub(crate) fn log_kbuckets(&mut self, peer: &PeerId) {
-        let distance = NetworkAddress::from_peer(self.self_peer_id)
-            .distance(&NetworkAddress::from_peer(*peer));
-        info!("Peer {peer:?} has a {:?} distance to us", distance.ilog2());
-
+    /// Collect kbuckets status
+    pub(crate) fn kbuckets_status(&mut self) -> KBucketStatus {
         let mut kbucket_table_stats = vec![];
         let mut index = 0;
         let mut total_peers = 0;
@@ -313,6 +312,28 @@ impl SwarmDriver {
             }
             index += 1;
         }
+        (
+            index,
+            total_peers,
+            peers_in_non_full_buckets,
+            num_of_full_buckets,
+            kbucket_table_stats,
+        )
+    }
+
+    /// Logs the kbuckets also records the bucket info.
+    pub(crate) fn log_kbuckets(&mut self, peer: &PeerId) {
+        let distance = NetworkAddress::from_peer(self.self_peer_id)
+            .distance(&NetworkAddress::from_peer(*peer));
+        info!("Peer {peer:?} has a {:?} distance to us", distance.ilog2());
+
+        let (
+            index,
+            total_peers,
+            peers_in_non_full_buckets,
+            num_of_full_buckets,
+            kbucket_table_stats,
+        ) = self.kbuckets_status();
 
         let estimated_network_size =
             Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
@@ -339,7 +360,7 @@ impl SwarmDriver {
     }
 
     /// Estimate the number of nodes in the network
-    fn estimate_network_size(
+    pub(crate) fn estimate_network_size(
         peers_in_non_full_buckets: usize,
         num_of_full_buckets: usize,
     ) -> usize {

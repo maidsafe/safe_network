@@ -36,7 +36,7 @@ use libp2p::mdns;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
-    kad::{self, QueryId, Quorum, Record, RecordKey, K_VALUE},
+    kad::{self, KBucketDistance as Distance, QueryId, Quorum, Record, RecordKey, K_VALUE, U256},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, OutboundRequestId, ProtocolSupport},
     swarm::{
@@ -926,21 +926,55 @@ impl SwarmDriver {
                 }
                 _ = set_farthest_record_interval.tick() => {
                     if !self.is_client {
-                        let distance = if let Some(distance) = self.network_density_samples.get_median() {
-                            distance
-                        } else {
-                            // In case sampling not triggered or yet,
-                            // fall back to use the distance to CLOSE_GROUP_SIZEth closest
-                            let closest_k_peers = self.get_closest_k_value_local_peers();
-                            if closest_k_peers.len() <= CLOSE_GROUP_SIZE + 1 {
-                                continue;
-                            }
-                            // Results are sorted, hence can calculate distance directly
-                            // Note: self is included
-                            let self_addr = NetworkAddress::from_peer(self.self_peer_id);
-                            self_addr.distance(&NetworkAddress::from_peer(closest_k_peers[CLOSE_GROUP_SIZE]))
+                        let (
+                            _index,
+                            _total_peers,
+                            peers_in_non_full_buckets,
+                            num_of_full_buckets,
+                            _kbucket_table_stats,
+                        ) = self.kbuckets_status();
+                        let estimated_network_size =
+                            Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
+                        if estimated_network_size <= CLOSE_GROUP_SIZE {
+                            info!("Not enough estimated network size {estimated_network_size}, with {peers_in_non_full_buckets} peers_in_non_full_buckets and {num_of_full_buckets}num_of_full_buckets.");
+                            continue;
+                        }
+                        // The entire Distance space is U256
+                        // (U256::MAX is 115792089237316195423570985008687907853269984665640564039457584007913129639935)
+                        // The network density (average distance among nodes) can be estimated as:
+                        //     network_density = entire_U256_space / estimated_network_size
+                        let density = U256::MAX / U256::from(estimated_network_size);
+                        let estimated_distance = density * U256::from(CLOSE_GROUP_SIZE);
+                        let density_distance = Distance(estimated_distance);
 
-                        };
+                        // Use distanct to close peer to avoid the situation that
+                        // the estimated density_distance is too narrow.
+                        let closest_k_peers = self.get_closest_k_value_local_peers();
+                        if closest_k_peers.len() <= CLOSE_GROUP_SIZE + 2 {
+                            continue;
+                        }
+                        // Results are sorted, hence can calculate distance directly
+                        // Note: self is included
+                        let self_addr = NetworkAddress::from_peer(self.self_peer_id);
+                        let close_peers_distance = self_addr.distance(&NetworkAddress::from_peer(closest_k_peers[CLOSE_GROUP_SIZE + 1]));
+
+                        let distance = std::cmp::max(density_distance, close_peers_distance);
+
+                        // let distance = if let Some(distance) = self.network_density_samples.get_median() {
+                        //     distance
+                        // } else {
+                        //     // In case sampling not triggered or yet,
+                        //     // fall back to use the distance to CLOSE_GROUP_SIZEth closest
+                        //     let closest_k_peers = self.get_closest_k_value_local_peers();
+                        //     if closest_k_peers.len() <= CLOSE_GROUP_SIZE + 1 {
+                        //         continue;
+                        //     }
+                        //     // Results are sorted, hence can calculate distance directly
+                        //     // Note: self is included
+                        //     let self_addr = NetworkAddress::from_peer(self.self_peer_id);
+                        //     self_addr.distance(&NetworkAddress::from_peer(closest_k_peers[CLOSE_GROUP_SIZE]))
+
+                        // };
 
                         info!("Set responsible range to {distance:?}({:?})", distance.ilog2());
 

@@ -22,7 +22,7 @@ loud = []
 
 [dependencies]
 lazy_static = "~1.4.0"
-libp2p = { version = "0.54.1", features = [
+libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "kad_0.46.2", features = [
     "tokio",
     "dns",
     "kad",
@@ -98,7 +98,7 @@ crate-type = ["cdylib", "rlib"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2.12", features = ["js"] }
-libp2p = { version = "0.54.1", features = [
+libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "kad_0.46.2", features = [
     "tokio",
     "dns",
     "kad",

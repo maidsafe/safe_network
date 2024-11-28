@@ -12,8 +12,9 @@ use std::collections::VecDeque;
 pub(crate) struct FifoRegister {
     queue: VecDeque<Distance>,
     max_length: usize,
+    #[allow(dead_code)]
     cached_median: Option<Distance>, // Cache for the median result
-    is_dirty: bool,                  // Flag indicating if cache is valid
+    is_dirty: bool, // Flag indicating if cache is valid
 }
 
 impl FifoRegister {
@@ -39,6 +40,7 @@ impl FifoRegister {
     }
 
     // Returns the median of the maximum values of the entries
+    #[allow(dead_code)]
     pub(crate) fn get_median(&mut self) -> Option<Distance> {
         if self.queue.is_empty() {
             return None; // No median if the queue is empty

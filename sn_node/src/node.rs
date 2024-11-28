@@ -360,14 +360,18 @@ impl Node {
                         });
                     }
                     _ = network_density_sampling_interval.tick() => {
-                        let start = Instant::now();
-                        debug!("Periodic network density sampling triggered");
-                        let network = self.network().clone();
+                        // The following shall be used by client only to support RBS.
+                        // Due to the concern of the extra resource usage that incurred.
+                        continue;
 
-                        let _handle = spawn(async move {
-                            Self::network_density_sampling(network).await;
-                            trace!("Periodic network density sampling took {:?}", start.elapsed());
-                        });
+                        // let start = Instant::now();
+                        // debug!("Periodic network density sampling triggered");
+                        // let network = self.network().clone();
+
+                        // let _handle = spawn(async move {
+                        //     Self::network_density_sampling(network).await;
+                        //     trace!("Periodic network density sampling took {:?}", start.elapsed());
+                        // });
                     }
                 }
             }
@@ -850,6 +854,7 @@ impl Node {
         );
     }
 
+    #[allow(dead_code)]
     async fn network_density_sampling(network: Network) {
         for _ in 0..10 {
             let target = NetworkAddress::from_peer(PeerId::random());
