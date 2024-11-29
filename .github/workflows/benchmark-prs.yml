@@ -378,37 +378,3 @@ jobs:
           # Enable Job Summary for PRs
           summary-always: true
 
-  benchmark-cash:
-    name: Compare sn_transfer benchmarks to main
-    # right now only ubuntu, running on multiple systems would require many pushes...\
-    # perhaps this can be done with one consolidation action in the future, pulling down all results and pushing
-    # once to the branch..
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      - uses: Swatinem/rust-cache@v2
-        continue-on-error: true
-
-      ########################
-      ### Setup            ###
-      ########################
-      - run: cargo install cargo-criterion
-
-      - name: install ripgrep
-        run: sudo apt-get -y install ripgrep
-
-      ########################
-      ### Benchmark        ###
-      ########################
-      - name: Bench `sn_transfers`
-        shell: bash
-        # Criterion outputs the actual bench results to stderr "2>&1 tee output.txt" takes stderr,
-        # passes to tee which displays it in the terminal and writes to output.txt
-        run: |
-          cargo criterion --message-format=json 2>&1 -p sn_transfers | tee -a output.txt
-          cat output.txt

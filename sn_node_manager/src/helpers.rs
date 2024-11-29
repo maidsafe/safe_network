@@ -25,6 +25,17 @@ use crate::{add_services::config::PortRange, config, VerbosityLevel};
 
 const MAX_DOWNLOAD_RETRIES: u8 = 3;
 
+// We need deterministic and fix path for the faucet wallet.
+// Otherwise the test instances will not be able to find the same faucet instance.
+pub fn get_faucet_data_dir() -> PathBuf {
+    let mut data_dirs = dirs_next::data_dir().expect("A homedir to exist.");
+    data_dirs.push("safe");
+    data_dirs.push("test_faucet");
+    std::fs::create_dir_all(data_dirs.as_path())
+        .expect("Faucet test path to be successfully created.");
+    data_dirs
+}
+
 #[cfg(windows)]
 pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Result<()> {
     if which::which("winsw.exe").is_ok() {

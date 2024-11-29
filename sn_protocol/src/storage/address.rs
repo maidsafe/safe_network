@@ -8,8 +8,9 @@
 
 mod chunk;
 mod scratchpad;
+mod transaction;
 
 pub use self::chunk::ChunkAddress;
 pub use self::scratchpad::ScratchpadAddress;
+pub use self::transaction::TransactionAddress;
 pub use sn_registers::RegisterAddress;
-pub use sn_transfers::SpendAddress;

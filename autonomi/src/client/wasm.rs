@@ -637,7 +637,9 @@ mod external_signer {
     use crate::client::external_signer::encrypt_data;
     use crate::client::payment::Receipt;
     use crate::receipt_from_quotes_and_payments;
-    use sn_evm::external_signer::{approve_to_spend_tokens_calldata, pay_for_quotes_calldata};
+    use sn_evm::external_signer::{
+        approve_to_transaction_tokens_calldata, pay_for_quotes_calldata,
+    };
     use sn_evm::EvmNetwork;
     use sn_evm::QuotePayment;
     use sn_evm::{Amount, PaymentQuote};
@@ -740,17 +742,17 @@ mod external_signer {
         Ok(js_value)
     }
 
-    /// Form approve to spend tokens calldata.
+    /// Form approve to transaction tokens calldata.
     #[wasm_bindgen(js_name = getApproveToSpendTokensCalldata)]
-    pub fn get_approve_to_spend_tokens_calldata(
+    pub fn get_approve_to_transaction_tokens_calldata(
         network: JsValue,
-        spender: JsValue,
+        transactioner: JsValue,
         amount: JsValue,
     ) -> Result<JsValue, JsError> {
         let network: EvmNetwork = serde_wasm_bindgen::from_value(network)?;
-        let spender: EvmAddress = serde_wasm_bindgen::from_value(spender)?;
+        let transactioner: EvmAddress = serde_wasm_bindgen::from_value(transactioner)?;
         let amount: Amount = serde_wasm_bindgen::from_value(amount)?;
-        let calldata = approve_to_spend_tokens_calldata(&network, spender, amount);
+        let calldata = approve_to_transaction_tokens_calldata(&network, transactioner, amount);
         let js_value = serde_wasm_bindgen::to_value(&calldata)?;
         Ok(js_value)
     }

@@ -219,7 +219,7 @@ impl Tui {
         self.cancellation_token.cancel();
     }
 
-    pub fn suspend(&mut self) -> Result<()> {
+    pub fn sutransaction(&mut self) -> Result<()> {
         self.exit()?;
         #[cfg(not(windows))]
         signal_hook::low_level::raise(signal_hook::consts::signal::SIGTSTP)?;

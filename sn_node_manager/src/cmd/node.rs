@@ -31,7 +31,6 @@ use sn_service_management::{
     rpc::RpcClient,
     NodeRegistry, NodeService, ServiceStateActions, ServiceStatus, UpgradeOptions, UpgradeResult,
 };
-use sn_transfers::HotWallet;
 use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr, time::Duration};
 use tracing::debug;
 
@@ -211,13 +210,8 @@ pub async fn balance(
         let node = &mut node_registry.nodes[index];
         let rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         let service = NodeService::new(node, Box::new(rpc_client));
-        let wallet = HotWallet::load_from(&service.service_data.data_dir_path)
-            .inspect_err(|err| error!("Error while loading hot wallet: {err:?}"))?;
-        println!(
-            "{}: {}",
-            service.service_data.service_name,
-            wallet.balance()
-        );
+        // TODO: remove this as we have no way to know the reward balance of nodes since EVM payments!
+        println!("{}: {}", service.service_data.service_name, 0,);
     }
     Ok(())
 }

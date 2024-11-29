@@ -60,7 +60,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "spender",
+          "name": "transactioner",
           "type": "address"
         },
         {
@@ -135,7 +135,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "spender",
+          "name": "transactioner",
           "type": "address"
         }
       ],
@@ -261,7 +261,7 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "spender",
+          "name": "transactioner",
           "type": "address"
         },
         {
@@ -390,7 +390,7 @@
         },
         {
           "internalType": "address",
-          "name": "spender",
+          "name": "transactioner",
           "type": "address"
         }
       ],
@@ -409,7 +409,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "spender",
+          "name": "transactioner",
           "type": "address"
         },
         {
@@ -776,7 +776,7 @@
         },
         {
           "internalType": "address",
-          "name": "spender",
+          "name": "transactioner",
           "type": "address"
         },
         {

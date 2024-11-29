@@ -156,10 +156,6 @@ jobs:
         timeout-minutes: 25
         run: cargo test --release --package sn_protocol
 
-      - name: Run transfers tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_transfers
-
       - name: Run logging tests
         timeout-minutes: 25
         run: cargo test --release --package sn_logging
@@ -584,9 +580,9 @@ jobs:
           log_file_prefix: safe_test_logs_e2e
           platform: ${{ matrix.os }}
 
-  # spend_test:
+  # transaction_test:
   #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-  #   name: spend tests against network
+  #   name: transaction tests against network
   #   runs-on: ${{ matrix.os }}
   #   strategy:
   #     matrix:
@@ -605,14 +601,6 @@ jobs:
 
   #     - name: Build faucet binary
   #       run: cargo build --release --bin faucet --features="local,gifting"
-  #       timeout-minutes: 30
-
-  #     - name: Build testing executable
-  #       run: cargo test --release -p sn_node --features=local --test sequential_transfers --test storage_payments --test double_spend --no-run
-  #       env:
-  #         # only set the target dir for windows to bypass the linker issue.
-  #         # happens if we build the node manager via testnet action
-  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 30
 
   #     - name: Start a local network
@@ -649,24 +637,18 @@ jobs:
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
 
-  #     - name: execute the double spend tests
-  #       run: cargo test --release -p sn_node --features="local" --test double_spend -- --nocapture --test-threads=1
-  #       env:
-  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-  #       timeout-minutes: 25
-
   #     - name: Stop the local network and upload logs
   #       if: always()
   #       uses: maidsafe/sn-local-testnet-action@main
   #       with:
   #         action: stop
-  #         log_file_prefix: safe_test_logs_spend
+  #         log_file_prefix: safe_test_logs_transaction
   #         platform: ${{ matrix.os }}
 
   # # runs with increased node count
-  # spend_simulation:
+  # transaction_simulation:
   #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-  #   name: spend simulation
+  #   name: transaction simulation
   #   runs-on: ${{ matrix.os }}
   #   strategy:
   #     matrix:
@@ -688,7 +670,7 @@ jobs:
   #       timeout-minutes: 30
 
   #     - name: Build testing executable
-  #       run: cargo test --release -p sn_node --features=local --test spend_simulation --no-run
+  #       run: cargo test --release -p sn_node --features=local --test transaction_simulation --no-run
   #       env:
   #         # only set the target dir for windows to bypass the linker issue.
   #         # happens if we build the node manager via testnet action
@@ -716,8 +698,8 @@ jobs:
   #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
   #         fi
 
-  #     - name: execute the spend simulation
-  #       run: cargo test --release -p sn_node --features="local" --test spend_simulation -- --nocapture
+  #     - name: execute the transaction simulation
+  #       run: cargo test --release -p sn_node --features="local" --test transaction_simulation -- --nocapture
   #       env:
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
@@ -727,7 +709,7 @@ jobs:
   #       uses: maidsafe/sn-local-testnet-action@main
   #       with:
   #         action: stop
-  #         log_file_prefix: safe_test_logs_spend_simulation
+  #         log_file_prefix: safe_test_logs_transaction_simulation
   #         platform: ${{ matrix.os }}
 
   # token_distribution_test:
@@ -1502,18 +1484,18 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 5
 
-  #     - name: Ensure no leftover cash_notes and payment files
+  #     - name: Ensure no leftover transactions and payment files
   #       run: |
-  #         expected_cash_notes_files="1"
+  #         expected_transactions_files="1"
   #         expected_payment_files="0"
   #         pwd
   #         ls $CLIENT_DATA_PATH/ -l
   #         ls $CLIENT_DATA_PATH/wallet -l
-  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #         cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
-  #         echo "Find $cash_note_files cash_note files"
-  #         if [ $expected_cash_notes_files -lt $cash_note_files ]; then
-  #           echo "Got too many cash_note files leftover: $cash_note_files"
+  #         ls $CLIENT_DATA_PATH/wallet/transactions -l
+  #         transaction_files=$(ls $CLIENT_DATA_PATH/wallet/transactions | wc -l)
+  #         echo "Find $transaction_files transaction files"
+  #         if [ $expected_transactions_files -lt $transaction_files ]; then
+  #           echo "Got too many transaction files leftover: $transaction_files"
   #           exit 1
   #         fi
   #         ls $CLIENT_DATA_PATH/wallet/payments -l
@@ -1536,17 +1518,17 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 10
 
-  #     - name: Ensure no leftover cash_notes and payment files
+  #     - name: Ensure no leftover transactions and payment files
   #       run: |
-  #         expected_cash_notes_files="1"
+  #         expected_transactions_files="1"
   #         expected_payment_files="0"
   #         pwd
   #         ls $CLIENT_DATA_PATH/ -l
   #         ls $CLIENT_DATA_PATH/wallet -l
-  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #         cash_note_files=$(find $CLIENT_DATA_PATH/wallet/cash_notes -type f | wc -l)
-  #         if (( $(echo "$cash_note_files > $expected_cash_notes_files" | bc -l) )); then
-  #           echo "Got too many cash_note files leftover: $cash_note_files when we expected $expected_cash_notes_files"
+  #         ls $CLIENT_DATA_PATH/wallet/transactions -l
+  #         transaction_files=$(find $CLIENT_DATA_PATH/wallet/transactions -type f | wc -l)
+  #         if (( $(echo "$transaction_files > $expected_transactions_files" | bc -l) )); then
+  #           echo "Got too many transaction files leftover: $transaction_files when we expected $expected_transactions_files"
   #           exit 1
   #         fi
   #         ls $CLIENT_DATA_PATH/wallet/payments -l
@@ -1589,18 +1571,18 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 10
 
-  #     - name: Ensure no leftover cash_notes and payment files
+  #     - name: Ensure no leftover transactions and payment files
   #       run: |
-  #         expected_cash_notes_files="1"
+  #         expected_transactions_files="1"
   #         expected_payment_files="0"
   #         pwd
   #         ls $CLIENT_DATA_PATH/ -l
   #         ls $CLIENT_DATA_PATH/wallet -l
-  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #         cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
-  #         echo "Find $cash_note_files cash_note files"
-  #         if [ $expected_cash_notes_files -lt $cash_note_files ]; then
-  #           echo "Got too many cash_note files leftover: $cash_note_files"
+  #         ls $CLIENT_DATA_PATH/wallet/transactions -l
+  #         transaction_files=$(ls $CLIENT_DATA_PATH/wallet/transactions | wc -l)
+  #         echo "Find $transaction_files transaction files"
+  #         if [ $expected_transactions_files -lt $transaction_files ]; then
+  #           echo "Got too many transaction files leftover: $transaction_files"
   #           exit 1
   #         fi
   #         ls $CLIENT_DATA_PATH/wallet/payments -l

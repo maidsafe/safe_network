@@ -76,23 +76,23 @@ where
     }
 
     /// See how many tokens are approved to be spent.
-    pub async fn allowance(&self, owner: Address, spender: Address) -> Result<U256, Error> {
-        debug!("Getting allowance of owner: {owner} for spender: {spender}",);
+    pub async fn allowance(&self, owner: Address, transactioner: Address) -> Result<U256, Error> {
+        debug!("Getting allowance of owner: {owner} for transactioner: {transactioner}",);
         let balance = self
             .contract
-            .allowance(owner, spender)
+            .allowance(owner, transactioner)
             .call()
             .await
             .inspect_err(|err| error!("Error getting allowance: {err:?}"))?
             ._0;
-        debug!("Allowance of owner: {owner} for spender: {spender} is: {balance}");
+        debug!("Allowance of owner: {owner} for transactioner: {transactioner} is: {balance}");
         Ok(balance)
     }
 
-    /// Approve spender to spend a raw amount of tokens.
-    pub async fn approve(&self, spender: Address, value: U256) -> Result<TxHash, Error> {
-        debug!("Approving spender to spend raw amt of tokens: {value}");
-        let (calldata, to) = self.approve_calldata(spender, value);
+    /// Approve transactioner to transaction a raw amount of tokens.
+    pub async fn approve(&self, transactioner: Address, value: U256) -> Result<TxHash, Error> {
+        debug!("Approving transactioner to transaction raw amt of tokens: {value}");
+        let (calldata, to) = self.approve_calldata(transactioner, value);
 
         let transaction_request = self
             .contract
@@ -108,13 +108,13 @@ where
             .await
             .inspect_err(|err| {
                 error!(
-                "Error approving spender {spender:?} to spend raw amt of tokens {value}:  {err:?}"
+                "Error approving transactioner {transactioner:?} to transaction raw amt of tokens {value}:  {err:?}"
             )
             })?;
 
         let pending_tx_hash = *pending_tx_builder.tx_hash();
 
-        debug!("The approval from sender {spender:?} is pending with tx_hash: {pending_tx_hash:?}",);
+        debug!("The approval from sender {transactioner:?} is pending with tx_hash: {pending_tx_hash:?}",);
 
         let tx_hash = pending_tx_builder.watch().await.inspect_err(|err| {
             error!("Error watching approve tx with hash {pending_tx_hash:?}:  {err:?}")
@@ -125,10 +125,14 @@ where
         Ok(tx_hash)
     }
 
-    /// Approve spender to spend a raw amount of tokens.
+    /// Approve transactioner to transaction a raw amount of tokens.
     /// Returns the transaction calldata.
-    pub fn approve_calldata(&self, spender: Address, value: U256) -> (Calldata, Address) {
-        let calldata = self.contract.approve(spender, value).calldata().to_owned();
+    pub fn approve_calldata(&self, transactioner: Address, value: U256) -> (Calldata, Address) {
+        let calldata = self
+            .contract
+            .approve(transactioner, value)
+            .calldata()
+            .to_owned();
         (calldata, *self.contract.address())
     }
 

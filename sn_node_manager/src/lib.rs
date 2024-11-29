@@ -41,14 +41,12 @@ impl From<u8> for VerbosityLevel {
 use crate::error::{Error, Result};
 use colored::Colorize;
 use semver::Version;
-use sn_evm::AttoTokens;
 use sn_service_management::rpc::RpcActions;
 use sn_service_management::{
     control::ServiceControl, error::Error as ServiceError, rpc::RpcClient, NodeRegistry,
     NodeService, NodeServiceData, ServiceStateActions, ServiceStatus, UpgradeOptions,
     UpgradeResult,
 };
-use sn_transfers::HotWallet;
 use tracing::debug;
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
@@ -549,17 +547,8 @@ pub async fn refresh_node_registry(
     for node in &mut node_registry.nodes {
         // The `status` command can run before a node is started and therefore before its wallet
         // exists.
-        match HotWallet::try_load_from(&node.data_dir_path) {
-            Ok(wallet) => {
-                node.reward_balance = Some(AttoTokens::from_u64(wallet.balance().as_nano()));
-                trace!(
-                    "Wallet balance for node {}: {}",
-                    node.service_name,
-                    wallet.balance()
-                );
-            }
-            Err(_) => node.reward_balance = None,
-        }
+        // TODO: remove this as we have no way to know the reward balance of nodes since EVM payments!
+        node.reward_balance = None;
 
         let mut rpc_client = RpcClient::from_socket_addr(node.rpc_socket_addr);
         rpc_client.set_max_attempts(1);
