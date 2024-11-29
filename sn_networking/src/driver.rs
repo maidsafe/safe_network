@@ -13,6 +13,7 @@ use crate::{
     error::{NetworkError, Result},
     event::{NetworkEvent, NodeEvent},
     external_address::ExternalAddressManager,
+    fifo_register::FifoRegister,
     log_markers::Marker,
     multiaddr_pop_p2p,
     network_discovery::NetworkDiscovery,
@@ -35,7 +36,7 @@ use libp2p::mdns;
 use libp2p::{core::muxing::StreamMuxerBox, relay};
 use libp2p::{
     identity::Keypair,
-    kad::{self, QueryId, Quorum, Record, RecordKey, K_VALUE},
+    kad::{self, KBucketDistance as Distance, QueryId, Quorum, Record, RecordKey, K_VALUE, U256},
     multiaddr::Protocol,
     request_response::{self, Config as RequestResponseConfig, OutboundRequestId, ProtocolSupport},
     swarm::{
@@ -736,6 +737,7 @@ impl NetworkBuilder {
             replication_targets: Default::default(),
             last_replication: None,
             last_connection_pruning_time: Instant::now(),
+            network_density_samples: FifoRegister::new(100),
         };
 
         let network = Network::new(
@@ -841,6 +843,8 @@ pub struct SwarmDriver {
     pub(crate) last_replication: Option<Instant>,
     /// when was the last outdated connection prunning undertaken.
     pub(crate) last_connection_pruning_time: Instant,
+    /// FIFO cache for the network density samples
+    pub(crate) network_density_samples: FifoRegister,
 }
 
 impl SwarmDriver {
@@ -922,15 +926,62 @@ impl SwarmDriver {
                 }
                 _ = set_farthest_record_interval.tick() => {
                     if !self.is_client {
-                        let closest_k_peers = self.get_closest_k_value_local_peers();
-
-                        if let Some(distance) = self.get_responsbile_range_estimate(&closest_k_peers) {
-                            info!("Set responsible range to {distance}");
-                            // set any new distance to farthest record in the store
-                            self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
-                            // the distance range within the replication_fetcher shall be in sync as well
-                            self.replication_fetcher.set_replication_distance_range(distance);
+                        let (
+                            _index,
+                            _total_peers,
+                            peers_in_non_full_buckets,
+                            num_of_full_buckets,
+                            _kbucket_table_stats,
+                        ) = self.kbuckets_status();
+                        let estimated_network_size =
+                            Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
+                        if estimated_network_size <= CLOSE_GROUP_SIZE {
+                            info!("Not enough estimated network size {estimated_network_size}, with {peers_in_non_full_buckets} peers_in_non_full_buckets and {num_of_full_buckets}num_of_full_buckets.");
+                            continue;
                         }
+                        // The entire Distance space is U256
+                        // (U256::MAX is 115792089237316195423570985008687907853269984665640564039457584007913129639935)
+                        // The network density (average distance among nodes) can be estimated as:
+                        //     network_density = entire_U256_space / estimated_network_size
+                        let density = U256::MAX / U256::from(estimated_network_size);
+                        let estimated_distance = density * U256::from(CLOSE_GROUP_SIZE);
+                        let density_distance = Distance(estimated_distance);
+
+                        // Use distanct to close peer to avoid the situation that
+                        // the estimated density_distance is too narrow.
+                        let closest_k_peers = self.get_closest_k_value_local_peers();
+                        if closest_k_peers.len() <= CLOSE_GROUP_SIZE + 2 {
+                            continue;
+                        }
+                        // Results are sorted, hence can calculate distance directly
+                        // Note: self is included
+                        let self_addr = NetworkAddress::from_peer(self.self_peer_id);
+                        let close_peers_distance = self_addr.distance(&NetworkAddress::from_peer(closest_k_peers[CLOSE_GROUP_SIZE + 1]));
+
+                        let distance = std::cmp::max(density_distance, close_peers_distance);
+
+                        // let distance = if let Some(distance) = self.network_density_samples.get_median() {
+                        //     distance
+                        // } else {
+                        //     // In case sampling not triggered or yet,
+                        //     // fall back to use the distance to CLOSE_GROUP_SIZEth closest
+                        //     let closest_k_peers = self.get_closest_k_value_local_peers();
+                        //     if closest_k_peers.len() <= CLOSE_GROUP_SIZE + 1 {
+                        //         continue;
+                        //     }
+                        //     // Results are sorted, hence can calculate distance directly
+                        //     // Note: self is included
+                        //     let self_addr = NetworkAddress::from_peer(self.self_peer_id);
+                        //     self_addr.distance(&NetworkAddress::from_peer(closest_k_peers[CLOSE_GROUP_SIZE]))
+
+                        // };
+
+                        info!("Set responsible range to {distance:?}({:?})", distance.ilog2());
+
+                        // set any new distance to farthest record in the store
+                        self.swarm.behaviour_mut().kademlia.store_mut().set_distance_range(distance);
+                        // the distance range within the replication_fetcher shall be in sync as well
+                        self.replication_fetcher.set_replication_distance_range(distance);
                     }
                 }
                 _ = relay_manager_reservation_interval.tick() => self.relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes),
@@ -941,34 +992,6 @@ impl SwarmDriver {
     // --------------------------------------------
     // ---------- Crate helpers -------------------
     // --------------------------------------------
-
-    /// Uses the closest k peers to estimate the farthest address as
-    /// `K_VALUE / 2`th peer's bucket.
-    fn get_responsbile_range_estimate(
-        &mut self,
-        // Sorted list of closest k peers to our peer id.
-        closest_k_peers: &[PeerId],
-    ) -> Option<u32> {
-        // if we don't have enough peers we don't set the distance range yet.
-        let mut farthest_distance = None;
-
-        if closest_k_peers.is_empty() {
-            return farthest_distance;
-        }
-
-        let our_address = NetworkAddress::from_peer(self.self_peer_id);
-
-        // get `K_VALUE / 2`th peer's address distance
-        // This is a rough estimate of the farthest address we might be responsible for.
-        // We want this to be higher than actually necessary, so we retain more data
-        // and can be sure to pass bad node checks
-        let target_index = std::cmp::min(K_VALUE.get() / 2, closest_k_peers.len()) - 1;
-
-        let address = NetworkAddress::from_peer(closest_k_peers[target_index]);
-        farthest_distance = our_address.distance(&address).ilog2();
-
-        farthest_distance
-    }
 
     /// Pushes NetworkSwarmCmd off thread so as to be non-blocking
     /// this is a wrapper around the `mpsc::Sender::send` call

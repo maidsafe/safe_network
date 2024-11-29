@@ -16,6 +16,7 @@ mod driver;
 mod error;
 mod event;
 mod external_address;
+mod fifo_register;
 mod log_markers;
 #[cfg(feature = "open-metrics")]
 mod metrics;
@@ -85,10 +86,6 @@ use {
 
 /// The type of quote for a selected payee.
 pub type PayeeQuote = (PeerId, RewardsAddress, PaymentQuote);
-
-/// The count of peers that will be considered as close to a record target,
-/// that a replication of the record shall be sent/accepted to/by the peer.
-pub const REPLICATION_PEERS_COUNT: usize = CLOSE_GROUP_SIZE + 2;
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -262,6 +259,16 @@ impl Network {
     pub async fn get_closest_k_value_local_peers(&self) -> Result<Vec<PeerId>> {
         let (sender, receiver) = oneshot::channel();
         self.send_local_swarm_cmd(LocalSwarmCmd::GetClosestKLocalPeers { sender });
+
+        receiver
+            .await
+            .map_err(|_e| NetworkError::InternalMsgChannelDropped)
+    }
+
+    /// Returns the replicate candidates in range.
+    pub async fn get_replicate_candidates(&self, data_addr: NetworkAddress) -> Result<Vec<PeerId>> {
+        let (sender, receiver) = oneshot::channel();
+        self.send_local_swarm_cmd(LocalSwarmCmd::GetReplicateCandidates { data_addr, sender });
 
         receiver
             .await
@@ -1026,6 +1033,10 @@ impl Network {
 
     pub fn trigger_irrelevant_record_cleanup(&self) {
         self.send_local_swarm_cmd(LocalSwarmCmd::TriggerIrrelevantRecordCleanup)
+    }
+
+    pub fn add_network_density_sample(&self, distance: KBucketDistance) {
+        self.send_local_swarm_cmd(LocalSwarmCmd::AddNetworkDensitySample { distance })
     }
 
     /// Helper to send NetworkSwarmCmd
