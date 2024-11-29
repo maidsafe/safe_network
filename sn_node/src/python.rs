@@ -1,3 +1,6 @@
+// TODO: Shall be removed once the python binding warnings resolved
+#![allow(non_local_definitions)]
+
 use crate::{NodeBuilder, RunningNode};
 use const_hex::FromHex;
 use libp2p::{
