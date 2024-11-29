@@ -92,7 +92,6 @@ async fn main() -> Result<()> {
     // For client, default to log to std::out
     let logging_targets = vec![
         ("safenode".to_string(), Level::INFO),
-        ("sn_transfers".to_string(), Level::INFO),
         ("sn_networking".to_string(), Level::INFO),
         ("sn_node".to_string(), Level::INFO),
     ];

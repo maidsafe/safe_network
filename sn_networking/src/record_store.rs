@@ -47,9 +47,9 @@ use tokio::sync::mpsc;
 use walkdir::{DirEntry, WalkDir};
 use xor_name::XorName;
 
-// A spend record is at the size of 4KB roughly.
+// A transaction record is at the size of 4KB roughly.
 // Given chunk record is maxed at size of 4MB.
-// During Beta phase, it's almost one spend per chunk,
+// During Beta phase, it's almost one transaction per chunk,
 // which makes the average record size is around 2MB.
 // Given we are targeting node size to be 32GB,
 // this shall allow around 16K records.
@@ -835,7 +835,7 @@ impl RecordStore for NodeRecordStore {
                         // Chunk with existing key do not to be stored again.
                         // `Spend` or `Register` with same content_hash do not to be stored again,
                         // otherwise shall be passed further to allow
-                        // double spend to be detected or register op update.
+                        // double transaction to be detected or register op update.
                         match self.records.get(&record.key) {
                             Some((_addr, RecordType::Chunk)) => {
                                 debug!("Chunk {record_key:?} already exists.");

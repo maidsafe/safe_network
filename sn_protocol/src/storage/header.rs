@@ -34,7 +34,7 @@ pub struct RecordHeader {
 pub enum RecordKind {
     Chunk,
     ChunkWithPayment,
-    Spend,
+    Transaction,
     Register,
     RegisterWithPayment,
     Scratchpad,
@@ -49,7 +49,7 @@ impl Serialize for RecordKind {
         match *self {
             Self::ChunkWithPayment => serializer.serialize_u32(0),
             Self::Chunk => serializer.serialize_u32(1),
-            Self::Spend => serializer.serialize_u32(2),
+            Self::Transaction => serializer.serialize_u32(2),
             Self::Register => serializer.serialize_u32(3),
             Self::RegisterWithPayment => serializer.serialize_u32(4),
             Self::Scratchpad => serializer.serialize_u32(5),
@@ -67,7 +67,7 @@ impl<'de> Deserialize<'de> for RecordKind {
         match num {
             0 => Ok(Self::ChunkWithPayment),
             1 => Ok(Self::Chunk),
-            2 => Ok(Self::Spend),
+            2 => Ok(Self::Transaction),
             3 => Ok(Self::Register),
             4 => Ok(Self::RegisterWithPayment),
             5 => Ok(Self::Scratchpad),
@@ -180,11 +180,11 @@ mod tests {
         .try_serialize()?;
         assert_eq!(chunk.len(), RecordHeader::SIZE);
 
-        let spend = RecordHeader {
-            kind: RecordKind::Spend,
+        let transaction = RecordHeader {
+            kind: RecordKind::Transaction,
         }
         .try_serialize()?;
-        assert_eq!(spend.len(), RecordHeader::SIZE);
+        assert_eq!(transaction.len(), RecordHeader::SIZE);
 
         let register = RecordHeader {
             kind: RecordKind::Register,

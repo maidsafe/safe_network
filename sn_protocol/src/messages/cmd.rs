@@ -11,7 +11,7 @@ use crate::{storage::RecordType, NetworkAddress};
 use serde::{Deserialize, Serialize};
 pub use sn_evm::PaymentQuote;
 
-/// Data and CashNote cmds - recording spends or creating, updating, and removing data.
+/// Data and CashNote cmds - recording transactions or creating, updating, and removing data.
 ///
 /// See the [`protocol`] module documentation for more details of the types supported by the Safe
 /// Network, and their semantics.

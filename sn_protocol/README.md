@@ -27,10 +27,6 @@ The `error.rs` file contains the definitions for various errors that can occur w
   - Example: `Result::Err(Error::ChunkNotStored(xor_name))`
 - `RegisterNotFound(Box<RegisterAddress>)`: Indicates that a register was not found.
   - Example: `Result::Err(Error::RegisterNotFound(register_address))`
-- `SpendNotFound(SpendAddress)`: Indicates that a spend was not found.
-  - Example: `Result::Err(Error::SpendNotFound(cash_note_address))`
-- `DoubleSpendAttempt(Box<SignedSpend>, Box<SignedSpend>)`: Indicates a double spend attempt.
-  - Example: `Result::Err(Error::DoubleSpendAttempt(spend1, spend2))`
 
 ## Messages
 
@@ -75,7 +71,7 @@ The `storage` module handles the storage aspects of the protocol.
 ### API Calls
 
 - `ChunkAddress`: Address of a chunk in the network.
-- `SpendAddress`: Address of a CashNote's Spend in the network.
+- `TransactionAddress`: Address of a CashNote's Spend in the network.
 - `Header`: Header information for storage items.
 
 ## Protobuf Definitions

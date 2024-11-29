@@ -120,7 +120,7 @@ default_dir = SafeNode.get_default_root_dir(peer_id)
   - `get_validation.rs`: Validation for GET requests
   - `put_validation.rs`: Validation for PUT requests
   - `replication.rs`: Data replication logic
-  - `spends.rs`: Logic related to spending tokens or resources
+  - `transactions.rs`: Logic related to spending tokens or resources
 - `tests/`: Test files
   - `common/mod.rs`: Common utilities for tests
   - `data_with_churn.rs`: Tests related to data with churn

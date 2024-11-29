@@ -12,11 +12,11 @@ use crate::helpers::{
 };
 
 #[cfg(feature = "faucet")]
+use crate::helpers::get_faucet_data_dir;
+#[cfg(feature = "faucet")]
 use crate::helpers::get_username;
 #[cfg(feature = "faucet")]
 use sn_service_management::FaucetServiceData;
-#[cfg(feature = "faucet")]
-use sn_transfers::get_faucet_data_dir;
 
 use color_eyre::eyre::OptionExt;
 use color_eyre::{eyre::eyre, Result};

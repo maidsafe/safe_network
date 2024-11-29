@@ -171,7 +171,7 @@ impl NodeMetricsRecorder {
                     .inc();
             }
 
-            Marker::ValidSpendRecordPutFromNetwork(_) => {
+            Marker::ValidTransactionRecordPutFromNetwork(_) => {
                 let _ = self
                     .put_record_ok
                     .get_or_create(&PutRecordOk {

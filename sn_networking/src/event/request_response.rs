@@ -208,7 +208,7 @@ impl SwarmDriver {
         // On receive a replication_list from a close_group peer, we undertake:
         //   1, For those keys that we don't have:
         //        fetch them if close enough to us
-        //   2, For those spends that we have that differ in the hash, we fetch the other version
+        //   2, For those transactions that we have that differ in the hash, we fetch the other version
         //         and update our local copy.
         let all_keys = self
             .swarm

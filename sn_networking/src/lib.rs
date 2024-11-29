@@ -25,9 +25,8 @@ mod record_store;
 mod record_store_api;
 mod relay_manager;
 mod replication_fetcher;
-mod spends;
 pub mod target_arch;
-mod transfers;
+mod transactions;
 mod transport;
 
 use cmd::LocalSwarmCmd;
@@ -42,7 +41,7 @@ pub use self::{
     error::{GetRecordError, NetworkError},
     event::{MsgResponder, NetworkEvent},
     record_store::{calculate_cost_for_records, NodeRecordStore},
-    transfers::{get_raw_signed_spends_from_record, get_signed_spend_from_record},
+    transactions::get_transactions_from_record,
 };
 #[cfg(feature = "open-metrics")]
 pub use metrics::service::MetricsRegistries;
@@ -76,11 +75,11 @@ use tokio::sync::{
 };
 use tokio::time::Duration;
 use {
+    sn_protocol::storage::Transaction,
     sn_protocol::storage::{
         try_deserialize_record, try_serialize_record, RecordHeader, RecordKind,
     },
     sn_registers::SignedRegister,
-    sn_transfers::SignedSpend,
     std::collections::HashSet,
 };
 
@@ -514,8 +513,8 @@ impl Network {
     /// In case a target_record is provided, only return when fetched target.
     /// Otherwise count it as a failure when all attempts completed.
     ///
-    /// It also handles the split record error for spends and registers.
-    /// For spends, it accumulates the spends and returns an error if more than one.
+    /// It also handles the split record error for transactions and registers.
+    /// For transactions, it accumulates the transactions and returns an error if more than one.
     /// For registers, it merges the registers and returns the merged record.
     pub async fn get_record_from_network(
         &self,
@@ -597,7 +596,7 @@ impl Network {
     }
 
     /// Handle the split record error.
-    /// Spend: Accumulate spends and return error if more than one.
+    /// Transaction: Accumulate transactions.
     /// Register: Merge registers and return the merged record.
     fn handle_split_record_error(
         result_map: &HashMap<XorName, (Record, HashSet<PeerId>)>,
@@ -605,9 +604,9 @@ impl Network {
     ) -> std::result::Result<Option<Record>, NetworkError> {
         let pretty_key = PrettyPrintRecordKey::from(key);
 
-        // attempt to deserialise and accumulate any spends or registers
+        // attempt to deserialise and accumulate any transactions or registers
         let results_count = result_map.len();
-        let mut accumulated_spends = HashSet::new();
+        let mut accumulated_transactions = HashSet::new();
         let mut collected_registers = Vec::new();
         let mut valid_scratchpad: Option<Scratchpad> = None;
 
@@ -634,12 +633,12 @@ impl Network {
                         error!("Encountered a split record for {pretty_key:?} with unexpected RecordKind {kind:?}, skipping.");
                         continue;
                     }
-                    RecordKind::Spend => {
-                        info!("For record {pretty_key:?}, we have a split record for a spend attempt. Accumulating spends");
+                    RecordKind::Transaction => {
+                        info!("For record {pretty_key:?}, we have a split record for a transaction attempt. Accumulating transactions");
 
-                        match get_raw_signed_spends_from_record(record) {
-                            Ok(spends) => {
-                                accumulated_spends.extend(spends);
+                        match get_transactions_from_record(record) {
+                            Ok(transactions) => {
+                                accumulated_transactions.extend(transactions);
                             }
                             Err(_) => {
                                 continue;
@@ -701,12 +700,26 @@ impl Network {
             }
         }
 
-        // Allow for early bail if we've already seen a split SpendAttempt
-        if accumulated_spends.len() > 1 {
-            info!("For record {pretty_key:?} task found split record for a spend, accumulated and sending them as a single record");
-            let accumulated_spends = accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
-
-            return Err(NetworkError::DoubleSpendAttempt(accumulated_spends));
+        // Return the accumulated transactions as a single record
+        if accumulated_transactions.len() > 1 {
+            info!("For record {pretty_key:?} task found split record for a transaction, accumulated and sending them as a single record");
+            let accumulated_transactions = accumulated_transactions
+                .into_iter()
+                .collect::<Vec<Transaction>>();
+            let record = Record {
+                key: key.clone(),
+                value: try_serialize_record(&accumulated_transactions, RecordKind::Transaction)
+                    .map_err(|err| {
+                        error!(
+                            "Error while serializing the accumulated transactions for {pretty_key:?}: {err:?}"
+                        );
+                        NetworkError::from(err)
+                    })?
+                    .to_vec(),
+                publisher: None,
+                expires: None,
+            };
+            return Ok(Some(record));
         } else if !collected_registers.is_empty() {
             info!("For record {pretty_key:?} task found multiple registers, merging them.");
             let signed_register = collected_registers.iter().fold(collected_registers[0].clone(), |mut acc, x| {

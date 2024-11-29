@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    driver::PendingGetClosestType, get_quorum_value, get_raw_signed_spends_from_record,
+    driver::PendingGetClosestType, get_quorum_value, get_transactions_from_record,
     target_arch::Instant, GetRecordCfg, GetRecordError, NetworkError, Result, SwarmDriver,
     CLOSE_GROUP_SIZE,
 };
@@ -17,10 +17,9 @@ use libp2p::kad::{
     QueryStats, Record, K_VALUE,
 };
 use sn_protocol::{
-    storage::{try_serialize_record, RecordKind},
+    storage::{try_serialize_record, RecordKind, Transaction},
     NetworkAddress, PrettyPrintRecordKey,
 };
-use sn_transfers::SignedSpend;
 use std::collections::{hash_map::Entry, BTreeSet, HashSet};
 use tokio::sync::oneshot;
 use xor_name::XorName;
@@ -397,23 +396,27 @@ impl SwarmDriver {
                     Self::send_record_after_checking_target(senders, peer_record.record, &cfg)?;
                 } else {
                     debug!("For record {pretty_key:?} task {query_id:?}, fetch completed with split record");
-                    let mut accumulated_spends = BTreeSet::new();
+                    let mut accumulated_transactions = BTreeSet::new();
                     for (record, _) in result_map.values() {
-                        match get_raw_signed_spends_from_record(record) {
-                            Ok(spends) => {
-                                accumulated_spends.extend(spends);
+                        match get_transactions_from_record(record) {
+                            Ok(transactions) => {
+                                accumulated_transactions.extend(transactions);
                             }
                             Err(_) => {
                                 continue;
                             }
                         }
                     }
-                    if !accumulated_spends.is_empty() {
-                        info!("For record {pretty_key:?} task {query_id:?}, found split record for a spend, accumulated and sending them as a single record");
-                        let accumulated_spends =
-                            accumulated_spends.into_iter().collect::<Vec<SignedSpend>>();
+                    if !accumulated_transactions.is_empty() {
+                        info!("For record {pretty_key:?} task {query_id:?}, found split record for a transaction, accumulated and sending them as a single record");
+                        let accumulated_transactions = accumulated_transactions
+                            .into_iter()
+                            .collect::<Vec<Transaction>>();
 
-                        let bytes = try_serialize_record(&accumulated_spends, RecordKind::Spend)?;
+                        let bytes = try_serialize_record(
+                            &accumulated_transactions,
+                            RecordKind::Transaction,
+                        )?;
 
                         let new_accumulated_record = Record {
                             key: peer_record.record.key,

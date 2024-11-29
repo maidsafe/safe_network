@@ -8,7 +8,6 @@
 
 use sn_evm::AttoTokens;
 use sn_protocol::{NetworkAddress, PrettyPrintRecordKey};
-use sn_transfers::WalletError;
 use thiserror::Error;
 
 pub(super) type Result<T, E = Error> = std::result::Result<T, E>;
@@ -25,9 +24,6 @@ pub enum Error {
 
     #[error("Register error {0}")]
     Register(#[from] sn_registers::Error),
-
-    #[error("WalletError error {0}")]
-    Wallet(#[from] WalletError),
 
     #[error("Transfers Error {0}")]
     Transfers(#[from] sn_evm::EvmError),

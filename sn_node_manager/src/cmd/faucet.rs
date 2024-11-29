@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use super::{download_and_get_upgrade_bin_path, print_upgrade_summary};
+use crate::helpers::get_faucet_data_dir;
 use crate::{
     add_services::{add_faucet, config::AddFaucetServiceOptions},
     config::{self, is_running_as_root},
@@ -22,7 +23,6 @@ use sn_service_management::{
     control::{ServiceControl, ServiceController},
     FaucetService, NodeRegistry, UpgradeOptions,
 };
-use sn_transfers::get_faucet_data_dir;
 use std::path::PathBuf;
 
 pub async fn add(

@@ -646,7 +646,7 @@ impl SwarmDriver {
                         match record_header.kind {
                             RecordKind::Chunk => RecordType::Chunk,
                             RecordKind::Scratchpad => RecordType::Scratchpad,
-                            RecordKind::Spend | RecordKind::Register => {
+                            RecordKind::Transaction | RecordKind::Register => {
                                 let content_hash = XorName::from_content(&record.value);
                                 RecordType::NonChunk(content_hash)
                             }

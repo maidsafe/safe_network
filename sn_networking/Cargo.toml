@@ -57,7 +57,6 @@ self_encryption = "~0.30.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
 sn_build_info = { path = "../sn_build_info", version = "0.1.19" }
 sn_protocol = { path = "../sn_protocol", version = "0.17.15" }
-sn_transfers = { path = "../sn_transfers", version = "0.20.3" }
 sn_registers = { path = "../sn_registers", version = "0.4.3" }
 sn_evm = { path = "../sn_evm", version = "0.1.4" }
 sysinfo = { version = "0.30.8", default-features = false, optional = true }

@@ -147,7 +147,7 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly E2E Test Run Failed"
 
-  # spend_test:
+  # transaction_test:
   #   name: Spend tests against network
   #   runs-on: ${{ matrix.os }}
   #   strategy:
@@ -161,10 +161,6 @@ jobs:
 
   #     - uses: Swatinem/rust-cache@v2
   #       continue-on-error: true
-
-  #     - name: Build testing executable
-  #       run: cargo test --release -p sn_node --features=local --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
-  #       timeout-minutes: 40
 
   #     - name: setup testnet-deploy
   #       uses: maidsafe/sn-testnet-control-action/init-testnet-deploy@main
@@ -206,14 +202,6 @@ jobs:
   #       run: cargo test --release -p sn_node --test storage_payments -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
-  #       timeout-minutes: 45
-
-  #     - name: execute the double spend tests
-  #       run: cargo test --release -p sn_node --test double_spend -- --nocapture --test-threads=1
-  #       timeout-minutes: 45
-
-  #     - name: execute the spend simulation tests
-  #       run: cargo test --release -p sn_node --test spend_simulation -- --nocapture --test-threads=1
   #       timeout-minutes: 45
 
   #     - name: Small wait to allow reward receipt

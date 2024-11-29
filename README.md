@@ -99,8 +99,6 @@ WASM support for the autonomi API is currently under active development. More do
   networking layer, built atop libp2p which allows nodes and clients to communicate.
 - [Protocol](https://github.com/maidsafe/safe_network/blob/main/sn_protocol/README.md) The protocol
   used by the safe network.
-- [Transfers](https://github.com/maidsafe/safe_network/blob/main/sn_transfers/README.md) The
-  transfers crate, used to send and receive tokens Native to the network.
 - [Registers](https://github.com/maidsafe/safe_network/blob/main/sn_registers/README.md) The
   registers crate, used for the Register CRDT data type on the network.
 - [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acquisition/README.md)

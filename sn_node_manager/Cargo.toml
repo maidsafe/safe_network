@@ -53,7 +53,6 @@ sn_protocol = { path = "../sn_protocol", version = "0.17.15" }
 sn_service_management = { path = "../sn_service_management", version = "0.4.3" }
 sn-releases = "0.2.6"
 sn_evm = { path = "../sn_evm", version = "0.1.4" }
-sn_transfers = { path = "../sn_transfers", version = "0.20.3" }
 sysinfo = "0.30.12"
 thiserror = "1.0.23"
 tokio = { version = "1.26", features = ["full"] }

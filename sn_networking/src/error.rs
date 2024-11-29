@@ -12,8 +12,8 @@ use libp2p::{
     swarm::DialError,
     PeerId, TransportError,
 };
+use sn_protocol::storage::TransactionAddress;
 use sn_protocol::{messages::Response, storage::RecordKind, NetworkAddress, PrettyPrintRecordKey};
-use sn_transfers::{SignedSpend, SpendAddress};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,
@@ -45,7 +45,7 @@ pub enum GetRecordError {
     RecordNotFound,
     // Avoid logging the whole `Record` content by accident.
     /// The split record error will be handled at the network layer.
-    /// For spends, it accumulates the spends and returns a double spend error if more than one.
+    /// For transactions, it accumulates the transactions
     /// For registers, it merges the registers and returns the merged record.
     #[error("Split Record has {} different copies", result_map.len())]
     SplitRecord {
@@ -103,10 +103,6 @@ pub enum NetworkError {
     #[error("SnProtocol Error: {0}")]
     ProtocolError(#[from] sn_protocol::error::Error),
 
-    #[error("Wallet Error {0}")]
-    Wallet(#[from] sn_transfers::WalletError),
-    #[error("Transfer Error {0}")]
-    Transfer(#[from] sn_transfers::TransferError),
     #[error("Evm payment Error {0}")]
     EvmPaymemt(#[from] sn_evm::EvmError),
 
@@ -128,7 +124,7 @@ pub enum NetworkError {
     InCorrectRecordHeader,
 
     // ---------- Transfer Errors
-    #[error("Failed to get spend: {0}")]
+    #[error("Failed to get transaction: {0}")]
     FailedToGetSpend(String),
     #[error("Transfer is invalid: {0}")]
     InvalidTransfer(String),
@@ -137,11 +133,9 @@ pub enum NetworkError {
     #[error("Failed to verify the ChunkProof with the provided quorum")]
     FailedToVerifyChunkProof(NetworkAddress),
 
-    // ---------- Spend Errors
-    #[error("Spend not found: {0:?}")]
-    NoSpendFoundInsideRecord(SpendAddress),
-    #[error("Double spend(s) attempt was detected. The signed spends are: {0:?}")]
-    DoubleSpendAttempt(Vec<SignedSpend>),
+    // ---------- Transaction Errors
+    #[error("Transaction not found: {0:?}")]
+    NoTransactionFoundInsideRecord(TransactionAddress),
 
     // ---------- Store Error
     #[error("No Store Cost Responses")]
