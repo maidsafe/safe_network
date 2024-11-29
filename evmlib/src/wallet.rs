@@ -105,22 +105,18 @@ impl Wallet {
         transfer_gas_tokens(self.wallet.clone(), &self.network, to, amount).await
     }
 
-    /// See how many tokens of the owner may be spent by the transactioner.
-    pub async fn token_allowance(
-        &self,
-        transactioner: Address,
-    ) -> Result<U256, network_token::Error> {
-        token_allowance(&self.network, self.address(), transactioner).await
+    /// See how many tokens of the owner may be spent by the spender.
+    pub async fn token_allowance(&self, spender: Address) -> Result<U256, network_token::Error> {
+        token_allowance(&self.network, self.address(), spender).await
     }
 
-    /// Approve an address / smart contract to transaction this wallet's payment tokens.
-    pub async fn approve_to_transaction_tokens(
+    /// Approve an address / smart contract to spend this wallet's payment tokens.
+    pub async fn approve_to_spend_tokens(
         &self,
-        transactioner: Address,
+        spender: Address,
         amount: U256,
     ) -> Result<TxHash, network_token::Error> {
-        approve_to_transaction_tokens(self.wallet.clone(), &self.network, transactioner, amount)
-            .await
+        approve_to_spend_tokens(self.wallet.clone(), &self.network, spender, amount).await
     }
 
     /// Pays for a single quote. Returns transaction hash of the payment.
@@ -227,29 +223,29 @@ pub async fn balance_of_gas_tokens(
     Ok(balance)
 }
 
-/// See how many tokens of the owner may be spent by the transactioner.
+/// See how many tokens of the owner may be spent by the spender.
 pub async fn token_allowance(
     network: &Network,
     owner: Address,
-    transactioner: Address,
+    spender: Address,
 ) -> Result<U256, network_token::Error> {
-    debug!("Getting allowance for owner: {owner} and transactioner: {transactioner}",);
+    debug!("Getting allowance for owner: {owner} and spender: {spender}",);
     let provider = http_provider(network.rpc_url().clone());
     let network_token = NetworkToken::new(*network.payment_token_address(), provider);
-    network_token.allowance(owner, transactioner).await
+    network_token.allowance(owner, spender).await
 }
 
-/// Approve an address / smart contract to transaction this wallet's payment tokens.
-pub async fn approve_to_transaction_tokens(
+/// Approve an address / smart contract to spend this wallet's payment tokens.
+pub async fn approve_to_spend_tokens(
     wallet: EthereumWallet,
     network: &Network,
-    transactioner: Address,
+    spender: Address,
     amount: U256,
 ) -> Result<TxHash, network_token::Error> {
-    debug!("Approving address/smart contract with {amount} tokens at address: {transactioner}",);
+    debug!("Approving address/smart contract with {amount} tokens at address: {spender}",);
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
     let network_token = NetworkToken::new(*network.payment_token_address(), provider);
-    network_token.approve(transactioner, amount).await
+    network_token.approve(spender, amount).await
 }
 
 /// Transfer payment tokens from the supplied wallet to an address.
@@ -323,8 +319,8 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 
     // TODO: Get rid of approvals altogether, by using permits or whatever..
     if allowance < total_amount_to_be_paid {
-        // Approve the contract to transaction all the client's tokens.
-        approve_to_transaction_tokens(
+        // Approve the contract to spend all the client's tokens.
+        approve_to_spend_tokens(
             wallet.clone(),
             network,
             *network.data_payments_address(),

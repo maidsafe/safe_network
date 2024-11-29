@@ -42,7 +42,7 @@ pub struct App {
     pub frame_rate: f64,
     pub components: Vec<Box<dyn Component>>,
     pub should_quit: bool,
-    pub should_sutransaction: bool,
+    pub should_suspend: bool,
     pub input_mode: InputMode,
     pub scene: Scene,
     pub last_tick_key_events: Vec<KeyEvent>,
@@ -150,7 +150,7 @@ impl App {
                 Box::new(upgrade_nodes),
             ],
             should_quit: false,
-            should_sutransaction: false,
+            should_suspend: false,
             input_mode: InputMode::Navigation,
             scene: Scene::Status,
             last_tick_key_events: Vec::new(),
@@ -221,8 +221,8 @@ impl App {
                         self.last_tick_key_events.drain(..);
                     }
                     Action::Quit => self.should_quit = true,
-                    Action::Sutransaction => self.should_sutransaction = true,
-                    Action::Resume => self.should_sutransaction = false,
+                    Action::Suspend => self.should_suspend = true,
+                    Action::Resume => self.should_suspend = false,
                     Action::Resize(w, h) => {
                         tui.resize(Rect::new(0, 0, w, h))?;
                         tui.draw(|f| {
@@ -296,8 +296,8 @@ impl App {
                     };
                 }
             }
-            if self.should_sutransaction {
-                tui.sutransaction()?;
+            if self.should_suspend {
+                tui.suspend()?;
                 action_tx.send(Action::Resume)?;
                 tui = tui::Tui::new()?
                     .tick_rate(self.tick_rate)

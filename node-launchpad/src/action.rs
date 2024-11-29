@@ -32,7 +32,7 @@ pub enum Action {
     Tick,
     Render,
     Resize(u16, u16),
-    Sutransaction,
+    Suspend,
     Resume,
     Quit,
     Refresh,

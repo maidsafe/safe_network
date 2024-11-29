@@ -23,17 +23,17 @@ pub enum Error {
     DataPaymentsContract(#[from] data_payments::error::Error),
 }
 
-/// Approve an address / smart contract to transaction this wallet's payment tokens.
+/// Approve an address / smart contract to spend this wallet's payment tokens.
 ///
 /// Returns the transaction calldata (input, to).
-pub fn approve_to_transaction_tokens_calldata(
+pub fn approve_to_spend_tokens_calldata(
     network: &Network,
-    transactioner: Address,
+    spender: Address,
     value: U256,
 ) -> (Calldata, Address) {
     let provider = http_provider(network.rpc_url().clone());
     let network_token = NetworkToken::new(*network.payment_token_address(), provider);
-    network_token.approve_calldata(transactioner, value)
+    network_token.approve_calldata(spender, value)
 }
 
 /// Transfer payment tokens from the supplied wallet to an address.
@@ -53,14 +53,14 @@ pub fn transfer_tokens_calldata(
 pub struct PayForQuotesCalldataReturnType {
     pub batched_calldata_map: HashMap<Calldata, Vec<QuoteHash>>,
     pub to: Address,
-    pub approve_transactioner: Address,
+    pub approve_spender: Address,
     pub approve_amount: Amount,
 }
 
 /// Use this wallet to pay for chunks in batched transfer transactions.
 /// If the amount of transfers is more than one transaction can contain, the transfers will be split up over multiple transactions.
 ///
-/// Returns PayForQuotesCalldataReturnType, containing calldata of the transaction batches along with the approval details for the transactioner.
+/// Returns PayForQuotesCalldataReturnType, containing calldata of the transaction batches along with the approval details for the spender.
 pub fn pay_for_quotes_calldata<T: IntoIterator<Item = QuotePayment>>(
     network: &Network,
     payments: T,
@@ -69,7 +69,7 @@ pub fn pay_for_quotes_calldata<T: IntoIterator<Item = QuotePayment>>(
 
     let total_amount = payments.iter().map(|(_, _, amount)| amount).sum();
 
-    let approve_transactioner = *network.data_payments_address();
+    let approve_spender = *network.data_payments_address();
     let approve_amount = total_amount;
 
     let provider = http_provider(network.rpc_url().clone());
@@ -90,7 +90,7 @@ pub fn pay_for_quotes_calldata<T: IntoIterator<Item = QuotePayment>>(
     Ok(PayForQuotesCalldataReturnType {
         batched_calldata_map: calldata_map,
         to: *data_payments.contract.address(),
-        approve_transactioner,
+        approve_spender,
         approve_amount,
     })
 }

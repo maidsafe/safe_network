@@ -12,7 +12,7 @@ use libp2p::{
     swarm::DialError,
     PeerId, TransportError,
 };
-use sn_protocol::storage::{Transaction, TransactionAddress};
+use sn_protocol::storage::TransactionAddress;
 use sn_protocol::{messages::Response, storage::RecordKind, NetworkAddress, PrettyPrintRecordKey};
 use std::{
     collections::{HashMap, HashSet},
@@ -45,7 +45,7 @@ pub enum GetRecordError {
     RecordNotFound,
     // Avoid logging the whole `Record` content by accident.
     /// The split record error will be handled at the network layer.
-    /// For transactions, it accumulates the transactions and returns a double transaction error if more than one.
+    /// For transactions, it accumulates the transactions
     /// For registers, it merges the registers and returns the merged record.
     #[error("Split Record has {} different copies", result_map.len())]
     SplitRecord {
@@ -133,11 +133,9 @@ pub enum NetworkError {
     #[error("Failed to verify the ChunkProof with the provided quorum")]
     FailedToVerifyChunkProof(NetworkAddress),
 
-    // ---------- Spend Errors
-    #[error("Spend not found: {0:?}")]
-    NoSpendFoundInsideRecord(TransactionAddress),
-    #[error("Double transaction(s) attempt was detected. The signed transactions are: {0:?}")]
-    DoubleSpendAttempt(Vec<Transaction>),
+    // ---------- Transaction Errors
+    #[error("Transaction not found: {0:?}")]
+    NoTransactionFoundInsideRecord(TransactionAddress),
 
     // ---------- Store Error
     #[error("No Store Cost Responses")]

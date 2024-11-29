@@ -189,16 +189,16 @@ const executeQuotePayments = async (sender, quotes, quotePayments) => {
         quotePayments
     );
 
-    // Form approve to transaction tokens calldata
+    // Form approve to spend tokens calldata
     const approveCalldata = autonomi.getApproveToSpendTokensCalldata(
         evmNetwork,
-        payForQuotesCalldata.approve_transactioner,
+        payForQuotesCalldata.approve_spender,
         payForQuotesCalldata.approve_amount
     );
 
     console.log("Sending approve transaction..");
 
-    // Approve to transaction tokens
+    // Approve to spend tokens
     let hash = await sendTransaction({
         from: sender,
         to: approveCalldata[1],

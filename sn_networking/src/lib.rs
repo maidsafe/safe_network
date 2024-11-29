@@ -596,7 +596,7 @@ impl Network {
     }
 
     /// Handle the split record error.
-    /// Spend: Accumulate transactions and return error if more than one.
+    /// Transaction: Accumulate transactions.
     /// Register: Merge registers and return the merged record.
     fn handle_split_record_error(
         result_map: &HashMap<XorName, (Record, HashSet<PeerId>)>,
@@ -700,14 +700,26 @@ impl Network {
             }
         }
 
-        // Allow for early bail if we've already seen a split SpendAttempt
+        // Return the accumulated transactions as a single record
         if accumulated_transactions.len() > 1 {
             info!("For record {pretty_key:?} task found split record for a transaction, accumulated and sending them as a single record");
             let accumulated_transactions = accumulated_transactions
                 .into_iter()
                 .collect::<Vec<Transaction>>();
-
-            return Err(NetworkError::DoubleSpendAttempt(accumulated_transactions));
+            let record = Record {
+                key: key.clone(),
+                value: try_serialize_record(&accumulated_transactions, RecordKind::Transaction)
+                    .map_err(|err| {
+                        error!(
+                            "Error while serializing the accumulated transactions for {pretty_key:?}: {err:?}"
+                        );
+                        NetworkError::from(err)
+                    })?
+                    .to_vec(),
+                publisher: None,
+                expires: None,
+            };
+            return Ok(Some(record));
         } else if !collected_registers.is_empty() {
             info!("For record {pretty_key:?} task found multiple registers, merging them.");
             let signed_register = collected_registers.iter().fold(collected_registers[0].clone(), |mut acc, x| {

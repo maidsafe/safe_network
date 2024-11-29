@@ -31,7 +31,7 @@
       "<Shift-q>": "Quit",
       "<Q>": "Quit",
       "<Ctrl-c>": "Quit",
-      "<Ctrl-z>": "Sutransaction" // Sutransaction the application
+      "<Ctrl-z>": "Suspend" // Suspend the application
     },
     "Options": {
       "<s>": {"SwitchScene":"Status"},
@@ -67,7 +67,7 @@
       "<Shift-q>": "Quit",
       "<Q>": "Quit",
       "<Ctrl-c>": "Quit",
-      "<Ctrl-z>": "Sutransaction" // Sutransaction the application
+      "<Ctrl-z>": "Suspend" // Suspend the application
     },
     "Help": {
       "<s>": {"SwitchScene":"Status"},
@@ -82,7 +82,7 @@
       "<Shift-q>": "Quit",
       "<Q>": "Quit",
       "<Ctrl-c>": "Quit",
-      "<Ctrl-z>": "Sutransaction" // Sutransaction the application
+      "<Ctrl-z>": "Suspend" // Suspend the application
     }
   }
 }

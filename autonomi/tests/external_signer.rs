@@ -50,21 +50,20 @@ async fn pay_for_content_addresses(
     // Init an external wallet provider. In the webapp, this would be MetaMask for example
     let provider = wallet.to_provider();
 
-    // Form approve to transaction tokens transaction data
-    let approve_calldata =
-        autonomi::client::external_signer::approve_to_transaction_tokens_calldata(
-            wallet.network(),
-            pay_for_quotes_calldata.approve_transactioner,
-            pay_for_quotes_calldata.approve_amount,
-        );
+    // Form approve to spend tokens transaction data
+    let approve_calldata = autonomi::client::external_signer::approve_to_spend_tokens_calldata(
+        wallet.network(),
+        pay_for_quotes_calldata.approve_spender,
+        pay_for_quotes_calldata.approve_amount,
+    );
 
-    // Prepare approve to transaction tokens transaction
+    // Prepare approve to spend tokens transaction
     let transaction_request = provider
         .transaction_request()
         .with_to(approve_calldata.1)
         .with_input(approve_calldata.0);
 
-    // Send approve to transaction tokens transaction
+    // Send approve to spend tokens transaction
     let _tx_hash = provider
         .send_transaction(transaction_request)
         .await?

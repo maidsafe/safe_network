@@ -71,11 +71,11 @@ async fn test_approve() {
     let account = wallet_address(network_token.contract.provider().wallet());
 
     let transaction_value = U256::from(1);
-    let transactioner = PrivateKeySigner::random();
+    let spender = PrivateKeySigner::random();
 
-    // Approve for the transactioner to transaction a value from the funds of the owner (our default account).
+    // Approve for the spender to spend a value from the funds of the owner (our default account).
     let approval_result = network_token
-        .approve(transactioner.address(), transaction_value)
+        .approve(spender.address(), transaction_value)
         .await;
 
     assert!(
@@ -86,7 +86,7 @@ async fn test_approve() {
 
     let allowance = network_token
         .contract
-        .allowance(account, transactioner.address())
+        .allowance(account, spender.address())
         .call()
         .await
         .unwrap()
