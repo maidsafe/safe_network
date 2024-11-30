@@ -2,15 +2,15 @@ use crate::client::data::PutError;
 use crate::client::utils::extract_quote_payments;
 use crate::self_encryption::encrypt;
 use crate::Client;
+use ant_evm::{PaymentQuote, QuotePayment};
+use ant_protocol::storage::Chunk;
 use bytes::Bytes;
-use sn_evm::{PaymentQuote, QuotePayment};
-use sn_protocol::storage::Chunk;
 use std::collections::HashMap;
 use xor_name::XorName;
 
 use crate::utils::cost_map_to_quotes;
 #[allow(unused_imports)]
-pub use sn_evm::external_signer::*;
+pub use ant_evm::external_signer::*;
 
 impl Client {
     /// Get quotes for data.
@@ -38,7 +38,7 @@ impl Client {
 ///
 /// Returns the data map chunk and file chunks.
 pub fn encrypt_data(data: Bytes) -> Result<(Chunk, Vec<Chunk>), PutError> {
-    let now = sn_networking::target_arch::Instant::now();
+    let now = ant_networking::target_arch::Instant::now();
     let result = encrypt(data)?;
 
     debug!("Encryption took: {:.2?}", now.elapsed());

@@ -6,11 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use ant_evm::get_evm_network_from_env;
+use ant_evm::EvmWallet;
+use ant_evm::{Amount, RewardsAddress};
+use ant_logging::LogBuilder;
 use const_hex::traits::FromHex;
-use sn_evm::get_evm_network_from_env;
-use sn_evm::EvmWallet;
-use sn_evm::{Amount, RewardsAddress};
-use sn_logging::LogBuilder;
 use test_utils::evm::get_funded_wallet;
 
 #[tokio::test]

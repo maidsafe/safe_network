@@ -29,10 +29,10 @@ use crate::{
     system::{get_default_mount_point, get_primary_mount_point, get_primary_mount_point_name},
     tui,
 };
+use ant_peers_acquisition::PeersArgs;
 use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::{prelude::Rect, style::Style, widgets::Block};
-use sn_peers_acquisition::PeersArgs;
 use tokio::sync::mpsc;
 
 pub struct App {
@@ -317,8 +317,8 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ant_peers_acquisition::PeersArgs;
     use color_eyre::eyre::Result;
-    use sn_peers_acquisition::PeersArgs;
     use std::io::Cursor;
     use std::io::Write;
     use tempfile::tempdir;

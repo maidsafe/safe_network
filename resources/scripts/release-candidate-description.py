@@ -70,18 +70,18 @@ def get_pr_list(pr_numbers):
 
 def main(pr_numbers):
     crate_binary_map = {
-        "nat-detection": "nat-detection",
-        "node-launchpad": "node-launchpad",
+        "ant-node": "safenode",
+        "ant-node-manager": "safenode-manager",
         "autonomi-cli": "autonomi",
-        "sn_node": "safenode",
-        "sn_node_manager": "safenode-manager",
+        "nat-detection": "nat-detection",
+        "node-launchpad": "node-launchpad"
     }
 
     markdown_doc = []
     markdown_doc.append("## Binary Versions\n")
     for crate, binary in crate_binary_map.items():
         version = get_crate_version(crate)
-        if crate == "sn_node_manager":
+        if crate == "ant-node-manager":
             markdown_doc.append(f"* `safenodemand`: v{version}")
         markdown_doc.append(f"* `{binary}`: v{version}")
     

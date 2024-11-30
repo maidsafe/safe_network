@@ -17,10 +17,10 @@ use crate::client::payment::PaymentOption;
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
-use sn_evm::{Amount, AttoTokens};
-use sn_evm::{EvmWalletError, ProofOfPayment};
-use sn_networking::{GetRecordCfg, NetworkError};
-use sn_protocol::{
+use ant_evm::{Amount, AttoTokens};
+use ant_evm::{EvmWalletError, ProofOfPayment};
+use ant_networking::{GetRecordCfg, NetworkError};
+use ant_protocol::{
     storage::{try_deserialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind},
     NetworkAddress,
 };
@@ -79,7 +79,7 @@ pub enum PutError {
     #[error("Serialization error: {0}")]
     Serialization(String),
     #[error("A wallet error occurred.")]
-    Wallet(#[from] sn_evm::EvmError),
+    Wallet(#[from] ant_evm::EvmError),
     #[error("The vault owner key does not match the client's public key")]
     VaultBadOwner,
     #[error("Payment unexpectedly invalid for {0:?}")]
@@ -109,7 +109,7 @@ pub enum GetError {
     #[error("General networking error: {0:?}")]
     Network(#[from] NetworkError),
     #[error("General protocol error: {0:?}")]
-    Protocol(#[from] sn_protocol::Error),
+    Protocol(#[from] ant_protocol::Error),
 }
 
 /// Errors that can occur during the cost calculation.
@@ -145,7 +145,7 @@ impl Client {
         data: Bytes,
         payment_option: PaymentOption,
     ) -> Result<DataAddr, PutError> {
-        let now = sn_networking::target_arch::Instant::now();
+        let now = ant_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
         let data_map_addr = data_map_chunk.address();
         debug!("Encryption took: {:.2?}", now.elapsed());
@@ -240,7 +240,7 @@ impl Client {
 
     /// Get the estimated cost of storing a piece of data.
     pub async fn data_cost(&self, data: Bytes) -> Result<AttoTokens, CostError> {
-        let now = sn_networking::target_arch::Instant::now();
+        let now = ant_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
 
         debug!("Encryption took: {:.2?}", now.elapsed());

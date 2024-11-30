@@ -7,9 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::system;
+use ant_node_manager::config::get_service_log_dir_path;
 use color_eyre::eyre::{self};
 use ratatui::prelude::*;
-use sn_node_manager::config::get_service_log_dir_path;
 use sn_releases::ReleaseType;
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`

@@ -6,29 +6,24 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-/// Register Secret Key
-pub use bls::SecretKey as RegisterSecretKey;
-use sn_evm::Amount;
-use sn_evm::AttoTokens;
-use sn_evm::EvmWalletError;
-use sn_networking::VerificationKind;
-use sn_protocol::storage::RetryStrategy;
-pub use sn_registers::{Permissions as RegisterPermissions, RegisterAddress};
-
 use crate::client::data::PayError;
 use crate::client::Client;
 use crate::client::ClientEvent;
 use crate::client::UploadSummary;
+
+pub use ant_registers::{Permissions as RegisterPermissions, RegisterAddress};
+pub use bls::SecretKey as RegisterSecretKey;
+
+use ant_evm::{Amount, AttoTokens, EvmWallet, EvmWalletError};
+use ant_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg, VerificationKind};
+use ant_protocol::{
+    storage::{try_deserialize_record, try_serialize_record, RecordKind, RetryStrategy},
+    NetworkAddress,
+};
+use ant_registers::Register as BaseRegister;
+use ant_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use bytes::Bytes;
 use libp2p::kad::{Quorum, Record};
-use sn_evm::EvmWallet;
-use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg};
-use sn_protocol::storage::try_deserialize_record;
-use sn_protocol::storage::try_serialize_record;
-use sn_protocol::storage::RecordKind;
-use sn_protocol::NetworkAddress;
-use sn_registers::Register as BaseRegister;
-use sn_registers::{Permissions, RegisterCrdt, RegisterOp, SignedRegister};
 use std::collections::BTreeSet;
 use xor_name::XorName;
 
@@ -49,9 +44,9 @@ pub enum RegisterError {
     #[error("Failed to retrieve wallet payment")]
     Wallet(#[from] EvmWalletError),
     #[error("Failed to write to low-level register")]
-    Write(#[source] sn_registers::Error),
+    Write(#[source] ant_registers::Error),
     #[error("Failed to sign register")]
-    CouldNotSign(#[source] sn_registers::Error),
+    CouldNotSign(#[source] ant_registers::Error),
     #[error("Received invalid quote from node, this node is possibly malfunctioning, try another node by trying another register name")]
     InvalidQuote,
 }

@@ -23,7 +23,7 @@ autonomi = { path = "../autonomi", version = "0.1.0" }
 2. Run a local EVM node:
 
 ```sh
-cargo run --bin evm_testnet
+cargo run --bin evm-testnet
 ```
 
 3. Run a local network with the `local` feature and use the local evm node.
@@ -144,7 +144,7 @@ Alternatively, you can provide the wallet address that should own all the gas an
 startup command using the `--genesis-wallet` flag:
 
 ```sh
-cargo run --bin evm_testnet -- --genesis-wallet <ETHEREUM_ADDRESS>
+cargo run --bin evm-testnet -- --genesis-wallet <ETHEREUM_ADDRESS>
 ```
 
 ```shell

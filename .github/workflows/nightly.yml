@@ -36,7 +36,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
@@ -211,7 +211,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_e2e
@@ -246,23 +246,23 @@ jobs:
 
       - name: Run node tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_node --lib
+        run: cargo test --release --package ant-node --lib
 
       - name: Run network tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_networking --features="open-metrics, encrypt-records"
+        run: cargo test --release --package ant-networking --features="open-metrics, encrypt-records"
 
       - name: Run protocol tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_protocol
+        run: cargo test --release --package ant-protocol
 
       - name: Run logging tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_logging
+        run: cargo test --release --package ant-logging
   
       - name: Run register tests
         timeout-minutes: 50
-        run: cargo test --release --package sn_registers
+        run: cargo test --release --package ant-registers
         env:
           PROPTEST_CASES: 512
 
@@ -303,7 +303,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build churn tests
-        run: cargo test --release -p sn_node --features=local --test data_with_churn --no-run
+        run: cargo test --release -p ant-node --features=local --test data_with_churn --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -311,7 +311,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
@@ -320,7 +320,7 @@ jobs:
           build: true
 
       - name: Chunks data integrity during nodes churn (during 10min) (in theory)
-        run: cargo test --release -p sn_node --features=local --test data_with_churn -- --nocapture
+        run: cargo test --release -p ant-node --features=local --test data_with_churn -- --nocapture
         env:
           TEST_DURATION_MINS: 60
           TEST_CHURN_CYCLES: 6
@@ -330,7 +330,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_churn
@@ -456,7 +456,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
-        run: cargo test --release -p sn_node --features=local --test verify_data_location --test verify_routing_table --no-run
+        run: cargo test --release -p ant-node --features=local --test verify_data_location --test verify_routing_table --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -464,7 +464,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
@@ -473,27 +473,27 @@ jobs:
           build: true
 
       - name: Verify the Routing table of the nodes
-        run: cargo test --release -p sn_node --features=local --test verify_routing_table -- --nocapture
+        run: cargo test --release -p ant-node --features=local --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
       - name: Verify the location of the data on the network
-        run: cargo test --release -p sn_node --features=local --test verify_data_location -- --nocapture
+        run: cargo test --release -p ant-node --features=local --test verify_data_location -- --nocapture
         env:
           SN_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 90
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --features=local --test verify_routing_table -- --nocapture
+        run: cargo test --release -p ant-node --features=local --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_data_location

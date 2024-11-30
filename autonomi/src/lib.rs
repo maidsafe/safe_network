@@ -43,10 +43,10 @@ pub mod client;
 mod self_encryption;
 mod utils;
 
-pub use sn_evm::get_evm_network_from_env;
-pub use sn_evm::EvmNetwork;
-pub use sn_evm::EvmWallet as Wallet;
-pub use sn_evm::RewardsAddress;
+pub use ant_evm::get_evm_network_from_env;
+pub use ant_evm::EvmNetwork;
+pub use ant_evm::EvmWallet as Wallet;
+pub use ant_evm::RewardsAddress;
 #[cfg(feature = "external-signer")]
 pub use utils::receipt_from_quotes_and_payments;
 

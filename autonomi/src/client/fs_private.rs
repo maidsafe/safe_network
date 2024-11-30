@@ -16,8 +16,8 @@
 
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::Client;
+use ant_evm::EvmWallet;
 use bytes::Bytes;
-use sn_evm::EvmWallet;
 use std::path::PathBuf;
 
 use super::archive_private::{PrivateArchive, PrivateArchiveAccess};

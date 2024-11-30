@@ -1,0 +1,19 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "EVM testnet for development on Autonomi"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "evm-testnet"
+repository = "https://github.com/maidsafe/autonomi"
+version = "0.1.4"
+
+[dependencies]
+ant-evm = { path = "../ant-evm", version = "0.1.4" }
+clap = { version = "4.5", features = ["derive"] }
+dirs-next = "~2.0.0"
+evmlib = { path = "../evmlib", version = "0.1.4" }
+tokio = { version = "1.40", features = ["rt-multi-thread", "signal"] }
+
+[lints]
+workspace = true

@@ -8,10 +8,10 @@
 
 use std::hash::{DefaultHasher, Hash, Hasher};
 
+use ant_evm::Amount;
+use ant_protocol::storage::Chunk;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::Amount;
-use sn_protocol::storage::Chunk;
 
 use super::data::{GetError, PutError};
 use crate::client::payment::PaymentOption;
@@ -65,7 +65,7 @@ impl Client {
         data: Bytes,
         payment_option: PaymentOption,
     ) -> Result<PrivateDataAccess, PutError> {
-        let now = sn_networking::target_arch::Instant::now();
+        let now = ant_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
         debug!("Encryption took: {:.2?}", now.elapsed());
 

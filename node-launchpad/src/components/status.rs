@@ -31,16 +31,16 @@ use crate::{
         clear_area, EUCALYPTUS, GHOST_WHITE, LIGHT_PERIWINKLE, VERY_LIGHT_AZURE, VIVID_SKY_BLUE,
     },
 };
+use ant_node_manager::add_services::config::PortRange;
+use ant_node_manager::config::get_node_registry_path;
+use ant_peers_acquisition::PeersArgs;
+use ant_service_management::{
+    control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
+};
 use color_eyre::eyre::{Ok, OptionExt, Result};
 use crossterm::event::KeyEvent;
 use ratatui::text::Span;
 use ratatui::{prelude::*, widgets::*};
-use sn_node_manager::add_services::config::PortRange;
-use sn_node_manager::config::get_node_registry_path;
-use sn_peers_acquisition::PeersArgs;
-use sn_service_management::{
-    control::ServiceController, NodeRegistry, NodeServiceData, ServiceStatus,
-};
 use std::fmt;
 use std::{
     path::PathBuf,
@@ -155,7 +155,7 @@ impl Status<'_> {
         let now = Instant::now();
         debug!("Refreshing node registry states on startup");
         let mut node_registry = NodeRegistry::load(&get_node_registry_path()?)?;
-        sn_node_manager::refresh_node_registry(
+        ant_node_manager::refresh_node_registry(
             &mut node_registry,
             &ServiceController {},
             false,

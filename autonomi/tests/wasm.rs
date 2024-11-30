@@ -10,8 +10,8 @@
 
 use std::time::Duration;
 
+use ant_networking::target_arch::sleep;
 use autonomi::Client;
-use sn_networking::target_arch::sleep;
 use test_utils::{evm::get_funded_wallet, gen_random_data, peers_from_env};
 use wasm_bindgen_test::*;
 
@@ -19,7 +19,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 
 #[wasm_bindgen_test]
 async fn put() -> Result<(), Box<dyn std::error::Error>> {
-    enable_logging_wasm("sn_networking,autonomi,wasm");
+    enable_logging_wasm("ant-networking,autonomi,wasm");
 
     let client = Client::connect(&peers_from_env()?).await?;
     let wallet = get_funded_wallet();

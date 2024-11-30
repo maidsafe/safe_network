@@ -34,11 +34,11 @@ pub mod wasm;
 // private module with utility functions
 mod utils;
 
-pub use sn_evm::Amount;
+pub use ant_evm::Amount;
 
+use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
+use ant_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use libp2p::{identity::Keypair, Multiaddr};
-use sn_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
-use sn_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
 
@@ -102,7 +102,7 @@ impl Client {
         // Spawn task to dial to the given peers
         let network_clone = network.clone();
         let peers = peers.to_vec();
-        let _handle = sn_networking::target_arch::spawn(async move {
+        let _handle = ant_networking::target_arch::spawn(async move {
             for addr in peers {
                 if let Err(err) = network_clone.dial(addr.clone()).await {
                     error!("Failed to dial addr={addr} with err: {err:?}");
@@ -112,7 +112,7 @@ impl Client {
         });
 
         let (sender, receiver) = futures::channel::oneshot::channel();
-        sn_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
+        ant_networking::target_arch::spawn(handle_event_receiver(event_receiver, sender));
 
         receiver.await.expect("sender should not close")?;
 
@@ -134,12 +134,12 @@ impl Client {
 fn build_client_and_run_swarm(local: bool) -> (Network, mpsc::Receiver<NetworkEvent>) {
     let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
 
-    // TODO: Re-export `Receiver<T>` from `sn_networking`. Else users need to keep their `tokio` dependency in sync.
+    // TODO: Re-export `Receiver<T>` from `ant-networking`. Else users need to keep their `tokio` dependency in sync.
     // TODO: Think about handling the mDNS error here.
     let (network, event_receiver, swarm_driver) =
         network_builder.build_client().expect("mdns to succeed");
 
-    let _swarm_driver = sn_networking::target_arch::spawn(swarm_driver.run());
+    let _swarm_driver = ant_networking::target_arch::spawn(swarm_driver.run());
 
     (network, event_receiver)
 }

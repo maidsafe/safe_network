@@ -4,5 +4,5 @@ git_release_enable = false
 semver_check = false
 
 [[package]]
-name = "test_utils"
+name = "test-utils"
 release = false

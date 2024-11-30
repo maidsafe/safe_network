@@ -193,13 +193,13 @@ jobs:
   #         echo "Deployment inventory is $SN_INVENTORY"
 
   #     - name: execute the sequential transfers test
-  #       run: cargo test --release -p sn_node --test sequential_transfers -- --nocapture --test-threads=1
+  #       run: cargo test --release -p ant-node --test sequential_transfers -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #       timeout-minutes: 45
 
   #     - name: execute the storage payment tests
-  #       run: cargo test --release -p sn_node --test storage_payments -- --nocapture --test-threads=1
+  #       run: cargo test --release -p ant-node --test storage_payments -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #       timeout-minutes: 45
@@ -268,7 +268,7 @@ jobs:
   #       continue-on-error: true
   #
   #     - name: Build churn tests
-  #       run: cargo test --release -p sn_node --test data_with_churn --no-run
+  #       run: cargo test --release -p ant-node --test data_with_churn --no-run
   #       timeout-minutes: 30
   #
   #     - name: Start a WAN network
@@ -299,7 +299,7 @@ jobs:
   #         echo "Deployment inventory is $SN_INVENTORY"
   #
   #     - name: Chunks data integrity during nodes churn
-  #       run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
+  #       run: cargo test --release -p ant-node --test data_with_churn -- --nocapture
   #       env:
   #         # TEST_DURATION_MINS: 60
   #         # TEST_CHURN_CYCLES: 6
@@ -473,7 +473,7 @@ jobs:
   #       continue-on-error: true
   #
   #     - name: Build data location and routing table tests
-  #       run: cargo test --release -p sn_node --test verify_data_location --test verify_routing_table --no-run
+  #       run: cargo test --release -p ant-node --test verify_data_location --test verify_routing_table --no-run
   #       timeout-minutes: 30
   #
   #     - name: Start a WAN network
@@ -503,17 +503,17 @@ jobs:
   #         echo "Deployment inventory is $SN_INVENTORY"
   #
   #     - name: Verify the Routing table of the nodes
-  #       run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
+  #       run: cargo test --release -p ant-node --test verify_routing_table -- --nocapture
   #       timeout-minutes: 5
   #
   #     - name: Verify the location of the data on the network
-  #       run: cargo test --release -p sn_node --test verify_data_location -- --nocapture
+  #       run: cargo test --release -p ant-node --test verify_data_location -- --nocapture
   #       env:
   #         SN_LOG: "all"
   #       timeout-minutes: 90
   #
   #     - name: Verify the routing tables of the nodes
-  #       run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
+  #       run: cargo test --release -p ant-node --test verify_routing_table -- --nocapture
   #       timeout-minutes: 5
   #
   #     - name: Fetch network logs

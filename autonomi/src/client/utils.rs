@@ -8,20 +8,20 @@
 
 use crate::client::payment::Receipt;
 use crate::utils::receipt_from_cost_map_and_payments;
+use ant_evm::{EvmWallet, ProofOfPayment, QuotePayment};
+use ant_networking::{
+    GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
+};
+use ant_protocol::{
+    messages::ChunkProof,
+    storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind, RetryStrategy},
+    NetworkAddress,
+};
 use bytes::Bytes;
 use futures::stream::{FuturesUnordered, StreamExt};
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use sn_evm::{EvmWallet, ProofOfPayment, QuotePayment};
-use sn_networking::{
-    GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
-};
-use sn_protocol::{
-    messages::ChunkProof,
-    storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind, RetryStrategy},
-    NetworkAddress,
-};
 use std::{collections::HashMap, future::Future, num::NonZero};
 use xor_name::XorName;
 
