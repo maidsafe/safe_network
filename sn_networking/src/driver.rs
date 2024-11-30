@@ -691,11 +691,23 @@ impl NetworkBuilder {
 
         let bootstrap = ContinuousNetworkDiscover::new();
         let replication_fetcher = ReplicationFetcher::new(peer_id, network_event_sender.clone());
-        let mut relay_manager = RelayManager::new(peer_id);
-        if !is_client {
-            relay_manager.enable_hole_punching(self.is_behind_home_network);
-        }
-        let external_address_manager = ExternalAddressManager::new(peer_id);
+
+        // Enable relay manager for nodes behind home network
+        let relay_manager = if !is_client && self.is_behind_home_network {
+            let relay_manager = RelayManager::new(peer_id);
+            Some(relay_manager)
+        } else {
+            info!("Relay manager is disabled for this node.");
+            None
+        };
+        // Enable external address manager for public nodes and not behind nat
+        let external_address_manager = if !is_client && !self.local && !self.is_behind_home_network
+        {
+            Some(ExternalAddressManager::new(peer_id))
+        } else {
+            info!("External address manager is disabled for this node.");
+            None
+        };
 
         let swarm_driver = SwarmDriver {
             swarm,
@@ -708,6 +720,7 @@ impl NetworkBuilder {
             peers_in_rt: 0,
             bootstrap,
             relay_manager,
+            connected_relay_clients: Default::default(),
             external_address_manager,
             replication_fetcher,
             #[cfg(feature = "open-metrics")]
@@ -801,8 +814,10 @@ pub struct SwarmDriver {
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousNetworkDiscover,
-    pub(crate) external_address_manager: ExternalAddressManager,
-    pub(crate) relay_manager: RelayManager,
+    pub(crate) external_address_manager: Option<ExternalAddressManager>,
+    pub(crate) relay_manager: Option<RelayManager>,
+    /// The peers that are using our relay service.
+    pub(crate) connected_relay_clients: HashSet<PeerId>,
     /// The peers that are closer to our PeerId. Includes self.
     pub(crate) replication_fetcher: ReplicationFetcher,
     #[cfg(feature = "open-metrics")]
@@ -984,7 +999,11 @@ impl SwarmDriver {
                         self.replication_fetcher.set_replication_distance_range(distance);
                     }
                 }
-                _ = relay_manager_reservation_interval.tick() => self.relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes),
+                _ = relay_manager_reservation_interval.tick() => {
+                    if let Some(relay_manager) = &mut self.relay_manager {
+                        relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes)
+                    }
+                },
             }
         }
     }
