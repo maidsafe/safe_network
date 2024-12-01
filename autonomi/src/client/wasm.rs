@@ -3,8 +3,8 @@ use super::address::{addr_to_str, str_to_addr};
 use super::vault::UserData;
 use crate::client::data_private::PrivateDataAccess;
 use crate::client::payment::Receipt;
+use ant_protocol::storage::Chunk;
 use libp2p::Multiaddr;
-use sn_protocol::storage::Chunk;
 use wasm_bindgen::prelude::*;
 
 /// The `Client` object allows interaction with the network to store and retrieve data.
@@ -27,7 +27,7 @@ use wasm_bindgen::prelude::*;
 pub struct JsClient(super::Client);
 
 #[wasm_bindgen]
-pub struct AttoTokens(sn_evm::AttoTokens);
+pub struct AttoTokens(ant_evm::AttoTokens);
 #[wasm_bindgen]
 impl AttoTokens {
     #[wasm_bindgen(js_name = toString)]
@@ -391,7 +391,7 @@ mod vault {
     use crate::client::vault::key::derive_secret_key_from_seed;
     use crate::client::vault::user_data::USER_DATA_VAULT_CONTENT_IDENTIFIER;
     use crate::client::vault::VaultContentType;
-    use sn_protocol::storage::Scratchpad;
+    use ant_protocol::storage::Scratchpad;
     use wasm_bindgen::{JsError, JsValue};
 
     /// Structure to keep track of uploaded archives, registers and other data.
@@ -637,11 +637,11 @@ mod external_signer {
     use crate::client::external_signer::encrypt_data;
     use crate::client::payment::Receipt;
     use crate::receipt_from_quotes_and_payments;
-    use sn_evm::external_signer::{approve_to_spend_tokens_calldata, pay_for_quotes_calldata};
-    use sn_evm::EvmNetwork;
-    use sn_evm::QuotePayment;
-    use sn_evm::{Amount, PaymentQuote};
-    use sn_evm::{EvmAddress, QuoteHash, TxHash};
+    use ant_evm::external_signer::{approve_to_spend_tokens_calldata, pay_for_quotes_calldata};
+    use ant_evm::EvmNetwork;
+    use ant_evm::QuotePayment;
+    use ant_evm::{Amount, PaymentQuote};
+    use ant_evm::{EvmAddress, QuoteHash, TxHash};
     use std::collections::{BTreeMap, HashMap};
     use wasm_bindgen::prelude::wasm_bindgen;
     use wasm_bindgen::{JsError, JsValue};
@@ -852,12 +852,12 @@ pub fn funded_wallet_with_custom_network(
 /// Enable tracing logging in the console.
 ///
 /// A level could be passed like `trace` or `warn`. Or set for a specific module/crate
-/// with `sn_networking=trace,autonomi=info`.
+/// with `ant-networking=trace,autonomi=info`.
 ///
 /// # Example
 ///
 /// ```js
-/// logInit("sn_networking=warn,autonomi=trace");
+/// logInit("ant-networking=warn,autonomi=trace");
 /// ```
 #[wasm_bindgen(js_name = logInit)]
 pub fn log_init(directive: String) {

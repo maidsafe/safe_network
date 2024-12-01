@@ -84,7 +84,7 @@ async fn main() -> Result<()> {
     if opt.version {
         println!(
             "{}",
-            sn_build_info::version_string(
+            ant_build_info::version_string(
                 "Autonomi NAT Detection",
                 env!("CARGO_PKG_VERSION"),
                 None
@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
 
     #[cfg(not(feature = "nightly"))]
     if opt.package_version {
-        println!("Package version: {}", sn_build_info::package_version());
+        println!("Package version: {}", ant_build_info::package_version());
         return Ok(());
     }
 

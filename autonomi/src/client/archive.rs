@@ -11,15 +11,15 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use sn_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
+use ant_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::{
     data::{CostError, DataAddr, GetError, PutError},
     Client,
 };
+use ant_evm::{AttoTokens, EvmWallet};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::{AttoTokens, EvmWallet};
 use xor_name::XorName;
 
 /// The address of an archive on the network. Points to an [`Archive`].

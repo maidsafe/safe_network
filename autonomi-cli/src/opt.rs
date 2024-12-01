@@ -8,10 +8,10 @@
 
 use std::time::Duration;
 
+use ant_logging::{LogFormat, LogOutputDest};
+use ant_peers_acquisition::PeersArgs;
 use clap::Parser;
 use color_eyre::Result;
-use sn_logging::{LogFormat, LogOutputDest};
-use sn_peers_acquisition::PeersArgs;
 
 use crate::commands::SubCmd;
 

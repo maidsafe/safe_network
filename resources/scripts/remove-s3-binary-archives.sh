@@ -18,10 +18,10 @@ declare -A binary_crate_dir_mappings=(
   ["nat-detection"]="nat-detection"
   ["node-launchpad"]="node-launchpad"
   ["autonomi"]="autonomi-cli"
-  ["safenode"]="sn_node"
-  ["safenode-manager"]="sn_node_manager"
-  ["safenode_rpc_client"]="sn_node_rpc_client"
-  ["safenodemand"]="sn_node_manager"
+  ["safenode"]="ant-node"
+  ["safenode-manager"]="ant-node-manager"
+  ["safenode_rpc_client"]="ant-node-rpc-client"
+  ["safenodemand"]="ant-node-manager"
 )
 declare -A binary_s3_bucket_mappings=(
   ["nat-detection"]="nat-detection"

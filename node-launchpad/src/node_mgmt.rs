@@ -1,14 +1,14 @@
 use crate::action::{Action, StatusActions};
 use crate::connection_mode::ConnectionMode;
-use color_eyre::eyre::{eyre, Error};
-use color_eyre::Result;
-use sn_evm::{EvmNetwork, RewardsAddress};
-use sn_node_manager::{
+use ant_evm::{EvmNetwork, RewardsAddress};
+use ant_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
-use sn_peers_acquisition::PeersArgs;
+use ant_peers_acquisition::PeersArgs;
+use ant_service_management::NodeRegistry;
+use color_eyre::eyre::{eyre, Error};
+use color_eyre::Result;
 use sn_releases::{self, ReleaseType, SafeReleaseRepoActions};
-use sn_service_management::NodeRegistry;
 use std::{path::PathBuf, str::FromStr};
 use tokio::runtime::Builder;
 use tokio::sync::mpsc::{self, UnboundedSender};
@@ -102,7 +102,7 @@ impl NodeManagement {
 /// Stop the specified services
 async fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     if let Err(err) =
-        sn_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
+        ant_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
     {
         error!("Error while stopping services {err:?}");
         send_action(
@@ -181,7 +181,7 @@ async fn maintain_n_running_nodes(args: MaintainNodesArgs) {
 
 /// Reset all the nodes
 async fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_reset: bool) {
-    if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
+    if let Err(err) = ant_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
         error!("Error while resetting services {err:?}");
         send_action(
             action_sender,
@@ -216,7 +216,7 @@ pub struct UpgradeNodesArgs {
 }
 
 async fn upgrade_nodes(args: UpgradeNodesArgs) {
-    if let Err(err) = sn_node_manager::cmd::node::upgrade(
+    if let Err(err) = ant_node_manager::cmd::node::upgrade(
         args.connection_timeout_s,
         args.do_not_start,
         args.custom_bin_path,
@@ -321,7 +321,7 @@ async fn run_nat_detection(action_sender: &UnboundedSender<Action>) {
         }
     };
 
-    if let Err(err) = sn_node_manager::cmd::nat_detection::run_nat_detection(
+    if let Err(err) = ant_node_manager::cmd::nat_detection::run_nat_detection(
         None,
         true,
         None,
@@ -408,7 +408,7 @@ fn get_port_range(custom_ports: &Option<PortRange>) -> (u16, u16) {
 
 /// Scale down the nodes
 async fn scale_down_nodes(config: &NodeConfig, count: u16) {
-    match sn_node_manager::cmd::node::maintain_n_running_nodes(
+    match ant_node_manager::cmd::node::maintain_n_running_nodes(
         false,
         config.auto_set_nat_flags,
         120,
@@ -482,7 +482,7 @@ async fn add_nodes(
         }
 
         let port_range = Some(PortRange::Single(*current_port));
-        match sn_node_manager::cmd::node::maintain_n_running_nodes(
+        match ant_node_manager::cmd::node::maintain_n_running_nodes(
             false,
             config.auto_set_nat_flags,
             120,
@@ -523,7 +523,7 @@ async fn add_nodes(
                 retry_count = 0; // Reset retry count on success
             }
             Err(err) => {
-                //TODO: We should use concrete error types here instead of string matching (sn_node_manager)
+                //TODO: We should use concrete error types here instead of string matching (ant_node_manager)
                 if err.to_string().contains("is being used by another service") {
                     warn!(
                         "Port {} is being used, retrying with a different port. Attempt {}/{}",

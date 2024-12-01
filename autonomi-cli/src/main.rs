@@ -24,10 +24,10 @@ pub use access::user_data;
 use clap::Parser;
 use color_eyre::Result;
 
-use opt::Opt;
 #[cfg(feature = "metrics")]
-use sn_logging::metrics::init_metrics;
-use sn_logging::{LogBuilder, LogFormat, ReloadHandle, WorkerGuard};
+use ant_logging::metrics::init_metrics;
+use ant_logging::{LogBuilder, LogFormat, ReloadHandle, WorkerGuard};
+use opt::Opt;
 use tracing::Level;
 
 #[tokio::main]
@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
 
     // Log the full command that was run and the git version
     info!("\"{}\"", std::env::args().collect::<Vec<_>>().join(" "));
-    let version = sn_build_info::git_info();
+    let version = ant_build_info::git_info();
     info!("autonomi client built with git version: {version}");
     println!("autonomi client built with git version: {version}");
 
@@ -51,16 +51,16 @@ async fn main() -> Result<()> {
 
 fn init_logging_and_metrics(opt: &Opt) -> Result<(ReloadHandle, Option<WorkerGuard>)> {
     let logging_targets = vec![
-        ("autonomi-cli".to_string(), Level::TRACE),
+        ("ant_build_info".to_string(), Level::TRACE),
+        ("ant_evm".to_string(), Level::TRACE),
+        ("ant_networking".to_string(), Level::INFO),
+        ("ant_registers".to_string(), Level::TRACE),
+        ("autonomi_cli".to_string(), Level::TRACE),
         ("autonomi".to_string(), Level::TRACE),
         ("evmlib".to_string(), Level::TRACE),
-        ("sn_evm".to_string(), Level::TRACE),
-        ("sn_networking".to_string(), Level::INFO),
-        ("sn_build_info".to_string(), Level::TRACE),
-        ("sn_logging".to_string(), Level::TRACE),
-        ("sn_peers_acquisition".to_string(), Level::TRACE),
-        ("sn_protocol".to_string(), Level::TRACE),
-        ("sn_registers".to_string(), Level::TRACE),
+        ("ant_logging".to_string(), Level::TRACE),
+        ("ant_peers_acquisition".to_string(), Level::TRACE),
+        ("ant_protocol".to_string(), Level::TRACE),
     ];
     let mut log_builder = LogBuilder::new(logging_targets);
     log_builder.output_dest(opt.log_output_dest.clone());

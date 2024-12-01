@@ -85,9 +85,9 @@ pub fn get_config_dir() -> Result<PathBuf> {
 #[cfg(windows)]
 pub async fn configure_winsw() -> Result<()> {
     let data_dir_path = get_launchpad_data_dir_path()?;
-    sn_node_manager::helpers::configure_winsw(
+    ant_node_manager::helpers::configure_winsw(
         &data_dir_path.join("winsw.exe"),
-        sn_node_manager::VerbosityLevel::Minimal,
+        ant_node_manager::VerbosityLevel::Minimal,
     )
     .await?;
     Ok(())

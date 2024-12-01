@@ -69,16 +69,16 @@ cargo build --release --features=network-contacts --bin safenode
   Interface, allowing users to interact with the network from their terminal.
 - [Node](https://github.com/maidsafe/safe_network/blob/main/sn_node/README.md) The backbone of the
   autonomi network. Nodes can be run on commodity hardware and run the Network.
-- [Node Manager](https://github.com/maidsafe/safe_network/blob/main/sn_node_manager/README.md) Use
+- [Node Manager](https://github.com/maidsafe/safe_network/blob/main/ant_node_manager/README.md) Use
   to create a local network for development and testing.
-- [Node RPC](https://github.com/maidsafe/safe_network/blob/main/sn_node_rpc_client/README.md) The
+- [Node RPC](https://github.com/maidsafe/safe_network/blob/main/ant-node-rpc-client/README.md) The
   RPC server used by the nodes to expose API calls to the outside world.
 
 #### Transport Protocols and Architectures
 
 The Safe Network uses `quic` as the default transport protocol.
 
-The `websockets` feature is available for the `sn_networking` crate, and above, and will allow for
+The `websockets` feature is available for the `ant-networking` crate, and above, and will allow for
 tcp over websockets.
 
 If building for `wasm32` then `websockets` are enabled by default as this is the only method
@@ -91,19 +91,19 @@ WASM support for the autonomi API is currently under active development. More do
 
 ### For the Technical
 
-- [Logging](https://github.com/maidsafe/safe_network/blob/main/sn_logging/README.md) The
+- [Logging](https://github.com/maidsafe/safe_network/blob/main/ant_logging/README.md) The
   generalised logging crate used by the safe network (backed by the tracing crate).
 - [Metrics](https://github.com/maidsafe/safe_network/blob/main/metrics/README.md) The metrics crate
   used by the safe network.
-- [Networking](https://github.com/maidsafe/safe_network/blob/main/sn_networking/README.md) The
+- [Networking](https://github.com/maidsafe/safe_network/blob/main/ant-networking/README.md) The
   networking layer, built atop libp2p which allows nodes and clients to communicate.
-- [Protocol](https://github.com/maidsafe/safe_network/blob/main/sn_protocol/README.md) The protocol
+- [Protocol](https://github.com/maidsafe/safe_network/blob/main/ant_protocol/README.md) The protocol
   used by the safe network.
-- [Registers](https://github.com/maidsafe/safe_network/blob/main/sn_registers/README.md) The
+- [Registers](https://github.com/maidsafe/safe_network/blob/main/ant-registers/README.md) The
   registers crate, used for the Register CRDT data type on the network.
-- [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/sn_peers_acquisition/README.md)
+- [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/ant_peers_acquisition/README.md)
   The peers acquisition crate, or: how the network layer discovers bootstrap peers.
-- [Build Info](https://github.com/maidsafe/safe_network/blob/main/sn_build_info/README.md) Small
+- [Build Info](https://github.com/maidsafe/safe_network/blob/main/ant-build-info/README.md) Small
   helper used to get the build/commit versioning info for debug purposes.
 
 ### Using a Local Network
@@ -126,7 +126,7 @@ To collect rewards for you nodes, you will need an EVM address, you can create o
 ##### 2. Run a local EVM node
 
 ```sh
-cargo run --bin evm_testnet
+cargo run --bin evm-testnet
 ```
 
 This creates a CSV file with the EVM network params in your data directory.
@@ -153,7 +153,7 @@ running nodes.
 
 To upload a file or a directory, you need to set the `SECRET_KEY` environment variable to your EVM secret key:
 
-> When running a local network, you can use the `SECRET_KEY` printed by the `evm_testnet` command [step 2](#2-run-a-local-evm-node) as it has all the money.
+> When running a local network, you can use the `SECRET_KEY` printed by the `evm-testnet` command [step 2](#2-run-a-local-evm-node) as it has all the money.
 
 ```bash
 SECRET_KEY=<YOUR_EVM_SECRET_KEY> cargo run --bin autonomi --features local -- file upload <path>

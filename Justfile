@@ -147,8 +147,6 @@ package-bin bin version="":
     "safenode_rpc_client")
   crate_dir_name=""
 
-  # In the case of the node manager, the actual name of the crate is `sn-node-manager`, but the
-  # directory it's in is `sn_node_manager`.
   bin="{{bin}}"
   case "$bin" in
     nat-detection)
@@ -161,16 +159,16 @@ package-bin bin version="":
       crate_dir_name="autonomi-cli"
       ;;
     safenode)
-      crate_dir_name="sn_node"
+      crate_dir_name="ant-node"
       ;;
     safenode-manager)
-      crate_dir_name="sn_node_manager"
+      crate_dir_name="ant-node-manager"
       ;;
     safenodemand)
-      crate_dir_name="sn_node_manager"
+      crate_dir_name="ant-node-manager"
       ;;
     safenode_rpc_client)
-      crate_dir_name="sn_node_rpc_client"
+      crate_dir_name="ant-node-rpc-client"
       ;;
     *)
       echo "The $bin binary is not supported"

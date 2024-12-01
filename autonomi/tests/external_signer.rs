@@ -2,6 +2,8 @@
 
 use alloy::network::TransactionBuilder;
 use alloy::providers::Provider;
+use ant_evm::{QuoteHash, TxHash};
+use ant_logging::LogBuilder;
 use autonomi::client::archive::Metadata;
 use autonomi::client::archive_private::PrivateArchive;
 use autonomi::client::external_signer::encrypt_data;
@@ -10,8 +12,6 @@ use autonomi::client::vault::user_data::USER_DATA_VAULT_CONTENT_IDENTIFIER;
 use autonomi::client::vault::VaultSecretKey;
 use autonomi::{receipt_from_quotes_and_payments, Client, Wallet};
 use bytes::Bytes;
-use sn_evm::{QuoteHash, TxHash};
-use sn_logging::LogBuilder;
 use std::collections::BTreeMap;
 use std::time::Duration;
 use test_utils::evm::get_funded_wallet;

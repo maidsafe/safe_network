@@ -14,7 +14,7 @@ describe('autonomi', function () {
     let wallet;
     before(async () => {
         await init();
-        atnm.logInit("sn_networking=warn,autonomi=trace");
+        atnm.logInit("ant-networking=warn,autonomi=trace");
         client = await atnm.Client.connect([window.peer_addr]);
         wallet = atnm.getFundedWallet();
     });

@@ -6,12 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use ant_peers_acquisition::PeersArgs;
+use ant_peers_acquisition::SAFE_PEERS_ENV;
 use autonomi::Multiaddr;
 use color_eyre::eyre::Context;
 use color_eyre::Result;
 use color_eyre::Section;
-use sn_peers_acquisition::PeersArgs;
-use sn_peers_acquisition::SAFE_PEERS_ENV;
 
 pub async fn get_peers(peers: PeersArgs) -> Result<Vec<Multiaddr>> {
     peers.get_peers().await

@@ -10,9 +10,9 @@ use crate::client::archive::Metadata;
 use crate::client::data::CostError;
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::Client;
+use ant_evm::EvmWallet;
+use ant_networking::target_arch::{Duration, SystemTime};
 use bytes::Bytes;
-use sn_evm::EvmWallet;
-use sn_networking::target_arch::{Duration, SystemTime};
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
@@ -181,9 +181,9 @@ impl Client {
 
     /// Get the cost to upload a file/dir to the network.
     /// quick and dirty implementation, please refactor once files are cleanly implemented
-    pub async fn file_cost(&self, path: &PathBuf) -> Result<sn_evm::AttoTokens, FileCostError> {
+    pub async fn file_cost(&self, path: &PathBuf) -> Result<ant_evm::AttoTokens, FileCostError> {
         let mut archive = Archive::new();
-        let mut total_cost = sn_evm::Amount::ZERO;
+        let mut total_cost = ant_evm::Amount::ZERO;
 
         for entry in walkdir::WalkDir::new(path) {
             let entry = entry?;
@@ -203,7 +203,7 @@ impl Client {
 
             // re-do encryption to get the correct map xorname here
             // this code needs refactor
-            let now = sn_networking::target_arch::Instant::now();
+            let now = ant_networking::target_arch::Instant::now();
             let (data_map_chunk, _) = crate::self_encryption::encrypt(file_bytes)?;
             tracing::debug!("Encryption took: {:.2?}", now.elapsed());
             let map_xor_name = *data_map_chunk.address().xorname();

@@ -11,7 +11,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use sn_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
+use ant_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
 use super::{
     archive::{Metadata, RenameError},

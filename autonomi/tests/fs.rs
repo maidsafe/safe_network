@@ -8,10 +8,10 @@
 
 #![cfg(feature = "fs")]
 
+use ant_logging::LogBuilder;
 use autonomi::Client;
 use eyre::Result;
 use sha2::{Digest, Sha256};
-use sn_logging::LogBuilder;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::time::Duration;

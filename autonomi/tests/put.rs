@@ -8,9 +8,9 @@
 
 #![cfg(feature = "data")]
 
+use ant_logging::LogBuilder;
 use autonomi::Client;
 use eyre::Result;
-use sn_logging::LogBuilder;
 use std::time::Duration;
 use test_utils::{evm::get_funded_wallet, gen_random_data, peers_from_env};
 use tokio::time::sleep;
