@@ -9,7 +9,7 @@
 
 use ant_logging::{Level, LogBuilder};
 use ant_node::NodeEvent;
-use ant_protocol::safenode_proto::{safe_node_client::SafeNodeClient, NodeEventsRequest};
+use ant_protocol::antnode_proto::{ant_node_client::AntNodeClient, NodeEventsRequest};
 use ant_service_management::rpc::{RpcActions, RpcClient};
 use clap::Parser;
 use color_eyre::eyre::Result;
@@ -68,7 +68,7 @@ enum Cmd {
         #[clap(default_value = "0")]
         delay_millis: u64,
     },
-    /// Update to latest `safenode` released version, and restart it
+    /// Update to latest `antnode` released version, and restart it
     #[clap(name = "update")]
     Update {
         /// Delay in milliseconds before updating and restarting the node
@@ -78,8 +78,8 @@ enum Cmd {
     /// Update the node's log levels.
     #[clap(name = "log")]
     Log {
-        /// Change the log level of the safenode. This accepts a comma-separated list of log levels for different modules
-        /// or specific keywords like "all" or "v".
+        /// Change the log level of antnode. This accepts a comma-separated list of log levels for
+        /// different modules or specific keywords like "all" or "v".
         ///
         /// Example: --level libp2p=DEBUG,tokio=INFO,all,sn_client=ERROR
         #[clap(name = "level", long)]
@@ -91,9 +91,9 @@ enum Cmd {
 async fn main() -> Result<()> {
     // For client, default to log to std::out
     let logging_targets = vec![
-        ("safenode".to_string(), Level::INFO),
-        ("ant-networking".to_string(), Level::INFO),
-        ("sn_node".to_string(), Level::INFO),
+        ("antnode".to_string(), Level::INFO),
+        ("ant_networking".to_string(), Level::INFO),
+        ("ant_node".to_string(), Level::INFO),
     ];
     let _log_appender_guard = LogBuilder::new(logging_targets).initialize()?;
 
@@ -177,7 +177,7 @@ pub async fn network_info(addr: SocketAddr) -> Result<()> {
 
 pub async fn node_events(addr: SocketAddr) -> Result<()> {
     let endpoint = format!("https://{addr}");
-    let mut client = SafeNodeClient::connect(endpoint).await?;
+    let mut client = AntNodeClient::connect(endpoint).await?;
     let response = client
         .node_events(Request::new(NodeEventsRequest {}))
         .await?;

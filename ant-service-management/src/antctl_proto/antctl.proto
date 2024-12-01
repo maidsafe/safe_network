@@ -6,19 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-// Protocol buffer for the safenodemand. This is used to control 
-// the safeodes started by the safenode-manager.
+// Protocol buffer for antctld. This is used to control nodes started by antctl.
 
 // Version of protocol buffer used
 syntax = "proto3";
 
 // Package name
-package safenode_manager_proto;
+package antctl_proto;
 
 import "req_resp_types.proto";
 
-service SafeNodeManager {
-  // Restart a running safenode service.
+service AntCtl {
+  // Restart a running antnode service.
   rpc RestartNodeService (NodeServiceRestartRequest) returns (NodeServiceRestartResponse);
 
   // Get the status of the nodes managed by the Daemon

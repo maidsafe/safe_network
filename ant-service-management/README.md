@@ -4,7 +4,7 @@ Provides utilities for dealing with services, which are mainly used by the node 
 
 ## RPC Actions
 
-The `RpcActions` trait defines the protocol that is currently available for interacting with `safenode`:
+The `RpcActions` trait defines the protocol that is currently available for interacting with `antnode`:
 
 ```
 node_info: Returns information about the node, such as its peer ID and version.

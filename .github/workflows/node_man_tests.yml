@@ -52,7 +52,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin faucet
+  #       run: cargo build --release --bin antnode --bin faucet
   #       timeout-minutes: 30
 
   #     - name: Start a local network
@@ -60,7 +60,7 @@ jobs:
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
@@ -105,7 +105,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin faucet
+  #       run: cargo build --release --bin antnode --bin faucet
   #       timeout-minutes: 30
 
   #     - name: Start a local network
@@ -113,7 +113,7 @@ jobs:
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true

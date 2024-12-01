@@ -16,12 +16,12 @@
 syntax = "proto3";
 
 // Package name
-package safenode_proto;
+package antnode_proto;
 
 import "req_resp_types.proto";
 
 // Service exposed by a SAFE node for administration, infrastructure, and support purposes
-service SafeNode {
+service AntNode {
   // Returns information about this node
   rpc NodeInfo (NodeInfoRequest) returns (NodeInfoResponse);
 

@@ -25,14 +25,14 @@ Libp2p.<br>
 
 #### Building the Node from Source
 
-If you wish to build a version of `safenode` from source, some special consideration must be given
+If you wish to build a version of `antnode` from source, some special consideration must be given
 if you want it to connect to the current beta network.
 
 You should build from the `stable` branch, as follows:
 
 ```
 git checkout stable
-cargo build --release --features=network-contacts --bin safenode
+cargo build --release --features network-contacts --bin antnode
 ```
 
 #### Running the Node
@@ -40,7 +40,7 @@ cargo build --release --features=network-contacts --bin safenode
 To run a node and receive rewards, you need to specify your Ethereum address as a parameter. Rewards are paid to the specified address.
 
 ```
-cargo run --release --bin safenode --features=network-contacts -- --rewards-address <YOUR_ETHEREUM_ADDRESS_TO_RECEIVE_REWARDS>
+cargo run --release --bin antnode --features network-contacts -- --rewards-address <YOUR_ETHEREUM_ADDRESS_TO_RECEIVE_REWARDS>
 ```
 
 More options about EVM Network below.
@@ -52,13 +52,13 @@ More options about EVM Network below.
 You should also build `safe` with the `network-contacts` and `distribution` features enabled:
 
 ```
-cargo build --release --features="network-contacts,distribution" --bin safe
+cargo build --release --features "network-contacts,distribution" --bin safe
 ```
 
-For `safenode`, only the `network-contacts` feature should be required:
+For `antnode`, only the `network-contacts` feature should be required:
 
 ```
-cargo build --release --features=network-contacts --bin safenode
+cargo build --release --features network-contacts --bin antnode
 ```
 
 #### Main Crates
@@ -135,7 +135,7 @@ This creates a CSV file with the EVM network params in your data directory.
    `--rewards-address` _is the address where you will receive your node earnings on._
 
 ```bash
-cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <YOUR_ETHEREUM_ADDRESS>
+cargo run --bin antctl --features local -- local run --build --clean --rewards-address <YOUR_ETHEREUM_ADDRESS>
 ```
 
 The EVM Network parameters are loaded from the CSV file in your data directory automatically when the `local` feature flag is enabled (`--features=local`).
@@ -143,7 +143,7 @@ The EVM Network parameters are loaded from the CSV file in your data directory a
 ##### 4. Verify node status
 
 ```bash
-cargo run --bin safenode-manager --features local -- status
+cargo run --bin antctl --features local -- status
 ```
 
 The node manager's `run` command starts the node processes. The `status` command should show twenty-five
@@ -286,10 +286,10 @@ workspace has a client binary that can be used to run commands against these ser
 Run the `status` command with the `--details` flag to get the RPC port for each node:
 
 ```
-$ cargo run --bin safenode-manager -- status --details
+$ cargo run --bin antctl -- status --details
 ...
 ===================================
-safenode-local25 - RUNNING
+antctl-local25 - RUNNING
 ===================================
 Version: 0.103.21
 Peer ID: 12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
@@ -299,7 +299,7 @@ Multiaddr: /ip4/127.0.0.1/udp/38835/quic-v1/p2p/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3G
 PID: 62369
 Data path: /home/<<user_directory>>/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
 Log path: /home/<<user_directory>>/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
-Bin path: target/release/safenode
+Bin path: target/release/antnode
 Connected peers: 24
 ```
 
@@ -308,7 +308,7 @@ Now you can run RPC commands against any node.
 The `info` command will retrieve basic information about the node:
 
 ```
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 info
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 info
 Node info:
 ==========
 RPC endpoint: https://127.0.0.1:34416
@@ -322,7 +322,7 @@ Time since last restart: 1614s
 The `netinfo` command will return connected peers and listeners:
 
 ```
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 netinfo
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 netinfo
 Node's connections to the Network:
 
 Connected peers:
@@ -349,13 +349,13 @@ Listener: /ip4/172.20.0.1/udp/38835/quic-v1
 Node control commands:
 
 ```
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 restart 5000
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 restart 5000
 Node successfully received the request to restart in 5s
 
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 stop 6000
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 stop 6000
 Node successfully received the request to stop in 6s
 
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 update 7000
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 update 7000
 Node successfully received the request to try to update in 7s
 ```
 
@@ -364,7 +364,7 @@ NOTE: it is preferable to use the node manager to control the node rather than R
 Listening to royalty payment events:
 
 ```
-$ cargo run --bin safenode_rpc_client -- 127.0.0.1:34416 transfers
+$ cargo run --bin antnode_rpc_client -- 127.0.0.1:34416 transfers
 Listening to transfer notifications... (press Ctrl+C to exit)
 
 New transfer notification received for PublicKey(0c54..5952), containing 1 cash note/s.
@@ -377,7 +377,7 @@ CashNote received with UniquePubkey(PublicKey(19ee..1580)), value: 0.000000001
 The `transfers` command can provide a path for royalty payment cash notes:
 
 ```
-$ cargo run --release --bin=safenode_rpc_client -- 127.0.0.1:34416 transfers ./royalties-cash-notes
+$ cargo run --release --bin antnode_rpc_client -- 127.0.0.1:34416 transfers ./royalties-cash-notes
 Listening to transfer notifications... (press Ctrl+C to exit)
 Writing cash notes to: ./royalties-cash-notes
 ```
@@ -390,7 +390,7 @@ corresponding to the public address of the recipient.
 When you're finished experimenting, tear down the network:
 
 ```bash
-cargo run --bin safenode-manager -- local kill
+cargo run --bin antctl -- local kill
 ```
 
 ## Metrics Dashboard

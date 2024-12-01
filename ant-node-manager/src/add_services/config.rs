@@ -69,6 +69,7 @@ impl PortRange {
 
 #[derive(Debug, PartialEq)]
 pub struct InstallNodeServiceCtxBuilder {
+    pub antnode_path: PathBuf,
     pub autostart: bool,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub data_dir_path: PathBuf,
@@ -88,7 +89,6 @@ pub struct InstallNodeServiceCtxBuilder {
     pub owner: Option<String>,
     pub rewards_address: RewardsAddress,
     pub rpc_socket_addr: SocketAddr,
-    pub safenode_path: PathBuf,
     pub service_user: Option<String>,
     pub upnp: bool,
 }
@@ -180,7 +180,7 @@ impl InstallNodeServiceCtxBuilder {
             contents: None,
             environment: self.env_variables,
             label: label.clone(),
-            program: self.safenode_path.to_path_buf(),
+            program: self.antnode_path.to_path_buf(),
             username: self.service_user.clone(),
             working_directory: None,
         })
@@ -188,11 +188,13 @@ impl InstallNodeServiceCtxBuilder {
 }
 
 pub struct AddNodeServiceOptions {
+    pub antnode_dir_path: PathBuf,
+    pub antnode_src_path: PathBuf,
     pub auto_restart: bool,
     pub auto_set_nat_flags: bool,
     pub bootstrap_peers: Vec<Multiaddr>,
     pub count: Option<u16>,
-    pub delete_safenode_src: bool,
+    pub delete_antnode_src: bool,
     pub enable_metrics_server: bool,
     pub env_variables: Option<Vec<(String, String)>>,
     pub evm_network: EvmNetwork,
@@ -209,8 +211,6 @@ pub struct AddNodeServiceOptions {
     pub rewards_address: RewardsAddress,
     pub rpc_address: Option<Ipv4Addr>,
     pub rpc_port: Option<PortRange>,
-    pub safenode_src_path: PathBuf,
-    pub safenode_dir_path: PathBuf,
     pub service_data_dir_path: PathBuf,
     pub service_log_dir_path: PathBuf,
     pub upnp: bool,
@@ -350,6 +350,7 @@ mod tests {
 
     fn create_default_builder() -> InstallNodeServiceCtxBuilder {
         InstallNodeServiceCtxBuilder {
+            antnode_path: PathBuf::from("/bin/antnode"),
             autostart: true,
             bootstrap_peers: vec![],
             data_dir_path: PathBuf::from("/data"),
@@ -370,7 +371,6 @@ mod tests {
             rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")
                 .unwrap(),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
-            safenode_path: PathBuf::from("/bin/safenode"),
             service_user: None,
             upnp: false,
         }
@@ -408,7 +408,7 @@ mod tests {
             rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")
                 .unwrap(),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
-            safenode_path: PathBuf::from("/bin/safenode"),
+            antnode_path: PathBuf::from("/bin/antnode"),
             service_user: None,
             upnp: false,
         }
@@ -446,7 +446,7 @@ mod tests {
             rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")
                 .unwrap(),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
-            safenode_path: PathBuf::from("/bin/safenode"),
+            antnode_path: PathBuf::from("/bin/antnode"),
             service_user: None,
             upnp: false,
         }
@@ -458,7 +458,7 @@ mod tests {
         let result = builder.build().unwrap();
 
         assert_eq!(result.label.to_string(), "test-node");
-        assert_eq!(result.program, PathBuf::from("/bin/safenode"));
+        assert_eq!(result.program, PathBuf::from("/bin/antnode"));
         assert!(result.autostart);
         assert_eq!(result.username, None);
         assert_eq!(result.working_directory, None);
@@ -490,7 +490,7 @@ mod tests {
         let result = builder.build().unwrap();
 
         assert_eq!(result.label.to_string(), "test-node");
-        assert_eq!(result.program, PathBuf::from("/bin/safenode"));
+        assert_eq!(result.program, PathBuf::from("/bin/antnode"));
         assert!(result.autostart);
         assert_eq!(result.username, None);
         assert_eq!(result.working_directory, None);
@@ -538,7 +538,7 @@ mod tests {
             "/ip4/127.0.0.1/tcp/8080".parse().unwrap(),
             "/ip4/192.168.1.1/tcp/8081".parse().unwrap(),
         ];
-        builder.service_user = Some("safenode-user".to_string());
+        builder.service_user = Some("antnode-user".to_string());
 
         let result = builder.build().unwrap();
 
@@ -587,7 +587,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             expected_args
         );
-        assert_eq!(result.username, Some("safenode-user".to_string()));
+        assert_eq!(result.username, Some("antnode-user".to_string()));
     }
 
     #[test]

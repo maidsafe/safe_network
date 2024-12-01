@@ -52,11 +52,11 @@ pub async fn init_metrics(pid: u32) {
         refresh_metrics(&mut sys, &mut networks, pid);
 
         let process = match sys.process(pid) {
-            Some(safenode) => {
-                let disk_usage = safenode.disk_usage();
+            Some(antnode) => {
+                let disk_usage = antnode.disk_usage();
                 let process = ProcessMetrics {
-                    cpu_usage_percent: safenode.cpu_usage(),
-                    memory_used_mb: safenode.memory() / TO_MB,
+                    cpu_usage_percent: antnode.cpu_usage(),
+                    memory_used_mb: antnode.memory() / TO_MB,
                     bytes_read: disk_usage.read_bytes,
                     bytes_written: disk_usage.written_bytes,
                     total_mb_read: disk_usage.total_read_bytes / TO_MB,
@@ -65,7 +65,7 @@ pub async fn init_metrics(pid: u32) {
                 Some(process)
             }
             None => {
-                // safenode with the provided Pid not found
+                // antnode with the provided Pid not found
                 None
             }
         };

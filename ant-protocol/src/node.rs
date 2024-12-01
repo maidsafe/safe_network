@@ -10,13 +10,12 @@ use crate::error::{Error, Result};
 use libp2p::PeerId;
 use std::path::PathBuf;
 
-/// Get the default safenode root dir for the provided PeerId
-pub fn get_safenode_root_dir(peer_id: PeerId) -> Result<PathBuf> {
+/// Get the default antnode root dir for the provided PeerId
+pub fn get_antnode_root_dir(peer_id: PeerId) -> Result<PathBuf> {
     let dir = dirs_next::data_dir()
         .ok_or_else(|| Error::CouldNotObtainDataDir)?
-        .join("safe")
+        .join("autonomi")
         .join("node")
         .join(peer_id.to_string());
-
     Ok(dir)
 }

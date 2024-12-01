@@ -95,7 +95,7 @@ pub struct Status<'a> {
     // Peers to pass into nodes for startup
     peers_args: PeersArgs,
     // If path is provided, we don't fetch the binary from the network
-    safenode_path: Option<PathBuf>,
+    antnode_path: Option<PathBuf>,
     // Path where the node data is stored
     data_dir_path: PathBuf,
     // Connection mode
@@ -119,7 +119,7 @@ pub struct StatusConfig {
     pub allocated_disk_space: usize,
     pub rewards_address: String,
     pub peers_args: PeersArgs,
-    pub safenode_path: Option<PathBuf>,
+    pub antnode_path: Option<PathBuf>,
     pub data_dir_path: PathBuf,
     pub connection_mode: ConnectionMode,
     pub port_from: Option<u32>,
@@ -143,7 +143,7 @@ impl Status<'_> {
             nodes_to_start: config.allocated_disk_space,
             lock_registry: None,
             rewards_address: config.rewards_address,
-            safenode_path: config.safenode_path,
+            antnode_path: config.antnode_path,
             data_dir_path: config.data_dir_path,
             connection_mode: config.connection_mode,
             port_from: config.port_from,
@@ -418,7 +418,7 @@ impl Component for Status<'_> {
                 if we_have_nodes && has_changed {
                     debug!("Setting lock_registry to ResettingNodes");
                     self.lock_registry = Some(LockRegistryState::ResettingNodes);
-                    info!("Resetting safenode services because the Rewards Address was reset.");
+                    info!("Resetting antnode services because the Rewards Address was reset.");
                     let action_sender = self.get_actions_sender()?;
                     self.node_management
                         .send_task(NodeManagementTask::ResetNodes {
@@ -430,7 +430,7 @@ impl Component for Status<'_> {
             Action::StoreStorageDrive(ref drive_mountpoint, ref _drive_name) => {
                 debug!("Setting lock_registry to ResettingNodes");
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
-                info!("Resetting safenode services because the Storage Drive was changed.");
+                info!("Resetting antnode services because the Storage Drive was changed.");
                 let action_sender = self.get_actions_sender()?;
                 self.node_management
                     .send_task(NodeManagementTask::ResetNodes {
@@ -444,7 +444,7 @@ impl Component for Status<'_> {
                 debug!("Setting lock_registry to ResettingNodes");
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 self.connection_mode = connection_mode;
-                info!("Resetting safenode services because the Connection Mode range was changed.");
+                info!("Resetting antnode services because the Connection Mode range was changed.");
                 let action_sender = self.get_actions_sender()?;
                 self.node_management
                     .send_task(NodeManagementTask::ResetNodes {
@@ -457,7 +457,7 @@ impl Component for Status<'_> {
                 self.lock_registry = Some(LockRegistryState::ResettingNodes);
                 self.port_from = Some(port_from);
                 self.port_to = Some(port_range);
-                info!("Resetting safenode services because the Port Range was changed.");
+                info!("Resetting antnode services because the Port Range was changed.");
                 let action_sender = self.get_actions_sender()?;
                 self.node_management
                     .send_task(NodeManagementTask::ResetNodes {
@@ -618,7 +618,7 @@ impl Component for Status<'_> {
                         owner: self.rewards_address.clone(),
                         peers_args: self.peers_args.clone(),
                         run_nat_detection: self.should_we_run_nat_detection(),
-                        safenode_path: self.safenode_path.clone(),
+                        antnode_path: self.antnode_path.clone(),
                         data_dir_path: Some(self.data_dir_path.clone()),
                         action_sender: action_sender.clone(),
                         connection_mode: self.connection_mode,

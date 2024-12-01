@@ -5,10 +5,10 @@ use ant_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
 use ant_peers_acquisition::PeersArgs;
+use ant_releases::{self, ReleaseType, SafeReleaseRepoActions};
 use ant_service_management::NodeRegistry;
 use color_eyre::eyre::{eyre, Error};
 use color_eyre::Result;
-use sn_releases::{self, ReleaseType, SafeReleaseRepoActions};
 use std::{path::PathBuf, str::FromStr};
 use tokio::runtime::Builder;
 use tokio::sync::mpsc::{self, UnboundedSender};
@@ -126,7 +126,7 @@ pub struct MaintainNodesArgs {
     pub owner: String,
     pub peers_args: PeersArgs,
     pub run_nat_detection: bool,
-    pub safenode_path: Option<PathBuf>,
+    pub antnode_path: Option<PathBuf>,
     pub data_dir_path: Option<PathBuf>,
     pub action_sender: UnboundedSender<Action>,
     pub connection_mode: ConnectionMode,
@@ -297,7 +297,7 @@ struct NodeConfig {
     count: u16,
     data_dir_path: Option<PathBuf>,
     peers_args: PeersArgs,
-    safenode_path: Option<PathBuf>,
+    antnode_path: Option<PathBuf>,
     rewards_address: String,
 }
 
@@ -360,7 +360,7 @@ fn prepare_node_config(args: &MaintainNodesArgs) -> NodeConfig {
         count: args.count,
         data_dir_path: args.data_dir_path.clone(),
         peers_args: args.peers_args.clone(),
-        safenode_path: args.safenode_path.clone(),
+        antnode_path: args.antnode_path.clone(),
         rewards_address: args.rewards_address.clone(),
     }
 }
@@ -373,8 +373,8 @@ fn debug_log_config(config: &NodeConfig, args: &MaintainNodesArgs) {
         config.count
     );
     debug!(
-        " owner: {:?}, peers_args: {:?}, safenode_path: {:?}",
-        config.owner, config.peers_args, config.safenode_path
+        " owner: {:?}, peers_args: {:?}, antnode_path: {:?}",
+        config.owner, config.peers_args, config.antnode_path
     );
     debug!(
         " data_dir_path: {:?}, connection_mode: {:?}",
@@ -431,7 +431,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         RewardsAddress::from_str(config.rewards_address.as_str()).unwrap(),
         None,
         None,
-        config.safenode_path.clone(),
+        config.antnode_path.clone(),
         None,
         config.upnp,
         None,
@@ -505,7 +505,7 @@ async fn add_nodes(
             RewardsAddress::from_str(config.rewards_address.as_str()).unwrap(),
             None,
             None,
-            config.safenode_path.clone(),
+            config.antnode_path.clone(),
             None,
             config.upnp,
             None,
@@ -554,8 +554,8 @@ async fn add_nodes(
                         action_sender.clone(),
                         Action::StatusActions(StatusActions::ErrorScalingUpNodes {
                             raw_error: "When trying to add a node, we failed.\n\
-                             You may be running an old version of safenode service?\n\
-                             Did you whitelisted safenode and the launchpad?"
+                             You may be running an old version of antnode service?\n\
+                             Did you whitelisted antnode and the launchpad?"
                                 .to_string(),
                         }),
                     );

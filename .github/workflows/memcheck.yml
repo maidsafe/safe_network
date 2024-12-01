@@ -10,10 +10,10 @@ on:
     branches: ["*"]
 
 env:
-  SAFE_DATA_PATH: /home/runner/.local/share/safe
-  CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
-  NODE_DATA_PATH: /home/runner/.local/share/safe/node
-  RESTART_TEST_NODE_DATA_PATH: /home/runner/.local/share/safe/restart_node
+  ANT_DATA_PATH: /home/runner/.local/share/autonomi
+  CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
+  NODE_DATA_PATH: /home/runner/.local/share/autonomi/node
+  RESTART_TEST_NODE_DATA_PATH: /home/runner/.local/share/autonomi/restart_node
 
 jobs:
   memory-check:
@@ -36,7 +36,7 @@ jobs:
         run: sudo apt-get install -y ripgrep
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
@@ -44,7 +44,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ubuntu-latest
           build: true
 
@@ -55,7 +55,7 @@ jobs:
       - name: Start a node instance to be restarted
         run: |
           mkdir -p $RESTART_TEST_NODE_DATA_PATH
-          ./target/release/safenode \
+          ./target/release/antnode \
             --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --rewards-address "0x03B770D9cD32077cC0bF330c13C114a87643B124" &
           sleep 10
         env:
@@ -91,13 +91,13 @@ jobs:
       - name: Start a different client to upload the same file
         run: |
           pwd
-          ls -l $SAFE_DATA_PATH
-          mv $CLIENT_DATA_PATH $SAFE_DATA_PATH/client_first
-          ls -l $SAFE_DATA_PATH
-          ls -l $SAFE_DATA_PATH/client_first
-          ls -l $SAFE_DATA_PATH/client_first/logs
-          mkdir $SAFE_DATA_PATH/client
-          ls -l $SAFE_DATA_PATH
+          ls -l $ANT_DATA_PATH
+          mv $CLIENT_DATA_PATH $ANT_DATA_PATH/client_first
+          ls -l $ANT_DATA_PATH
+          ls -l $ANT_DATA_PATH/client_first
+          ls -l $ANT_DATA_PATH/client_first/logs
+          mkdir $ANT_DATA_PATH/client
+          ls -l $ANT_DATA_PATH
           cp ./the-test-data.zip ./the-test-data_1.zip
           ./target/release/autonomi --log-output-dest=data-dir file upload "./the-test-data_1.zip" > ./second_upload 2>&1
         env:
@@ -110,11 +110,11 @@ jobs:
         if: always()
 
       - name: Stop the restart node
-        run: kill $( cat $RESTART_TEST_NODE_DATA_PATH/safenode.pid )
+        run: kill $( cat $RESTART_TEST_NODE_DATA_PATH/antnode.pid )
 
       - name: Start the restart node again
         run: |
-          ./target/release/safenode \
+          ./target/release/antnode \
             --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --rewards-address "0x03B770D9cD32077cC0bF330c13C114a87643B124" &
           sleep 10
         env:
@@ -156,7 +156,7 @@ jobs:
         shell: bash
         timeout-minutes: 1
         continue-on-error: true
-        run: pgrep safenode | wc -l
+        run: pgrep antnode | wc -l
         if: always()
 
       - name: Stop the local network and upload logs
@@ -243,16 +243,16 @@ jobs:
       #   # As the `rg` cmd will fail the shell directly if no entry find,
       #   # hence not covering it.
       #   # Be aware that if do need to looking for handlings longer than second, it shall be:
-      #   #   rg "SwarmCmd handled in [^m,µ,n]*s:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats
+      #   #   rg "SwarmCmd handled in [^m,µ,n]*s:" $NODE_DATA_PATH/*/logs/* --glob antnode.* -c --stats
       #   run: |
       #     num_of_times=$(
-      #       rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats |
+      #       rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob antnode.* -c --stats |
       #       rg "(\d+) matches" |
       #       rg "\d+" -o
       #     )
       #     echo "Number of long cmd handling times: $num_of_times"
       #     total_long_handling_ms=$(
-      #       rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -o --no-line-number --no-filename |
+      #       rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob antnode.* -o --no-line-number --no-filename |
       #       awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
       #     )
       #     echo "Total cmd long handling time is: $total_long_handling_ms ms"
@@ -261,13 +261,13 @@ jobs:
       #     total_long_handling=$(($total_long_handling_ms))
       #     total_num_of_times=$(($num_of_times))
       #     num_of_times=$(
-      #       rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats |
+      #       rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob antnode.* -c --stats |
       #       rg "(\d+) matches" |
       #       rg "\d+" -o
       #     )
       #     echo "Number of long event handling times: $num_of_times"
       #     total_long_handling_ms=$(
-      #       rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -o --no-line-number --no-filename |
+      #       rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob antnode.* -o --no-line-number --no-filename |
       #       awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
       #     )
       #     echo "Total event long handling time is: $total_long_handling_ms ms"
@@ -283,7 +283,7 @@ jobs:
       - name: Move restart_node log to the working directory
         run: |
           ls -l $RESTART_TEST_NODE_DATA_PATH
-          mv $RESTART_TEST_NODE_DATA_PATH/safenode.log ./restart_node.log
+          mv $RESTART_TEST_NODE_DATA_PATH/antnode.log ./restart_node.log
         continue-on-error: true
         if: always()
         timeout-minutes: 1

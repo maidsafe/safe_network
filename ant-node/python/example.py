@@ -1,4 +1,4 @@
-from safenode import SafeNode
+from antnode import AntNode
 import os
 
 def print_section(title):
@@ -15,7 +15,7 @@ def demonstrate_basic_node_operations():
     print_section("Basic Node Operations")
     
     # Create and start node
-    node = SafeNode()
+    node = AntNode()
     initial_rewards_address = "0x1234567890123456789012345678901234567890"
     print(f"Starting node with rewards address: {initial_rewards_address}")
 
@@ -70,14 +70,14 @@ def demonstrate_directory_management(node, peer_id):
         print(f"Data directory: {data_dir}")
         
         # Get default directory for current peer
-        default_dir = SafeNode.get_default_root_dir(peer_id)
+        default_dir = AntNode.get_default_root_dir(peer_id)
         print(f"Default root directory for peer {peer_id}: {default_dir}")
         
         # Demonstrate custom directory
-        custom_dir = os.path.join(os.path.expanduser("~"), "safenode-test")
+        custom_dir = os.path.join(os.path.expanduser("~"), "antnode-test")
         print(f"\nStarting new node with custom directory: {custom_dir}")
         
-        new_node = SafeNode()
+        new_node = AntNode()
         new_node.run(
             rewards_address="0x1234567890123456789012345678901234567890",
             evm_network="arbitrum_sepolia",

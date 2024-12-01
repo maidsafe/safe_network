@@ -10,11 +10,11 @@ use crate::{
     config::get_node_registry_path, helpers::download_and_extract_release, VerbosityLevel,
 };
 use ant_peers_acquisition::get_peers_from_url;
+use ant_releases::{ReleaseType, SafeReleaseRepoActions};
 use ant_service_management::{NatDetectionStatus, NodeRegistry};
 use color_eyre::eyre::{bail, OptionExt, Result};
 use libp2p::Multiaddr;
 use rand::seq::SliceRandom;
-use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use std::{
     io::{BufRead, BufReader},
     path::PathBuf,

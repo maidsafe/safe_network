@@ -44,12 +44,11 @@ pub struct DeploymentInventory {
     #[serde(deserialize_with = "deserialize_peer_socket_map")]
     pub rpc_endpoints: BTreeMap<PeerId, SocketAddr>,
     #[serde(deserialize_with = "deserialize_peer_socket_map")]
-    pub safenodemand_endpoints: BTreeMap<PeerId, SocketAddr>,
+    pub antctld_endpoints: BTreeMap<PeerId, SocketAddr>,
     pub node_count: u16,
     pub ssh_user: String,
     pub genesis_multiaddr: String,
     pub peers: Vec<String>,
-    pub faucet_address: String,
     pub uploaded_files: Vec<(String, String)>,
 }
 
@@ -84,7 +83,7 @@ impl DeploymentInventory {
         } else {
             let path = dirs_next::data_dir()
                 .ok_or_else(|| eyre!("Could not obtain data_dir"))?
-                .join("safe")
+                .join("autonomi")
                 .join("testnet-deploy")
                 .join(format!("{inv}-inventory.json"));
             if path.exists() {

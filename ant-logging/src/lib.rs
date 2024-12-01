@@ -34,27 +34,6 @@ pub enum LogOutputDest {
     Path(PathBuf),
 }
 
-fn current_exe_name() -> String {
-    std::env::args()
-        .next()
-        .and_then(|arg| {
-            std::path::Path::new(&arg).file_name().map(|s| {
-                let mut name = s.to_string_lossy().to_string();
-                name = name.strip_prefix("sn_").unwrap_or(&name).to_string();
-
-                if cfg!(windows) && name.to_lowercase().ends_with(".exe") {
-                    name = name.strip_suffix(".exe").unwrap_or(&name).to_string();
-                }
-
-                if name == "safe" {
-                    name = "client".to_string();
-                }
-                name
-            })
-        })
-        .unwrap_or_else(|| "default".to_string())
-}
-
 impl LogOutputDest {
     pub fn parse_from_str(val: &str) -> Result<Self> {
         match val {
@@ -66,8 +45,8 @@ impl LogOutputDest {
                 // Get the data directory path and append the timestamp to the log file name
                 let dir = match dirs_next::data_dir() {
                     Some(dir) => dir
-                        .join("safe")
-                        .join(current_exe_name())
+                        .join("autonomi")
+                        .join("client")
                         .join("logs")
                         .join(format!("log_{timestamp}")),
                     None => {

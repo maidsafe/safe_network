@@ -17,8 +17,8 @@ pub mod rpc;
 #[macro_use]
 extern crate tracing;
 
-pub mod safenode_manager_proto {
-    tonic::include_proto!("safenode_manager_proto");
+pub mod antctl_proto {
+    tonic::include_proto!("antctl_proto");
 }
 
 use async_trait::async_trait;
@@ -196,7 +196,7 @@ pub fn get_local_node_registry_path() -> Result<PathBuf> {
             error!("Failed to get data_dir");
             Error::UserDataDirectoryNotObtainable
         })?
-        .join("safe")
+        .join("autonomi")
         .join("local_node_registry.json");
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)

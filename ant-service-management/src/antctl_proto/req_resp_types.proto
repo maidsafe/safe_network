@@ -10,7 +10,7 @@
 syntax = "proto3";
 
 // Package name
-package safenode_manager_proto;
+package antctl_proto;
 
 message NodeServiceRestartRequest {
     bytes peer_id = 1;

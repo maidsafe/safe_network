@@ -39,7 +39,7 @@ def get_pr_list(pr_numbers):
         raise Exception("The GITHUB_PAT_SAFE_NETWORK_PR_LIST environment variable must be set")
 
     g = Github(token)
-    repo = g.get_repo("maidsafe/safe_network")
+    repo = g.get_repo("maidsafe/autonomi")
 
     filtered_pulls = []
     for pr_num in pr_numbers:
@@ -70,8 +70,8 @@ def get_pr_list(pr_numbers):
 
 def main(pr_numbers):
     crate_binary_map = {
-        "ant-node": "safenode",
-        "ant-node-manager": "safenode-manager",
+        "ant-node": "antnode",
+        "ant-node-manager": "antctl",
         "autonomi-cli": "autonomi",
         "nat-detection": "nat-detection",
         "node-launchpad": "node-launchpad"
@@ -82,7 +82,7 @@ def main(pr_numbers):
     for crate, binary in crate_binary_map.items():
         version = get_crate_version(crate)
         if crate == "ant-node-manager":
-            markdown_doc.append(f"* `safenodemand`: v{version}")
+            markdown_doc.append(f"* `antctld`: v{version}")
         markdown_doc.append(f"* `{binary}`: v{version}")
     
     markdown_doc.append("\n## Merged Pull Requests\n")

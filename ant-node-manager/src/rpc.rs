@@ -62,6 +62,7 @@ pub async fn restart_node_service(
                 )
             })?;
         let install_ctx = InstallNodeServiceCtxBuilder {
+            antnode_path: current_node_clone.antnode_path.clone(),
             autostart: current_node_clone.auto_restart,
             bootstrap_peers: node_registry.bootstrap_peers.clone(),
             data_dir_path: current_node_clone.data_dir_path.clone(),
@@ -78,10 +79,9 @@ pub async fn restart_node_service(
             owner: current_node_clone.owner.clone(),
             name: current_node_clone.service_name.clone(),
             node_ip: current_node_clone.node_ip,
-            node_port: current_node_clone.get_safenode_port(),
+            node_port: current_node_clone.get_antnode_port(),
             rewards_address: current_node_clone.rewards_address,
             rpc_socket_addr: current_node_clone.rpc_socket_addr,
-            safenode_path: current_node_clone.safenode_path.clone(),
             service_user: current_node_clone.user.clone(),
             upnp: current_node_clone.upnp,
         }
@@ -95,18 +95,16 @@ pub async fn restart_node_service(
         service_manager.start().await?;
     } else {
         debug!("Starting a new node since retain peer id is false.");
-        // else start a new node instance.
         let new_node_number = nodes_len + 1;
-        let new_service_name = format!("safenode{new_node_number}");
+        let new_service_name = format!("antnode{new_node_number}");
 
-        // modify the paths & copy safenode binary
-        // example path "log_dir_path":"/var/log/safenode/safenode18"
+        // example path "log_dir_path":"/var/log/antnode/antnode18"
         let log_dir_path = {
             let mut log_dir_path = current_node_clone.log_dir_path.clone();
             log_dir_path.pop();
             log_dir_path.join(&new_service_name)
         };
-        // example path "data_dir_path":"/var/safenode-manager/services/safenode18"
+        // example path "data_dir_path":"/var/antctl/services/antnode18"
         let data_dir_path = {
             let mut data_dir_path = current_node_clone.data_dir_path.clone();
             data_dir_path.pop();
@@ -144,19 +142,19 @@ pub async fn restart_node_service(
                 current_node_clone.user
             )
         })?;
-        // example path "safenode_path":"/var/safenode-manager/services/safenode18/safenode"
-        let safenode_path = {
-            debug!("Copying safenode binary");
-            let mut safenode_path = current_node_clone.safenode_path.clone();
-            let safenode_file_name = safenode_path
+        // example path "antnode_path":"/var/antctl/services/antnode18/antnode"
+        let antnode_path = {
+            debug!("Copying antnode binary");
+            let mut antnode_path = current_node_clone.antnode_path.clone();
+            let antnode_file_name = antnode_path
                 .file_name()
-                .ok_or_eyre("Could not get filename from the current node's safenode path")?
+                .ok_or_eyre("Could not get filename from the current node's antnode path")?
                 .to_string_lossy()
                 .to_string();
-            safenode_path.pop();
-            safenode_path.pop();
+            antnode_path.pop();
+            antnode_path.pop();
 
-            let safenode_path = safenode_path.join(&new_service_name);
+            let antnode_path = antnode_path.join(&new_service_name);
             create_owned_dir(
                 data_dir_path.clone(),
                 current_node_clone
@@ -170,15 +168,15 @@ pub async fn restart_node_service(
                     current_node_clone.user
                 )
             })?;
-            let safenode_path = safenode_path.join(safenode_file_name);
+            let antnode_path = antnode_path.join(antnode_file_name);
 
-            std::fs::copy(&current_node_clone.safenode_path, &safenode_path).map_err(|err| {
+            std::fs::copy(&current_node_clone.antnode_path, &antnode_path).map_err(|err| {
                 eyre!(
-                    "Failed to copy safenode bin from {:?} to {safenode_path:?} with err: {err}",
-                    current_node_clone.safenode_path
+                    "Failed to copy antnode bin from {:?} to {antnode_path:?} with err: {err}",
+                    current_node_clone.antnode_path
                 )
             })?;
-            safenode_path
+            antnode_path
         };
 
         let install_ctx = InstallNodeServiceCtxBuilder {
@@ -201,7 +199,7 @@ pub async fn restart_node_service(
             owner: None,
             rewards_address: current_node_clone.rewards_address,
             rpc_socket_addr: current_node_clone.rpc_socket_addr,
-            safenode_path: safenode_path.clone(),
+            antnode_path: antnode_path.clone(),
             service_user: current_node_clone.user.clone(),
             upnp: current_node_clone.upnp,
         }
@@ -211,6 +209,7 @@ pub async fn restart_node_service(
         })?;
 
         let mut node = NodeServiceData {
+            antnode_path,
             auto_restart: current_node_clone.auto_restart,
             connected_peers: None,
             data_dir_path,
@@ -233,7 +232,6 @@ pub async fn restart_node_service(
             rewards_address: current_node_clone.rewards_address,
             reward_balance: current_node_clone.reward_balance,
             rpc_socket_addr: current_node_clone.rpc_socket_addr,
-            safenode_path,
             service_name: new_service_name.clone(),
             status: ServiceStatus::Added,
             upnp: current_node_clone.upnp,

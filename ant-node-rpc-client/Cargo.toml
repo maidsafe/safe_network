@@ -10,7 +10,7 @@ repository = "https://github.com/maidsafe/autonomi"
 version = "0.6.36"
 
 [[bin]]
-name = "safenode_rpc_client"
+name = "antnode_rpc_client"
 path = "src/main.rs"
 
 [features]

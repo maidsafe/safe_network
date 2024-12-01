@@ -8,9 +8,9 @@
 
 use crate::system;
 use ant_node_manager::config::get_service_log_dir_path;
+use ant_releases::ReleaseType;
 use color_eyre::eyre::{self};
 use ratatui::prelude::*;
-use sn_releases::ReleaseType;
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
 pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {

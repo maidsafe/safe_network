@@ -1,6 +1,6 @@
 [package]
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
-description = "A command-line application for installing, managing and operating `safenode` as a service."
+description = "A command-line application for installing, managing and operating `antnode` as a service."
 edition = "2021"
 homepage = "https://maidsafe.net"
 license = "GPL-3.0"

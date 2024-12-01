@@ -17,19 +17,17 @@ use crate::{
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
 use ant_peers_acquisition::PeersArgs;
+use ant_releases::{ReleaseType, SafeReleaseRepoActions};
 use ant_service_management::{
     control::ServiceController, get_local_node_registry_path, NodeRegistry,
 };
 use color_eyre::{eyre::eyre, Help, Report, Result};
-use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use std::path::PathBuf;
 
 pub async fn join(
     build: bool,
     count: u16,
     enable_metrics_server: bool,
-    _faucet_path: Option<PathBuf>,
-    _faucet_version: Option<String>,
     interval: u64,
     metrics_port: Option<PortRange>,
     node_path: Option<PathBuf>,
@@ -62,21 +60,10 @@ pub async fn join(
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
-    #[cfg(feature = "faucet")]
-    let faucet_bin_path = get_bin_path(
-        build,
-        _faucet_path,
-        ReleaseType::Faucet,
-        _faucet_version,
-        &*release_repo,
-        verbosity,
-    )
-    .await?;
-
-    let safenode_bin_path = get_bin_path(
+    let antnode_bin_path = get_bin_path(
         build,
         node_path,
-        ReleaseType::Safenode,
+        ReleaseType::AntNode,
         node_version,
         &*release_repo,
         verbosity,
@@ -99,9 +86,8 @@ pub async fn join(
         },
     };
     let options = LocalNetworkOptions {
+        antnode_bin_path,
         enable_metrics_server,
-        #[cfg(feature = "faucet")]
-        faucet_bin_path,
         interval,
         join: true,
         metrics_port,
@@ -111,7 +97,6 @@ pub async fn join(
         owner_prefix,
         peers,
         rpc_port,
-        safenode_bin_path,
         skip_validation,
         log_format,
         rewards_address,
@@ -143,8 +128,6 @@ pub async fn run(
     clean: bool,
     count: u16,
     enable_metrics_server: bool,
-    _faucet_path: Option<PathBuf>,
-    _faucet_version: Option<String>,
     interval: u64,
     metrics_port: Option<PortRange>,
     node_path: Option<PathBuf>,
@@ -175,7 +158,7 @@ pub async fn run(
         );
         let client_data_path = dirs_next::data_dir()
             .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
-            .join("safe")
+            .join("autonomi")
             .join("client");
         if client_data_path.is_dir() {
             std::fs::remove_dir_all(client_data_path)?;
@@ -202,21 +185,10 @@ pub async fn run(
 
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
-    #[cfg(feature = "faucet")]
-    let faucet_bin_path = get_bin_path(
-        build,
-        _faucet_path,
-        ReleaseType::Faucet,
-        _faucet_version,
-        &*release_repo,
-        verbosity,
-    )
-    .await?;
-
-    let safenode_bin_path = get_bin_path(
+    let antnode_bin_path = get_bin_path(
         build,
         node_path,
-        ReleaseType::Safenode,
+        ReleaseType::AntNode,
         node_version,
         &*release_repo,
         verbosity,
@@ -224,9 +196,8 @@ pub async fn run(
     .await?;
 
     let options = LocalNetworkOptions {
+        antnode_bin_path,
         enable_metrics_server,
-        #[cfg(feature = "faucet")]
-        faucet_bin_path,
         join: false,
         interval,
         metrics_port,
@@ -236,7 +207,6 @@ pub async fn run(
         owner_prefix,
         peers: None,
         rpc_port,
-        safenode_bin_path,
         skip_validation,
         log_format,
         rewards_address,

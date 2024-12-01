@@ -6,6 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use ant_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepoActions};
 use ant_service_management::NodeServiceData;
 use color_eyre::{
     eyre::{bail, eyre},
@@ -13,7 +14,6 @@ use color_eyre::{
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use semver::Version;
-use sn_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepoActions};
 use std::{
     io::Read,
     path::{Path, PathBuf},
@@ -29,7 +29,7 @@ const MAX_DOWNLOAD_RETRIES: u8 = 3;
 // Otherwise the test instances will not be able to find the same faucet instance.
 pub fn get_faucet_data_dir() -> PathBuf {
     let mut data_dirs = dirs_next::data_dir().expect("A homedir to exist.");
-    data_dirs.push("safe");
+    data_dirs.push("autonomi");
     data_dirs.push("test_faucet");
     std::fs::create_dir_all(data_dirs.as_path())
         .expect("Faucet test path to be successfully created.");

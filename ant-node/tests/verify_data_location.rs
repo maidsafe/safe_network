@@ -12,14 +12,14 @@ mod common;
 use ant_logging::LogBuilder;
 use ant_networking::{sleep, sort_peers_by_key};
 use ant_protocol::{
-    safenode_proto::{NodeInfoRequest, RecordAddressesRequest},
+    antnode_proto::{NodeInfoRequest, RecordAddressesRequest},
     NetworkAddress, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
 use autonomi::Client;
 use bytes::Bytes;
 use common::{
     client::{get_all_rpc_addresses, get_client_and_funded_wallet},
-    get_all_peer_ids, get_safenode_rpc_client, NodeRestart,
+    get_all_peer_ids, get_antnode_rpc_client, NodeRestart,
 };
 use eyre::{eyre, Result};
 use libp2p::{
@@ -116,12 +116,12 @@ async fn verify_data_location() -> Result<()> {
         }
         current_churn_count += 1;
 
-        let safenode_rpc_endpoint = match node_restart.restart_next(false, false).await? {
+        let antnode_rpc_endpoint = match node_restart.restart_next(false, false).await? {
             None => {
                 // we have reached the end.
                 break 'main Ok(());
             }
-            Some(safenode_rpc_endpoint) => safenode_rpc_endpoint,
+            Some(antnode_rpc_endpoint) => antnode_rpc_endpoint,
         };
 
         // wait for the dead peer to be removed from the RT and the replication flow to finish
@@ -132,7 +132,7 @@ async fn verify_data_location() -> Result<()> {
         tokio::time::sleep(VERIFICATION_DELAY).await;
 
         // get the new PeerId for the current NodeIndex
-        let mut rpc_client = get_safenode_rpc_client(safenode_rpc_endpoint).await?;
+        let mut rpc_client = get_antnode_rpc_client(antnode_rpc_endpoint).await?;
 
         let response = rpc_client
             .node_info(Request::new(NodeInfoRequest {}))
@@ -179,7 +179,7 @@ async fn get_records_and_holders(node_rpc_addresses: &[SocketAddr]) -> Result<Re
     let mut record_holders = RecordHolders::default();
 
     for (node_index, rpc_address) in node_rpc_addresses.iter().enumerate() {
-        let mut rpc_client = get_safenode_rpc_client(*rpc_address).await?;
+        let mut rpc_client = get_antnode_rpc_client(*rpc_address).await?;
 
         let records_response = rpc_client
             .record_addresses(Request::new(RecordAddressesRequest {}))

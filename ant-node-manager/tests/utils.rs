@@ -12,7 +12,7 @@ use color_eyre::{eyre::eyre, Result};
 use std::process::Command;
 
 pub async fn get_service_status() -> Result<StatusSummary> {
-    let mut cmd = Command::cargo_bin("safenode-manager")?;
+    let mut cmd = Command::cargo_bin("antctl")?;
     let output = cmd
         .arg("status")
         .arg("--json")

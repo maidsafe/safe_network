@@ -1,5 +1,5 @@
-use ant_service_management::safenode_manager_proto::safe_node_manager_client::SafeNodeManagerClient;
-use ant_service_management::safenode_manager_proto::NodeServiceRestartRequest;
+use ant_service_management::antctl_proto::ant_ctl_client::AntCtlClient;
+use ant_service_management::antctl_proto::NodeServiceRestartRequest;
 use color_eyre::eyre::bail;
 use color_eyre::{eyre::eyre, Result};
 use libp2p_identity::PeerId;
@@ -11,7 +11,7 @@ use tonic::Request;
 
 struct DaemonRpcClient {
     addr: SocketAddr,
-    rpc: SafeNodeManagerClient<Channel>,
+    rpc: AntCtlClient<Channel>,
 }
 
 pub async fn restart_node(
@@ -48,7 +48,7 @@ async fn get_rpc_client(socket_addr: SocketAddr) -> Result<DaemonRpcClient> {
     let endpoint = format!("https://{socket_addr}");
     let mut attempts = 0;
     loop {
-        if let Ok(rpc_client) = SafeNodeManagerClient::connect(endpoint.clone()).await {
+        if let Ok(rpc_client) = AntCtlClient::connect(endpoint.clone()).await {
             let rpc_client = DaemonRpcClient {
                 addr: socket_addr,
                 rpc: rpc_client,

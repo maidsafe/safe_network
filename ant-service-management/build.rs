@@ -7,6 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::compile_protos("./src/safenode_manager_proto/safenode_manager.proto")?;
+    tonic_build::compile_protos("./src/antctl_proto/antctl.proto")?;
     Ok(())
 }

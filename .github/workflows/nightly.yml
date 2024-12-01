@@ -17,11 +17,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            safe_path: /home/runner/.local/share/safe
+            autonomi_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            autonomi_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            safe_path: /Users/runner/Library/Application\ Support/safe
+            autonomi_path: /Users/runner/Library/Application\ Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +32,7 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
@@ -40,7 +40,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -186,7 +186,7 @@ jobs:
 
       - name: Delete current register signing key
         shell: bash
-        run: rm -rf ${{ matrix.safe_path }}/autonomi
+        run: rm -rf ${{ matrix.autonomi_path }}/autonomi
 
       - name: Generate new register signing key
         run: ./target/release/autonomi --log-output-dest=data-dir register generate-key
@@ -281,14 +281,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-            safe_path: /home/runner/.local/share/safe
+            node_data_path: /home/runner/.local/share/autonomi/node
+            autonomi_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi\\node
+            autonomi_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
-            safe_path: /Users/runner/Library/Application Support/safe
+            node_data_path: /Users/runner/Library/Application Support/autonomi/node
+            autonomi_path: /Users/runner/Library/Application Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -299,7 +299,7 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode
+        run: cargo build --release --features local --bin antnode
         timeout-minutes: 30
 
       - name: Build churn tests
@@ -315,7 +315,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -421,7 +421,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.autonomi_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -435,13 +435,13 @@ jobs:
         include:
           - os: ubuntu-latest
             node_data_path: /home/runner/.local/share/safe/node
-            safe_path: /home/runner/.local/share/safe
+            autonomi_path: /home/runner/.local/share/safe
           - os: windows-latest
             node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            autonomi_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
           - os: macos-latest
             node_data_path: /Users/runner/Library/Application Support/safe/node
-            safe_path: /Users/runner/Library/Application Support/safe
+            autonomi_path: /Users/runner/Library/Application Support/safe
     steps:
       - uses: actions/checkout@v4
 
@@ -452,7 +452,7 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode
+        run: cargo build --release --features local --bin antnode
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
@@ -468,7 +468,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -533,7 +533,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.autonomi_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1

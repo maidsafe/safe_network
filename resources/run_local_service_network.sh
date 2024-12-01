@@ -9,15 +9,15 @@ if [ -z "$1" ]; then
 fi
 count=$1
 
-sudo safenode-manager add --first --local
-sudo safenode-manager start
+sudo antctl add --first --local
+sudo antctl start
 
-output=$(sudo safenode-manager status --json)
+output=$(sudo antctl status --json)
 
 port=$(echo "$output" | jq -r '.[0].port')
 peer_id=$(echo "$output" | jq -r '.[0].peer_id')
 genesis_multiaddr="/ip4/127.0.0.1/tcp/${port}/p2p/${peer_id}"
 
-sudo safenode-manager add --local --count "$count" --peer "$genesis_multiaddr"
-sudo safenode-manager start
-safenode-manager faucet --peer "$genesis_multiaddr"
+sudo antctl add --local --count "$count" --peer "$genesis_multiaddr"
+sudo antctl start
+antctl faucet --peer "$genesis_multiaddr"

@@ -15,8 +15,8 @@ permissions:
 env:
   CARGO_INCREMENTAL: "0"
   RUST_BACKTRACE: 1
-  CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
-  NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
+  NODE_DATA_PATH: /home/runner/.local/share/autonomi/node
 
 jobs:
   benchmark-cli:
@@ -46,7 +46,7 @@ jobs:
         run: wget https://sn-node.s3.eu-west-2.amazonaws.com/the-test-data.zip
 
       - name: Build node and cli binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
@@ -54,7 +54,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ubuntu-latest
           build: true
           sn-log: "all"

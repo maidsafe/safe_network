@@ -5,8 +5,8 @@ on: pull_request
 env:
   CARGO_INCREMENTAL: "0"
   RUST_BACKTRACE: 1
-  CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
-  NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
+  NODE_DATA_PATH: /home/runner/.local/share/autonomi/node
 
 jobs:
   benchmark-cli:
@@ -43,7 +43,7 @@ jobs:
       # it will be better to execute bench test with `local`,
       # to make the measurement results reflect speed improvement or regression more accurately.
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
@@ -53,7 +53,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ubuntu-latest
           build: true
 
@@ -286,13 +286,13 @@ jobs:
         shell: bash
         run: |
           num_of_times=$(
-            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats |
+            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob antnode.* -c --stats |
             rg "(\d+) matches" |
             rg "\d+" -o
           )
           echo "Number of long cmd handling times: $num_of_times"
           total_long_handling_ms=$(
-            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -o --no-line-number --no-filename |
+            rg "SwarmCmd handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob antnode.* -o --no-line-number --no-filename |
             awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
           )
           echo "Total cmd long handling time is: $total_long_handling_ms ms"
@@ -301,13 +301,13 @@ jobs:
           total_long_handling=$(($total_long_handling_ms))
           total_num_of_times=$(($num_of_times))
           num_of_times=$(
-            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -c --stats |
+            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob antnode.* -c --stats |
             rg "(\d+) matches" |
             rg "\d+" -o
           )
           echo "Number of long event handling times: $num_of_times"
           total_long_handling_ms=$(
-            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob safenode.* -o --no-line-number --no-filename |
+            rg "SwarmEvent handled in [0-9.]+ms:" $NODE_DATA_PATH/*/logs/* --glob antnode.* -o --no-line-number --no-filename |
             awk -F' |ms:' '{sum += $4} END {printf "%.0f\n", sum}'
           )
           echo "Total event long handling time is: $total_long_handling_ms ms"
@@ -377,4 +377,3 @@ jobs:
           alert-threshold: "200%"
           # Enable Job Summary for PRs
           summary-always: true
-

@@ -13,7 +13,7 @@ extern crate tracing;
 pub mod error;
 /// Messages types
 pub mod messages;
-/// Helpers for safenode
+/// Helpers for antnode
 pub mod node;
 /// RPC commands to node
 pub mod node_rpc;
@@ -25,8 +25,8 @@ pub mod version;
 // this includes code generated from .proto files
 #[expect(clippy::unwrap_used, clippy::clone_on_ref_ptr)]
 #[cfg(feature = "rpc")]
-pub mod safenode_proto {
-    tonic::include_proto!("safenode_proto");
+pub mod antnode_proto {
+    tonic::include_proto!("antnode_proto");
 }
 pub use error::Error;
 use storage::ScratchpadAddress;

@@ -1,8 +1,8 @@
-# Safe Network Node (sn_node)
+# Autonomi Node
 
 ## Overview
 
-The `sn_node` directory provides the `safenode` binary and Python bindings for the Safe Network node implementation. This directory contains the core logic for node operations, including API definitions, error handling, event management, and data validation.
+The `ant-node` directory provides the `antnode` binary and Python bindings for the Safe Network node implementation. This directory contains the core logic for node operations, including API definitions, error handling, event management, and data validation.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ The `sn_node` directory provides the `safenode` binary and Python bindings for t
 ## Installation
 
 ### Binary Installation
-Follow the main project's installation guide to set up the `safenode` binary.
+Follow the main project's installation guide to set up the `antnode` binary.
 
 ### Python Installation
 To install the Python bindings, you'll need:
@@ -35,7 +35,7 @@ maturin develop
 ## Usage
 
 ### Binary Usage
-To run the `safenode` binary, follow the instructions in the main project's usage guide.
+To run the `antnode` binary, follow the instructions in the main project's usage guide.
 
 ### Python Usage
 
@@ -44,10 +44,10 @@ The Python module provides a comprehensive interface to run and manage Safe Netw
 #### Basic Node Operations
 
 ```python
-from safenode import SafeNode
+from antnode import AntNode
 
 # Create and start a node
-node = SafeNode()
+node = AntNode()
 node.run(
     rewards_address="0x1234567890123456789012345678901234567890",  # Your EVM wallet address
     evm_network="arbitrum_sepolia",  # or "arbitrum_one" for mainnet
@@ -98,7 +98,7 @@ logs_dir = node.get_logs_dir()
 data_dir = node.get_data_dir()
 
 # Get default directory for a specific peer
-default_dir = SafeNode.get_default_root_dir(peer_id)
+default_dir = AntNode.get_default_root_dir(peer_id)
 ```
 
 #### Important Notes

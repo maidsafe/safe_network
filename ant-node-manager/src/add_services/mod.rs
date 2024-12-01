@@ -15,7 +15,7 @@ use self::config::{
     InstallNodeServiceCtxBuilder,
 };
 use crate::{
-    config::{create_owned_dir, get_user_safenode_data_dir},
+    config::{create_owned_dir, get_user_antnode_data_dir},
     helpers::{check_port_availability, get_start_port_if_applicable, increment_port_option},
     VerbosityLevel, DAEMON_SERVICE_NAME,
 };
@@ -34,7 +34,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
 };
 
-/// Install safenode as a service.
+/// Install antnode as a service.
 ///
 /// This only defines the service; it does not start it.
 ///
@@ -88,12 +88,12 @@ pub async fn add_node(
         None => None,
     };
 
-    let safenode_file_name = options
-        .safenode_src_path
+    let antnode_file_name = options
+        .antnode_src_path
         .file_name()
         .ok_or_else(|| {
-            error!("Could not get filename from the safenode download path");
-            eyre!("Could not get filename from the safenode download path")
+            error!("Could not get filename from the antnode download path");
+            eyre!("Could not get filename from the antnode download path")
         })?
         .to_string_lossy()
         .to_string();
@@ -156,15 +156,15 @@ pub async fn add_node(
             SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), rpc_free_port)
         };
 
-        let service_name = format!("safenode{node_number}");
+        let service_name = format!("antnode{node_number}");
         let service_data_dir_path = options.service_data_dir_path.join(service_name.clone());
-        let service_safenode_path = service_data_dir_path.join(safenode_file_name.clone());
+        let service_antnode_path = service_data_dir_path.join(antnode_file_name.clone());
 
         // For a user mode service, if the user has *not* specified a custom directory and they are
         // using the default, e.g., ~/.local/share/safe/node/<service-name>, an additional "logs"
         // directory needs to be appended to the path, otherwise the log files will be output at
         // the same directory where `secret-key` is, which is not what users expect.
-        let default_log_dir_path = get_user_safenode_data_dir()?;
+        let default_log_dir_path = get_user_antnode_data_dir()?;
         let service_log_dir_path =
             if options.user_mode && options.service_log_dir_path == default_log_dir_path {
                 options
@@ -185,10 +185,10 @@ pub async fn add_node(
             std::fs::create_dir_all(service_log_dir_path.clone())?;
         }
 
-        debug!("Copying safenode binary to {service_safenode_path:?}");
+        debug!("Copying antnode binary to {service_antnode_path:?}");
         std::fs::copy(
-            options.safenode_src_path.clone(),
-            service_safenode_path.clone(),
+            options.antnode_src_path.clone(),
+            service_antnode_path.clone(),
         )?;
 
         if options.auto_set_nat_flags {
@@ -237,7 +237,7 @@ pub async fn add_node(
             owner: owner.clone(),
             rewards_address: options.rewards_address,
             rpc_socket_addr,
-            safenode_path: service_safenode_path.clone(),
+            antnode_path: service_antnode_path.clone(),
             service_user: options.user.clone(),
             upnp: options.upnp,
         }
@@ -248,13 +248,14 @@ pub async fn add_node(
                 info!("Successfully added service {service_name}");
                 added_service_data.push((
                     service_name.clone(),
-                    service_safenode_path.to_string_lossy().into_owned(),
+                    service_antnode_path.to_string_lossy().into_owned(),
                     service_data_dir_path.to_string_lossy().into_owned(),
                     service_log_dir_path.to_string_lossy().into_owned(),
                     rpc_socket_addr,
                 ));
 
                 node_registry.nodes.push(NodeServiceData {
+                    antnode_path: service_antnode_path,
                     auto_restart: options.auto_restart,
                     connected_peers: None,
                     data_dir_path: service_data_dir_path.clone(),
@@ -277,7 +278,6 @@ pub async fn add_node(
                     owner: owner.clone(),
                     peer_id: None,
                     pid: None,
-                    safenode_path: service_safenode_path,
                     service_name,
                     status: ServiceStatus::Added,
                     upnp: options.upnp,
@@ -301,9 +301,9 @@ pub async fn add_node(
         rpc_port = increment_port_option(rpc_port);
     }
 
-    if options.delete_safenode_src {
-        debug!("Deleting safenode binary file");
-        std::fs::remove_file(options.safenode_src_path)?;
+    if options.delete_antnode_src {
+        debug!("Deleting antnode binary file");
+        std::fs::remove_file(options.antnode_src_path)?;
     }
 
     if !added_service_data.is_empty() {
@@ -316,7 +316,7 @@ pub async fn add_node(
         println!("Services Added:");
         for install in added_service_data.iter() {
             println!(" {} {}", "✓".green(), install.0);
-            println!("    - Safenode path: {}", install.1);
+            println!("    - Antnode path: {}", install.1);
             println!("    - Data path: {}", install.2);
             println!("    - Log path: {}", install.3);
             println!("    - RPC port: {}", install.4);
@@ -435,8 +435,8 @@ pub fn add_daemon(
     service_control: &dyn ServiceControl,
 ) -> Result<()> {
     if node_registry.daemon.is_some() {
-        error!("A safenodemand service has already been created");
-        return Err(eyre!("A safenodemand service has already been created"));
+        error!("A antctld service has already been created");
+        return Err(eyre!("A antctld service has already been created"));
     }
 
     debug!(
