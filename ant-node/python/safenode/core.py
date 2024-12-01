@@ -1,4 +1,4 @@
-"""Core functionality for safenode Python bindings."""
-from safenode._safenode import SafeNode
+"""Core functionality for antnode Python bindings."""
+from antnode._antnode import AntNode
 
-__all__ = ['SafeNode'] 
+__all__ = ['AntNode'] 

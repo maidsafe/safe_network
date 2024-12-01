@@ -50,7 +50,7 @@ use semver::Version;
 use tracing::debug;
 
 pub const DAEMON_DEFAULT_PORT: u16 = 12500;
-pub const DAEMON_SERVICE_NAME: &str = "safenodemand";
+pub const DAEMON_SERVICE_NAME: &str = "antctld";
 
 const RPC_START_UP_DELAY_MS: u64 = 3000;
 
@@ -106,7 +106,7 @@ impl<T: ServiceStateActions + Send> ServiceManager<T> {
         // This is an attempt to see whether the service process has actually launched. You don't
         // always get an error from the service infrastructure.
         //
-        // There might be many different `safenode` processes running, but since each service has
+        // There might be many different `antnode` processes running, but since each service has
         // its own isolated binary, we use the binary path to uniquely identify it.
         match self
             .service_control
@@ -410,7 +410,7 @@ pub async fn status_report(
             );
             println!("Data path: {}", node.data_dir_path.to_string_lossy());
             println!("Log path: {}", node.log_dir_path.to_string_lossy());
-            println!("Bin path: {}", node.safenode_path.to_string_lossy());
+            println!("Bin path: {}", node.antnode_path.to_string_lossy());
             println!(
                 "Connected peers: {}",
                 node.connected_peers
@@ -709,7 +709,7 @@ mod tests {
 
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -719,9 +719,7 @@ mod tests {
             .returning(|_| ());
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| Ok(1000));
 
@@ -729,8 +727,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 1000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -751,7 +749,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -765,7 +763,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -781,8 +779,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -827,7 +825,7 @@ mod tests {
 
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -837,9 +835,7 @@ mod tests {
             .returning(|_| ());
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| Ok(1000));
 
@@ -847,8 +843,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 1000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -867,7 +863,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -881,7 +877,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -899,8 +895,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Stopped,
             upnp: false,
             user: Some("safe".to_string()),
@@ -939,16 +935,14 @@ mod tests {
 
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| Ok(100));
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -962,7 +956,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -980,8 +974,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1020,19 +1014,16 @@ mod tests {
 
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| {
                 Err(ServiceError::ServiceProcessNotFound(
-                    "Could not find process at '/var/safenode-manager/services/safenode1/safenode'"
-                        .to_string(),
+                    "Could not find process at '/var/antctl/services/antnode1/antnode'".to_string(),
                 ))
             });
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -1042,9 +1033,7 @@ mod tests {
             .returning(|_| ());
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| Ok(1000));
 
@@ -1052,8 +1041,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 1000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -1072,7 +1061,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1086,7 +1075,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1104,8 +1093,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1143,7 +1132,7 @@ mod tests {
 
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -1153,20 +1142,18 @@ mod tests {
             .returning(|_| ());
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| {
                 Err(ServiceControlError::ServiceProcessNotFound(
-                    "/var/safenode-manager/services/safenode1/safenode".to_string(),
+                    "/var/antctl/services/antnode1/antnode".to_string(),
                 ))
             });
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1180,7 +1167,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1196,8 +1183,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1230,7 +1217,7 @@ mod tests {
 
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(true))
+            .with(eq("antnode1"), eq(true))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -1240,9 +1227,7 @@ mod tests {
             .returning(|_| ());
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| Ok(100));
 
@@ -1250,8 +1235,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 1000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -1270,7 +1255,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1284,7 +1269,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1300,8 +1285,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1328,7 +1313,7 @@ mod tests {
 
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -1338,9 +1323,7 @@ mod tests {
             .returning(|_| ());
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| Ok(1000));
         mock_rpc_client
@@ -1351,8 +1334,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 1000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: "0.98.1".to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -1373,7 +1356,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1387,7 +1370,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1403,8 +1386,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1432,21 +1415,19 @@ mod tests {
 
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| Ok(100));
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1460,7 +1441,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1478,8 +1459,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1509,7 +1490,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1523,7 +1504,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1539,8 +1520,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1570,7 +1551,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1584,7 +1565,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1602,8 +1583,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Stopped,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1634,7 +1615,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1648,7 +1629,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1664,8 +1645,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Removed,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1697,21 +1678,19 @@ mod tests {
 
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(true))
+            .with(eq("antnode1"), eq(true))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| Ok(100));
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1725,7 +1704,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1743,8 +1722,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: None,
@@ -1775,13 +1754,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -1794,14 +1773,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -1813,7 +1792,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -1831,8 +1810,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -1851,7 +1830,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1865,7 +1844,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1883,8 +1862,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1939,13 +1918,13 @@ mod tests {
         let target_version = "0.1.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mock_service_control = MockServiceControl::new();
         let mock_rpc_client = MockRpcClient::new();
@@ -1953,7 +1932,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1967,7 +1946,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1985,8 +1964,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -2024,13 +2003,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -2043,14 +2022,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2062,7 +2041,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2080,8 +2059,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -2100,7 +2079,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -2114,7 +2093,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -2132,8 +2111,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -2189,13 +2168,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -2208,14 +2187,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2227,7 +2206,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(0)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2239,8 +2218,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -2259,7 +2238,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -2273,7 +2252,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -2291,8 +2270,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -2353,13 +2332,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let current_node_bin_str = current_node_bin.to_path_buf().to_string_lossy().to_string();
 
@@ -2373,14 +2352,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2392,7 +2371,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2413,7 +2392,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -2427,7 +2406,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -2445,8 +2424,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -2492,13 +2471,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -2511,14 +2490,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(true))
+            .with(eq("antnode1"), eq(true))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(true))
+            .with(eq("antnode1"), eq(true))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2530,7 +2509,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(true))
+            .with(eq("antnode1"), eq(true))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2548,8 +2527,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -2568,7 +2547,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -2582,7 +2561,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -2600,8 +2579,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: None,
@@ -2657,13 +2636,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -2676,14 +2655,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2694,9 +2673,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--upnp"),
                         OsString::from("--rewards-address"),
                         OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
@@ -2705,7 +2684,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -2718,7 +2697,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2736,8 +2715,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -2756,13 +2735,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -2780,8 +2759,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: true,
             user: Some("safe".to_string()),
@@ -2819,13 +2798,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -2838,14 +2817,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2856,9 +2835,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--log-format"),
                         OsString::from("json"),
                         OsString::from("--rewards-address"),
@@ -2868,7 +2847,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -2881,7 +2860,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -2899,8 +2878,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -2919,13 +2898,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: Some(LogFormat::Json),
             max_archived_log_files: None,
             max_log_files: None,
@@ -2943,8 +2922,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -2986,13 +2965,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -3005,14 +2984,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3023,9 +3002,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--home-network"),
                         OsString::from("--rewards-address"),
                         OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
@@ -3034,7 +3013,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -3047,7 +3026,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3065,8 +3044,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -3085,13 +3064,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: true,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -3109,8 +3088,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -3148,13 +3127,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -3167,14 +3146,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3185,9 +3164,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--ip"),
                         OsString::from("192.168.1.1"),
                         OsString::from("--rewards-address"),
@@ -3197,7 +3176,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -3210,7 +3189,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3228,8 +3207,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -3248,13 +3227,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -3272,8 +3251,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -3314,13 +3293,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -3333,14 +3312,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3351,9 +3330,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--port"),
                         OsString::from("12000"),
                         OsString::from("--rewards-address"),
@@ -3363,7 +3342,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -3376,7 +3355,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3394,8 +3373,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -3414,13 +3393,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -3438,8 +3417,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -3477,13 +3456,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -3496,14 +3475,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3514,9 +3493,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--max-archived-log-files"),
                         OsString::from("20"),
                         OsString::from("--rewards-address"),
@@ -3526,7 +3505,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -3539,7 +3518,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3557,8 +3536,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -3577,12 +3556,12 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: Some(20),
             max_log_files: None,
@@ -3597,8 +3576,8 @@ mod tests {
             pid: Some(1000),
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -3643,13 +3622,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -3662,14 +3641,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3680,9 +3659,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--max-log-files"),
                         OsString::from("20"),
                         OsString::from("--rewards-address"),
@@ -3692,7 +3671,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -3705,7 +3684,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3723,8 +3702,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -3743,12 +3722,12 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: Some(20),
@@ -3763,8 +3742,8 @@ mod tests {
             pid: Some(1000),
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -3806,13 +3785,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -3825,14 +3804,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3843,9 +3822,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--metrics-server-port"),
                         OsString::from("12000"),
                         OsString::from("--rewards-address"),
@@ -3855,7 +3834,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -3868,7 +3847,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -3886,8 +3865,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -3906,13 +3885,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -3930,8 +3909,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -3972,13 +3951,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -3991,14 +3970,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4009,9 +3988,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--metrics-server-port"),
                         OsString::from("12000"),
                         OsString::from("--rewards-address"),
@@ -4021,7 +4000,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -4034,7 +4013,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4052,8 +4031,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -4072,13 +4051,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -4096,8 +4075,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -4138,13 +4117,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -4157,14 +4136,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4175,9 +4154,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--owner"),
                         OsString::from("discord_username"),
                         OsString::from("--rewards-address"),
@@ -4187,7 +4166,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -4200,7 +4179,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4218,8 +4197,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -4238,13 +4217,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -4262,8 +4241,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -4304,13 +4283,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -4323,14 +4302,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4341,9 +4320,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--owner"),
                         OsString::from("discord_username"),
                         OsString::from("--rewards-address"),
@@ -4353,7 +4332,7 @@ mod tests {
                     autostart: true,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -4366,7 +4345,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4384,8 +4363,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -4404,13 +4383,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: true,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -4428,8 +4407,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -4467,13 +4446,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -4486,14 +4465,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4504,9 +4483,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--owner"),
                         OsString::from("discord_username"),
                         OsString::from("--rewards-address"),
@@ -4522,7 +4501,7 @@ mod tests {
                     autostart: true,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -4535,7 +4514,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4553,8 +4532,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -4573,7 +4552,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: true,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -4587,7 +4566,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -4606,8 +4585,8 @@ mod tests {
             reward_balance: Some(AttoTokens::zero()),
 
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -4645,13 +4624,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -4664,14 +4643,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4682,9 +4661,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--owner"),
                         OsString::from("discord_username"),
                         OsString::from("--rewards-address"),
@@ -4700,7 +4679,7 @@ mod tests {
                     autostart: true,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -4713,7 +4692,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4731,8 +4710,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -4751,7 +4730,7 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: true,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -4765,7 +4744,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -4784,8 +4763,8 @@ mod tests {
             reward_balance: Some(AttoTokens::zero()),
 
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -4823,13 +4802,13 @@ mod tests {
         let target_version = "0.2.0";
 
         let tmp_data_dir = assert_fs::TempDir::new()?;
-        let current_install_dir = tmp_data_dir.child("safenode_install");
+        let current_install_dir = tmp_data_dir.child("antnode_install");
         current_install_dir.create_dir_all()?;
 
-        let current_node_bin = current_install_dir.child("safenode");
-        current_node_bin.write_binary(b"fake safenode binary")?;
-        let target_node_bin = tmp_data_dir.child("safenode");
-        target_node_bin.write_binary(b"fake safenode binary")?;
+        let current_node_bin = current_install_dir.child("antnode");
+        current_node_bin.write_binary(b"fake antnode binary")?;
+        let target_node_bin = tmp_data_dir.child("antnode");
+        target_node_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         let mut mock_rpc_client = MockRpcClient::new();
@@ -4842,14 +4821,14 @@ mod tests {
             .returning(|_| Ok(1000));
         mock_service_control
             .expect_stop()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
         // after binary upgrade
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4860,9 +4839,9 @@ mod tests {
                         OsString::from("--rpc"),
                         OsString::from("127.0.0.1:8081"),
                         OsString::from("--root-dir"),
-                        OsString::from("/var/safenode-manager/services/safenode1"),
+                        OsString::from("/var/antctl/services/antnode1"),
                         OsString::from("--log-output-dest"),
-                        OsString::from("/var/log/safenode/safenode1"),
+                        OsString::from("/var/log/antnode/antnode1"),
                         OsString::from("--upnp"),
                         OsString::from("--rewards-address"),
                         OsString::from("0x03B770D9cD32077cC0bF330c13C114a87643B124"),
@@ -4871,7 +4850,7 @@ mod tests {
                     autostart: false,
                     contents: None,
                     environment: None,
-                    label: "safenode1".parse()?,
+                    label: "antnode1".parse()?,
                     program: current_node_bin.to_path_buf(),
                     username: Some("safe".to_string()),
                     working_directory: None,
@@ -4884,7 +4863,7 @@ mod tests {
         // after service restart
         mock_service_control
             .expect_start()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
         mock_service_control
@@ -4905,8 +4884,8 @@ mod tests {
             Ok(NodeInfo {
                 pid: 2000,
                 peer_id: PeerId::from_str("12D3KooWS2tpXGGTmg2AHFiDh57yPQnat49YHnyqoggzXZWpqkCR")?,
-                data_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
-                log_path: PathBuf::from("/var/log/safenode/safenode1"),
+                data_path: PathBuf::from("/var/antctl/services/antnode1"),
+                log_path: PathBuf::from("/var/log/antnode/antnode1"),
                 version: target_version.to_string(),
                 uptime: std::time::Duration::from_secs(1), // the service was just started
                 wallet_balance: 0,
@@ -4925,13 +4904,13 @@ mod tests {
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::ArbitrumOne,
             genesis: false,
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -4949,8 +4928,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: current_node_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: current_node_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: true,
             user: Some("safe".to_string()),
@@ -4986,17 +4965,17 @@ mod tests {
     #[tokio::test]
     async fn remove_should_remove_an_added_node() -> Result<()> {
         let temp_dir = assert_fs::TempDir::new()?;
-        let log_dir = temp_dir.child("safenode1-logs");
+        let log_dir = temp_dir.child("antnode1-logs");
         log_dir.create_dir_all()?;
-        let data_dir = temp_dir.child("safenode1-data");
+        let data_dir = temp_dir.child("antnode1-data");
         data_dir.create_dir_all()?;
-        let safenode_bin = data_dir.child("safenode");
-        safenode_bin.write_binary(b"fake safenode binary")?;
+        let antnode_bin = data_dir.child("antnode");
+        antnode_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
@@ -5033,9 +5012,9 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: safenode_bin.to_path_buf(),
+            antnode_path: antnode_bin.to_path_buf(),
             status: ServiceStatus::Stopped,
-            service_name: "safenode1".to_string(),
+            service_name: "antnode1".to_string(),
             version: "0.98.1".to_string(),
             upnp: false,
             user: Some("safe".to_string()),
@@ -5065,16 +5044,14 @@ mod tests {
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| Ok(1000));
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -5088,7 +5065,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -5106,8 +5083,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -5125,7 +5102,7 @@ mod tests {
         match result {
             Ok(_) => panic!("This test should result in an error"),
             Err(e) => assert_eq!(
-                "The service(s) is already running: [\"safenode1\"]",
+                "The service(s) is already running: [\"antnode1\"]",
                 e.to_string()
             ),
         }
@@ -5137,31 +5114,28 @@ mod tests {
     async fn remove_should_return_an_error_for_a_node_that_was_marked_running_but_was_not_actually_running(
     ) -> Result<()> {
         let temp_dir = assert_fs::TempDir::new()?;
-        let log_dir = temp_dir.child("safenode1-logs");
+        let log_dir = temp_dir.child("antnode1-logs");
         log_dir.create_dir_all()?;
-        let data_dir = temp_dir.child("safenode1-data");
+        let data_dir = temp_dir.child("antnode1-data");
         data_dir.create_dir_all()?;
-        let safenode_bin = data_dir.child("safenode");
-        safenode_bin.write_binary(b"fake safenode binary")?;
+        let antnode_bin = data_dir.child("antnode");
+        antnode_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
             .expect_get_process_pid()
-            .with(eq(PathBuf::from(
-                "/var/safenode-manager/services/safenode1/safenode",
-            )))
+            .with(eq(PathBuf::from("/var/antctl/services/antnode1/antnode")))
             .times(1)
             .returning(|_| {
                 Err(ServiceError::ServiceProcessNotFound(
-                    "Could not find process at '/var/safenode-manager/services/safenode1/safenode'"
-                        .to_string(),
+                    "Could not find process at '/var/antctl/services/antnode1/antnode'".to_string(),
                 ))
             });
 
         let mut service_data = NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -5175,7 +5149,7 @@ mod tests {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -5193,8 +5167,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Running,
             upnp: false,
             user: Some("safe".to_string()),
@@ -5223,17 +5197,17 @@ mod tests {
     #[tokio::test]
     async fn remove_should_remove_an_added_node_and_keep_directories() -> Result<()> {
         let temp_dir = assert_fs::TempDir::new()?;
-        let log_dir = temp_dir.child("safenode1-logs");
+        let log_dir = temp_dir.child("antnode1-logs");
         log_dir.create_dir_all()?;
-        let data_dir = temp_dir.child("safenode1-data");
+        let data_dir = temp_dir.child("antnode1-data");
         data_dir.create_dir_all()?;
-        let safenode_bin = data_dir.child("safenode");
-        safenode_bin.write_binary(b"fake safenode binary")?;
+        let antnode_bin = data_dir.child("antnode");
+        antnode_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(false))
+            .with(eq("antnode1"), eq(false))
             .times(1)
             .returning(|_, _| Ok(()));
 
@@ -5270,8 +5244,8 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: safenode_bin.to_path_buf(),
-            service_name: "safenode1".to_string(),
+            antnode_path: antnode_bin.to_path_buf(),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Stopped,
             upnp: false,
             user: Some("safe".to_string()),
@@ -5300,17 +5274,17 @@ mod tests {
     #[tokio::test]
     async fn remove_should_remove_a_user_mode_service() -> Result<()> {
         let temp_dir = assert_fs::TempDir::new()?;
-        let log_dir = temp_dir.child("safenode1-logs");
+        let log_dir = temp_dir.child("antnode1-logs");
         log_dir.create_dir_all()?;
-        let data_dir = temp_dir.child("safenode1-data");
+        let data_dir = temp_dir.child("antnode1-data");
         data_dir.create_dir_all()?;
-        let safenode_bin = data_dir.child("safenode");
-        safenode_bin.write_binary(b"fake safenode binary")?;
+        let antnode_bin = data_dir.child("antnode");
+        antnode_bin.write_binary(b"fake antnode binary")?;
 
         let mut mock_service_control = MockServiceControl::new();
         mock_service_control
             .expect_uninstall()
-            .with(eq("safenode1"), eq(true))
+            .with(eq("antnode1"), eq(true))
             .times(1)
             .returning(|_, _| Ok(()));
 
@@ -5347,9 +5321,9 @@ mod tests {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: safenode_bin.to_path_buf(),
+            antnode_path: antnode_bin.to_path_buf(),
             status: ServiceStatus::Stopped,
-            service_name: "safenode1".to_string(),
+            service_name: "antnode1".to_string(),
             upnp: false,
             user: None,
             user_mode: true,

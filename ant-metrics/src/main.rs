@@ -18,7 +18,7 @@ use std::{
 };
 use walkdir::WalkDir;
 
-const LOG_FILENAME_PREFIX: &str = "safenode.log";
+const LOG_FILENAME_PREFIX: &str = "antnode.log";
 type NodeId = String;
 
 #[derive(serde::Serialize)]

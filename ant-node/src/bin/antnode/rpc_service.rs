@@ -8,15 +8,14 @@
 
 use ant_logging::ReloadHandle;
 use ant_node::RunningNode;
-use ant_protocol::node_rpc::{NodeCtrl, StopResult};
-use ant_protocol::safenode_proto::{
-    k_buckets_response,
-    safe_node_server::{SafeNode, SafeNodeServer},
-    KBucketsRequest, KBucketsResponse, NetworkInfoRequest, NetworkInfoResponse, NodeEvent,
-    NodeEventsRequest, NodeInfoRequest, NodeInfoResponse, RecordAddressesRequest,
+use ant_protocol::antnode_proto::{
+    ant_node_server::{AntNode, AntNodeServer},
+    k_buckets_response, KBucketsRequest, KBucketsResponse, NetworkInfoRequest, NetworkInfoResponse,
+    NodeEvent, NodeEventsRequest, NodeInfoRequest, NodeInfoResponse, RecordAddressesRequest,
     RecordAddressesResponse, RestartRequest, RestartResponse, StopRequest, StopResponse,
     UpdateLogLevelRequest, UpdateLogLevelResponse, UpdateRequest, UpdateResponse,
 };
+use ant_protocol::node_rpc::{NodeCtrl, StopResult};
 use eyre::{ErrReport, Result};
 use std::{
     collections::HashMap,
@@ -42,7 +41,7 @@ struct SafeNodeRpcService {
 
 // Implementing RPC interface for service defined in .proto
 #[tonic::async_trait]
-impl SafeNode for SafeNodeRpcService {
+impl AntNode for SafeNodeRpcService {
     type NodeEventsStream = ReceiverStream<Result<NodeEvent, Status>>;
 
     async fn node_info(
@@ -311,7 +310,7 @@ pub(crate) fn start_rpc_service(
     let _handle = tokio::spawn(async move {
         // adding our service to our server.
         if let Err(e) = Server::builder()
-            .add_service(SafeNodeServer::new(service))
+            .add_service(AntNodeServer::new(service))
             .serve(addr)
             .await
         {

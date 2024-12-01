@@ -9,9 +9,9 @@
 #![allow(clippy::mutable_key_type)]
 mod common;
 
-use crate::common::{client::get_all_rpc_addresses, get_all_peer_ids, get_safenode_rpc_client};
+use crate::common::{client::get_all_rpc_addresses, get_all_peer_ids, get_antnode_rpc_client};
 use ant_logging::LogBuilder;
-use ant_protocol::safenode_proto::KBucketsRequest;
+use ant_protocol::antnode_proto::KBucketsRequest;
 use color_eyre::Result;
 use libp2p::{
     kad::{KBucketKey, K_VALUE},
@@ -51,7 +51,7 @@ async fn verify_routing_table() -> Result<()> {
     let mut all_failed_list = BTreeMap::new();
 
     for (node_index, rpc_address) in node_rpc_address.iter().enumerate() {
-        let mut rpc_client = get_safenode_rpc_client(*rpc_address).await?;
+        let mut rpc_client = get_antnode_rpc_client(*rpc_address).await?;
 
         let response = rpc_client
             .k_buckets(Request::new(KBucketsRequest {}))

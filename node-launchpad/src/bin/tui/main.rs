@@ -44,11 +44,11 @@ pub struct Cli {
     )]
     pub frame_rate: f64,
 
-    /// Provide a path for the safenode binary to be used by the service.
+    /// Provide a path for the antnode binary to be used by the service.
     ///
     /// Useful for creating the service using a custom built binary.
     #[clap(long)]
-    safenode_path: Option<PathBuf>,
+    antnode_path: Option<PathBuf>,
 
     #[command(flatten)]
     pub(crate) peers: PeersArgs,
@@ -128,7 +128,7 @@ async fn main() -> Result<()> {
         args.tick_rate,
         args.frame_rate,
         args.peers,
-        args.safenode_path,
+        args.antnode_path,
         None,
     )
     .await?;

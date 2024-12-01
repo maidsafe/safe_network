@@ -6,18 +6,18 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use ant_releases::ReleaseType;
 use color_eyre::{eyre::eyre, Result};
-use sn_releases::ReleaseType;
 use std::path::PathBuf;
 
 #[cfg(unix)]
 pub fn get_daemon_install_path() -> PathBuf {
-    PathBuf::from("/usr/local/bin/safenodemand")
+    PathBuf::from("/usr/local/bin/antctld")
 }
 
 #[cfg(windows)]
 pub fn get_daemon_install_path() -> PathBuf {
-    PathBuf::from("C:\\ProgramData\\safenodemand\\safenodemand.exe")
+    PathBuf::from("C:\\ProgramData\\antctld\\antctld.exe")
 }
 
 #[cfg(unix)]
@@ -28,16 +28,18 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
     use std::os::unix::fs::PermissionsExt;
 
     let path = if is_running_as_root() {
-        let path = PathBuf::from("/var/safenode-manager/");
-        debug!("Running as root, creating node_manager_path and setting perms if path doesn't exists: {path:?}");
+        debug!("Running as root");
+        let path = PathBuf::from("/var/antctl/");
+        debug!("Creating antctl directory: {path:?}");
         std::fs::create_dir_all(&path)?;
         let mut perm = std::fs::metadata(&path)?.permissions();
         perm.set_mode(0o755); // set permissions to rwxr-xr-x
         std::fs::set_permissions(&path, perm)?;
         path
     } else {
-        let path = get_user_safenode_data_dir()?;
-        debug!("Running as non-root, node_manager_path is: {path:?}");
+        debug!("Running as non-root");
+        let path = get_user_antnode_data_dir()?;
+        debug!("antctl path: {path:?}");
         path
     };
 
@@ -54,7 +56,7 @@ pub fn get_node_manager_path() -> Result<PathBuf> {
 #[cfg(windows)]
 pub fn get_node_manager_path() -> Result<PathBuf> {
     use std::path::Path;
-    let path = Path::new("C:\\ProgramData\\safenode-manager");
+    let path = Path::new("C:\\ProgramData\\antctl");
     debug!("Running as root, creating node_manager_path at: {path:?}");
 
     if !path.exists() {
@@ -70,24 +72,24 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
     let path = get_node_manager_path()?;
     let node_registry_path = path.join("node_registry.json");
     if is_running_as_root() && !node_registry_path.exists() {
-        debug!("Running as root and node_registry_path doesn't exist, creating node_registry_path and setting perms at: {node_registry_path:?}");
+        debug!("Running as root");
+        debug!("Creating node registry path: {node_registry_path:?}");
         std::fs::OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true) // Do not append to the file if it already exists.
             .open(node_registry_path.clone())?;
-        // Set the permissions of /var/safenode-manager/node_registry.json to rwxrwxrwx. The
+        // Set the permissions of /var/antctl/node_registry.json to rwxrwxrwx. The
         // `status` command updates the registry with the latest information it has on the
         // services at the time it runs. It's normally the case that service management status
         // operations do not require elevated privileges. If we want that to be the case, we
         // need to give all users the ability to write to the registry file. Everything else in
-        // the /var/safenode-manager directory and its subdirectories will still require
-        // elevated privileges.
+        // the /var/antctl directory and its subdirectories will still require elevated privileges.
         let mut perm = std::fs::metadata(node_registry_path.clone())?.permissions();
         perm.set_mode(0o777);
         std::fs::set_permissions(node_registry_path.clone(), perm)?;
     }
-    debug!("Node registry path is: {node_registry_path:?}");
+    debug!("Node registry path: {node_registry_path:?}");
 
     Ok(node_registry_path)
 }
@@ -95,7 +97,7 @@ pub fn get_node_registry_path() -> Result<PathBuf> {
 #[cfg(windows)]
 pub fn get_node_registry_path() -> Result<PathBuf> {
     use std::path::Path;
-    let path = Path::new("C:\\ProgramData\\safenode-manager");
+    let path = Path::new("C:\\ProgramData\\antctl");
     if !path.exists() {
         std::fs::create_dir_all(path)?;
     }
@@ -121,11 +123,11 @@ pub fn get_service_data_dir_path(
         }
         None => {
             if owner.is_some() {
-                let path = PathBuf::from("/var/safenode-manager/services");
+                let path = PathBuf::from("/var/antctl/services");
                 debug!("Using default path for service data dir: {path:?}");
                 path
             } else {
-                let path = get_user_safenode_data_dir()?;
+                let path = get_user_antnode_data_dir()?;
                 debug!("Using user mode service data dir: {path:?}");
                 path
             }
@@ -148,7 +150,7 @@ pub fn get_service_data_dir_path(
             p
         }
         None => {
-            let path = PathBuf::from("C:\\ProgramData\\safenode\\data");
+            let path = PathBuf::from("C:\\ProgramData\\antctl\\data");
             debug!("Using default path for service data dir: {path:?}");
             path
         }
@@ -179,7 +181,7 @@ pub fn get_service_log_dir_path(
                 debug!("Using default path for service log dir: {path:?}");
                 path
             } else {
-                let path = get_user_safenode_data_dir()?;
+                let path = get_user_antnode_data_dir()?;
                 debug!("Using user mode service log dir: {path:?}");
                 path
             }
@@ -254,12 +256,12 @@ pub fn is_running_as_root() -> bool {
     std::fs::read_dir("C:\\Windows\\System32\\config").is_ok()
 }
 
-pub fn get_user_safenode_data_dir() -> Result<PathBuf> {
+pub fn get_user_antnode_data_dir() -> Result<PathBuf> {
     Ok(dirs_next::data_dir()
         .ok_or_else(|| {
             error!("Failed to get data_dir");
             eyre!("Could not obtain user data directory")
         })?
-        .join("safe")
+        .join("autonomi")
         .join("node"))
 }

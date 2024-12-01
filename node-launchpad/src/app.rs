@@ -53,7 +53,7 @@ impl App {
         tick_rate: f64,
         frame_rate: f64,
         peers_args: PeersArgs,
-        safenode_path: Option<PathBuf>,
+        antnode_path: Option<PathBuf>,
         app_data_path: Option<PathBuf>,
     ) -> Result<Self> {
         // Configurations
@@ -93,7 +93,7 @@ impl App {
             allocated_disk_space: app_data.nodes_to_start,
             rewards_address: app_data.discord_username.clone(),
             peers_args,
-            safenode_path,
+            antnode_path,
             data_dir_path,
             connection_mode,
             port_from: Some(port_from),

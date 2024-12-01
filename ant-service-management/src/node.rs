@@ -52,7 +52,7 @@ impl<'a> NodeService<'a> {
 #[async_trait]
 impl ServiceStateActions for NodeService<'_> {
     fn bin_path(&self) -> PathBuf {
-        self.service_data.safenode_path.clone()
+        self.service_data.antnode_path.clone()
     }
 
     fn build_upgrade_install_context(&self, options: UpgradeOptions) -> Result<ServiceInstallCtx> {
@@ -151,7 +151,7 @@ impl ServiceStateActions for NodeService<'_> {
             contents: None,
             environment: options.env_variables,
             label: label.clone(),
-            program: self.service_data.safenode_path.to_path_buf(),
+            program: self.service_data.antnode_path.to_path_buf(),
             username: self.service_data.user.clone(),
             working_directory: None,
         })
@@ -219,7 +219,7 @@ impl ServiceStateActions for NodeService<'_> {
             for addr in &network_info.listeners {
                 if let Some(port) = get_port_from_multiaddr(addr) {
                     debug!(
-                        "Found safenode port for {}: {port}",
+                        "Found antnode port for {}: {port}",
                         self.service_data.service_name
                     );
                     self.service_data.node_port = Some(port);
@@ -228,7 +228,7 @@ impl ServiceStateActions for NodeService<'_> {
             }
 
             if self.service_data.node_port.is_none() {
-                error!("Could not find safenode port");
+                error!("Could not find antnode port");
                 error!("This will cause the node to have a different port during upgrade");
             }
 
@@ -280,6 +280,7 @@ impl ServiceStateActions for NodeService<'_> {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeServiceData {
+    pub antnode_path: PathBuf,
     #[serde(default)]
     pub auto_restart: bool,
     #[serde(
@@ -317,7 +318,6 @@ pub struct NodeServiceData {
     pub rewards_address: RewardsAddress,
     pub reward_balance: Option<AttoTokens>,
     pub rpc_socket_addr: SocketAddr,
-    pub safenode_path: PathBuf,
     pub service_name: String,
     pub status: ServiceStatus,
     #[serde(default = "default_upnp")]
@@ -390,7 +390,7 @@ where
 
 impl NodeServiceData {
     /// Returns the UDP port from our node's listen address.
-    pub fn get_safenode_port(&self) -> Option<u16> {
+    pub fn get_antnode_port(&self) -> Option<u16> {
         // assuming the listening addr contains /ip4/127.0.0.1/udp/56215/quic-v1/p2p/<peer_id>
         if let Some(multi_addrs) = &self.listen_addr {
             println!("Listening addresses are defined");

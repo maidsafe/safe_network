@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use ant_evm::Amount;
-use ant_protocol::safenode_proto::{NodeInfoRequest, RestartRequest};
+use ant_protocol::antnode_proto::{NodeInfoRequest, RestartRequest};
 use ant_service_management::{get_local_node_registry_path, NodeRegistry};
 use autonomi::Client;
 use evmlib::wallet::Wallet;
@@ -21,7 +21,7 @@ use tokio::sync::Mutex;
 use tonic::Request;
 use tracing::{debug, info};
 
-use crate::common::get_safenode_rpc_client;
+use crate::common::get_antnode_rpc_client;
 
 /// This is a limited hard coded value as Droplet version has to contact the faucet to get the funds.
 /// This is limited to 10 requests to the faucet, where each request yields 100 SNT
@@ -164,7 +164,7 @@ impl LocalNetwork {
 
     // Restart a local node by sending in the SafenodeRpcCmd::Restart to the node's RPC endpoint.
     pub async fn restart_node(rpc_endpoint: SocketAddr, retain_peer_id: bool) -> Result<()> {
-        let mut rpc_client = get_safenode_rpc_client(rpc_endpoint).await?;
+        let mut rpc_client = get_antnode_rpc_client(rpc_endpoint).await?;
 
         let response = rpc_client
             .node_info(Request::new(NodeInfoRequest {}))
@@ -306,13 +306,13 @@ impl WanNetwork {
     //     Ok(local_wallet)
     // }
 
-    // // Restart a remote safenode service by sending a RPC to the safenode manager daemon.
+    // // Restart a remote antnode service by sending a RPC to the antctl daemon.
     // pub async fn restart_node(
     //     peer_id: &PeerId,
     //     daemon_endpoint: SocketAddr,
     //     retain_peer_id: bool,
     // ) -> Result<()> {
-    //     let mut rpc_client = get_safenode_manager_rpc_client(daemon_endpoint).await?;
+    //     let mut rpc_client = get_antctl_rpc_client(daemon_endpoint).await?;
 
     //     let _response = rpc_client
     //         .restart_node_service(Request::new(NodeServiceRestartRequest {
@@ -322,8 +322,8 @@ impl WanNetwork {
     //         }))
     //         .await?;
 
-    //     println!("Node restart requested to safenodemand {daemon_endpoint}");
-    //     info!("Node restart requested to safenodemand {daemon_endpoint}");
+    //     println!("Node restart requested to antctld {daemon_endpoint}");
+    //     info!("Node restart requested to antctld {daemon_endpoint}");
 
     //     Ok(())
     // }

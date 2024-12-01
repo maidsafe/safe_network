@@ -5,7 +5,7 @@ use crate::{NodeBuilder, RunningNode};
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_networking::PutRecordCfg;
 use ant_protocol::{
-    node::get_safenode_root_dir,
+    node::get_antnode_root_dir,
     storage::{ChunkAddress, RecordType},
     NetworkAddress,
 };
@@ -26,13 +26,13 @@ use xor_name::XorName;
 
 /// Python wrapper for the Safe Network Node
 #[pyclass(name = "SafeNode")]
-pub struct SafeNode {
+pub struct AntNode {
     node: Arc<Mutex<Option<RunningNode>>>,
     runtime: Arc<Mutex<Option<tokio::runtime::Runtime>>>,
 }
 
 #[pymethods]
-impl SafeNode {
+impl AntNode {
     #[new]
     fn new() -> Self {
         Self {
@@ -427,7 +427,7 @@ impl SafeNode {
             None
         };
 
-        let path = get_safenode_root_dir(peer_id.unwrap_or_else(|| PeerId::random()))
+        let path = get_antnode_root_dir(peer_id.unwrap_or_else(|| PeerId::random()))
             .map_err(|e| PyRuntimeError::new_err(format!("Failed to get default root dir: {e}")))?;
 
         Ok(path
@@ -477,8 +477,8 @@ impl SafeNode {
 
 /// Python module initialization
 #[pymodule]
-#[pyo3(name = "_safenode")]
+#[pyo3(name = "_antnode")]
 fn init_module(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    m.add_class::<SafeNode>()?;
+    m.add_class::<AntNode>()?;
     Ok(())
 }

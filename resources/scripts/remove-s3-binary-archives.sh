@@ -18,19 +18,19 @@ declare -A binary_crate_dir_mappings=(
   ["nat-detection"]="nat-detection"
   ["node-launchpad"]="node-launchpad"
   ["autonomi"]="autonomi-cli"
-  ["safenode"]="ant-node"
-  ["safenode-manager"]="ant-node-manager"
-  ["safenode_rpc_client"]="ant-node-rpc-client"
-  ["safenodemand"]="ant-node-manager"
+  ["antnode"]="ant-node"
+  ["antctl"]="ant-node-manager"
+  ["antnode_rpc_client"]="ant-node-rpc-client"
+  ["antctld"]="ant-node-manager"
 )
 declare -A binary_s3_bucket_mappings=(
   ["nat-detection"]="nat-detection"
   ["node-launchpad"]="node-launchpad"
   ["autonomi"]="autonomi-cli"
-  ["safenode"]="sn-node"
-  ["safenode-manager"]="sn-node-manager"
-  ["safenode_rpc_client"]="sn-node-rpc-client"
-  ["safenodemand"]="sn-node-manager"
+  ["antnode"]="antnode"
+  ["antctl"]="antctl"
+  ["antnode_rpc_client"]="antnode-rpc-client"
+  ["antctld"]="antctl"
 )
 
 for arch in "${architectures[@]}"; do

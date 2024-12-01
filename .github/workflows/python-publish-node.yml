@@ -30,9 +30,9 @@ jobs:
           components: rustfmt
       - name: Create Python module structure
         run: |
-          mkdir -p sn_node/python/safenode
-          cat > sn_node/python/safenode/__init__.py << EOL
-          from ._safenode import *
+          mkdir -p ant_node/python/antnode
+          cat > ant_node/python/antnode/__init__.py << EOL
+          from ._antnode import *
           __version__ = "${{ github.ref_name }}"
           EOL
       - name: Build wheels
@@ -41,12 +41,12 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist
           sccache: 'true'
-          working-directory: ./sn_node
+          working-directory: ./ant_node
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
-          path: sn_node/dist/*.whl
+          path: ant_node/dist/*.whl
           if-no-files-found: error
           retention-days: 1
           compression-level: 9
@@ -78,20 +78,20 @@ jobs:
       - name: Create Python module structure
         shell: cmd
         run: |
-          if not exist "sn_node\python\safenode" mkdir sn_node\python\safenode
-          echo from ._safenode import * > sn_node\python\safenode\__init__.py
-          echo __version__ = "${{ github.ref_name }}" >> sn_node\python\safenode\__init__.py
+          if not exist "ant_node\python\antnode" mkdir ant_node\python\antnode
+          echo from ._antnode import * > ant_node\python\antnode\__init__.py
+          echo __version__ = "${{ github.ref_name }}" >> ant_node\python\antnode\__init__.py
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           args: --release --out dist
           sccache: 'true'
-          working-directory: ./sn_node
+          working-directory: ./ant_node
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
-          path: sn_node/dist/*.whl
+          path: ant_node/dist/*.whl
           if-no-files-found: error
           retention-days: 1
           compression-level: 9
@@ -127,9 +127,9 @@ jobs:
           rustup component add rustfmt
       - name: Create Python module structure
         run: |
-          mkdir -p sn_node/python/safenode
-          cat > sn_node/python/safenode/__init__.py << EOL
-          from ._safenode import *
+          mkdir -p ant_node/python/antnode
+          cat > ant_node/python/antnode/__init__.py << EOL
+          from ._antnode import *
           __version__ = "${{ github.ref_name }}"
           EOL
       - name: Build wheels
@@ -139,7 +139,7 @@ jobs:
           manylinux: auto
           args: --release --out dist
           sccache: 'true'
-          working-directory: ./sn_node
+          working-directory: ./ant_node
           before-script-linux: |
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
             source $HOME/.cargo/env
@@ -148,7 +148,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.python-version }}-${{ matrix.target }}
-          path: sn_node/dist/*.whl
+          path: ant_node/dist/*.whl
           if-no-files-found: error
           retention-days: 1
           compression-level: 9
@@ -171,9 +171,9 @@ jobs:
           components: rustfmt
       - name: Create Python module structure
         run: |
-          mkdir -p sn_node/python/safenode
-          cat > sn_node/python/safenode/__init__.py << EOL
-          from ._safenode import *
+          mkdir -p ant_node/python/antnode
+          cat > ant_node/python/antnode/__init__.py << EOL
+          from ._antnode import *
           __version__ = "${{ github.ref_name }}"
           EOL
       - name: Build sdist
@@ -181,12 +181,12 @@ jobs:
         with:
           command: sdist
           args: --out dist
-          working-directory: ./sn_node
+          working-directory: ./ant_node
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
           name: sdist
-          path: sn_node/dist/*.tar.gz
+          path: ant_node/dist/*.tar.gz
           if-no-files-found: error
           retention-days: 1
           compression-level: 9

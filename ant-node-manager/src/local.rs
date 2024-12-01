@@ -11,13 +11,6 @@ use crate::helpers::{
     check_port_availability, get_bin_version, get_start_port_if_applicable, increment_port_option,
 };
 
-#[cfg(feature = "faucet")]
-use crate::helpers::get_faucet_data_dir;
-#[cfg(feature = "faucet")]
-use crate::helpers::get_username;
-#[cfg(feature = "faucet")]
-use ant_service_management::FaucetServiceData;
-
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
 use ant_service_management::{
@@ -41,9 +34,7 @@ use sysinfo::{Pid, System};
 
 #[cfg_attr(test, automock)]
 pub trait Launcher {
-    fn get_safenode_path(&self) -> PathBuf;
-    #[cfg(feature = "faucet")]
-    fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32>;
+    fn get_antnode_path(&self) -> PathBuf;
     #[allow(clippy::too_many_arguments)]
     fn launch_node(
         &self,
@@ -61,40 +52,12 @@ pub trait Launcher {
 
 #[derive(Default)]
 pub struct LocalSafeLauncher {
-    #[cfg(feature = "faucet")]
-    pub faucet_bin_path: PathBuf,
-    pub safenode_bin_path: PathBuf,
+    pub antnode_bin_path: PathBuf,
 }
 
 impl Launcher for LocalSafeLauncher {
-    fn get_safenode_path(&self) -> PathBuf {
-        self.safenode_bin_path.clone()
-    }
-
-    #[cfg(feature = "faucet")]
-    fn launch_faucet(&self, genesis_multiaddr: &Multiaddr) -> Result<u32> {
-        info!("Launching the faucet server...");
-        debug!("Using genesis_multiaddr: {}", genesis_multiaddr.to_string());
-        let args = vec![
-            "--peer".to_string(),
-            genesis_multiaddr.to_string(),
-            "server".to_string(),
-        ];
-
-        #[cfg(feature = "faucet")]
-        debug!(
-            "Using faucet binary: {}",
-            self.faucet_bin_path.to_string_lossy()
-        );
-
-        debug!("Using args: {}", args.join(" "));
-
-        let child = Command::new(self.faucet_bin_path.clone())
-            .args(args)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn()?;
-        Ok(child.id())
+    fn get_antnode_path(&self) -> PathBuf {
+        self.antnode_bin_path.clone()
     }
 
     fn launch_node(
@@ -159,7 +122,7 @@ impl Launcher for LocalSafeLauncher {
             }
         }
 
-        Command::new(self.safenode_bin_path.clone())
+        Command::new(self.antnode_bin_path.clone())
             .args(args)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
@@ -197,7 +160,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
 
     let faucet_data_path = dirs_next::data_dir()
         .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
-        .join("safe")
+        .join("autonomi")
         .join("test_faucet");
     if faucet_data_path.is_dir() {
         std::fs::remove_dir_all(faucet_data_path)?;
@@ -205,7 +168,7 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
     }
     let genesis_data_path = dirs_next::data_dir()
         .ok_or_else(|| eyre!("Could not obtain user's data directory"))?
-        .join("safe")
+        .join("autonomi")
         .join("test_genesis");
     if genesis_data_path.is_dir() {
         debug!("Removed genesis data directory");
@@ -252,9 +215,8 @@ pub fn kill_network(node_registry: &NodeRegistry, keep_directories: bool) -> Res
 }
 
 pub struct LocalNetworkOptions {
+    pub antnode_bin_path: PathBuf,
     pub enable_metrics_server: bool,
-    #[cfg(feature = "faucet")]
-    pub faucet_bin_path: PathBuf,
     pub join: bool,
     pub interval: u64,
     pub metrics_port: Option<PortRange>,
@@ -264,7 +226,6 @@ pub struct LocalNetworkOptions {
     pub owner_prefix: Option<String>,
     pub peers: Option<Vec<Multiaddr>>,
     pub rpc_port: Option<PortRange>,
-    pub safenode_bin_path: PathBuf,
     pub skip_validation: bool,
     pub log_format: Option<LogFormat>,
     pub rewards_address: RewardsAddress,
@@ -295,9 +256,7 @@ pub async fn run_network(
     }
 
     let launcher = LocalSafeLauncher {
-        safenode_bin_path: options.safenode_bin_path.to_path_buf(),
-        #[cfg(feature = "faucet")]
-        faucet_bin_path: options.faucet_bin_path.to_path_buf(),
+        antnode_bin_path: options.antnode_bin_path.to_path_buf(),
     };
 
     let mut node_port = get_start_port_if_applicable(options.node_port);
@@ -348,7 +307,7 @@ pub async fn run_network(
                 rpc_socket_addr,
                 rewards_address: options.rewards_address,
                 evm_network: options.evm_network.clone(),
-                version: get_bin_version(&launcher.get_safenode_path())?,
+                version: get_bin_version(&launcher.get_antnode_path())?,
             },
             &launcher,
             &rpc_client,
@@ -397,7 +356,7 @@ pub async fn run_network(
                 rpc_socket_addr,
                 rewards_address: options.rewards_address,
                 evm_network: options.evm_network.clone(),
-                version: get_bin_version(&launcher.get_safenode_path())?,
+                version: get_bin_version(&launcher.get_antnode_path())?,
             },
             &launcher,
             &rpc_client,
@@ -421,24 +380,6 @@ pub async fn run_network(
         println!("Waiting for 10 seconds before validating the network...");
         std::thread::sleep(std::time::Duration::from_secs(10));
         validate_network(node_registry, bootstrap_peers.clone()).await?;
-    }
-
-    #[cfg(feature = "faucet")]
-    if !options.join {
-        println!("Launching the faucet server...");
-        let pid = launcher.launch_faucet(&bootstrap_peers[0])?;
-        let version = get_bin_version(&options.faucet_bin_path)?;
-        let faucet = FaucetServiceData {
-            faucet_path: options.faucet_bin_path,
-            local: true,
-            log_dir_path: get_faucet_data_dir(),
-            pid: Some(pid),
-            service_name: "faucet".to_string(),
-            status: ServiceStatus::Running,
-            user: get_username()?,
-            version,
-        };
-        node_registry.faucet = Some(faucet);
     }
 
     Ok(())
@@ -489,6 +430,7 @@ pub async fn run_node(
         .collect();
 
     Ok(NodeServiceData {
+        antnode_path: launcher.get_antnode_path(),
         auto_restart: false,
         connected_peers,
         data_dir_path: node_info.data_path,
@@ -511,9 +453,8 @@ pub async fn run_node(
         rewards_address: run_options.rewards_address,
         reward_balance: None,
         rpc_socket_addr: run_options.rpc_socket_addr,
-        safenode_path: launcher.get_safenode_path(),
         status: ServiceStatus::Running,
-        service_name: format!("safenode-local{}", run_options.number),
+        service_name: format!("antnode-local{}", run_options.number),
         upnp: false,
         user: None,
         user_mode: false,
@@ -640,9 +581,9 @@ mod tests {
             .times(1)
             .returning(|_| ());
         mock_launcher
-            .expect_get_safenode_path()
+            .expect_get_antnode_path()
             .times(1)
-            .returning(|| PathBuf::from("/usr/local/bin/safenode"));
+            .returning(|| PathBuf::from("/usr/local/bin/antnode"));
 
         mock_rpc_client
             .expect_node_info()
@@ -651,8 +592,8 @@ mod tests {
                 Ok(NodeInfo {
                     pid: 1000,
                     peer_id,
-                    data_path: PathBuf::from(format!("~/.local/share/safe/{peer_id}")),
-                    log_path: PathBuf::from(format!("~/.local/share/safe/{peer_id}/logs")),
+                    data_path: PathBuf::from(format!("~/.local/share/autonomi/{peer_id}")),
+                    log_path: PathBuf::from(format!("~/.local/share/autonomi/{peer_id}/logs")),
                     version: "0.100.12".to_string(),
                     uptime: std::time::Duration::from_secs(1), // the service was just started
                     wallet_balance: 0,
@@ -690,20 +631,20 @@ mod tests {
 
         assert!(node.genesis);
         assert_eq!(node.version, "0.100.12");
-        assert_eq!(node.service_name, "safenode-local1");
+        assert_eq!(node.service_name, "antnode-local1");
         assert_eq!(
             node.data_dir_path,
-            PathBuf::from(format!("~/.local/share/safe/{peer_id}"))
+            PathBuf::from(format!("~/.local/share/autonomi/{peer_id}"))
         );
         assert_eq!(
             node.log_dir_path,
-            PathBuf::from(format!("~/.local/share/safe/{peer_id}/logs"))
+            PathBuf::from(format!("~/.local/share/autonomi/{peer_id}/logs"))
         );
         assert_eq!(node.number, 1);
         assert_eq!(node.pid, Some(1000));
         assert_eq!(node.rpc_socket_addr, rpc_socket_addr);
         assert_eq!(node.status, ServiceStatus::Running);
-        assert_eq!(node.safenode_path, PathBuf::from("/usr/local/bin/safenode"));
+        assert_eq!(node.antnode_path, PathBuf::from("/usr/local/bin/antnode"));
 
         Ok(())
     }

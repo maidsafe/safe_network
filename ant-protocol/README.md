@@ -76,9 +76,9 @@ The `storage` module handles the storage aspects of the protocol.
 
 ## Protobuf Definitions
 
-The `safenode_proto` directory contains the Protocol Buffers definitions for the Safe Network.
+The `antnode_proto` directory contains the Protocol Buffers definitions for the Safe Network.
 
 ### Files
 
 - `req_resp_types.proto`: Definitions for request and response types.
-- `safenode.proto`: Main Protocol Buffers definitions for the Safe Network.
+- `antnode.proto`: Main Protocol Buffers definitions for the Safe Network.

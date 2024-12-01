@@ -10,9 +10,9 @@
 syntax = "proto3";
 
 // Package name
-package safenode_proto;
+package antnode_proto;
 
-// Basic info about the node and safenode app
+// Basic info about the node and antnode app
 message NodeInfoRequest {}
 
 message NodeInfoResponse {
@@ -57,14 +57,14 @@ message KBucketsResponse {
     map<uint32, Peers> kbuckets = 1;
 }
 
-// Stop the safenode app
+// Stop the antnode app
 message StopRequest {
   uint64 delay_millis = 1;
 }
 
 message StopResponse {}
 
-// Restart the safenode app
+// Restart the antnode app
 message RestartRequest {
   uint64 delay_millis = 1;
   bool retain_peer_id = 2;
@@ -72,7 +72,7 @@ message RestartRequest {
 
 message RestartResponse {}
 
-// Update the safenode app
+// Update the antnode app
 message UpdateRequest {
   uint64 delay_millis = 1;
 }

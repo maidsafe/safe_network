@@ -16,13 +16,13 @@ use std::path::PathBuf;
 /// They are intended to run on a CI-based environment with a fresh build agent because they will
 /// create real services and user accounts, and will not attempt to clean themselves up.
 ///
-/// They are assuming the existence of a `safenode` binary produced by the release process, and a
+/// They are assuming the existence of a `antnode` binary produced by the release process, and a
 /// running local network, with SAFE_PEERS set to a local node.
 const CI_USER: &str = "runner";
 #[cfg(unix)]
-const SAFENODE_BIN_NAME: &str = "safenode";
+const ANTNODE_BIN_NAME: &str = "antnode";
 #[cfg(windows)]
-const SAFENODE_BIN_NAME: &str = "safenode.exe";
+const ANTNODE_BIN_NAME: &str = "antnode.exe";
 
 /// The default behaviour is for the service to run as the `safe` user, which gets created during
 /// the process. However, there seems to be some sort of issue with adding user accounts on the GHA
@@ -30,11 +30,11 @@ const SAFENODE_BIN_NAME: &str = "safenode.exe";
 /// build agent.
 #[test]
 fn cross_platform_service_install_and_control() {
-    let safenode_path = PathBuf::from("..")
+    let antnode_path = PathBuf::from("..")
         .join("target")
         .join("release")
-        .join(SAFENODE_BIN_NAME);
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+        .join(ANTNODE_BIN_NAME);
+    let mut cmd = Command::cargo_bin("antctl").unwrap();
     cmd.arg("add")
         .arg("--local")
         .arg("--user")
@@ -42,32 +42,32 @@ fn cross_platform_service_install_and_control() {
         .arg("--count")
         .arg("3")
         .arg("--path")
-        .arg(safenode_path.to_string_lossy().to_string())
+        .arg(antnode_path.to_string_lossy().to_string())
         .assert()
         .success();
 
     let registry = get_status();
-    assert_eq!(registry.nodes[0].service_name, "safenode1");
+    assert_eq!(registry.nodes[0].service_name, "antnode1");
     assert_eq!(registry.nodes[0].peer_id, None);
     assert_eq!(registry.nodes[0].status, ServiceStatus::Added);
-    assert_eq!(registry.nodes[1].service_name, "safenode2");
+    assert_eq!(registry.nodes[1].service_name, "antnode2");
     assert_eq!(registry.nodes[1].peer_id, None);
     assert_eq!(registry.nodes[1].status, ServiceStatus::Added);
-    assert_eq!(registry.nodes[2].service_name, "safenode3");
+    assert_eq!(registry.nodes[2].service_name, "antnode3");
     assert_eq!(registry.nodes[2].peer_id, None);
     assert_eq!(registry.nodes[2].status, ServiceStatus::Added);
 
     // Start each of the three services.
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("antctl").unwrap();
     cmd.arg("start").assert().success();
 
     // After `start`, all services should be running with valid peer IDs assigned.
     let registry = get_status();
-    assert_eq!(registry.nodes[0].service_name, "safenode1");
+    assert_eq!(registry.nodes[0].service_name, "antnode1");
     assert_eq!(registry.nodes[0].status, ServiceStatus::Running);
-    assert_eq!(registry.nodes[1].service_name, "safenode2");
+    assert_eq!(registry.nodes[1].service_name, "antnode2");
     assert_eq!(registry.nodes[1].status, ServiceStatus::Running);
-    assert_eq!(registry.nodes[2].service_name, "safenode3");
+    assert_eq!(registry.nodes[2].service_name, "antnode3");
     assert_eq!(registry.nodes[2].status, ServiceStatus::Running);
 
     // The three peer IDs should persist throughout the rest of the test.
@@ -78,39 +78,39 @@ fn cross_platform_service_install_and_control() {
         .collect::<Vec<Option<PeerId>>>();
 
     // Stop each of the three services.
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("antctl").unwrap();
     cmd.arg("stop").assert().success();
 
     // After `stop`, all services should be stopped with peer IDs retained.
     let registry = get_status();
-    assert_eq!(registry.nodes[0].service_name, "safenode1");
+    assert_eq!(registry.nodes[0].service_name, "antnode1");
     assert_eq!(registry.nodes[0].status, ServiceStatus::Stopped);
     assert_eq!(registry.nodes[0].peer_id, peer_ids[0]);
-    assert_eq!(registry.nodes[1].service_name, "safenode2");
+    assert_eq!(registry.nodes[1].service_name, "antnode2");
     assert_eq!(registry.nodes[1].status, ServiceStatus::Stopped);
     assert_eq!(registry.nodes[1].peer_id, peer_ids[1]);
-    assert_eq!(registry.nodes[2].service_name, "safenode3");
+    assert_eq!(registry.nodes[2].service_name, "antnode3");
     assert_eq!(registry.nodes[2].status, ServiceStatus::Stopped);
     assert_eq!(registry.nodes[2].peer_id, peer_ids[2]);
 
     // Start each of the three services again.
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("antctl").unwrap();
     cmd.arg("start").assert().success();
 
     // Peer IDs again should be retained after restart.
     let registry = get_status();
-    assert_eq!(registry.nodes[0].service_name, "safenode1");
+    assert_eq!(registry.nodes[0].service_name, "antnode1");
     assert_eq!(registry.nodes[0].status, ServiceStatus::Running);
     assert_eq!(registry.nodes[0].peer_id, peer_ids[0]);
-    assert_eq!(registry.nodes[1].service_name, "safenode2");
+    assert_eq!(registry.nodes[1].service_name, "antnode2");
     assert_eq!(registry.nodes[1].status, ServiceStatus::Running);
     assert_eq!(registry.nodes[1].peer_id, peer_ids[1]);
-    assert_eq!(registry.nodes[2].service_name, "safenode3");
+    assert_eq!(registry.nodes[2].service_name, "antnode3");
     assert_eq!(registry.nodes[2].status, ServiceStatus::Running);
     assert_eq!(registry.nodes[2].peer_id, peer_ids[2]);
 
     // Stop two nodes by peer ID.
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("antctl").unwrap();
     cmd.arg("stop")
         .arg("--peer-id")
         .arg(registry.nodes[0].peer_id.unwrap().to_string())
@@ -121,18 +121,18 @@ fn cross_platform_service_install_and_control() {
 
     // Peer IDs again should be retained after restart.
     let registry = get_status();
-    assert_eq!(registry.nodes[0].service_name, "safenode1");
+    assert_eq!(registry.nodes[0].service_name, "antnode1");
     assert_eq!(registry.nodes[0].status, ServiceStatus::Stopped);
     assert_eq!(registry.nodes[0].peer_id, peer_ids[0]);
-    assert_eq!(registry.nodes[1].service_name, "safenode2");
+    assert_eq!(registry.nodes[1].service_name, "antnode2");
     assert_eq!(registry.nodes[1].status, ServiceStatus::Running);
     assert_eq!(registry.nodes[1].peer_id, peer_ids[1]);
-    assert_eq!(registry.nodes[2].service_name, "safenode3");
+    assert_eq!(registry.nodes[2].service_name, "antnode3");
     assert_eq!(registry.nodes[2].status, ServiceStatus::Stopped);
     assert_eq!(registry.nodes[2].peer_id, peer_ids[2]);
 
     // Now restart the stopped nodes by service name.
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("antctl").unwrap();
     cmd.arg("start")
         .arg("--service-name")
         .arg(registry.nodes[0].service_name.clone())
@@ -143,34 +143,34 @@ fn cross_platform_service_install_and_control() {
 
     // The stopped nodes should now be running again.
     let registry = get_status();
-    assert_eq!(registry.nodes[0].service_name, "safenode1");
+    assert_eq!(registry.nodes[0].service_name, "antnode1");
     assert_eq!(registry.nodes[0].status, ServiceStatus::Running);
     assert_eq!(registry.nodes[0].peer_id, peer_ids[0]);
-    assert_eq!(registry.nodes[1].service_name, "safenode2");
+    assert_eq!(registry.nodes[1].service_name, "antnode2");
     assert_eq!(registry.nodes[1].status, ServiceStatus::Running);
     assert_eq!(registry.nodes[1].peer_id, peer_ids[1]);
-    assert_eq!(registry.nodes[2].service_name, "safenode3");
+    assert_eq!(registry.nodes[2].service_name, "antnode3");
     assert_eq!(registry.nodes[2].status, ServiceStatus::Running);
     assert_eq!(registry.nodes[2].peer_id, peer_ids[2]);
 
     // Finally, stop each of the three services.
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("antctl").unwrap();
     cmd.arg("stop").assert().success();
 
     // After `stop`, all services should be stopped with peer IDs retained.
     let registry = get_status();
-    assert_eq!(registry.nodes[0].service_name, "safenode1");
+    assert_eq!(registry.nodes[0].service_name, "antnode1");
     assert_eq!(registry.nodes[0].status, ServiceStatus::Stopped);
     assert_eq!(registry.nodes[0].peer_id, peer_ids[0]);
-    assert_eq!(registry.nodes[1].service_name, "safenode2");
+    assert_eq!(registry.nodes[1].service_name, "antnode2");
     assert_eq!(registry.nodes[1].status, ServiceStatus::Stopped);
     assert_eq!(registry.nodes[1].peer_id, peer_ids[1]);
-    assert_eq!(registry.nodes[2].service_name, "safenode3");
+    assert_eq!(registry.nodes[2].service_name, "antnode3");
     assert_eq!(registry.nodes[2].status, ServiceStatus::Stopped);
     assert_eq!(registry.nodes[2].peer_id, peer_ids[2]);
 
     // Remove two nodes.
-    let mut cmd = Command::cargo_bin("safenode-manager").unwrap();
+    let mut cmd = Command::cargo_bin("antctl").unwrap();
     cmd.arg("remove")
         .arg("--service-name")
         .arg(registry.nodes[0].service_name.clone())
@@ -190,7 +190,7 @@ fn cross_platform_service_install_and_control() {
 }
 
 fn get_status() -> StatusSummary {
-    let output = Command::cargo_bin("safenode-manager")
+    let output = Command::cargo_bin("antctl")
         .unwrap()
         .arg("status")
         .arg("--json")

@@ -17,11 +17,11 @@ use crate::{
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, VerbosityLevel,
 };
+use ant_releases::{ReleaseType, SafeReleaseRepoActions};
 use ant_service_management::UpgradeResult;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
 use semver::Version;
-use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use std::{
     path::PathBuf,
     process::{Command, Stdio},

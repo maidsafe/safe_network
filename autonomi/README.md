@@ -29,15 +29,15 @@ cargo run --bin evm-testnet
 3. Run a local network with the `local` feature and use the local evm node.
 
 ```sh
-cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-local
+cargo run --bin antctl --features local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-local
 ```
 
 4. Then run the tests with the `local` feature and pass the EVM params again:
 
 ```sh
-EVM_NETWORK=local cargo test --package=autonomi --features=local
+EVM_NETWORK=local cargo test --package autonomi --features local
 # Or with logs
-RUST_LOG=autonomi EVM_NETWORK=local cargo test --package=autonomi --features=local -- --nocapture
+RUST_LOG=autonomi EVM_NETWORK=local cargo test --package autonomi --features local -- --nocapture
 ```
 
 ### Using a live testnet or mainnet
@@ -48,16 +48,16 @@ point it to a live network.
 1. Run a local network with the `local` feature:
 
 ```sh
-cargo run --bin=safenode-manager --features=local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-arbitrum-one
+cargo run --bin antctl --features local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-arbitrum-one
 ```
 
 2. Then run the tests with the `local` feature. Make sure that the wallet of the private key you pass has enough gas and
    payment tokens on the network (in this case Arbitrum One):
 
 ```sh
-EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
+EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package autonomi --features local
 # Or with logs
-RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local -- --nocapture
+RUST_LOG=autonomi EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package autonomi --features local -- --nocapture
 ```
 
 ### WebAssembly
@@ -84,7 +84,7 @@ SAFE_PEERS=/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID> wasm-pack test --release --fire
 set and build the JS package:
 
 ```sh
-wasm-pack build --dev --target=web autonomi --features=vault
+wasm-pack build --dev --target web autonomi --features vault
 ```
 
 Then cd into `autonomi/tests-js`, and use `npm` to install and serve the test html file.
@@ -106,8 +106,8 @@ Build the package with the `external-signer` feature (and again with the env var
 Python:
 
 ```sh
-wasm-pack build --dev --target=web autonomi --features=external-signer
-python -m http.server --directory=autonomi 8000
+wasm-pack build --dev --target web autonomi --features external-signer
+python -m http.server --directory autonomi 8000
 ```
 
 Then visit `http://127.0.0.1:8000/examples/metamask` in your (modern) browser.

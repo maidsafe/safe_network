@@ -3,9 +3,9 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "safenode"
+name = "antnode"
 dynamic = ["version"]
-description = "SAFE Network Node"
+description = "The Autonomi node binary"
 requires-python = ">=3.8"
 dependencies = [
     "maturin>=1.7.4",
@@ -14,8 +14,8 @@ dependencies = [
 
 [tool.maturin]
 features = ["extension-module"]
-module-name = "safenode._safenode"
+module-name = "antnode._antnode"
 python-source = "python"
 bindings = "pyo3"
 manifest-path = "Cargo.toml"
-sdist-include = ["python/safenode/*"]
+sdist-include = ["python/antnode/*"]

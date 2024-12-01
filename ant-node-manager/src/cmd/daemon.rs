@@ -12,12 +12,12 @@ use crate::{
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, ServiceManager, VerbosityLevel,
 };
+use ant_releases::{ReleaseType, SafeReleaseRepoActions};
 use ant_service_management::{
     control::{ServiceControl, ServiceController},
     DaemonService, NodeRegistry,
 };
 use color_eyre::{eyre::eyre, Result};
-use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use std::{net::Ipv4Addr, path::PathBuf};
 
 pub async fn add(
@@ -51,7 +51,7 @@ pub async fn add(
         (path, version)
     } else {
         download_and_extract_release(
-            ReleaseType::SafenodeManagerDaemon,
+            ReleaseType::AntCtlDaemon,
             url.clone(),
             version,
             &*release_repo,
@@ -64,7 +64,7 @@ pub async fn add(
     info!("Adding daemon service");
 
     // At the moment we don't have the option to provide a user for running the service. Since
-    // `safenodemand` requires manipulation of services, the user running it must either be root or
+    // `antctld` requires manipulation of services, the user running it must either be root or
     // have root access. For now we will just use the `root` user. The user option gets ignored on
     // Windows anyway, so there shouldn't be a cross-platform issue here.
     add_daemon(

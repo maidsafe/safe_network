@@ -10,8 +10,8 @@ readme = "README.md"
 repository = "https://github.com/maidsafe/autonomi"
 
 [[bin]]
-name = "safenode"
-path = "src/bin/safenode/main.rs"
+name = "antnode"
+path = "src/bin/antnode/main.rs"
 
 [features]
 default = ["metrics", "upnp", "open-metrics", "encrypt-records"]

@@ -21,6 +21,7 @@ use crate::{
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
 use ant_peers_acquisition::PeersArgs;
+use ant_releases::{ReleaseType, SafeReleaseRepoActions};
 use ant_service_management::{
     control::{ServiceControl, ServiceController},
     rpc::RpcClient,
@@ -30,7 +31,6 @@ use color_eyre::{eyre::eyre, Help, Result};
 use colored::Colorize;
 use libp2p_identity::PeerId;
 use semver::Version;
-use sn_releases::{ReleaseType, SafeReleaseRepoActions};
 use std::{cmp::Ordering, io::Write, net::Ipv4Addr, path::PathBuf, str::FromStr, time::Duration};
 use tracing::debug;
 
@@ -67,7 +67,7 @@ pub async fn add(
     let user_mode = !is_running_as_root();
 
     if verbosity != VerbosityLevel::Minimal {
-        print_banner("Add Safenode Services");
+        print_banner("Add Antnode Services");
         println!("{} service(s) to be added", count.unwrap_or(1));
     }
 
@@ -82,21 +82,18 @@ pub async fn add(
 
     let service_data_dir_path =
         config::get_service_data_dir_path(data_dir_path, service_user.clone())?;
-    let service_log_dir_path = config::get_service_log_dir_path(
-        ReleaseType::Safenode,
-        log_dir_path,
-        service_user.clone(),
-    )?;
+    let service_log_dir_path =
+        config::get_service_log_dir_path(ReleaseType::AntNode, log_dir_path, service_user.clone())?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     let release_repo = <dyn SafeReleaseRepoActions>::default_config();
 
-    let (safenode_src_path, version) = if let Some(path) = src_path.clone() {
+    let (antnode_src_path, version) = if let Some(path) = src_path.clone() {
         let version = get_bin_version(&path)?;
         (path, version)
     } else {
         download_and_extract_release(
-            ReleaseType::Safenode,
+            ReleaseType::AntNode,
             url.clone(),
             version,
             &*release_repo,
@@ -117,8 +114,8 @@ pub async fn add(
     // Thus make use of get_peers_exclude_network_contacts() instead of get_peers() to make sure we only
     // parse the --peers and SAFE_PEERS env var.
 
-    // If the `safenode` binary we're using has `network-contacts` enabled (which is the case for released binaries),
-    // it's fine if the service definition doesn't call `safenode` with a `--peer` argument.
+    // If the `antnode` binary we're using has `network-contacts` enabled (which is the case for released binaries),
+    // it's fine if the service definition doesn't call `antnode` with a `--peer` argument.
     let is_first = peers_args.first;
     let bootstrap_peers = match peers_args.get_peers_exclude_network_contacts().await {
         Ok(peers) => {
@@ -142,7 +139,7 @@ pub async fn add(
         auto_set_nat_flags,
         bootstrap_peers,
         count,
-        delete_safenode_src: src_path.is_none(),
+        delete_antnode_src: src_path.is_none(),
         enable_metrics_server,
         evm_network: evm_network.unwrap_or(EvmNetwork::ArbitrumOne),
         env_variables,
@@ -159,8 +156,8 @@ pub async fn add(
         rewards_address,
         rpc_address,
         rpc_port,
-        safenode_src_path,
-        safenode_dir_path: service_data_dir_path.clone(),
+        antnode_src_path,
+        antnode_dir_path: service_data_dir_path.clone(),
         service_data_dir_path,
         service_log_dir_path,
         upnp,
@@ -223,9 +220,9 @@ pub async fn remove(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if verbosity != VerbosityLevel::Minimal {
-        print_banner("Remove Safenode Services");
+        print_banner("Remove Antnode Services");
     }
-    info!("Removing safe node services with keep_dirs=({keep_directories}) for: {peer_ids:?}, {service_names:?}");
+    info!("Removing antnode services with keep_dirs=({keep_directories}) for: {peer_ids:?}, {service_names:?}");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(
@@ -271,12 +268,12 @@ pub async fn remove(
 
 pub async fn reset(force: bool, verbosity: VerbosityLevel) -> Result<()> {
     if verbosity != VerbosityLevel::Minimal {
-        print_banner("Reset Safenode Services");
+        print_banner("Reset Antnode Services");
     }
-    info!("Resetting all safenode services, with force={force}");
+    info!("Resetting all antnode services, with force={force}");
 
     if !force {
-        println!("WARNING: all safenode services, data, and logs will be removed.");
+        println!("WARNING: all antnode services, data, and logs will be removed.");
         println!("Do you wish to proceed? [y/n]");
         std::io::stdout().flush()?;
         let mut input = String::new();
@@ -310,9 +307,9 @@ pub async fn start(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if verbosity != VerbosityLevel::Minimal {
-        print_banner("Start Safenode Services");
+        print_banner("Start Antnode Services");
     }
-    info!("Starting safenode services for: {peer_ids:?}, {service_names:?}");
+    info!("Starting antnode services for: {peer_ids:?}, {service_names:?}");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(
@@ -383,7 +380,7 @@ pub async fn status(details: bool, fail: bool, json: bool) -> Result<()> {
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     if !node_registry.nodes.is_empty() {
         if !json && !details {
-            print_banner("Safenode Services");
+            print_banner("Antnode Services");
         }
         status_report(
             &mut node_registry,
@@ -406,9 +403,9 @@ pub async fn stop(
     verbosity: VerbosityLevel,
 ) -> Result<()> {
     if verbosity != VerbosityLevel::Minimal {
-        print_banner("Stop Safenode Services");
+        print_banner("Stop Antnode Services");
     }
-    info!("Stopping safenode services for: {peer_ids:?}, {service_names:?}");
+    info!("Stopping antnode services for: {peer_ids:?}, {service_names:?}");
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
     refresh_node_registry(
@@ -478,15 +475,15 @@ pub async fn upgrade(
     let use_force = force || custom_bin_path.is_some();
 
     if verbosity != VerbosityLevel::Minimal {
-        print_banner("Upgrade Safenode Services");
+        print_banner("Upgrade Antnode Services");
     }
     info!(
-        "Upgrading safenode services with use_force={use_force} for: {peer_ids:?}, {service_names:?}"
+        "Upgrading antnode services with use_force={use_force} for: {peer_ids:?}, {service_names:?}"
     );
 
     let (upgrade_bin_path, target_version) = download_and_get_upgrade_bin_path(
         custom_bin_path.clone(),
-        ReleaseType::Safenode,
+        ReleaseType::AntNode,
         url,
         version,
         verbosity,

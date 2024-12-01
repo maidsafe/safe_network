@@ -37,9 +37,9 @@ use std::{
 };
 
 #[cfg(not(target_os = "windows"))]
-const SAFENODE_FILE_NAME: &str = "safenode";
+const ANTNODE_FILE_NAME: &str = "antnode";
 #[cfg(target_os = "windows")]
-const SAFENODE_FILE_NAME: &str = "safenode.exe";
+const ANTNODE_FILE_NAME: &str = "antnode.exe";
 #[cfg(not(target_os = "windows"))]
 const AUDITOR_FILE_NAME: &str = "sn_auditor";
 #[cfg(target_os = "windows")]
@@ -49,9 +49,9 @@ const FAUCET_FILE_NAME: &str = "faucet";
 #[cfg(target_os = "windows")]
 const FAUCET_FILE_NAME: &str = "faucet.exe";
 #[cfg(not(target_os = "windows"))]
-const DAEMON_FILE_NAME: &str = "safenodemand";
+const DAEMON_FILE_NAME: &str = "antctld";
 #[cfg(target_os = "windows")]
-const DAEMON_FILE_NAME: &str = "safenodemand.exe";
+const DAEMON_FILE_NAME: &str = "antctld.exe";
 
 mock! {
     pub ServiceControl {}
@@ -88,8 +88,8 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut node_registry = NodeRegistry {
         auditor: None,
@@ -113,7 +113,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -127,21 +127,21 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
         genesis: true,
         home_network: false,
         local: true,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -159,7 +159,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: true,
@@ -174,8 +174,8 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -201,7 +201,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
     )
     .await?;
 
-    safenode_download_path.assert(predicate::path::missing());
+    antnode_download_path.assert(predicate::path::missing());
     node_data_dir.assert(predicate::path::is_dir());
     node_logs_dir.assert(predicate::path::is_dir());
 
@@ -209,7 +209,7 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
     assert_eq!(node_registry.nodes.len(), 1);
     assert!(node_registry.nodes[0].genesis);
     assert_eq!(node_registry.nodes[0].version, latest_version);
-    assert_eq!(node_registry.nodes[0].service_name, "safenode1");
+    assert_eq!(node_registry.nodes[0].service_name, "antnode1");
     assert_eq!(node_registry.nodes[0].user, Some(get_username()));
     assert_eq!(node_registry.nodes[0].number, 1);
     assert_eq!(
@@ -218,11 +218,11 @@ async fn add_genesis_node_should_use_latest_version_and_add_one_service() -> Res
     );
     assert_eq!(
         node_registry.nodes[0].log_dir_path,
-        node_logs_dir.to_path_buf().join("safenode1")
+        node_logs_dir.to_path_buf().join("antnode1")
     );
     assert_eq!(
         node_registry.nodes[0].data_dir_path,
-        node_data_dir.to_path_buf().join("safenode1")
+        node_data_dir.to_path_buf().join("antnode1")
     );
     assert_matches!(node_registry.nodes[0].status, ServiceStatus::Added);
     assert_eq!(
@@ -262,7 +262,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
         nodes: vec![NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -276,7 +276,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -293,8 +293,8 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
             status: ServiceStatus::Added,
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             upnp: false,
             user: Some("safe".to_string()),
             user_mode: false,
@@ -306,12 +306,12 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
     };
 
     let temp_dir = assert_fs::TempDir::new()?;
-    let node_data_dir = temp_dir.child("safenode1");
+    let node_data_dir = temp_dir.child("antnode1");
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let custom_rpc_address = Ipv4Addr::new(127, 0, 0, 1);
 
@@ -321,7 +321,7 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: true,
@@ -336,8 +336,8 @@ async fn add_genesis_node_should_return_an_error_if_there_is_already_a_genesis_n
             node_port: None,
             rpc_address: Some(custom_rpc_address),
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -391,12 +391,12 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
 
     let latest_version = "0.96.4";
     let temp_dir = assert_fs::TempDir::new()?;
-    let node_data_dir = temp_dir.child("safenode1");
+    let node_data_dir = temp_dir.child("antnode1");
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let result = add_node(
         AddNodeServiceOptions {
@@ -404,7 +404,7 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(3),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: true,
@@ -419,8 +419,8 @@ async fn add_genesis_node_should_return_an_error_if_count_is_greater_than_1() ->
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -478,8 +478,8 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -493,7 +493,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -507,20 +507,20 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         genesis: false,
         home_network: false,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         service_user: Some(get_username()),
         upnp: false,
@@ -543,7 +543,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode2"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -557,21 +557,21 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         genesis: false,
         home_network: false,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode2"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode2".to_string(),
+        name: "antnode2".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode2")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode2")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -592,7 +592,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         .in_sequence(&mut seq);
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
-        data_dir_path: node_data_dir.to_path_buf().join("safenode3"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode3"),
         bootstrap_peers: vec![],
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -608,20 +608,20 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
         home_network: false,
         local: false,
         log_format: None,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode3"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode3"),
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode3".to_string(),
+        name: "antnode3".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8085),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode3")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode3")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -640,7 +640,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(3),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -655,8 +655,8 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -684,7 +684,7 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
 
     assert_eq!(node_registry.nodes.len(), 3);
     assert_eq!(node_registry.nodes[0].version, latest_version);
-    assert_eq!(node_registry.nodes[0].service_name, "safenode1");
+    assert_eq!(node_registry.nodes[0].service_name, "antnode1");
     assert_eq!(node_registry.nodes[0].user, Some(get_username()));
     assert_eq!(node_registry.nodes[0].number, 1);
     assert_eq!(
@@ -693,15 +693,15 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     );
     assert_eq!(
         node_registry.nodes[0].log_dir_path,
-        node_logs_dir.to_path_buf().join("safenode1")
+        node_logs_dir.to_path_buf().join("antnode1")
     );
     assert_eq!(
         node_registry.nodes[0].data_dir_path,
-        node_data_dir.to_path_buf().join("safenode1")
+        node_data_dir.to_path_buf().join("antnode1")
     );
     assert_matches!(node_registry.nodes[0].status, ServiceStatus::Added);
     assert_eq!(node_registry.nodes[1].version, latest_version);
-    assert_eq!(node_registry.nodes[1].service_name, "safenode2");
+    assert_eq!(node_registry.nodes[1].service_name, "antnode2");
     assert_eq!(node_registry.nodes[1].user, Some(get_username()));
     assert_eq!(node_registry.nodes[1].number, 2);
     assert_eq!(
@@ -710,15 +710,15 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     );
     assert_eq!(
         node_registry.nodes[1].log_dir_path,
-        node_logs_dir.to_path_buf().join("safenode2")
+        node_logs_dir.to_path_buf().join("antnode2")
     );
     assert_eq!(
         node_registry.nodes[1].data_dir_path,
-        node_data_dir.to_path_buf().join("safenode2")
+        node_data_dir.to_path_buf().join("antnode2")
     );
     assert_matches!(node_registry.nodes[1].status, ServiceStatus::Added);
     assert_eq!(node_registry.nodes[2].version, latest_version);
-    assert_eq!(node_registry.nodes[2].service_name, "safenode3");
+    assert_eq!(node_registry.nodes[2].service_name, "antnode3");
     assert_eq!(node_registry.nodes[2].user, Some(get_username()));
     assert_eq!(node_registry.nodes[2].number, 3);
     assert_eq!(
@@ -727,11 +727,11 @@ async fn add_node_should_use_latest_version_and_add_three_services() -> Result<(
     );
     assert_eq!(
         node_registry.nodes[2].log_dir_path,
-        node_logs_dir.to_path_buf().join("safenode3")
+        node_logs_dir.to_path_buf().join("antnode3")
     );
     assert_eq!(
         node_registry.nodes[2].data_dir_path,
-        node_data_dir.to_path_buf().join("safenode3")
+        node_data_dir.to_path_buf().join("antnode3")
     );
     assert_matches!(node_registry.nodes[2].status, ServiceStatus::Added);
 
@@ -764,8 +764,8 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -778,7 +778,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: new_peers.clone(),
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -792,21 +792,21 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
         genesis: false,
         home_network: false,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -825,7 +825,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
             auto_set_nat_flags: false,
             bootstrap_peers: new_peers.clone(),
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             local: false,
@@ -840,8 +840,8 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_src_path: safenode_download_path.to_path_buf(),
-            safenode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -867,7 +867,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
     )
     .await?;
 
-    safenode_download_path.assert(predicate::path::missing());
+    antnode_download_path.assert(predicate::path::missing());
     node_data_dir.assert(predicate::path::is_dir());
     node_logs_dir.assert(predicate::path::is_dir());
 
@@ -876,7 +876,7 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
 
     assert_eq!(node_registry.nodes.len(), 1);
     assert_eq!(node_registry.nodes[0].version, latest_version);
-    assert_eq!(node_registry.nodes[0].service_name, "safenode1");
+    assert_eq!(node_registry.nodes[0].service_name, "antnode1");
     assert_eq!(node_registry.nodes[0].user, Some(get_username()));
     assert_eq!(node_registry.nodes[0].number, 1);
     assert_eq!(
@@ -885,11 +885,11 @@ async fn add_node_should_update_the_bootstrap_peers_inside_node_registry() -> Re
     );
     assert_eq!(
         node_registry.nodes[0].log_dir_path,
-        node_logs_dir.to_path_buf().join("safenode1")
+        node_logs_dir.to_path_buf().join("antnode1")
     );
     assert_eq!(
         node_registry.nodes[0].data_dir_path,
-        node_data_dir.to_path_buf().join("safenode1")
+        node_data_dir.to_path_buf().join("antnode1")
     );
     assert_matches!(node_registry.nodes[0].status, ServiceStatus::Added);
 
@@ -924,8 +924,8 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -937,7 +937,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: env_variables.clone(),
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -951,21 +951,21 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
         genesis: false,
         home_network: false,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -983,7 +983,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: env_variables.clone(),
             genesis: false,
@@ -998,8 +998,8 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -1025,7 +1025,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
     )
     .await?;
 
-    safenode_download_path.assert(predicate::path::missing());
+    antnode_download_path.assert(predicate::path::missing());
     node_data_dir.assert(predicate::path::is_dir());
     node_logs_dir.assert(predicate::path::is_dir());
 
@@ -1033,7 +1033,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
 
     assert_eq!(node_registry.nodes.len(), 1);
     assert_eq!(node_registry.nodes[0].version, latest_version);
-    assert_eq!(node_registry.nodes[0].service_name, "safenode1");
+    assert_eq!(node_registry.nodes[0].service_name, "antnode1");
     assert_eq!(node_registry.nodes[0].user, Some(get_username()));
     assert_eq!(node_registry.nodes[0].number, 1);
     assert_eq!(
@@ -1042,11 +1042,11 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
     );
     assert_eq!(
         node_registry.nodes[0].log_dir_path,
-        node_logs_dir.to_path_buf().join("safenode1")
+        node_logs_dir.to_path_buf().join("antnode1")
     );
     assert_eq!(
         node_registry.nodes[0].data_dir_path,
-        node_data_dir.to_path_buf().join("safenode1")
+        node_data_dir.to_path_buf().join("antnode1")
     );
     assert_matches!(node_registry.nodes[0].status, ServiceStatus::Added);
 
@@ -1069,7 +1069,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         nodes: vec![NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1083,7 +1083,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -1099,8 +1099,8 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1112,12 +1112,12 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         daemon: None,
     };
     let temp_dir = assert_fs::TempDir::new()?;
-    let node_data_dir = temp_dir.child("safenode1");
+    let node_data_dir = temp_dir.child("antnode1");
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
     mock_service_control
@@ -1128,7 +1128,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode2"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode2"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -1142,21 +1142,21 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
         genesis: false,
         home_network: false,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode2"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode2"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode2".to_string(),
+        name: "antnode2".to_string(),
         node_ip: None,
         node_port: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8083),
         owner: None,
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode2")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode2")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -1175,7 +1175,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -1190,8 +1190,8 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_src_path: safenode_download_path.to_path_buf(),
-            safenode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -1219,7 +1219,7 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
 
     assert_eq!(node_registry.nodes.len(), 2);
     assert_eq!(node_registry.nodes[1].version, latest_version);
-    assert_eq!(node_registry.nodes[1].service_name, "safenode2");
+    assert_eq!(node_registry.nodes[1].service_name, "antnode2");
     assert_eq!(node_registry.nodes[1].user, Some(get_username()));
     assert_eq!(node_registry.nodes[1].number, 2);
     assert_eq!(
@@ -1228,11 +1228,11 @@ async fn add_new_node_should_add_another_service() -> Result<()> {
     );
     assert_eq!(
         node_registry.nodes[1].log_dir_path,
-        node_logs_dir.to_path_buf().join("safenode2")
+        node_logs_dir.to_path_buf().join("antnode2")
     );
     assert_eq!(
         node_registry.nodes[1].data_dir_path,
-        node_data_dir.to_path_buf().join("safenode2")
+        node_data_dir.to_path_buf().join("antnode2")
     );
     assert_matches!(node_registry.nodes[0].status, ServiceStatus::Added);
     assert!(!node_registry.nodes[0].auto_restart);
@@ -1263,8 +1263,8 @@ async fn add_node_should_use_custom_ip() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let custom_ip = Ipv4Addr::new(192, 168, 1, 1);
 
@@ -1288,7 +1288,7 @@ async fn add_node_should_use_custom_ip() -> Result<()> {
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -1296,7 +1296,7 @@ async fn add_node_should_use_custom_ip() -> Result<()> {
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -1315,11 +1315,11 @@ async fn add_node_should_use_custom_ip() -> Result<()> {
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode1".parse()?,
+                label: "antnode1".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -1334,7 +1334,7 @@ async fn add_node_should_use_custom_ip() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -1349,8 +1349,8 @@ async fn add_node_should_use_custom_ip() -> Result<()> {
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -1376,7 +1376,7 @@ async fn add_node_should_use_custom_ip() -> Result<()> {
     )
     .await?;
 
-    safenode_download_path.assert(predicate::path::missing());
+    antnode_download_path.assert(predicate::path::missing());
     node_data_dir.assert(predicate::path::is_dir());
     node_logs_dir.assert(predicate::path::is_dir());
 
@@ -1409,8 +1409,8 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let custom_port = 12000;
 
@@ -1424,7 +1424,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -1438,21 +1438,21 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
         genesis: false,
         home_network: false,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: Some(custom_port),
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -1471,7 +1471,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -1486,8 +1486,8 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
             node_port: Some(PortRange::Single(custom_port)),
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -1513,7 +1513,7 @@ async fn add_node_should_use_custom_ports_for_one_service() -> Result<()> {
     )
     .await?;
 
-    safenode_download_path.assert(predicate::path::missing());
+    antnode_download_path.assert(predicate::path::missing());
     node_data_dir.assert(predicate::path::is_dir());
     node_logs_dir.assert(predicate::path::is_dir());
 
@@ -1546,8 +1546,8 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -1569,7 +1569,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -1577,7 +1577,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -1596,11 +1596,11 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode1".parse()?,
+                label: "antnode1".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -1627,7 +1627,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode2")
+                            .join("antnode2")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -1635,7 +1635,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode2")
+                            .join("antnode2")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -1654,11 +1654,11 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode2".parse()?,
+                label: "antnode2".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode2")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode2")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -1685,7 +1685,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode3")
+                            .join("antnode3")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -1693,7 +1693,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode3")
+                            .join("antnode3")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -1712,11 +1712,11 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode3".parse()?,
+                label: "antnode3".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode3")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode3")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -1731,7 +1731,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(3),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -1746,8 +1746,8 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
             node_port: Some(PortRange::Range(12000, 12002)),
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -1773,7 +1773,7 @@ async fn add_node_should_use_a_custom_port_range() -> Result<()> {
     )
     .await?;
 
-    safenode_download_path.assert(predicate::path::missing());
+    antnode_download_path.assert(predicate::path::missing());
     node_data_dir.assert(predicate::path::is_dir());
     node_logs_dir.assert(predicate::path::is_dir());
     assert_eq!(node_registry.nodes.len(), 3);
@@ -1797,7 +1797,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
         nodes: vec![NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1812,7 +1812,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
             listen_addr: None,
             local: false,
             log_format: None,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
@@ -1827,8 +1827,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1845,8 +1845,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let result = add_node(
         AddNodeServiceOptions {
@@ -1854,7 +1854,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -1869,8 +1869,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_is_used() -> R
             node_port: Some(PortRange::Single(12000)),
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -1918,7 +1918,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
         nodes: vec![NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -1933,7 +1933,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
             listen_addr: None,
             local: false,
             log_format: None,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             max_archived_log_files: None,
             max_log_files: None,
             metrics_port: None,
@@ -1948,8 +1948,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -1966,8 +1966,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let result = add_node(
         AddNodeServiceOptions {
@@ -1975,7 +1975,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(3),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -1990,8 +1990,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_port_in_range_is_us
             node_port: Some(PortRange::Range(12000, 12002)),
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -2047,8 +2047,8 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let result = add_node(
         AddNodeServiceOptions {
@@ -2056,7 +2056,7 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(2),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -2071,8 +2071,8 @@ async fn add_node_should_return_an_error_if_port_and_node_count_do_not_match() -
             node_port: Some(PortRange::Range(12000, 12002)),
             rpc_address: None,
             rpc_port: None,
-            safenode_src_path: safenode_download_path.to_path_buf(),
-            safenode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -2133,8 +2133,8 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let result = add_node(
         AddNodeServiceOptions {
@@ -2142,7 +2142,7 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(2),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -2157,8 +2157,8 @@ async fn add_node_should_return_an_error_if_multiple_services_are_specified_with
             node_port: Some(PortRange::Single(12000)),
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -2220,8 +2220,8 @@ async fn add_node_should_set_random_ports_if_enable_metrics_server_is_true() -> 
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -2244,7 +2244,7 @@ async fn add_node_should_set_random_ports_if_enable_metrics_server_is_true() -> 
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2252,7 +2252,7 @@ async fn add_node_should_set_random_ports_if_enable_metrics_server_is_true() -> 
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2271,11 +2271,11 @@ async fn add_node_should_set_random_ports_if_enable_metrics_server_is_true() -> 
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode1".parse()?,
+                label: "antnode1".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -2290,7 +2290,7 @@ async fn add_node_should_set_random_ports_if_enable_metrics_server_is_true() -> 
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: true,
             env_variables: None,
             genesis: false,
@@ -2305,8 +2305,8 @@ async fn add_node_should_set_random_ports_if_enable_metrics_server_is_true() -> 
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -2360,8 +2360,8 @@ async fn add_node_should_set_max_archived_log_files() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -2384,7 +2384,7 @@ async fn add_node_should_set_max_archived_log_files() -> Result<()> {
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2392,7 +2392,7 @@ async fn add_node_should_set_max_archived_log_files() -> Result<()> {
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2411,11 +2411,11 @@ async fn add_node_should_set_max_archived_log_files() -> Result<()> {
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode1".parse()?,
+                label: "antnode1".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -2430,7 +2430,7 @@ async fn add_node_should_set_max_archived_log_files() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(1),
-            delete_safenode_src: false,
+            delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -2445,8 +2445,8 @@ async fn add_node_should_set_max_archived_log_files() -> Result<()> {
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -2501,8 +2501,8 @@ async fn add_node_should_set_max_log_files() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -2525,7 +2525,7 @@ async fn add_node_should_set_max_log_files() -> Result<()> {
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2533,7 +2533,7 @@ async fn add_node_should_set_max_log_files() -> Result<()> {
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2552,11 +2552,11 @@ async fn add_node_should_set_max_log_files() -> Result<()> {
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode1".parse()?,
+                label: "antnode1".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -2571,7 +2571,7 @@ async fn add_node_should_set_max_log_files() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(1),
-            delete_safenode_src: false,
+            delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -2586,8 +2586,8 @@ async fn add_node_should_set_max_log_files() -> Result<()> {
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -2641,8 +2641,8 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -2664,7 +2664,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2672,7 +2672,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2691,11 +2691,11 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode1".parse()?,
+                label: "antnode1".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -2722,7 +2722,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode2")
+                            .join("antnode2")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2730,7 +2730,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode2")
+                            .join("antnode2")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2749,11 +2749,11 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode2".parse()?,
+                label: "antnode2".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode2")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode2")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -2780,7 +2780,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode3")
+                            .join("antnode3")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2788,7 +2788,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode3")
+                            .join("antnode3")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -2807,11 +2807,11 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode3".parse()?,
+                label: "antnode3".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode3")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode3")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -2826,7 +2826,7 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(3),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -2841,8 +2841,8 @@ async fn add_node_should_use_a_custom_port_range_for_metrics_server() -> Result<
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -2889,7 +2889,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
         nodes: vec![NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -2903,7 +2903,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -2919,8 +2919,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -2937,8 +2937,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let result = add_node(
         AddNodeServiceOptions {
@@ -2946,7 +2946,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -2961,8 +2961,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_is_use
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -3011,7 +3011,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
         nodes: vec![NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -3025,7 +3025,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -3041,8 +3041,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -3059,8 +3059,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let result = add_node(
         AddNodeServiceOptions {
@@ -3068,7 +3068,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(3),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -3083,8 +3083,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_metrics_port_in_ran
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -3142,8 +3142,8 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -3160,7 +3160,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -3168,7 +3168,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -3185,11 +3185,11 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode1".parse()?,
+                label: "antnode1".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -3211,7 +3211,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode2")
+                            .join("antnode2")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -3219,7 +3219,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode2")
+                            .join("antnode2")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -3236,11 +3236,11 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode2".parse()?,
+                label: "antnode2".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode2")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode2")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -3262,7 +3262,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode3")
+                            .join("antnode3")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -3270,7 +3270,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode3")
+                            .join("antnode3")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -3287,11 +3287,11 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode3".parse()?,
+                label: "antnode3".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode3")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode3")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -3306,7 +3306,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(3),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -3321,8 +3321,8 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
             node_port: None,
             rpc_address: None,
             rpc_port: Some(PortRange::Range(20000, 20002)),
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -3348,7 +3348,7 @@ async fn add_node_should_use_a_custom_port_range_for_the_rpc_server() -> Result<
     )
     .await?;
 
-    safenode_download_path.assert(predicate::path::missing());
+    antnode_download_path.assert(predicate::path::missing());
     node_data_dir.assert(predicate::path::is_dir());
     node_logs_dir.assert(predicate::path::is_dir());
     assert_eq!(node_registry.nodes.len(), 3);
@@ -3380,7 +3380,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
         nodes: vec![NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -3394,7 +3394,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -3410,8 +3410,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -3428,8 +3428,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let result = add_node(
         AddNodeServiceOptions {
@@ -3437,7 +3437,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -3452,8 +3452,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_is_used() 
             node_port: None,
             rpc_address: None,
             rpc_port: Some(PortRange::Single(8081)),
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -3502,7 +3502,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
         nodes: vec![NodeServiceData {
             auto_restart: false,
             connected_peers: None,
-            data_dir_path: PathBuf::from("/var/safenode-manager/services/safenode1"),
+            data_dir_path: PathBuf::from("/var/antctl/services/antnode1"),
             evm_network: EvmNetwork::Custom(CustomNetwork {
                 rpc_url_http: "http://localhost:8545".parse()?,
                 payment_token_address: RewardsAddress::from_str(
@@ -3516,7 +3516,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             home_network: false,
             listen_addr: None,
             local: false,
-            log_dir_path: PathBuf::from("/var/log/safenode/safenode1"),
+            log_dir_path: PathBuf::from("/var/log/antnode/antnode1"),
             log_format: None,
             max_archived_log_files: None,
             max_log_files: None,
@@ -3532,8 +3532,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             )?,
             reward_balance: Some(AttoTokens::zero()),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-            safenode_path: PathBuf::from("/var/safenode-manager/services/safenode1/safenode"),
-            service_name: "safenode1".to_string(),
+            antnode_path: PathBuf::from("/var/antctl/services/antnode1/antnode"),
+            service_name: "antnode1".to_string(),
             status: ServiceStatus::Added,
             upnp: false,
             user: Some("safe".to_string()),
@@ -3550,8 +3550,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let result = add_node(
         AddNodeServiceOptions {
@@ -3559,7 +3559,7 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(2),
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -3574,8 +3574,8 @@ async fn add_node_should_return_an_error_if_duplicate_custom_rpc_port_in_range_i
             node_port: None,
             rpc_address: None,
             rpc_port: Some(PortRange::Range(8081, 8082)),
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -3633,8 +3633,8 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -3647,7 +3647,7 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -3661,21 +3661,21 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
         genesis: false,
         home_network: false,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -3693,7 +3693,7 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
             auto_set_nat_flags: true,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             local: false,
@@ -3708,8 +3708,8 @@ async fn add_node_should_disable_upnp_and_home_network_if_nat_status_is_public()
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: true,
@@ -3764,8 +3764,8 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -3778,7 +3778,7 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -3792,21 +3792,21 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
         genesis: false,
         home_network: false,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: true,
     }
@@ -3824,7 +3824,7 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
             auto_set_nat_flags: true,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             local: false,
@@ -3839,8 +3839,8 @@ async fn add_node_should_enable_upnp_if_nat_status_is_upnp() -> Result<()> {
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -3895,8 +3895,8 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -3909,7 +3909,7 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -3923,21 +3923,21 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
         genesis: false,
         home_network: true,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 12001),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -3955,7 +3955,7 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
             auto_set_nat_flags: true,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             local: false,
@@ -3970,8 +3970,8 @@ async fn add_node_should_enable_home_network_if_nat_status_is_private() -> Resul
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: true,
@@ -4027,8 +4027,8 @@ async fn add_node_should_return_an_error_if_nat_status_is_none_but_auto_set_nat_
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -4044,7 +4044,7 @@ async fn add_node_should_return_an_error_if_nat_status_is_none_but_auto_set_nat_
             auto_set_nat_flags: true,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             local: false,
@@ -4059,8 +4059,8 @@ async fn add_node_should_return_an_error_if_nat_status_is_none_but_auto_set_nat_
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -4532,7 +4532,7 @@ async fn add_daemon_should_add_a_daemon_service() -> Result<()> {
                 autostart: true,
                 contents: None,
                 environment: Some(vec![("SN_LOG".to_string(), "ALL".to_string())]),
-                label: "safenodemand".parse()?,
+                label: "antctld".parse()?,
                 program: daemon_install_path.to_path_buf(),
                 username: Some(get_username()),
                 working_directory: None,
@@ -4563,7 +4563,7 @@ async fn add_daemon_should_add_a_daemon_service() -> Result<()> {
     let saved_daemon = node_registry.daemon.unwrap();
     assert_eq!(saved_daemon.daemon_path, daemon_install_path.to_path_buf());
     assert!(saved_daemon.pid.is_none());
-    assert_eq!(saved_daemon.service_name, "safenodemand");
+    assert_eq!(saved_daemon.service_name, "antctld");
     assert_eq!(saved_daemon.status, ServiceStatus::Added);
     assert_eq!(saved_daemon.version, latest_version);
 
@@ -4586,13 +4586,13 @@ async fn add_daemon_should_return_an_error_if_a_daemon_service_was_already_creat
     let mut node_registry = NodeRegistry {
         bootstrap_peers: vec![],
         daemon: Some(DaemonServiceData {
-            daemon_path: PathBuf::from("/usr/local/bin/safenodemand"),
+            daemon_path: PathBuf::from("/usr/local/bin/antctld"),
             endpoint: Some(SocketAddr::new(
                 IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
                 8080,
             )),
             pid: Some(1234),
-            service_name: "safenodemand".to_string(),
+            service_name: "antctld".to_string(),
             status: ServiceStatus::Running,
             version: latest_version.to_string(),
         }),
@@ -4622,7 +4622,7 @@ async fn add_daemon_should_return_an_error_if_a_daemon_service_was_already_creat
         Ok(_) => panic!("This test should result in an error"),
         Err(e) => {
             assert_eq!(
-                format!("A safenodemand service has already been created"),
+                format!("A antctld service has already been created"),
                 e.to_string()
             )
         }
@@ -4655,8 +4655,8 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -4670,7 +4670,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -4684,21 +4684,21 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
         genesis: false,
         home_network: false,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -4717,7 +4717,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(1),
-            delete_safenode_src: false,
+            delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -4732,8 +4732,8 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -4759,7 +4759,7 @@ async fn add_node_should_not_delete_the_source_binary_if_path_arg_is_used() -> R
     )
     .await?;
 
-    safenode_download_path.assert(predicate::path::is_file());
+    antnode_download_path.assert(predicate::path::is_file());
 
     Ok(())
 }
@@ -4788,8 +4788,8 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -4803,7 +4803,7 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         genesis: false,
         home_network: true,
@@ -4817,21 +4817,21 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
                 "0x8464135c8F25Da09e49BC8782676a84730C318bC",
             )?,
         }),
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -4850,7 +4850,7 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(1),
-            delete_safenode_src: false,
+            delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -4865,8 +4865,8 @@ async fn add_node_should_apply_the_home_network_flag_if_it_is_used() -> Result<(
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -4921,8 +4921,8 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -4936,7 +4936,7 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -4950,21 +4950,21 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
         genesis: false,
         home_network: true,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: false,
     }
@@ -4983,7 +4983,7 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(1),
-            delete_safenode_src: false,
+            delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -4998,8 +4998,8 @@ async fn add_node_should_add_the_node_in_user_mode() -> Result<()> {
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -5052,8 +5052,8 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut seq = Sequence::new();
 
@@ -5066,7 +5066,7 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
     let install_ctx = InstallNodeServiceCtxBuilder {
         autostart: false,
         bootstrap_peers: vec![],
-        data_dir_path: node_data_dir.to_path_buf().join("safenode1"),
+        data_dir_path: node_data_dir.to_path_buf().join("antnode1"),
         env_variables: None,
         evm_network: EvmNetwork::Custom(CustomNetwork {
             rpc_url_http: "http://localhost:8545".parse()?,
@@ -5080,21 +5080,21 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
         genesis: false,
         home_network: true,
         local: false,
-        log_dir_path: node_logs_dir.to_path_buf().join("safenode1"),
+        log_dir_path: node_logs_dir.to_path_buf().join("antnode1"),
         log_format: None,
         max_archived_log_files: None,
         max_log_files: None,
         metrics_port: None,
-        name: "safenode1".to_string(),
+        name: "antnode1".to_string(),
         node_ip: None,
         node_port: None,
         owner: None,
         rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")?,
         rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081),
-        safenode_path: node_data_dir
+        antnode_path: node_data_dir
             .to_path_buf()
-            .join("safenode1")
-            .join(SAFENODE_FILE_NAME),
+            .join("antnode1")
+            .join(ANTNODE_FILE_NAME),
         service_user: Some(get_username()),
         upnp: true,
     }
@@ -5113,7 +5113,7 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: Some(1),
-            delete_safenode_src: false,
+            delete_antnode_src: false,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -5128,8 +5128,8 @@ async fn add_node_should_add_the_node_with_upnp_enabled() -> Result<()> {
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: true,
@@ -5172,8 +5172,8 @@ async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut node_registry = NodeRegistry {
         auditor: None,
@@ -5205,7 +5205,7 @@ async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -5213,7 +5213,7 @@ async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -5232,11 +5232,11 @@ async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
                 autostart: false,
                 contents: None,
                 environment: None,
-                label: "safenode1".parse()?,
+                label: "antnode1".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -5252,7 +5252,7 @@ async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -5267,8 +5267,8 @@ async fn add_node_should_assign_an_owner_in_lowercase() -> Result<()> {
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,
@@ -5313,8 +5313,8 @@ async fn add_node_should_auto_restart() -> Result<()> {
     node_data_dir.create_dir_all()?;
     let node_logs_dir = temp_dir.child("logs");
     node_logs_dir.create_dir_all()?;
-    let safenode_download_path = temp_dir.child(SAFENODE_FILE_NAME);
-    safenode_download_path.write_binary(b"fake safenode bin")?;
+    let antnode_download_path = temp_dir.child(ANTNODE_FILE_NAME);
+    antnode_download_path.write_binary(b"fake antnode bin")?;
 
     let mut node_registry = NodeRegistry {
         auditor: None,
@@ -5346,7 +5346,7 @@ async fn add_node_should_auto_restart() -> Result<()> {
                     OsString::from(
                         node_data_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -5354,7 +5354,7 @@ async fn add_node_should_auto_restart() -> Result<()> {
                     OsString::from(
                         node_logs_dir
                             .to_path_buf()
-                            .join("safenode1")
+                            .join("antnode1")
                             .to_string_lossy()
                             .to_string(),
                     ),
@@ -5373,11 +5373,11 @@ async fn add_node_should_auto_restart() -> Result<()> {
                 autostart: true,
                 contents: None,
                 environment: None,
-                label: "safenode1".parse()?,
+                label: "antnode1".parse()?,
                 program: node_data_dir
                     .to_path_buf()
-                    .join("safenode1")
-                    .join(SAFENODE_FILE_NAME),
+                    .join("antnode1")
+                    .join(ANTNODE_FILE_NAME),
                 username: Some(get_username()),
                 working_directory: None,
             }),
@@ -5393,7 +5393,7 @@ async fn add_node_should_auto_restart() -> Result<()> {
             auto_set_nat_flags: false,
             bootstrap_peers: vec![],
             count: None,
-            delete_safenode_src: true,
+            delete_antnode_src: true,
             enable_metrics_server: false,
             env_variables: None,
             genesis: false,
@@ -5408,8 +5408,8 @@ async fn add_node_should_auto_restart() -> Result<()> {
             node_port: None,
             rpc_address: None,
             rpc_port: None,
-            safenode_dir_path: temp_dir.to_path_buf(),
-            safenode_src_path: safenode_download_path.to_path_buf(),
+            antnode_dir_path: temp_dir.to_path_buf(),
+            antnode_src_path: antnode_download_path.to_path_buf(),
             service_data_dir_path: node_data_dir.to_path_buf(),
             service_log_dir_path: node_logs_dir.to_path_buf(),
             upnp: false,

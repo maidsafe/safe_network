@@ -25,8 +25,8 @@ pub static SELECTED_WALLET_ADDRESS: OnceLock<String> = OnceLock::new();
 /// Creates the wallets folder if it is missing and returns the folder path.
 pub(crate) fn get_client_wallet_dir_path() -> Result<PathBuf, Error> {
     let mut home_dirs = dirs_next::data_dir().ok_or(Error::WalletsFolderNotFound)?;
-    home_dirs.push("safe");
     home_dirs.push("autonomi");
+    home_dirs.push("client");
     home_dirs.push("wallets");
 
     std::fs::create_dir_all(home_dirs.as_path()).map_err(|_| Error::FailedToCreateWalletsFolder)?;

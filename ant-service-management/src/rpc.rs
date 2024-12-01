@@ -8,8 +8,8 @@
 
 use crate::error::{Error, Result};
 use ant_protocol::{
-    safenode_proto::{
-        safe_node_client::SafeNodeClient, NetworkInfoRequest, NodeInfoRequest,
+    antnode_proto::{
+        ant_node_client::AntNodeClient, NetworkInfoRequest, NodeInfoRequest,
         RecordAddressesRequest, RestartRequest, StopRequest, UpdateLogLevelRequest, UpdateRequest,
     },
     CLOSE_GROUP_SIZE,
@@ -90,14 +90,14 @@ impl RpcClient {
     }
 
     // Connect to the RPC endpoint with retry
-    async fn connect_with_retry(&self) -> Result<SafeNodeClient<tonic::transport::Channel>> {
+    async fn connect_with_retry(&self) -> Result<AntNodeClient<tonic::transport::Channel>> {
         let mut attempts = 0;
         loop {
             debug!(
                 "Attempting connection to node RPC endpoint at {}...",
                 self.endpoint
             );
-            match SafeNodeClient::connect(self.endpoint.clone()).await {
+            match AntNodeClient::connect(self.endpoint.clone()).await {
                 Ok(rpc_client) => {
                     debug!("Connection successful");
                     break Ok(rpc_client);
@@ -239,7 +239,7 @@ impl RpcActions for RpcClient {
                 "Attempting connection to node RPC endpoint at {}...",
                 self.endpoint
             );
-            if let Ok(mut client) = SafeNodeClient::connect(self.endpoint.clone()).await {
+            if let Ok(mut client) = AntNodeClient::connect(self.endpoint.clone()).await {
                 debug!("Connection to RPC successful");
                 if let Ok(response) = client
                     .network_info(Request::new(NetworkInfoRequest {}))

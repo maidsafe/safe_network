@@ -177,11 +177,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            safe_path: /home/runner/.local/share/safe
+            ant_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            ant_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            safe_path: /Users/runner/Library/Application\ Support/safe
+            ant_path: /Users/runner/Library/Application\ Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -190,7 +190,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
@@ -198,7 +198,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -343,25 +343,25 @@ jobs:
 
       - name: Delete current register signing key
         shell: bash
-        run: rm -rf ${{ matrix.safe_path }}/autonomi
+        run: rm -rf ${{ matrix.ant_path }}/client
 
       - name: Generate new register signing key
-        run: ./target/release/autonomi --log-output-dest=data-dir register generate-key
+        run: ./target/release/autonomi --log-output-dest data-dir register generate-key
 
       - name: Get Public Register (new signing key is not the owner)
-        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        run: ./target/release/autonomi --log-output-dest data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: Edit Public Register (new signing key is not the owner)
-        run: ./target/release/autonomi --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 333
+        run: ./target/release/autonomi --log-output-dest data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 333
         env:
           SN_LOG: "v"
         timeout-minutes: 10
 
       - name: Get Public Register (new signing key is not the owner)
-        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        run: ./target/release/autonomi --log-output-dest data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
           SN_LOG: "v"
         timeout-minutes: 2
@@ -373,25 +373,25 @@ jobs:
         timeout-minutes: 2
 
       - name: file upload
-        run: ./target/release/autonomi --log-output-dest=data-dir file upload random.txt
+        run: ./target/release/autonomi --log-output-dest data-dir file upload random.txt
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: create a local register
-        run: ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register 1234
+        run: ./target/release/autonomi --log-output-dest data-dir register create sample_new_register 1234
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: Estimate cost to create a vault
-        run: ./target/release/autonomi --log-output-dest=data-dir vault cost
+        run: ./target/release/autonomi --log-output-dest data-dir vault cost
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: create a vault with existing user data as above
-        run: ./target/release/autonomi --log-output-dest=data-dir vault create
+        run: ./target/release/autonomi --log-output-dest data-dir vault create
         env:
           SN_LOG: "v"
         timeout-minutes: 2
@@ -402,9 +402,9 @@ jobs:
           set -e
           for i in {1..100}; do
             dd if=/dev/urandom of=random_file_$i.bin bs=1M count=1 status=none
-            ./target/release/autonomi --log-output-dest=data-dir file upload random_file_$i.bin --public
-            ./target/release/autonomi --log-output-dest=data-dir file upload random_file_$i.bin
-            ./target/release/autonomi --log-output-dest=data-dir register create $i random_file_$i.bin
+            ./target/release/autonomi --log-output-dest data-dir file upload random_file_$i.bin --public
+            ./target/release/autonomi --log-output-dest data-dir file upload random_file_$i.bin
+            ./target/release/autonomi --log-output-dest data-dir register create $i random_file_$i.bin
           done
         env:
           SN_LOG: "v"
@@ -421,22 +421,22 @@ jobs:
               [System.IO.File]::WriteAllBytes($fileName, $byteArray)
 
               # Run autonomi commands
-              ./target/release/autonomi --log-output-dest=data-dir file upload "random_file_$i.bin" --public
-              ./target/release/autonomi --log-output-dest=data-dir file upload "random_file_$i.bin"
-              ./target/release/autonomi --log-output-dest=data-dir register create $i "random_file_$i.bin"
+              ./target/release/autonomi --log-output-dest data-dir file upload "random_file_$i.bin" --public
+              ./target/release/autonomi --log-output-dest data-dir file upload "random_file_$i.bin"
+              ./target/release/autonomi --log-output-dest data-dir register create $i "random_file_$i.bin"
           }
         env:
           SN_LOG: "v"
         timeout-minutes: 25
 
       - name: sync the vault
-        run: ./target/release/autonomi --log-output-dest=data-dir vault sync
+        run: ./target/release/autonomi --log-output-dest data-dir vault sync
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: load the vault from network
-        run: ./target/release/autonomi --log-output-dest=data-dir vault load
+        run: ./target/release/autonomi --log-output-dest data-dir vault load
         env:
           SN_LOG: "v"
         timeout-minutes: 2
@@ -453,7 +453,7 @@ jobs:
           NUM_OF_PRIVATE_FILES_IN_VAULT=""
           NUM_OF_REGISTERS_IN_VAULT=""
           
-          ./target/release/autonomi --log-output-dest=data-dir file list 2>&1 > file_list.txt
+          ./target/release/autonomi --log-output-dest data-dir file list 2>&1 > file_list.txt
           
           ./target/release/autonomi register list | grep register > register_list.txt
           
@@ -463,7 +463,7 @@ jobs:
           # when obtaining registers we get random garbage, this is the only hack that works.
           NUM_OF_REGISTERS_first=${NUM_OF_REGISTERS%%[ $'\n']*}
           echo "NUM_OF_REGISTERS is $NUM_OF_REGISTERS_first"
-          ./target/release/autonomi --log-output-dest=data-dir vault load 2>&1 > vault_data.txt
+          ./target/release/autonomi --log-output-dest data-dir vault load 2>&1 > vault_data.txt
 
           NUM_OF_PUBLIC_FILES_IN_VAULT=`cat vault_data.txt  | grep "public" | grep -o '[0-9]\+'`
           NUM_OF_PRIVATE_FILES_IN_VAULT=`cat vault_data.txt| grep "private" | grep -o '[0-9]\+'`
@@ -488,9 +488,9 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          ./target/release/autonomi --log-output-dest=data-dir file list > file_list.txt 2>&1
+          ./target/release/autonomi --log-output-dest data-dir file list > file_list.txt 2>&1
           ./target/release/autonomi register list > register_list.txt 2>&1
-          ./target/release/autonomi --log-output-dest=data-dir vault load > vault_data.txt 2>&1
+          ./target/release/autonomi --log-output-dest data-dir vault load > vault_data.txt 2>&1
         env:
           SN_LOG: "v"
         timeout-minutes: 15
@@ -567,7 +567,7 @@ jobs:
           time ./target/release/autonomi --log-output-dest=data-dir file upload random_1GB.bin
           ./target/release/autonomi --log-output-dest=data-dir vault sync
           rm -rf random*.bin
-          rm -rf ${{ matrix.safe_path }}/autonomi          
+          rm -rf ${{ matrix.ant_path }}/autonomi          
         env:
           SN_LOG: "v"
         timeout-minutes: 15
@@ -596,7 +596,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features=local --bin safenode
+  #       run: cargo build --release --features=local --bin antnode
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
@@ -608,7 +608,7 @@ jobs:
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
@@ -662,7 +662,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features=local --bin safenode
+  #       run: cargo build --release --features=local --bin antnode
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
@@ -683,7 +683,7 @@ jobs:
   #         action: start
   #         interval: 2000
   #         node-count: 50
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
@@ -728,7 +728,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features=local,distribution --bin safenode
+  #       run: cargo build --release --features=local,distribution --bin antnode
   #       timeout-minutes: 35
 
   #     - name: Build faucet binary
@@ -748,7 +748,7 @@ jobs:
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
@@ -786,14 +786,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-            safe_path: /home/runner/.local/share/safe
+            node_data_path: /home/runner/.local/share/autonomi/node
+            ant_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi\\node
+            ant_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
-            safe_path: /Users/runner/Library/Application Support/safe
+            node_data_path: /Users/runner/Library/Application Support/autonomi/node
+            ant_path: /Users/runner/Library/Application Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -802,7 +802,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode
+        run: cargo build --release --features local --bin antnode
         timeout-minutes: 30
 
       - name: Build churn tests
@@ -818,7 +818,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -919,7 +919,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.ant_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -933,14 +933,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-            safe_path: /home/runner/.local/share/safe
+            node_data_path: /home/runner/.local/share/autonomi/node
+            ant_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi\\node
+            ant_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
-            safe_path: /Users/runner/Library/Application Support/safe
+            node_data_path: /Users/runner/Library/Application Support/autonomi/node
+            ant_path: /Users/runner/Library/Application Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -949,7 +949,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode
+        run: cargo build --release --features local --bin antnode
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
@@ -965,7 +965,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -984,13 +984,13 @@ jobs:
           fi
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p ant-node --features="local" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p ant-node --features "local" --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
       - name: Verify the location of the data on the network
-        run: cargo test --release -p ant-node --features="local" --test verify_data_location -- --nocapture
+        run: cargo test --release -p ant-node --features "local" --test verify_data_location -- --nocapture
         env:
           CHURN_COUNT: 6
           SN_LOG: "all"
@@ -998,7 +998,7 @@ jobs:
         timeout-minutes: 25
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p ant-node --features="local" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p ant-node --features "local" --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
@@ -1050,7 +1050,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.ant_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -1072,7 +1072,7 @@ jobs:
   #       run: sudo apt-get install -y ripgrep
 
   #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin safe
+  #       run: cargo build --release --bin antnode --bin safe
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
@@ -1084,14 +1084,14 @@ jobs:
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ubuntu-latest
   #         build: true
 
   #     - name: Check we're _not_ warned about using default genesis
   #       run: |
-  #         if rg "USING DEFAULT" "${{ matrix.safe_path }}"/*/*/logs; then
+  #         if rg "USING DEFAULT" "${{ matrix.ant_path }}"/*/*/logs; then
   #           exit 1
   #         fi
   #       shell: bash
@@ -1283,7 +1283,7 @@ jobs:
           ls -l
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
@@ -1291,7 +1291,7 @@ jobs:
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ubuntu-latest
           build: true
 
@@ -1442,7 +1442,7 @@ jobs:
   #         df
 
   #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin safe
+  #       run: cargo build --release --bin antnode --bin safe
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
@@ -1454,7 +1454,7 @@ jobs:
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ubuntu-latest
   #         build: true

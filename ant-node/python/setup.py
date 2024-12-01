@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(
-    name="safenode",
-    packages=["safenode"],
+    name="antnode",
+    packages=["antnode"],
     package_dir={"": "python"},
     zip_safe=False,
 ) 

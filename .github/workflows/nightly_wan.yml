@@ -417,7 +417,7 @@ jobs:
   #           echo "We are logging an extremely large data"
   #           exit 1
   #         fi
-  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/antnode.log
   #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
   #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
   #         then
@@ -430,7 +430,7 @@ jobs:
   #         then
   #           echo "Sanity check pass for local safe path"
   #         fi
-  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/antnode.log
   #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
   #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
   #         then
@@ -607,7 +607,7 @@ jobs:
   #           echo "We are logging an extremely large data"
   #           exit 1
   #         fi
-  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/antnode.log
   #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
   #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
   #         then
@@ -620,7 +620,7 @@ jobs:
   #         then
   #           echo "Sanity check pass for local safe path"
   #         fi
-  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/antnode.log
   #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
   #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
   #         then

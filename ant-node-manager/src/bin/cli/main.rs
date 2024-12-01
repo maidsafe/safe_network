@@ -59,9 +59,9 @@ pub(crate) struct Cmd {
 
 #[derive(Subcommand, Debug)]
 pub enum SubCmd {
-    /// Add one or more safenode services.
+    /// Add one or more antnode services.
     ///
-    /// By default, the latest safenode binary will be downloaded; however, it is possible to
+    /// By default, the latest antnode binary will be downloaded; however, it is possible to
     /// provide a binary either by specifying a URL, a local path, or a specific version number.
     ///
     /// On Windows, this command must run with administrative privileges.
@@ -77,7 +77,7 @@ pub enum SubCmd {
     /// distributions, however, use Systemd, which *does* support user-mode services.
     #[clap(name = "add")]
     Add {
-        /// Set to automatically restart safenode services upon OS reboot.
+        /// Set to automatically restart antnode services upon OS reboot.
         ///
         /// If not used, any added services will *not* restart automatically when the OS reboots
         /// and they will need to be explicitly started again.
@@ -103,20 +103,20 @@ pub enum SubCmd {
         /// This path is a prefix. Each installed node will have its own directory underneath it.
         ///
         /// If not provided, the default location is platform specific:
-        ///  - Linux/macOS (system-wide): /var/safenode-manager/services
-        ///  - Linux/macOS (user-mode): ~/.local/share/safe/node
-        ///  - Windows: C:\ProgramData\safenode\services
+        ///  - Linux/macOS (system-wide): /var/antctl/services
+        ///  - Linux/macOS (user-mode): ~/.local/share/autonomi/node
+        ///  - Windows: C:\ProgramData\antnode\services
         #[clap(long, verbatim_doc_comment)]
         data_dir_path: Option<PathBuf>,
         /// Set this flag to enable the metrics server. The ports will be selected at random.
         ///
-        /// If you're passing the compiled safenode via --path, make sure to enable the open-metrics feature
+        /// If you're passing the compiled antnode via --path, make sure to enable the open-metrics feature
         /// when compiling.
         ///
         /// If you want to specify the ports, use the --metrics-port argument.
         #[clap(long)]
         enable_metrics_server: bool,
-        /// Provide environment variables for the safenode service.
+        /// Provide environment variables for the antnode service.
         ///
         /// Useful to set log levels. Variables should be comma separated without spaces.
         ///
@@ -126,12 +126,12 @@ pub enum SubCmd {
         /// Specify what EVM network to use for payments.
         #[command(subcommand)]
         evm_network: EvmNetworkCommand,
-        /// Set this flag to use the safenode '--home-network' feature.
+        /// Set this flag to use the antnode '--home-network' feature.
         ///
-        /// This enables the use of safenode services from a home network with a router.
+        /// This enables the use of antnode services from a home network with a router.
         #[clap(long)]
         home_network: bool,
-        /// Set this flag to launch safenode with the --local flag.
+        /// Set this flag to launch antnode with the --local flag.
         ///
         /// This is useful for building a service-based local network.
         #[clap(long)]
@@ -141,9 +141,9 @@ pub enum SubCmd {
         /// This path is a prefix. Each installed node will have its own directory underneath it.
         ///
         /// If not provided, the default location is platform specific:
-        ///  - Linux/macOS (system-wide): /var/log/safenode
-        ///  - Linux/macOS (user-mode): ~/.local/share/safe/node/*/logs
-        ///  - Windows: C:\ProgramData\safenode\logs
+        ///  - Linux/macOS (system-wide): /var/log/antnode
+        ///  - Linux/macOS (user-mode): ~/.local/share/autonomi/node/*/logs
+        ///  - Windows: C:\ProgramData\antnode\logs
         #[clap(long, verbatim_doc_comment)]
         log_dir_path: Option<PathBuf>,
         /// Specify the logging format for started nodes.
@@ -166,7 +166,7 @@ pub enum SubCmd {
         max_archived_log_files: Option<usize>,
         /// Specify a port for the open metrics server.
         ///
-        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature
+        /// If you're passing the compiled antnode via --node-path, make sure to enable the open-metrics feature
         /// when compiling.
         ///
         /// If not set, metrics server will not be started. Use --enable-metrics-server to start
@@ -177,12 +177,12 @@ pub enum SubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         metrics_port: Option<PortRange>,
-        /// Specify the IP address for the safenode service(s).
+        /// Specify the IP address for the antnode service(s).
         ///
         /// If not set, we bind to all the available network interfaces.
         #[clap(long)]
         node_ip: Option<Ipv4Addr>,
-        /// Specify a port for the safenode service(s).
+        /// Specify a port for the antnode service(s).
         ///
         /// If not used, ports will be selected at random.
         ///
@@ -200,7 +200,7 @@ pub enum SubCmd {
         /// run as normal.
         #[clap(long)]
         owner: Option<String>,
-        /// Provide a path for the safenode binary to be used by the service.
+        /// Provide a path for the antnode binary to be used by the service.
         ///
         /// Useful for creating the service using a custom built binary.
         #[clap(long)]
@@ -228,14 +228,14 @@ pub enum SubCmd {
         rpc_port: Option<PortRange>,
         /// Try to use UPnP to open a port in the home router and allow incoming connections.
         ///
-        /// This requires a safenode binary built with the 'upnp' feature.
+        /// This requires a antnode binary built with the 'upnp' feature.
         #[clap(long, default_value_t = false)]
         upnp: bool,
-        /// Provide a safenode binary using a URL.
+        /// Provide a antnode binary using a URL.
         ///
         /// The binary must be inside a zip or gzipped tar archive.
         ///
-        /// This option can be used to test a safenode binary that has been built from a forked
+        /// This option can be used to test a antnode binary that has been built from a forked
         /// branch and uploaded somewhere. A typical use case would be for a developer who launches
         /// a testnet to test some changes they have on a fork.
         #[clap(long, conflicts_with = "version")]
@@ -247,7 +247,7 @@ pub enum SubCmd {
         /// On Windows this argument will have no effect.
         #[clap(long)]
         user: Option<String>,
-        /// Provide a specific version of safenode to be installed.
+        /// Provide a specific version of antnode to be installed.
         ///
         /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
@@ -279,7 +279,7 @@ pub enum SubCmd {
     Local(LocalSubCmd),
     #[clap(subcommand)]
     NatDetection(NatDetectionSubCmd),
-    /// Remove safenode service(s).
+    /// Remove antnode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be removed.
     ///
@@ -315,7 +315,7 @@ pub enum SubCmd {
         #[clap(long, short)]
         force: bool,
     },
-    /// Start safenode service(s).
+    /// Start antnode service(s).
     ///
     /// By default, each node service is started after the previous node has successfully connected to the network or
     /// after the 'connection-timeout' period has been reached for that node. The timeout is 300 seconds by default.
@@ -368,7 +368,7 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "details")]
         json: bool,
     },
-    /// Stop safenode service(s).
+    /// Stop antnode service(s).
     ///
     /// If no peer ID(s) or service name(s) are supplied, all services will be stopped.
     ///
@@ -392,7 +392,7 @@ pub enum SubCmd {
         #[clap(long, conflicts_with = "peer_id")]
         service_name: Vec<String>,
     },
-    /// Upgrade safenode services.
+    /// Upgrade antnode services.
     ///
     /// By default, each node service is started after the previous node has successfully connected to the network or
     /// after the 'connection-timeout' period has been reached for that node. The timeout is 300 seconds by default.
@@ -418,11 +418,11 @@ pub enum SubCmd {
         /// Can be useful for testing scenarios.
         #[clap(long)]
         do_not_start: bool,
-        /// Provide environment variables for the safenode service.
+        /// Provide environment variables for the antnode service.
         ///
         /// Values set when the service was added will be overridden.
         ///
-        /// Useful to set safenode's log levels. Variables should be comma separated without
+        /// Useful to set antnode's log levels. Variables should be comma separated without
         /// spaces.
         ///
         /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
@@ -442,7 +442,7 @@ pub enum SubCmd {
         /// Units are milliseconds.
         #[clap(long, conflicts_with = "connection-timeout")]
         interval: Option<u64>,
-        /// Provide a path for the safenode binary to be used by the service.
+        /// Provide a path for the antnode binary to be used by the service.
         ///
         /// Useful for upgrading the service using a custom built binary.
         #[clap(long)]
@@ -577,7 +577,7 @@ pub enum AuditorSubCmd {
 pub enum DaemonSubCmd {
     /// Add a daemon service for issuing commands via RPC.
     ///
-    /// By default, the latest safenodemand binary will be downloaded; however, it is possible to
+    /// By default, the latest antctld binary will be downloaded; however, it is possible to
     /// provide a binary either by specifying a URL, a local path, or a specific version number.
     ///
     /// This command must run as the root/administrative user.
@@ -794,7 +794,7 @@ pub enum LocalSubCmd {
     /// being managed by the node manager.
     #[clap(name = "join")]
     Join {
-        /// Set to build the safenode and faucet binaries.
+        /// Set to build the antnode and faucet binaries.
         ///
         /// This option requires the command run from the root of the safe_network repository.
         #[clap(long)]
@@ -804,25 +804,13 @@ pub enum LocalSubCmd {
         count: u16,
         /// Set this flag to enable the metrics server. The ports will be selected at random.
         ///
-        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature flag
-        /// on the safenode when compiling. If you're using --build, then make sure to enable the feature flag on the
-        /// safenode-manager.
+        /// If you're passing the compiled antnode via --node-path, make sure to enable the open-metrics feature flag
+        /// on the antnode when compiling. If you're using --build, then make sure to enable the feature flag on
+        /// antctl.
         ///
         /// If you want to specify the ports, use the --metrics-port argument.
         #[clap(long)]
         enable_metrics_server: bool,
-        /// Path to a faucet binary
-        ///
-        /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "faucet_version")]
-        faucet_path: Option<PathBuf>,
-        /// The version of the faucet to use.
-        ///
-        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
-        ///
-        /// The version and path arguments are mutually exclusive.
-        #[clap(long)]
-        faucet_version: Option<String>,
         /// An interval applied between launching each node.
         ///
         /// Units are milliseconds.
@@ -837,9 +825,9 @@ pub enum LocalSubCmd {
         log_format: Option<LogFormat>,
         /// Specify a port for the open metrics server.
         ///
-        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature flag
-        /// on the safenode when compiling. If you're using --build, then make sure to enable the feature flag on the
-        /// safenode-manager.
+        /// If you're passing the compiled antnode via --node-path, make sure to enable the open-metrics feature flag
+        /// on the antnode when compiling. If you're using --build, then make sure to enable the feature flag on
+        /// antctl.
         ///
         /// If not set, metrics server will not be started. Use --enable-metrics-server to start
         /// the metrics server without specifying a port.
@@ -849,14 +837,14 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         metrics_port: Option<PortRange>,
-        /// Path to a safenode binary.
+        /// Path to a antnode binary.
         ///
-        /// Make sure to enable the local feature flag on the safenode when compiling the binary.
+        /// Make sure to enable the local feature flag on the antnode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version")]
         node_path: Option<PathBuf>,
-        /// Specify a port for the safenode service(s).
+        /// Specify a port for the antnode service(s).
         ///
         /// If not used, ports will be selected at random.
         ///
@@ -865,7 +853,7 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         node_port: Option<PortRange>,
-        /// The version of safenode to use.
+        /// The version of antnode to use.
         ///
         /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
@@ -908,14 +896,14 @@ pub enum LocalSubCmd {
     },
     /// Run a local network.
     ///
-    /// This will run safenode processes on the current machine to form a local network. A faucet
+    /// This will run antnode processes on the current machine to form a local network. A faucet
     /// service will also run for dispensing tokens.
     ///
-    /// Paths can be supplied for safenode and faucet binaries, but otherwise, the latest versions
+    /// Paths can be supplied for antnode and faucet binaries, but otherwise, the latest versions
     /// will be downloaded.
     #[clap(name = "run")]
     Run {
-        /// Set to build the safenode and faucet binaries.
+        /// Set to build the antnode and faucet binaries.
         ///
         /// This option requires the command run from the root of the safe_network repository.
         #[clap(long)]
@@ -928,25 +916,13 @@ pub enum LocalSubCmd {
         count: u16,
         /// Set this flag to enable the metrics server. The ports will be selected at random.
         ///
-        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature flag
-        /// on the safenode when compiling. If you're using --build, then make sure to enable the feature flag on the
-        /// safenode-manager.
+        /// If you're passing the compiled antnode via --node-path, make sure to enable the open-metrics feature flag
+        /// on the antnode when compiling. If you're using --build, then make sure to enable the feature flag on
+        /// antctl.
         ///
         /// If you want to specify the ports, use the --metrics-port argument.
         #[clap(long)]
         enable_metrics_server: bool,
-        /// Path to a faucet binary.
-        ///
-        /// The path and version arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "faucet_version", conflicts_with = "build")]
-        faucet_path: Option<PathBuf>,
-        /// The version of the faucet to use.
-        ///
-        /// The version number should be in the form X.Y.Z, with no 'v' prefix.
-        ///
-        /// The version and path arguments are mutually exclusive.
-        #[clap(long, conflicts_with = "build")]
-        faucet_version: Option<String>,
         /// An interval applied between launching each node.
         ///
         /// Units are milliseconds.
@@ -961,9 +937,9 @@ pub enum LocalSubCmd {
         log_format: Option<LogFormat>,
         /// Specify a port for the open metrics server.
         ///
-        /// If you're passing the compiled safenode via --node-path, make sure to enable the open-metrics feature flag
-        /// on the safenode when compiling. If you're using --build, then make sure to enable the feature flag on the
-        /// safenode-manager.
+        /// If you're passing the compiled antnode via --node-path, make sure to enable the open-metrics feature flag
+        /// on the antnode when compiling. If you're using --build, then make sure to enable the feature flag on
+        /// antctl.
         ///
         /// If not set, metrics server will not be started. Use --enable-metrics-server to start
         /// the metrics server without specifying a port.
@@ -973,14 +949,14 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         metrics_port: Option<PortRange>,
-        /// Path to a safenode binary
+        /// Path to an antnode binary
         ///
-        /// Make sure to enable the local feature flag on the safenode when compiling the binary.
+        /// Make sure to enable the local feature flag on the antnode when compiling the binary.
         ///
         /// The path and version arguments are mutually exclusive.
         #[clap(long, conflicts_with = "node_version", conflicts_with = "build")]
         node_path: Option<PathBuf>,
-        /// Specify a port for the safenode service(s).
+        /// Specify a port for the antnode service(s).
         ///
         /// If not used, ports will be selected at random.
         ///
@@ -989,7 +965,7 @@ pub enum LocalSubCmd {
         /// services, which in this case would be 5. The range must also go from lower to higher.
         #[clap(long, value_parser = PortRange::parse)]
         node_port: Option<PortRange>,
-        /// The version of safenode to use.
+        /// The version of antnode to use.
         ///
         /// The version number should be in the form X.Y.Z, with no 'v' prefix.
         ///
@@ -1241,8 +1217,6 @@ async fn main() -> Result<()> {
                 build,
                 count,
                 enable_metrics_server,
-                faucet_path,
-                faucet_version,
                 interval,
                 metrics_port,
                 node_path,
@@ -1266,8 +1240,6 @@ async fn main() -> Result<()> {
                     build,
                     count,
                     enable_metrics_server,
-                    faucet_path,
-                    faucet_version,
                     interval,
                     metrics_port,
                     node_path,
@@ -1291,8 +1263,6 @@ async fn main() -> Result<()> {
                 clean,
                 count,
                 enable_metrics_server,
-                faucet_path,
-                faucet_version,
                 interval,
                 log_format,
                 metrics_port,
@@ -1316,8 +1286,6 @@ async fn main() -> Result<()> {
                     clean,
                     count,
                     enable_metrics_server,
-                    faucet_path,
-                    faucet_version,
                     interval,
                     metrics_port,
                     node_path,
@@ -1417,8 +1385,8 @@ fn get_log_builder(level: Level) -> Result<LogBuilder> {
         ("evm-testnet".to_string(), level),
         ("ant_peers_acquisition".to_string(), level),
         ("ant_node_manager".to_string(), level),
-        ("safenode_manager".to_string(), level),
-        ("safenodemand".to_string(), level),
+        ("antctl".to_string(), level),
+        ("antctld".to_string(), level),
         ("ant_service_management".to_string(), level),
     ];
     let mut log_builder = LogBuilder::new(logging_targets);

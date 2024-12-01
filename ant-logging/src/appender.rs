@@ -40,11 +40,11 @@ pub(super) fn file_rotater(
     let binary_name = env::current_exe()
         .map(|path| {
             path.file_stem()
-                .unwrap_or(OsStr::new("safe"))
+                .unwrap_or(OsStr::new("autonomi"))
                 .to_string_lossy()
                 .into_owned()
         })
-        .unwrap_or_else(|_| "safe".to_string());
+        .unwrap_or_else(|_| "autonomi".to_string());
 
     let file_appender = FileRotateAppender::make_rotate_appender(
         dir,

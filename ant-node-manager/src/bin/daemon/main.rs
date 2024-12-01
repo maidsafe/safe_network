@@ -12,9 +12,9 @@ extern crate tracing;
 use ant_logging::LogBuilder;
 use ant_node_manager::{config::get_node_registry_path, rpc, DAEMON_DEFAULT_PORT};
 use ant_service_management::{
-    safenode_manager_proto::{
+    antctl_proto::{
+        ant_ctl_server::{AntCtl, AntCtlServer},
         get_status_response::Node,
-        safe_node_manager_server::{SafeNodeManager, SafeNodeManagerServer},
         GetStatusRequest, GetStatusResponse, NodeServiceRestartRequest, NodeServiceRestartResponse,
     },
     NodeRegistry,
@@ -49,11 +49,11 @@ struct Args {
     version: bool,
 }
 
-struct SafeNodeManagerDaemon {}
+struct AntCtlDaemon {}
 
 // Implementing RPC interface for service defined in .proto
 #[tonic::async_trait]
-impl SafeNodeManager for SafeNodeManagerDaemon {
+impl AntCtl for AntCtlDaemon {
     async fn restart_node_service(
         &self,
         request: Request<NodeServiceRestartRequest>,
@@ -109,7 +109,7 @@ impl SafeNodeManager for SafeNodeManagerDaemon {
     }
 }
 
-impl SafeNodeManagerDaemon {
+impl AntCtlDaemon {
     fn load_node_registry() -> Result<NodeRegistry> {
         let node_registry_path = get_node_registry_path()
             .map_err(|err| eyre!("Could not obtain node registry path: {err:?}"))?;
@@ -134,7 +134,7 @@ impl SafeNodeManagerDaemon {
 
 // The SafeNodeManager trait returns `Status` as its error. So the actual logic is here and we can easily map the errors
 // into Status inside the trait fns.
-impl SafeNodeManagerDaemon {}
+impl AntCtlDaemon {}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
@@ -164,16 +164,16 @@ async fn main() -> Result<()> {
     }
 
     let _log_handles = get_log_builder()?.initialize()?;
-    println!("Starting safenodemand");
-    let service = SafeNodeManagerDaemon {};
+    println!("Starting antctld");
+    let service = AntCtlDaemon {};
 
     if let Err(err) = Server::builder()
-        .add_service(SafeNodeManagerServer::new(service))
+        .add_service(AntCtlServer::new(service))
         .serve(SocketAddr::new(IpAddr::V4(args.address), args.port))
         .await
     {
-        error!("Safenode Manager Daemon failed to start: {err:?}");
-        println!("Safenode Manager Daemon failed to start: {err:?}");
+        error!("Antctl Daemon failed to start: {err:?}");
+        println!("Antctl Daemon failed to start: {err:?}");
         return Err(err.into());
     }
 
@@ -183,16 +183,16 @@ async fn main() -> Result<()> {
 fn get_log_builder() -> Result<LogBuilder> {
     let logging_targets = vec![
         ("ant_node_manager".to_string(), Level::TRACE),
-        ("safenode_manager".to_string(), Level::TRACE),
-        ("safenodemand".to_string(), Level::TRACE),
+        ("antctl".to_string(), Level::TRACE),
+        ("antctld".to_string(), Level::TRACE),
         ("ant_service_management".to_string(), Level::TRACE),
     ];
     let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
 
     let output_dest = dirs_next::data_dir()
         .ok_or_else(|| eyre!("Could not obtain user data directory"))?
-        .join("safe")
-        .join("safenodemand")
+        .join("autonomi")
+        .join("antctld")
         .join("logs")
         .join(format!("log_{timestamp}"));
 

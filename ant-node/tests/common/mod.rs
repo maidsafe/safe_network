@@ -10,10 +10,9 @@
 pub mod client;
 
 use self::client::LocalNetwork;
-use ant_protocol::safenode_proto::{safe_node_client::SafeNodeClient, NodeInfoRequest};
+use ant_protocol::antnode_proto::{ant_node_client::AntNodeClient, NodeInfoRequest};
 use ant_service_management::{
-    get_local_node_registry_path,
-    safenode_manager_proto::safe_node_manager_client::SafeNodeManagerClient, NodeRegistry,
+    antctl_proto::ant_ctl_client::AntCtlClient, get_local_node_registry_path, NodeRegistry,
 };
 use eyre::{bail, eyre, OptionExt, Result};
 use itertools::Either;
@@ -55,14 +54,14 @@ use tracing::{debug, error, warn};
 // }
 
 // Connect to a RPC socket addr with retry
-pub async fn get_safenode_rpc_client(
+pub async fn get_antnode_rpc_client(
     socket_addr: SocketAddr,
-) -> Result<SafeNodeClient<tonic::transport::Channel>> {
+) -> Result<AntNodeClient<tonic::transport::Channel>> {
     // get the new PeerId for the current NodeIndex
     let endpoint = format!("https://{socket_addr}");
     let mut attempts = 0;
     loop {
-        if let Ok(rpc_client) = SafeNodeClient::connect(endpoint.clone()).await {
+        if let Ok(rpc_client) = AntNodeClient::connect(endpoint.clone()).await {
             break Ok(rpc_client);
         }
         attempts += 1;
@@ -76,14 +75,14 @@ pub async fn get_safenode_rpc_client(
 }
 
 // Connect to a RPC socket addr with retry
-pub async fn get_safenode_manager_rpc_client(
+pub async fn get_antctl_rpc_client(
     socket_addr: SocketAddr,
-) -> Result<SafeNodeManagerClient<tonic::transport::Channel>> {
+) -> Result<AntCtlClient<tonic::transport::Channel>> {
     // get the new PeerId for the current NodeIndex
     let endpoint = format!("https://{socket_addr}");
     let mut attempts = 0;
     loop {
-        if let Ok(rpc_client) = SafeNodeManagerClient::connect(endpoint.clone()).await {
+        if let Ok(rpc_client) = AntCtlClient::connect(endpoint.clone()).await {
             break Ok(rpc_client);
         }
         attempts += 1;
@@ -101,7 +100,7 @@ pub async fn get_all_peer_ids(node_rpc_addresses: &Vec<SocketAddr>) -> Result<Ve
     let mut all_peers = Vec::new();
 
     for addr in node_rpc_addresses {
-        let mut rpc_client = get_safenode_rpc_client(*addr).await?;
+        let mut rpc_client = get_antnode_rpc_client(*addr).await?;
 
         // get the peer_id
         let response = rpc_client
@@ -154,33 +153,31 @@ impl NodeRestart {
     /// Set `progress_on_error` to `true` if we want to restart the next node if you call this function again.
     /// Else we'll be retrying the same node on the next call.
     ///
-    /// Returns the `safenode's RPC addr` if we have restarted a node successfully.
+    /// Returns the antctl RPC service if we have restarted a node successfully.
     /// Returns `None` if `loop_over` is `false` and we have not restarted any nodes.
     pub async fn restart_next(
         &mut self,
         loop_over: bool,
         progress_on_error: bool,
     ) -> Result<Option<SocketAddr>> {
-        let safenode_rpc_endpoint = match self.inventory_file.clone() {
+        let antnode_rpc_endpoint = match self.inventory_file.clone() {
             Either::Left(inv) => {
                 // check if we've reached the end
-                if loop_over && self.next_to_restart_idx > inv.safenodemand_endpoints.len() {
+                if loop_over && self.next_to_restart_idx > inv.antctld_endpoints.len() {
                     self.next_to_restart_idx = 0;
                 }
 
-                if let Some((peer_id, daemon_endpoint)) = inv
-                    .safenodemand_endpoints
-                    .iter()
-                    .nth(self.next_to_restart_idx)
+                if let Some((peer_id, daemon_endpoint)) =
+                    inv.antctld_endpoints.iter().nth(self.next_to_restart_idx)
                 {
                     self.restart(*peer_id, *daemon_endpoint, progress_on_error)
                         .await?;
 
-                    let safenode_rpc_endpoint = inv
+                    let antnode_rpc_endpoint = inv
                         .rpc_endpoints
                         .get(peer_id)
-                        .ok_or_eyre("Failed to obtain safenode rpc endpoint from inventory file")?;
-                    Some(*safenode_rpc_endpoint)
+                        .ok_or_eyre("Failed to obtain antnode rpc endpoint from inventory file")?;
+                    Some(*antnode_rpc_endpoint)
                 } else {
                     warn!("We have restarted all the nodes in the list. Since loop_over is false, we are not restarting any nodes now.");
                     None
@@ -192,16 +189,16 @@ impl NodeRestart {
                     self.next_to_restart_idx = 0;
                 }
 
-                if let Some((peer_id, safenode_rpc_endpoint)) = reg
+                if let Some((peer_id, antnode_rpc_endpoint)) = reg
                     .nodes
                     .get(self.next_to_restart_idx)
                     .map(|node| (node.peer_id, node.rpc_socket_addr))
                 {
                     let peer_id =
                         peer_id.ok_or_eyre("PeerId should be present for a local node")?;
-                    self.restart(peer_id, safenode_rpc_endpoint, progress_on_error)
+                    self.restart(peer_id, antnode_rpc_endpoint, progress_on_error)
                         .await?;
-                    Some(safenode_rpc_endpoint)
+                    Some(antnode_rpc_endpoint)
                 } else {
                     warn!("We have restarted all the nodes in the list. Since loop_over is false, we are not restarting any nodes now.");
                     None
@@ -209,7 +206,7 @@ impl NodeRestart {
             }
         };
 
-        Ok(safenode_rpc_endpoint)
+        Ok(antnode_rpc_endpoint)
     }
 
     async fn restart(
@@ -237,7 +234,7 @@ impl NodeRestart {
             },
             Either::Right(_reg) => {
                 match LocalNetwork::restart_node(endpoint, self.retain_peer_id).await
-                .map_err(|err| eyre!("Failed to restart peer {peer_id:?} on safenode RPC endpoint: {endpoint:?} with err {err:?}")) {
+                .map_err(|err| eyre!("Failed to restart peer {peer_id:?} on antnode RPC endpoint: {endpoint:?} with err {err:?}")) {
                     Ok(_) => {
                         self.next_to_restart_idx += 1;
                     },

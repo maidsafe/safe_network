@@ -269,10 +269,10 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
                 // bins
                 ("autonomi_cli".to_string(), Level::TRACE),
                 ("evm_testnet".to_string(), Level::TRACE),
-                ("safenode".to_string(), Level::TRACE),
-                ("safenode_rpc_client".to_string(), Level::TRACE),
-                ("safenode_manager".to_string(), Level::TRACE),
-                ("safenodemand".to_string(), Level::TRACE),
+                ("antnode".to_string(), Level::TRACE),
+                ("antnode_rpc_client".to_string(), Level::TRACE),
+                ("antctl".to_string(), Level::TRACE),
+                ("antctld".to_string(), Level::TRACE),
                 // libs
                 ("ant_build_info".to_string(), Level::TRACE),
                 ("ant_evm".to_string(), Level::TRACE),

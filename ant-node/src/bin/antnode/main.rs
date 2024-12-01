@@ -20,7 +20,7 @@ use ant_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use ant_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use ant_peers_acquisition::PeersArgs;
 use ant_protocol::{
-    node::get_safenode_root_dir,
+    node::get_antnode_root_dir,
     node_rpc::{NodeCtrl, StopResult},
     version::IDENTIFY_PROTOCOL_STR,
 };
@@ -75,7 +75,7 @@ pub fn parse_log_output(val: &str) -> Result<LogOutputDestArg> {
 // They are used for inserting line breaks when the help menu is rendered in the UI.
 #[derive(Parser, Debug)]
 #[command(disable_version_flag = true)]
-#[clap(name = "safenode cli", version = env!("CARGO_PKG_VERSION"))]
+#[clap(name = "antnode cli", version = env!("CARGO_PKG_VERSION"))]
 struct Opt {
     /// Specify whether the node is operating from a home network and situated behind a NAT without port forwarding
     /// capabilities. Setting this to true, activates hole-punching to facilitate direct connections from other nodes.
@@ -281,7 +281,7 @@ fn main() -> Result<()> {
 
     ant_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR);
     debug!(
-        "safenode built with git version: {}",
+        "antnode built with git version: {}",
         ant_build_info::git_info()
     );
 
@@ -367,7 +367,7 @@ You can check your reward balance by running:
 
     // write the PID to the root dir
     let pid = std::process::id();
-    let pid_file = running_node.root_dir_path().join("safenode.pid");
+    let pid_file = running_node.root_dir_path().join("antnode.pid");
     std::fs::write(pid_file, pid.to_string().as_bytes())?;
 
     // Channel to receive node ctrl cmds from RPC service (if enabled), and events monitoring task
@@ -391,7 +391,7 @@ You can check your reward balance by running:
             })
             .await
         {
-            error!("Failed to send node control msg to safenode bin main thread: {err}");
+            error!("Failed to send node control msg to antnode bin main thread: {err}");
         }
     });
     let ctrl_tx_clone_cpu = ctrl_tx.clone();
@@ -436,7 +436,7 @@ You can check your reward balance by running:
                     })
                     .await
                 {
-                    error!("Failed to send node control msg to safenode bin main thread: {err}");
+                    error!("Failed to send node control msg to antnode bin main thread: {err}");
                 }
                 break;
             }
@@ -494,7 +494,7 @@ You can check your reward balance by running:
                 }
             }
             Some(NodeCtrl::Update(_delay)) => {
-                // TODO: implement self-update once safenode app releases are published again
+                // TODO: implement self-update once antnode app releases are published again
                 println!("No self-update supported yet.");
             }
             None => {
@@ -518,9 +518,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                         })
                         .await
                     {
-                        error!(
-                            "Failed to send node control msg to safenode bin main thread: {err}"
-                        );
+                        error!("Failed to send node control msg to antnode bin main thread: {err}");
                         break;
                     }
                 }
@@ -532,9 +530,7 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
                         })
                         .await
                     {
-                        error!(
-                            "Failed to send node control msg to safenode bin main thread: {err}"
-                        );
+                        error!("Failed to send node control msg to antnode bin main thread: {err}");
                         break;
                     }
                 }
@@ -561,13 +557,13 @@ fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, ReloadHandle, Opt
         ("ant_peers_acquisition".to_string(), Level::DEBUG),
         ("ant_protocol".to_string(), Level::DEBUG),
         ("ant_registers".to_string(), Level::DEBUG),
-        ("safenode".to_string(), Level::DEBUG),
+        ("antnode".to_string(), Level::DEBUG),
     ];
 
     let output_dest = match &opt.log_output_dest {
         LogOutputDestArg::Stdout => LogOutputDest::Stdout,
         LogOutputDestArg::DataDir => {
-            let path = get_safenode_root_dir(peer_id)?.join("logs");
+            let path = get_antnode_root_dir(peer_id)?.join("logs");
             LogOutputDest::Path(path)
         }
         LogOutputDestArg::Path(path) => LogOutputDest::Path(path.clone()),
@@ -671,7 +667,7 @@ fn get_root_dir_and_keypair(root_dir: &Option<PathBuf>) -> Result<(PathBuf, Keyp
                 libp2p::identity::ed25519::Keypair::from(secret_key.clone()).into();
             let peer_id = keypair.public().to_peer_id();
 
-            let dir = get_safenode_root_dir(peer_id)?;
+            let dir = get_antnode_root_dir(peer_id)?;
             std::fs::create_dir_all(&dir)?;
 
             let secret_key_path = dir.join("secret-key");
