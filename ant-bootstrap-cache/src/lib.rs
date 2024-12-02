@@ -117,11 +117,22 @@ impl BootstrapPeer {
 
     pub fn update_status(&mut self, success: bool) {
         if success {
-            self.success_count = self.success_count.saturating_add(1);
+            if let Some(new_value) = self.success_count.checked_add(1) {
+                self.success_count = new_value;
         } else {
-            self.failure_count = self.failure_count.saturating_add(1);
+                self.success_count = 1;
+                self.failure_count = 0;
+            }
         }
         self.last_seen = SystemTime::now();
+        if !success {
+            if let Some(new_value) = self.failure_count.checked_add(1) {
+                self.failure_count = new_value;
+            } else {
+                self.failure_count = 1;
+                self.success_count = 0;
+            }
+        }
     }
 
     pub fn is_reliable(&self) -> bool {
@@ -155,6 +166,16 @@ impl BootstrapPeer {
                 .failure_count
                 .saturating_add(current_shared_state.failure_count);
         }
+
+        // if at max value, reset to 0
+        if self.success_count == u32::MAX {
+            self.success_count = 1;
+            self.failure_count = 0;
+        } else if self.failure_count == u32::MAX {
+            self.failure_count = 1;
+            self.success_count = 0;
+        }
+
         self.last_seen = std::cmp::max(self.last_seen, current_shared_state.last_seen);
     }
 }
