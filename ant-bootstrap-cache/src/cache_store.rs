@@ -6,7 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{BootstrapConfig, BootstrapPeer, Error, InitialPeerDiscovery, Result};
+use crate::{
+    craft_valid_multiaddr, BootstrapConfig, BootstrapPeer, Error, InitialPeerDiscovery, Result,
+};
 use fs2::FileExt;
 use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
@@ -54,14 +56,6 @@ impl CacheData {
                 false
             }
         });
-    }
-
-    pub fn update_peer_status(&mut self, addr: &Multiaddr, success: bool) {
-        let peer = self
-            .peers
-            .entry(addr.to_string())
-            .or_insert_with(|| BootstrapPeer::new(addr.clone()));
-        peer.update_status(success);
     }
 }
 
@@ -209,7 +203,7 @@ impl BootstrapCacheStore {
         self.old_shared_state = data;
 
         // Save the default data to disk
-        self.sync_to_disk().await?;
+        self.sync_and_save_to_disk(false).await?;
 
         Ok(())
     }
@@ -324,23 +318,30 @@ impl BootstrapCacheStore {
             .filter(|peer| peer.success_count > peer.failure_count)
     }
 
+    /// Update the status of a peer in the cache. The peer must be added to the cache first.
     pub fn update_peer_status(&mut self, addr: &Multiaddr, success: bool) {
-        self.data.update_peer_status(addr, success);
+        if let Some(peer) = self.data.peers.get_mut(&addr.to_string()) {
+            peer.update_status(success);
+        }
     }
 
     pub fn add_peer(&mut self, addr: Multiaddr) {
+        let Some(addr) = craft_valid_multiaddr(&addr) else {
+            return;
+        };
+
         let addr_str = addr.to_string();
 
         // Check if we already have this peer
         if self.data.peers.contains_key(&addr_str) {
-            debug!("Updating existing peer {}", addr_str);
+            debug!("Updating existing peer's last_seen {addr_str}");
             if let Some(peer) = self.data.peers.get_mut(&addr_str) {
                 peer.last_seen = SystemTime::now();
             }
             return;
         }
 
-        self.remove_oldest_peers();
+        self.try_remove_oldest_peers();
 
         // Add the new peer
         debug!("Adding new peer {} (under max_peers limit)", addr_str);
@@ -369,7 +370,9 @@ impl BootstrapCacheStore {
         }
     }
 
-    pub async fn sync_to_disk(&mut self) -> Result<()> {
+    /// Do not perform cleanup when `data` is fetched from the network.
+    /// The SystemTime might not be accurate.
+    pub async fn sync_and_save_to_disk(&mut self, with_cleanup: bool) -> Result<()> {
         if self.config.disable_cache_writing {
             info!("Cache writing is disabled, skipping sync to disk");
             return Ok(());
@@ -400,8 +403,10 @@ impl BootstrapCacheStore {
             warn!("Failed to load cache data from file, overwriting with new data");
         }
 
-        self.data.cleanup_stale_and_unreliable_peers();
-        self.remove_oldest_peers();
+        if with_cleanup {
+            self.data.cleanup_stale_and_unreliable_peers();
+            self.try_remove_oldest_peers();
+        }
         self.old_shared_state = self.data.clone();
 
         self.atomic_write().await.inspect_err(|e| {
@@ -410,7 +415,7 @@ impl BootstrapCacheStore {
     }
 
     /// Remove the oldest peers until we're under the max_peers limit
-    fn remove_oldest_peers(&mut self) {
+    fn try_remove_oldest_peers(&mut self) {
         // If we're at max peers, remove the oldest peer
         while self.data.peers.len() >= self.config.max_peers {
             if let Some((oldest_addr, _)) = self
@@ -525,7 +530,7 @@ mod tests {
                 .peers
                 .insert(addr.to_string(), BootstrapPeer::new(addr.clone()));
         }
-        store.sync_to_disk().await.unwrap();
+        store.sync_and_save_to_disk(true).await.unwrap();
 
         store.update_peer_status(&addr, true);
 

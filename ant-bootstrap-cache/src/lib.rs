@@ -119,7 +119,7 @@ impl BootstrapPeer {
         if success {
             if let Some(new_value) = self.success_count.checked_add(1) {
                 self.success_count = new_value;
-        } else {
+            } else {
                 self.success_count = 1;
                 self.failure_count = 0;
             }
@@ -267,7 +267,7 @@ impl BootstrapCacheStore {
         // If we have peers, update cache and return, else initialize from cache
         if store.peer_count() > 0 {
             info!("Using provided peers and updating cache");
-            store.sync_to_disk().await?;
+            store.sync_and_save_to_disk(false).await?;
         } else {
             store.init().await?;
         }
