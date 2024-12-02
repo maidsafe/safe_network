@@ -59,7 +59,7 @@ jobs:
       - name: Check env variables
         shell: bash
         run: |
-          echo "Peer is $SAFE_PEERS"
+          echo "Peer is $ANT_PEERS"
           echo "Deployment inventory is $SN_INVENTORY"
 
       - name: Obtain the funds from the faucet
@@ -74,13 +74,13 @@ jobs:
           cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
           cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to upload
         run: cargo run --bin safe -- --log-output-dest=data-dir files upload "ubuntu-16.04.7-desktop-amd64.iso" --retry-strategy quick
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 45
 
       - name: Cause random churn
@@ -96,7 +96,7 @@ jobs:
       - name: Start a client to download files
         run: cargo run --bin safe --release -- --log-output-dest=data-dir files download --retry-strategy quick
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 30
 
       - name: Fetch network logs

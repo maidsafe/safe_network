@@ -16,11 +16,11 @@ Libp2p.<br>
 
 ### For Users
 
-- [CLI](https://github.com/maidsafe/autonomi/blob/main/autonomi-cli/README.md) The Command Line
-  Interface, allowing users to interact with the network from their terminal.
+- [CLI](https://github.com/maidsafe/autonomi/blob/main/ant-cli/README.md) The client command line
+  interface that enables users to interact with the network from their terminal.
 - [Node](https://github.com/maidsafe/autonomi/blob/main/ant-node/README.md) The backbone of the
-  Autonomi network. Nodes can be run on commodity hardware and provide storage space and validation of
-  transactions to the network.
+  Autonomi network. Nodes can run on commodity hardware and provide storage space and validate
+  transactions on the network.
 - Web App: Coming Soon!
 
 #### Building the Node from Source
@@ -60,11 +60,11 @@ cargo build --release --features network-contacts --bin antnode
 #### Main Crates
 
 - [Autonomi API](https://github.com/maidsafe/autonomi/blob/main/autonomi/README.md) The client APIs
-  allowing use of the Autonomi Network to users and developers.
-- [Autonomi CLI](https://github.com/maidsafe/autonomi/blob/main/autonomi-cli/README.md) The Command Line
-  Interface, allowing users to interact with the network from their terminal.
+  allowing use of the Autonomi network to users and developers.
+- [Autonomi CLI](https://github.com/maidsafe/autonomi/blob/main/ant-cli/README.md) The client command line
+  interface that enables users to interact with the network from their terminal.
 - [Node](https://github.com/maidsafe/autonomi/blob/main/ant-node/README.md) The backbone of the
-  autonomi network. Nodes can be run on commodity hardware and run the Network.
+  Autonomi network. Nodes can be run on commodity hardware and connect to the network.
 - [Node Manager](https://github.com/maidsafe/autonomi/blob/main/ant-node-manager/README.md) Use
   to create a local network for development and testing.
 - [Node RPC](https://github.com/maidsafe/autonomi/blob/main/ant-node-rpc-client/README.md) The
@@ -72,7 +72,7 @@ cargo build --release --features network-contacts --bin antnode
 
 #### Transport Protocols and Architectures
 
-The Autonomi Network uses `quic` as the default transport protocol.
+The Autonomi network uses `quic` as the default transport protocol.
 
 The `websockets` feature is available for the `ant-networking` crate, and above, and will allow for
 tcp over websockets.
@@ -104,8 +104,8 @@ WASM support for the autonomi API is currently under active development. More do
 
 ### Using a Local Network
 
-We can explore the network's features by using multiple node processes to form a local network. We also need to run a
-local EVM network for our nodes and client to connect to.
+We can explore the network's features by using multiple node processes to form a local network. We
+also need to run a local EVM network for our nodes and client to connect to.
 
 Follow these steps to create a local network:
 
@@ -142,7 +142,7 @@ The EVM Network parameters are loaded from the CSV file in your data directory a
 cargo run --bin antctl --features local -- status
 ```
 
-The node manager's `run` command starts the node processes. The `status` command should show twenty-five
+The Antctl `run` command starts the node processes. The `status` command should show twenty-five
 running nodes.
 
 ##### 5. Uploading and Downloading Data
@@ -152,7 +152,7 @@ To upload a file or a directory, you need to set the `SECRET_KEY` environment va
 > When running a local network, you can use the `SECRET_KEY` printed by the `evm-testnet` command [step 2](#2-run-a-local-evm-node) as it has all the money.
 
 ```bash
-SECRET_KEY=<YOUR_EVM_SECRET_KEY> cargo run --bin autonomi --features local -- file upload <path>
+SECRET_KEY=<YOUR_EVM_SECRET_KEY> cargo run --bin ant --features local -- file upload <path>
 ```
 
 The output will print out the address at which the content was uploaded.
@@ -160,7 +160,7 @@ The output will print out the address at which the content was uploaded.
 Now to download the files again:
 
 ```bash
-cargo run --bin autonomi --features local -- file download <addr> <dest_path>
+cargo run --bin ant --features local -- file download <addr> <dest_path>
 ```
 
 ### Registers

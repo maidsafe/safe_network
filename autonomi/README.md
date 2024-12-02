@@ -67,7 +67,7 @@ To run a WASM test
 - Install `wasm-pack`
 - Make sure your Rust supports the `wasm32-unknown-unknown` target. (If you
   have `rustup`: `rustup target add wasm32-unknown-unknown`.)
-- Pass a bootstrap peer via `SAFE_PEERS`. This *has* to be the websocket address,
+- Pass a bootstrap peer via `ANT_PEERS`. This *has* to be the websocket address,
   e.g. `/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID>`.
     - As well as the other environment variables needed for EVM payments (e.g. `RPC_URL`).
 - Optionally specify the specific test, e.g. `-- put` to run `put()` in `wasm.rs` only.
@@ -75,7 +75,7 @@ To run a WASM test
 Example:
 
 ```sh
-SAFE_PEERS=/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID> wasm-pack test --release --firefox autonomi --features=data,files --test wasm -- put
+ANT_PEERS=/ip4/<ip>/tcp/<port>/ws/p2p/<peer ID> wasm-pack test --release --firefox autonomi --features=data,files --test wasm -- put
 ```
 
 #### Test from JS in the browser

@@ -904,7 +904,7 @@ async fn add_node_should_update_the_environment_variables_inside_node_registry()
     let mut mock_service_control = MockServiceControl::new();
 
     let env_variables = Some(vec![
-        ("SN_LOG".to_owned(), "all".to_owned()),
+        ("ANT_LOG".to_owned(), "all".to_owned()),
         ("RUST_LOG".to_owned(), "libp2p=debug".to_owned()),
     ]);
 
@@ -4138,7 +4138,7 @@ async fn add_auditor_should_add_an_auditor_service() -> Result<()> {
                 ],
                 autostart: true,
                 contents: None,
-                environment: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+                environment: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
                 label: "auditor".parse()?,
                 program: auditor_install_path.to_path_buf(),
                 username: Some(get_username()),
@@ -4152,7 +4152,7 @@ async fn add_auditor_should_add_an_auditor_service() -> Result<()> {
         AddAuditorServiceOptions {
             bootstrap_peers: vec![],
             beta_encryption_key: None,
-            env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+            env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
             auditor_install_bin_path: auditor_install_path.to_path_buf(),
             service_log_dir_path: auditor_logs_dir.to_path_buf(),
@@ -4224,7 +4224,7 @@ async fn add_auditor_should_return_an_error_if_a_auditor_service_was_already_cre
         AddAuditorServiceOptions {
             bootstrap_peers: vec![],
             beta_encryption_key: None,
-            env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+            env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
             auditor_install_bin_path: auditor_install_path.to_path_buf(),
             service_log_dir_path: auditor_logs_dir.to_path_buf(),
@@ -4290,7 +4290,7 @@ async fn add_auditor_should_include_beta_encryption_key_if_specified() -> Result
                 ],
                 autostart: true,
                 contents: None,
-                environment: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+                environment: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
                 label: "auditor".parse()?,
                 program: auditor_install_path.to_path_buf(),
                 username: Some(get_username()),
@@ -4304,7 +4304,7 @@ async fn add_auditor_should_include_beta_encryption_key_if_specified() -> Result
         AddAuditorServiceOptions {
             bootstrap_peers: vec![],
             beta_encryption_key: Some("test".to_string()),
-            env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+            env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             auditor_src_bin_path: auditor_download_path.to_path_buf(),
             auditor_install_bin_path: auditor_install_path.to_path_buf(),
             service_log_dir_path: auditor_logs_dir.to_path_buf(),
@@ -4379,7 +4379,7 @@ async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
                 ],
                 autostart: true,
                 contents: None,
-                environment: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+                environment: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
                 label: "faucet".parse()?,
                 program: faucet_install_path.to_path_buf(),
                 username: Some(get_username()),
@@ -4392,7 +4392,7 @@ async fn add_faucet_should_add_a_faucet_service() -> Result<()> {
     add_faucet(
         AddFaucetServiceOptions {
             bootstrap_peers: vec![],
-            env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+            env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             faucet_src_bin_path: faucet_download_path.to_path_buf(),
             faucet_install_bin_path: faucet_install_path.to_path_buf(),
             local: false,
@@ -4465,7 +4465,7 @@ async fn add_faucet_should_return_an_error_if_a_faucet_service_was_already_creat
     let result = add_faucet(
         AddFaucetServiceOptions {
             bootstrap_peers: vec![],
-            env_variables: Some(vec![("SN_LOG".to_string(), "all".to_string())]),
+            env_variables: Some(vec![("ANT_LOG".to_string(), "all".to_string())]),
             faucet_src_bin_path: faucet_download_path.to_path_buf(),
             faucet_install_bin_path: faucet_install_path.to_path_buf(),
             local: false,
@@ -4531,7 +4531,7 @@ async fn add_daemon_should_add_a_daemon_service() -> Result<()> {
                 ],
                 autostart: true,
                 contents: None,
-                environment: Some(vec![("SN_LOG".to_string(), "ALL".to_string())]),
+                environment: Some(vec![("ANT_LOG".to_string(), "ALL".to_string())]),
                 label: "antctld".parse()?,
                 program: daemon_install_path.to_path_buf(),
                 username: Some(get_username()),
@@ -4546,7 +4546,7 @@ async fn add_daemon_should_add_a_daemon_service() -> Result<()> {
             address: Ipv4Addr::new(127, 0, 0, 1),
             daemon_install_bin_path: daemon_install_path.to_path_buf(),
             daemon_src_bin_path: daemon_download_path.to_path_buf(),
-            env_variables: Some(vec![("SN_LOG".to_string(), "ALL".to_string())]),
+            env_variables: Some(vec![("ANT_LOG".to_string(), "ALL".to_string())]),
             port: 8080,
             user: get_username(),
             version: latest_version.to_string(),

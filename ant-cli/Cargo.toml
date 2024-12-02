@@ -1,6 +1,6 @@
 [package]
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
-name = "autonomi-cli"
+name = "ant-cli"
 description = "CLI client for the Autonomi network"
 license = "GPL-3.0"
 version = "0.1.5"
@@ -10,7 +10,7 @@ readme = "README.md"
 repository = "https://github.com/maidsafe/autonomi"
 
 [[bin]]
-name = "autonomi"
+name = "ant"
 path = "src/main.rs"
 
 [features]
@@ -56,7 +56,7 @@ tokio = { version = "1.32.0", features = [
     "sync",
     "time",
     "fs",
-] }
+]}
 tracing = { version = "~0.1.26" }
 walkdir = "2.5.0"
 
@@ -64,7 +64,7 @@ walkdir = "2.5.0"
 autonomi = { path = "../autonomi", version = "0.2.4", features = [
     "data",
     "fs",
-] }
+]}
 criterion = "0.5.1"
 eyre = "0.6.8"
 rand = { version = "~0.8.5", features = ["small_rng"] }

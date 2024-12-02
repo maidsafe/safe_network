@@ -35,13 +35,13 @@ pub fn gen_random_data(len: usize) -> Bytes {
     Bytes::from(data)
 }
 
-/// Parse the `SAFE_PEERS` env var into a list of Multiaddrs.
+/// Parse the `ANT_PEERS` env var into a list of Multiaddrs.
 ///
 /// An empty `Vec` will be returned if the env var is not set or if local discovery is enabled.
 pub fn peers_from_env() -> Result<Vec<Multiaddr>> {
     let bootstrap_peers = if cfg!(feature = "local") {
         Ok(vec![])
-    } else if let Some(peers_str) = env_from_runtime_or_compiletime!("SAFE_PEERS") {
+    } else if let Some(peers_str) = env_from_runtime_or_compiletime!("ANT_PEERS") {
         peers_str.split(',').map(parse_peer_addr).collect()
     } else {
         Ok(vec![])

@@ -65,14 +65,14 @@ jobs:
   #         platform: ${{ matrix.os }}
   #         build: true
 
-  #     - name: Check SAFE_PEERS was set
+  #     - name: Check ANT_PEERS was set
   #       shell: bash
   #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
+  #         if [[ -z "$ANT_PEERS" ]]; then
+  #           echo "The ANT_PEERS variable has not been set"
   #           exit 1
   #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #           echo "ANT_PEERS has been set to $ANT_PEERS"
   #         fi
 
   #     - shell: bash
@@ -118,14 +118,14 @@ jobs:
   #         platform: ${{ matrix.os }}
   #         build: true
 
-  #     - name: Check SAFE_PEERS was set
+  #     - name: Check ANT_PEERS was set
   #       shell: bash
   #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
+  #         if [[ -z "$ANT_PEERS" ]]; then
+  #           echo "The ANT_PEERS variable has not been set"
   #           exit 1
   #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #           echo "ANT_PEERS has been set to $ANT_PEERS"
   #         fi
 
   #     - shell: bash

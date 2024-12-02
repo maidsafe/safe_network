@@ -1,7 +1,7 @@
 # A CLI for the Autonomi Network
 
 ```
-Usage: autonomi [OPTIONS] <COMMAND>
+Usage: ant [OPTIONS] <COMMAND>
 
 Commands:
   file      Operations related to file handling
@@ -16,7 +16,7 @@ Options:
       --log-format <LOG_FORMAT>
           Specify the logging format.
       --peer <multiaddr>
-          Peer(s) to use for bootstrap, in a 'multiaddr' format containing the peer ID [env: SAFE_PEERS=]
+          Peer(s) to use for bootstrap, in a 'multiaddr' format containing the peer ID [env: ANT_PEERS=]
       --timeout <CONNECTION_TIMEOUT>
           The maximum duration to wait for a connection to the network before timing out
   -x, --no-verify

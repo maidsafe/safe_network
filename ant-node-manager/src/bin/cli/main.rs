@@ -120,7 +120,7 @@ pub enum SubCmd {
         ///
         /// Useful to set log levels. Variables should be comma separated without spaces.
         ///
-        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        /// Example: --env ANT_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
         /// Specify what EVM network to use for payments.
@@ -425,7 +425,7 @@ pub enum SubCmd {
         /// Useful to set antnode's log levels. Variables should be comma separated without
         /// spaces.
         ///
-        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        /// Example: --env ANT_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
         /// Set this flag to force the upgrade command to replace binaries without comparing any
@@ -487,7 +487,7 @@ pub enum AuditorSubCmd {
         ///
         /// Useful to set log levels. Variables should be comma separated without spaces.
         ///
-        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        /// Example: --env ANT_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
         /// Provide the path for the log directory for the auditor.
@@ -554,7 +554,7 @@ pub enum AuditorSubCmd {
         ///
         /// Useful to set log levels. Variables should be comma separated without spaces.
         ///
-        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        /// Example: --env ANT_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
         /// Provide a binary to upgrade to using a URL.
@@ -594,7 +594,7 @@ pub enum DaemonSubCmd {
         ///
         /// Useful to set log levels. Variables should be comma separated without spaces.
         ///
-        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        /// Example: --env ANT_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
         /// Specify a port for the daemon to listen on.
@@ -651,7 +651,7 @@ pub enum FaucetSubCmd {
         ///
         /// Useful to set log levels. Variables should be comma separated without spaces.
         ///
-        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        /// Example: --env ANT_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
         /// Provide the path for the log directory for the faucet.
@@ -718,7 +718,7 @@ pub enum FaucetSubCmd {
         ///
         /// Useful to set log levels. Variables should be comma separated without spaces.
         ///
-        /// Example: --env SN_LOG=all,RUST_LOG=libp2p=debug
+        /// Example: --env ANT_LOG=all,RUST_LOG=libp2p=debug
         #[clap(name = "env", long, use_value_delimiter = true, value_parser = parse_environment_variables)]
         env_variables: Option<Vec<(String, String)>>,
         /// Provide a binary to upgrade to using a URL.

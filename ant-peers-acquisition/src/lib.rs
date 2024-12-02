@@ -30,7 +30,7 @@ lazy_static! {
 const MAX_RETRIES_ON_GET_PEERS_FROM_URL: usize = 7;
 
 /// The name of the environment variable that can be used to pass peers to the node.
-pub const SAFE_PEERS_ENV: &str = "SAFE_PEERS";
+pub const ANT_PEERS_ENV: &str = "ANT_PEERS";
 
 #[derive(Args, Debug, Default, Clone)]
 pub struct PeersArgs {
@@ -48,9 +48,9 @@ pub struct PeersArgs {
     ///
     /// This argument can be provided multiple times to connect to multiple peers.
     ///
-    /// Alternatively, the `SAFE_PEERS` environment variable can provide a comma-separated peer
+    /// Alternatively, the `ANT_PEERS` environment variable can provide a comma-separated peer
     /// list.
-    #[clap(long = "peer", env = "SAFE_PEERS", value_name = "multiaddr", value_delimiter = ',', value_parser = parse_peer_addr, conflicts_with = "first")]
+    #[clap(long = "peer", env = "ANT_PEERS", value_name = "multiaddr", value_delimiter = ',', value_parser = parse_peer_addr, conflicts_with = "first")]
     pub peers: Vec<Multiaddr>,
 
     /// Specify the URL to fetch the network contacts from.
@@ -69,11 +69,11 @@ impl PeersArgs {
     ///
     /// Otherwise, peers are obtained in the following order of precedence:
     /// * The `--peer` argument.
-    /// * The `SAFE_PEERS` environment variable.
+    /// * The `ANT_PEERS` environment variable.
     /// * Using the `local` feature, which will return an empty peer list.
     /// * Using the `network-contacts` feature, which will download the peer list from a file on S3.
     ///
-    /// Note: the current behaviour is that `--peer` and `SAFE_PEERS` will be combined. Some tests
+    /// Note: the current behaviour is that `--peer` and `ANT_PEERS` will be combined. Some tests
     /// currently rely on this. We will change it soon.
     pub async fn get_peers(self) -> Result<Vec<Multiaddr>> {
         self.get_peers_inner(false).await
@@ -85,13 +85,13 @@ impl PeersArgs {
     ///
     /// Otherwise, peers are obtained in the following order of precedence:
     /// * The `--peer` argument.
-    /// * The `SAFE_PEERS` environment variable.
+    /// * The `ANT_PEERS` environment variable.
     /// * Using the `local` feature, which will return an empty peer list.
     ///
     /// This will not fetch the peers from network-contacts even if the `network-contacts` feature is enabled. Use
     /// get_peers() instead.
     ///
-    /// Note: the current behaviour is that `--peer` and `SAFE_PEERS` will be combined. Some tests
+    /// Note: the current behaviour is that `--peer` and `ANT_PEERS` will be combined. Some tests
     /// currently rely on this. We will change it soon.
     pub async fn get_peers_exclude_network_contacts(self) -> Result<Vec<Multiaddr>> {
         self.get_peers_inner(true).await
@@ -104,7 +104,7 @@ impl PeersArgs {
         }
 
         let mut peers = if !self.peers.is_empty() {
-            info!("Using peers supplied with the --peer argument(s) or SAFE_PEERS");
+            info!("Using peers supplied with the --peer argument(s) or ANT_PEERS");
             self.peers
         } else if cfg!(feature = "local") {
             info!("No peers given");

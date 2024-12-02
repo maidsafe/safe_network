@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "ant-build-info",
+    "ant-cli",
     "ant-evm",
     "ant-logging",
     "ant-metrics",
@@ -15,7 +16,6 @@ members = [
     "ant-service-management",
     "ant-token-supplies",
     "autonomi",
-    "autonomi-cli",
     "evmlib",
     "evm-testnet",
     "nat-detection",

@@ -61,7 +61,7 @@ jobs:
       - name: Check env variables
         shell: bash
         run: |
-          echo "Peer is $SAFE_PEERS"
+          echo "Peer is $ANT_PEERS"
           echo "Deployment inventory is $SN_INVENTORY"
 
       - name: start faucet
@@ -79,7 +79,7 @@ jobs:
           faucet_address=$(jq -r '.faucet_address' $inventory_path)
           cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to carry out chunk actions
@@ -87,7 +87,7 @@ jobs:
           set -e
           cargo run --bin safe --release -- --log-output-dest=data-dir files upload "./resources" --retry-strategy quick
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to create a register
@@ -95,7 +95,7 @@ jobs:
           set -e
           cargo run --bin safe --release -- --log-output-dest=data-dir register create -n baobao
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to get a register
@@ -103,7 +103,7 @@ jobs:
           set -e
           cargo run --bin safe --release -- --log-output-dest=data-dir register get -n baobao
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 2
 
       - name: Start a client to edit a register
@@ -111,7 +111,7 @@ jobs:
           set -e
           cargo run --bin safe --release -- --log-output-dest=data-dir register edit -n baobao wood
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 2
 
       # - name: Fetch network logs
@@ -189,19 +189,19 @@ jobs:
   #     - name: Check env variables
   #       shell: bash
   #       run: |
-  #         echo "Peer is $SAFE_PEERS"
+  #         echo "Peer is $ANT_PEERS"
   #         echo "Deployment inventory is $SN_INVENTORY"
 
   #     - name: execute the sequential transfers test
   #       run: cargo test --release -p ant-node --test sequential_transfers -- --nocapture --test-threads=1
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 45
 
   #     - name: execute the storage payment tests
   #       run: cargo test --release -p ant-node --test storage_payments -- --nocapture --test-threads=1
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 45
 
   #     - name: Small wait to allow reward receipt
@@ -295,7 +295,7 @@ jobs:
   #     - name: Check env variables
   #       shell: bash
   #       run: |
-  #         echo "Peer is $SAFE_PEERS"
+  #         echo "Peer is $ANT_PEERS"
   #         echo "Deployment inventory is $SN_INVENTORY"
   #
   #     - name: Chunks data integrity during nodes churn
@@ -303,11 +303,11 @@ jobs:
   #       env:
   #         # TEST_DURATION_MINS: 60
   #         # TEST_CHURN_CYCLES: 6
-  #         # SN_LOG: "all"
+  #         # ANT_LOG: "all"
   #         # todo: lower time for testing
   #         TEST_DURATION_MINS: 10
   #         TEST_CHURN_CYCLES: 2
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 90
   #
   #     - name: Fetch network logs
@@ -499,7 +499,7 @@ jobs:
   #     - name: Check env variables
   #       shell: bash
   #       run: |
-  #         echo "Peer is $SAFE_PEERS"
+  #         echo "Peer is $ANT_PEERS"
   #         echo "Deployment inventory is $SN_INVENTORY"
   #
   #     - name: Verify the Routing table of the nodes
@@ -509,7 +509,7 @@ jobs:
   #     - name: Verify the location of the data on the network
   #       run: cargo test --release -p ant-node --test verify_data_location -- --nocapture
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 90
   #
   #     - name: Verify the routing tables of the nodes

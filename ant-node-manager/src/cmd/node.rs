@@ -112,7 +112,7 @@ pub async fn add(
     // ant_peers_acquisition, we might end up getting having a huge peer list, and that's problematic for
     // service definition files.
     // Thus make use of get_peers_exclude_network_contacts() instead of get_peers() to make sure we only
-    // parse the --peers and SAFE_PEERS env var.
+    // parse the --peers and ANT_PEERS env var.
 
     // If the `antnode` binary we're using has `network-contacts` enabled (which is the case for released binaries),
     // it's fine if the service definition doesn't call `antnode` with a `--peer` argument.

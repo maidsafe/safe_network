@@ -218,7 +218,7 @@ impl WanNetwork {
     //     {
     //         match parse_peer_addr(peer) {
     //             Ok(peer) => bootstrap_peers.push(peer),
-    //             Err(err) => error!("Can't parse SAFE_PEERS {peer:?} with error {err:?}"),
+    //             Err(err) => error!("Can't parse ANT_PEERS {peer:?} with error {err:?}"),
     //         }
     //     }
     //     if bootstrap_peers.is_empty() {
