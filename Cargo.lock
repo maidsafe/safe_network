@@ -732,6 +732,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "ant-cli"
+version = "0.1.5"
+dependencies = [
+ "ant-build-info",
+ "ant-logging",
+ "ant-peers-acquisition",
+ "autonomi",
+ "clap",
+ "color-eyre",
+ "const-hex",
+ "criterion",
+ "dirs-next",
+ "eyre",
+ "hex 0.4.3",
+ "indicatif",
+ "prettytable",
+ "rand 0.8.5",
+ "rayon",
+ "ring 0.17.8",
+ "rpassword",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "walkdir",
+]
+
+[[package]]
 name = "ant-evm"
 version = "0.1.4"
 dependencies = [
@@ -1510,36 +1540,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
  "xor_name",
-]
-
-[[package]]
-name = "autonomi-cli"
-version = "0.1.5"
-dependencies = [
- "ant-build-info",
- "ant-logging",
- "ant-peers-acquisition",
- "autonomi",
- "clap",
- "color-eyre",
- "const-hex",
- "criterion",
- "dirs-next",
- "eyre",
- "hex 0.4.3",
- "indicatif",
- "prettytable",
- "rand 0.8.5",
- "rayon",
- "ring 0.17.8",
- "rpassword",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "walkdir",
 ]
 
 [[package]]

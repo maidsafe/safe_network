@@ -43,7 +43,7 @@ jobs:
       # it will be better to execute bench test with `local`,
       # to make the measurement results reflect speed improvement or regression more accurately.
       - name: Build binaries
-        run: cargo build --release --features local --bin antnode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin ant
         timeout-minutes: 30
 
       - name: Start a local network
@@ -71,7 +71,7 @@ jobs:
 
       - name: Start a client instance to compare memory usage
         shell: bash
-        run: ./target/release/autonomi --log-output-dest=data-dir file upload "./the-test-data.zip"
+        run: ./target/release/ant --log-output-dest=data-dir file upload "./the-test-data.zip"
         env:
           SN_LOG: "all"
         timeout-minutes: 5
@@ -93,7 +93,7 @@ jobs:
           client_avg_mem_limit_mb="512" # mb
 
           peak_mem_usage=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob autonomi.* -o --no-line-number --no-filename |
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob ant.* -o --no-line-number --no-filename |
             awk -F':' '/"memory_used_mb":/{print $2}' |
             sort -n |
             tail -n 1
@@ -105,11 +105,11 @@ jobs:
           fi
 
           total_mem=$(
-            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob autonomi.* -o --no-line-number --no-filename |
+            rg '"memory_used_mb":[^,]*' $CLIENT_DATA_PATH/logs --glob ant.* -o --no-line-number --no-filename |
             awk -F':' '/"memory_used_mb":/ {sum += $2} END {printf "%.0f\n", sum}'
           )
           num_of_times=$(
-            rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs --glob autonomi.* -c --stats |
+            rg "\"memory_used_mb\"" $CLIENT_DATA_PATH/logs --glob ant.* -c --stats |
             rg "(\d+) matches" |
             rg "\d+" -o
           )
