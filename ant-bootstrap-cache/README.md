@@ -10,11 +10,6 @@ A robust peer caching system for the Autonomi Network that provides persistent s
 - Cross-process safe with file locking
 - Atomic write operations to prevent cache corruption
 
-### Concurrent Access
-- Thread-safe in-memory cache with `RwLock`
-- File system level locking for cross-process synchronization
-- Shared (read) and exclusive (write) lock support
-
 ### Data Management
 - Automatic cleanup of stale and unreliable peers
 - Configurable maximum peer limit

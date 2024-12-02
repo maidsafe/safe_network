@@ -13,10 +13,8 @@ use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read};
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tempfile::NamedTempFile;
-use tokio::sync::RwLock;
 
 const PEER_EXPIRY_DURATION: Duration = Duration::from_secs(24 * 60 * 60); // 24 hours
 
@@ -81,21 +79,24 @@ impl Default for CacheData {
     }
 }
 
-#[derive(Clone)]
-pub struct CacheStore {
+#[derive(Clone, Debug)]
+pub struct BootstrapCacheStore {
     cache_path: PathBuf,
-    config: Arc<BootstrapConfig>,
-    data: Arc<RwLock<CacheData>>,
+    config: BootstrapConfig,
+    data: CacheData,
     /// This is our last known state of the cache on disk, which is shared across all instances.
     /// This is not updated until `sync_to_disk` is called.
-    old_shared_state: Arc<RwLock<CacheData>>,
+    old_shared_state: CacheData,
 }
 
-impl CacheStore {
+impl BootstrapCacheStore {
+    pub fn config(&self) -> &BootstrapConfig {
+        &self.config
+    }
+
     pub async fn new(config: BootstrapConfig) -> Result<Self> {
         info!("Creating new CacheStore with config: {:?}", config);
         let cache_path = config.cache_file_path.clone();
-        let config = Arc::new(config);
 
         // Create cache directory if it doesn't exist
         if let Some(parent) = cache_path.parent() {
@@ -107,11 +108,11 @@ impl CacheStore {
             }
         }
 
-        let store = Self {
+        let mut store = Self {
             cache_path,
             config,
-            data: Arc::new(RwLock::new(CacheData::default())),
-            old_shared_state: Arc::new(RwLock::new(CacheData::default())),
+            data: CacheData::default(),
+            old_shared_state: CacheData::default(),
         };
 
         store.init().await?;
@@ -124,7 +125,6 @@ impl CacheStore {
     pub async fn new_without_init(config: BootstrapConfig) -> Result<Self> {
         info!("Creating new CacheStore with config: {:?}", config);
         let cache_path = config.cache_file_path.clone();
-        let config = Arc::new(config);
 
         // Create cache directory if it doesn't exist
         if let Some(parent) = cache_path.parent() {
@@ -139,15 +139,15 @@ impl CacheStore {
         let store = Self {
             cache_path,
             config,
-            data: Arc::new(RwLock::new(CacheData::default())),
-            old_shared_state: Arc::new(RwLock::new(CacheData::default())),
+            data: CacheData::default(),
+            old_shared_state: CacheData::default(),
         };
 
         info!("Successfully created CacheStore without initializing the data.");
         Ok(store)
     }
 
-    pub async fn init(&self) -> Result<()> {
+    pub async fn init(&mut self) -> Result<()> {
         let data = if self.cache_path.exists() {
             info!(
                 "Cache file exists at {:?}, attempting to load",
@@ -205,8 +205,8 @@ impl CacheStore {
         };
 
         // Update the store's data
-        *self.data.write().await = data.clone();
-        *self.old_shared_state.write().await = data;
+        self.data = data.clone();
+        self.old_shared_state = data;
 
         // Save the default data to disk
         self.sync_to_disk().await?;
@@ -309,101 +309,58 @@ impl CacheStore {
         Ok(data)
     }
 
-    pub async fn get_peers(&self) -> Vec<BootstrapPeer> {
-        let data = self.data.read().await;
-        data.peers.values().cloned().collect()
+    pub fn get_peers(&self) -> impl Iterator<Item = &BootstrapPeer> {
+        self.data.peers.values()
     }
 
-    pub async fn peer_count(&self) -> usize {
-        let data = self.data.read().await;
-        data.peers.len()
+    pub fn peer_count(&self) -> usize {
+        self.data.peers.len()
     }
 
-    pub async fn get_reliable_peers(&self) -> Vec<BootstrapPeer> {
-        let data = self.data.read().await;
-        let reliable_peers: Vec<_> = data
+    pub fn get_reliable_peers(&self) -> impl Iterator<Item = &BootstrapPeer> {
+        self.data
             .peers
             .values()
             .filter(|peer| peer.success_count > peer.failure_count)
-            .cloned()
-            .collect();
-
-        // If we have no reliable peers and the cache file is not read-only,
-        // try to refresh from default endpoints
-        if reliable_peers.is_empty()
-            && !self
-                .cache_path
-                .metadata()
-                .map(|m| m.permissions().readonly())
-                .unwrap_or(false)
-        {
-            drop(data);
-            if let Ok(new_data) = Self::fallback_to_default(&self.config).await {
-                let mut data = self.data.write().await;
-                *data = new_data;
-                return data
-                    .peers
-                    .values()
-                    .filter(|peer| peer.success_count > peer.failure_count)
-                    .cloned()
-                    .collect();
-            }
-        }
-
-        reliable_peers
     }
 
-    pub async fn update_peer_status(&self, addr: &Multiaddr, success: bool) {
-        let mut data = self.data.write().await;
-        data.update_peer_status(addr, success);
+    pub fn update_peer_status(&mut self, addr: &Multiaddr, success: bool) {
+        self.data.update_peer_status(addr, success);
     }
 
-    pub async fn add_peer(&self, addr: Multiaddr) {
-        let mut data = self.data.write().await;
+    pub fn add_peer(&mut self, addr: Multiaddr) {
         let addr_str = addr.to_string();
 
         // Check if we already have this peer
-        if data.peers.contains_key(&addr_str) {
+        if self.data.peers.contains_key(&addr_str) {
             debug!("Updating existing peer {}", addr_str);
-            if let Some(peer) = data.peers.get_mut(&addr_str) {
+            if let Some(peer) = self.data.peers.get_mut(&addr_str) {
                 peer.last_seen = SystemTime::now();
             }
             return;
         }
 
-        // If we're at max peers, remove the oldest peer
-        if data.peers.len() >= self.config.max_peers {
-            debug!(
-                "At max peers limit ({}), removing oldest peer",
-                self.config.max_peers
-            );
-            if let Some((oldest_addr, _)) = data.peers.iter().min_by_key(|(_, peer)| peer.last_seen)
-            {
-                let oldest_addr = oldest_addr.clone();
-                data.peers.remove(&oldest_addr);
-            }
-        }
+        self.remove_oldest_peers();
 
         // Add the new peer
         debug!("Adding new peer {} (under max_peers limit)", addr_str);
-        data.peers.insert(addr_str, BootstrapPeer::new(addr));
+        self.data.peers.insert(addr_str, BootstrapPeer::new(addr));
     }
 
-    pub async fn remove_peer(&self, addr: &str) {
-        let mut data = self.data.write().await;
-        data.peers.remove(addr);
+    pub fn remove_peer(&mut self, addr: &str) {
+        self.data.peers.remove(addr);
     }
 
-    pub async fn cleanup_stale_and_unreliable_peers(&self) {
-        let mut data = self.data.write().await;
-        data.cleanup_stale_and_unreliable_peers();
+    pub fn cleanup_stale_and_unreliable_peers(&mut self) {
+        self.data.cleanup_stale_and_unreliable_peers();
     }
 
     /// Clear all peers from the cache and save to disk
-    pub async fn clear_peers_and_save(&self) -> Result<()> {
-        let mut data = self.data.write().await;
-        data.peers.clear();
-        match self.atomic_write(&data).await {
+    pub async fn clear_peers_and_save(&mut self) -> Result<()> {
+        self.data.peers.clear();
+        self.old_shared_state.peers.clear();
+
+        match self.atomic_write().await {
             Ok(_) => Ok(()),
             Err(e) => {
                 error!("Failed to save cache to disk: {e}");
@@ -412,17 +369,15 @@ impl CacheStore {
         }
     }
 
-    pub async fn sync_to_disk(&self) -> Result<()> {
+    pub async fn sync_to_disk(&mut self) -> Result<()> {
         if self.config.disable_cache_writing {
             info!("Cache writing is disabled, skipping sync to disk");
             return Ok(());
         }
-        let mut data = self.data.write().await;
-        let mut old_shared_state = self.old_shared_state.write().await;
 
         info!(
-            "Syncing cache to disk, with data containing: {} peers and old state containing: {} peers", data.peers.len(),
-            old_shared_state.peers.len()
+            "Syncing cache to disk, with data containing: {} peers and old state containing: {} peers", self.data.peers.len(),
+            self.old_shared_state.peers.len()
         );
 
         // Check if the file is read-only before attempting to write
@@ -438,21 +393,38 @@ impl CacheStore {
             return Ok(());
         }
 
-        data.cleanup_stale_and_unreliable_peers();
-
         if let Ok(data_from_file) = Self::load_cache_data(&self.cache_path).await {
-            data.sync(&old_shared_state, &data_from_file);
+            self.data.sync(&self.old_shared_state, &data_from_file);
             // Now the synced version is the old_shared_state
-            *old_shared_state = data.clone();
         } else {
             warn!("Failed to load cache data from file, overwriting with new data");
         }
 
-        match self.atomic_write(&data).await {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                error!("Failed to save cache to disk: {e}");
-                Err(e)
+        self.data.cleanup_stale_and_unreliable_peers();
+        self.remove_oldest_peers();
+        self.old_shared_state = self.data.clone();
+
+        self.atomic_write().await.inspect_err(|e| {
+            error!("Failed to save cache to disk: {e}");
+        })
+    }
+
+    /// Remove the oldest peers until we're under the max_peers limit
+    fn remove_oldest_peers(&mut self) {
+        // If we're at max peers, remove the oldest peer
+        while self.data.peers.len() >= self.config.max_peers {
+            if let Some((oldest_addr, _)) = self
+                .data
+                .peers
+                .iter()
+                .min_by_key(|(_, peer)| peer.last_seen)
+            {
+                let oldest_addr = oldest_addr.clone();
+                debug!(
+                    "At max peers limit ({}), removing oldest peer: {oldest_addr}",
+                    self.config.max_peers
+                );
+                self.data.peers.remove(&oldest_addr);
             }
         }
     }
@@ -491,7 +463,7 @@ impl CacheStore {
         }
     }
 
-    async fn atomic_write(&self, data: &CacheData) -> Result<()> {
+    async fn atomic_write(&self) -> Result<()> {
         // Create parent directory if it doesn't exist
         if let Some(parent) = self.cache_path.parent() {
             fs::create_dir_all(parent).map_err(Error::from)?;
@@ -501,7 +473,7 @@ impl CacheStore {
         let temp_file = NamedTempFile::new().map_err(Error::from)?;
 
         // Write data to temporary file
-        serde_json::to_writer_pretty(&temp_file, &data).map_err(Error::from)?;
+        serde_json::to_writer_pretty(&temp_file, &self.data).map_err(Error::from)?;
 
         // Open the target file with proper permissions
         let file = OpenOptions::new()
@@ -529,32 +501,35 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
-    async fn create_test_store() -> (CacheStore, PathBuf) {
+    async fn create_test_store() -> (BootstrapCacheStore, PathBuf) {
         let temp_dir = tempdir().unwrap();
         let cache_file = temp_dir.path().join("cache.json");
 
-        let config = crate::BootstrapConfig::empty().with_cache_path(&cache_file);
+        let config = crate::BootstrapConfig::empty()
+            .unwrap()
+            .with_cache_path(&cache_file);
 
-        let store = CacheStore::new(config).await.unwrap();
+        let store = BootstrapCacheStore::new(config).await.unwrap();
         (store.clone(), store.cache_path.clone())
     }
 
     #[tokio::test]
     async fn test_peer_update_and_save() {
-        let (store, _) = create_test_store().await;
+        let (mut store, _) = create_test_store().await;
         let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
 
         // Manually add a peer without using fallback
         {
-            let mut data = store.data.write().await;
-            data.peers
+            store
+                .data
+                .peers
                 .insert(addr.to_string(), BootstrapPeer::new(addr.clone()));
         }
         store.sync_to_disk().await.unwrap();
 
-        store.update_peer_status(&addr, true).await;
+        store.update_peer_status(&addr, true);
 
-        let peers = store.get_peers().await;
+        let peers = store.get_peers().collect::<Vec<_>>();
         assert_eq!(peers.len(), 1);
         assert_eq!(peers[0].addr, addr);
         assert_eq!(peers[0].success_count, 1);
@@ -563,95 +538,93 @@ mod tests {
 
     #[tokio::test]
     async fn test_peer_cleanup() {
-        let (store, _) = create_test_store().await;
+        let (mut store, _) = create_test_store().await;
         let good_addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
         let bad_addr: Multiaddr = "/ip4/127.0.0.1/tcp/8081".parse().unwrap();
 
         // Add peers
-        store.add_peer(good_addr.clone()).await;
-        store.add_peer(bad_addr.clone()).await;
+        store.add_peer(good_addr.clone());
+        store.add_peer(bad_addr.clone());
 
         // Make one peer reliable and one unreliable
-        store.update_peer_status(&good_addr, true).await;
+        store.update_peer_status(&good_addr, true);
 
         // Fail the bad peer more times than max_retries
         for _ in 0..5 {
-            store.update_peer_status(&bad_addr, false).await;
+            store.update_peer_status(&bad_addr, false);
         }
 
         // Clean up unreliable peers
-        store.cleanup_stale_and_unreliable_peers().await;
+        store.cleanup_stale_and_unreliable_peers();
 
         // Get all peers (not just reliable ones)
-        let peers = store.get_peers().await;
+        let peers = store.get_peers().collect::<Vec<_>>();
         assert_eq!(peers.len(), 1);
         assert_eq!(peers[0].addr, good_addr);
     }
 
     #[tokio::test]
     async fn test_peer_not_removed_if_successful() {
-        let (store, _) = create_test_store().await;
+        let (mut store, _) = create_test_store().await;
         let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
 
         // Add a peer and make it successful
-        store.add_peer(addr.clone()).await;
-        store.update_peer_status(&addr, true).await;
+        store.add_peer(addr.clone());
+        store.update_peer_status(&addr, true);
 
         // Wait a bit
         tokio::time::sleep(Duration::from_millis(100)).await;
 
         // Run cleanup
-        store.cleanup_stale_and_unreliable_peers().await;
+        store.cleanup_stale_and_unreliable_peers();
 
         // Verify peer is still there
-        let peers = store.get_peers().await;
+        let peers = store.get_peers().collect::<Vec<_>>();
         assert_eq!(peers.len(), 1);
         assert_eq!(peers[0].addr, addr);
     }
 
     #[tokio::test]
     async fn test_peer_removed_only_when_unresponsive() {
-        let (store, _) = create_test_store().await;
+        let (mut store, _) = create_test_store().await;
         let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
 
         // Add a peer
-        store.add_peer(addr.clone()).await;
+        store.add_peer(addr.clone());
 
         // Make it fail more than successes
         for _ in 0..3 {
-            store.update_peer_status(&addr, true).await;
+            store.update_peer_status(&addr, true);
         }
         for _ in 0..4 {
-            store.update_peer_status(&addr, false).await;
+            store.update_peer_status(&addr, false);
         }
 
         // Run cleanup
-        store.cleanup_stale_and_unreliable_peers().await;
+        store.cleanup_stale_and_unreliable_peers();
 
         // Verify peer is removed
-        let peers = store.get_peers().await;
         assert_eq!(
-            peers.len(),
+            store.get_peers().count(),
             0,
             "Peer should be removed after max_retries failures"
         );
 
         // Test with some successes but more failures
-        store.add_peer(addr.clone()).await;
-        store.update_peer_status(&addr, true).await;
-        store.update_peer_status(&addr, true).await;
+        store.add_peer(addr.clone());
+        store.update_peer_status(&addr, true);
+        store.update_peer_status(&addr, true);
 
         for _ in 0..5 {
-            store.update_peer_status(&addr, false).await;
+            store.update_peer_status(&addr, false);
         }
 
         // Run cleanup
-        store.cleanup_stale_and_unreliable_peers().await;
+        store.cleanup_stale_and_unreliable_peers();
 
         // Verify peer is removed due to more failures than successes
-        let peers = store.get_peers().await;
         assert_eq!(
-            peers.len(),
+            store.get_peers().count(),
             0,
             "Peer should be removed when failures exceed successes"
         );

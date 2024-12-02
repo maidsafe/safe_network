@@ -8,11 +8,19 @@
 
 use crate::error::{Error, Result};
 use ant_protocol::version::{get_key_version_str, get_truncate_version_str};
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 use url::Url;
 
 const MAX_PEERS: usize = 1500;
-// const UPDATE_INTERVAL: Duration = Duration::from_secs(60);
+
+// Min time until we save the bootstrap cache to disk. 5 mins
+const MIN_BOOTSTRAP_CACHE_SAVE_INTERVAL: Duration = Duration::from_secs(5 * 60);
+
+// Max time until we save the bootstrap cache to disk. 24 hours
+const MAX_BOOTSTRAP_CACHE_SAVE_INTERVAL: Duration = Duration::from_secs(24 * 60 * 60);
 
 /// Configuration for the bootstrap cache
 #[derive(Clone, Debug)]
@@ -23,10 +31,14 @@ pub struct BootstrapConfig {
     pub max_peers: usize,
     /// Path to the bootstrap cache file
     pub cache_file_path: PathBuf,
-    // /// How often to update the cache (in seconds)
-    // pub update_interval: Duration,
     /// Flag to disable writing to the cache file
     pub disable_cache_writing: bool,
+    /// The min time duration until we save the bootstrap cache to disk.
+    pub min_cache_save_duration: Duration,
+    /// The max time duration until we save the bootstrap cache to disk.
+    pub max_cache_save_duration: Duration,
+    /// The cache save scaling factor. We start with the min_cache_save_duration and scale it up to the max_cache_save_duration.
+    pub cache_save_scaling_factor: u64,
 }
 
 impl BootstrapConfig {
@@ -43,20 +55,24 @@ impl BootstrapConfig {
             ],
             max_peers: MAX_PEERS,
             cache_file_path: default_cache_path()?,
-            // update_interval: UPDATE_INTERVAL,
             disable_cache_writing: false,
+            min_cache_save_duration: MIN_BOOTSTRAP_CACHE_SAVE_INTERVAL,
+            max_cache_save_duration: MAX_BOOTSTRAP_CACHE_SAVE_INTERVAL,
+            cache_save_scaling_factor: 2,
         })
     }
 
     /// Creates a new BootstrapConfig with empty settings
-    pub fn empty() -> Self {
-        Self {
+    pub fn empty() -> Result<Self> {
+        Ok(Self {
             endpoints: vec![],
             max_peers: MAX_PEERS,
-            cache_file_path: PathBuf::new(),
-            // update_interval: UPDATE_INTERVAL,
+            cache_file_path: default_cache_path()?,
             disable_cache_writing: false,
-        }
+            min_cache_save_duration: MIN_BOOTSTRAP_CACHE_SAVE_INTERVAL,
+            max_cache_save_duration: MAX_BOOTSTRAP_CACHE_SAVE_INTERVAL,
+            cache_save_scaling_factor: 2,
+        })
     }
 
     /// Update the config with custom endpoints
@@ -89,12 +105,6 @@ impl BootstrapConfig {
         self.max_peers = max_peers;
         self
     }
-
-    // /// Sets the update interval
-    // pub fn with_update_interval(mut self, update_interval: Duration) -> Self {
-    //     self.update_interval = update_interval;
-    //     self
-    // }
 
     /// Sets the flag to disable writing to the cache file
     pub fn with_disable_cache_writing(mut self, disable: bool) -> Self {

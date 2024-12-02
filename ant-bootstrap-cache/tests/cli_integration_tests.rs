@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ant_bootstrap_cache::{BootstrapConfig, CacheStore, PeersArgs};
+use ant_bootstrap_cache::{BootstrapCacheStore, BootstrapConfig, PeersArgs};
 use libp2p::Multiaddr;
 use std::env;
 use std::fs;
@@ -26,7 +26,9 @@ fn init_logging() {
 async fn setup() -> (TempDir, BootstrapConfig) {
     let temp_dir = TempDir::new().unwrap();
     let cache_path = temp_dir.path().join("cache.json");
-    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
+    let config = BootstrapConfig::empty()
+        .unwrap()
+        .with_cache_path(&cache_path);
 
     (temp_dir, config)
 }
@@ -43,8 +45,8 @@ async fn test_first_flag() -> Result<(), Box<dyn std::error::Error>> {
         local: false,
     };
 
-    let store = CacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().await;
+    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let peers = store.get_peers().collect::<Vec<_>>();
     assert!(peers.is_empty(), "First node should have no peers");
 
     Ok(())
@@ -66,8 +68,8 @@ async fn test_peer_argument() -> Result<(), Box<dyn std::error::Error>> {
         local: false,
     };
 
-    let store = CacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().await;
+    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let peers = store.get_peers().collect::<Vec<_>>();
     assert_eq!(peers.len(), 1, "Should have one peer");
     assert_eq!(
         peers[0].addr, peer_addr,
@@ -95,10 +97,12 @@ async fn test_safe_peers_env() -> Result<(), Box<dyn std::error::Error>> {
         local: false,
     };
 
-    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
+    let config = BootstrapConfig::empty()
+        .unwrap()
+        .with_cache_path(&cache_path);
 
-    let store = CacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().await;
+    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let peers = store.get_peers().collect::<Vec<_>>();
 
     // We should have multiple peers (env var + cache/endpoints)
     assert!(!peers.is_empty(), "Should have peers");
@@ -136,8 +140,8 @@ async fn test_network_contacts_fallback() -> Result<(), Box<dyn std::error::Erro
         local: false,
     };
 
-    let store = CacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().await;
+    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let peers = store.get_peers().collect::<Vec<_>>();
     assert_eq!(
         peers.len(),
         2,
@@ -154,7 +158,9 @@ async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
     let cache_path = temp_dir.path().join("cache.json");
 
     // Create a config with some peers in the cache
-    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
+    let config = BootstrapConfig::empty()
+        .unwrap()
+        .with_cache_path(&cache_path);
 
     // Create args with local mode enabled
     let args = PeersArgs {
@@ -164,8 +170,8 @@ async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
         local: true,
     };
 
-    let store = CacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().await;
+    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let peers = store.get_peers().collect::<Vec<_>>();
     assert!(peers.is_empty(), "Local mode should have no peers");
 
     // Verify cache was not touched
@@ -187,7 +193,9 @@ async fn test_test_network_peers() -> Result<(), Box<dyn std::error::Error>> {
         "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
             .parse()?;
 
-    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
+    let config = BootstrapConfig::empty()
+        .unwrap()
+        .with_cache_path(&cache_path);
 
     let args = PeersArgs {
         first: false,
@@ -196,8 +204,8 @@ async fn test_test_network_peers() -> Result<(), Box<dyn std::error::Error>> {
         local: false,
     };
 
-    let store = CacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().await;
+    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let peers = store.get_peers().collect::<Vec<_>>();
     assert_eq!(peers.len(), 1, "Should have exactly one test network peer");
     assert_eq!(
         peers[0].addr, peer_addr,
@@ -224,7 +232,9 @@ async fn test_peers_update_cache() -> Result<(), Box<dyn std::error::Error>> {
         "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
             .parse()?;
 
-    let config = BootstrapConfig::empty().with_cache_path(&cache_path);
+    let config = BootstrapConfig::empty()
+        .unwrap()
+        .with_cache_path(&cache_path);
 
     // Create args with peers but no test network mode
     let args = PeersArgs {
@@ -234,8 +244,8 @@ async fn test_peers_update_cache() -> Result<(), Box<dyn std::error::Error>> {
         local: false,
     };
 
-    let store = CacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().await;
+    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let peers = store.get_peers().collect::<Vec<_>>();
     assert_eq!(peers.len(), 1, "Should have one peer");
     assert_eq!(peers[0].addr, peer_addr, "Should have the correct peer");
 

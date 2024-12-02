@@ -21,11 +21,11 @@
 //! # Example
 //!
 //! ```no_run
-//! use bootstrap_cache::{CacheStore, BootstrapConfig, PeersArgs};
+//! use ant_bootstrap_cache::{BootstrapCacheStore, BootstrapConfig, PeersArgs};
 //! use url::Url;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let config = BootstrapConfig::new().unwrap();
+//! let config = BootstrapConfig::empty().unwrap();
 //! let args = PeersArgs {
 //!     first: false,
 //!     peers: vec![],
@@ -33,8 +33,8 @@
 //!     local: false,
 //! };
 //!
-//! let store = CacheStore::from_args(args, config).await?;
-//! let peers = store.get_peers().await;
+//! let store = BootstrapCacheStore::from_args(args, config).await?;
+//! let peers = store.get_peers();
 //! # Ok(())
 //! # }
 //! ```
@@ -53,7 +53,7 @@ use std::{fmt, time::SystemTime};
 use thiserror::Error;
 use url::Url;
 
-pub use cache_store::CacheStore;
+pub use cache_store::BootstrapCacheStore;
 pub use config::BootstrapConfig;
 pub use error::{Error, Result};
 pub use initial_peer_discovery::InitialPeerDiscovery;
@@ -182,7 +182,7 @@ pub struct PeersArgs {
     pub local: bool,
 }
 
-impl CacheStore {
+impl BootstrapCacheStore {
     /// Create a new CacheStore from command line arguments
     /// This also initializes the store with the provided peers
     pub async fn from_args(args: PeersArgs, mut config: BootstrapConfig) -> Result<Self> {
@@ -193,7 +193,7 @@ impl CacheStore {
         // If this is the first node, return empty store with no fallback
         if args.first {
             info!("First node in network, returning empty store");
-            let store = Self::new_without_init(config).await?;
+            let mut store = Self::new_without_init(config).await?;
             store.clear_peers_and_save().await?;
             return Ok(store);
         }
@@ -207,7 +207,7 @@ impl CacheStore {
         }
 
         // Create a new store but don't load from cache or fetch from endpoints yet
-        let store = Self::new_without_init(config).await?;
+        let mut store = Self::new_without_init(config).await?;
 
         // Add peers from environment variable if present
         if let Ok(env_peers) = std::env::var("SAFE_PEERS") {
@@ -215,7 +215,7 @@ impl CacheStore {
                 if let Ok(peer) = peer_str.parse() {
                     if let Some(peer) = craft_valid_multiaddr(&peer) {
                         info!("Adding peer from environment: {}", peer);
-                        store.add_peer(peer).await;
+                        store.add_peer(peer);
                     } else {
                         warn!("Invalid peer address format from environment: {}", peer);
                     }
@@ -227,7 +227,7 @@ impl CacheStore {
         for peer in args.peers {
             if let Some(peer) = craft_valid_multiaddr(&peer) {
                 info!("Adding peer from arguments: {}", peer);
-                store.add_peer(peer).await;
+                store.add_peer(peer);
             } else {
                 warn!("Invalid peer address format from arguments: {}", peer);
             }
@@ -239,12 +239,12 @@ impl CacheStore {
             let peer_discovery = InitialPeerDiscovery::with_endpoints(vec![url])?;
             let peers = peer_discovery.fetch_peers().await?;
             for peer in peers {
-                store.add_peer(peer.addr).await;
+                store.add_peer(peer.addr);
             }
         }
 
         // If we have peers, update cache and return, else initialize from cache
-        if store.peer_count().await > 0 {
+        if store.peer_count() > 0 {
             info!("Using provided peers and updating cache");
             store.sync_to_disk().await?;
         } else {
