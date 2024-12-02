@@ -96,9 +96,9 @@ struct Opt {
     /// `data-dir` is the default value.
     ///
     /// The data directory location is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/node/<peer-id>/logs
-    ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>/logs
-    ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>\logs
+    ///  - Linux: $HOME/.local/share/autonomi/node/<peer-id>/logs
+    ///  - macOS: $HOME/Library/Application Support/autonomi/node/<peer-id>/logs
+    ///  - Windows: C:\Users\<username>\AppData\Roaming\autonomi\node\<peer-id>\logs
     #[expect(rustdoc::invalid_html_tags)]
     #[clap(long, default_value_t = LogOutputDestArg::DataDir, value_parser = parse_log_output, verbatim_doc_comment)]
     log_output_dest: LogOutputDestArg,
@@ -144,9 +144,9 @@ struct Opt {
     /// Specify the node's data directory.
     ///
     /// If not provided, the default location is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/node/<peer-id>
-    ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>
-    ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>
+    ///  - Linux: $HOME/.local/share/autonomi/node/<peer-id>
+    ///  - macOS: $HOME/Library/Application Support/autonomi/node/<peer-id>
+    ///  - Windows: C:\Users\<username>\AppData\Roaming\autonomi\node\<peer-id>
     #[expect(rustdoc::invalid_html_tags)]
     #[clap(long, verbatim_doc_comment)]
     root_dir: Option<PathBuf>,

@@ -16,10 +16,10 @@ Libp2p.<br>
 
 ### For Users
 
-- [CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi-cli/README.md) The Command Line
+- [CLI](https://github.com/maidsafe/autonomi/blob/main/autonomi-cli/README.md) The Command Line
   Interface, allowing users to interact with the network from their terminal.
-- [Node](https://github.com/maidsafe//safe_network/blob/main/sn_node/README.md) The backbone of the
-  safe network. Nodes can be run on commodity hardware and provide storage space and validation of
+- [Node](https://github.com/maidsafe/autonomi/blob/main/ant-node/README.md) The backbone of the
+  Autonomi network. Nodes can be run on commodity hardware and provide storage space and validation of
   transactions to the network.
 - Web App: Coming Soon!
 
@@ -49,34 +49,30 @@ More options about EVM Network below.
 
 #### Build
 
-You should also build `safe` with the `network-contacts` and `distribution` features enabled:
+You can build `autonomi` and `antnode` with the `network-contacts` feature:
 
 ```
-cargo build --release --features "network-contacts,distribution" --bin safe
-```
-
-For `antnode`, only the `network-contacts` feature should be required:
-
-```
+cargo build --release --features network-contacts --bin autonomi
 cargo build --release --features network-contacts --bin antnode
 ```
 
+
 #### Main Crates
 
-- [Autonomi API](https://github.com/maidsafe/safe_network/blob/main/autonomi/README.md) The client APIs
+- [Autonomi API](https://github.com/maidsafe/autonomi/blob/main/autonomi/README.md) The client APIs
   allowing use of the Autonomi Network to users and developers.
-- [Autonomi CLI](https://github.com/maidsafe/safe_network/blob/main/autonomi-cli/README.md) The Command Line
+- [Autonomi CLI](https://github.com/maidsafe/autonomi/blob/main/autonomi-cli/README.md) The Command Line
   Interface, allowing users to interact with the network from their terminal.
-- [Node](https://github.com/maidsafe/safe_network/blob/main/sn_node/README.md) The backbone of the
+- [Node](https://github.com/maidsafe/autonomi/blob/main/ant-node/README.md) The backbone of the
   autonomi network. Nodes can be run on commodity hardware and run the Network.
-- [Node Manager](https://github.com/maidsafe/safe_network/blob/main/ant_node_manager/README.md) Use
+- [Node Manager](https://github.com/maidsafe/autonomi/blob/main/ant-node-manager/README.md) Use
   to create a local network for development and testing.
-- [Node RPC](https://github.com/maidsafe/safe_network/blob/main/ant-node-rpc-client/README.md) The
+- [Node RPC](https://github.com/maidsafe/autonomi/blob/main/ant-node-rpc-client/README.md) The
   RPC server used by the nodes to expose API calls to the outside world.
 
 #### Transport Protocols and Architectures
 
-The Safe Network uses `quic` as the default transport protocol.
+The Autonomi Network uses `quic` as the default transport protocol.
 
 The `websockets` feature is available for the `ant-networking` crate, and above, and will allow for
 tcp over websockets.
@@ -91,19 +87,19 @@ WASM support for the autonomi API is currently under active development. More do
 
 ### For the Technical
 
-- [Logging](https://github.com/maidsafe/safe_network/blob/main/ant_logging/README.md) The
-  generalised logging crate used by the safe network (backed by the tracing crate).
-- [Metrics](https://github.com/maidsafe/safe_network/blob/main/metrics/README.md) The metrics crate
-  used by the safe network.
-- [Networking](https://github.com/maidsafe/safe_network/blob/main/ant-networking/README.md) The
+- [Logging](https://github.com/maidsafe/autonomi/blob/main/ant-logging/README.md) The
+  generalised logging crate used by the autonomi network (backed by the tracing crate).
+- [Metrics](https://github.com/maidsafe/autonomi/blob/main/ant-metrics/README.md) The metrics crate
+  used by the autonomi network.
+- [Networking](https://github.com/maidsafe/autonomi/blob/main/ant-networking/README.md) The
   networking layer, built atop libp2p which allows nodes and clients to communicate.
-- [Protocol](https://github.com/maidsafe/safe_network/blob/main/ant_protocol/README.md) The protocol
-  used by the safe network.
-- [Registers](https://github.com/maidsafe/safe_network/blob/main/ant-registers/README.md) The
+- [Protocol](https://github.com/maidsafe/autonomi/blob/main/ant-protocol/README.md) The protocol
+  used by the autonomi network.
+- [Registers](https://github.com/maidsafe/autonomi/blob/main/ant-registers/README.md) The
   registers crate, used for the Register CRDT data type on the network.
-- [Peers Acquisition](https://github.com/maidsafe/safe_network/blob/main/ant_peers_acquisition/README.md)
+- [Peers Acquisition](https://github.com/maidsafe/autonomi/blob/main/ant-peers-acquisition/README.md)
   The peers acquisition crate, or: how the network layer discovers bootstrap peers.
-- [Build Info](https://github.com/maidsafe/safe_network/blob/main/ant-build-info/README.md) Small
+- [Build Info](https://github.com/maidsafe/autonomi/blob/main/ant-build-info/README.md) Small
   helper used to get the build/commit versioning info for debug purposes.
 
 ### Using a Local Network
@@ -297,8 +293,8 @@ Port: 38835
 RPC Port: 34416
 Multiaddr: /ip4/127.0.0.1/udp/38835/quic-v1/p2p/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
 PID: 62369
-Data path: /home/<<user_directory>>/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
-Log path: /home/<<user_directory>>/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
+Data path: /home/<<user_directory>>/.local/share/autonomi/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
+Log path: /home/<<user_directory>>/.local/share/autonomi/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
 Bin path: target/release/antnode
 Connected peers: 24
 ```
@@ -313,7 +309,7 @@ Node info:
 ==========
 RPC endpoint: https://127.0.0.1:34416
 Peer Id: 12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8
-Logs dir: /home/<<user_directory>>/.local/share/safe/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
+Logs dir: /home/<<user_directory>>/.local/share/autonomi/node/12D3KooWJ4Yp8CjrbuUyeLDsAgMfCb3GAYMoBvJCRp1axjHr9cf8/logs
 PID: 62369
 Binary version: 0.103.21
 Time since last restart: 1614s

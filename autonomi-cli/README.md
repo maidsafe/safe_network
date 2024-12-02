@@ -50,7 +50,7 @@ Example:
    Enter password (leave empty for none):
    Repeat password:
    Wallet address: 0xaf676aC7C821977506AC9DcE28bFe83fb06938d8
-   Stored wallet in: "/Users/macuser/Library/Application Support/safe/autonomi/wallets/0xaf676aC7C821977506AC9DcE28bFe83fb06938d8.encrypted"
+   Stored wallet in: "/Users/macuser/Library/Application Support/autonomi/client/wallets/0xaf676aC7C821977506AC9DcE28bFe83fb06938d8.encrypted"
    ```
 
 ### Import a wallet

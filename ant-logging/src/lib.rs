@@ -246,8 +246,8 @@ impl LogBuilder {
                 // Get the current timestamp and format it to be human readable
                 let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
                 let path = dir
-                    .join("safe")
                     .join("autonomi")
+                    .join("client")
                     .join("logs")
                     .join(format!("log_{timestamp}"));
                 LogOutputDest::Path(path)

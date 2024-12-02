@@ -65,7 +65,7 @@ jobs:
       - name: Obtain the funds from the faucet
         run: |
           # read the inventory file
-          inventory_path=/home/runner/.local/share/safe/testnet-deploy/NightlyChurnE2E-inventory.json
+          inventory_path=/home/runner/.local/share/autonomi/testnet-deploy/NightlyChurnE2E-inventory.json
           echo "Inventory Path: $inventory_path"
           faucet_address=$(jq -r '.faucet_address' $inventory_path)
           cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
@@ -125,9 +125,9 @@ jobs:
         with:
           name: local_logs_NightlyChurnE2E
           path: |
-            ~/.local/share/safe/node/*/logs/*.log*
-            ~/.local/share/safe/*/*/*.log*
-            ~/.local/share/safe/autonomi/logs/*/*.log*
+            ~/.local/share/autonomi/node/*/logs/*.log*
+            ~/.local/share/autonomi/*/*/*.log*
+            ~/.local/share/autonomi/autonomi/logs/*/*.log*
 
       - name: Stop the WAN network
         if: always()

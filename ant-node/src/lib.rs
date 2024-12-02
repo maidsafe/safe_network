@@ -71,9 +71,9 @@ impl RunningNode {
     ///
     /// This will either be a value defined by the user, or a default location, plus the peer ID
     /// appended. The default location is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/node/<peer-id>
-    ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>
-    ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>
+    ///  - Linux: $HOME/.local/share/autonomi/node/<peer-id>
+    ///  - macOS: $HOME/Library/Application Support/autonomi/node/<peer-id>
+    ///  - Windows: C:\Users\<username>\AppData\Roaming\autonomi\node\<peer-id>
     #[expect(rustdoc::invalid_html_tags)]
     pub fn root_dir_path(&self) -> PathBuf {
         self.root_dir_path.clone()
