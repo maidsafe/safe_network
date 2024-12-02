@@ -111,7 +111,7 @@ pub struct LogBuilder {
 
 impl LogBuilder {
     /// Create a new builder
-    /// Provide the default_logging_targets that are used if the `SN_LOG` env variable is not set.
+    /// Provide the default_logging_targets that are used if the `ANT_LOG` env variable is not set.
     ///
     /// By default, we use log to the StdOut with the default format.
     pub fn new(default_logging_targets: Vec<(String, Level)>) -> Self {
@@ -229,16 +229,16 @@ impl LogBuilder {
 
     /// Initialize just the fmt_layer for testing purposes.
     ///
-    /// Also overwrites the SN_LOG variable to log everything including the test_file_name
+    /// Also overwrites the ANT_LOG variable to log everything including the test_file_name
     fn get_test_layers(test_file_name: &str, disable_networking_logs: bool) -> TracingLayers {
-        // overwrite SN_LOG
+        // overwrite ANT_LOG
         if disable_networking_logs {
             std::env::set_var(
-                "SN_LOG",
+                "ANT_LOG",
                 format!("{test_file_name}=TRACE,all,ant_networking=WARN,all"),
             );
         } else {
-            std::env::set_var("SN_LOG", format!("{test_file_name}=TRACE,all"));
+            std::env::set_var("ANT_LOG", format!("{test_file_name}=TRACE,all"));
         }
 
         let output_dest = match dirs_next::data_dir() {

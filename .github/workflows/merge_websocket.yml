@@ -69,17 +69,17 @@ jobs:
           build: true
           sn-log: ""
 
-      - name: Check if SAFE_PEERS and EVM_NETWORK are set
+      - name: Check if ANT_PEERS and EVM_NETWORK are set
         shell: bash
         run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
+          if [[ -z "$ANT_PEERS" ]]; then
+            echo "The ANT_PEERS variable has not been set"
             exit 1
           elif [[ -z "$EVM_NETWORK" ]]; then
             echo "The EVM_NETWORK variable has not been set"
             exit 1
           else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+            echo "ANT_PEERS has been set to $ANT_PEERS"
             echo "EVM_NETWORK has been set to $EVM_NETWORK"
           fi
 
@@ -102,7 +102,7 @@ jobs:
       - name: File upload
         run: ./target/release/ant --log-output-dest=data-dir file upload "./test_data_1.tar.gz" > ./upload_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: showing the upload terminal output
@@ -119,7 +119,7 @@ jobs:
       - name: File Download
         run: ./target/release/ant --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources > ./download_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: showing the download terminal output

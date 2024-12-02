@@ -202,17 +202,17 @@ jobs:
           platform: ${{ matrix.os }}
           build: true
 
-      - name: Check if SAFE_PEERS and EVM_NETWORK are set
+      - name: Check if ANT_PEERS and EVM_NETWORK are set
         shell: bash
         run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
+          if [[ -z "$ANT_PEERS" ]]; then
+            echo "The ANT_PEERS variable has not been set"
             exit 1
           elif [[ -z "$EVM_NETWORK" ]]; then
             echo "The EVM_NETWORK variable has not been set"
             exit 1
           else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+            echo "ANT_PEERS has been set to $ANT_PEERS"
             echo "EVM_NETWORK has been set to $EVM_NETWORK"
           fi
 
@@ -220,7 +220,7 @@ jobs:
       - name: Run autonomi --tests
         run: cargo test --package autonomi --tests -- --nocapture
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
@@ -239,13 +239,13 @@ jobs:
       - name: Get file cost
         run: ./target/release/ant --log-output-dest=data-dir file cost "./resources"
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 15
 
       - name: File upload
         run: ./target/release/ant --log-output-dest=data-dir file upload "./resources" > ./upload_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 15
 
       - name: parse address (unix)
@@ -265,7 +265,7 @@ jobs:
       - name: File Download
         run: ./target/release/ant --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: Generate register signing key
@@ -274,7 +274,7 @@ jobs:
       - name: Create register (writeable by owner)
         run: ./target/release/ant --log-output-dest=data-dir register create baobao 123 > ./register_create_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 10
 
       - name: parse register address (unix)
@@ -294,25 +294,25 @@ jobs:
       - name: Get register
         run: ./target/release/ant --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: Edit register
         run: ./target/release/ant --log-output-dest=data-dir register edit ${{ env.REGISTER_ADDRESS }} 456
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 10
 
       - name: Get register (after edit)
         run: ./target/release/ant --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: Create Public Register (writeable by anyone)
         run: ./target/release/ant --log-output-dest=data-dir register create bao 111 --public > ./register_public_create_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: parse public register address (unix)
@@ -332,13 +332,13 @@ jobs:
       - name: Get Public Register (current key is the owner)
         run: ./target/release/ant --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: Edit Public Register (current key is the owner)
         run: ./target/release/ant --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 222
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 10
 
       - name: Delete current register signing key
@@ -351,49 +351,49 @@ jobs:
       - name: Get Public Register (new signing key is not the owner)
         run: ./target/release/ant --log-output-dest data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: Edit Public Register (new signing key is not the owner)
         run: ./target/release/ant --log-output-dest data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 333
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 10
 
       - name: Get Public Register (new signing key is not the owner)
         run: ./target/release/ant --log-output-dest data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: create local user file
         run: echo random > random.txt
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: file upload
         run: ./target/release/ant --log-output-dest data-dir file upload random.txt
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: create a local register
         run: ./target/release/ant --log-output-dest data-dir register create sample_new_register 1234
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: Estimate cost to create a vault
         run: ./target/release/ant --log-output-dest data-dir vault cost
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: create a vault with existing user data as above
         run: ./target/release/ant --log-output-dest data-dir vault create
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: add more files - linux/macos
@@ -407,7 +407,7 @@ jobs:
             ./target/release/ant --log-output-dest data-dir register create $i random_file_$i.bin
           done
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 25
 
       - name: add more files - windows
@@ -426,19 +426,19 @@ jobs:
               ./target/release/ant --log-output-dest data-dir register create $i "random_file_$i.bin"
           }
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 25
 
       - name: sync the vault
         run: ./target/release/ant --log-output-dest data-dir vault sync
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: load the vault from network
         run: ./target/release/ant --log-output-dest data-dir vault load
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: vault sync validation
@@ -480,7 +480,7 @@ jobs:
           python3 -c 'import sys; assert sys.argv[1] == sys.argv[2], f"Error: local data and vault in network dont match, Local registers: {sys.argv[1]} and vault registers: {sys.argv[2]} are Not Equal"' $NUM_OF_REGISTERS_first $NUM_OF_REGISTERS_IN_VAULT
           echo "vault synced successfully!"
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 15
 
       - name: Set up variables - vault sync - windows
@@ -492,7 +492,7 @@ jobs:
           ./target/release/ant register list > register_list.txt 2>&1
           ./target/release/ant --log-output-dest data-dir vault load > vault_data.txt 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 15
 
       - name: Vault sync validation
@@ -538,13 +538,13 @@ jobs:
           assert NUM_OF_REGISTERS_FILES == NUM_OF_REGISTERS_IN_VAULT, f"Error: local data and vault in network dont match, Local registers: {NUM_OF_REGISTERS_FILES} and vault registers: {NUM_OF_REGISTERS_IN_VAULT} are Not Equal"
           print("Vault synced successfully!")
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: load an existing vault from the network
         run: ./target/release/ant --log-output-dest=data-dir vault load
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: Time profiling for Different files
@@ -569,7 +569,7 @@ jobs:
           rm -rf random*.bin
           rm -rf ${{ matrix.ant_path }}/autonomi          
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 15
 
       - name: Stop the local network and upload logs
@@ -613,27 +613,27 @@ jobs:
   #         platform: ${{ matrix.os }}
   #         build: true
 
-  #     - name: Check SAFE_PEERS was set
+  #     - name: Check ANT_PEERS was set
   #       shell: bash
   #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
+  #         if [[ -z "$ANT_PEERS" ]]; then
+  #           echo "The ANT_PEERS variable has not been set"
   #           exit 1
   #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #           echo "ANT_PEERS has been set to $ANT_PEERS"
   #         fi
 
   #     - name: execute the sequential transfers tests
   #       run: cargo test --release -p ant-node --features="local" --test sequential_transfers -- --nocapture --test-threads=1
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
 
   #     - name: execute the storage payment tests
   #       run: cargo test --release -p ant-node --features="local" --test storage_payments -- --nocapture --test-threads=1
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
 
@@ -688,14 +688,14 @@ jobs:
   #         platform: ${{ matrix.os }}
   #         build: true
 
-  #     - name: Check SAFE_PEERS was set
+  #     - name: Check ANT_PEERS was set
   #       shell: bash
   #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
+  #         if [[ -z "$ANT_PEERS" ]]; then
+  #           echo "The ANT_PEERS variable has not been set"
   #           exit 1
   #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #           echo "ANT_PEERS has been set to $ANT_PEERS"
   #         fi
 
   #     - name: execute the transaction simulation
@@ -753,20 +753,20 @@ jobs:
   #         platform: ${{ matrix.os }}
   #         build: true
 
-  #     - name: Check SAFE_PEERS was set
+  #     - name: Check ANT_PEERS was set
   #       shell: bash
   #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
+  #         if [[ -z "$ANT_PEERS" ]]; then
+  #           echo "The ANT_PEERS variable has not been set"
   #           exit 1
   #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #           echo "ANT_PEERS has been set to $ANT_PEERS"
   #         fi
 
   #     - name: execute token_distribution tests
   #       run: cargo test --release --features=local,distribution token_distribution -- --nocapture --test-threads=1
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
 
@@ -822,17 +822,17 @@ jobs:
           platform: ${{ matrix.os }}
           build: true
 
-      - name: Check if SAFE_PEERS and EVM_NETWORK are set
+      - name: Check if ANT_PEERS and EVM_NETWORK are set
         shell: bash
         run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
+          if [[ -z "$ANT_PEERS" ]]; then
+            echo "The ANT_PEERS variable has not been set"
             exit 1
           elif [[ -z "$EVM_NETWORK" ]]; then
             echo "The EVM_NETWORK variable has not been set"
             exit 1
           else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+            echo "ANT_PEERS has been set to $ANT_PEERS"
             echo "EVM_NETWORK has been set to $EVM_NETWORK"
           fi
 
@@ -841,7 +841,7 @@ jobs:
         env:
           TEST_DURATION_MINS: 5
           TEST_TOTAL_CHURN_CYCLES: 15
-          SN_LOG: "all"
+          ANT_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 30
 
@@ -969,17 +969,17 @@ jobs:
           platform: ${{ matrix.os }}
           build: true
 
-      - name: Check if SAFE_PEERS and EVM_NETWORK are set
+      - name: Check if ANT_PEERS and EVM_NETWORK are set
         shell: bash
         run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-              echo "The SAFE_PEERS variable has not been set"
+          if [[ -z "$ANT_PEERS" ]]; then
+              echo "The ANT_PEERS variable has not been set"
               exit 1
           elif [[ -z "$EVM_NETWORK" ]]; then
               echo "The EVM_NETWORK variable has not been set"
               exit 1
           else
-              echo "SAFE_PEERS has been set to $SAFE_PEERS"
+              echo "ANT_PEERS has been set to $ANT_PEERS"
               echo "EVM_NETWORK has been set to $EVM_NETWORK"
           fi
 
@@ -993,7 +993,7 @@ jobs:
         run: cargo test --release -p ant-node --features "local" --test verify_data_location -- --nocapture
         env:
           CHURN_COUNT: 6
-          SN_LOG: "all"
+          ANT_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 25
 
@@ -1103,14 +1103,14 @@ jobs:
   #         mv target/release/safe ~/safe
   #         rm -rf target
 
-  #     - name: Check SAFE_PEERS was set
+  #     - name: Check ANT_PEERS was set
   #       shell: bash
   #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
+  #         if [[ -z "$ANT_PEERS" ]]; then
+  #           echo "The ANT_PEERS variable has not been set"
   #           exit 1
   #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #           echo "ANT_PEERS has been set to $ANT_PEERS"
   #         fi
 
   #     - name: Create and fund a wallet first time
@@ -1120,7 +1120,7 @@ jobs:
   #         echo "----------"
   #         cat first.txt
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 5
 
   #     - name: Move faucet log to the working folder
@@ -1133,7 +1133,7 @@ jobs:
   #         ls -l $SAFE_DATA_PATH/test_faucet/logs
   #         mv $SAFE_DATA_PATH/test_faucet/logs/faucet.log ./faucet_log.log
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #         SAFE_DATA_PATH: /home/runner/.local/share/autonomi
   #       continue-on-error: true
   #       if: always()
@@ -1155,25 +1155,25 @@ jobs:
   #     rm -rf /home/runner/.local/share/autonomi/test_genesis
   #     rm -rf /home/runner/.local/share/autonomi/autonomi
   #   env:
-  #     SN_LOG: "all"
+  #     ANT_LOG: "all"
   #   timeout-minutes: 5
 
   # - name: Create a new wallet
   #   run: ~/safe --log-output-dest=data-dir wallet create --no-password
   #   env:
-  #     SN_LOG: "all"
+  #     ANT_LOG: "all"
   #   timeout-minutes: 5
 
   # - name: Attempt second faucet genesis disbursement
   #   run: ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1)  > second.txt 2>&1 || true
   #   env:
-  #     SN_LOG: "all"
+  #     ANT_LOG: "all"
   #   timeout-minutes: 5
 
   # - name: cat second.txt
   #   run: cat second.txt
   #   env:
-  #     SN_LOG: "all"
+  #     ANT_LOG: "all"
   #   timeout-minutes: 5
 
   # - name: Verify a second disbursement is rejected
@@ -1185,7 +1185,7 @@ jobs:
   #     exit 1
   #     fi
   #   env:
-  #     SN_LOG: "all"
+  #     ANT_LOG: "all"
   #   timeout-minutes: 5
 
   # - name: Create and fund a wallet with different keypair
@@ -1203,7 +1203,7 @@ jobs:
   #       echo "Faucet with different genesis key rejected"
   #     fi
   #   env:
-  #     SN_LOG: "all"
+  #     ANT_LOG: "all"
   #   timeout-minutes: 5
 
   #     - name: Build faucet binary again without the gifting feature
@@ -1220,7 +1220,7 @@ jobs:
   #         target/release/faucet server &
   #         sleep 60
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 5
 
   #     - name: check there is no upload happens
@@ -1295,17 +1295,17 @@ jobs:
           platform: ubuntu-latest
           build: true
 
-      - name: Check if SAFE_PEERS and EVM_NETWORK are set
+      - name: Check if ANT_PEERS and EVM_NETWORK are set
         shell: bash
         run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-            echo "The SAFE_PEERS variable has not been set"
+          if [[ -z "$ANT_PEERS" ]]; then
+            echo "The ANT_PEERS variable has not been set"
             exit 1
           elif [[ -z "$EVM_NETWORK" ]]; then
             echo "The EVM_NETWORK variable has not been set"
             exit 1
           else
-            echo "SAFE_PEERS has been set to $SAFE_PEERS"
+            echo "ANT_PEERS has been set to $ANT_PEERS"
             echo "EVM_NETWORK has been set to $EVM_NETWORK"
           fi
 
@@ -1328,7 +1328,7 @@ jobs:
       - name: File upload
         run: ./target/release/ant --log-output-dest data-dir file upload "./test_data_1.tar.gz" > ./upload_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: showing the upload terminal output
@@ -1345,7 +1345,7 @@ jobs:
       - name: File Download
         run: ./target/release/ant --log-output-dest data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources > ./download_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: showing the download terminal output
@@ -1459,14 +1459,14 @@ jobs:
   #         platform: ubuntu-latest
   #         build: true
 
-  #     - name: Check SAFE_PEERS was set
+  #     - name: Check ANT_PEERS was set
   #       shell: bash
   #       run: |
-  #         if [[ -z "$SAFE_PEERS" ]]; then
-  #           echo "The SAFE_PEERS variable has not been set"
+  #         if [[ -z "$ANT_PEERS" ]]; then
+  #           echo "The ANT_PEERS variable has not been set"
   #           exit 1
   #         else
-  #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
+  #           echo "ANT_PEERS has been set to $ANT_PEERS"
   #         fi
 
   #     - name: Create and fund a wallet to pay for files storage
@@ -1475,13 +1475,13 @@ jobs:
   #         ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
   #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 5
 
   #     - name: Start a client to upload first file
   #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_1.tar.gz" --retry-strategy quick
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 5
 
   #     - name: Ensure no leftover transactions and payment files
@@ -1515,7 +1515,7 @@ jobs:
   #     - name: Use same client to upload second file
   #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_2.tar.gz" --retry-strategy quick
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 10
 
   #     - name: Ensure no leftover transactions and payment files
@@ -1560,7 +1560,7 @@ jobs:
   #         ./target/release/faucet --log-output-dest=data-dir send 100000000 $(./target/release/safe --log-output-dest=data-dir wallet address | tail -n 1) | tail -n 1 > transfer_hex
   #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #         SAFE_DATA_PATH: /home/runner/.local/share/autonomi
   #         CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
   #       timeout-minutes: 25
@@ -1568,7 +1568,7 @@ jobs:
   #     - name: Use second client to upload third file
   #       run: ./target/release/safe --log-output-dest=data-dir files upload "./test_data_3.tar.gz" --retry-strategy quick
   #       env:
-  #         SN_LOG: "all"
+  #         ANT_LOG: "all"
   #       timeout-minutes: 10
 
   #     - name: Ensure no leftover transactions and payment files

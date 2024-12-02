@@ -32,9 +32,9 @@ const MAX_LOG_SIZE: usize = 20 * 1024 * 1024;
 const MAX_UNCOMPRESSED_LOG_FILES: usize = 10;
 const MAX_LOG_FILES: usize = 1000;
 // Everything is logged by default
-const ALL_SN_LOGS: &str = "all";
+const ALL_ANT_LOGS: &str = "all";
 // Trace at nodes, clients, debug at networking layer
-const VERBOSE_SN_LOGS: &str = "v";
+const VERBOSE_ANT_LOGS: &str = "v";
 
 /// Handle that implements functions to change the log level on the fly.
 pub struct ReloadHandle(pub(crate) Handle<Box<dyn Filter<Registry> + Send + Sync>, Registry>);
@@ -163,10 +163,10 @@ impl TracingLayers {
                 }
             }
         };
-        let targets = match std::env::var("SN_LOG") {
+        let targets = match std::env::var("ANT_LOG") {
             Ok(sn_log_val) => {
                 if print_updates_to_stdout {
-                    println!("Using SN_LOG={sn_log_val}");
+                    println!("Using ANT_LOG={sn_log_val}");
                 }
                 get_logging_targets(&sn_log_val)?
             }
@@ -216,9 +216,9 @@ impl TracingLayers {
             ])))
             .install_batch(opentelemetry::runtime::Tokio)?;
 
-        let targets = match std::env::var("SN_LOG_OTLP") {
+        let targets = match std::env::var("ANT_LOG_OTLP") {
             Ok(sn_log_val) => {
-                println!("Using SN_LOG_OTLP={sn_log_val}");
+                println!("Using ANT_LOG_OTLP={sn_log_val}");
                 get_logging_targets(&sn_log_val)?
             }
             Err(_) => default_logging_targets,
@@ -235,8 +235,8 @@ impl TracingLayers {
     }
 }
 
-/// Parses the logging targets from the env variable (SN_LOG). The crates should be given as a CSV, for e.g.,
-/// `export SN_LOG = libp2p=DEBUG, tokio=INFO, all, sn_client=ERROR`
+/// Parses the logging targets from the env variable (ANT_LOG). The crates should be given as a CSV, for e.g.,
+/// `export ANT_LOG = libp2p=DEBUG, tokio=INFO, all, sn_client=ERROR`
 /// Custom keywords will take less precedence if the same target has been manually specified in the CSV.
 /// `sn_client=ERROR` in the above example will be used instead of the TRACE level set by "all" keyword.
 fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> {
@@ -247,10 +247,10 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
     for crate_log_level in logging_env_value.split(',') {
         // TODO: are there other default short-circuits wanted?
         // Could we have a default set if NOT on a release commit?
-        if crate_log_level == ALL_SN_LOGS {
+        if crate_log_level == ALL_ANT_LOGS {
             contains_keyword_all_sn_logs = true;
             continue;
-        } else if crate_log_level == VERBOSE_SN_LOGS {
+        } else if crate_log_level == VERBOSE_ANT_LOGS {
             contains_keyword_verbose_sn_logs = true;
             continue;
         }

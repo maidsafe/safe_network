@@ -44,17 +44,17 @@ jobs:
           platform: ${{ matrix.os }}
           build: true
 
-      - name: Check if SAFE_PEERS and EVM_NETWORK are set
+      - name: Check if ANT_PEERS and EVM_NETWORK are set
         shell: bash
         run: |
-          if [[ -z "$SAFE_PEERS" ]]; then
-              echo "The SAFE_PEERS variable has not been set"
+          if [[ -z "$ANT_PEERS" ]]; then
+              echo "The ANT_PEERS variable has not been set"
               exit 1
           elif [[ -z "$EVM_NETWORK" ]]; then
               echo "The EVM_NETWORK variable has not been set"
               exit 1
           else
-              echo "SAFE_PEERS has been set to $SAFE_PEERS"
+              echo "ANT_PEERS has been set to $ANT_PEERS"
               echo "EVM_NETWORK has been set to $EVM_NETWORK"
           fi
 
@@ -62,7 +62,7 @@ jobs:
       - name: Run autonomi --tests
         run: cargo test --package autonomi --tests -- --nocapture
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
@@ -82,13 +82,13 @@ jobs:
       - name: Get file cost
         run: ./target/release/ant --log-output-dest=data-dir file cost "./resources"
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 15
 
       - name: File upload
         run: ./target/release/ant --log-output-dest=data-dir file upload "./resources" > ./upload_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 15
 
       - name: parse address (unix)
@@ -108,7 +108,7 @@ jobs:
       - name: File Download
         run: ./target/release/ant --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: Generate register signing key
@@ -117,7 +117,7 @@ jobs:
       - name: Create register (writeable by owner)
         run: ./target/release/ant --log-output-dest=data-dir register create baobao 123 > ./register_create_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 10
 
       - name: parse register address (unix)
@@ -137,25 +137,25 @@ jobs:
       - name: Get register
         run: ./target/release/ant --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: Edit register
         run: ./target/release/ant --log-output-dest=data-dir register edit ${{ env.REGISTER_ADDRESS }} 456
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 10
 
       - name: Get register (after edit)
         run: ./target/release/ant --log-output-dest=data-dir register get ${{ env.REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: Create Public Register (writeable by anyone)
         run: ./target/release/ant --log-output-dest=data-dir register create bao 111 --public > ./register_public_create_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: parse public register address (unix)
@@ -175,13 +175,13 @@ jobs:
       - name: Get Public Register (current key is the owner)
         run: ./target/release/ant --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: Edit Public Register (current key is the owner)
         run: ./target/release/ant --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 222
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 10
 
       - name: Delete current register signing key
@@ -194,19 +194,19 @@ jobs:
       - name: Get Public Register (new signing key is not the owner)
         run: ./target/release/ant --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: Edit Public Register (new signing key is not the owner)
         run: ./target/release/ant --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 333
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 10
 
       - name: Get Public Register (new signing key is not the owner)
         run: ./target/release/ant --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: Stop the local network and upload logs
@@ -324,7 +324,7 @@ jobs:
         env:
           TEST_DURATION_MINS: 60
           TEST_CHURN_CYCLES: 6
-          SN_LOG: "all"
+          ANT_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 90
 
@@ -481,7 +481,7 @@ jobs:
       - name: Verify the location of the data on the network
         run: cargo test --release -p ant-node --features=local --test verify_data_location -- --nocapture
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 90
 

@@ -48,9 +48,9 @@ jobs:
           platform: ubuntu-latest
           build: true
 
-      - name: Check SAFE_PEERS was set
+      - name: Check ANT_PEERS was set
         shell: bash
-        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
+        run: echo "The ANT_PEERS variable has been set to $ANT_PEERS"
 
       - name: Start a node instance to be restarted
         run: |
@@ -59,7 +59,7 @@ jobs:
             --root-dir $RESTART_TEST_NODE_DATA_PATH --log-output-dest $RESTART_TEST_NODE_DATA_PATH --local --rewards-address "0x03B770D9cD32077cC0bF330c13C114a87643B124" &
           sleep 10
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
 
       - name: Download 95mb file to be uploaded with the safe client
         shell: bash
@@ -72,7 +72,7 @@ jobs:
       - name: File upload
         run: ./target/release/ant --log-output-dest=data-dir file upload --public "./the-test-data.zip" > ./upload_output 2>&1
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 5
 
       - name: showing the upload terminal output
@@ -101,7 +101,7 @@ jobs:
           cp ./the-test-data.zip ./the-test-data_1.zip
           ./target/release/ant --log-output-dest data-dir file_TYPE upload "" > ./second_upload 2>&1
         enrelease-candidatev:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 25
 
       - name: showing the second upload terminal output
@@ -121,7 +121,7 @@ jobs:
             --rewards-address "0x03B770D9cD32077cC0bF330c13C114a87643B124" &
           sleep 10
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
 
       # Records are encrypted, and seeds will change after restart
       # Currently, there will be `Existing record found`, but NO `Existing record loaded`
@@ -154,7 +154,7 @@ jobs:
           ./target/release/ant
           --log-output-dest=data-dir file download ${{ env.UPLOAD_ADDRESS }} ./downloaded_resources
         env:
-          SN_LOG: "v"
+          ANT_LOG: "v"
         timeout-minutes: 2
 
       - name: Check nodes running

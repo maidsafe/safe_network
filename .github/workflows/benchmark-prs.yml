@@ -49,7 +49,7 @@ jobs:
       - name: Start a local network
         uses: maidsafe/ant-local-testnet-action@main
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         with:
           action: start
           enable-evm-testnet: true
@@ -57,9 +57,9 @@ jobs:
           platform: ubuntu-latest
           build: true
 
-      - name: Check SAFE_PEERS was set
+      - name: Check ANT_PEERS was set
         shell: bash
-        run: echo "The SAFE_PEERS variable has been set to $SAFE_PEERS"
+        run: echo "The ANT_PEERS variable has been set to $ANT_PEERS"
 
       - name: export default secret key
         run: echo "SECRET_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" >> $GITHUB_ENV
@@ -73,7 +73,7 @@ jobs:
         shell: bash
         run: ./target/release/ant --log-output-dest=data-dir file upload "./the-test-data.zip"
         env:
-          SN_LOG: "all"
+          ANT_LOG: "all"
         timeout-minutes: 5
 
       - name: Cleanup uploaded_files folder to avoid pollute download benchmark

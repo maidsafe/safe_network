@@ -17,7 +17,7 @@ use std::path::PathBuf;
 /// create real services and user accounts, and will not attempt to clean themselves up.
 ///
 /// They are assuming the existence of a `antnode` binary produced by the release process, and a
-/// running local network, with SAFE_PEERS set to a local node.
+/// running local network, with ANT_PEERS set to a local node.
 const CI_USER: &str = "runner";
 #[cfg(unix)]
 const ANTNODE_BIN_NAME: &str = "antnode";
