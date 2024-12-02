@@ -75,7 +75,7 @@
 //     // this example to be able to pay for the Register's storage.
 //     let root_dir = dirs_next::data_dir()
 //         .ok_or_else(|| eyre!("could not obtain data directory path".to_string()))?
-//         .join("safe")
+//         .join("autonomi")
 //         .join("client");
 
 //     let wallet = load_account_wallet_or_create_with_mnemonic(&root_dir, None)

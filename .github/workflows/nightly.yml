@@ -434,14 +434,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-            autonomi_path: /home/runner/.local/share/safe
+            node_data_path: /home/runner/.local/share/autonomi/node
+            autonomi_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-            autonomi_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi\\node
+            autonomi_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
-            autonomi_path: /Users/runner/Library/Application Support/safe
+            node_data_path: /Users/runner/Library/Application Support/autonomi/node
+            autonomi_path: /Users/runner/Library/Application Support/autonomi
     steps:
       - uses: actions/checkout@v4
 

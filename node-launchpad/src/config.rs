@@ -21,9 +21,9 @@ const CONFIG: &str = include_str!("../.config/config.json5");
 
 /// Where to store the Nodes data.
 ///
-/// If `base_dir` is the primary mount point, we store in "<base_dir>/$HOME/user_data_dir/safe/node".
+/// If `base_dir` is the primary mount point, we store in "<base_dir>/$HOME/user_data_dir/autonomi/node".
 ///
-/// if not we store in "<base_dir>/safe/node".
+/// if not we store in "<base_dir>/autonomi/node".
 ///
 /// If should_create is true, the directory will be created if it doesn't exists.
 pub fn get_launchpad_nodes_data_dir_path(
@@ -43,7 +43,7 @@ pub fn get_launchpad_nodes_data_dir_path(
         base_dir.clone()
     };
     mount_point.push(data_directory);
-    mount_point.push("safe");
+    mount_point.push("autonomi");
     mount_point.push("node");
     if should_create {
         debug!("Creating nodes data dir: {:?}", mount_point.as_path());
@@ -69,7 +69,7 @@ pub fn get_launchpad_nodes_data_dir_path(
 pub fn get_launchpad_data_dir_path() -> Result<PathBuf> {
     let mut home_dirs =
         dirs_next::data_dir().ok_or_else(|| eyre!("Data directory is not obtainable"))?;
-    home_dirs.push("safe");
+    home_dirs.push("autonomi");
     home_dirs.push("launchpad");
     std::fs::create_dir_all(home_dirs.as_path())?;
     Ok(home_dirs)

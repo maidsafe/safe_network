@@ -161,7 +161,7 @@ pub async fn add_node(
         let service_antnode_path = service_data_dir_path.join(antnode_file_name.clone());
 
         // For a user mode service, if the user has *not* specified a custom directory and they are
-        // using the default, e.g., ~/.local/share/safe/node/<service-name>, an additional "logs"
+        // using the default, e.g., ~/.local/share/autonomi/node/<service-name>, an additional "logs"
         // directory needs to be appended to the path, otherwise the log files will be output at
         // the same directory where `secret-key` is, which is not what users expect.
         let default_log_dir_path = get_user_antnode_data_dir()?;

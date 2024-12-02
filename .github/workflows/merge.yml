@@ -1134,7 +1134,7 @@ jobs:
   #         mv $SAFE_DATA_PATH/test_faucet/logs/faucet.log ./faucet_log.log
   #       env:
   #         SN_LOG: "all"
-  #         SAFE_DATA_PATH: /home/runner/.local/share/safe
+  #         SAFE_DATA_PATH: /home/runner/.local/share/autonomi
   #       continue-on-error: true
   #       if: always()
   #       timeout-minutes: 1
@@ -1150,10 +1150,10 @@ jobs:
   # - name: Cleanup prior faucet and cashnotes
   #   run: |
   #     ls -l /home/runner/.local/share
-  #     ls -l /home/runner/.local/share/safe
-  #     rm -rf /home/runner/.local/share/safe/test_faucet
-  #     rm -rf /home/runner/.local/share/safe/test_genesis
-  #     rm -rf /home/runner/.local/share/safe/autonomi
+  #     ls -l /home/runner/.local/share/autonomi
+  #     rm -rf /home/runner/.local/share/autonomi/test_faucet
+  #     rm -rf /home/runner/.local/share/autonomi/test_genesis
+  #     rm -rf /home/runner/.local/share/autonomi/autonomi
   #   env:
   #     SN_LOG: "all"
   #   timeout-minutes: 5
@@ -1191,10 +1191,10 @@ jobs:
   # - name: Create and fund a wallet with different keypair
   #   run: |
   #     ls -l /home/runner/.local/share
-  #     ls -l /home/runner/.local/share/safe
-  #     rm -rf /home/runner/.local/share/safe/test_faucet
-  #     rm -rf /home/runner/.local/share/safe/test_genesis
-  #     rm -rf /home/runner/.local/share/safe/autonomi
+  #     ls -l /home/runner/.local/share/autonomi
+  #     rm -rf /home/runner/.local/share/autonomi/test_faucet
+  #     rm -rf /home/runner/.local/share/autonomi/test_genesis
+  #     rm -rf /home/runner/.local/share/autonomi/autonomi
   #     ~/safe --log-output-dest=data-dir wallet create --no-password
   #     if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
   #       echo "Faucet with different genesis key not rejected!"
@@ -1213,10 +1213,10 @@ jobs:
   #     - name: Start up a faucet in server mode
   #       run: |
   #         ls -l /home/runner/.local/share
-  #         ls -l /home/runner/.local/share/safe
-  #         rm -rf /home/runner/.local/share/safe/test_faucet
-  #         rm -rf /home/runner/.local/share/safe/test_genesis
-  #         rm -rf /home/runner/.local/share/safe/autonomi
+  #         ls -l /home/runner/.local/share/autonomi
+  #         rm -rf /home/runner/.local/share/autonomi/test_faucet
+  #         rm -rf /home/runner/.local/share/autonomi/test_genesis
+  #         rm -rf /home/runner/.local/share/autonomi/autonomi
   #         target/release/faucet server &
   #         sleep 60
   #       env:
@@ -1232,7 +1232,7 @@ jobs:
   #           exit 1
   #         fi
   #       env:
-  #         NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  #         NODE_DATA_PATH: /home/runner/.local/share/autonomi/node
   #       timeout-minutes: 1
 
   #     - name: Stop the local network and upload logs
@@ -1361,7 +1361,7 @@ jobs:
         shell: bash
         timeout-minutes: 1
         env:
-          NODE_DATA_PATH: /home/runner/.local/share/safe/node
+          NODE_DATA_PATH: /home/runner/.local/share/autonomi/node
         run: |
           incoming_connection_errors=$(rg "IncomingConnectionError" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to find IncomingConnectionError error"; exit 0; }
@@ -1391,7 +1391,7 @@ jobs:
   #   name: Replication bench with heavy upload
   #   runs-on: ubuntu-latest
   #   env:
-  #     CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
+  #     CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
 
   #   steps:
   #     - uses: actions/checkout@v4
@@ -1505,7 +1505,7 @@ jobs:
   #           exit 1
   #         fi
   #       env:
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
   #       timeout-minutes: 10
 
   #     - name: Wait for certain period
@@ -1538,7 +1538,7 @@ jobs:
   #           exit 1
   #         fi
   #       env:
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
   #       timeout-minutes: 10
 
   #     - name: Wait for certain period
@@ -1561,8 +1561,8 @@ jobs:
   #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
   #       env:
   #         SN_LOG: "all"
-  #         SAFE_DATA_PATH: /home/runner/.local/share/safe
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #         SAFE_DATA_PATH: /home/runner/.local/share/autonomi
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
   #       timeout-minutes: 25
 
   #     - name: Use second client to upload third file
@@ -1592,7 +1592,7 @@ jobs:
   #           exit 1
   #         fi
   #       env:
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
   #       timeout-minutes: 10
 
   #     - name: Stop the local network and upload logs

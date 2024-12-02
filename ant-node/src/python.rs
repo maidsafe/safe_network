@@ -412,9 +412,9 @@ impl AntNode {
 
     /// Get the default root directory path for the given peer ID
     /// This is platform specific:
-    ///  - Linux: $HOME/.local/share/safe/node/<peer-id>
-    ///  - macOS: $HOME/Library/Application Support/safe/node/<peer-id>
-    ///  - Windows: C:\Users\<username>\AppData\Roaming\safe\node\<peer-id>
+    ///  - Linux: $HOME/.local/share/autonomi/node/<peer-id>
+    ///  - macOS: $HOME/Library/Application Support/autonomi/node/<peer-id>
+    ///  - Windows: C:\Users\<username>\AppData\Roaming\autonomi\node\<peer-id>
     #[allow(clippy::redundant_closure)]
     #[staticmethod]
     fn get_default_root_dir(peer_id: Option<String>) -> PyResult<String> {
