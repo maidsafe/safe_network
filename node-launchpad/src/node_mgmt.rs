@@ -1,14 +1,14 @@
 use crate::action::{Action, StatusActions};
 use crate::connection_mode::ConnectionMode;
-use color_eyre::eyre::{eyre, Error};
-use color_eyre::Result;
-use sn_evm::{EvmNetwork, RewardsAddress};
-use sn_node_manager::{
+use ant_evm::{EvmNetwork, RewardsAddress};
+use ant_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
-use sn_peers_acquisition::PeersArgs;
-use sn_releases::{self, ReleaseType, SafeReleaseRepoActions};
-use sn_service_management::NodeRegistry;
+use ant_peers_acquisition::PeersArgs;
+use ant_releases::{self, ReleaseType, SafeReleaseRepoActions};
+use ant_service_management::NodeRegistry;
+use color_eyre::eyre::{eyre, Error};
+use color_eyre::Result;
 use std::{path::PathBuf, str::FromStr};
 use tokio::runtime::Builder;
 use tokio::sync::mpsc::{self, UnboundedSender};
@@ -102,7 +102,7 @@ impl NodeManagement {
 /// Stop the specified services
 async fn stop_nodes(services: Vec<String>, action_sender: UnboundedSender<Action>) {
     if let Err(err) =
-        sn_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
+        ant_node_manager::cmd::node::stop(None, vec![], services, VerbosityLevel::Minimal).await
     {
         error!("Error while stopping services {err:?}");
         send_action(
@@ -126,7 +126,7 @@ pub struct MaintainNodesArgs {
     pub owner: String,
     pub peers_args: PeersArgs,
     pub run_nat_detection: bool,
-    pub safenode_path: Option<PathBuf>,
+    pub antnode_path: Option<PathBuf>,
     pub data_dir_path: Option<PathBuf>,
     pub action_sender: UnboundedSender<Action>,
     pub connection_mode: ConnectionMode,
@@ -181,7 +181,7 @@ async fn maintain_n_running_nodes(args: MaintainNodesArgs) {
 
 /// Reset all the nodes
 async fn reset_nodes(action_sender: UnboundedSender<Action>, start_nodes_after_reset: bool) {
-    if let Err(err) = sn_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
+    if let Err(err) = ant_node_manager::cmd::node::reset(true, VerbosityLevel::Minimal).await {
         error!("Error while resetting services {err:?}");
         send_action(
             action_sender,
@@ -216,7 +216,7 @@ pub struct UpgradeNodesArgs {
 }
 
 async fn upgrade_nodes(args: UpgradeNodesArgs) {
-    if let Err(err) = sn_node_manager::cmd::node::upgrade(
+    if let Err(err) = ant_node_manager::cmd::node::upgrade(
         args.connection_timeout_s,
         args.do_not_start,
         args.custom_bin_path,
@@ -297,7 +297,7 @@ struct NodeConfig {
     count: u16,
     data_dir_path: Option<PathBuf>,
     peers_args: PeersArgs,
-    safenode_path: Option<PathBuf>,
+    antnode_path: Option<PathBuf>,
     rewards_address: String,
 }
 
@@ -321,7 +321,7 @@ async fn run_nat_detection(action_sender: &UnboundedSender<Action>) {
         }
     };
 
-    if let Err(err) = sn_node_manager::cmd::nat_detection::run_nat_detection(
+    if let Err(err) = ant_node_manager::cmd::nat_detection::run_nat_detection(
         None,
         true,
         None,
@@ -360,7 +360,7 @@ fn prepare_node_config(args: &MaintainNodesArgs) -> NodeConfig {
         count: args.count,
         data_dir_path: args.data_dir_path.clone(),
         peers_args: args.peers_args.clone(),
-        safenode_path: args.safenode_path.clone(),
+        antnode_path: args.antnode_path.clone(),
         rewards_address: args.rewards_address.clone(),
     }
 }
@@ -373,8 +373,8 @@ fn debug_log_config(config: &NodeConfig, args: &MaintainNodesArgs) {
         config.count
     );
     debug!(
-        " owner: {:?}, peers_args: {:?}, safenode_path: {:?}",
-        config.owner, config.peers_args, config.safenode_path
+        " owner: {:?}, peers_args: {:?}, antnode_path: {:?}",
+        config.owner, config.peers_args, config.antnode_path
     );
     debug!(
         " data_dir_path: {:?}, connection_mode: {:?}",
@@ -408,7 +408,7 @@ fn get_port_range(custom_ports: &Option<PortRange>) -> (u16, u16) {
 
 /// Scale down the nodes
 async fn scale_down_nodes(config: &NodeConfig, count: u16) {
-    match sn_node_manager::cmd::node::maintain_n_running_nodes(
+    match ant_node_manager::cmd::node::maintain_n_running_nodes(
         false,
         config.auto_set_nat_flags,
         120,
@@ -431,7 +431,7 @@ async fn scale_down_nodes(config: &NodeConfig, count: u16) {
         RewardsAddress::from_str(config.rewards_address.as_str()).unwrap(),
         None,
         None,
-        config.safenode_path.clone(),
+        config.antnode_path.clone(),
         None,
         config.upnp,
         None,
@@ -482,7 +482,7 @@ async fn add_nodes(
         }
 
         let port_range = Some(PortRange::Single(*current_port));
-        match sn_node_manager::cmd::node::maintain_n_running_nodes(
+        match ant_node_manager::cmd::node::maintain_n_running_nodes(
             false,
             config.auto_set_nat_flags,
             120,
@@ -505,7 +505,7 @@ async fn add_nodes(
             RewardsAddress::from_str(config.rewards_address.as_str()).unwrap(),
             None,
             None,
-            config.safenode_path.clone(),
+            config.antnode_path.clone(),
             None,
             config.upnp,
             None,
@@ -523,7 +523,7 @@ async fn add_nodes(
                 retry_count = 0; // Reset retry count on success
             }
             Err(err) => {
-                //TODO: We should use concrete error types here instead of string matching (sn_node_manager)
+                //TODO: We should use concrete error types here instead of string matching (ant_node_manager)
                 if err.to_string().contains("is being used by another service") {
                     warn!(
                         "Port {} is being used, retrying with a different port. Attempt {}/{}",
@@ -554,8 +554,8 @@ async fn add_nodes(
                         action_sender.clone(),
                         Action::StatusActions(StatusActions::ErrorScalingUpNodes {
                             raw_error: "When trying to add a node, we failed.\n\
-                             You may be running an old version of safenode service?\n\
-                             Did you whitelisted safenode and the launchpad?"
+                             You may be running an old version of antnode service?\n\
+                             Did you whitelisted antnode and the launchpad?"
                                 .to_string(),
                         }),
                     );

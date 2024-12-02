@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+#[cfg(target_os = "windows")]
+use ant_node_manager::config::is_running_as_root;
 use clap::Parser;
 use color_eyre::eyre::{eyre, Result};
-#[cfg(target_os = "windows")]
-use sn_node_manager::config::is_running_as_root;
 use std::{path::PathBuf, process::Command};
 use which::which;
 

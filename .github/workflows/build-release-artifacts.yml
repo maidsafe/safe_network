@@ -51,7 +51,7 @@ jobs:
         run: just build-release-artifacts "${{ matrix.target }}"
       - uses: actions/upload-artifact@main
         with:
-          name: safe_network-${{ matrix.target }}
+          name: autonomi-${{ matrix.target }}
           path: |
             artifacts
             !artifacts/.cargo-lock
@@ -66,31 +66,31 @@ jobs:
           ref: ${{ inputs.tag || inputs.branch }}
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-x86_64-pc-windows-msvc
+          name: autonomi-x86_64-pc-windows-msvc
           path: artifacts/x86_64-pc-windows-msvc/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-x86_64-unknown-linux-musl
+          name: autonomi-x86_64-unknown-linux-musl
           path: artifacts/x86_64-unknown-linux-musl/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-aarch64-apple-darwin
+          name: autonomi-aarch64-apple-darwin
           path: artifacts/aarch64-apple-darwin/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-x86_64-apple-darwin
+          name: autonomi-x86_64-apple-darwin
           path: artifacts/x86_64-apple-darwin/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-arm-unknown-linux-musleabi
+          name: autonomi-arm-unknown-linux-musleabi
           path: artifacts/arm-unknown-linux-musleabi/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-armv7-unknown-linux-musleabihf
+          name: autonomi-armv7-unknown-linux-musleabihf
           path: artifacts/armv7-unknown-linux-musleabihf/release
       - uses: actions/download-artifact@master
         with:
-          name: safe_network-aarch64-unknown-linux-musl
+          name: autonomi-aarch64-unknown-linux-musl
           path: artifacts/aarch64-unknown-linux-musl/release
       - uses: cargo-bins/cargo-binstall@main
       - shell: bash

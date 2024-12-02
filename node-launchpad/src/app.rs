@@ -29,10 +29,10 @@ use crate::{
     system::{get_default_mount_point, get_primary_mount_point, get_primary_mount_point_name},
     tui,
 };
+use ant_peers_acquisition::PeersArgs;
 use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::{prelude::Rect, style::Style, widgets::Block};
-use sn_peers_acquisition::PeersArgs;
 use tokio::sync::mpsc;
 
 pub struct App {
@@ -53,7 +53,7 @@ impl App {
         tick_rate: f64,
         frame_rate: f64,
         peers_args: PeersArgs,
-        safenode_path: Option<PathBuf>,
+        antnode_path: Option<PathBuf>,
         app_data_path: Option<PathBuf>,
     ) -> Result<Self> {
         // Configurations
@@ -93,7 +93,7 @@ impl App {
             allocated_disk_space: app_data.nodes_to_start,
             rewards_address: app_data.discord_username.clone(),
             peers_args,
-            safenode_path,
+            antnode_path,
             data_dir_path,
             connection_mode,
             port_from: Some(port_from),
@@ -317,8 +317,8 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ant_peers_acquisition::PeersArgs;
     use color_eyre::eyre::Result;
-    use sn_peers_acquisition::PeersArgs;
     use std::io::Cursor;
     use std::io::Write;
     use tempfile::tempdir;

@@ -8,11 +8,11 @@
 
 #![cfg(feature = "registers")]
 
+use ant_logging::LogBuilder;
 use autonomi::Client;
 use bytes::Bytes;
 use eyre::Result;
 use rand::Rng;
-use sn_logging::LogBuilder;
 use std::time::Duration;
 use test_utils::{evm::get_funded_wallet, peers_from_env};
 use tokio::time::sleep;

@@ -1,6 +1,6 @@
 use crate::client::data::PayError;
 use crate::Client;
-use sn_evm::{EvmWallet, ProofOfPayment};
+use ant_evm::{EvmWallet, ProofOfPayment};
 use std::collections::HashMap;
 use xor_name::XorName;
 

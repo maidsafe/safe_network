@@ -1,0 +1,87 @@
+// Copyright 2024 MaidSafe.net limited.
+//
+// This SAFE Network Software is licensed to you under The General Public License (GPL), version 3.
+// Unless required by applicable law or agreed to in writing, the SAFE Network Software distributed
+// under the GPL Licence is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. Please review the Licences for the specific language governing
+// permissions and limitations relating to use of the SAFE Network Software.
+
+// Version of protocol buffer used
+syntax = "proto3";
+
+// Package name
+package antnode_proto;
+
+// Basic info about the node and antnode app
+message NodeInfoRequest {}
+
+message NodeInfoResponse {
+  bytes peer_id = 1;
+  uint32 pid = 2;
+  string log_dir = 3;
+  string bin_version = 4;
+  uint64 uptime_secs = 5;
+  string data_dir = 6;
+  uint64 wallet_balance = 7;
+}
+
+// Information about how this node's connections to the network and peers
+message NetworkInfoRequest {}
+
+message NetworkInfoResponse {
+  repeated bytes connected_peers = 1;
+  repeated string listeners = 2;
+}
+
+// Stream of node events
+message NodeEventsRequest {}
+
+message NodeEvent {
+  bytes event = 1;
+}
+
+// Addresses of all the Records stored by the node
+message RecordAddressesRequest {}
+
+message RecordAddressesResponse {
+    repeated bytes addresses = 1;
+}
+
+// KBuckets of this node
+message KBucketsRequest {}
+
+message KBucketsResponse {
+    message Peers {
+        repeated bytes peers = 1;
+    }
+    map<uint32, Peers> kbuckets = 1;
+}
+
+// Stop the antnode app
+message StopRequest {
+  uint64 delay_millis = 1;
+}
+
+message StopResponse {}
+
+// Restart the antnode app
+message RestartRequest {
+  uint64 delay_millis = 1;
+  bool retain_peer_id = 2;
+}
+
+message RestartResponse {}
+
+// Update the antnode app
+message UpdateRequest {
+  uint64 delay_millis = 1;
+}
+
+message UpdateResponse {}
+
+// Set the node's log level
+message UpdateLogLevelRequest {
+    string log_level = 1;
+}
+
+message UpdateLogLevelResponse{}

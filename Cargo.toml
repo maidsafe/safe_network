@@ -1,49 +1,45 @@
 [workspace]
 resolver = "2"
 members = [
+    "ant-build-info",
+    "ant-evm",
+    "ant-logging",
+    "ant-metrics",
+    "ant-networking",
+    "ant-node",
+    "ant-node-manager",
+    "ant-node-rpc-client",
+    "ant-peers-acquisition",
+    "ant-protocol",
+    "ant-registers",
+    "ant-service-management",
+    "ant-token-supplies",
     "autonomi",
     "autonomi-cli",
     "evmlib",
-    "evm_testnet",
-    "sn_build_info",
-    "sn_evm",
-    "sn_logging",
-    "sn_metrics",
+    "evm-testnet",
     "nat-detection",
-    "sn_networking",
-    "sn_node",
     "node-launchpad",
-    "sn_node_manager",
-    "sn_node_rpc_client",
-    "sn_peers_acquisition",
-    "sn_protocol",
-    "sn_registers",
-    "sn_service_management",
-    "sn_transfers",
-    "test_utils",
-    "token_supplies",
+    "test-utils",
 ]
 
 [workspace.lints.rust]
 arithmetic_overflow = "forbid"
 mutable_transmutes = "forbid"
 no_mangle_const_items = "forbid"
-unknown_crate_types = "forbid"
-unsafe_code = "warn"
 trivial_casts = "warn"
 trivial_numeric_casts = "warn"
+unsafe_code = "warn"
+unknown_crate_types = "forbid"
 unused_extern_crates = "warn"
 unused_import_braces = "warn"
 
 [workspace.lints.clippy]
-uninlined_format_args = "warn"
+clone_on_ref_ptr = "warn"
 unicode_not_nfc = "warn"
+uninlined_format_args = "warn"
 unused_async = "warn"
 unwrap_used = "warn"
-clone_on_ref_ptr = "warn"
-
-[profile.release]
-debug = true
 
 [profile.dev]
 debug = 0

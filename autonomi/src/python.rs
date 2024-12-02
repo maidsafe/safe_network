@@ -1,3 +1,6 @@
+// TODO: Shall be removed once the python binding warnings resolved
+#![allow(non_local_definitions)]
+
 use crate::client::{
     archive::ArchiveAddr,
     archive_private::PrivateArchiveAccess,
@@ -7,9 +10,9 @@ use crate::client::{
     Client as RustClient,
 };
 use crate::{Bytes, Wallet as RustWallet};
+use ant_evm::EvmNetwork;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use sn_evm::EvmNetwork;
 use xor_name::XorName;
 
 #[pyclass(name = "Client")]

@@ -1,6 +1,6 @@
 use crate::client::payment::Receipt;
-use sn_evm::{PaymentQuote, ProofOfPayment, QuoteHash, TxHash};
-use sn_networking::PayeeQuote;
+use ant_evm::{PaymentQuote, ProofOfPayment, QuoteHash, TxHash};
+use ant_networking::PayeeQuote;
 use std::collections::{BTreeMap, HashMap};
 use xor_name::XorName;
 

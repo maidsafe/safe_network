@@ -52,7 +52,7 @@ pub fn get_evm_testnet_csv_path() -> Result<PathBuf, Error> {
         .ok_or(Error::FailedToGetEvmNetwork(
             "failed to get data dir when fetching evm testnet CSV file".to_string(),
         ))?
-        .join("safe")
+        .join("autonomi")
         .join(EVM_TESTNET_CSV_FILENAME);
     Ok(file)
 }

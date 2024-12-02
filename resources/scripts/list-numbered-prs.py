@@ -19,7 +19,7 @@ def main(pr_numbers):
         raise Exception("The GITHUB_PAT_SAFE_NETWORK_PR_LIST environment variable must be set")
 
     g = Github(token)
-    repo = g.get_repo("maidsafe/safe_network")
+    repo = g.get_repo("maidsafe/autonomi")
 
     filtered_pulls = []
     for pr_num in pr_numbers:

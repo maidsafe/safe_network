@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use ant_protocol::storage::Chunk;
 use bytes::{BufMut, Bytes, BytesMut};
 use self_encryption::{DataMap, MAX_CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
-use sn_protocol::storage::Chunk;
 use tracing::debug;
 
 #[derive(Debug, thiserror::Error)]

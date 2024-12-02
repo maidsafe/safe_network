@@ -17,9 +17,9 @@ use crate::client::registers::RegisterAddress;
 use crate::client::vault::VaultError;
 use crate::client::vault::{app_name_to_vault_content_type, VaultContentType, VaultSecretKey};
 use crate::client::Client;
+use ant_evm::AttoTokens;
+use ant_protocol::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::AttoTokens;
-use sn_protocol::Bytes;
 use std::sync::LazyLock;
 
 /// Vault content type for UserDataVault

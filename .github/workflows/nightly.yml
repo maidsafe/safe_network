@@ -17,11 +17,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            safe_path: /home/runner/.local/share/safe
+            autonomi_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            autonomi_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            safe_path: /Users/runner/Library/Application\ Support/safe
+            autonomi_path: /Users/runner/Library/Application\ Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -32,15 +32,15 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -186,7 +186,7 @@ jobs:
 
       - name: Delete current register signing key
         shell: bash
-        run: rm -rf ${{ matrix.safe_path }}/autonomi
+        run: rm -rf ${{ matrix.autonomi_path }}/autonomi
 
       - name: Generate new register signing key
         run: ./target/release/autonomi --log-output-dest=data-dir register generate-key
@@ -211,7 +211,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_e2e
@@ -246,27 +246,23 @@ jobs:
 
       - name: Run node tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_node --lib
+        run: cargo test --release --package ant-node --lib
 
       - name: Run network tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_networking --features="open-metrics, encrypt-records"
+        run: cargo test --release --package ant-networking --features="open-metrics, encrypt-records"
 
       - name: Run protocol tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_protocol
-
-      - name: Run transfers tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_transfers
+        run: cargo test --release --package ant-protocol
 
       - name: Run logging tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_logging
+        run: cargo test --release --package ant-logging
   
       - name: Run register tests
         timeout-minutes: 50
-        run: cargo test --release --package sn_registers
+        run: cargo test --release --package ant-registers
         env:
           PROPTEST_CASES: 512
 
@@ -285,14 +281,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-            safe_path: /home/runner/.local/share/safe
+            node_data_path: /home/runner/.local/share/autonomi/node
+            autonomi_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi\\node
+            autonomi_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
-            safe_path: /Users/runner/Library/Application Support/safe
+            node_data_path: /Users/runner/Library/Application Support/autonomi/node
+            autonomi_path: /Users/runner/Library/Application Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -303,11 +299,11 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode
+        run: cargo build --release --features local --bin antnode
         timeout-minutes: 30
 
       - name: Build churn tests
-        run: cargo test --release -p sn_node --features=local --test data_with_churn --no-run
+        run: cargo test --release -p ant-node --features=local --test data_with_churn --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -315,16 +311,16 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
       - name: Chunks data integrity during nodes churn (during 10min) (in theory)
-        run: cargo test --release -p sn_node --features=local --test data_with_churn -- --nocapture
+        run: cargo test --release -p ant-node --features=local --test data_with_churn -- --nocapture
         env:
           TEST_DURATION_MINS: 60
           TEST_CHURN_CYCLES: 6
@@ -334,7 +330,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_churn
@@ -425,7 +421,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.autonomi_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -438,14 +434,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-            safe_path: /home/runner/.local/share/safe
+            node_data_path: /home/runner/.local/share/autonomi/node
+            autonomi_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi\\node
+            autonomi_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
-            safe_path: /Users/runner/Library/Application Support/safe
+            node_data_path: /Users/runner/Library/Application Support/autonomi/node
+            autonomi_path: /Users/runner/Library/Application Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -456,11 +452,11 @@ jobs:
         continue-on-error: true
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode
+        run: cargo build --release --features local --bin antnode
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
-        run: cargo test --release -p sn_node --features=local --test verify_data_location --test verify_routing_table --no-run
+        run: cargo test --release -p ant-node --features=local --test verify_data_location --test verify_routing_table --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -468,36 +464,36 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
       - name: Verify the Routing table of the nodes
-        run: cargo test --release -p sn_node --features=local --test verify_routing_table -- --nocapture
+        run: cargo test --release -p ant-node --features=local --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
       - name: Verify the location of the data on the network
-        run: cargo test --release -p sn_node --features=local --test verify_data_location -- --nocapture
+        run: cargo test --release -p ant-node --features=local --test verify_data_location -- --nocapture
         env:
           SN_LOG: "all"
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 90
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --features=local --test verify_routing_table -- --nocapture
+        run: cargo test --release -p ant-node --features=local --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_data_location
@@ -537,7 +533,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.autonomi_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1

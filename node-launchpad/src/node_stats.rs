@@ -6,10 +6,10 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use ant_service_management::{NodeServiceData, ServiceStatus};
 use color_eyre::Result;
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
-use sn_service_management::{NodeServiceData, ServiceStatus};
 use std::{path::PathBuf, time::Instant};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -199,7 +199,7 @@ impl NodeStats {
                     }
                     _ => {}
                 }
-            } else if sample.metric == "sn_networking_process_memory_used_mb" {
+            } else if sample.metric == "ant_networking_process_memory_used_mb" {
                 // Memory
                 match sample.value {
                     prometheus_parse::Value::Counter(val)
@@ -235,7 +235,7 @@ impl NodeStats {
                     }
                     _ => {}
                 }
-            } else if sample.metric == "sn_networking_records_stored" {
+            } else if sample.metric == "ant_networking_records_stored" {
                 // Records
                 match sample.value {
                     prometheus_parse::Value::Counter(val)
@@ -245,7 +245,7 @@ impl NodeStats {
                     }
                     _ => {}
                 }
-            } else if sample.metric == "sn_networking_peers_in_routing_table" {
+            } else if sample.metric == "ant_networking_peers_in_routing_table" {
                 // Peers
                 match sample.value {
                     prometheus_parse::Value::Counter(val)
@@ -255,7 +255,7 @@ impl NodeStats {
                     }
                     _ => {}
                 }
-            } else if sample.metric == "sn_networking_open_connections" {
+            } else if sample.metric == "ant_networking_open_connections" {
                 // Connections
                 match sample.value {
                     prometheus_parse::Value::Counter(val)

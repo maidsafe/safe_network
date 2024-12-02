@@ -8,15 +8,13 @@
 
 use std::hash::{DefaultHasher, Hash, Hasher};
 
+use ant_evm::Amount;
+use ant_protocol::storage::Chunk;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use sn_evm::Amount;
-use sn_protocol::storage::Chunk;
 
-use super::data::CHUNK_UPLOAD_BATCH_SIZE;
 use super::data::{GetError, PutError};
 use crate::client::payment::PaymentOption;
-use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
 
@@ -67,7 +65,7 @@ impl Client {
         data: Bytes,
         payment_option: PaymentOption,
     ) -> Result<PrivateDataAccess, PutError> {
-        let now = sn_networking::target_arch::Instant::now();
+        let now = ant_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
         debug!("Encryption took: {:.2?}", now.elapsed());
 
@@ -81,35 +79,22 @@ impl Client {
 
         // Upload the chunks with the payments
         debug!("Uploading {} chunks", chunks.len());
-        let mut upload_tasks = vec![];
-        for chunk in chunks {
-            let self_clone = self.clone();
-            let address = *chunk.address();
-            if let Some(proof) = receipt.get(chunk.name()) {
-                let proof_clone = proof.clone();
-                upload_tasks.push(async move {
-                    self_clone
-                        .chunk_upload_with_payment(chunk, proof_clone)
-                        .await
-                        .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))
-                });
-            } else {
-                debug!("Chunk at {address:?} was already paid for so skipping");
-            }
-        }
-        let uploads =
-            process_tasks_with_max_concurrency(upload_tasks, *CHUNK_UPLOAD_BATCH_SIZE).await;
 
-        // Check for errors
-        let total_uploads = uploads.len();
-        let ok_uploads = uploads
-            .iter()
-            .filter_map(|up| up.is_ok().then_some(()))
-            .count();
-        info!("Uploaded {} chunks out of {}", ok_uploads, total_uploads);
-        let uploads: Result<Vec<_>, _> = uploads.into_iter().collect();
-        uploads.inspect_err(|err| error!("Error uploading chunk: {err:?}"))?;
-        let record_count = ok_uploads;
+        let mut failed_uploads = self
+            .upload_chunks_with_retries(chunks.iter().collect(), &receipt)
+            .await;
+
+        // Return the last chunk upload error
+        if let Some(last_chunk_fail) = failed_uploads.pop() {
+            tracing::error!(
+                "Error uploading chunk ({:?}): {:?}",
+                last_chunk_fail.0.address(),
+                last_chunk_fail.1
+            );
+            return Err(last_chunk_fail.1);
+        }
+
+        let record_count = chunks.len();
 
         // Reporting
         if let Some(channel) = self.client_event_sender.as_ref() {

@@ -11,6 +11,9 @@ mod terminal;
 #[macro_use]
 extern crate tracing;
 
+#[cfg(target_os = "windows")]
+use ant_node_manager::config::is_running_as_root;
+use ant_peers_acquisition::PeersArgs;
 use clap::Parser;
 use color_eyre::eyre::Result;
 use node_launchpad::{
@@ -18,9 +21,6 @@ use node_launchpad::{
     config::configure_winsw,
     utils::{initialize_logging, initialize_panic_handler},
 };
-#[cfg(target_os = "windows")]
-use sn_node_manager::config::is_running_as_root;
-use sn_peers_acquisition::PeersArgs;
 use std::{env, path::PathBuf};
 
 #[derive(Parser, Debug)]
@@ -44,11 +44,11 @@ pub struct Cli {
     )]
     pub frame_rate: f64,
 
-    /// Provide a path for the safenode binary to be used by the service.
+    /// Provide a path for the antnode binary to be used by the service.
     ///
     /// Useful for creating the service using a custom built binary.
     #[clap(long)]
-    safenode_path: Option<PathBuf>,
+    antnode_path: Option<PathBuf>,
 
     #[command(flatten)]
     pub(crate) peers: PeersArgs,
@@ -103,7 +103,7 @@ async fn main() -> Result<()> {
     if args.version {
         println!(
             "{}",
-            sn_build_info::version_string(
+            ant_build_info::version_string(
                 "Autonomi Node Launchpad",
                 env!("CARGO_PKG_VERSION"),
                 None
@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
 
     #[cfg(not(feature = "nightly"))]
     if args.package_version {
-        println!("{}", sn_build_info::package_version());
+        println!("{}", ant_build_info::package_version());
         return Ok(());
     }
 
@@ -128,7 +128,7 @@ async fn main() -> Result<()> {
         args.tick_rate,
         args.frame_rate,
         args.peers,
-        args.safenode_path,
+        args.antnode_path,
         None,
     )
     .await?;

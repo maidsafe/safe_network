@@ -1,13 +1,13 @@
 [package]
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
 name = "autonomi-cli"
-description = "Autonomi CLI"
+description = "CLI client for the Autonomi network"
 license = "GPL-3.0"
 version = "0.1.5"
 edition = "2021"
 homepage = "https://maidsafe.net"
 readme = "README.md"
-repository = "https://github.com/maidsafe/safe_network"
+repository = "https://github.com/maidsafe/autonomi"
 
 [[bin]]
 name = "autonomi"
@@ -15,31 +15,39 @@ path = "src/main.rs"
 
 [features]
 default = ["metrics"]
-local = ["sn_peers_acquisition/local", "autonomi/local"]
-metrics = ["sn_logging/process-metrics"]
-network-contacts = ["sn_peers_acquisition/network-contacts"]
+local = ["ant-peers-acquisition/local", "autonomi/local"]
+metrics = ["ant-logging/process-metrics"]
+network-contacts = ["ant-peers-acquisition/network-contacts"]
+websockets = ["autonomi/websockets"]
 
 [[bench]]
 name = "files"
 harness = false
 
 [dependencies]
+ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
+ant-logging = { path = "../ant-logging", version = "0.2.40" }
+ant-peers-acquisition = { path = "../ant-peers-acquisition", version = "0.5.7" }
 autonomi = { path = "../autonomi", version = "0.2.4", features = [
     "data",
     "fs",
     "vault",
     "registers",
     "loud",
-] }
+]}
 clap = { version = "4.2.1", features = ["derive"] }
 color-eyre = "~0.6"
 const-hex = "1.13.1"
 dirs-next = "~2.0.0"
-prettytable = "0.10.0"
-thiserror = "1.0"
+hex = "0.4.3"
 indicatif = { version = "0.17.5", features = ["tokio"] }
+prettytable = "0.10.0"
 rand = { version = "~0.8.5", features = ["small_rng"] }
+ring = "0.17.8"
 rpassword = "7.0"
+serde = "1.0.210"
+serde_json = "1.0.132"
+thiserror = "1.0"
 tokio = { version = "1.32.0", features = [
     "io-util",
     "macros",
@@ -50,25 +58,18 @@ tokio = { version = "1.32.0", features = [
     "fs",
 ] }
 tracing = { version = "~0.1.26" }
-sn_peers_acquisition = { path = "../sn_peers_acquisition", version = "0.5.7" }
-sn_build_info = { path = "../sn_build_info", version = "0.1.19" }
-sn_logging = { path = "../sn_logging", version = "0.2.40" }
 walkdir = "2.5.0"
-serde_json = "1.0.132"
-serde = "1.0.210"
-hex = "0.4.3"
-ring = "0.17.8"
 
 [dev-dependencies]
 autonomi = { path = "../autonomi", version = "0.2.4", features = [
     "data",
     "fs",
 ] }
-eyre = "0.6.8"
 criterion = "0.5.1"
-tempfile = "3.6.0"
+eyre = "0.6.8"
 rand = { version = "~0.8.5", features = ["small_rng"] }
 rayon = "1.8.0"
+tempfile = "3.6.0"
 
 [lints]
 workspace = true

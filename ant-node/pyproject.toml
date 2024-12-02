@@ -1,0 +1,21 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "antnode"
+dynamic = ["version"]
+description = "The Autonomi node binary"
+requires-python = ">=3.8"
+dependencies = [
+    "maturin>=1.7.4",
+    "pip>=24.3.1",
+]
+
+[tool.maturin]
+features = ["extension-module"]
+module-name = "antnode._antnode"
+python-source = "python"
+bindings = "pyo3"
+manifest-path = "Cargo.toml"
+sdist-include = ["python/antnode/*"]

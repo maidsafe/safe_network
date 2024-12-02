@@ -6,15 +6,13 @@ It should only be edited by the RC owner, i.e., the original poster.
 
 ## Binary Versions
 
-* `faucet` __REPLACE__
 * `nat-detection` __REPLACE__
 * `node-launchpad` __REPLACE__
-* `safe` __REPLACE__
-* `safenode` __REPLACE__
-* `safenode-manager` __REPLACE__
-* `safenodemand` __REPLACE__
-* `sn_auditor` __REPLACE__
-* `safenode_rpc_client` __REPLACE__
+* `autonomi` __REPLACE__
+* `antnode` __REPLACE__
+* `antctl` __REPLACE__
+* `antctld` __REPLACE__
+* `antnode_rpc_client` __REPLACE__
 
 ## Closed Pull Requests
 

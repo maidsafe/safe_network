@@ -16,14 +16,14 @@ use super::data::CostError;
 use crate::client::data::PutError;
 use crate::client::payment::PaymentOption;
 use crate::client::Client;
-use libp2p::kad::{Quorum, Record};
-use sn_evm::{Amount, AttoTokens};
-use sn_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg, VerificationKind};
-use sn_protocol::storage::{
+use ant_evm::{Amount, AttoTokens};
+use ant_networking::{GetRecordCfg, GetRecordError, NetworkError, PutRecordCfg, VerificationKind};
+use ant_protocol::storage::{
     try_serialize_record, RecordKind, RetryStrategy, Scratchpad, ScratchpadAddress,
 };
-use sn_protocol::Bytes;
-use sn_protocol::{storage::try_deserialize_record, NetworkAddress};
+use ant_protocol::Bytes;
+use ant_protocol::{storage::try_deserialize_record, NetworkAddress};
+use libp2p::kad::{Quorum, Record};
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use tracing::info;
@@ -35,7 +35,7 @@ pub enum VaultError {
     #[error("Scratchpad found at {0:?} was not a valid record.")]
     CouldNotDeserializeVaultScratchPad(ScratchpadAddress),
     #[error("Protocol: {0}")]
-    Protocol(#[from] sn_protocol::Error),
+    Protocol(#[from] ant_protocol::Error),
     #[error("Network: {0}")]
     Network(#[from] NetworkError),
     #[error("Vault not found")]

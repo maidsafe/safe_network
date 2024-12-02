@@ -74,7 +74,7 @@ jobs:
           set -e
 
           # read the inventory file
-          inventory_path=/home/runner/.local/share/safe/testnet-deploy/${{ env.NETWORK_NAME }}-inventory.json
+          inventory_path=/home/runner/.local/share/autonomi/testnet-deploy/${{ env.NETWORK_NAME }}-inventory.json
           echo "Inventory Path: $inventory_path"
           faucet_address=$(jq -r '.faucet_address' $inventory_path)
           cargo run --bin safe --release -- wallet get-faucet ${faucet_address}
@@ -128,9 +128,9 @@ jobs:
         with:
           name: local_logs_NightlyE2E
           path: |
-            ~/.local/share/safe/node/*/logs/*.log*
-            ~/.local/share/safe/*/*/*.log*
-            ~/.local/share/safe/autonomi/logs/*/*.log*
+            ~/.local/share/autonomi/node/*/logs/*.log*
+            ~/.local/share/autonomi/*/*/*.log*
+            ~/.local/share/autonomi/autonomi/logs/*/*.log*
 
       - name: destroy network
         if: always()
@@ -147,7 +147,7 @@ jobs:
           SLACK_MESSAGE: "Please check the logs for the run at ${{ env.WORKFLOW_URL }}/${{ github.run_id }}"
           SLACK_TITLE: "Nightly E2E Test Run Failed"
 
-  # spend_test:
+  # transaction_test:
   #   name: Spend tests against network
   #   runs-on: ${{ matrix.os }}
   #   strategy:
@@ -161,10 +161,6 @@ jobs:
 
   #     - uses: Swatinem/rust-cache@v2
   #       continue-on-error: true
-
-  #     - name: Build testing executable
-  #       run: cargo test --release -p sn_node --features=local --test sequential_transfers --test storage_payments --test double_spend --test spend_simulation --no-run
-  #       timeout-minutes: 40
 
   #     - name: setup testnet-deploy
   #       uses: maidsafe/sn-testnet-control-action/init-testnet-deploy@main
@@ -197,23 +193,15 @@ jobs:
   #         echo "Deployment inventory is $SN_INVENTORY"
 
   #     - name: execute the sequential transfers test
-  #       run: cargo test --release -p sn_node --test sequential_transfers -- --nocapture --test-threads=1
+  #       run: cargo test --release -p ant-node --test sequential_transfers -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #       timeout-minutes: 45
 
   #     - name: execute the storage payment tests
-  #       run: cargo test --release -p sn_node --test storage_payments -- --nocapture --test-threads=1
+  #       run: cargo test --release -p ant-node --test storage_payments -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
-  #       timeout-minutes: 45
-
-  #     - name: execute the double spend tests
-  #       run: cargo test --release -p sn_node --test double_spend -- --nocapture --test-threads=1
-  #       timeout-minutes: 45
-
-  #     - name: execute the spend simulation tests
-  #       run: cargo test --release -p sn_node --test spend_simulation -- --nocapture --test-threads=1
   #       timeout-minutes: 45
 
   #     - name: Small wait to allow reward receipt
@@ -234,9 +222,9 @@ jobs:
   #       with:
   #         name: local_logs_NightlySpendTest
   #         path: |
-  #           ~/.local/share/safe/node/*/logs/*.log*
-  #           ~/.local/share/safe/*/*/*.log*
-  #           ~/.local/share/safe/autonomi/logs/*/*.log*
+  #           ~/.local/share/autonomi/node/*/logs/*.log*
+  #           ~/.local/share/autonomi/*/*/*.log*
+  #           ~/.local/share/autonomi/autonomi/logs/*/*.log*
 
   #     - name: destroy network
   #       uses: maidsafe/sn-testnet-control-action/destroy-network@main
@@ -260,13 +248,13 @@ jobs:
   #       include:
   #         - os: ubuntu-latest
   #           wan_logs_path: /home/runner/sn-testnet-deploy/logs
-  #           local_safe_path: /home/runner/.local/share/safe
+  #           local_safe_path: /home/runner/.local/share/autonomi
   #         # - os: windows-latest
-  #         #   node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-  #         #   safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+  #         #   node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi\\node
+  #         #   safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
   #         # - os: macos-latest
-  #         #   node_data_path: /Users/runner/Library/Application Support/safe/node
-  #         #   safe_path: /Users/runner/Library/Application Support/safe
+  #         #   node_data_path: /Users/runner/Library/Application Support/autonomi/node
+  #         #   safe_path: /Users/runner/Library/Application Support/autonomi
   #   steps:
   #     - uses: actions/checkout@v4
   #
@@ -280,7 +268,7 @@ jobs:
   #       continue-on-error: true
   #
   #     - name: Build churn tests
-  #       run: cargo test --release -p sn_node --test data_with_churn --no-run
+  #       run: cargo test --release -p ant-node --test data_with_churn --no-run
   #       timeout-minutes: 30
   #
   #     - name: Start a WAN network
@@ -311,7 +299,7 @@ jobs:
   #         echo "Deployment inventory is $SN_INVENTORY"
   #
   #     - name: Chunks data integrity during nodes churn
-  #       run: cargo test --release -p sn_node --test data_with_churn -- --nocapture
+  #       run: cargo test --release -p ant-node --test data_with_churn -- --nocapture
   #       env:
   #         # TEST_DURATION_MINS: 60
   #         # TEST_CHURN_CYCLES: 6
@@ -348,9 +336,9 @@ jobs:
   #       with:
   #         name: local_logs_NightlyChurnTest
   #         path: |
-  #           ~/.local/share/safe/node/*/logs/*.log*
-  #           ~/.local/share/safe/*/*/*.log*
-  #           ~/.local/share/safe/autonomi/logs/*/*.log*
+  #           ~/.local/share/autonomi/node/*/logs/*.log*
+  #           ~/.local/share/autonomi/*/*/*.log*
+  #           ~/.local/share/autonomi/autonomi/logs/*/*.log*
   #
   #     - name: Stop the WAN network
   #       if: always()
@@ -429,7 +417,7 @@ jobs:
   #           echo "We are logging an extremely large data"
   #           exit 1
   #         fi
-  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/antnode.log
   #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
   #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
   #         then
@@ -442,7 +430,7 @@ jobs:
   #         then
   #           echo "Sanity check pass for local safe path"
   #         fi
-  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/antnode.log
   #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
   #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
   #         then
@@ -465,13 +453,13 @@ jobs:
   #       include:
   #         - os: ubuntu-latest
   #           wan_logs_path: /home/runner/sn-testnet-deploy/logs
-  #           local_safe_path: /home/runner/.local/share/safe
+  #           local_safe_path: /home/runner/.local/share/autonomi
   #         # - os: windows-latest
   #         #   node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
   #         #   safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
   #         # - os: macos-latest
-  #         #   node_data_path: /Users/runner/Library/Application Support/safe/node
-  #         #   safe_path: /Users/runner/Library/Application Support/safe
+  #         #   node_data_path: /Users/runner/Library/Application Support/autonomi/node
+  #         #   safe_path: /Users/runner/Library/Application Support/autonomi
   #   steps:
   #     - uses: actions/checkout@v4
   #
@@ -485,7 +473,7 @@ jobs:
   #       continue-on-error: true
   #
   #     - name: Build data location and routing table tests
-  #       run: cargo test --release -p sn_node --test verify_data_location --test verify_routing_table --no-run
+  #       run: cargo test --release -p ant-node --test verify_data_location --test verify_routing_table --no-run
   #       timeout-minutes: 30
   #
   #     - name: Start a WAN network
@@ -515,17 +503,17 @@ jobs:
   #         echo "Deployment inventory is $SN_INVENTORY"
   #
   #     - name: Verify the Routing table of the nodes
-  #       run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
+  #       run: cargo test --release -p ant-node --test verify_routing_table -- --nocapture
   #       timeout-minutes: 5
   #
   #     - name: Verify the location of the data on the network
-  #       run: cargo test --release -p sn_node --test verify_data_location -- --nocapture
+  #       run: cargo test --release -p ant-node --test verify_data_location -- --nocapture
   #       env:
   #         SN_LOG: "all"
   #       timeout-minutes: 90
   #
   #     - name: Verify the routing tables of the nodes
-  #       run: cargo test --release -p sn_node --test verify_routing_table -- --nocapture
+  #       run: cargo test --release -p ant-node --test verify_routing_table -- --nocapture
   #       timeout-minutes: 5
   #
   #     - name: Fetch network logs
@@ -554,9 +542,9 @@ jobs:
   #       with:
   #         name: local_logs_NightlyDataLocationTest
   #         path: |
-  #           ~/.local/share/safe/node/*/logs/*.log*
-  #           ~/.local/share/safe/*/*/*.log*
-  #           ~/.local/share/safe/autonomi/logs/*/*.log*
+  #           ~/.local/share/autonomi/node/*/logs/*.log*
+  #           ~/.local/share/autonomi/*/*/*.log*
+  #           ~/.local/share/autonomi/autonomi/logs/*/*.log*
   #
   #     - name: Stop the WAN network
   #       if: always()
@@ -619,7 +607,7 @@ jobs:
   #           echo "We are logging an extremely large data"
   #           exit 1
   #         fi
-  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/antnode.log
   #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
   #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 15000 { print; exit 1 }'
   #         then
@@ -632,7 +620,7 @@ jobs:
   #         then
   #           echo "Sanity check pass for local safe path"
   #         fi
-  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/safenode.log
+  #         #  node dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/safenode1/antnode.log
   #         #faucet dir structure: ~/sn-testnet-deploy/logs/NightlyChurnTest/NightlyChurnTest-genesis/faucet/logs/faucet.log
   #         if ! rg '^' "${{ matrix.wan_logs_path }}"/*/*/*/ | awk 'length($0) > 1000 { print; exit 1 }'
   #         then

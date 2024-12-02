@@ -1,0 +1,25 @@
+[package]
+authors = ["MaidSafe Developers <dev@maidsafe.net>"]
+description = "Provides custom build information for binaries in the Autonomi project"
+edition = "2021"
+homepage = "https://maidsafe.net"
+license = "GPL-3.0"
+name = "ant-build-info"
+readme = "README.md"
+repository = "https://github.com/maidsafe/autonomi"
+version = "0.1.19"
+build = "build.rs"
+include = ["Cargo.toml", "src/**/*", "build.rs"]
+
+[build-dependencies]
+vergen = { version = "8.0.0", features = ["build", "git", "gitcl"] }
+
+[features]
+nightly = []
+
+[lints]
+workspace = true
+
+[dependencies]
+chrono = "0.4"
+tracing = { version = "~0.1.26" }

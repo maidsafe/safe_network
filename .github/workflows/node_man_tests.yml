@@ -33,7 +33,7 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-cache-${{ hashFiles('**/Cargo.lock') }}
       - shell: bash
-        run: cargo test --lib --package sn-node-manager
+        run: cargo test --lib --package ant-node-manager
 
   # node-manager-user-mode-e2e-tests:
   #   name: user-mode e2e
@@ -52,15 +52,15 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin faucet
+  #       run: cargo build --release --bin antnode --bin faucet
   #       timeout-minutes: 30
 
   #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
@@ -77,11 +77,11 @@ jobs:
 
   #     - shell: bash
   #       run: |
-  #         cargo test --package sn-node-manager --release --test e2e -- --nocapture
+  #         cargo test --package ant-node-manager --release --test e2e -- --nocapture
 
   #     - name: Stop the local network and upload logs
   #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: stop
   #         log_file_prefix: node_man_tests_user_mode
@@ -105,15 +105,15 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin faucet
+  #       run: cargo build --release --bin antnode --bin faucet
   #       timeout-minutes: 30
 
   #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
@@ -132,7 +132,7 @@ jobs:
   #       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
   #       run: |
   #         ${{ matrix.elevated }} rustup default stable
-  #         ${{ matrix.elevated }} cargo test --package sn-node-manager --release --test e2e -- --nocapture
+  #         ${{ matrix.elevated }} cargo test --package ant-node-manager --release --test e2e -- --nocapture
 
   #     # Powershell step runs as admin by default.
   #     - name: run integration test in powershell
@@ -145,11 +145,11 @@ jobs:
   #         Move-Item -Path WinSW.exe -Destination "$env:GITHUB_WORKSPACE\bin"
   #         $env:PATH += ";$env:GITHUB_WORKSPACE\bin"
 
-  #         cargo test --release --package sn-node-manager --test e2e -- --nocapture
+  #         cargo test --release --package ant-node-manager --test e2e -- --nocapture
 
   #     - name: Stop the local network and upload logs
   #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: stop
   #         log_file_prefix: node_man_tests_system_wide

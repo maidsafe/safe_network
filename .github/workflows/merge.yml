@@ -129,31 +129,40 @@ jobs:
 
       - name: Run node tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_node --lib
+        run: cargo test --release --package ant-node --lib
 
+      # The `can_store_after_restart` can be executed with other package tests together and passing
+      # on local machine. However keeps failing (when executed together) on CI machines.
+      # This is most likely due to the setup and cocurrency issues of the tests.
+      # As the `record_store` is used in a single thread style, get the test passing executed
+      # and passing standalone is enough.
       - name: Run network tests (with encrypt-records)
         timeout-minutes: 25
-        run: cargo test --release --package sn_networking --features="open-metrics, encrypt-records"
+        run: cargo test --release --package ant-networking --features="open-metrics, encrypt-records" -- --skip can_store_after_restart
+
+      - name: Run network tests (with encrypt-records)
+        timeout-minutes: 5
+        run: cargo test --release --package ant-networking --features="open-metrics, encrypt-records" can_store_after_restart
 
       - name: Run network tests (without encrypt-records)
         timeout-minutes: 25
-        run: cargo test --release --package sn_networking --features="open-metrics"
+        run: cargo test --release --package ant-networking --features="open-metrics" -- --skip can_store_after_restart
+
+      - name: Run network tests (without encrypt-records)
+        timeout-minutes: 5
+        run: cargo test --release --package ant-networking --features="open-metrics" can_store_after_restart
 
       - name: Run protocol tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_protocol
-
-      - name: Run transfers tests
-        timeout-minutes: 25
-        run: cargo test --release --package sn_transfers
+        run: cargo test --release --package ant-protocol
 
       - name: Run logging tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_logging
+        run: cargo test --release --package ant-logging
 
       - name: Run register tests
         timeout-minutes: 25
-        run: cargo test --release --package sn_registers
+        run: cargo test --release --package ant-registers
         env:
           # this will speed up PR merge flows, while giving us a modicum
           # of proptesting
@@ -168,11 +177,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            safe_path: /home/runner/.local/share/safe
+            ant_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            ant_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            safe_path: /Users/runner/Library/Application\ Support/safe
+            ant_path: /Users/runner/Library/Application\ Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -181,15 +190,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -334,25 +343,25 @@ jobs:
 
       - name: Delete current register signing key
         shell: bash
-        run: rm -rf ${{ matrix.safe_path }}/autonomi
+        run: rm -rf ${{ matrix.ant_path }}/client
 
       - name: Generate new register signing key
-        run: ./target/release/autonomi --log-output-dest=data-dir register generate-key
+        run: ./target/release/autonomi --log-output-dest data-dir register generate-key
 
       - name: Get Public Register (new signing key is not the owner)
-        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        run: ./target/release/autonomi --log-output-dest data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: Edit Public Register (new signing key is not the owner)
-        run: ./target/release/autonomi --log-output-dest=data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 333
+        run: ./target/release/autonomi --log-output-dest data-dir register edit ${{ env.PUBLIC_REGISTER_ADDRESS }} 333
         env:
           SN_LOG: "v"
         timeout-minutes: 10
 
       - name: Get Public Register (new signing key is not the owner)
-        run: ./target/release/autonomi --log-output-dest=data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
+        run: ./target/release/autonomi --log-output-dest data-dir register get ${{ env.PUBLIC_REGISTER_ADDRESS }}
         env:
           SN_LOG: "v"
         timeout-minutes: 2
@@ -364,25 +373,25 @@ jobs:
         timeout-minutes: 2
 
       - name: file upload
-        run: ./target/release/autonomi --log-output-dest=data-dir file upload random.txt
+        run: ./target/release/autonomi --log-output-dest data-dir file upload random.txt
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: create a local register
-        run: ./target/release/autonomi --log-output-dest=data-dir register create sample_new_register 1234
+        run: ./target/release/autonomi --log-output-dest data-dir register create sample_new_register 1234
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: Estimate cost to create a vault
-        run: ./target/release/autonomi --log-output-dest=data-dir vault cost
+        run: ./target/release/autonomi --log-output-dest data-dir vault cost
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: create a vault with existing user data as above
-        run: ./target/release/autonomi --log-output-dest=data-dir vault create
+        run: ./target/release/autonomi --log-output-dest data-dir vault create
         env:
           SN_LOG: "v"
         timeout-minutes: 2
@@ -393,9 +402,9 @@ jobs:
           set -e
           for i in {1..100}; do
             dd if=/dev/urandom of=random_file_$i.bin bs=1M count=1 status=none
-            ./target/release/autonomi --log-output-dest=data-dir file upload random_file_$i.bin --public
-            ./target/release/autonomi --log-output-dest=data-dir file upload random_file_$i.bin
-            ./target/release/autonomi --log-output-dest=data-dir register create $i random_file_$i.bin
+            ./target/release/autonomi --log-output-dest data-dir file upload random_file_$i.bin --public
+            ./target/release/autonomi --log-output-dest data-dir file upload random_file_$i.bin
+            ./target/release/autonomi --log-output-dest data-dir register create $i random_file_$i.bin
           done
         env:
           SN_LOG: "v"
@@ -412,22 +421,22 @@ jobs:
               [System.IO.File]::WriteAllBytes($fileName, $byteArray)
 
               # Run autonomi commands
-              ./target/release/autonomi --log-output-dest=data-dir file upload "random_file_$i.bin" --public
-              ./target/release/autonomi --log-output-dest=data-dir file upload "random_file_$i.bin"
-              ./target/release/autonomi --log-output-dest=data-dir register create $i "random_file_$i.bin"
+              ./target/release/autonomi --log-output-dest data-dir file upload "random_file_$i.bin" --public
+              ./target/release/autonomi --log-output-dest data-dir file upload "random_file_$i.bin"
+              ./target/release/autonomi --log-output-dest data-dir register create $i "random_file_$i.bin"
           }
         env:
           SN_LOG: "v"
         timeout-minutes: 25
 
       - name: sync the vault
-        run: ./target/release/autonomi --log-output-dest=data-dir vault sync
+        run: ./target/release/autonomi --log-output-dest data-dir vault sync
         env:
           SN_LOG: "v"
         timeout-minutes: 2
 
       - name: load the vault from network
-        run: ./target/release/autonomi --log-output-dest=data-dir vault load
+        run: ./target/release/autonomi --log-output-dest data-dir vault load
         env:
           SN_LOG: "v"
         timeout-minutes: 2
@@ -444,7 +453,7 @@ jobs:
           NUM_OF_PRIVATE_FILES_IN_VAULT=""
           NUM_OF_REGISTERS_IN_VAULT=""
           
-          ./target/release/autonomi --log-output-dest=data-dir file list 2>&1 > file_list.txt
+          ./target/release/autonomi --log-output-dest data-dir file list 2>&1 > file_list.txt
           
           ./target/release/autonomi register list | grep register > register_list.txt
           
@@ -454,7 +463,7 @@ jobs:
           # when obtaining registers we get random garbage, this is the only hack that works.
           NUM_OF_REGISTERS_first=${NUM_OF_REGISTERS%%[ $'\n']*}
           echo "NUM_OF_REGISTERS is $NUM_OF_REGISTERS_first"
-          ./target/release/autonomi --log-output-dest=data-dir vault load 2>&1 > vault_data.txt
+          ./target/release/autonomi --log-output-dest data-dir vault load 2>&1 > vault_data.txt
 
           NUM_OF_PUBLIC_FILES_IN_VAULT=`cat vault_data.txt  | grep "public" | grep -o '[0-9]\+'`
           NUM_OF_PRIVATE_FILES_IN_VAULT=`cat vault_data.txt| grep "private" | grep -o '[0-9]\+'`
@@ -479,9 +488,9 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          ./target/release/autonomi --log-output-dest=data-dir file list > file_list.txt 2>&1
+          ./target/release/autonomi --log-output-dest data-dir file list > file_list.txt 2>&1
           ./target/release/autonomi register list > register_list.txt 2>&1
-          ./target/release/autonomi --log-output-dest=data-dir vault load > vault_data.txt 2>&1
+          ./target/release/autonomi --log-output-dest data-dir vault load > vault_data.txt 2>&1
         env:
           SN_LOG: "v"
         timeout-minutes: 15
@@ -558,22 +567,22 @@ jobs:
           time ./target/release/autonomi --log-output-dest=data-dir file upload random_1GB.bin
           ./target/release/autonomi --log-output-dest=data-dir vault sync
           rm -rf random*.bin
-          rm -rf ${{ matrix.safe_path }}/autonomi          
+          rm -rf ${{ matrix.ant_path }}/autonomi          
         env:
           SN_LOG: "v"
         timeout-minutes: 15
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_e2e
           platform: ${{ matrix.os }}
 
-  # spend_test:
+  # transaction_test:
   #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-  #   name: spend tests against network
+  #   name: transaction tests against network
   #   runs-on: ${{ matrix.os }}
   #   strategy:
   #     matrix:
@@ -587,27 +596,19 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features=local --bin safenode
+  #       run: cargo build --release --features=local --bin antnode
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
   #       run: cargo build --release --bin faucet --features="local,gifting"
   #       timeout-minutes: 30
 
-  #     - name: Build testing executable
-  #       run: cargo test --release -p sn_node --features=local --test sequential_transfers --test storage_payments --test double_spend --no-run
-  #       env:
-  #         # only set the target dir for windows to bypass the linker issue.
-  #         # happens if we build the node manager via testnet action
-  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-  #       timeout-minutes: 30
-
   #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
@@ -623,37 +624,31 @@ jobs:
   #         fi
 
   #     - name: execute the sequential transfers tests
-  #       run: cargo test --release -p sn_node --features="local" --test sequential_transfers -- --nocapture --test-threads=1
+  #       run: cargo test --release -p ant-node --features="local" --test sequential_transfers -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
 
   #     - name: execute the storage payment tests
-  #       run: cargo test --release -p sn_node --features="local" --test storage_payments -- --nocapture --test-threads=1
+  #       run: cargo test --release -p ant-node --features="local" --test storage_payments -- --nocapture --test-threads=1
   #       env:
   #         SN_LOG: "all"
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
 
-  #     - name: execute the double spend tests
-  #       run: cargo test --release -p sn_node --features="local" --test double_spend -- --nocapture --test-threads=1
-  #       env:
-  #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
-  #       timeout-minutes: 25
-
   #     - name: Stop the local network and upload logs
   #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: stop
-  #         log_file_prefix: safe_test_logs_spend
+  #         log_file_prefix: safe_test_logs_transaction
   #         platform: ${{ matrix.os }}
 
   # # runs with increased node count
-  # spend_simulation:
+  # transaction_simulation:
   #   if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
-  #   name: spend simulation
+  #   name: transaction simulation
   #   runs-on: ${{ matrix.os }}
   #   strategy:
   #     matrix:
@@ -667,7 +662,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features=local --bin safenode
+  #       run: cargo build --release --features=local --bin antnode
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
@@ -675,7 +670,7 @@ jobs:
   #       timeout-minutes: 30
 
   #     - name: Build testing executable
-  #       run: cargo test --release -p sn_node --features=local --test spend_simulation --no-run
+  #       run: cargo test --release -p ant-node --features=local --test transaction_simulation --no-run
   #       env:
   #         # only set the target dir for windows to bypass the linker issue.
   #         # happens if we build the node manager via testnet action
@@ -683,12 +678,12 @@ jobs:
   #       timeout-minutes: 30
 
   #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: start
   #         interval: 2000
   #         node-count: 50
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
@@ -703,18 +698,18 @@ jobs:
   #           echo "SAFE_PEERS has been set to $SAFE_PEERS"
   #         fi
 
-  #     - name: execute the spend simulation
-  #       run: cargo test --release -p sn_node --features="local" --test spend_simulation -- --nocapture
+  #     - name: execute the transaction simulation
+  #       run: cargo test --release -p ant-node --features="local" --test transaction_simulation -- --nocapture
   #       env:
   #         CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
   #       timeout-minutes: 25
 
   #     - name: Stop the local network and upload logs
   #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: stop
-  #         log_file_prefix: safe_test_logs_spend_simulation
+  #         log_file_prefix: safe_test_logs_transaction_simulation
   #         platform: ${{ matrix.os }}
 
   # token_distribution_test:
@@ -733,7 +728,7 @@ jobs:
   #     - uses: Swatinem/rust-cache@v2
 
   #     - name: Build binaries
-  #       run: cargo build --release --features=local,distribution --bin safenode
+  #       run: cargo build --release --features=local,distribution --bin antnode
   #       timeout-minutes: 35
 
   #     - name: Build faucet binary
@@ -749,11 +744,11 @@ jobs:
   #       timeout-minutes: 35
 
   #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ${{ matrix.os }}
   #         build: true
@@ -777,7 +772,7 @@ jobs:
 
   #     - name: Stop the local network and upload logs
   #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: stop
   #         log_file_prefix: safe_test_logs_token_distribution
@@ -791,14 +786,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-            safe_path: /home/runner/.local/share/safe
+            node_data_path: /home/runner/.local/share/autonomi/node
+            ant_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi\\node
+            ant_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
-            safe_path: /Users/runner/Library/Application Support/safe
+            node_data_path: /Users/runner/Library/Application Support/autonomi/node
+            ant_path: /Users/runner/Library/Application Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -807,11 +802,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode
+        run: cargo build --release --features local --bin antnode
         timeout-minutes: 30
 
       - name: Build churn tests
-        run: cargo test --release -p sn_node --features=local --test data_with_churn --no-run
+        run: cargo test --release -p ant-node --features=local --test data_with_churn --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -819,11 +814,11 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -842,7 +837,7 @@ jobs:
           fi
 
       - name: Chunks data integrity during nodes churn
-        run: cargo test --release -p sn_node --features=local --test data_with_churn -- --nocapture
+        run: cargo test --release -p ant-node --features=local --test data_with_churn -- --nocapture
         env:
           TEST_DURATION_MINS: 5
           TEST_TOTAL_CHURN_CYCLES: 15
@@ -856,7 +851,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_churn
@@ -924,7 +919,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.ant_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -938,14 +933,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_data_path: /home/runner/.local/share/safe/node
-            safe_path: /home/runner/.local/share/safe
+            node_data_path: /home/runner/.local/share/autonomi/node
+            ant_path: /home/runner/.local/share/autonomi
           - os: windows-latest
-            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe\\node
-            safe_path: C:\\Users\\runneradmin\\AppData\\Roaming\\safe
+            node_data_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi\\node
+            ant_path: C:\\Users\\runneradmin\\AppData\\Roaming\\autonomi
           - os: macos-latest
-            node_data_path: /Users/runner/Library/Application Support/safe/node
-            safe_path: /Users/runner/Library/Application Support/safe
+            node_data_path: /Users/runner/Library/Application Support/autonomi/node
+            ant_path: /Users/runner/Library/Application Support/autonomi
     steps:
       - uses: actions/checkout@v4
 
@@ -954,11 +949,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode
+        run: cargo build --release --features local --bin antnode
         timeout-minutes: 30
 
       - name: Build data location and routing table tests
-        run: cargo test --release -p sn_node --features=local --test verify_data_location --test verify_routing_table --no-run
+        run: cargo test --release -p ant-node --features=local --test verify_data_location --test verify_routing_table --no-run
         env:
           # only set the target dir for windows to bypass the linker issue.
           # happens if we build the node manager via testnet action
@@ -966,11 +961,11 @@ jobs:
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ${{ matrix.os }}
           build: true
 
@@ -989,13 +984,13 @@ jobs:
           fi
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --features="local" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p ant-node --features "local" --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
 
       - name: Verify the location of the data on the network
-        run: cargo test --release -p sn_node --features="local" --test verify_data_location -- --nocapture
+        run: cargo test --release -p ant-node --features "local" --test verify_data_location -- --nocapture
         env:
           CHURN_COUNT: 6
           SN_LOG: "all"
@@ -1003,7 +998,7 @@ jobs:
         timeout-minutes: 25
 
       - name: Verify the routing tables of the nodes
-        run: cargo test --release -p sn_node --features="local" --test verify_routing_table -- --nocapture
+        run: cargo test --release -p ant-node --features "local" --test verify_routing_table -- --nocapture
         env:
           CARGO_TARGET_DIR: ${{ matrix.os == 'windows-latest' && './test-target' || '.' }}
         timeout-minutes: 5
@@ -1014,7 +1009,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           log_file_prefix: safe_test_logs_data_location
@@ -1055,7 +1050,7 @@ jobs:
         shell: bash
         timeout-minutes: 10
         run: |
-          if ! rg '^' "${{ matrix.safe_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
+          if ! rg '^' "${{ matrix.ant_path }}"/*/*/logs | awk 'length($0) > 15000 { print; exit 1 }'
           then
             echo "We are logging an extremely large data"
             exit 1
@@ -1077,7 +1072,7 @@ jobs:
   #       run: sudo apt-get install -y ripgrep
 
   #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin safe
+  #       run: cargo build --release --bin antnode --bin safe
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
@@ -1085,18 +1080,18 @@ jobs:
   #       timeout-minutes: 30
 
   #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ubuntu-latest
   #         build: true
 
   #     - name: Check we're _not_ warned about using default genesis
   #       run: |
-  #         if rg "USING DEFAULT" "${{ matrix.safe_path }}"/*/*/logs; then
+  #         if rg "USING DEFAULT" "${{ matrix.ant_path }}"/*/*/logs; then
   #           exit 1
   #         fi
   #       shell: bash
@@ -1139,7 +1134,7 @@ jobs:
   #         mv $SAFE_DATA_PATH/test_faucet/logs/faucet.log ./faucet_log.log
   #       env:
   #         SN_LOG: "all"
-  #         SAFE_DATA_PATH: /home/runner/.local/share/safe
+  #         SAFE_DATA_PATH: /home/runner/.local/share/autonomi
   #       continue-on-error: true
   #       if: always()
   #       timeout-minutes: 1
@@ -1155,10 +1150,10 @@ jobs:
   # - name: Cleanup prior faucet and cashnotes
   #   run: |
   #     ls -l /home/runner/.local/share
-  #     ls -l /home/runner/.local/share/safe
-  #     rm -rf /home/runner/.local/share/safe/test_faucet
-  #     rm -rf /home/runner/.local/share/safe/test_genesis
-  #     rm -rf /home/runner/.local/share/safe/autonomi
+  #     ls -l /home/runner/.local/share/autonomi
+  #     rm -rf /home/runner/.local/share/autonomi/test_faucet
+  #     rm -rf /home/runner/.local/share/autonomi/test_genesis
+  #     rm -rf /home/runner/.local/share/autonomi/autonomi
   #   env:
   #     SN_LOG: "all"
   #   timeout-minutes: 5
@@ -1196,10 +1191,10 @@ jobs:
   # - name: Create and fund a wallet with different keypair
   #   run: |
   #     ls -l /home/runner/.local/share
-  #     ls -l /home/runner/.local/share/safe
-  #     rm -rf /home/runner/.local/share/safe/test_faucet
-  #     rm -rf /home/runner/.local/share/safe/test_genesis
-  #     rm -rf /home/runner/.local/share/safe/autonomi
+  #     ls -l /home/runner/.local/share/autonomi
+  #     rm -rf /home/runner/.local/share/autonomi/test_faucet
+  #     rm -rf /home/runner/.local/share/autonomi/test_genesis
+  #     rm -rf /home/runner/.local/share/autonomi/autonomi
   #     ~/safe --log-output-dest=data-dir wallet create --no-password
   #     if GENESIS_PK=a9925296499299fdbf4412509d342a92e015f5b996e9acd1d2ab7f2326e3ad05934326efdc345345a95e973ac1bb6637 GENESIS_SK=40f6bbc870355c68138ac70b450b6425af02b49874df3f141b7018378ceaac66 nohup ~/faucet --log-output-dest=data-dir send 100000000 $(~/safe --log-output-dest=data-dir wallet address | tail -n 1); then
   #       echo "Faucet with different genesis key not rejected!"
@@ -1218,10 +1213,10 @@ jobs:
   #     - name: Start up a faucet in server mode
   #       run: |
   #         ls -l /home/runner/.local/share
-  #         ls -l /home/runner/.local/share/safe
-  #         rm -rf /home/runner/.local/share/safe/test_faucet
-  #         rm -rf /home/runner/.local/share/safe/test_genesis
-  #         rm -rf /home/runner/.local/share/safe/autonomi
+  #         ls -l /home/runner/.local/share/autonomi
+  #         rm -rf /home/runner/.local/share/autonomi/test_faucet
+  #         rm -rf /home/runner/.local/share/autonomi/test_genesis
+  #         rm -rf /home/runner/.local/share/autonomi/autonomi
   #         target/release/faucet server &
   #         sleep 60
   #       env:
@@ -1237,12 +1232,12 @@ jobs:
   #           exit 1
   #         fi
   #       env:
-  #         NODE_DATA_PATH: /home/runner/.local/share/safe/node
+  #         NODE_DATA_PATH: /home/runner/.local/share/autonomi/node
   #       timeout-minutes: 1
 
   #     - name: Stop the local network and upload logs
   #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: stop
   #         platform: ubuntu-latest
@@ -1288,15 +1283,15 @@ jobs:
           ls -l
 
       - name: Build binaries
-        run: cargo build --release --features local --bin safenode --bin autonomi
+        run: cargo build --release --features local --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ubuntu-latest
           build: true
 
@@ -1366,7 +1361,7 @@ jobs:
         shell: bash
         timeout-minutes: 1
         env:
-          NODE_DATA_PATH: /home/runner/.local/share/safe/node
+          NODE_DATA_PATH: /home/runner/.local/share/autonomi/node
         run: |
           incoming_connection_errors=$(rg "IncomingConnectionError" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to find IncomingConnectionError error"; exit 0; }
@@ -1384,7 +1379,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           platform: ubuntu-latest
@@ -1396,7 +1391,7 @@ jobs:
   #   name: Replication bench with heavy upload
   #   runs-on: ubuntu-latest
   #   env:
-  #     CLIENT_DATA_PATH: /home/runner/.local/share/safe/autonomi
+  #     CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
 
   #   steps:
   #     - uses: actions/checkout@v4
@@ -1447,7 +1442,7 @@ jobs:
   #         df
 
   #     - name: Build binaries
-  #       run: cargo build --release --bin safenode --bin safe
+  #       run: cargo build --release --bin antnode --bin safe
   #       timeout-minutes: 30
 
   #     - name: Build faucet binary
@@ -1455,11 +1450,11 @@ jobs:
   #       timeout-minutes: 30
 
   #     - name: Start a local network
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: start
   #         interval: 2000
-  #         node-path: target/release/safenode
+  #         node-path: target/release/antnode
   #         faucet-path: target/release/faucet
   #         platform: ubuntu-latest
   #         build: true
@@ -1489,18 +1484,18 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 5
 
-  #     - name: Ensure no leftover cash_notes and payment files
+  #     - name: Ensure no leftover transactions and payment files
   #       run: |
-  #         expected_cash_notes_files="1"
+  #         expected_transactions_files="1"
   #         expected_payment_files="0"
   #         pwd
   #         ls $CLIENT_DATA_PATH/ -l
   #         ls $CLIENT_DATA_PATH/wallet -l
-  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #         cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
-  #         echo "Find $cash_note_files cash_note files"
-  #         if [ $expected_cash_notes_files -lt $cash_note_files ]; then
-  #           echo "Got too many cash_note files leftover: $cash_note_files"
+  #         ls $CLIENT_DATA_PATH/wallet/transactions -l
+  #         transaction_files=$(ls $CLIENT_DATA_PATH/wallet/transactions | wc -l)
+  #         echo "Find $transaction_files transaction files"
+  #         if [ $expected_transactions_files -lt $transaction_files ]; then
+  #           echo "Got too many transaction files leftover: $transaction_files"
   #           exit 1
   #         fi
   #         ls $CLIENT_DATA_PATH/wallet/payments -l
@@ -1510,7 +1505,7 @@ jobs:
   #           exit 1
   #         fi
   #       env:
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
   #       timeout-minutes: 10
 
   #     - name: Wait for certain period
@@ -1523,17 +1518,17 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 10
 
-  #     - name: Ensure no leftover cash_notes and payment files
+  #     - name: Ensure no leftover transactions and payment files
   #       run: |
-  #         expected_cash_notes_files="1"
+  #         expected_transactions_files="1"
   #         expected_payment_files="0"
   #         pwd
   #         ls $CLIENT_DATA_PATH/ -l
   #         ls $CLIENT_DATA_PATH/wallet -l
-  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #         cash_note_files=$(find $CLIENT_DATA_PATH/wallet/cash_notes -type f | wc -l)
-  #         if (( $(echo "$cash_note_files > $expected_cash_notes_files" | bc -l) )); then
-  #           echo "Got too many cash_note files leftover: $cash_note_files when we expected $expected_cash_notes_files"
+  #         ls $CLIENT_DATA_PATH/wallet/transactions -l
+  #         transaction_files=$(find $CLIENT_DATA_PATH/wallet/transactions -type f | wc -l)
+  #         if (( $(echo "$transaction_files > $expected_transactions_files" | bc -l) )); then
+  #           echo "Got too many transaction files leftover: $transaction_files when we expected $expected_transactions_files"
   #           exit 1
   #         fi
   #         ls $CLIENT_DATA_PATH/wallet/payments -l
@@ -1543,7 +1538,7 @@ jobs:
   #           exit 1
   #         fi
   #       env:
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
   #       timeout-minutes: 10
 
   #     - name: Wait for certain period
@@ -1566,8 +1561,8 @@ jobs:
   #         ./target/release/safe --log-output-dest=data-dir wallet receive --file transfer_hex
   #       env:
   #         SN_LOG: "all"
-  #         SAFE_DATA_PATH: /home/runner/.local/share/safe
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #         SAFE_DATA_PATH: /home/runner/.local/share/autonomi
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
   #       timeout-minutes: 25
 
   #     - name: Use second client to upload third file
@@ -1576,18 +1571,18 @@ jobs:
   #         SN_LOG: "all"
   #       timeout-minutes: 10
 
-  #     - name: Ensure no leftover cash_notes and payment files
+  #     - name: Ensure no leftover transactions and payment files
   #       run: |
-  #         expected_cash_notes_files="1"
+  #         expected_transactions_files="1"
   #         expected_payment_files="0"
   #         pwd
   #         ls $CLIENT_DATA_PATH/ -l
   #         ls $CLIENT_DATA_PATH/wallet -l
-  #         ls $CLIENT_DATA_PATH/wallet/cash_notes -l
-  #         cash_note_files=$(ls $CLIENT_DATA_PATH/wallet/cash_notes | wc -l)
-  #         echo "Find $cash_note_files cash_note files"
-  #         if [ $expected_cash_notes_files -lt $cash_note_files ]; then
-  #           echo "Got too many cash_note files leftover: $cash_note_files"
+  #         ls $CLIENT_DATA_PATH/wallet/transactions -l
+  #         transaction_files=$(ls $CLIENT_DATA_PATH/wallet/transactions | wc -l)
+  #         echo "Find $transaction_files transaction files"
+  #         if [ $expected_transactions_files -lt $transaction_files ]; then
+  #           echo "Got too many transaction files leftover: $transaction_files"
   #           exit 1
   #         fi
   #         ls $CLIENT_DATA_PATH/wallet/payments -l
@@ -1597,12 +1592,12 @@ jobs:
   #           exit 1
   #         fi
   #       env:
-  #         CLIENT_DATA_PATH: /home/runner/.local/share/safe/client
+  #         CLIENT_DATA_PATH: /home/runner/.local/share/autonomi/client
   #       timeout-minutes: 10
 
   #     - name: Stop the local network and upload logs
   #       if: always()
-  #       uses: maidsafe/sn-local-testnet-action@main
+  #       uses: maidsafe/ant-local-testnet-action@main
   #       with:
   #         action: stop
   #         log_file_prefix: safe_test_logs_heavy_replicate_bench

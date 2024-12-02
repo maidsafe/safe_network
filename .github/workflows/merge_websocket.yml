@@ -56,15 +56,15 @@ jobs:
           ls -l
 
       - name: Build binaries
-        run: cargo build --release --features local,websockets --bin safenode --bin autonomi
+        run: cargo build --release --features local,websockets --bin antnode --bin autonomi
         timeout-minutes: 30
 
       - name: Start a local network
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: start
           enable-evm-testnet: true
-          node-path: target/release/safenode
+          node-path: target/release/antnode
           platform: ubuntu-latest
           build: true
           sn-log: ""
@@ -135,7 +135,7 @@ jobs:
         shell: bash
         timeout-minutes: 1
         env:
-          NODE_DATA_PATH: /home/runner/.local/share/safe/node
+          NODE_DATA_PATH: /home/runner/.local/share/autonomi/node
         run: |
           incoming_connection_errors=$(rg "IncomingConnectionError" $NODE_DATA_PATH -c --stats | \
             rg "(\d+) matches" | rg "\d+" -o) || { echo "Failed to find IncomingConnectionError error"; exit 0; }
@@ -154,7 +154,7 @@ jobs:
 
       - name: Stop the local network and upload logs
         if: always()
-        uses: maidsafe/sn-local-testnet-action@main
+        uses: maidsafe/ant-local-testnet-action@main
         with:
           action: stop
           platform: ubuntu-latest
