@@ -32,16 +32,11 @@ ant-networking = { path = "../ant-networking", version = "0.19.5" }
 ant-peers-acquisition = { path = "../ant-peers-acquisition", version = "0.5.7" }
 ant-protocol = { version = "0.17.15", path = "../ant-protocol" }
 ant-registers = { path = "../ant-registers", version = "0.4.3" }
-bip39 = "2.0.0"
 blst = "0.3.13"
 blstrs = "0.7.1"
 bls = { package = "blsttc", version = "8.0.1" }
 bytes = { version = "1.0.1", features = ["serde"] }
 const-hex = "1.12.0"
-curv = { version = "0.10.1", package = "sn_curv", default-features = false, features = [
-    "num-bigint",
-] }
-eip2333 = { version = "0.2.1", package = "sn_bls_ckd" }
 futures = "0.3.30"
 hex = "~0.4.3"
 libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "kad_0.46.2" }
@@ -69,7 +64,6 @@ sha2 = "0.10.6"
 # Do not specify the version field. Release process expects even the local dev deps to be published.
 # Removing the version field is a workaround.
 test-utils = { path = "../test-utils" }
-tiny_http = "0.11"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wasm-bindgen-test = "0.3.43"
 
