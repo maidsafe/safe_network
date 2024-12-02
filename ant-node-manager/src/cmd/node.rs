@@ -21,7 +21,7 @@ use crate::{
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
 use ant_peers_acquisition::PeersArgs;
-use ant_releases::{ReleaseType, SafeReleaseRepoActions};
+use ant_releases::{AntReleaseRepoActions, ReleaseType};
 use ant_service_management::{
     control::{ServiceControl, ServiceController},
     rpc::RpcClient,
@@ -86,7 +86,7 @@ pub async fn add(
         config::get_service_log_dir_path(ReleaseType::AntNode, log_dir_path, service_user.clone())?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+    let release_repo = <dyn AntReleaseRepoActions>::default_config();
 
     let (antnode_src_path, version) = if let Some(path) = src_path.clone() {
         let version = get_bin_version(&path)?;

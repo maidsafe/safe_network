@@ -5,7 +5,7 @@ use ant_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
 use ant_peers_acquisition::PeersArgs;
-use ant_releases::{self, ReleaseType, SafeReleaseRepoActions};
+use ant_releases::{self, AntReleaseRepoActions, ReleaseType};
 use ant_service_management::NodeRegistry;
 use color_eyre::eyre::{eyre, Error};
 use color_eyre::Result;
@@ -305,7 +305,7 @@ struct NodeConfig {
 async fn run_nat_detection(action_sender: &UnboundedSender<Action>) {
     info!("Running nat detection....");
 
-    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+    let release_repo = <dyn AntReleaseRepoActions>::default_config();
     let version = match release_repo
         .get_latest_version(&ReleaseType::NatDetection)
         .await

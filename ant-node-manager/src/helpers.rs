@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ant_releases::{get_running_platform, ArchiveType, ReleaseType, SafeReleaseRepoActions};
+use ant_releases::{get_running_platform, AntReleaseRepoActions, ArchiveType, ReleaseType};
 use ant_service_management::NodeServiceData;
 use color_eyre::{
     eyre::{bail, eyre},
@@ -49,7 +49,7 @@ pub async fn configure_winsw(dest_path: &Path, verbosity: VerbosityLevel) -> Res
         }
         debug!("Downloading WinSW to {dest_path:?}");
 
-        let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+        let release_repo = <dyn AntReleaseRepoActions>::default_config();
 
         let mut pb = None;
         let callback = if verbosity != VerbosityLevel::Minimal {
@@ -120,7 +120,7 @@ pub async fn download_and_extract_release(
     release_type: ReleaseType,
     url: Option<String>,
     version: Option<String>,
-    release_repo: &dyn SafeReleaseRepoActions,
+    release_repo: &dyn AntReleaseRepoActions,
     verbosity: VerbosityLevel,
     download_dir_path: Option<PathBuf>,
 ) -> Result<(PathBuf, String)> {

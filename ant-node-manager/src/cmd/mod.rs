@@ -17,7 +17,7 @@ use crate::{
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, VerbosityLevel,
 };
-use ant_releases::{ReleaseType, SafeReleaseRepoActions};
+use ant_releases::{AntReleaseRepoActions, ReleaseType};
 use ant_service_management::UpgradeResult;
 use color_eyre::{eyre::eyre, Result};
 use colored::Colorize;
@@ -47,7 +47,7 @@ pub async fn download_and_get_upgrade_bin_path(
         return Ok((path, bin_version.parse()?));
     }
 
-    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+    let release_repo = <dyn AntReleaseRepoActions>::default_config();
     if let Some(version) = version {
         debug!("Downloading provided version {version} of {release_type}");
         let (upgrade_bin_path, version) = download_and_extract_release(
@@ -136,7 +136,7 @@ pub async fn get_bin_path(
     path: Option<PathBuf>,
     release_type: ReleaseType,
     version: Option<String>,
-    release_repo: &dyn SafeReleaseRepoActions,
+    release_repo: &dyn AntReleaseRepoActions,
     verbosity: VerbosityLevel,
 ) -> Result<PathBuf> {
     if build {

@@ -112,9 +112,9 @@ dependencies = [
 
 [[package]]
 name = "allocator-api2"
-version = "0.2.20"
+version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45862d1c77f2228b9e10bc609d5bc203d86ebc9b87ad8d5d5167a6c9abf739d9"
+checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "alloy"
@@ -1062,7 +1062,7 @@ dependencies = [
 [[package]]
 name = "ant-releases"
 version = "0.3.1"
-source = "git+https://github.com/jacderida/ant-releases.git?branch=chore-rename_binaries#9747746fbef12b63c49cdb9dbb08ecd42b18794b"
+source = "git+https://github.com/jacderida/ant-releases.git?branch=chore-rename_binaries#464f306a4b609fa57cbb7533fd6fdb21dd0f81a6"
 dependencies = [
  "async-trait",
  "chrono",
@@ -8802,9 +8802,9 @@ dependencies = [
 
 [[package]]
 name = "soketto"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37468c595637c10857701c990f93a40ce0e357cedb0953d1c26c8d8027f9bb53"
+checksum = "2e859df029d160cb88608f5d7df7fb4753fd20fdfb4de5644f3d8b8440841721"
 dependencies = [
  "base64 0.22.1",
  "bytes",
