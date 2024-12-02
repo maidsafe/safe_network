@@ -17,7 +17,7 @@ use crate::{
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
 use ant_peers_acquisition::PeersArgs;
-use ant_releases::{ReleaseType, SafeReleaseRepoActions};
+use ant_releases::{AntReleaseRepoActions, ReleaseType};
 use ant_service_management::{
     control::ServiceController, get_local_node_registry_path, NodeRegistry,
 };
@@ -58,7 +58,7 @@ pub async fn join(
     let local_node_reg_path = &get_local_node_registry_path()?;
     let mut local_node_registry = NodeRegistry::load(local_node_reg_path)?;
 
-    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+    let release_repo = <dyn AntReleaseRepoActions>::default_config();
 
     let antnode_bin_path = get_bin_path(
         build,
@@ -183,7 +183,7 @@ pub async fn run(
     }
     info!("Launching local network");
 
-    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+    let release_repo = <dyn AntReleaseRepoActions>::default_config();
 
     let antnode_bin_path = get_bin_path(
         build,

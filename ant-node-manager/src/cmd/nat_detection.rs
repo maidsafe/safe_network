@@ -10,7 +10,7 @@ use crate::{
     config::get_node_registry_path, helpers::download_and_extract_release, VerbosityLevel,
 };
 use ant_peers_acquisition::get_peers_from_url;
-use ant_releases::{ReleaseType, SafeReleaseRepoActions};
+use ant_releases::{AntReleaseRepoActions, ReleaseType};
 use ant_service_management::{NatDetectionStatus, NodeRegistry};
 use color_eyre::eyre::{bail, OptionExt, Result};
 use libp2p::Multiaddr;
@@ -59,7 +59,7 @@ pub async fn run_nat_detection(
     let nat_detection_path = if let Some(path) = path {
         path
     } else {
-        let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+        let release_repo = <dyn AntReleaseRepoActions>::default_config();
 
         let (nat_detection_path, _) = download_and_extract_release(
             ReleaseType::NatDetection,

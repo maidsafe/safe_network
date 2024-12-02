@@ -12,7 +12,7 @@ use crate::{
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, ServiceManager, VerbosityLevel,
 };
-use ant_releases::{ReleaseType, SafeReleaseRepoActions};
+use ant_releases::{AntReleaseRepoActions, ReleaseType};
 use ant_service_management::{
     control::{ServiceControl, ServiceController},
     DaemonService, NodeRegistry,
@@ -44,7 +44,7 @@ pub async fn add(
     service_manager.create_service_user(service_user)?;
 
     let mut node_registry = NodeRegistry::load(&config::get_node_registry_path()?)?;
-    let release_repo = <dyn SafeReleaseRepoActions>::default_config();
+    let release_repo = <dyn AntReleaseRepoActions>::default_config();
 
     let (daemon_src_bin_path, version) = if let Some(path) = src_path {
         let version = get_bin_version(&path)?;
