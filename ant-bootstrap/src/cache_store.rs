@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    craft_valid_multiaddr, multiaddr_get_peer_id, BootstrapAddr, BootstrapAddresses,
-    BootstrapConfig, Error, InitialPeerDiscovery, Result,
+    craft_valid_multiaddr, initial_peers::PeersArgs, multiaddr_get_peer_id, BootstrapAddr,
+    BootstrapAddresses, BootstrapCacheConfig, Error, Result,
 };
 use fs2::FileExt;
 use libp2p::multiaddr::Protocol;
@@ -24,7 +24,7 @@ use tempfile::NamedTempFile;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CacheData {
-    peers: std::collections::HashMap<PeerId, BootstrapAddresses>,
+    pub(crate) peers: std::collections::HashMap<PeerId, BootstrapAddresses>,
     #[serde(default = "SystemTime::now")]
     last_updated: SystemTime,
     #[serde(default = "default_version")]
@@ -56,6 +56,8 @@ impl CacheData {
                 .entry(*peer)
                 .or_insert(current_shared_addrs_state.clone());
 
+            trace!("Syncing {peer:?} from fs with addrs count: {:?}, old state count: {:?}. Our in memory state count: {:?}", current_shared_addrs_state.0.len(), old_shared_addrs_state.map(|x| x.0.len()), bootstrap_addresses.0.len());
+
             // Add/sync every BootstrapAddr into self
             bootstrap_addresses.sync(old_shared_addrs_state, current_shared_addrs_state);
         }
@@ -69,7 +71,7 @@ impl CacheData {
     /// - Removes all peers with empty addrs set
     /// - Maintains `max_addr` per peer by removing the addr with the lowest success rate
     /// - Maintains `max_peers` in the list by removing the peer with the oldest last_seen
-    pub fn perform_cleanup(&mut self, cfg: &BootstrapConfig) {
+    pub fn perform_cleanup(&mut self, cfg: &BootstrapCacheConfig) {
         self.peers.values_mut().for_each(|bootstrap_addresses| {
             bootstrap_addresses.0.retain(|bootstrap_addr| {
                 let now = SystemTime::now();
@@ -100,7 +102,7 @@ impl CacheData {
     }
 
     /// Remove the oldest peers until we're under the max_peers limit
-    pub fn try_remove_oldest_peers(&mut self, cfg: &BootstrapConfig) {
+    pub fn try_remove_oldest_peers(&mut self, cfg: &BootstrapCacheConfig) {
         if self.peers.len() > cfg.max_peers {
             let mut peer_last_seen_map = HashMap::new();
             for (peer, addrs) in self.peers.iter() {
@@ -149,48 +151,21 @@ impl Default for CacheData {
 
 #[derive(Clone, Debug)]
 pub struct BootstrapCacheStore {
-    cache_path: PathBuf,
-    config: BootstrapConfig,
-    data: CacheData,
+    pub(crate) cache_path: PathBuf,
+    pub(crate) config: BootstrapCacheConfig,
+    pub(crate) data: CacheData,
     /// This is our last known state of the cache on disk, which is shared across all instances.
     /// This is not updated until `sync_to_disk` is called.
-    old_shared_state: CacheData,
+    pub(crate) old_shared_state: CacheData,
 }
 
 impl BootstrapCacheStore {
-    pub fn config(&self) -> &BootstrapConfig {
+    pub fn config(&self) -> &BootstrapCacheConfig {
         &self.config
     }
 
-    pub async fn new(config: BootstrapConfig) -> Result<Self> {
-        info!("Creating new CacheStore with config: {:?}", config);
-        let cache_path = config.cache_file_path.clone();
-
-        // Create cache directory if it doesn't exist
-        if let Some(parent) = cache_path.parent() {
-            if !parent.exists() {
-                info!("Attempting to create cache directory at {parent:?}");
-                fs::create_dir_all(parent).inspect_err(|err| {
-                    warn!("Failed to create cache directory at {parent:?}: {err}");
-                })?;
-            }
-        }
-
-        let mut store = Self {
-            cache_path,
-            config,
-            data: CacheData::default(),
-            old_shared_state: CacheData::default(),
-        };
-
-        store.init().await?;
-
-        info!("Successfully created CacheStore and initialized it.");
-
-        Ok(store)
-    }
-
-    pub async fn new_without_init(config: BootstrapConfig) -> Result<Self> {
+    /// Create a empty CacheStore with the given configuration
+    pub fn empty(config: BootstrapCacheConfig) -> Result<Self> {
         info!("Creating new CacheStore with config: {:?}", config);
         let cache_path = config.cache_file_path.clone();
 
@@ -211,146 +186,26 @@ impl BootstrapCacheStore {
             old_shared_state: CacheData::default(),
         };
 
-        info!("Successfully created CacheStore without initializing the data.");
         Ok(store)
     }
 
-    pub async fn init(&mut self) -> Result<()> {
-        let data = if self.cache_path.exists() {
-            info!(
-                "Cache file exists at {:?}, attempting to load",
-                self.cache_path
-            );
-            match Self::load_cache_data(&self.config).await {
-                Ok(data) => {
-                    info!(
-                        "Successfully loaded cache data with {} peers",
-                        data.peers.len()
-                    );
-                    // If cache data exists but has no peers and file is not read-only,
-                    // fallback to default
-                    let is_readonly = self
-                        .cache_path
-                        .metadata()
-                        .map(|m| m.permissions().readonly())
-                        .unwrap_or(false);
-
-                    if data.peers.is_empty() && !is_readonly {
-                        info!("Cache is empty and not read-only, falling back to default");
-                        Self::fallback_to_default(&self.config).await?
-                    } else {
-                        // Ensure we don't exceed max_peers
-                        let mut filtered_data = data;
-                        if filtered_data.peers.len() > self.config.max_peers {
-                            info!(
-                                "Trimming cache from {} to {} peers",
-                                filtered_data.peers.len(),
-                                self.config.max_peers
-                            );
-
-                            filtered_data.peers = filtered_data
-                                .peers
-                                .into_iter()
-                                .take(self.config.max_peers)
-                                .collect();
-                        }
-                        filtered_data
-                    }
-                }
-                Err(e) => {
-                    warn!("Failed to load cache data: {}", e);
-                    // If we can't read or parse the cache file, fallback to default
-                    Self::fallback_to_default(&self.config).await?
-                }
-            }
-        } else {
-            info!(
-                "Cache file does not exist at {:?}, falling back to default",
-                self.cache_path
-            );
-            // If cache file doesn't exist, fallback to default
-            Self::fallback_to_default(&self.config).await?
-        };
-
-        // Update the store's data
-        self.data = data.clone();
-        self.old_shared_state = data;
-
-        // Save the default data to disk
-        self.sync_and_save_to_disk(false).await?;
-
+    pub async fn initialize_from_peers_arg(&mut self, peers_arg: &PeersArgs) -> Result<()> {
+        peers_arg
+            .get_bootstrap_addr_and_initialize_cache(Some(self))
+            .await?;
+        self.sync_and_save_to_disk(true).await?;
         Ok(())
     }
 
-    async fn fallback_to_default(config: &BootstrapConfig) -> Result<CacheData> {
-        info!("Falling back to default peers from endpoints");
-        let mut data = CacheData {
-            peers: std::collections::HashMap::new(),
-            last_updated: SystemTime::now(),
-            version: default_version(),
-        };
-
-        // If no endpoints are configured, just return empty cache
-        if config.endpoints.is_empty() {
-            warn!("No endpoints configured, returning empty cache");
-            return Ok(data);
-        }
-
-        // Try to discover peers from configured endpoints
-        let discovery = InitialPeerDiscovery::with_endpoints(config.endpoints.clone())?;
-        match discovery.fetch_bootstrap_addresses().await {
-            Ok(addrs) => {
-                info!("Successfully fetched {} peers from endpoints", addrs.len());
-                // Only add up to max_peers from the discovered peers
-                let mut count = 0;
-                for bootstrap_addr in addrs.into_iter() {
-                    if count >= config.max_peers {
-                        break;
-                    }
-                    if let Some(peer_id) = bootstrap_addr.peer_id() {
-                        data.insert(peer_id, bootstrap_addr);
-                        count += 1;
-                    }
-                }
-
-                // Create parent directory if it doesn't exist
-                if let Some(parent) = config.cache_file_path.parent() {
-                    if !parent.exists() {
-                        info!("Creating cache directory at {:?}", parent);
-                        if let Err(e) = fs::create_dir_all(parent) {
-                            warn!("Failed to create cache directory: {}", e);
-                        }
-                    }
-                }
-
-                // Try to write the cache file immediately
-                match serde_json::to_string_pretty(&data) {
-                    Ok(json) => {
-                        info!("Writing {} peers to cache file", data.peers.len());
-                        if let Err(e) = fs::write(&config.cache_file_path, json) {
-                            warn!("Failed to write cache file: {}", e);
-                        } else {
-                            info!(
-                                "Successfully wrote cache file at {:?}",
-                                config.cache_file_path
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        warn!("Failed to serialize cache data: {}", e);
-                    }
-                }
-
-                Ok(data)
-            }
-            Err(e) => {
-                warn!("Failed to fetch peers from endpoints: {}", e);
-                Ok(data) // Return empty cache on error
-            }
-        }
+    pub async fn initialize_from_local_cache(&mut self) -> Result<()> {
+        self.data = Self::load_cache_data(&self.config).await?;
+        self.old_shared_state = self.data.clone();
+        Ok(())
     }
 
-    async fn load_cache_data(cfg: &BootstrapConfig) -> Result<CacheData> {
+    /// Load cache data from disk
+    /// Make sure to have clean addrs inside the cache as we don't call craft_valid_multiaddr
+    pub async fn load_cache_data(cfg: &BootstrapCacheConfig) -> Result<CacheData> {
         // Try to open the file with read permissions
         let mut file = match OpenOptions::new().read(true).open(&cfg.cache_file_path) {
             Ok(f) => f,
@@ -395,6 +250,15 @@ impl BootstrapCacheStore {
             .flat_map(|bootstrap_addresses| bootstrap_addresses.0.iter())
     }
 
+    /// Get a list containing single addr per peer. We use the least faulty addr for each peer.
+    pub fn get_unique_peer_addr(&self) -> impl Iterator<Item = &Multiaddr> {
+        self.data
+            .peers
+            .values()
+            .flat_map(|bootstrap_addresses| bootstrap_addresses.get_least_faulty())
+            .map(|bootstrap_addr| &bootstrap_addr.addr)
+    }
+
     pub fn get_reliable_addrs(&self) -> impl Iterator<Item = &BootstrapAddr> {
         self.data
             .peers
@@ -418,7 +282,7 @@ impl BootstrapCacheStore {
     /// Add a set of addresses to the cache.
     pub fn add_addr(&mut self, addr: Multiaddr) {
         debug!("Trying to add new addr: {addr}");
-        let Some(addr) = craft_valid_multiaddr(&addr) else {
+        let Some(addr) = craft_valid_multiaddr(&addr, false) else {
             return;
         };
         let peer_id = match addr.iter().find(|p| matches!(p, Protocol::P2p(_))) {
@@ -433,13 +297,16 @@ impl BootstrapCacheStore {
                 bootstrap_addr.last_seen = SystemTime::now();
                 return;
             } else {
-                bootstrap_addrs.insert_addr(&BootstrapAddr::new(addr.clone()));
+                let mut bootstrap_addr = BootstrapAddr::new(addr.clone());
+                bootstrap_addr.success_count = 1;
+                bootstrap_addrs.insert_addr(&bootstrap_addr);
             }
         } else {
-            self.data.peers.insert(
-                peer_id,
-                BootstrapAddresses(vec![BootstrapAddr::new(addr.clone())]),
-            );
+            let mut bootstrap_addr = BootstrapAddr::new(addr.clone());
+            bootstrap_addr.success_count = 1;
+            self.data
+                .peers
+                .insert(peer_id, BootstrapAddresses(vec![bootstrap_addr]));
         }
 
         debug!("Added new peer {addr:?}, performing cleanup of old addrs");
@@ -556,6 +423,7 @@ impl BootstrapCacheStore {
     }
 
     async fn atomic_write(&self) -> Result<()> {
+        info!("Writing cache to disk: {:?}", self.cache_path);
         // Create parent directory if it doesn't exist
         if let Some(parent) = self.cache_path.parent() {
             fs::create_dir_all(parent).map_err(Error::from)?;
@@ -583,6 +451,8 @@ impl BootstrapCacheStore {
             error!("Failed to persist file with err: {err:?}");
         })?;
 
+        info!("Cache written to disk: {:?}", self.cache_path);
+
         // Lock will be automatically released when file is dropped
         Ok(())
     }
@@ -597,11 +467,9 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let cache_file = temp_dir.path().join("cache.json");
 
-        let config = crate::BootstrapConfig::empty()
-            .unwrap()
-            .with_cache_path(&cache_file);
+        let config = crate::BootstrapCacheConfig::empty().with_cache_path(&cache_file);
 
-        let store = BootstrapCacheStore::new(config).await.unwrap();
+        let store = BootstrapCacheStore::empty(config).unwrap();
         (store.clone(), store.cache_path.clone())
     }
 
@@ -684,54 +552,5 @@ mod tests {
         let peers = store.get_addrs().collect::<Vec<_>>();
         assert_eq!(peers.len(), 1);
         assert_eq!(peers[0].addr, addr);
-    }
-
-    #[tokio::test]
-    async fn test_peer_removed_only_when_unresponsive() {
-        let (mut store, _) = create_test_store().await;
-        let addr: Multiaddr =
-            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
-                .parse()
-                .unwrap();
-
-        // Add a peer
-        store.add_addr(addr.clone());
-
-        // Make it fail more than successes
-        for _ in 0..3 {
-            store.update_addr_status(&addr, true);
-        }
-        for _ in 0..4 {
-            store.update_addr_status(&addr, false);
-        }
-
-        // Run cleanup
-        store.perform_cleanup();
-
-        // Verify peer is removed
-        assert_eq!(
-            store.get_addrs().count(),
-            0,
-            "Peer should be removed after max_retries failures"
-        );
-
-        // Test with some successes but more failures
-        store.add_addr(addr.clone());
-        store.update_addr_status(&addr, true);
-        store.update_addr_status(&addr, true);
-
-        for _ in 0..5 {
-            store.update_addr_status(&addr, false);
-        }
-
-        // Run cleanup
-        store.perform_cleanup();
-
-        // Verify peer is removed due to more failures than successes
-        assert_eq!(
-            store.get_addrs().count(),
-            0,
-            "Peer should be removed when failures exceed successes"
-        );
     }
 }

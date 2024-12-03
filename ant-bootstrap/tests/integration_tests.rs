@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ant_bootstrap_cache::{BootstrapEndpoints, InitialPeerDiscovery};
+use ant_bootstrap::{BootstrapEndpoints, ContactsFetcher};
 use libp2p::Multiaddr;
 use tracing_subscriber::{fmt, EnvFilter};
 use url::Url;
@@ -25,8 +25,8 @@ fn init_logging() {
 #[tokio::test]
 async fn test_fetch_from_amazon_s3() {
     init_logging();
-    let discovery = InitialPeerDiscovery::new().unwrap();
-    let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+    let fetcher = ContactsFetcher::with_mainnet_endpoints().unwrap();
+    let addrs = fetcher.fetch_bootstrap_addresses().await.unwrap();
 
     // We should get some peers
     assert!(!addrs.is_empty(), "Expected to find some peers from S3");
@@ -63,9 +63,9 @@ async fn test_individual_s3_endpoints() {
     let endpoint = format!("{}/peers", mock_server.uri())
         .parse::<Url>()
         .unwrap();
-    let discovery = InitialPeerDiscovery::with_endpoints(vec![endpoint.clone()]).unwrap();
+    let fetcher = ContactsFetcher::with_endpoints(vec![endpoint.clone()]).unwrap();
 
-    match discovery.fetch_bootstrap_addresses().await {
+    match fetcher.fetch_bootstrap_addresses().await {
         Ok(peers) => {
             println!(
                 "Successfully fetched {} peers from {}",
@@ -103,8 +103,8 @@ async fn test_individual_s3_endpoints() {
 #[tokio::test]
 async fn test_response_format() {
     init_logging();
-    let discovery = InitialPeerDiscovery::new().unwrap();
-    let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+    let fetcher = ContactsFetcher::with_mainnet_endpoints().unwrap();
+    let addrs = fetcher.fetch_bootstrap_addresses().await.unwrap();
 
     // Get the first peer to check format
     let first_peer = addrs.first().expect("Expected at least one peer");
@@ -155,9 +155,9 @@ async fn test_json_endpoint_format() {
         .await;
 
     let endpoint = mock_server.uri().parse::<Url>().unwrap();
-    let discovery = InitialPeerDiscovery::with_endpoints(vec![endpoint.clone()]).unwrap();
+    let fetcher = ContactsFetcher::with_endpoints(vec![endpoint.clone()]).unwrap();
 
-    let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+    let addrs = fetcher.fetch_bootstrap_addresses().await.unwrap();
     assert_eq!(addrs.len(), 2);
 
     // Verify peer addresses

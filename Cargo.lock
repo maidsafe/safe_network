@@ -723,12 +723,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "ant-bootstrap-cache"
+name = "ant-bootstrap"
 version = "0.1.0"
 dependencies = [
  "ant-logging",
  "ant-protocol",
  "chrono",
+ "clap",
  "dirs-next",
  "fs2",
  "futures",

@@ -10,6 +10,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Failed to obtain any bootstrap peers")]
+    NoBootstrapPeersFound,
     #[error("Failed to parse cache data")]
     FailedToParseCacheData,
     #[error("Could not obtain data directory")]
@@ -18,8 +20,6 @@ pub enum Error {
     FailedToObtainAddrsFromUrl(String, usize),
     #[error("No Bootstrap Addresses found: {0}")]
     NoBootstrapAddressesFound(String),
-    #[error("Invalid response: {0}")]
-    InvalidResponse(String),
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
     #[error("JSON error: {0}")]
@@ -32,14 +32,6 @@ pub enum Error {
     Persist(#[from] tempfile::PersistError),
     #[error("Lock error")]
     LockError,
-    #[error("Circuit breaker open: {0}")]
-    CircuitBreakerOpen(String),
-    #[error("Request failed: {0}")]
-    RequestFailed(String),
-    #[error("Request timeout")]
-    RequestTimeout,
-    #[error("Invalid multiaddr: {0}")]
-    InvalidMultiAddr(#[from] libp2p::multiaddr::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

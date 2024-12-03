@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ant_bootstrap_cache::{BootstrapCacheStore, BootstrapConfig};
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore};
 use ant_logging::LogBuilder;
 use libp2p::Multiaddr;
 use std::time::Duration;
@@ -21,11 +21,9 @@ async fn test_cache_store_operations() -> Result<(), Box<dyn std::error::Error>>
     let cache_path = temp_dir.path().join("cache.json");
 
     // Create cache store with config
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let mut cache_store = BootstrapCacheStore::new(config).await?;
+    let mut cache_store = BootstrapCacheStore::empty(config)?;
 
     // Test adding and retrieving peers
     let addr: Multiaddr =
@@ -51,11 +49,9 @@ async fn test_cache_persistence() -> Result<(), Box<dyn std::error::Error>> {
     let cache_path = temp_dir.path().join("cache.json");
 
     // Create first cache store
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let mut cache_store1 = BootstrapCacheStore::new(config.clone()).await?;
+    let mut cache_store1 = BootstrapCacheStore::empty(config.clone())?;
 
     // Add a peer and mark it as reliable
     let addr: Multiaddr =
@@ -66,7 +62,8 @@ async fn test_cache_persistence() -> Result<(), Box<dyn std::error::Error>> {
     cache_store1.sync_and_save_to_disk(true).await.unwrap();
 
     // Create a new cache store with the same path
-    let cache_store2 = BootstrapCacheStore::new(config).await?;
+    let mut cache_store2 = BootstrapCacheStore::empty(config)?;
+    cache_store2.initialize_from_local_cache().await.unwrap();
     let addrs = cache_store2.get_reliable_addrs().collect::<Vec<_>>();
 
     assert!(!addrs.is_empty(), "Cache should persist across instances");
@@ -84,10 +81,8 @@ async fn test_cache_reliability_tracking() -> Result<(), Box<dyn std::error::Err
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
-    let mut cache_store = BootstrapCacheStore::new(config).await?;
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
+    let mut cache_store = BootstrapCacheStore::empty(config)?;
 
     let addr: Multiaddr =
         "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
@@ -127,12 +122,10 @@ async fn test_cache_max_peers() -> Result<(), Box<dyn std::error::Error>> {
     let cache_path = temp_dir.path().join("cache.json");
 
     // Create cache with small max_peers limit
-    let mut config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let mut config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
     config.max_peers = 2;
 
-    let mut cache_store = BootstrapCacheStore::new(config).await?;
+    let mut cache_store = BootstrapCacheStore::empty(config)?;
 
     // Add three peers with distinct timestamps
     let mut addresses = Vec::new();
@@ -171,11 +164,9 @@ async fn test_cache_file_corruption() -> Result<(), Box<dyn std::error::Error>> 
     let cache_path = temp_dir.path().join("cache.json");
 
     // Create cache with some peers
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let mut cache_store = BootstrapCacheStore::new_without_init(config.clone()).await?;
+    let mut cache_store = BootstrapCacheStore::empty(config.clone())?;
 
     // Add a peer
     let addr: Multiaddr =
@@ -189,7 +180,7 @@ async fn test_cache_file_corruption() -> Result<(), Box<dyn std::error::Error>> 
     tokio::fs::write(&cache_path, "invalid json content").await?;
 
     // Create a new cache store - it should handle the corruption gracefully
-    let mut new_cache_store = BootstrapCacheStore::new_without_init(config).await?;
+    let mut new_cache_store = BootstrapCacheStore::empty(config)?;
     let addrs = new_cache_store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Cache should be empty after corruption");
 

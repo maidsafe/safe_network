@@ -1,18 +1,22 @@
 [package]
 authors = ["MaidSafe Developers <dev@maidsafe.net>"]
-description = "Bootstrap Cache functionality for Autonomi"
+description = "Bootstrap functionality for Autonomi"
 edition = "2021"
 homepage = "https://maidsafe.net"
 license = "GPL-3.0"
-name = "ant-bootstrap-cache"
+name = "ant-bootstrap"
 readme = "README.md"
 repository = "https://github.com/maidsafe/autonomi"
 version = "0.1.0"
+
+[features]
+local = []
 
 [dependencies]
 ant-logging = { path = "../ant-logging", version = "0.2.40" }
 ant-protocol = { version = "0.17.15", path = "../ant-protocol" }
 chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.2.1", features = ["derive", "env"] }
 dirs-next = "~2.0.0"
 fs2 = "0.4.3"
 futures = "0.3.30"

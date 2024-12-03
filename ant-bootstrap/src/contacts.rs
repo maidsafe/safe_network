@@ -8,13 +8,11 @@
 
 use crate::{craft_valid_multiaddr_from_str, BootstrapAddr, BootstrapEndpoints, Error, Result};
 use futures::stream::{self, StreamExt};
+use libp2p::Multiaddr;
 use reqwest::Client;
 use std::time::Duration;
 use url::Url;
 
-/// The default network contacts endpoint
-const DEFAULT_BOOTSTRAP_ENDPOINT: &str =
-    "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts";
 /// The client fetch timeout
 const FETCH_TIMEOUT_SECS: u64 = 30;
 /// Maximum number of endpoints to fetch at a time
@@ -23,19 +21,19 @@ const MAX_CONCURRENT_FETCHES: usize = 3;
 const MAX_RETRIES_ON_FETCH_FAILURE: usize = 3;
 
 /// Discovers initial peers from a list of endpoints
-pub struct InitialPeerDiscovery {
+pub struct ContactsFetcher {
     /// The list of endpoints
     endpoints: Vec<Url>,
     /// Reqwest Client
     request_client: Client,
+    /// Ignore PeerId in the multiaddr if not present. This is only useful for fetching nat detection contacts
+    ignore_peer_id: bool,
 }
 
-impl InitialPeerDiscovery {
+impl ContactsFetcher {
     /// Create a new struct with the default endpoint
     pub fn new() -> Result<Self> {
-        Self::with_endpoints(vec![DEFAULT_BOOTSTRAP_ENDPOINT
-            .parse()
-            .expect("Invalid URL")])
+        Self::with_endpoints(vec![])
     }
 
     /// Create a new struct with the provided endpoints
@@ -51,13 +49,47 @@ impl InitialPeerDiscovery {
         Ok(Self {
             endpoints,
             request_client,
+            ignore_peer_id: false,
         })
     }
 
-    /// Fetch BootstrapAddr from all configured endpoints
+    /// Create a new struct with the mainnet endpoints
+    pub fn with_mainnet_endpoints() -> Result<Self> {
+        let mut fetcher = Self::new()?;
+        let mainnet_contact = vec![
+            "https://sn-testnet.s3.eu-west-2.amazonaws.com/bootstrap_cache.json"
+                .parse()
+                .expect("Failed to parse URL"),
+            "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts"
+                .parse()
+                .expect("Failed to parse URL"),
+        ];
+        fetcher.endpoints = mainnet_contact;
+        Ok(fetcher)
+    }
+
+    pub fn insert_endpoint(&mut self, endpoint: Url) {
+        self.endpoints.push(endpoint);
+    }
+
+    pub fn ignore_peer_id(&mut self, ignore_peer_id: bool) {
+        self.ignore_peer_id = ignore_peer_id;
+    }
+
+    /// Fetch the list of bootstrap addresses from all configured endpoints
     pub async fn fetch_bootstrap_addresses(&self) -> Result<Vec<BootstrapAddr>> {
+        Ok(self
+            .fetch_addrs()
+            .await?
+            .into_iter()
+            .map(BootstrapAddr::new)
+            .collect())
+    }
+
+    /// Fetch the list of multiaddrs from all configured endpoints
+    pub async fn fetch_addrs(&self) -> Result<Vec<Multiaddr>> {
         info!(
-            "Starting peer discovery from {} endpoints: {:?}",
+            "Starting peer fetcher from {} endpoints: {:?}",
             self.endpoints.len(),
             self.endpoints
         );
@@ -71,7 +103,12 @@ impl InitialPeerDiscovery {
                     endpoint
                 );
                 (
-                    Self::fetch_from_endpoint(self.request_client.clone(), &endpoint).await,
+                    Self::fetch_from_endpoint(
+                        self.request_client.clone(),
+                        &endpoint,
+                        self.ignore_peer_id,
+                    )
+                    .await,
                     endpoint,
                 )
             })
@@ -126,11 +163,12 @@ impl InitialPeerDiscovery {
         }
     }
 
-    /// Fetch the list of bootstrap addresses from a single endpoint
+    /// Fetch the list of multiaddrs from a single endpoint
     async fn fetch_from_endpoint(
         request_client: Client,
         endpoint: &Url,
-    ) -> Result<Vec<BootstrapAddr>> {
+        ignore_peer_id: bool,
+    ) -> Result<Vec<Multiaddr>> {
         info!("Fetching peers from endpoint: {endpoint}");
         let mut retries = 0;
 
@@ -142,7 +180,7 @@ impl InitialPeerDiscovery {
                     if response.status().is_success() {
                         let text = response.text().await?;
 
-                        match Self::try_parse_response(&text) {
+                        match Self::try_parse_response(&text, ignore_peer_id) {
                             Ok(addrs) => break addrs,
                             Err(err) => {
                                 warn!("Failed to parse response with err: {err:?}");
@@ -186,7 +224,7 @@ impl InitialPeerDiscovery {
     }
 
     /// Try to parse a response from a endpoint
-    fn try_parse_response(response: &str) -> Result<Vec<BootstrapAddr>> {
+    fn try_parse_response(response: &str, ignore_peer_id: bool) -> Result<Vec<Multiaddr>> {
         match serde_json::from_str::<BootstrapEndpoints>(response) {
             Ok(json_endpoints) => {
                 info!(
@@ -196,8 +234,9 @@ impl InitialPeerDiscovery {
                 let bootstrap_addresses = json_endpoints
                     .peers
                     .into_iter()
-                    .filter_map(|addr_str| craft_valid_multiaddr_from_str(&addr_str))
-                    .map(BootstrapAddr::new)
+                    .filter_map(|addr_str| {
+                        craft_valid_multiaddr_from_str(&addr_str, ignore_peer_id)
+                    })
                     .collect::<Vec<_>>();
 
                 if bootstrap_addresses.is_empty() {
@@ -219,8 +258,7 @@ impl InitialPeerDiscovery {
                 // example of contacts file exists in resources/network-contacts-examples
                 let bootstrap_addresses = response
                     .split('\n')
-                    .filter_map(craft_valid_multiaddr_from_str)
-                    .map(BootstrapAddr::new)
+                    .filter_map(|str| craft_valid_multiaddr_from_str(str, ignore_peer_id))
                     .collect::<Vec<_>>();
 
                 if bootstrap_addresses.is_empty() {
@@ -264,10 +302,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let mut discovery = InitialPeerDiscovery::new().unwrap();
-        discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
+        let mut fetcher = ContactsFetcher::new().unwrap();
+        fetcher.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        let addrs = fetcher.fetch_bootstrap_addresses().await.unwrap();
         assert_eq!(addrs.len(), 2);
 
         let addr1: Multiaddr =
@@ -303,13 +341,13 @@ mod tests {
             .mount(&mock_server2)
             .await;
 
-        let mut discovery = InitialPeerDiscovery::new().unwrap();
-        discovery.endpoints = vec![
+        let mut fetcher = ContactsFetcher::new().unwrap();
+        fetcher.endpoints = vec![
             mock_server1.uri().parse().unwrap(),
             mock_server2.uri().parse().unwrap(),
         ];
 
-        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        let addrs = fetcher.fetch_bootstrap_addresses().await.unwrap();
         assert_eq!(addrs.len(), 1);
 
         let addr: Multiaddr =
@@ -333,10 +371,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let mut discovery = InitialPeerDiscovery::new().unwrap();
-        discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
+        let mut fetcher = ContactsFetcher::new().unwrap();
+        fetcher.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        let addrs = fetcher.fetch_bootstrap_addresses().await.unwrap();
         let valid_addr: Multiaddr =
             "/ip4/127.0.0.2/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5"
                 .parse()
@@ -354,10 +392,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let mut discovery = InitialPeerDiscovery::new().unwrap();
-        discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
+        let mut fetcher = ContactsFetcher::new().unwrap();
+        fetcher.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let result = discovery.fetch_bootstrap_addresses().await;
+        let result = fetcher.fetch_bootstrap_addresses().await;
 
         assert!(matches!(result, Err(Error::NoBootstrapAddressesFound(_))));
     }
@@ -374,10 +412,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let mut discovery = InitialPeerDiscovery::new().unwrap();
-        discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
+        let mut fetcher = ContactsFetcher::new().unwrap();
+        fetcher.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        let addrs = fetcher.fetch_bootstrap_addresses().await.unwrap();
         assert_eq!(addrs.len(), 1);
 
         let addr: Multiaddr =
@@ -388,22 +426,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_default_endpoints() {
-        let discovery = InitialPeerDiscovery::new().unwrap();
-        assert_eq!(discovery.endpoints.len(), 1);
-        assert_eq!(
-            discovery.endpoints[0],
-            "https://sn-testnet.s3.eu-west-2.amazonaws.com/network-contacts"
-                .parse()
-                .unwrap()
-        );
-    }
-
-    #[tokio::test]
     async fn test_custom_endpoints() {
         let endpoints = vec!["http://example.com".parse().unwrap()];
-        let discovery = InitialPeerDiscovery::with_endpoints(endpoints.clone()).unwrap();
-        assert_eq!(discovery.endpoints, endpoints);
+        let fetcher = ContactsFetcher::with_endpoints(endpoints.clone()).unwrap();
+        assert_eq!(fetcher.endpoints, endpoints);
     }
 
     #[tokio::test]
@@ -418,10 +444,10 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let mut discovery = InitialPeerDiscovery::new().unwrap();
-        discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
+        let mut fetcher = ContactsFetcher::new().unwrap();
+        fetcher.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        let addrs = fetcher.fetch_bootstrap_addresses().await.unwrap();
         assert_eq!(addrs.len(), 2);
 
         let addr1: Multiaddr =

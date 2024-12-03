@@ -21,19 +21,22 @@
 //! # Example
 //!
 //! ```no_run
-//! use ant_bootstrap_cache::{BootstrapCacheStore, BootstrapConfig, PeersArgs};
+//! use ant_bootstrap::{BootstrapCacheStore, BootstrapCacheConfig, PeersArgs};
 //! use url::Url;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let config = BootstrapConfig::empty().unwrap();
+//! let config = BootstrapCacheConfig::empty();
 //! let args = PeersArgs {
 //!     first: false,
 //!     addrs: vec![],
 //!     network_contacts_url: Some(Url::parse("https://example.com/peers")?),
 //!     local: false,
+//!     disable_mainnet_contacts: false,
+//!     ignore_cache: false,
 //! };
 //!
-//! let store = BootstrapCacheStore::from_args(args, config).await?;
+//! let mut store = BootstrapCacheStore::empty(config)?;
+//! store.initialize_from_peers_arg(&args).await?;
 //! let addrs = store.get_addrs();
 //! # Ok(())
 //! # }
@@ -44,19 +47,20 @@ extern crate tracing;
 
 mod cache_store;
 pub mod config;
-mod error;
-mod initial_peer_discovery;
+pub mod contacts;
+pub mod error;
+mod initial_peers;
 
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 use thiserror::Error;
-use url::Url;
 
 pub use cache_store::BootstrapCacheStore;
-pub use config::BootstrapConfig;
+pub use config::BootstrapCacheConfig;
+pub use contacts::ContactsFetcher;
 pub use error::{Error, Result};
-pub use initial_peer_discovery::InitialPeerDiscovery;
+pub use initial_peers::{PeersArgs, ANT_PEERS_ENV};
 
 /// Structure representing a list of bootstrap endpoints
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -117,6 +121,10 @@ impl BootstrapAddresses {
             .find(|bootstrap_addr| &bootstrap_addr.addr == addr)
     }
 
+    pub fn get_least_faulty(&self) -> Option<&BootstrapAddr> {
+        self.0.iter().min_by_key(|addr| addr.failure_rate() as u64)
+    }
+
     pub fn remove_addr(&mut self, addr: &Multiaddr) {
         if let Some(idx) = self
             .0
@@ -136,6 +144,10 @@ impl BootstrapAddresses {
                 });
                 bootstrap_addr.sync(old_bootstrap_addr, current_bootstrap_addr);
             } else {
+                trace!(
+                    "Addr {:?} from fs not found in memory, inserting it.",
+                    current_bootstrap_addr.addr
+                );
                 self.insert_addr(current_bootstrap_addr);
             }
         }
@@ -205,6 +217,7 @@ impl BootstrapAddr {
     /// If the peer has a old state, just update the difference in values
     /// If the peer has no old state, add the values
     pub fn sync(&mut self, old_shared_state: Option<&Self>, current_shared_state: &Self) {
+        trace!("Syncing addr {:?} with old_shared_state: {old_shared_state:?} and current_shared_state: {current_shared_state:?}. Our in-memory state {self:?}", self.addr);
         if self.last_seen == current_shared_state.last_seen {
             return;
         }
@@ -241,8 +254,8 @@ impl BootstrapAddr {
             self.failure_count = 1;
             self.success_count = 0;
         }
-
         self.last_seen = std::cmp::max(self.last_seen, current_shared_state.last_seen);
+        trace!("Successfully synced BootstrapAddr: {self:?}");
     }
 
     fn failure_rate(&self) -> f64 {
@@ -254,100 +267,13 @@ impl BootstrapAddr {
     }
 }
 
-/// Command line arguments for peer configuration
-#[derive(Debug, Clone, Default)]
-pub struct PeersArgs {
-    /// First node in the network
-    pub first: bool,
-    /// List of addresses
-    pub addrs: Vec<Multiaddr>,
-    /// URL to fetch network contacts from
-    pub network_contacts_url: Option<Url>,
-    /// Use only local discovery (mDNS)
-    pub local: bool,
-}
-
-impl BootstrapCacheStore {
-    /// Create a new CacheStore from command line arguments
-    /// This also initializes the store with the provided bootstrap addresses
-    pub async fn from_args(args: PeersArgs, mut config: BootstrapConfig) -> Result<Self> {
-        if let Some(url) = &args.network_contacts_url {
-            config.endpoints.push(url.clone());
-        }
-
-        // If this is the first node, return empty store with no fallback
-        if args.first {
-            info!("First node in network, returning empty store");
-            let mut store = Self::new_without_init(config).await?;
-            store.clear_peers_and_save().await?;
-            return Ok(store);
-        }
-
-        // If local mode is enabled, return empty store (will use mDNS)
-        if args.local {
-            info!("Local mode enabled, using only local discovery. Cache writing is disabled");
-            config.disable_cache_writing = true;
-            let store = Self::new_without_init(config).await?;
-            return Ok(store);
-        }
-
-        // Create a new store but don't load from cache or fetch from endpoints yet
-        let mut store = Self::new_without_init(config).await?;
-
-        // Add addrs from environment variable if present
-        if let Ok(env_string) = std::env::var("SAFE_PEERS") {
-            for multiaddr_str in env_string.split(',') {
-                if let Ok(addr) = multiaddr_str.parse() {
-                    if let Some(addr) = craft_valid_multiaddr(&addr) {
-                        info!("Adding addr from environment: {addr}",);
-                        store.add_addr(addr);
-                    } else {
-                        warn!("Invalid peer address format from environment: {}", addr);
-                    }
-                }
-            }
-        }
-
-        // Add addrs from arguments if present
-        for addr in args.addrs {
-            if let Some(addr) = craft_valid_multiaddr(&addr) {
-                info!("Adding addr from arguments: {addr}");
-                store.add_addr(addr);
-            } else {
-                warn!("Invalid multiaddress format from arguments: {addr}");
-            }
-        }
-
-        // If we have a network contacts URL, fetch addrs from there.
-        if let Some(url) = args.network_contacts_url {
-            info!(
-                "Fetching bootstrap address from network contacts URL: {}",
-                url
-            );
-            let peer_discovery = InitialPeerDiscovery::with_endpoints(vec![url])?;
-            let bootstrap_addresses = peer_discovery.fetch_bootstrap_addresses().await?;
-            for addr in bootstrap_addresses {
-                store.add_addr(addr.addr);
-            }
-        }
-
-        // If we have peers, update cache and return, else initialize from cache
-        if store.peer_count() > 0 {
-            info!("Using provided peers and updating cache");
-            store.sync_and_save_to_disk(false).await?;
-        } else {
-            store.init().await?;
-        }
-
-        Ok(store)
-    }
-}
-
 /// Craft a proper address to avoid any ill formed addresses
-pub fn craft_valid_multiaddr(addr: &Multiaddr) -> Option<Multiaddr> {
+///
+/// ignore_peer_id is only used for nat-detection contact list
+pub fn craft_valid_multiaddr(addr: &Multiaddr, ignore_peer_id: bool) -> Option<Multiaddr> {
     let peer_id = addr
         .iter()
-        .find(|protocol| matches!(protocol, Protocol::P2p(_)))?;
+        .find(|protocol| matches!(protocol, Protocol::P2p(_)));
 
     let mut output_address = Multiaddr::empty();
 
@@ -385,17 +311,22 @@ pub fn craft_valid_multiaddr(addr: &Multiaddr) -> Option<Multiaddr> {
         return None;
     }
 
-    output_address.push(peer_id);
+    if let Some(peer_id) = peer_id {
+        output_address.push(peer_id);
+    } else if !ignore_peer_id {
+        return None;
+    }
 
     Some(output_address)
 }
 
-pub fn craft_valid_multiaddr_from_str(addr_str: &str) -> Option<Multiaddr> {
+/// ignore_peer_id is only used for nat-detection contact list
+pub fn craft_valid_multiaddr_from_str(addr_str: &str, ignore_peer_id: bool) -> Option<Multiaddr> {
     let Ok(addr) = addr_str.parse::<Multiaddr>() else {
         warn!("Failed to parse multiaddr from str {addr_str}");
         return None;
     };
-    craft_valid_multiaddr(&addr)
+    craft_valid_multiaddr(&addr, ignore_peer_id)
 }
 
 pub fn multiaddr_get_peer_id(addr: &Multiaddr) -> Option<PeerId> {

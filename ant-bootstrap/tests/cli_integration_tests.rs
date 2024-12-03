@@ -6,7 +6,8 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ant_bootstrap_cache::{BootstrapCacheStore, BootstrapConfig, PeersArgs};
+use ant_bootstrap::ANT_PEERS_ENV;
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore, PeersArgs};
 use ant_logging::LogBuilder;
 use libp2p::Multiaddr;
 use std::env;
@@ -17,12 +18,10 @@ use wiremock::{
     Mock, MockServer, ResponseTemplate,
 };
 
-async fn setup() -> (TempDir, BootstrapConfig) {
+async fn setup() -> (TempDir, BootstrapCacheConfig) {
     let temp_dir = TempDir::new().unwrap();
     let cache_path = temp_dir.path().join("cache.json");
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
     (temp_dir, config)
 }
@@ -37,9 +36,12 @@ async fn test_first_flag() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![],
         network_contacts_url: None,
         local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config.clone())?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "First node should have no addrs");
 
@@ -60,9 +62,12 @@ async fn test_peer_argument() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![peer_addr.clone()],
         network_contacts_url: None,
         local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config.clone())?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert_eq!(addrs.len(), 1, "Should have one addr");
     assert_eq!(addrs[0].addr, peer_addr, "Should have the correct address");
@@ -71,29 +76,30 @@ async fn test_peer_argument() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[tokio::test]
-async fn test_safe_peers_env() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_ant_peers_env() -> Result<(), Box<dyn std::error::Error>> {
     let _guard = LogBuilder::init_single_threaded_tokio_test("cli_integration_tests", false);
 
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
-    // Set SAFE_PEERS environment variable
+    // Set ANT_PEERS_ENV environment variable
     let addr =
         "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE";
-    env::set_var("SAFE_PEERS", addr);
+    env::set_var(ANT_PEERS_ENV, addr);
 
     let args = PeersArgs {
         first: false,
         addrs: vec![],
         network_contacts_url: None,
         local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config.clone())?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
 
     // We should have multiple peers (env var + cache/endpoints)
@@ -101,10 +107,13 @@ async fn test_safe_peers_env() -> Result<(), Box<dyn std::error::Error>> {
 
     // Verify that our env var peer is included in the set
     let has_env_peer = addrs.iter().any(|p| p.addr.to_string() == addr);
-    assert!(has_env_peer, "Should include the peer from env var");
+    assert!(
+        has_env_peer,
+        "Should include the peer from ANT_PEERS_ENV var"
+    );
 
     // Clean up
-    env::remove_var("SAFE_PEERS");
+    env::remove_var(ANT_PEERS_ENV);
 
     Ok(())
 }
@@ -131,9 +140,12 @@ async fn test_network_contacts_fallback() -> Result<(), Box<dyn std::error::Erro
         addrs: vec![],
         network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
         local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config.clone())?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert_eq!(
         addrs.len(),
@@ -152,9 +164,7 @@ async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
     let cache_path = temp_dir.path().join("cache.json");
 
     // Create a config with some peers in the cache
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
     // Create args with local mode enabled
     let args = PeersArgs {
@@ -162,9 +172,12 @@ async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![],
         network_contacts_url: None,
         local: true,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config.clone())?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Local mode should have no peers");
 
@@ -188,18 +201,19 @@ async fn test_test_network_peers() -> Result<(), Box<dyn std::error::Error>> {
         "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
             .parse()?;
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
     let args = PeersArgs {
         first: false,
         addrs: vec![peer_addr.clone()],
         network_contacts_url: None,
         local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config.clone())?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert_eq!(addrs.len(), 1, "Should have exactly one test network peer");
     assert_eq!(
@@ -228,9 +242,7 @@ async fn test_peers_update_cache() -> Result<(), Box<dyn std::error::Error>> {
         "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
             .parse()?;
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
     // Create args with peers but no test network mode
     let args = PeersArgs {
@@ -238,9 +250,12 @@ async fn test_peers_update_cache() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![peer_addr.clone()],
         network_contacts_url: None,
         local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config.clone())?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert_eq!(addrs.len(), 1, "Should have one peer");
     assert_eq!(addrs[0].addr, peer_addr, "Should have the correct peer");

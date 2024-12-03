@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ant_bootstrap_cache::{BootstrapCacheStore, BootstrapConfig, PeersArgs};
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore, PeersArgs};
 use ant_logging::LogBuilder;
 use libp2p::Multiaddr;
 use tempfile::TempDir;
@@ -16,12 +16,11 @@ use wiremock::{
 };
 
 // Setup function to create a new temp directory and config for each test
-async fn setup() -> (TempDir, BootstrapConfig) {
+async fn setup() -> (TempDir, BootstrapCacheConfig) {
     let temp_dir = TempDir::new().unwrap();
     let cache_path = temp_dir.path().join("cache.json");
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
+    let config = BootstrapCacheConfig::empty()
         .with_cache_path(&cache_path)
         .with_max_peers(50);
 
@@ -48,9 +47,12 @@ async fn test_multiaddr_format_parsing() -> Result<(), Box<dyn std::error::Error
             addrs: vec![addr.clone()],
             network_contacts_url: None,
             local: false,
+            disable_mainnet_contacts: false,
+            ignore_cache: false,
         };
 
-        let store = BootstrapCacheStore::from_args(args, config).await?;
+        let mut store = BootstrapCacheStore::empty(config)?;
+        store.initialize_from_peers_arg(&args).await?;
         let bootstrap_addresses = store.get_addrs().collect::<Vec<_>>();
         assert_eq!(bootstrap_addresses.len(), 1, "Should have one peer");
         assert_eq!(
@@ -84,9 +86,12 @@ async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>
         addrs: vec![],
         network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
         local: false,
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config)?;
+    store.initialize_from_peers_arg(&args).await?;
     let adddrs = store.get_addrs().collect::<Vec<_>>();
     assert_eq!(
         adddrs.len(),
@@ -107,58 +112,6 @@ async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>
 }
 
 #[tokio::test]
-async fn test_invalid_address_handling() -> Result<(), Box<dyn std::error::Error>> {
-    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
-
-    // Test various invalid address formats
-    let invalid_addrs = vec![
-        "not-a-multiaddr",
-        "127.0.0.1",            // IP only
-        "127.0.0.1:8080:extra", // Invalid socket addr
-        "/ip4/127.0.0.1",       // Incomplete multiaddr
-    ];
-
-    for addr_str in invalid_addrs {
-        let (_temp_dir, config) = setup().await; // Fresh config for each test case
-        let args = PeersArgs {
-            first: false,
-            addrs: vec![],
-            network_contacts_url: None,
-            local: true, // Use local mode to avoid fetching from default endpoints
-        };
-
-        let store = BootstrapCacheStore::from_args(args.clone(), config.clone()).await?;
-        let addrs = store.get_addrs().collect::<Vec<_>>();
-        assert_eq!(
-            addrs.len(),
-            0,
-            "Should have no peers from invalid address in env var: {}",
-            addr_str
-        );
-
-        // Also test direct args path
-        if let Ok(addr) = addr_str.parse::<Multiaddr>() {
-            let args_with_peer = PeersArgs {
-                first: false,
-                addrs: vec![addr],
-                network_contacts_url: None,
-                local: false,
-            };
-            let store = BootstrapCacheStore::from_args(args_with_peer, config).await?;
-            let addrs = store.get_addrs().collect::<Vec<_>>();
-            assert_eq!(
-                addrs.len(),
-                0,
-                "Should have no peers from invalid address in args: {}",
-                addr_str
-            );
-        }
-    }
-
-    Ok(())
-}
-
-#[tokio::test]
 async fn test_socket_addr_format() -> Result<(), Box<dyn std::error::Error>> {
     let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
 
@@ -170,13 +123,14 @@ async fn test_socket_addr_format() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config)?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Should have no peers in local mode");
 
@@ -195,13 +149,14 @@ async fn test_multiaddr_format() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config)?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Should have no peers in local mode");
 
@@ -220,13 +175,14 @@ async fn test_invalid_addr_format() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config)?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Should have no peers in local mode");
 
@@ -245,13 +201,14 @@ async fn test_mixed_addr_formats() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config)?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Should have no peers in local mode");
 
@@ -270,13 +227,14 @@ async fn test_socket_addr_conversion() -> Result<(), Box<dyn std::error::Error>>
         addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config)?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Should have no peers in local mode");
 
@@ -295,13 +253,14 @@ async fn test_invalid_socket_addr() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config)?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Should have no peers in local mode");
 
@@ -320,13 +279,14 @@ async fn test_invalid_multiaddr() -> Result<(), Box<dyn std::error::Error>> {
         addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config)?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Should have no peers in local mode");
 
@@ -345,13 +305,14 @@ async fn test_mixed_valid_invalid_addrs() -> Result<(), Box<dyn std::error::Erro
         addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
+        disable_mainnet_contacts: false,
+        ignore_cache: false,
     };
 
-    let config = BootstrapConfig::empty()
-        .unwrap()
-        .with_cache_path(&cache_path);
+    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let store = BootstrapCacheStore::from_args(args, config).await?;
+    let mut store = BootstrapCacheStore::empty(config)?;
+    store.initialize_from_peers_arg(&args).await?;
     let addrs = store.get_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Should have no peers in local mode");
 
