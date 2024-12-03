@@ -68,7 +68,7 @@ build-release-artifacts arch nightly="false":
     cargo binstall --no-confirm cross
     cross build --release --target $arch --bin nat-detection $nightly_feature
     cross build --release --target $arch --bin node-launchpad $nightly_feature
-    cross build --release --features network-contacts,websockets --target $arch --bin autonomi $nightly_feature
+    cross build --release --features network-contacts,websockets --target $arch --bin ant $nightly_feature
     cross build --release --features network-contacts,websockets --target $arch --bin antnode $nightly_feature
     cross build --release --target $arch --bin antctl $nightly_feature
     cross build --release --target $arch --bin antctld $nightly_feature
@@ -76,7 +76,7 @@ build-release-artifacts arch nightly="false":
   else
     cargo build --release --target $arch --bin nat-detection $nightly_feature
     cargo build --release --target $arch --bin node-launchpad $nightly_feature
-    cargo build --release --features network-contacts,websockets --target $arch --bin autonomi $nightly_feature
+    cargo build --release --features network-contacts,websockets --target $arch --bin ant $nightly_feature
     cargo build --release --features network-contacts,websockets --target $arch --bin antnode $nightly_feature
     cargo build --release --target $arch --bin antctl $nightly_feature
     cargo build --release --target $arch --bin antctld $nightly_feature
@@ -115,7 +115,7 @@ package-all-bins:
   set -e
   just package-bin "nat-detection"
   just package-bin "node-launchpad"
-  just package-bin "autonomi"
+  just package-bin "ant"
   just package-bin "antnode"
   just package-bin "antctl"
   just package-bin "antctld"
@@ -140,7 +140,7 @@ package-bin bin version="":
   supported_bins=(\
     "nat-detection" \
     "node-launchpad" \
-    "autonomi" \
+    "ant" \
     "antnode" \
     "antctl" \
     "antctld" \
@@ -155,7 +155,7 @@ package-bin bin version="":
     node-launchpad)
       crate_dir_name="node-launchpad"
       ;;
-    autonomi)
+    ant)
       crate_dir_name="autonomi-cli"
       ;;
     antnode)
@@ -208,7 +208,7 @@ upload-all-packaged-bins-to-s3:
   binaries=(
     nat-detection
     node-launchpad
-    autonomi
+    ant
     antnode
     antctl
     antnode_rpc_client
@@ -229,7 +229,7 @@ upload-packaged-bin-to-s3 bin_name:
     node-launchpad)
       bucket="node-launchpad"
       ;;
-    autonomi)
+    ant)
       bucket="autonomi-cli"
       ;;
     antnode)
@@ -239,7 +239,7 @@ upload-packaged-bin-to-s3 bin_name:
       bucket="antctl"
       ;;
     antctld)
-      bucket="antctld"
+      bucket="antctl"
       ;;
     antnode_rpc_client)
       bucket="antnode-rpc-client"
@@ -279,7 +279,7 @@ delete-s3-bin bin_name version:
     node-launchpad)
       bucket="node-launchpad"
       ;;
-    autonomi)
+    ant)
       bucket="autonomi-cli"
       ;;
     antnode)
@@ -363,7 +363,7 @@ package-arch arch:
   binaries=(
     nat-detection
     node-launchpad
-    autonomi
+    ant
     antnode
     antctl
     antnode_rpc_client
