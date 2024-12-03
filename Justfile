@@ -156,7 +156,7 @@ package-bin bin version="":
       crate_dir_name="node-launchpad"
       ;;
     ant)
-      crate_dir_name="autonomi-cli"
+      crate_dir_name="ant-cli"
       ;;
     antnode)
       crate_dir_name="ant-node"
