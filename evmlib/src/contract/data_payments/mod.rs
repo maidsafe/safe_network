@@ -81,7 +81,7 @@ where
             .await?
             .watch()
             .await?;
-
+        debug!("Data payments transaction hash: {:?}", tx_hash);
         Ok(tx_hash)
     }
 
