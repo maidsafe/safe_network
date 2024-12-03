@@ -38,7 +38,7 @@ pub async fn add(
         print_banner("Add Daemon Service");
     }
 
-    let service_user = "safe";
+    let service_user = "ant";
     let service_manager = ServiceController {};
     debug!("Trying to create service user '{service_user}' for the daemon");
     service_manager.create_service_user(service_user)?;
