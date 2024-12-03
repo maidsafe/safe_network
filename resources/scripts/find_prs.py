@@ -9,7 +9,7 @@ from datetime import datetime
 class GitHubPRFinder:
     def __init__(self, token: str):
         self.owner = "maidsafe"
-        self.repo = "safe_network"
+        self.repo = "autonomi"
         self.token = token
         self.api_url = f"https://api.github.com/repos/{self.owner}/{self.repo}/commits"
 

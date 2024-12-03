@@ -75,7 +75,7 @@ pub async fn add(
     let service_user = if user_mode {
         None
     } else {
-        let service_user = user.unwrap_or_else(|| "safe".to_string());
+        let service_user = user.unwrap_or_else(|| "ant".to_string());
         service_manager.create_service_user(&service_user)?;
         Some(service_user)
     };
