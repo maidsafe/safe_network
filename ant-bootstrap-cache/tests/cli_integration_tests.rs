@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use ant_bootstrap_cache::{BootstrapCacheStore, BootstrapConfig, PeersArgs};
+use ant_logging::LogBuilder;
 use libp2p::Multiaddr;
 use std::env;
 use std::fs;
@@ -15,13 +16,6 @@ use wiremock::{
     matchers::{method, path},
     Mock, MockServer, ResponseTemplate,
 };
-
-// Initialize logging for tests
-fn init_logging() {
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter("bootstrap_cache=debug")
-        .try_init();
-}
 
 async fn setup() -> (TempDir, BootstrapConfig) {
     let temp_dir = TempDir::new().unwrap();
@@ -35,26 +29,26 @@ async fn setup() -> (TempDir, BootstrapConfig) {
 
 #[tokio::test]
 async fn test_first_flag() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("cli_integration_tests", false);
     let (_temp_dir, config) = setup().await;
 
     let args = PeersArgs {
         first: true,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: false,
     };
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "First node should have no peers");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "First node should have no addrs");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_peer_argument() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("cli_integration_tests", false);
     let (_temp_dir, config) = setup().await;
 
     let peer_addr: Multiaddr =
@@ -63,36 +57,34 @@ async fn test_peer_argument() -> Result<(), Box<dyn std::error::Error>> {
 
     let args = PeersArgs {
         first: false,
-        peers: vec![peer_addr.clone()],
+        addrs: vec![peer_addr.clone()],
         network_contacts_url: None,
         local: false,
     };
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert_eq!(peers.len(), 1, "Should have one peer");
-    assert_eq!(
-        peers[0].addr, peer_addr,
-        "Should have the correct peer address"
-    );
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert_eq!(addrs.len(), 1, "Should have one addr");
+    assert_eq!(addrs[0].addr, peer_addr, "Should have the correct address");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_safe_peers_env() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("cli_integration_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
     // Set SAFE_PEERS environment variable
-    let peer_addr =
+    let addr =
         "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE";
-    env::set_var("SAFE_PEERS", peer_addr);
+    env::set_var("SAFE_PEERS", addr);
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: false,
     };
@@ -102,13 +94,13 @@ async fn test_safe_peers_env() -> Result<(), Box<dyn std::error::Error>> {
         .with_cache_path(&cache_path);
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
+    let addrs = store.get_addrs().collect::<Vec<_>>();
 
     // We should have multiple peers (env var + cache/endpoints)
-    assert!(!peers.is_empty(), "Should have peers");
+    assert!(!addrs.is_empty(), "Should have peers");
 
     // Verify that our env var peer is included in the set
-    let has_env_peer = peers.iter().any(|p| p.addr.to_string() == peer_addr);
+    let has_env_peer = addrs.iter().any(|p| p.addr.to_string() == addr);
     assert!(has_env_peer, "Should include the peer from env var");
 
     // Clean up
@@ -119,7 +111,8 @@ async fn test_safe_peers_env() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tokio::test]
 async fn test_network_contacts_fallback() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("cli_integration_tests", false);
+
     let (_temp_dir, config) = setup().await;
 
     // Start mock server
@@ -135,15 +128,15 @@ async fn test_network_contacts_fallback() -> Result<(), Box<dyn std::error::Erro
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
         local: false,
     };
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
+    let addrs = store.get_addrs().collect::<Vec<_>>();
     assert_eq!(
-        peers.len(),
+        addrs.len(),
         2,
         "Should have two peers from network contacts"
     );
@@ -153,7 +146,8 @@ async fn test_network_contacts_fallback() -> Result<(), Box<dyn std::error::Erro
 
 #[tokio::test]
 async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("cli_integration_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
@@ -165,14 +159,14 @@ async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
     // Create args with local mode enabled
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: true,
     };
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "Local mode should have no peers");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "Local mode should have no peers");
 
     // Verify cache was not touched
     assert!(
@@ -185,7 +179,8 @@ async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tokio::test]
 async fn test_test_network_peers() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("cli_integration_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
@@ -199,16 +194,16 @@ async fn test_test_network_peers() -> Result<(), Box<dyn std::error::Error>> {
 
     let args = PeersArgs {
         first: false,
-        peers: vec![peer_addr.clone()],
+        addrs: vec![peer_addr.clone()],
         network_contacts_url: None,
         local: false,
     };
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert_eq!(peers.len(), 1, "Should have exactly one test network peer");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert_eq!(addrs.len(), 1, "Should have exactly one test network peer");
     assert_eq!(
-        peers[0].addr, peer_addr,
+        addrs[0].addr, peer_addr,
         "Should have the correct test network peer"
     );
 
@@ -223,7 +218,8 @@ async fn test_test_network_peers() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tokio::test]
 async fn test_peers_update_cache() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("cli_integration_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
@@ -239,15 +235,15 @@ async fn test_peers_update_cache() -> Result<(), Box<dyn std::error::Error>> {
     // Create args with peers but no test network mode
     let args = PeersArgs {
         first: false,
-        peers: vec![peer_addr.clone()],
+        addrs: vec![peer_addr.clone()],
         network_contacts_url: None,
         local: false,
     };
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert_eq!(peers.len(), 1, "Should have one peer");
-    assert_eq!(peers[0].addr, peer_addr, "Should have the correct peer");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert_eq!(addrs.len(), 1, "Should have one peer");
+    assert_eq!(addrs[0].addr, peer_addr, "Should have the correct peer");
 
     // Verify cache was updated
     assert!(cache_path.exists(), "Cache file should exist");

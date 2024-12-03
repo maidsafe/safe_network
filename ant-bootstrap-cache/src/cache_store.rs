@@ -7,22 +7,24 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    craft_valid_multiaddr, BootstrapConfig, BootstrapPeer, Error, InitialPeerDiscovery, Result,
+    craft_valid_multiaddr, multiaddr_get_peer_id, BootstrapAddr, BootstrapAddresses,
+    BootstrapConfig, Error, InitialPeerDiscovery, Result,
 };
 use fs2::FileExt;
-use libp2p::Multiaddr;
+use libp2p::multiaddr::Protocol;
+use libp2p::{Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read};
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use tempfile::NamedTempFile;
 
-const PEER_EXPIRY_DURATION: Duration = Duration::from_secs(24 * 60 * 60); // 24 hours
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CacheData {
-    peers: std::collections::HashMap<String, BootstrapPeer>,
+    peers: std::collections::HashMap<PeerId, BootstrapAddresses>,
     #[serde(default = "SystemTime::now")]
     last_updated: SystemTime,
     #[serde(default = "default_version")]
@@ -30,32 +32,104 @@ pub struct CacheData {
 }
 
 impl CacheData {
+    pub fn insert(&mut self, peer_id: PeerId, bootstrap_addr: BootstrapAddr) {
+        match self.peers.entry(peer_id) {
+            Entry::Occupied(mut occupied_entry) => {
+                occupied_entry.get_mut().insert_addr(&bootstrap_addr);
+            }
+            Entry::Vacant(vacant_entry) => {
+                vacant_entry.insert(BootstrapAddresses(vec![bootstrap_addr]));
+            }
+        }
+    }
+
     /// Sync the self cache with another cache by referencing our old_shared_state.
     /// Since the cache is updated on periodic interval, we cannot just add our state with the shared state on the fs.
-    /// This would lead to race conditions, hence th need to store the old shared state and sync it with the new shared state.
+    /// This would lead to race conditions, hence the need to store the old shared state in memory and sync it with the
+    /// new shared state obtained from fs.
     pub fn sync(&mut self, old_shared_state: &CacheData, current_shared_state: &CacheData) {
-        for (addr, current_shared_peer_state) in current_shared_state.peers.iter() {
-            let old_shared_peer_state = old_shared_state.peers.get(addr);
-            // If the peer is in the old state, only update the difference in values
-            self.peers
-                .entry(addr.clone())
-                .and_modify(|p| p.sync(old_shared_peer_state, current_shared_peer_state))
-                .or_insert_with(|| current_shared_peer_state.clone());
+        // Add/sync every BootstrapAddresses from shared state into self
+        for (peer, current_shared_addrs_state) in current_shared_state.peers.iter() {
+            let old_shared_addrs_state = old_shared_state.peers.get(peer);
+            let bootstrap_addresses = self
+                .peers
+                .entry(*peer)
+                .or_insert(current_shared_addrs_state.clone());
+
+            // Add/sync every BootstrapAddr into self
+            bootstrap_addresses.sync(old_shared_addrs_state, current_shared_addrs_state);
         }
 
         self.last_updated = SystemTime::now();
     }
 
-    pub fn cleanup_stale_and_unreliable_peers(&mut self) {
-        self.peers.retain(|_, peer| peer.is_reliable());
-        let now = SystemTime::now();
-        self.peers.retain(|_, peer| {
-            if let Ok(duration) = now.duration_since(peer.last_seen) {
-                duration < PEER_EXPIRY_DURATION
-            } else {
-                false
+    /// Perform cleanup on the Peers
+    /// - Removes all the unreliable addrs for a peer
+    /// - Removes all the expired addrs for a peer
+    /// - Removes all peers with empty addrs set
+    /// - Maintains `max_addr` per peer by removing the addr with the lowest success rate
+    /// - Maintains `max_peers` in the list by removing the peer with the oldest last_seen
+    pub fn perform_cleanup(&mut self, cfg: &BootstrapConfig) {
+        self.peers.values_mut().for_each(|bootstrap_addresses| {
+            bootstrap_addresses.0.retain(|bootstrap_addr| {
+                let now = SystemTime::now();
+                let has_not_expired =
+                    if let Ok(duration) = now.duration_since(bootstrap_addr.last_seen) {
+                        duration < cfg.addr_expiry_duration
+                    } else {
+                        false
+                    };
+                bootstrap_addr.is_reliable() && has_not_expired
+            })
+        });
+
+        self.peers
+            .retain(|_, bootstrap_addresses| !bootstrap_addresses.0.is_empty());
+
+        self.peers.values_mut().for_each(|bootstrap_addresses| {
+            if bootstrap_addresses.0.len() > cfg.max_addrs_per_peer {
+                // sort by lowest failure rate first
+                bootstrap_addresses
+                    .0
+                    .sort_by_key(|addr| addr.failure_rate() as u64);
+                bootstrap_addresses.0.truncate(cfg.max_addrs_per_peer);
             }
         });
+
+        self.try_remove_oldest_peers(cfg);
+    }
+
+    /// Remove the oldest peers until we're under the max_peers limit
+    pub fn try_remove_oldest_peers(&mut self, cfg: &BootstrapConfig) {
+        if self.peers.len() > cfg.max_peers {
+            let mut peer_last_seen_map = HashMap::new();
+            for (peer, addrs) in self.peers.iter() {
+                let mut latest_seen = Duration::from_secs(u64::MAX);
+                for addr in addrs.0.iter() {
+                    if let Ok(elapsed) = addr.last_seen.elapsed() {
+                        trace!("Time elapsed for {addr:?} is {elapsed:?}");
+                        if elapsed < latest_seen {
+                            trace!("Updating latest_seen to {elapsed:?}");
+                            latest_seen = elapsed;
+                        }
+                    }
+                }
+                trace!("Last seen for {peer:?} is {latest_seen:?}");
+                peer_last_seen_map.insert(*peer, latest_seen);
+            }
+
+            while self.peers.len() > cfg.max_peers {
+                // find the peer with the largest last_seen
+                if let Some((&oldest_peer, last_seen)) = peer_last_seen_map
+                    .iter()
+                    .max_by_key(|(_, last_seen)| **last_seen)
+                {
+                    debug!("Found the oldest peer to remove: {oldest_peer:?} with last_seen of {last_seen:?}");
+                    self.peers.remove(&oldest_peer);
+                    peer_last_seen_map.remove(&oldest_peer);
+                }
+            }
+        }
     }
 }
 
@@ -147,7 +221,7 @@ impl BootstrapCacheStore {
                 "Cache file exists at {:?}, attempting to load",
                 self.cache_path
             );
-            match Self::load_cache_data(&self.cache_path).await {
+            match Self::load_cache_data(&self.config).await {
                 Ok(data) => {
                     info!(
                         "Successfully loaded cache data with {} peers",
@@ -224,12 +298,19 @@ impl BootstrapCacheStore {
 
         // Try to discover peers from configured endpoints
         let discovery = InitialPeerDiscovery::with_endpoints(config.endpoints.clone())?;
-        match discovery.fetch_peers().await {
-            Ok(peers) => {
-                info!("Successfully fetched {} peers from endpoints", peers.len());
+        match discovery.fetch_bootstrap_addresses().await {
+            Ok(addrs) => {
+                info!("Successfully fetched {} peers from endpoints", addrs.len());
                 // Only add up to max_peers from the discovered peers
-                for peer in peers.into_iter().take(config.max_peers) {
-                    data.peers.insert(peer.addr.to_string(), peer);
+                let mut count = 0;
+                for bootstrap_addr in addrs.into_iter() {
+                    if count >= config.max_peers {
+                        break;
+                    }
+                    if let Some(peer_id) = bootstrap_addr.peer_id() {
+                        data.insert(peer_id, bootstrap_addr);
+                        count += 1;
+                    }
                 }
 
                 // Create parent directory if it doesn't exist
@@ -269,9 +350,9 @@ impl BootstrapCacheStore {
         }
     }
 
-    async fn load_cache_data(cache_path: &PathBuf) -> Result<CacheData> {
+    async fn load_cache_data(cfg: &BootstrapConfig) -> Result<CacheData> {
         // Try to open the file with read permissions
-        let mut file = match OpenOptions::new().read(true).open(cache_path) {
+        let mut file = match OpenOptions::new().read(true).open(&cfg.cache_file_path) {
             Ok(f) => f,
             Err(e) => {
                 warn!("Failed to open cache file: {}", e);
@@ -298,62 +379,88 @@ impl BootstrapCacheStore {
             Error::FailedToParseCacheData
         })?;
 
-        data.cleanup_stale_and_unreliable_peers();
+        data.perform_cleanup(cfg);
 
         Ok(data)
-    }
-
-    pub fn get_peers(&self) -> impl Iterator<Item = &BootstrapPeer> {
-        self.data.peers.values()
     }
 
     pub fn peer_count(&self) -> usize {
         self.data.peers.len()
     }
 
-    pub fn get_reliable_peers(&self) -> impl Iterator<Item = &BootstrapPeer> {
+    pub fn get_addrs(&self) -> impl Iterator<Item = &BootstrapAddr> {
         self.data
             .peers
             .values()
-            .filter(|peer| peer.success_count > peer.failure_count)
+            .flat_map(|bootstrap_addresses| bootstrap_addresses.0.iter())
     }
 
-    /// Update the status of a peer in the cache. The peer must be added to the cache first.
-    pub fn update_peer_status(&mut self, addr: &Multiaddr, success: bool) {
-        if let Some(peer) = self.data.peers.get_mut(&addr.to_string()) {
-            peer.update_status(success);
+    pub fn get_reliable_addrs(&self) -> impl Iterator<Item = &BootstrapAddr> {
+        self.data
+            .peers
+            .values()
+            .flat_map(|bootstrap_addresses| bootstrap_addresses.0.iter())
+            .filter(|bootstrap_addr| bootstrap_addr.is_reliable())
+    }
+
+    /// Update the status of an addr in the cache. The peer must be added to the cache first.
+    pub fn update_addr_status(&mut self, addr: &Multiaddr, success: bool) {
+        if let Some(peer_id) = multiaddr_get_peer_id(addr) {
+            debug!("Updating addr status: {addr} (success: {success})");
+            if let Some(bootstrap_addresses) = self.data.peers.get_mut(&peer_id) {
+                bootstrap_addresses.update_addr_status(addr, success);
+            } else {
+                debug!("Peer not found in cache to update: {addr}");
+            }
         }
     }
 
-    pub fn add_peer(&mut self, addr: Multiaddr) {
+    /// Add a set of addresses to the cache.
+    pub fn add_addr(&mut self, addr: Multiaddr) {
+        debug!("Trying to add new addr: {addr}");
         let Some(addr) = craft_valid_multiaddr(&addr) else {
             return;
         };
-
-        let addr_str = addr.to_string();
+        let peer_id = match addr.iter().find(|p| matches!(p, Protocol::P2p(_))) {
+            Some(Protocol::P2p(id)) => id,
+            _ => return,
+        };
 
         // Check if we already have this peer
-        if self.data.peers.contains_key(&addr_str) {
-            debug!("Updating existing peer's last_seen {addr_str}");
-            if let Some(peer) = self.data.peers.get_mut(&addr_str) {
-                peer.last_seen = SystemTime::now();
+        if let Some(bootstrap_addrs) = self.data.peers.get_mut(&peer_id) {
+            if let Some(bootstrap_addr) = bootstrap_addrs.get_addr_mut(&addr) {
+                debug!("Updating existing peer's last_seen {addr}");
+                bootstrap_addr.last_seen = SystemTime::now();
+                return;
+            } else {
+                bootstrap_addrs.insert_addr(&BootstrapAddr::new(addr.clone()));
             }
-            return;
+        } else {
+            self.data.peers.insert(
+                peer_id,
+                BootstrapAddresses(vec![BootstrapAddr::new(addr.clone())]),
+            );
         }
 
-        self.try_remove_oldest_peers();
-
-        // Add the new peer
-        debug!("Adding new peer {} (under max_peers limit)", addr_str);
-        self.data.peers.insert(addr_str, BootstrapPeer::new(addr));
+        debug!("Added new peer {addr:?}, performing cleanup of old addrs");
+        self.perform_cleanup();
     }
 
-    pub fn remove_peer(&mut self, addr: &str) {
-        self.data.peers.remove(addr);
+    /// Remove a single address for a peer.
+    pub fn remove_addr(&mut self, addr: &Multiaddr) {
+        if let Some(peer_id) = multiaddr_get_peer_id(addr) {
+            if let Some(bootstrap_addresses) = self.data.peers.get_mut(&peer_id) {
+                bootstrap_addresses.remove_addr(addr);
+            } else {
+                debug!("Peer {peer_id:?} not found in the cache. Not removing addr: {addr:?}")
+            }
+        } else {
+            debug!("Could not obtain PeerId for {addr:?}, not removing addr from cache.");
+        }
     }
 
-    pub fn cleanup_stale_and_unreliable_peers(&mut self) {
-        self.data.cleanup_stale_and_unreliable_peers();
+    pub fn perform_cleanup(&mut self) {
+        self.data.perform_cleanup(&self.config);
     }
 
     /// Clear all peers from the cache and save to disk
@@ -396,7 +503,7 @@ impl BootstrapCacheStore {
             return Ok(());
         }
 
-        if let Ok(data_from_file) = Self::load_cache_data(&self.cache_path).await {
+        if let Ok(data_from_file) = Self::load_cache_data(&self.config).await {
             self.data.sync(&self.old_shared_state, &data_from_file);
             // Now the synced version is the old_shared_state
         } else {
@@ -404,34 +511,14 @@ impl BootstrapCacheStore {
         }
 
         if with_cleanup {
-            self.data.cleanup_stale_and_unreliable_peers();
-            self.try_remove_oldest_peers();
+            self.data.perform_cleanup(&self.config);
+            self.data.try_remove_oldest_peers(&self.config);
         }
         self.old_shared_state = self.data.clone();
 
         self.atomic_write().await.inspect_err(|e| {
             error!("Failed to save cache to disk: {e}");
         })
-    }
-
-    /// Remove the oldest peers until we're under the max_peers limit
-    fn try_remove_oldest_peers(&mut self) {
-        // If we're at max peers, remove the oldest peer
-        while self.data.peers.len() >= self.config.max_peers {
-            if let Some((oldest_addr, _)) = self
-                .data
-                .peers
-                .iter()
-                .min_by_key(|(_, peer)| peer.last_seen)
-            {
-                let oldest_addr = oldest_addr.clone();
-                debug!(
-                    "At max peers limit ({}), removing oldest peer: {oldest_addr}",
-                    self.config.max_peers
-                );
-                self.data.peers.remove(&oldest_addr);
-            }
-        }
     }
 
     async fn acquire_shared_lock(file: &File) -> Result<()> {
@@ -521,20 +608,21 @@ mod tests {
     #[tokio::test]
     async fn test_peer_update_and_save() {
         let (mut store, _) = create_test_store().await;
-        let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
+        let addr: Multiaddr =
+            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
+                .parse()
+                .unwrap();
 
         // Manually add a peer without using fallback
         {
-            store
-                .data
-                .peers
-                .insert(addr.to_string(), BootstrapPeer::new(addr.clone()));
+            let peer_id = multiaddr_get_peer_id(&addr).unwrap();
+            store.data.insert(peer_id, BootstrapAddr::new(addr.clone()));
         }
         store.sync_and_save_to_disk(true).await.unwrap();
 
-        store.update_peer_status(&addr, true);
+        store.update_addr_status(&addr, true);
 
-        let peers = store.get_peers().collect::<Vec<_>>();
+        let peers = store.get_addrs().collect::<Vec<_>>();
         assert_eq!(peers.len(), 1);
         assert_eq!(peers[0].addr, addr);
         assert_eq!(peers[0].success_count, 1);
@@ -544,26 +632,32 @@ mod tests {
     #[tokio::test]
     async fn test_peer_cleanup() {
         let (mut store, _) = create_test_store().await;
-        let good_addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
-        let bad_addr: Multiaddr = "/ip4/127.0.0.1/tcp/8081".parse().unwrap();
+        let good_addr: Multiaddr =
+            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
+                .parse()
+                .unwrap();
+        let bad_addr: Multiaddr =
+            "/ip4/127.0.0.1/tcp/8081/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5"
+                .parse()
+                .unwrap();
 
         // Add peers
-        store.add_peer(good_addr.clone());
-        store.add_peer(bad_addr.clone());
+        store.add_addr(good_addr.clone());
+        store.add_addr(bad_addr.clone());
 
         // Make one peer reliable and one unreliable
-        store.update_peer_status(&good_addr, true);
+        store.update_addr_status(&good_addr, true);
 
         // Fail the bad peer more times than max_retries
         for _ in 0..5 {
-            store.update_peer_status(&bad_addr, false);
+            store.update_addr_status(&bad_addr, false);
         }
 
         // Clean up unreliable peers
-        store.cleanup_stale_and_unreliable_peers();
+        store.perform_cleanup();
 
         // Get all peers (not just reliable ones)
-        let peers = store.get_peers().collect::<Vec<_>>();
+        let peers = store.get_addrs().collect::<Vec<_>>();
         assert_eq!(peers.len(), 1);
         assert_eq!(peers[0].addr, good_addr);
     }
@@ -571,20 +665,23 @@ mod tests {
     #[tokio::test]
     async fn test_peer_not_removed_if_successful() {
         let (mut store, _) = create_test_store().await;
-        let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
+        let addr: Multiaddr =
+            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
+                .parse()
+                .unwrap();
 
         // Add a peer and make it successful
-        store.add_peer(addr.clone());
-        store.update_peer_status(&addr, true);
+        store.add_addr(addr.clone());
+        store.update_addr_status(&addr, true);
 
         // Wait a bit
         tokio::time::sleep(Duration::from_millis(100)).await;
 
         // Run cleanup
-        store.cleanup_stale_and_unreliable_peers();
+        store.perform_cleanup();
 
         // Verify peer is still there
-        let peers = store.get_peers().collect::<Vec<_>>();
+        let peers = store.get_addrs().collect::<Vec<_>>();
         assert_eq!(peers.len(), 1);
         assert_eq!(peers[0].addr, addr);
     }
@@ -592,44 +689,47 @@ mod tests {
     #[tokio::test]
     async fn test_peer_removed_only_when_unresponsive() {
         let (mut store, _) = create_test_store().await;
-        let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
+        let addr: Multiaddr =
+            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
+                .parse()
+                .unwrap();
 
         // Add a peer
-        store.add_peer(addr.clone());
+        store.add_addr(addr.clone());
 
         // Make it fail more than successes
         for _ in 0..3 {
-            store.update_peer_status(&addr, true);
+            store.update_addr_status(&addr, true);
         }
         for _ in 0..4 {
-            store.update_peer_status(&addr, false);
+            store.update_addr_status(&addr, false);
         }
 
         // Run cleanup
-        store.cleanup_stale_and_unreliable_peers();
+        store.perform_cleanup();
 
         // Verify peer is removed
         assert_eq!(
-            store.get_peers().count(),
+            store.get_addrs().count(),
             0,
             "Peer should be removed after max_retries failures"
         );
 
         // Test with some successes but more failures
-        store.add_peer(addr.clone());
-        store.update_peer_status(&addr, true);
-        store.update_peer_status(&addr, true);
+        store.add_addr(addr.clone());
+        store.update_addr_status(&addr, true);
+        store.update_addr_status(&addr, true);
 
         for _ in 0..5 {
-            store.update_peer_status(&addr, false);
+            store.update_addr_status(&addr, false);
         }
 
         // Run cleanup
-        store.cleanup_stale_and_unreliable_peers();
+        store.perform_cleanup();
 
         // Verify peer is removed due to more failures than successes
         assert_eq!(
-            store.get_peers().count(),
+            store.get_addrs().count(),
             0,
             "Peer should be removed when failures exceed successes"
         );

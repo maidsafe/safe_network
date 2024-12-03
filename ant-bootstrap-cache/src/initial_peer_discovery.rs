@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{craft_valid_multiaddr_from_str, BootstrapEndpoints, BootstrapPeer, Error, Result};
+use crate::{craft_valid_multiaddr_from_str, BootstrapAddr, BootstrapEndpoints, Error, Result};
 use futures::stream::{self, StreamExt};
 use reqwest::Client;
 use std::time::Duration;
@@ -54,19 +54,22 @@ impl InitialPeerDiscovery {
         })
     }
 
-    /// Fetch peers from all configured endpoints
-    pub async fn fetch_peers(&self) -> Result<Vec<BootstrapPeer>> {
+    /// Fetch BootstrapAddr from all configured endpoints
+    pub async fn fetch_bootstrap_addresses(&self) -> Result<Vec<BootstrapAddr>> {
         info!(
             "Starting peer discovery from {} endpoints: {:?}",
             self.endpoints.len(),
             self.endpoints
         );
-        let mut peers = Vec::new();
+        let mut bootstrap_addresses = Vec::new();
         let mut last_error = None;
 
         let mut fetches = stream::iter(self.endpoints.clone())
             .map(|endpoint| async move {
-                info!("Attempting to fetch peers from endpoint: {}", endpoint);
+                info!(
+                    "Attempting to fetch bootstrap addresses from endpoint: {}",
+                    endpoint
+                );
                 (
                     Self::fetch_from_endpoint(self.request_client.clone(), &endpoint).await,
                     endpoint,
@@ -76,56 +79,62 @@ impl InitialPeerDiscovery {
 
         while let Some((result, endpoint)) = fetches.next().await {
             match result {
-                Ok(mut endpoint_peers) => {
+                Ok(mut endpoing_bootstrap_addresses) => {
                     info!(
-                        "Successfully fetched {} peers from {}. First few peers: {:?}",
-                        endpoint_peers.len(),
+                        "Successfully fetched {} bootstrap addrs from {}. First few addrs: {:?}",
+                        endpoing_bootstrap_addresses.len(),
                         endpoint,
-                        endpoint_peers.iter().take(3).collect::<Vec<_>>()
+                        endpoing_bootstrap_addresses
+                            .iter()
+                            .take(3)
+                            .collect::<Vec<_>>()
                     );
-                    peers.append(&mut endpoint_peers);
+                    bootstrap_addresses.append(&mut endpoing_bootstrap_addresses);
                 }
                 Err(e) => {
-                    warn!("Failed to fetch peers from {}: {}", endpoint, e);
+                    warn!("Failed to fetch bootstrap addrs from {}: {}", endpoint, e);
                     last_error = Some(e);
                 }
             }
         }
 
-        if peers.is_empty() {
+        if bootstrap_addresses.is_empty() {
             last_error.map_or_else(
                 || {
-                    warn!("No peers found from any endpoint and no errors reported");
-                    Err(Error::NoPeersFound(
+                    warn!("No bootstrap addrs found from any endpoint and no errors reported");
+                    Err(Error::NoBootstrapAddressesFound(
                         "No valid peers found from any endpoint".to_string(),
                     ))
                 },
                 |e| {
-                    warn!("No peers found from any endpoint. Last error: {}", e);
-                    Err(Error::NoPeersFound(format!(
-                        "No valid peers found from any endpoint: {e}",
+                    warn!(
+                        "No bootstrap addrs found from any endpoint. Last error: {}",
+                        e
+                    );
+                    Err(Error::NoBootstrapAddressesFound(format!(
+                        "No valid bootstrap addrs found from any endpoint: {e}",
                     )))
                 },
             )
         } else {
             info!(
-                "Successfully discovered {} total peers. First few: {:?}",
-                peers.len(),
-                peers.iter().take(3).collect::<Vec<_>>()
+                "Successfully discovered {} total addresses. First few: {:?}",
+                bootstrap_addresses.len(),
+                bootstrap_addresses.iter().take(3).collect::<Vec<_>>()
             );
-            Ok(peers)
+            Ok(bootstrap_addresses)
         }
     }
 
-    /// Fetch the list of bootstrap peer from a single endpoint
+    /// Fetch the list of bootstrap addresses from a single endpoint
     async fn fetch_from_endpoint(
         request_client: Client,
         endpoint: &Url,
-    ) -> Result<Vec<BootstrapPeer>> {
+    ) -> Result<Vec<BootstrapAddr>> {
         info!("Fetching peers from endpoint: {endpoint}");
         let mut retries = 0;
 
-        let peers = loop {
+        let bootstrap_addresses = loop {
             let response = request_client.get(endpoint.clone()).send().await;
 
             match response {
@@ -134,12 +143,12 @@ impl InitialPeerDiscovery {
                         let text = response.text().await?;
 
                         match Self::try_parse_response(&text) {
-                            Ok(peers) => break peers,
+                            Ok(addrs) => break addrs,
                             Err(err) => {
                                 warn!("Failed to parse response with err: {err:?}");
                                 retries += 1;
                                 if retries >= MAX_RETRIES_ON_FETCH_FAILURE {
-                                    return Err(Error::FailedToObtainPeersFromUrl(
+                                    return Err(Error::FailedToObtainAddrsFromUrl(
                                         endpoint.to_string(),
                                         MAX_RETRIES_ON_FETCH_FAILURE,
                                     ));
@@ -149,7 +158,7 @@ impl InitialPeerDiscovery {
                     } else {
                         retries += 1;
                         if retries >= MAX_RETRIES_ON_FETCH_FAILURE {
-                            return Err(Error::FailedToObtainPeersFromUrl(
+                            return Err(Error::FailedToObtainAddrsFromUrl(
                                 endpoint.to_string(),
                                 MAX_RETRIES_ON_FETCH_FAILURE,
                             ));
@@ -157,10 +166,10 @@ impl InitialPeerDiscovery {
                     }
                 }
                 Err(err) => {
-                    error!("Failed to get peers from URL {endpoint}: {err:?}");
+                    error!("Failed to get bootstrap addrs from URL {endpoint}: {err:?}");
                     retries += 1;
                     if retries >= MAX_RETRIES_ON_FETCH_FAILURE {
-                        return Err(Error::FailedToObtainPeersFromUrl(
+                        return Err(Error::FailedToObtainAddrsFromUrl(
                             endpoint.to_string(),
                             MAX_RETRIES_ON_FETCH_FAILURE,
                         ));
@@ -168,62 +177,65 @@ impl InitialPeerDiscovery {
                 }
             }
             trace!(
-                "Failed to get peers from URL, retrying {retries}/{MAX_RETRIES_ON_FETCH_FAILURE}"
+                "Failed to get bootstrap addrs from URL, retrying {retries}/{MAX_RETRIES_ON_FETCH_FAILURE}"
             );
             tokio::time::sleep(Duration::from_secs(1)).await;
         };
 
-        Ok(peers)
+        Ok(bootstrap_addresses)
     }
 
     /// Try to parse a response from a endpoint
-    fn try_parse_response(response: &str) -> Result<Vec<BootstrapPeer>> {
+    fn try_parse_response(response: &str) -> Result<Vec<BootstrapAddr>> {
         match serde_json::from_str::<BootstrapEndpoints>(response) {
             Ok(json_endpoints) => {
                 info!(
                     "Successfully parsed JSON response with {} peers",
                     json_endpoints.peers.len()
                 );
-                let peers = json_endpoints
+                let bootstrap_addresses = json_endpoints
                     .peers
                     .into_iter()
                     .filter_map(|addr_str| craft_valid_multiaddr_from_str(&addr_str))
-                    .map(BootstrapPeer::new)
+                    .map(BootstrapAddr::new)
                     .collect::<Vec<_>>();
 
-                if peers.is_empty() {
+                if bootstrap_addresses.is_empty() {
                     warn!("No valid peers found in JSON response");
-                    Err(Error::NoPeersFound(
+                    Err(Error::NoBootstrapAddressesFound(
                         "No valid peers found in JSON response".to_string(),
                     ))
                 } else {
-                    info!("Successfully parsed {} valid peers from JSON", peers.len());
-                    Ok(peers)
+                    info!(
+                        "Successfully parsed {} valid peers from JSON",
+                        bootstrap_addresses.len()
+                    );
+                    Ok(bootstrap_addresses)
                 }
             }
             Err(e) => {
                 info!("Attempting to parse response as plain text");
                 // Try parsing as plain text with one multiaddr per line
                 // example of contacts file exists in resources/network-contacts-examples
-                let peers = response
+                let bootstrap_addresses = response
                     .split('\n')
                     .filter_map(craft_valid_multiaddr_from_str)
-                    .map(BootstrapPeer::new)
+                    .map(BootstrapAddr::new)
                     .collect::<Vec<_>>();
 
-                if peers.is_empty() {
+                if bootstrap_addresses.is_empty() {
                     warn!(
-                        "No valid peers found in plain text response. Previous Json error: {e:?}"
+                        "No valid bootstrap addrs found in plain text response. Previous Json error: {e:?}"
                     );
-                    Err(Error::NoPeersFound(
-                        "No valid peers found in plain text response".to_string(),
+                    Err(Error::NoBootstrapAddressesFound(
+                        "No valid bootstrap addrs found in plain text response".to_string(),
                     ))
                 } else {
                     info!(
-                        "Successfully parsed {} valid peers from plain text",
-                        peers.len()
+                        "Successfully parsed {} valid bootstrap addrs from plain text",
+                        bootstrap_addresses.len()
                     );
-                    Ok(peers)
+                    Ok(bootstrap_addresses)
                 }
             }
         }
@@ -240,14 +252,14 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn test_fetch_peers() {
+    async fn test_fetch_addrs() {
         let mock_server = MockServer::start().await;
 
         Mock::given(method("GET"))
             .and(path("/"))
             .respond_with(
                 ResponseTemplate::new(200)
-                    .set_body_string("/ip4/127.0.0.1/tcp/8080\n/ip4/127.0.0.2/tcp/8080"),
+                    .set_body_string("/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE\n/ip4/127.0.0.2/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5"),
             )
             .mount(&mock_server)
             .await;
@@ -255,13 +267,19 @@ mod tests {
         let mut discovery = InitialPeerDiscovery::new().unwrap();
         discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let peers = discovery.fetch_peers().await.unwrap();
-        assert_eq!(peers.len(), 2);
+        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        assert_eq!(addrs.len(), 2);
 
-        let addr1: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
-        let addr2: Multiaddr = "/ip4/127.0.0.2/tcp/8080".parse().unwrap();
-        assert!(peers.iter().any(|p| p.addr == addr1));
-        assert!(peers.iter().any(|p| p.addr == addr2));
+        let addr1: Multiaddr =
+            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
+                .parse()
+                .unwrap();
+        let addr2: Multiaddr =
+            "/ip4/127.0.0.2/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5"
+                .parse()
+                .unwrap();
+        assert!(addrs.iter().any(|p| p.addr == addr1));
+        assert!(addrs.iter().any(|p| p.addr == addr2));
     }
 
     #[tokio::test]
@@ -279,7 +297,9 @@ mod tests {
         // Second endpoint succeeds
         Mock::given(method("GET"))
             .and(path("/"))
-            .respond_with(ResponseTemplate::new(200).set_body_string("/ip4/127.0.0.1/tcp/8080"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(
+                "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5",
+            ))
             .mount(&mock_server2)
             .await;
 
@@ -289,11 +309,14 @@ mod tests {
             mock_server2.uri().parse().unwrap(),
         ];
 
-        let peers = discovery.fetch_peers().await.unwrap();
-        assert_eq!(peers.len(), 1);
+        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        assert_eq!(addrs.len(), 1);
 
-        let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
-        assert_eq!(peers[0].addr, addr);
+        let addr: Multiaddr =
+            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5"
+                .parse()
+                .unwrap();
+        assert_eq!(addrs[0].addr, addr);
     }
 
     #[tokio::test]
@@ -304,7 +327,7 @@ mod tests {
             .and(path("/"))
             .respond_with(
                 ResponseTemplate::new(200).set_body_string(
-                    "/ip4/127.0.0.1/tcp/8080\ninvalid-addr\n/ip4/127.0.0.2/tcp/8080",
+                    "/ip4/127.0.0.1/tcp/8080\n/ip4/127.0.0.2/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5",
                 ),
             )
             .mount(&mock_server)
@@ -313,9 +336,12 @@ mod tests {
         let mut discovery = InitialPeerDiscovery::new().unwrap();
         discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let peers = discovery.fetch_peers().await.unwrap();
-        let valid_addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
-        assert_eq!(peers[0].addr, valid_addr);
+        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        let valid_addr: Multiaddr =
+            "/ip4/127.0.0.2/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5"
+                .parse()
+                .unwrap();
+        assert_eq!(addrs[0].addr, valid_addr);
     }
 
     #[tokio::test]
@@ -331,9 +357,9 @@ mod tests {
         let mut discovery = InitialPeerDiscovery::new().unwrap();
         discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let result = discovery.fetch_peers().await;
+        let result = discovery.fetch_bootstrap_addresses().await;
 
-        assert!(matches!(result, Err(Error::NoPeersFound(_))));
+        assert!(matches!(result, Err(Error::NoBootstrapAddressesFound(_))));
     }
 
     #[tokio::test]
@@ -343,7 +369,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/"))
             .respond_with(
-                ResponseTemplate::new(200).set_body_string("\n  \n/ip4/127.0.0.1/tcp/8080\n  \n"),
+                ResponseTemplate::new(200).set_body_string("\n  \n/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5\n  \n"),
             )
             .mount(&mock_server)
             .await;
@@ -351,11 +377,14 @@ mod tests {
         let mut discovery = InitialPeerDiscovery::new().unwrap();
         discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let peers = discovery.fetch_peers().await.unwrap();
-        assert_eq!(peers.len(), 1);
+        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        assert_eq!(addrs.len(), 1);
 
-        let addr: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
-        assert_eq!(peers[0].addr, addr);
+        let addr: Multiaddr =
+            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5"
+                .parse()
+                .unwrap();
+        assert_eq!(addrs[0].addr, addr);
     }
 
     #[tokio::test]
@@ -384,7 +413,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/"))
             .respond_with(ResponseTemplate::new(200).set_body_string(
-                r#"{"peers": ["/ip4/127.0.0.1/tcp/8080", "/ip4/127.0.0.2/tcp/8080"]}"#,
+                r#"{"peers": ["/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5", "/ip4/127.0.0.2/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"]}"#,
             ))
             .mount(&mock_server)
             .await;
@@ -392,12 +421,18 @@ mod tests {
         let mut discovery = InitialPeerDiscovery::new().unwrap();
         discovery.endpoints = vec![mock_server.uri().parse().unwrap()];
 
-        let peers = discovery.fetch_peers().await.unwrap();
-        assert_eq!(peers.len(), 2);
+        let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+        assert_eq!(addrs.len(), 2);
 
-        let addr1: Multiaddr = "/ip4/127.0.0.1/tcp/8080".parse().unwrap();
-        let addr2: Multiaddr = "/ip4/127.0.0.2/tcp/8080".parse().unwrap();
-        assert!(peers.iter().any(|p| p.addr == addr1));
-        assert!(peers.iter().any(|p| p.addr == addr2));
+        let addr1: Multiaddr =
+            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5"
+                .parse()
+                .unwrap();
+        let addr2: Multiaddr =
+            "/ip4/127.0.0.2/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
+                .parse()
+                .unwrap();
+        assert!(addrs.iter().any(|p| p.addr == addr1));
+        assert!(addrs.iter().any(|p| p.addr == addr2));
     }
 }

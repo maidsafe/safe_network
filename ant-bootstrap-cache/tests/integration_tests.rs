@@ -26,15 +26,15 @@ fn init_logging() {
 async fn test_fetch_from_amazon_s3() {
     init_logging();
     let discovery = InitialPeerDiscovery::new().unwrap();
-    let peers = discovery.fetch_peers().await.unwrap();
+    let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
 
     // We should get some peers
-    assert!(!peers.is_empty(), "Expected to find some peers from S3");
+    assert!(!addrs.is_empty(), "Expected to find some peers from S3");
 
     // Verify that all peers have valid multiaddresses
-    for peer in &peers {
-        println!("Found peer: {}", peer.addr);
-        let addr_str = peer.addr.to_string();
+    for addr in &addrs {
+        println!("Found peer: {}", addr.addr);
+        let addr_str = addr.addr.to_string();
         assert!(addr_str.contains("/ip4/"), "Expected IPv4 address");
         assert!(addr_str.contains("/udp/"), "Expected UDP port");
         assert!(addr_str.contains("/quic-v1/"), "Expected QUIC protocol");
@@ -65,7 +65,7 @@ async fn test_individual_s3_endpoints() {
         .unwrap();
     let discovery = InitialPeerDiscovery::with_endpoints(vec![endpoint.clone()]).unwrap();
 
-    match discovery.fetch_peers().await {
+    match discovery.fetch_bootstrap_addresses().await {
         Ok(peers) => {
             println!(
                 "Successfully fetched {} peers from {}",
@@ -104,10 +104,10 @@ async fn test_individual_s3_endpoints() {
 async fn test_response_format() {
     init_logging();
     let discovery = InitialPeerDiscovery::new().unwrap();
-    let peers = discovery.fetch_peers().await.unwrap();
+    let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
 
     // Get the first peer to check format
-    let first_peer = peers.first().expect("Expected at least one peer");
+    let first_peer = addrs.first().expect("Expected at least one peer");
     let addr_str = first_peer.addr.to_string();
 
     // Print the address for debugging
@@ -157,11 +157,11 @@ async fn test_json_endpoint_format() {
     let endpoint = mock_server.uri().parse::<Url>().unwrap();
     let discovery = InitialPeerDiscovery::with_endpoints(vec![endpoint.clone()]).unwrap();
 
-    let peers = discovery.fetch_peers().await.unwrap();
-    assert_eq!(peers.len(), 2);
+    let addrs = discovery.fetch_bootstrap_addresses().await.unwrap();
+    assert_eq!(addrs.len(), 2);
 
     // Verify peer addresses
-    let addrs: Vec<String> = peers.iter().map(|p| p.addr.to_string()).collect();
+    let addrs: Vec<String> = addrs.iter().map(|p| p.addr.to_string()).collect();
     assert!(addrs.contains(
         &"/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
             .to_string()
@@ -190,8 +190,8 @@ async fn test_s3_json_format() {
     assert_eq!(endpoints.peers.len(), 24);
 
     // Verify we can parse each peer address
-    for peer in endpoints.peers {
-        peer.parse::<Multiaddr>().unwrap();
+    for addrs in endpoints.peers {
+        addrs.parse::<Multiaddr>().unwrap();
     }
 
     // Verify metadata

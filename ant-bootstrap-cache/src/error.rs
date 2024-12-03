@@ -14,10 +14,10 @@ pub enum Error {
     FailedToParseCacheData,
     #[error("Could not obtain data directory")]
     CouldNotObtainDataDir,
-    #[error("Could not obtain bootstrap peers from {0} after {1} retries")]
-    FailedToObtainPeersFromUrl(String, usize),
-    #[error("No peers found: {0}")]
-    NoPeersFound(String),
+    #[error("Could not obtain bootstrap addresses from {0} after {1} retries")]
+    FailedToObtainAddrsFromUrl(String, usize),
+    #[error("No Bootstrap Addresses found: {0}")]
+    NoBootstrapAddressesFound(String),
     #[error("Invalid response: {0}")]
     InvalidResponse(String),
     #[error("IO error: {0}")]

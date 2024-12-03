@@ -726,6 +726,7 @@ dependencies = [
 name = "ant-bootstrap-cache"
 version = "0.1.0"
 dependencies = [
+ "ant-logging",
  "ant-protocol",
  "chrono",
  "dirs-next",

@@ -7,20 +7,13 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use ant_bootstrap_cache::{BootstrapCacheStore, BootstrapConfig, PeersArgs};
-use libp2p::{multiaddr::Protocol, Multiaddr};
-use std::net::SocketAddrV4;
+use ant_logging::LogBuilder;
+use libp2p::Multiaddr;
 use tempfile::TempDir;
 use wiremock::{
     matchers::{method, path},
     Mock, MockServer, ResponseTemplate,
 };
-
-// Initialize logging for tests
-fn init_logging() {
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter("bootstrap_cache=debug")
-        .try_init();
-}
 
 // Setup function to create a new temp directory and config for each test
 async fn setup() -> (TempDir, BootstrapConfig) {
@@ -36,44 +29,15 @@ async fn setup() -> (TempDir, BootstrapConfig) {
 }
 
 #[tokio::test]
-async fn test_ipv4_socket_address_parsing() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
-    let (_temp_dir, config) = setup().await;
-
-    // Test IPv4 socket address format (1.2.3.4:1234)
-    let socket_addr = "127.0.0.1:8080".parse::<SocketAddrV4>()?;
-    let expected_addr = Multiaddr::empty()
-        .with(Protocol::Ip4(*socket_addr.ip()))
-        .with(Protocol::Udp(socket_addr.port()))
-        .with(Protocol::QuicV1);
-
-    let args = PeersArgs {
-        first: false,
-        peers: vec![expected_addr.clone()],
-        network_contacts_url: None,
-        local: false,
-    };
-
-    let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert_eq!(peers.len(), 1, "Should have one peer");
-    assert_eq!(peers[0].addr, expected_addr, "Address format should match");
-
-    Ok(())
-}
-
-#[tokio::test]
 async fn test_multiaddr_format_parsing() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
 
     // Test various multiaddr formats
     let addrs = vec![
-        // Standard format with peer ID
+        // quic
         "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE",
-        // Without peer ID
-        "/ip4/127.0.0.1/udp/8080/quic-v1",
-        // With ws
-        "/ip4/127.0.0.1/tcp/8080/ws",
+        // ws
+        "/ip4/127.0.0.1/tcp/8080/ws/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE",
     ];
 
     for addr_str in addrs {
@@ -81,15 +45,18 @@ async fn test_multiaddr_format_parsing() -> Result<(), Box<dyn std::error::Error
         let addr = addr_str.parse::<Multiaddr>()?;
         let args = PeersArgs {
             first: false,
-            peers: vec![addr.clone()],
+            addrs: vec![addr.clone()],
             network_contacts_url: None,
             local: false,
         };
 
         let store = BootstrapCacheStore::from_args(args, config).await?;
-        let peers = store.get_peers().collect::<Vec<_>>();
-        assert_eq!(peers.len(), 1, "Should have one peer");
-        assert_eq!(peers[0].addr, addr, "Address format should match");
+        let bootstrap_addresses = store.get_addrs().collect::<Vec<_>>();
+        assert_eq!(bootstrap_addresses.len(), 1, "Should have one peer");
+        assert_eq!(
+            bootstrap_addresses[0].addr, addr,
+            "Address format should match"
+        );
     }
 
     Ok(())
@@ -97,7 +64,8 @@ async fn test_multiaddr_format_parsing() -> Result<(), Box<dyn std::error::Error
 
 #[tokio::test]
 async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
+
     let (_temp_dir, config) = setup().await;
 
     // Create a mock server with network contacts format
@@ -113,22 +81,22 @@ async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
         local: false,
     };
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
+    let adddrs = store.get_addrs().collect::<Vec<_>>();
     assert_eq!(
-        peers.len(),
+        adddrs.len(),
         2,
         "Should have two peers from network contacts"
     );
 
     // Verify address formats
-    for peer in peers {
-        let addr_str = peer.addr.to_string();
+    for addr in adddrs {
+        let addr_str = addr.addr.to_string();
         assert!(addr_str.contains("/ip4/"), "Should have IPv4 address");
         assert!(addr_str.contains("/udp/"), "Should have UDP port");
         assert!(addr_str.contains("/quic-v1/"), "Should have QUIC protocol");
@@ -140,7 +108,7 @@ async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>
 
 #[tokio::test]
 async fn test_invalid_address_handling() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
 
     // Test various invalid address formats
     let invalid_addrs = vec![
@@ -154,15 +122,15 @@ async fn test_invalid_address_handling() -> Result<(), Box<dyn std::error::Error
         let (_temp_dir, config) = setup().await; // Fresh config for each test case
         let args = PeersArgs {
             first: false,
-            peers: vec![],
+            addrs: vec![],
             network_contacts_url: None,
             local: true, // Use local mode to avoid fetching from default endpoints
         };
 
         let store = BootstrapCacheStore::from_args(args.clone(), config.clone()).await?;
-        let peers = store.get_peers().collect::<Vec<_>>();
+        let addrs = store.get_addrs().collect::<Vec<_>>();
         assert_eq!(
-            peers.len(),
+            addrs.len(),
             0,
             "Should have no peers from invalid address in env var: {}",
             addr_str
@@ -172,14 +140,14 @@ async fn test_invalid_address_handling() -> Result<(), Box<dyn std::error::Error
         if let Ok(addr) = addr_str.parse::<Multiaddr>() {
             let args_with_peer = PeersArgs {
                 first: false,
-                peers: vec![addr],
+                addrs: vec![addr],
                 network_contacts_url: None,
                 local: false,
             };
             let store = BootstrapCacheStore::from_args(args_with_peer, config).await?;
-            let peers = store.get_peers().collect::<Vec<_>>();
+            let addrs = store.get_addrs().collect::<Vec<_>>();
             assert_eq!(
-                peers.len(),
+                addrs.len(),
                 0,
                 "Should have no peers from invalid address in args: {}",
                 addr_str
@@ -192,13 +160,14 @@ async fn test_invalid_address_handling() -> Result<(), Box<dyn std::error::Error
 
 #[tokio::test]
 async fn test_socket_addr_format() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
     };
@@ -208,21 +177,22 @@ async fn test_socket_addr_format() -> Result<(), Box<dyn std::error::Error>> {
         .with_cache_path(&cache_path);
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "Should have no peers in local mode");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "Should have no peers in local mode");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_multiaddr_format() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
     };
@@ -232,21 +202,22 @@ async fn test_multiaddr_format() -> Result<(), Box<dyn std::error::Error>> {
         .with_cache_path(&cache_path);
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "Should have no peers in local mode");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "Should have no peers in local mode");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_invalid_addr_format() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
     };
@@ -256,21 +227,22 @@ async fn test_invalid_addr_format() -> Result<(), Box<dyn std::error::Error>> {
         .with_cache_path(&cache_path);
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "Should have no peers in local mode");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "Should have no peers in local mode");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_mixed_addr_formats() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
     };
@@ -280,21 +252,22 @@ async fn test_mixed_addr_formats() -> Result<(), Box<dyn std::error::Error>> {
         .with_cache_path(&cache_path);
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "Should have no peers in local mode");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "Should have no peers in local mode");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_socket_addr_conversion() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
     };
@@ -304,21 +277,22 @@ async fn test_socket_addr_conversion() -> Result<(), Box<dyn std::error::Error>>
         .with_cache_path(&cache_path);
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "Should have no peers in local mode");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "Should have no peers in local mode");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_invalid_socket_addr() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
     };
@@ -328,21 +302,22 @@ async fn test_invalid_socket_addr() -> Result<(), Box<dyn std::error::Error>> {
         .with_cache_path(&cache_path);
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "Should have no peers in local mode");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "Should have no peers in local mode");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_invalid_multiaddr() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
     };
@@ -352,21 +327,22 @@ async fn test_invalid_multiaddr() -> Result<(), Box<dyn std::error::Error>> {
         .with_cache_path(&cache_path);
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "Should have no peers in local mode");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "Should have no peers in local mode");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn test_mixed_valid_invalid_addrs() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
+    let _guard = LogBuilder::init_single_threaded_tokio_test("address_format_tests", false);
+
     let temp_dir = TempDir::new()?;
     let cache_path = temp_dir.path().join("cache.json");
 
     let args = PeersArgs {
         first: false,
-        peers: vec![],
+        addrs: vec![],
         network_contacts_url: None,
         local: true, // Use local mode to avoid getting peers from default endpoints
     };
@@ -376,8 +352,8 @@ async fn test_mixed_valid_invalid_addrs() -> Result<(), Box<dyn std::error::Erro
         .with_cache_path(&cache_path);
 
     let store = BootstrapCacheStore::from_args(args, config).await?;
-    let peers = store.get_peers().collect::<Vec<_>>();
-    assert!(peers.is_empty(), "Should have no peers in local mode");
+    let addrs = store.get_addrs().collect::<Vec<_>>();
+    assert!(addrs.is_empty(), "Should have no peers in local mode");
 
     Ok(())
 }

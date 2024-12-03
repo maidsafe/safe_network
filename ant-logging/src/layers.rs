@@ -274,6 +274,7 @@ fn get_logging_targets(logging_env_value: &str) -> Result<Vec<(String, Level)>> 
                 ("antctl".to_string(), Level::TRACE),
                 ("antctld".to_string(), Level::TRACE),
                 // libs
+                ("ant_bootstrap_cache".to_string(), Level::TRACE),
                 ("ant_build_info".to_string(), Level::TRACE),
                 ("ant_evm".to_string(), Level::TRACE),
                 ("ant_logging".to_string(), Level::TRACE),

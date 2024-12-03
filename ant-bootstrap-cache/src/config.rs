@@ -14,7 +14,14 @@ use std::{
 };
 use url::Url;
 
+/// The duration since last)seen before removing the address of a Peer.
+const ADDR_EXPIRY_DURATION: Duration = Duration::from_secs(24 * 60 * 60); // 24 hours
+
+/// Maximum peers to store
 const MAX_PEERS: usize = 1500;
+
+/// Maximum number of addresses to store for a Peer
+const MAX_ADDRS_PER_PEER: usize = 6;
 
 // Min time until we save the bootstrap cache to disk. 5 mins
 const MIN_BOOTSTRAP_CACHE_SAVE_INTERVAL: Duration = Duration::from_secs(5 * 60);
@@ -25,10 +32,14 @@ const MAX_BOOTSTRAP_CACHE_SAVE_INTERVAL: Duration = Duration::from_secs(24 * 60 
 /// Configuration for the bootstrap cache
 #[derive(Clone, Debug)]
 pub struct BootstrapConfig {
+    /// The duration since last)seen before removing the address of a Peer.
+    pub addr_expiry_duration: Duration,
     /// List of bootstrap endpoints to fetch peer information from
     pub endpoints: Vec<Url>,
     /// Maximum number of peers to keep in the cache
     pub max_peers: usize,
+    /// Maximum number of addresses stored per peer.
+    pub max_addrs_per_peer: usize,
     /// Path to the bootstrap cache file
     pub cache_file_path: PathBuf,
     /// Flag to disable writing to the cache file
@@ -45,6 +56,7 @@ impl BootstrapConfig {
     /// Creates a new BootstrapConfig with default settings
     pub fn default_config() -> Result<Self> {
         Ok(Self {
+            addr_expiry_duration: ADDR_EXPIRY_DURATION,
             endpoints: vec![
                 "https://sn-testnet.s3.eu-west-2.amazonaws.com/bootstrap_cache.json"
                     .parse()
@@ -54,6 +66,7 @@ impl BootstrapConfig {
                     .expect("Failed to parse URL"),
             ],
             max_peers: MAX_PEERS,
+            max_addrs_per_peer: MAX_ADDRS_PER_PEER,
             cache_file_path: default_cache_path()?,
             disable_cache_writing: false,
             min_cache_save_duration: MIN_BOOTSTRAP_CACHE_SAVE_INTERVAL,
@@ -65,14 +78,22 @@ impl BootstrapConfig {
     /// Creates a new BootstrapConfig with empty settings
     pub fn empty() -> Result<Self> {
         Ok(Self {
+            addr_expiry_duration: ADDR_EXPIRY_DURATION,
             endpoints: vec![],
             max_peers: MAX_PEERS,
+            max_addrs_per_peer: MAX_ADDRS_PER_PEER,
             cache_file_path: default_cache_path()?,
             disable_cache_writing: false,
             min_cache_save_duration: MIN_BOOTSTRAP_CACHE_SAVE_INTERVAL,
             max_cache_save_duration: MAX_BOOTSTRAP_CACHE_SAVE_INTERVAL,
             cache_save_scaling_factor: 2,
         })
+    }
+
+    /// Set a new addr expiry duration
+    pub fn with_addr_expiry_duration(mut self, duration: Duration) -> Self {
+        self.addr_expiry_duration = duration;
+        self
     }
 
     /// Update the config with custom endpoints
@@ -103,6 +124,12 @@ impl BootstrapConfig {
     /// Sets the maximum number of peers
     pub fn with_max_peers(mut self, max_peers: usize) -> Self {
         self.max_peers = max_peers;
+        self
+    }
+
+    /// Sets the maximum number of addresses for a single peer.
+    pub fn with_addrs_per_peer(mut self, max_addrs: usize) -> Self {
+        self.max_addrs_per_peer = max_addrs;
         self
     }
 
