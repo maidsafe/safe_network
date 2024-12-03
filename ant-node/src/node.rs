@@ -24,7 +24,11 @@ use ant_protocol::{
 };
 use bytes::Bytes;
 use itertools::Itertools;
-use libp2p::{identity::Keypair, Multiaddr, PeerId};
+use libp2p::{
+    identity::Keypair,
+    kad::{KBucketDistance as Distance, U256},
+    Multiaddr, PeerId,
+};
 use num_traits::cast::ToPrimitive;
 use rand::{
     rngs::{OsRng, StdRng},
@@ -674,8 +678,89 @@ impl Node {
                     is_in_trouble,
                 }
             }
+            Query::GetClosestPeers {
+                key,
+                num_of_peers,
+                range,
+                sign_result,
+            } => {
+                debug!(
+                    "Got GetClosestPeers targeting {key:?} with {num_of_peers:?} peers or {range:?} range, signature {sign_result} required."
+                );
+                Self::respond_get_closest_peers(network, key, num_of_peers, range, sign_result)
+                    .await
+            }
         };
         Response::Query(resp)
+    }
+
+    async fn respond_get_closest_peers(
+        network: &Network,
+        target: NetworkAddress,
+        num_of_peers: Option<usize>,
+        range: Option<[u8; 32]>,
+        sign_result: bool,
+    ) -> QueryResponse {
+        let local_peers = network.get_local_peers_with_multiaddr().await;
+        let peers: Vec<(NetworkAddress, Vec<Multiaddr>)> = if let Ok(local_peers) = local_peers {
+            Self::calculate_get_closest_peers(local_peers, target.clone(), num_of_peers, range)
+        } else {
+            vec![]
+        };
+
+        let signature = if sign_result {
+            let mut bytes = rmp_serde::to_vec(&target).unwrap_or_default();
+            bytes.extend_from_slice(&rmp_serde::to_vec(&peers).unwrap_or_default());
+            if let Ok(sig) = network.sign(&bytes) {
+                Some(sig)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        QueryResponse::GetClosestPeers {
+            target,
+            peers,
+            signature,
+        }
+    }
+
+    fn calculate_get_closest_peers(
+        peer_addrs: Vec<(PeerId, Vec<Multiaddr>)>,
+        target: NetworkAddress,
+        num_of_peers: Option<usize>,
+        range: Option<[u8; 32]>,
+    ) -> Vec<(NetworkAddress, Vec<Multiaddr>)> {
+        match (num_of_peers, range) {
+            (_, Some(value)) => {
+                let distance = Distance(U256::from(value));
+                peer_addrs
+                    .iter()
+                    .filter_map(|(peer_id, multi_addrs)| {
+                        let addr = NetworkAddress::from_peer(*peer_id);
+                        if target.distance(&addr) <= distance {
+                            Some((addr, multi_addrs.clone()))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
+            }
+            (Some(num_of_peers), _) => {
+                let mut result: Vec<(NetworkAddress, Vec<Multiaddr>)> = peer_addrs
+                    .iter()
+                    .map(|(peer_id, multi_addrs)| {
+                        let addr = NetworkAddress::from_peer(*peer_id);
+                        (addr, multi_addrs.clone())
+                    })
+                    .collect();
+                result.sort_by_key(|(addr, _multi_addrs)| target.distance(addr));
+                result.into_iter().take(num_of_peers).collect()
+            }
+            (None, None) => vec![],
+        }
     }
 
     // Nodes only check ChunkProof each other, to avoid `multi-version` issue
@@ -970,4 +1055,105 @@ fn challenge_score_scheme(
         HIGHEST_SCORE,
         HIGHEST_SCORE * correct_answers / expected_proofs.len(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_no_local_peers() {
+        let local_peers: Vec<(PeerId, Vec<Multiaddr>)> = vec![];
+        let target = NetworkAddress::from_peer(PeerId::random());
+        let num_of_peers = Some(5);
+        let range = None;
+        let result = Node::calculate_get_closest_peers(local_peers, target, num_of_peers, range);
+
+        assert_eq!(result, vec![]);
+    }
+
+    #[test]
+    fn test_fewer_local_peers_than_num_of_peers() {
+        let local_peers: Vec<(PeerId, Vec<Multiaddr>)> = vec![
+            (
+                PeerId::random(),
+                vec![Multiaddr::from_str("/ip4/192.168.1.1/tcp/8080").unwrap()],
+            ),
+            (
+                PeerId::random(),
+                vec![Multiaddr::from_str("/ip4/192.168.1.2/tcp/8080").unwrap()],
+            ),
+            (
+                PeerId::random(),
+                vec![Multiaddr::from_str("/ip4/192.168.1.2/tcp/8080").unwrap()],
+            ),
+        ];
+        let target = NetworkAddress::from_peer(PeerId::random());
+        let num_of_peers = Some(2);
+        let range = None;
+        let result = Node::calculate_get_closest_peers(
+            local_peers.clone(),
+            target.clone(),
+            num_of_peers,
+            range,
+        );
+
+        // Result shall be sorted and truncated
+        let mut expected_result: Vec<(NetworkAddress, Vec<Multiaddr>)> = local_peers
+            .iter()
+            .map(|(peer_id, multi_addrs)| {
+                let addr = NetworkAddress::from_peer(*peer_id);
+                (addr, multi_addrs.clone())
+            })
+            .collect();
+        expected_result.sort_by_key(|(addr, _multi_addrs)| target.distance(addr));
+        let expected_result: Vec<_> = expected_result.into_iter().take(2).collect();
+
+        assert_eq!(expected_result, result);
+    }
+
+    #[test]
+    fn test_with_range_and_num_of_peers() {
+        let local_peers: Vec<(PeerId, Vec<Multiaddr>)> = vec![
+            (
+                PeerId::random(),
+                vec![Multiaddr::from_str("/ip4/192.168.1.1/tcp/8080").unwrap()],
+            ),
+            (
+                PeerId::random(),
+                vec![Multiaddr::from_str("/ip4/192.168.1.2/tcp/8080").unwrap()],
+            ),
+            (
+                PeerId::random(),
+                vec![Multiaddr::from_str("/ip4/192.168.1.2/tcp/8080").unwrap()],
+            ),
+        ];
+        let target = NetworkAddress::from_peer(PeerId::random());
+        let num_of_peers = Some(0);
+        let range_value = [128; 32];
+        let range = Some(range_value);
+        let result = Node::calculate_get_closest_peers(
+            local_peers.clone(),
+            target.clone(),
+            num_of_peers,
+            range,
+        );
+
+        // Range shall be preferred, i.e. the result peers shall all within the range
+        let distance = Distance(U256::from(range_value));
+        let expected_result: Vec<(NetworkAddress, Vec<Multiaddr>)> = local_peers
+            .into_iter()
+            .filter_map(|(peer_id, multi_addrs)| {
+                let addr = NetworkAddress::from_peer(peer_id);
+                if target.distance(&addr) <= distance {
+                    Some((addr, multi_addrs.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        assert_eq!(expected_result, result);
+    }
 }
