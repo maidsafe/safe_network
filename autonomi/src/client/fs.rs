@@ -36,7 +36,6 @@ pub static FILE_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
 });
 
 /// Errors that can occur during the file upload operation.
-#[cfg(feature = "fs")]
 #[derive(Debug, thiserror::Error)]
 pub enum UploadError {
     #[error("Failed to recursively traverse directory")]
@@ -53,7 +52,6 @@ pub enum UploadError {
     Deserialization(#[from] rmp_serde::decode::Error),
 }
 
-#[cfg(feature = "fs")]
 /// Errors that can occur during the download operation.
 #[derive(Debug, thiserror::Error)]
 pub enum DownloadError {
@@ -63,7 +61,6 @@ pub enum DownloadError {
     IoError(#[from] std::io::Error),
 }
 
-#[cfg(feature = "fs")]
 /// Errors that can occur during the file cost calculation.
 #[derive(Debug, thiserror::Error)]
 pub enum FileCostError {

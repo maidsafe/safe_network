@@ -6,6 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+// Optionally enable nightly `doc_cfg`. Allows items to be annotated, e.g.: "Available on crate feature X only".
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 pub mod address;
 pub mod payment;
 
@@ -14,14 +17,19 @@ pub mod archive_private;
 pub mod data;
 pub mod data_private;
 #[cfg(feature = "external-signer")]
+#[cfg_attr(docsrs, doc(cfg(feature = "external-signer")))]
 pub mod external_signer;
 #[cfg(feature = "fs")]
+#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 pub mod fs;
 #[cfg(feature = "fs")]
+#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
 pub mod fs_private;
 #[cfg(feature = "registers")]
+#[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
 pub mod registers;
 #[cfg(feature = "vault")]
+#[cfg_attr(docsrs, doc(cfg(feature = "vault")))]
 pub mod vault;
 
 #[cfg(target_arch = "wasm32")]
