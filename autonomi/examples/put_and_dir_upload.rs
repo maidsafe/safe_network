@@ -10,7 +10,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Put and fetch data.
     let data_addr = client
-        .data_put(Bytes::from("Hello, World"), wallet.clone().into())
+        .data_put(Bytes::from("Hello, World"), (&wallet).into())
         .await?;
     let _data_fetched = client.data_get(data_addr).await?;
 
