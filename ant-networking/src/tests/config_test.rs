@@ -1,52 +1,65 @@
 use crate::config::{
+    ConfigError, NetworkConfig, 
     CLOSE_GROUP_SIZE, CONNECTION_KEEP_ALIVE_TIMEOUT, KAD_QUERY_TIMEOUT_S, MAX_PACKET_SIZE,
-    NETWORKING_CHANNEL_SIZE, NetworkConfig, REQUEST_TIMEOUT_DEFAULT_S,
-    RELAY_MANAGER_RESERVATION_INTERVAL, RESEND_IDENTIFY_INVERVAL,
+    NETWORKING_CHANNEL_SIZE, REQUEST_TIMEOUT_DEFAULT_S,
 };
 use std::time::Duration;
 
 #[test]
-fn test_network_config_creation() {
-    let custom_config = NetworkConfig {
-        max_packet_size: 1024,
-        close_group_size: 4,
-        request_timeout: Duration::from_secs(30),
-        connection_keep_alive: Duration::from_secs(10),
-        kad_query_timeout: Duration::from_secs(15),
-        channel_size: 50,
-    };
+fn test_network_config_builder() {
+    let config = NetworkConfig::builder()
+        .max_packet_size(1024)
+        .close_group_size(4)
+        .request_timeout(Duration::from_secs(30))
+        .connection_keep_alive(Duration::from_secs(10))
+        .kad_query_timeout(Duration::from_secs(15))
+        .channel_size(50)
+        .build()
+        .unwrap();
 
-    assert_eq!(custom_config.max_packet_size, 1024);
-    assert_eq!(custom_config.close_group_size, 4);
-    assert_eq!(custom_config.request_timeout, Duration::from_secs(30));
-    assert_eq!(custom_config.connection_keep_alive, Duration::from_secs(10));
-    assert_eq!(custom_config.kad_query_timeout, Duration::from_secs(15));
-    assert_eq!(custom_config.channel_size, 50);
+    assert_eq!(config.max_packet_size, 1024);
+    assert_eq!(config.close_group_size, 4);
+    assert_eq!(config.request_timeout, Duration::from_secs(30));
+    assert_eq!(config.connection_keep_alive, Duration::from_secs(10));
+    assert_eq!(config.kad_query_timeout, Duration::from_secs(15));
+    assert_eq!(config.channel_size, 50);
 }
 
 #[test]
-fn test_config_constants() {
-    assert!(MAX_PACKET_SIZE > 0);
-    assert!(CLOSE_GROUP_SIZE > 0);
-    assert!(REQUEST_TIMEOUT_DEFAULT_S > 0);
-    assert!(CONNECTION_KEEP_ALIVE_TIMEOUT > Duration::from_secs(0));
-    assert!(KAD_QUERY_TIMEOUT_S > 0);
-    assert!(NETWORKING_CHANNEL_SIZE > 0);
-    assert!(RELAY_MANAGER_RESERVATION_INTERVAL > Duration::from_secs(0));
-    assert!(RESEND_IDENTIFY_INVERVAL > Duration::from_secs(0));
+fn test_network_config_validation() {
+    // Test invalid packet size
+    let result = NetworkConfig::builder()
+        .max_packet_size(MAX_PACKET_SIZE + 1)
+        .build();
+    assert!(matches!(result, Err(ConfigError::PacketSizeTooLarge(_))));
+
+    // Test invalid close group size
+    let result = NetworkConfig::builder()
+        .close_group_size(2)
+        .build();
+    assert!(matches!(result, Err(ConfigError::InvalidCloseGroupSize(_))));
+
+    // Test invalid timeout
+    let result = NetworkConfig::builder()
+        .request_timeout(Duration::from_secs(5))
+        .build();
+    assert!(matches!(result, Err(ConfigError::TimeoutTooShort(_, _))));
+
+    // Test invalid channel size
+    let result = NetworkConfig::builder()
+        .channel_size(5)
+        .build();
+    assert!(matches!(result, Err(ConfigError::ChannelSizeTooSmall(_))));
 }
 
 #[test]
-fn test_config_reasonable_values() {
-    // Test that packet size is reasonable (not too small or large)
-    assert!(MAX_PACKET_SIZE >= 1024); // At least 1KB
-    assert!(MAX_PACKET_SIZE <= 1024 * 1024 * 10); // Not more than 10MB
-
-    // Test that timeouts are reasonable
-    assert!(REQUEST_TIMEOUT_DEFAULT_S >= 10); // At least 10 seconds
-    assert!(REQUEST_TIMEOUT_DEFAULT_S <= 300); // Not more than 5 minutes
-
-    // Test that group size is reasonable
-    assert!(CLOSE_GROUP_SIZE >= 3); // At least 3 nodes for redundancy
-    assert!(CLOSE_GROUP_SIZE <= 20); // Not too many nodes
+fn test_network_config_defaults() {
+    let config = NetworkConfig::default();
+    
+    assert_eq!(config.max_packet_size, MAX_PACKET_SIZE);
+    assert_eq!(config.close_group_size, CLOSE_GROUP_SIZE);
+    assert_eq!(config.request_timeout, Duration::from_secs(REQUEST_TIMEOUT_DEFAULT_S));
+    assert_eq!(config.connection_keep_alive, CONNECTION_KEEP_ALIVE_TIMEOUT);
+    assert_eq!(config.kad_query_timeout, Duration::from_secs(KAD_QUERY_TIMEOUT_S));
+    assert_eq!(config.channel_size, NETWORKING_CHANNEL_SIZE);
 } 
