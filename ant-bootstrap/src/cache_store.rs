@@ -207,30 +207,25 @@ impl BootstrapCacheStore {
     /// Make sure to have clean addrs inside the cache as we don't call craft_valid_multiaddr
     pub async fn load_cache_data(cfg: &BootstrapCacheConfig) -> Result<CacheData> {
         // Try to open the file with read permissions
-        let mut file = match OpenOptions::new().read(true).open(&cfg.cache_file_path) {
-            Ok(f) => f,
-            Err(e) => {
-                warn!("Failed to open cache file: {}", e);
-                return Err(Error::from(e));
-            }
-        };
+        let mut file = OpenOptions::new()
+            .read(true)
+            .open(&cfg.cache_file_path)
+            .inspect_err(|err| warn!("Failed to open cache file: {err}",))?;
 
         // Acquire shared lock for reading
-        if let Err(e) = Self::acquire_shared_lock(&file).await {
-            warn!("Failed to acquire shared lock: {}", e);
-            return Err(e);
-        }
+        Self::acquire_shared_lock(&file).await.inspect_err(|err| {
+            warn!("Failed to acquire shared lock: {err}");
+        })?;
 
         // Read the file contents
         let mut contents = String::new();
-        if let Err(e) = file.read_to_string(&mut contents) {
-            warn!("Failed to read cache file: {}", e);
-            return Err(Error::from(e));
-        }
+        file.read_to_string(&mut contents).inspect_err(|err| {
+            warn!("Failed to read cache file: {err}");
+        })?;
 
         // Parse the cache data
-        let mut data = serde_json::from_str::<CacheData>(&contents).map_err(|e| {
-            warn!("Failed to parse cache data: {}", e);
+        let mut data = serde_json::from_str::<CacheData>(&contents).map_err(|err| {
+            warn!("Failed to parse cache data: {err}");
             Error::FailedToParseCacheData
         })?;
 
@@ -389,7 +384,7 @@ impl BootstrapCacheStore {
     }
 
     async fn acquire_shared_lock(file: &File) -> Result<()> {
-        let file = file.try_clone().map_err(Error::from)?;
+        let file = file.try_clone()?;
 
         tokio::task::spawn_blocking(move || file.try_lock_shared().map_err(Error::from))
             .await
@@ -426,22 +421,22 @@ impl BootstrapCacheStore {
         info!("Writing cache to disk: {:?}", self.cache_path);
         // Create parent directory if it doesn't exist
         if let Some(parent) = self.cache_path.parent() {
-            fs::create_dir_all(parent).map_err(Error::from)?;
+            fs::create_dir_all(parent)?;
         }
 
         // Create a temporary file in the same directory as the cache file
-        let temp_file = NamedTempFile::new().map_err(Error::from)?;
+        let temp_dir = std::env::temp_dir();
+        let temp_file = NamedTempFile::new_in(&temp_dir)?;
 
         // Write data to temporary file
-        serde_json::to_writer_pretty(&temp_file, &self.data).map_err(Error::from)?;
+        serde_json::to_writer_pretty(&temp_file, &self.data)?;
 
         // Open the target file with proper permissions
         let file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
-            .open(&self.cache_path)
-            .map_err(Error::from)?;
+            .open(&self.cache_path)?;
 
         // Acquire exclusive lock
         Self::acquire_exclusive_lock(&file).await?;
