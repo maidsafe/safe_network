@@ -9,13 +9,9 @@
 pub mod address;
 pub mod payment;
 
-#[cfg(feature = "data")]
 pub mod archive;
-#[cfg(feature = "data")]
 pub mod archive_private;
-#[cfg(feature = "data")]
 pub mod data;
-#[cfg(feature = "data")]
 pub mod data_private;
 #[cfg(feature = "external-signer")]
 pub mod external_signer;

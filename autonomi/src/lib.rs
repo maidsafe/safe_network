@@ -26,7 +26,6 @@
 //!
 //! - `fs`: Up/download files and directories from filesystem
 //! - `registers`: Operate on register datatype
-//! - `data`: Operate on raw bytes and chunks
 //! - `vault`: Operate on Vault datatype
 //! - `full`: All of above
 //! - `local`: Discover local peers using mDNS. Useful for development.
@@ -39,7 +38,6 @@
 extern crate tracing;
 
 pub mod client;
-#[cfg(feature = "data")]
 mod self_encryption;
 mod utils;
 
