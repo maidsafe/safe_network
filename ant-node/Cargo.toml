@@ -17,10 +17,9 @@ path = "src/bin/antnode/main.rs"
 default = ["metrics", "upnp", "open-metrics", "encrypt-records"]
 encrypt-records = ["ant-networking/encrypt-records"]
 extension-module = ["pyo3/extension-module"]
-local = ["ant-networking/local", "ant-evm/local"]
+local = ["ant-networking/local", "ant-evm/local", "ant-bootstrap/local"]
 loud = ["ant-networking/loud"] # loud mode: print important messages to console
 metrics = ["ant-logging/process-metrics"]
-network-contacts = ["ant-peers-acquisition/network-contacts"]
 nightly = []
 open-metrics = ["ant-networking/open-metrics", "prometheus-client"]
 otlp = ["ant-logging/otlp"]
@@ -33,7 +32,6 @@ ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
 ant-evm = { path = "../ant-evm", version = "0.1.4" }
 ant-logging = { path = "../ant-logging", version = "0.2.40" }
 ant-networking = { path = "../ant-networking", version = "0.19.5" }
-ant-peers-acquisition = { path = "../ant-peers-acquisition", version = "0.5.7" }
 ant-protocol = { path = "../ant-protocol", version = "0.17.15" }
 ant-registers = { path = "../ant-registers", version = "0.4.3" }
 ant-service-management = { path = "../ant-service-management", version = "0.4.3" }

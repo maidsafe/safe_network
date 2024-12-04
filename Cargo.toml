@@ -11,7 +11,6 @@ members = [
     "ant-node",
     "ant-node-manager",
     "ant-node-rpc-client",
-    "ant-peers-acquisition",
     "ant-protocol",
     "ant-registers",
     "ant-service-management",

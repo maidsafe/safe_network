@@ -9,7 +9,7 @@
 use crate::{
     config::get_node_registry_path, helpers::download_and_extract_release, VerbosityLevel,
 };
-use ant_peers_acquisition::get_peers_from_url;
+use ant_bootstrap::ContactsFetcher;
 use ant_releases::{AntReleaseRepoActions, ReleaseType};
 use ant_service_management::{NatDetectionStatus, NodeRegistry};
 use color_eyre::eyre::{bail, OptionExt, Result};
@@ -35,7 +35,11 @@ pub async fn run_nat_detection(
     let servers = match servers {
         Some(servers) => servers,
         None => {
-            let servers = get_peers_from_url(NAT_DETECTION_SERVERS_LIST_URL.parse()?).await?;
+            let mut contacts_fetcher = ContactsFetcher::new()?;
+            contacts_fetcher.ignore_peer_id(true);
+            contacts_fetcher.insert_endpoint(NAT_DETECTION_SERVERS_LIST_URL.parse()?);
+
+            let servers = contacts_fetcher.fetch_addrs().await?;
 
             servers
                 .choose_multiple(&mut rand::thread_rng(), 10)

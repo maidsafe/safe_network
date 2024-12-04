@@ -548,12 +548,12 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
 
 fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, ReloadHandle, Option<WorkerGuard>)> {
     let logging_targets = vec![
+        ("ant_bootstrap".to_string(), Level::INFO),
         ("ant_build_info".to_string(), Level::DEBUG),
         ("ant_evm".to_string(), Level::DEBUG),
         ("ant_logging".to_string(), Level::DEBUG),
         ("ant_networking".to_string(), Level::INFO),
         ("ant_node".to_string(), Level::DEBUG),
-        ("ant_peers_acquisition".to_string(), Level::DEBUG),
         ("ant_protocol".to_string(), Level::DEBUG),
         ("ant_registers".to_string(), Level::DEBUG),
         ("antnode".to_string(), Level::DEBUG),

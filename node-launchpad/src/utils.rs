@@ -81,8 +81,12 @@ pub fn initialize_logging() -> Result<()> {
         .context(format!("Failed to create file {log_path:?}"))?;
     std::env::set_var(
         "RUST_LOG",
-        std::env::var("RUST_LOG")
-            .unwrap_or_else(|_| format!("{}=trace,ant_node_manager=trace,ant_service_management=trace,ant_peers_acquisition=trace", env!("CARGO_CRATE_NAME"))),
+        std::env::var("RUST_LOG").unwrap_or_else(|_| {
+            format!(
+                "{}=trace,ant_node_manager=trace,ant_service_management=trace,ant_bootstrap=debug",
+                env!("CARGO_CRATE_NAME")
+            )
+        }),
     );
     let file_subscriber = tracing_subscriber::fmt::layer()
         .with_file(true)

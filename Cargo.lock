@@ -762,7 +762,6 @@ dependencies = [
  "ant-bootstrap",
  "ant-build-info",
  "ant-logging",
- "ant-peers-acquisition",
  "autonomi",
  "clap",
  "color-eyre",
@@ -905,7 +904,6 @@ dependencies = [
  "ant-evm",
  "ant-logging",
  "ant-networking",
- "ant-peers-acquisition",
  "ant-protocol",
  "ant-registers",
  "ant-service-management",
@@ -959,10 +957,10 @@ dependencies = [
 name = "ant-node-manager"
 version = "0.11.3"
 dependencies = [
+ "ant-bootstrap",
  "ant-build-info",
  "ant-evm",
  "ant-logging",
- "ant-peers-acquisition",
  "ant-protocol",
  "ant-releases",
  "ant-service-management",
@@ -1005,7 +1003,6 @@ dependencies = [
  "ant-build-info",
  "ant-logging",
  "ant-node",
- "ant-peers-acquisition",
  "ant-protocol",
  "ant-service-management",
  "async-trait",
@@ -1021,22 +1018,6 @@ dependencies = [
  "tonic 0.6.2",
  "tracing",
  "tracing-core",
-]
-
-[[package]]
-name = "ant-peers-acquisition"
-version = "0.5.7"
-dependencies = [
- "ant-protocol",
- "clap",
- "lazy_static",
- "libp2p 0.54.1 (git+https://github.com/maqi/rust-libp2p.git?branch=kad_0.46.2)",
- "rand 0.8.5",
- "reqwest 0.12.9",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "url",
 ]
 
 [[package]]
@@ -1556,7 +1537,6 @@ dependencies = [
  "ant-evm",
  "ant-logging",
  "ant-networking",
- "ant-peers-acquisition",
  "ant-protocol",
  "ant-registers",
  "bip39",
@@ -6586,10 +6566,10 @@ dependencies = [
 name = "node-launchpad"
 version = "0.4.5"
 dependencies = [
+ "ant-bootstrap",
  "ant-build-info",
  "ant-evm",
  "ant-node-manager",
- "ant-peers-acquisition",
  "ant-protocol",
  "ant-releases",
  "ant-service-management",
@@ -9594,7 +9574,6 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 name = "test-utils"
 version = "0.4.11"
 dependencies = [
- "ant-peers-acquisition",
  "bytes",
  "color-eyre",
  "dirs-next",

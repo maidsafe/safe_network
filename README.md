@@ -32,7 +32,7 @@ You should build from the `stable` branch, as follows:
 
 ```
 git checkout stable
-cargo build --release --features network-contacts --bin antnode
+cargo build --release --bin antnode
 ```
 
 #### Running the Node
@@ -40,23 +40,12 @@ cargo build --release --features network-contacts --bin antnode
 To run a node and receive rewards, you need to specify your Ethereum address as a parameter. Rewards are paid to the specified address.
 
 ```
-cargo run --release --bin antnode --features network-contacts -- --rewards-address <YOUR_ETHEREUM_ADDRESS_TO_RECEIVE_REWARDS>
+cargo run --release --bin antnode -- --rewards-address <YOUR_ETHEREUM_ADDRESS_TO_RECEIVE_REWARDS>
 ```
 
 More options about EVM Network below.
 
 ### For Developers
-
-#### Build
-
-You can build `autonomi` and `antnode` with the `network-contacts` feature:
-
-```
-cargo build --release --features network-contacts --bin autonomi
-cargo build --release --features network-contacts --bin antnode
-```
-
-
 #### Main Crates
 
 - [Autonomi API](https://github.com/maidsafe/autonomi/blob/main/autonomi/README.md) The client APIs
@@ -97,8 +86,8 @@ WASM support for the autonomi API is currently under active development. More do
   used by the autonomi network.
 - [Registers](https://github.com/maidsafe/autonomi/blob/main/ant-registers/README.md) The
   registers crate, used for the Register CRDT data type on the network.
-- [Peers Acquisition](https://github.com/maidsafe/autonomi/blob/main/ant-peers-acquisition/README.md)
-  The peers acquisition crate, or: how the network layer discovers bootstrap peers.
+- [Bootstrap](https://github.com/maidsafe/autonomi/blob/main/ant-bootstrap/README.md)
+  The network bootstrap cache or: how the network layer discovers bootstrap peers.
 - [Build Info](https://github.com/maidsafe/autonomi/blob/main/ant-build-info/README.md) Small
   helper used to get the build/commit versioning info for debug purposes.
 

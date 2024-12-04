@@ -14,9 +14,9 @@ use crate::{
     local::{kill_network, run_network, LocalNetworkOptions},
     print_banner, status_report, VerbosityLevel,
 };
+use ant_bootstrap::PeersArgs;
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
-use ant_peers_acquisition::PeersArgs;
 use ant_releases::{AntReleaseRepoActions, ReleaseType};
 use ant_service_management::{
     control::ServiceController, get_local_node_registry_path, NodeRegistry,
@@ -72,10 +72,10 @@ pub async fn join(
 
     // If no peers are obtained we will attempt to join the existing local network, if one
     // is running.
-    let peers = match peers_args.get_peers().await {
+    let peers = match peers_args.get_addrs().await {
         Ok(peers) => Some(peers),
         Err(err) => match err {
-            ant_peers_acquisition::error::Error::PeersNotObtained => {
+            ant_bootstrap::error::Error::NoBootstrapPeersFound => {
                 warn!("PeersNotObtained, peers is set to None");
                 None
             }

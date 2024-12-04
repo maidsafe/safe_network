@@ -9,6 +9,7 @@
 mod subcommands;
 
 use crate::subcommands::evm_network::EvmNetworkCommand;
+use ant_bootstrap::PeersArgs;
 use ant_evm::RewardsAddress;
 use ant_logging::{LogBuilder, LogFormat};
 use ant_node_manager::{
@@ -16,7 +17,6 @@ use ant_node_manager::{
     cmd::{self},
     VerbosityLevel, DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S,
 };
-use ant_peers_acquisition::PeersArgs;
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
 use libp2p::Multiaddr;
@@ -1381,9 +1381,9 @@ async fn main() -> Result<()> {
 
 fn get_log_builder(level: Level) -> Result<LogBuilder> {
     let logging_targets = vec![
+        ("ant_bootstrap".to_string(), level),
         ("evmlib".to_string(), level),
         ("evm-testnet".to_string(), level),
-        ("ant_peers_acquisition".to_string(), level),
         ("ant_node_manager".to_string(), level),
         ("antctl".to_string(), level),
         ("antctld".to_string(), level),
