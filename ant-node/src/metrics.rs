@@ -71,7 +71,7 @@ impl NodeMetricsRecorder {
 
         let sub_registry = registries
             .standard_metrics
-            .sub_registry_with_prefix("sn_node");
+            .sub_registry_with_prefix("ant_node");
 
         let put_record_ok = Family::default();
         sub_registry.register(
