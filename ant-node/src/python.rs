@@ -102,13 +102,13 @@ impl AntNode {
                 rewards_address,
                 evm_network,
                 node_socket_addr,
-                initial_peers,
                 local,
                 root_dir.unwrap_or_else(|| PathBuf::from(".")),
                 #[cfg(feature = "upnp")]
                 false,
             );
-            node_builder.is_behind_home_network = home_network;
+            node_builder.initial_peers(initial_peers);
+            node_builder.is_behind_home_network(home_network);
 
             node_builder
                 .build_and_run()

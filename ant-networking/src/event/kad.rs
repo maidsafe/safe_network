@@ -242,11 +242,12 @@ impl SwarmDriver {
                 peer,
                 is_new_peer,
                 old_peer,
+                addresses,
                 ..
             } => {
                 event_string = "kad_event::RoutingUpdated";
                 if is_new_peer {
-                    self.update_on_peer_addition(peer);
+                    self.update_on_peer_addition(peer, addresses);
 
                     // This should only happen once
                     if self.bootstrap.notify_new_peer() {

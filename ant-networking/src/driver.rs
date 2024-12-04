@@ -30,6 +30,7 @@ use crate::{
 };
 use crate::{transport, NodeIssue};
 
+use ant_bootstrap::BootstrapCacheStore;
 use ant_evm::PaymentQuote;
 use ant_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
@@ -71,8 +72,11 @@ use std::{
     num::NonZeroUsize,
     path::PathBuf,
 };
-use tokio::sync::{mpsc, oneshot};
 use tokio::time::Duration;
+use tokio::{
+    sync::{mpsc, oneshot},
+    time::Interval,
+};
 use tracing::warn;
 use xor_name::XorName;
 
@@ -260,13 +264,13 @@ pub(super) struct NodeBehaviour {
 
 #[derive(Debug)]
 pub struct NetworkBuilder {
+    bootstrap_cache: Option<BootstrapCacheStore>,
     is_behind_home_network: bool,
     keypair: Keypair,
     local: bool,
     listen_addr: Option<SocketAddr>,
     request_timeout: Option<Duration>,
     concurrency_limit: Option<usize>,
-    initial_peers: Vec<Multiaddr>,
     #[cfg(feature = "open-metrics")]
     metrics_registries: Option<MetricsRegistries>,
     #[cfg(feature = "open-metrics")]
@@ -278,13 +282,13 @@ pub struct NetworkBuilder {
 impl NetworkBuilder {
     pub fn new(keypair: Keypair, local: bool) -> Self {
         Self {
+            bootstrap_cache: None,
             is_behind_home_network: false,
             keypair,
             local,
             listen_addr: None,
             request_timeout: None,
             concurrency_limit: None,
-            initial_peers: Default::default(),
             #[cfg(feature = "open-metrics")]
             metrics_registries: None,
             #[cfg(feature = "open-metrics")]
@@ -292,6 +296,10 @@ impl NetworkBuilder {
             #[cfg(feature = "upnp")]
             upnp: false,
         }
+    }
+
+    pub fn bootstrap_cache(&mut self, bootstrap_cache: BootstrapCacheStore) {
+        self.bootstrap_cache = Some(bootstrap_cache);
     }
 
     pub fn is_behind_home_network(&mut self, enable: bool) {
@@ -308,10 +316,6 @@ impl NetworkBuilder {
 
     pub fn concurrency_limit(&mut self, concurrency_limit: usize) {
         self.concurrency_limit = Some(concurrency_limit);
-    }
-
-    pub fn initial_peers(&mut self, initial_peers: Vec<Multiaddr>) {
-        self.initial_peers = initial_peers;
     }
 
     /// Set the registries used inside the metrics server.
@@ -720,6 +724,7 @@ impl NetworkBuilder {
             close_group: Vec::with_capacity(CLOSE_GROUP_SIZE),
             peers_in_rt: 0,
             bootstrap,
+            bootstrap_cache: self.bootstrap_cache,
             relay_manager,
             connected_relay_clients: Default::default(),
             external_address_manager,
@@ -815,6 +820,7 @@ pub struct SwarmDriver {
     pub(crate) close_group: Vec<PeerId>,
     pub(crate) peers_in_rt: usize,
     pub(crate) bootstrap: ContinuousNetworkDiscover,
+    pub(crate) bootstrap_cache: Option<BootstrapCacheStore>,
     pub(crate) external_address_manager: Option<ExternalAddressManager>,
     pub(crate) relay_manager: Option<RelayManager>,
     /// The peers that are using our relay service.
@@ -843,7 +849,7 @@ pub struct SwarmDriver {
     pub(crate) bootstrap_peers: BTreeMap<Option<u32>, HashSet<PeerId>>,
     // Peers that having live connection to. Any peer got contacted during kad network query
     // will have live connection established. And they may not appear in the RT.
-    pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Instant)>,
+    pub(crate) live_connected_peers: BTreeMap<ConnectionId, (PeerId, Multiaddr, Instant)>,
     /// The list of recently established connections ids.
     /// This is used to prevent log spamming.
     pub(crate) latest_established_connection_ids: HashMap<usize, (IpAddr, Instant)>,
@@ -875,6 +881,24 @@ impl SwarmDriver {
         let mut network_discover_interval = interval(NETWORK_DISCOVER_INTERVAL);
         let mut set_farthest_record_interval = interval(CLOSET_RECORD_CHECK_INTERVAL);
         let mut relay_manager_reservation_interval = interval(RELAY_MANAGER_RESERVATION_INTERVAL);
+
+        let mut bootstrap_cache_save_interval = self.bootstrap_cache.as_ref().and_then(|cache| {
+            if cache.config().disable_cache_writing {
+                None
+            } else {
+                // add a variance of 10% to the interval, to avoid all nodes writing to disk at the same time.
+                let duration =
+                    Self::duration_with_variance(cache.config().min_cache_save_duration, 10);
+                Some(interval(duration))
+            }
+        });
+        if let Some(interval) = bootstrap_cache_save_interval.as_mut() {
+            interval.tick().await; // first tick completes immediately
+            info!(
+                "Bootstrap cache save interval is set to {:?}",
+                interval.period()
+            );
+        }
 
         // temporarily skip processing IncomingConnectionError swarm event to avoid log spamming
         let mut previous_incoming_connection_error_event = None;
@@ -1004,6 +1028,37 @@ impl SwarmDriver {
                     if let Some(relay_manager) = &mut self.relay_manager {
                         relay_manager.try_connecting_to_relay(&mut self.swarm, &self.bad_nodes)
                     }
+                },
+                Some(()) = Self::conditional_interval(&mut bootstrap_cache_save_interval) => {
+                    let Some(bootstrap_cache) = self.bootstrap_cache.as_mut() else {
+                        continue;
+                    };
+                    let Some(current_interval) = bootstrap_cache_save_interval.as_mut() else {
+                        continue;
+                    };
+
+                    if let Err(err) = bootstrap_cache.sync_and_save_to_disk(true).await {
+                        error!("Failed to save bootstrap cache: {err}");
+                    }
+
+                    if current_interval.period() >= bootstrap_cache.config().max_cache_save_duration {
+                        continue;
+                    }
+
+                    // add a variance of 1% to the max interval to avoid all nodes writing to disk at the same time.
+                    let max_cache_save_duration =
+                        Self::duration_with_variance(bootstrap_cache.config().max_cache_save_duration, 1);
+
+                    // scale up the interval until we reach the max
+                    let new_duration = Duration::from_secs(
+                        std::cmp::min(
+                         current_interval.period().as_secs() * bootstrap_cache.config().cache_save_scaling_factor,
+                         max_cache_save_duration.as_secs(),
+                    ));
+                    info!("Scaling up the bootstrap cache save interval to {new_duration:?}");
+                    *current_interval = interval(new_duration);
+                    current_interval.tick().await; // first tick completes immediately
+
                 },
             }
         }
@@ -1156,13 +1211,35 @@ impl SwarmDriver {
         info!("Listening on {id:?} with addr: {addr:?}");
         Ok(())
     }
+
+    /// Returns a new duration that is within +/- variance of the provided duration.
+    fn duration_with_variance(duration: Duration, variance: u32) -> Duration {
+        let actual_variance = duration / variance;
+        let random_adjustment =
+            Duration::from_secs(rand::thread_rng().gen_range(0..actual_variance.as_secs()));
+        if random_adjustment.as_secs() % 2 == 0 {
+            duration - random_adjustment
+        } else {
+            duration + random_adjustment
+        }
+    }
+
+    /// To tick an optional interval inside tokio::select! without looping forever.
+    async fn conditional_interval(i: &mut Option<Interval>) -> Option<()> {
+        match i {
+            Some(i) => {
+                i.tick().await;
+                Some(())
+            }
+            None => None,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::check_and_wipe_storage_dir_if_necessary;
-
-    use std::{fs, io::Read};
+    use std::{fs, io::Read, time::Duration};
 
     #[tokio::test]
     async fn version_file_update() {
@@ -1218,5 +1295,19 @@ mod tests {
         }
         // The storage_dir shall be removed as version_key changed
         assert!(fs::metadata(storage_dir.clone()).is_err());
+    }
+
+    #[tokio::test]
+    async fn test_duration_variance_fn() {
+        let duration = Duration::from_secs(100);
+        let variance = 10;
+        for _ in 0..10000 {
+            let new_duration = crate::SwarmDriver::duration_with_variance(duration, variance);
+            if new_duration < duration - duration / variance
+                || new_duration > duration + duration / variance
+            {
+                panic!("new_duration: {new_duration:?} is not within the expected range",);
+            }
+        }
     }
 }

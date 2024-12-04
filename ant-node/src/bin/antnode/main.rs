@@ -13,12 +13,12 @@ mod rpc_service;
 mod subcommands;
 
 use crate::subcommands::EvmNetworkCommand;
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore, PeersArgs};
 use ant_evm::{get_evm_network_from_env, EvmNetwork, RewardsAddress};
 #[cfg(feature = "metrics")]
 use ant_logging::metrics::init_metrics;
 use ant_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use ant_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
-use ant_peers_acquisition::PeersArgs;
 use ant_protocol::{
     node::get_antnode_root_dir,
     node_rpc::{NodeCtrl, StopResult},
@@ -172,12 +172,6 @@ struct Opt {
     #[clap(long)]
     rpc: Option<SocketAddr>,
 
-    /// Run the node in local mode.
-    ///
-    /// When this flag is set, we will not filter out local addresses that we observe.
-    #[clap(long)]
-    local: bool,
-
     /// Specify the owner(readable discord user name).
     #[clap(long)]
     owner: Option<String>,
@@ -271,7 +265,9 @@ fn main() -> Result<()> {
         init_logging(&opt, keypair.public().to_peer_id())?;
 
     let rt = Runtime::new()?;
-    let bootstrap_peers = rt.block_on(opt.peers.get_peers())?;
+    let mut bootstrap_cache = BootstrapCacheStore::empty(BootstrapCacheConfig::default_config()?)?;
+    rt.block_on(bootstrap_cache.initialize_from_peers_arg(&opt.peers))?;
+
     let msg = format!(
         "Running {} v{}",
         env!("CARGO_BIN_NAME"),
@@ -285,7 +281,10 @@ fn main() -> Result<()> {
         ant_build_info::git_info()
     );
 
-    info!("Node started with initial_peers {bootstrap_peers:?}");
+    info!(
+        "Node started with bootstrap cache containing {} peers",
+        bootstrap_cache.peer_count()
+    );
 
     // Create a tokio runtime per `run_node` attempt, this ensures
     // any spawned tasks are closed before we would attempt to run
@@ -299,13 +298,13 @@ fn main() -> Result<()> {
             rewards_address,
             evm_network,
             node_socket_addr,
-            bootstrap_peers,
-            opt.local,
+            opt.peers.local,
             root_dir,
             #[cfg(feature = "upnp")]
             opt.upnp,
         );
-        node_builder.is_behind_home_network = opt.home_network;
+        node_builder.bootstrap_cache(bootstrap_cache);
+        node_builder.is_behind_home_network(opt.home_network);
         #[cfg(feature = "open-metrics")]
         let mut node_builder = node_builder;
         // if enable flag is provided or only if the port is specified then enable the server by setting Some()

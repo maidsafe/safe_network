@@ -21,6 +21,7 @@ websockets = ["libp2p/tcp"]
 
 [dependencies]
 aes-gcm-siv = "0.11.1"
+ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
 ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
 ant-evm = { path = "../ant-evm", version = "0.1.4" }
 ant-protocol = { path = "../ant-protocol", version = "0.17.15" }

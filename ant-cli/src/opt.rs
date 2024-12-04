@@ -6,14 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use std::time::Duration;
-
+use crate::commands::SubCmd;
+use ant_bootstrap::PeersArgs;
 use ant_logging::{LogFormat, LogOutputDest};
-use ant_peers_acquisition::PeersArgs;
 use clap::Parser;
 use color_eyre::Result;
-
-use crate::commands::SubCmd;
+use std::time::Duration;
 
 // Please do not remove the blank lines in these doc comments.
 // They are used for inserting line breaks when the help menu is rendered in the UI.
