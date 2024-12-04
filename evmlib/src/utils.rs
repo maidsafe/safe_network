@@ -70,7 +70,8 @@ pub fn get_evm_network(
     ))
 }
 
-/// Get the `Network` from environment variables
+/// Get the `Network` from environment variables.
+///
 /// Returns an error if we cannot obtain the network from any means.
 pub fn get_evm_network_from_env() -> Result<Network, Error> {
     let evm_vars = [

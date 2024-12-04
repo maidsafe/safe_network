@@ -55,6 +55,7 @@ pub use bytes::Bytes;
 #[doc(no_inline)] // Place this under 'Re-exports' in the docs.
 pub use libp2p::Multiaddr;
 
+#[doc(inline)]
 pub use client::Client;
 
 #[cfg(feature = "extension-module")]
