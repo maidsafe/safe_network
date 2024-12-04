@@ -63,7 +63,7 @@ async fn test_cache_persistence() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create a new cache store with the same path
     let mut cache_store2 = BootstrapCacheStore::empty(config)?;
-    cache_store2.initialize_from_local_cache().await.unwrap();
+    cache_store2.initialize_from_local_cache().unwrap();
     let addrs = cache_store2.get_reliable_addrs().collect::<Vec<_>>();
 
     assert!(!addrs.is_empty(), "Cache should persist across instances");

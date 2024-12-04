@@ -10,6 +10,7 @@ use crate::{
     craft_valid_multiaddr, initial_peers::PeersArgs, multiaddr_get_peer_id, BootstrapAddr,
     BootstrapAddresses, BootstrapCacheConfig, Error, Result,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use fs2::FileExt;
 use libp2p::multiaddr::Protocol;
 use libp2p::{Multiaddr, PeerId};
@@ -17,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read};
+use std::io::Read;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use tempfile::NamedTempFile;
@@ -197,15 +198,15 @@ impl BootstrapCacheStore {
         Ok(())
     }
 
-    pub async fn initialize_from_local_cache(&mut self) -> Result<()> {
-        self.data = Self::load_cache_data(&self.config).await?;
+    pub fn initialize_from_local_cache(&mut self) -> Result<()> {
+        self.data = Self::load_cache_data(&self.config)?;
         self.old_shared_state = self.data.clone();
         Ok(())
     }
 
     /// Load cache data from disk
     /// Make sure to have clean addrs inside the cache as we don't call craft_valid_multiaddr
-    pub async fn load_cache_data(cfg: &BootstrapCacheConfig) -> Result<CacheData> {
+    pub fn load_cache_data(cfg: &BootstrapCacheConfig) -> Result<CacheData> {
         // Try to open the file with read permissions
         let mut file = OpenOptions::new()
             .read(true)
@@ -213,7 +214,7 @@ impl BootstrapCacheStore {
             .inspect_err(|err| warn!("Failed to open cache file: {err}",))?;
 
         // Acquire shared lock for reading
-        Self::acquire_shared_lock(&file).await.inspect_err(|err| {
+        Self::acquire_shared_lock(&file).inspect_err(|err| {
             warn!("Failed to acquire shared lock: {err}");
         })?;
 
@@ -365,7 +366,7 @@ impl BootstrapCacheStore {
             return Ok(());
         }
 
-        if let Ok(data_from_file) = Self::load_cache_data(&self.config).await {
+        if let Ok(data_from_file) = Self::load_cache_data(&self.config) {
             self.data.sync(&self.old_shared_state, &data_from_file);
             // Now the synced version is the old_shared_state
         } else {
@@ -383,19 +384,31 @@ impl BootstrapCacheStore {
         })
     }
 
-    async fn acquire_shared_lock(file: &File) -> Result<()> {
-        let file = file.try_clone()?;
-
-        tokio::task::spawn_blocking(move || file.try_lock_shared().map_err(Error::from))
-            .await
-            .map_err(|e| {
-                Error::from(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to spawn blocking task: {}", e),
-                ))
-            })?
+    /// Acquire a shared lock on the cache file.
+    #[cfg(target_arch = "wasm32")]
+    fn acquire_shared_lock(_file: &File) -> Result<()> {
+        Ok(())
     }
 
+    /// Acquire a shared lock on the cache file.
+    /// This is a no-op on WASM.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn acquire_shared_lock(file: &File) -> Result<()> {
+        let file = file.try_clone()?;
+        file.try_lock_shared()?;
+
+        Ok(())
+    }
+
+    /// Acquire an exclusive lock on the cache file.
+    /// This is a no-op on WASM.
+    #[cfg(target_arch = "wasm32")]
+    async fn acquire_exclusive_lock(_file: &File) -> Result<()> {
+        Ok(())
+    }
+
+    /// Acquire an exclusive lock on the cache file.
+    #[cfg(not(target_arch = "wasm32"))]
     async fn acquire_exclusive_lock(file: &File) -> Result<()> {
         let mut backoff = Duration::from_millis(10);
         let max_attempts = 5;
@@ -407,9 +420,12 @@ impl BootstrapCacheStore {
                 Err(_) if attempts >= max_attempts => {
                     return Err(Error::LockError);
                 }
-                Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     attempts += 1;
+                    #[cfg(not(target_arch = "wasm32"))]
                     tokio::time::sleep(backoff).await;
+                    #[cfg(target_arch = "wasm32")]
+                    wasmtimer::tokio::sleep(backoff).await;
                     backoff *= 2;
                 }
                 Err(_) => return Err(Error::LockError),

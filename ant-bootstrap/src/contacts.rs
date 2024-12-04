@@ -14,6 +14,7 @@ use std::time::Duration;
 use url::Url;
 
 /// The client fetch timeout
+#[cfg(not(target_arch = "wasm32"))]
 const FETCH_TIMEOUT_SECS: u64 = 30;
 /// Maximum number of endpoints to fetch at a time
 const MAX_CONCURRENT_FETCHES: usize = 3;
@@ -217,7 +218,11 @@ impl ContactsFetcher {
             trace!(
                 "Failed to get bootstrap addrs from URL, retrying {retries}/{MAX_RETRIES_ON_FETCH_FAILURE}"
             );
+
+            #[cfg(not(target_arch = "wasm32"))]
             tokio::time::sleep(Duration::from_secs(1)).await;
+            #[cfg(target_arch = "wasm32")]
+            wasmtimer::tokio::sleep(Duration::from_secs(1)).await;
         };
 
         Ok(bootstrap_addresses)

@@ -21,15 +21,14 @@ use crate::{
     record_store_api::UnifiedRecordStore,
     relay_manager::RelayManager,
     replication_fetcher::ReplicationFetcher,
+    target_arch::Interval,
     target_arch::{interval, spawn, Instant},
-    GetRecordError, Network, CLOSE_GROUP_SIZE,
+    transport, GetRecordError, Network, NodeIssue, CLOSE_GROUP_SIZE,
 };
 #[cfg(feature = "open-metrics")]
 use crate::{
     metrics::service::run_metrics_server, metrics::NetworkMetricsRecorder, MetricsRegistries,
 };
-use crate::{transport, NodeIssue};
-
 use ant_bootstrap::BootstrapCacheStore;
 use ant_evm::PaymentQuote;
 use ant_protocol::{
@@ -72,11 +71,8 @@ use std::{
     num::NonZeroUsize,
     path::PathBuf,
 };
+use tokio::sync::{mpsc, oneshot};
 use tokio::time::Duration;
-use tokio::{
-    sync::{mpsc, oneshot},
-    time::Interval,
-};
 use tracing::warn;
 use xor_name::XorName;
 
@@ -1056,9 +1052,11 @@ impl SwarmDriver {
                          max_cache_save_duration.as_secs(),
                     ));
                     info!("Scaling up the bootstrap cache save interval to {new_duration:?}");
-                    *current_interval = interval(new_duration);
-                    current_interval.tick().await; // first tick completes immediately
 
+                    // `Interval` ticks immediately for Tokio, but not for `wasmtimer`, which is used for wasm32.
+                    *current_interval = interval(new_duration);
+                    #[cfg(not(target_arch = "wasm32"))]
+                    current_interval.tick().await;
                 },
             }
         }

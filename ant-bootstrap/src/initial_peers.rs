@@ -164,7 +164,7 @@ impl PeersArgs {
             };
             if let Some(cfg) = cfg {
                 info!("Loading bootstrap addresses from cache");
-                if let Ok(data) = BootstrapCacheStore::load_cache_data(&cfg).await {
+                if let Ok(data) = BootstrapCacheStore::load_cache_data(&cfg) {
                     if let Some(cache) = cache.as_mut() {
                         info!("Initializing cache with bootstrap addresses from cache");
                         cache.data = data.clone();
