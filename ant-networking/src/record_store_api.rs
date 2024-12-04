@@ -111,13 +111,17 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn store_cost(&self, key: &RecordKey) -> (AttoTokens, QuotingMetrics) {
+    pub(crate) fn store_cost(
+        &self,
+        key: &RecordKey,
+        network_size: Option<u64>,
+    ) -> (AttoTokens, QuotingMetrics) {
         match self {
             Self::Client(_) => {
                 warn!("Calling store cost calculation at Client. This should not happen");
                 (AttoTokens::zero(), Default::default())
             }
-            Self::Node(store) => store.store_cost(key),
+            Self::Node(store) => store.store_cost(key, network_size),
         }
     }
 
