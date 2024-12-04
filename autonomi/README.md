@@ -17,7 +17,7 @@ cargo add autonomi
 ### Example
 
 ```rust
-use autonomi::{Bytes, Client, EvmNetwork, Wallet};
+use autonomi::{Bytes, Client, Wallet};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
     let client = Client::connect(&["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?]).await?;
-    let wallet = Wallet::new_from_private_key(EvmNetwork::ArbitrumSepolia, key)?;
+    let wallet = Wallet::new_from_private_key(Default::default(), key)?;
 
     // Put and fetch data.
     let data_addr = client
@@ -41,6 +41,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+```
+
+In the above example the wallet is setup to use the default EVM network (Arbitrum One). Instead we can use a different network:
+```rust
+use autonomi::{EvmNetwork, Wallet};
+// Arbitrum Sepolia
+let wallet = Wallet::new_from_private_key(EvmNetwork::ArbitrumSepolia, key)?;
+// Custom (e.g. local testnet)
+let wallet = Wallet::new_from_private_key(EvmNetwork::new_custom("<rpc URL>", "<payment token address>", "<data payment address>"), key)?;
 ```
 
 ## Running tests
