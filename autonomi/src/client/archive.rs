@@ -146,6 +146,19 @@ impl Archive {
 
 impl Client {
     /// Fetch an archive from the network
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use autonomi::client::{Client, archive::ArchiveAddr};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
+    /// let client = Client::connect(&peers).await?;      
+    /// let archive = client.archive_get(ArchiveAddr::random(&mut rand::thread_rng())).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn archive_get(&self, addr: ArchiveAddr) -> Result<Archive, GetError> {
         let data = self.data_get(addr).await?;
         Ok(Archive::from_bytes(data)?)
