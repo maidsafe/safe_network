@@ -575,12 +575,21 @@ impl SwarmDriver {
             }
             LocalSwarmCmd::GetLocalStoreCost { key, sender } => {
                 cmd_string = "GetLocalStoreCost";
+                let (
+                    _index,
+                    _total_peers,
+                    peers_in_non_full_buckets,
+                    num_of_full_buckets,
+                    _kbucket_table_stats,
+                ) = self.kbuckets_status();
+                let estimated_network_size =
+                    Self::estimate_network_size(peers_in_non_full_buckets, num_of_full_buckets);
                 let (cost, quoting_metrics) = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
                     .store_mut()
-                    .store_cost(&key);
+                    .store_cost(&key, Some(estimated_network_size as u64));
 
                 self.record_metrics(Marker::StoreCost {
                     cost: cost.as_atto(),

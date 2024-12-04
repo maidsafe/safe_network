@@ -725,7 +725,11 @@ impl NodeRecordStore {
     }
 
     /// Calculate the cost to store data for our current store state
-    pub(crate) fn store_cost(&self, key: &Key) -> (AttoTokens, QuotingMetrics) {
+    pub(crate) fn store_cost(
+        &self,
+        key: &Key,
+        network_size: Option<u64>,
+    ) -> (AttoTokens, QuotingMetrics) {
         let records_stored = self.records.len();
 
         let live_time = if let Ok(elapsed) = self.timestamp.elapsed() {
@@ -739,10 +743,15 @@ impl NodeRecordStore {
             max_records: self.config.max_records,
             received_payment_count: self.received_payment_count,
             live_time,
+            network_density: None,
+            network_size,
         };
 
         if let Some(distance_range) = self.responsible_distance_range {
             let relevant_records = self.get_records_within_distance_range(distance_range);
+
+            // The `responsible_range` is the network density
+            quoting_metrics.network_density = Some(distance_range.0.into());
 
             quoting_metrics.close_records_stored = relevant_records;
         } else {
@@ -1167,13 +1176,13 @@ mod tests {
             swarm_cmd_sender,
         );
 
-        let store_cost_before = store.store_cost(&r.key);
+        let store_cost_before = store.store_cost(&r.key, None);
         // An initial unverified put should not write to disk
         assert!(store.put(r.clone()).is_ok());
         assert!(store.get(&r.key).is_none());
         // Store cost should not change if no PUT has been added
         assert_eq!(
-            store.store_cost(&r.key).0,
+            store.store_cost(&r.key, None).0,
             store_cost_before.0,
             "store cost should not change over unverified put"
         );
@@ -1950,6 +1959,8 @@ mod tests {
                     max_records: MAX_RECORDS_COUNT,
                     received_payment_count: 1, // unimportant for cost calc
                     live_time: 0,              // unimportant for cost calc
+                    network_density: None,
+                    network_size: None,
                 },
                 bad_nodes: vec![],
                 pub_key: bls::SecretKey::random().public_key().to_bytes().to_vec(),
