@@ -59,7 +59,7 @@ async fn test_cache_persistence() -> Result<(), Box<dyn std::error::Error>> {
             .parse()?;
     cache_store1.add_addr(addr.clone());
     cache_store1.update_addr_status(&addr, true);
-    cache_store1.sync_and_save_to_disk(true).await.unwrap();
+    cache_store1.sync_and_save_to_disk(true).unwrap();
 
     // Create a new cache store with the same path
     let mut cache_store2 = BootstrapCacheStore::empty(config)?;

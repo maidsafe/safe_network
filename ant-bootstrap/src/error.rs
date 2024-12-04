@@ -26,8 +26,6 @@ pub enum Error {
     Json(#[from] serde_json::Error),
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
-    #[error("Persist error: {0}")]
-    Persist(#[from] tempfile::PersistError),
     #[error("Lock error")]
     LockError,
 }

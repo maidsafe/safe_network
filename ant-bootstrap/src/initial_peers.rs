@@ -96,7 +96,7 @@ impl PeersArgs {
             info!("First node in network, no initial bootstrap peers");
             if let Some(cache) = cache {
                 info!("Clearing cache for 'first' node");
-                cache.clear_peers_and_save().await?;
+                cache.clear_peers_and_save()?;
             }
             return Ok(vec![]);
         }

@@ -1033,7 +1033,7 @@ impl SwarmDriver {
                         continue;
                     };
 
-                    if let Err(err) = bootstrap_cache.sync_and_save_to_disk(true).await {
+                    if let Err(err) = bootstrap_cache.sync_and_save_to_disk(true) {
                         error!("Failed to save bootstrap cache: {err}");
                     }
 

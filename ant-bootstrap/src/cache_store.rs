@@ -10,18 +10,16 @@ use crate::{
     craft_valid_multiaddr, initial_peers::PeersArgs, multiaddr_get_peer_id, BootstrapAddr,
     BootstrapAddresses, BootstrapCacheConfig, Error, Result,
 };
-#[cfg(not(target_arch = "wasm32"))]
-use fs2::FileExt;
-use libp2p::multiaddr::Protocol;
-use libp2p::{Multiaddr, PeerId};
+use atomic_write_file::AtomicWriteFile;
+use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
-use std::fs::{self, File, OpenOptions};
-use std::io::Read;
-use std::path::PathBuf;
-use std::time::{Duration, SystemTime};
-use tempfile::NamedTempFile;
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    fs::{self, OpenOptions},
+    io::{Read, Write},
+    path::PathBuf,
+    time::{Duration, SystemTime},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CacheData {
@@ -194,7 +192,7 @@ impl BootstrapCacheStore {
         peers_arg
             .get_bootstrap_addr_and_initialize_cache(Some(self))
             .await?;
-        self.sync_and_save_to_disk(true).await?;
+        self.sync_and_save_to_disk(true)?;
         Ok(())
     }
 
@@ -212,11 +210,6 @@ impl BootstrapCacheStore {
             .read(true)
             .open(&cfg.cache_file_path)
             .inspect_err(|err| warn!("Failed to open cache file: {err}",))?;
-
-        // Acquire shared lock for reading
-        Self::acquire_shared_lock(&file).inspect_err(|err| {
-            warn!("Failed to acquire shared lock: {err}");
-        })?;
 
         // Read the file contents
         let mut contents = String::new();
@@ -327,11 +320,11 @@ impl BootstrapCacheStore {
     }
 
     /// Clear all peers from the cache and save to disk
-    pub async fn clear_peers_and_save(&mut self) -> Result<()> {
+    pub fn clear_peers_and_save(&mut self) -> Result<()> {
         self.data.peers.clear();
         self.old_shared_state.peers.clear();
 
-        match self.atomic_write().await {
+        match self.atomic_write() {
             Ok(_) => Ok(()),
             Err(e) => {
                 error!("Failed to save cache to disk: {e}");
@@ -342,7 +335,7 @@ impl BootstrapCacheStore {
 
     /// Do not perform cleanup when `data` is fetched from the network.
     /// The SystemTime might not be accurate.
-    pub async fn sync_and_save_to_disk(&mut self, with_cleanup: bool) -> Result<()> {
+    pub fn sync_and_save_to_disk(&mut self, with_cleanup: bool) -> Result<()> {
         if self.config.disable_cache_writing {
             info!("Cache writing is disabled, skipping sync to disk");
             return Ok(());
@@ -379,92 +372,34 @@ impl BootstrapCacheStore {
         }
         self.old_shared_state = self.data.clone();
 
-        self.atomic_write().await.inspect_err(|e| {
+        self.atomic_write().inspect_err(|e| {
             error!("Failed to save cache to disk: {e}");
         })
     }
 
-    /// Acquire a shared lock on the cache file.
-    #[cfg(target_arch = "wasm32")]
-    fn acquire_shared_lock(_file: &File) -> Result<()> {
-        Ok(())
-    }
-
-    /// Acquire a shared lock on the cache file.
-    /// This is a no-op on WASM.
-    #[cfg(not(target_arch = "wasm32"))]
-    fn acquire_shared_lock(file: &File) -> Result<()> {
-        let file = file.try_clone()?;
-        file.try_lock_shared()?;
-
-        Ok(())
-    }
-
-    /// Acquire an exclusive lock on the cache file.
-    /// This is a no-op on WASM.
-    #[cfg(target_arch = "wasm32")]
-    async fn acquire_exclusive_lock(_file: &File) -> Result<()> {
-        Ok(())
-    }
-
-    /// Acquire an exclusive lock on the cache file.
-    #[cfg(not(target_arch = "wasm32"))]
-    async fn acquire_exclusive_lock(file: &File) -> Result<()> {
-        let mut backoff = Duration::from_millis(10);
-        let max_attempts = 5;
-        let mut attempts = 0;
-
-        loop {
-            match file.try_lock_exclusive() {
-                Ok(_) => return Ok(()),
-                Err(_) if attempts >= max_attempts => {
-                    return Err(Error::LockError);
-                }
-                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                    attempts += 1;
-                    #[cfg(not(target_arch = "wasm32"))]
-                    tokio::time::sleep(backoff).await;
-                    #[cfg(target_arch = "wasm32")]
-                    wasmtimer::tokio::sleep(backoff).await;
-                    backoff *= 2;
-                }
-                Err(_) => return Err(Error::LockError),
-            }
-        }
-    }
-
-    async fn atomic_write(&self) -> Result<()> {
-        info!("Writing cache to disk: {:?}", self.cache_path);
+    fn atomic_write(&self) -> Result<()> {
+        debug!("Writing cache to disk: {:?}", self.cache_path);
         // Create parent directory if it doesn't exist
         if let Some(parent) = self.cache_path.parent() {
             fs::create_dir_all(parent)?;
         }
 
-        // Create a temporary file in the same directory as the cache file
-        let temp_dir = std::env::temp_dir();
-        let temp_file = NamedTempFile::new_in(&temp_dir)?;
+        let mut file = AtomicWriteFile::options()
+            .open(&self.cache_path)
+            .inspect_err(|err| {
+                error!("Failed to open cache file using AtomicWriteFile: {err}");
+            })?;
 
-        // Write data to temporary file
-        serde_json::to_writer_pretty(&temp_file, &self.data)?;
-
-        // Open the target file with proper permissions
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(&self.cache_path)?;
-
-        // Acquire exclusive lock
-        Self::acquire_exclusive_lock(&file).await?;
-
-        // Perform atomic rename
-        temp_file.persist(&self.cache_path).inspect_err(|err| {
-            error!("Failed to persist file with err: {err:?}");
+        let data = serde_json::to_string_pretty(&self.data).inspect_err(|err| {
+            error!("Failed to serialize cache data: {err}");
+        })?;
+        writeln!(file, "{data}")?;
+        file.commit().inspect_err(|err| {
+            error!("Failed to commit atomic write: {err}");
         })?;
 
         info!("Cache written to disk: {:?}", self.cache_path);
 
-        // Lock will be automatically released when file is dropped
         Ok(())
     }
 }
@@ -497,7 +432,7 @@ mod tests {
             let peer_id = multiaddr_get_peer_id(&addr).unwrap();
             store.data.insert(peer_id, BootstrapAddr::new(addr.clone()));
         }
-        store.sync_and_save_to_disk(true).await.unwrap();
+        store.sync_and_save_to_disk(true).unwrap();
 
         store.update_addr_status(&addr, true);
 
