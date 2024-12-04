@@ -8,14 +8,14 @@
 
 use crate::keys::{get_secret_key_from_env, load_evm_wallet_from_env};
 use crate::wallet::fs::{select_wallet, select_wallet_private_key};
-use autonomi::{EvmNetwork, Wallet};
+use autonomi::{Network, Wallet};
 
 pub(crate) mod encryption;
 pub(crate) mod error;
 pub(crate) mod fs;
 pub(crate) mod input;
 
-pub const DUMMY_NETWORK: EvmNetwork = EvmNetwork::ArbitrumSepolia;
+pub const DUMMY_NETWORK: Network = Network::ArbitrumSepolia;
 
 /// Load wallet from ENV or disk
 pub(crate) fn load_wallet() -> color_eyre::Result<Wallet> {
