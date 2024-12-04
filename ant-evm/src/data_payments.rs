@@ -54,8 +54,12 @@ pub struct QuotingMetrics {
     /// number of times that got paid
     pub received_payment_count: usize,
     /// the duration that node keeps connected to the network, measured in hours
-    /// TODO: take `restart` into accout
     pub live_time: u64,
+    /// network density from this node's perspective, which is the responsible_range as well
+    /// This could be calculated via sampling, or equation calculation.
+    pub network_density: Option<[u8; 32]>,
+    /// estimated network size
+    pub network_size: Option<u64>,
 }
 
 impl QuotingMetrics {
@@ -66,6 +70,8 @@ impl QuotingMetrics {
             max_records: 0,
             received_payment_count: 0,
             live_time: 0,
+            network_density: None,
+            network_size: None,
         }
     }
 }
@@ -84,6 +90,7 @@ pub struct PaymentQuote {
     /// the content paid for
     pub content: XorName,
     /// how much the node demands for storing the content
+    /// TODO: to be removed once swtich to `client querying smart_contract`
     pub cost: AttoTokens,
     /// the local node time when the quote was created
     pub timestamp: SystemTime,
