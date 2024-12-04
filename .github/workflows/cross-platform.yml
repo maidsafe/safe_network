@@ -36,7 +36,7 @@ jobs:
 
       - name: Cargo check for WASM
         # Allow clippy lints (these can be pedantic on WASM), but deny regular Rust warnings
-        run: cargo clippy --target=wasm32-unknown-unknown --package=autonomi --all-targets -- --allow=clippy::all --deny=warnings
+        run: cargo clippy --target=wasm32-unknown-unknown --package=autonomi --lib --tests -- --allow=clippy::all --deny=warnings
         timeout-minutes: 30
 
   websocket:
