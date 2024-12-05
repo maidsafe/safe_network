@@ -8,3 +8,4 @@
 
 pub mod data_payments;
 pub mod network_token;
+pub mod payment_vault;
