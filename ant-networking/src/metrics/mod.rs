@@ -199,7 +199,7 @@ impl NetworkMetricsRecorder {
 
         let extended_metrics_sub_registry = registries
             .extended_metrics
-            .sub_registry_with_prefix("ant-networking");
+            .sub_registry_with_prefix("ant_networking");
         let shunned_count_across_time_frames = Family::default();
         extended_metrics_sub_registry.register(
             "shunned_count_across_time_frames",

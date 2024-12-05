@@ -130,7 +130,7 @@ default_dir = AntNode.get_default_root_dir(peer_id)
 
 ## Testing
 
-To run tests, navigate to the `sn_node` directory and execute:
+To run tests, navigate to the `ant-node` directory and execute:
 
 ```bash
 cargo test
