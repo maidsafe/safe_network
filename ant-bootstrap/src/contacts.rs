@@ -6,7 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{craft_valid_multiaddr_from_str, BootstrapAddr, BootstrapEndpoints, Error, Result};
+use crate::{cache_store::CacheData, craft_valid_multiaddr_from_str, BootstrapAddr, Error, Result};
 use futures::stream::{self, StreamExt};
 use libp2p::Multiaddr;
 use reqwest::Client;
@@ -230,7 +230,7 @@ impl ContactsFetcher {
 
     /// Try to parse a response from a endpoint
     fn try_parse_response(response: &str, ignore_peer_id: bool) -> Result<Vec<Multiaddr>> {
-        match serde_json::from_str::<BootstrapEndpoints>(response) {
+        match serde_json::from_str::<CacheData>(response) {
             Ok(json_endpoints) => {
                 info!(
                     "Successfully parsed JSON response with {} peers",
@@ -239,8 +239,8 @@ impl ContactsFetcher {
                 let bootstrap_addresses = json_endpoints
                     .peers
                     .into_iter()
-                    .filter_map(|addr_str| {
-                        craft_valid_multiaddr_from_str(&addr_str, ignore_peer_id)
+                    .filter_map(|(_, addresses)| {
+                        addresses.get_least_faulty().map(|addr| addr.addr.clone())
                     })
                     .collect::<Vec<_>>();
 
@@ -435,35 +435,5 @@ mod tests {
         let endpoints = vec!["http://example.com".parse().unwrap()];
         let fetcher = ContactsFetcher::with_endpoints(endpoints.clone()).unwrap();
         assert_eq!(fetcher.endpoints, endpoints);
-    }
-
-    #[tokio::test]
-    async fn test_json_endpoints() {
-        let mock_server = MockServer::start().await;
-
-        Mock::given(method("GET"))
-            .and(path("/"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(
-                r#"{"peers": ["/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5", "/ip4/127.0.0.2/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"]}"#,
-            ))
-            .mount(&mock_server)
-            .await;
-
-        let mut fetcher = ContactsFetcher::new().unwrap();
-        fetcher.endpoints = vec![mock_server.uri().parse().unwrap()];
-
-        let addrs = fetcher.fetch_bootstrap_addresses().await.unwrap();
-        assert_eq!(addrs.len(), 2);
-
-        let addr1: Multiaddr =
-            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWD2aV1f3qkhggzEFaJ24CEFYkSdZF5RKoMLpU6CwExYV5"
-                .parse()
-                .unwrap();
-        let addr2: Multiaddr =
-            "/ip4/127.0.0.2/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
-                .parse()
-                .unwrap();
-        assert!(addrs.iter().any(|p| p.addr == addr1));
-        assert!(addrs.iter().any(|p| p.addr == addr2));
     }
 }

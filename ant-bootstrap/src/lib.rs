@@ -38,40 +38,6 @@ pub use contacts::ContactsFetcher;
 pub use error::{Error, Result};
 pub use initial_peers::{PeersArgs, ANT_PEERS_ENV};
 
-/// Structure representing a list of bootstrap endpoints
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BootstrapEndpoints {
-    /// List of peer multiaddresses
-    pub peers: Vec<String>,
-    /// Optional metadata about the endpoints
-    #[serde(default)]
-    pub metadata: EndpointMetadata,
-}
-
-/// Metadata about bootstrap endpoints
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EndpointMetadata {
-    /// When the endpoints were last updated
-    #[serde(default = "default_last_updated")]
-    pub last_updated: String,
-    /// Optional description of the endpoints
-    #[serde(default)]
-    pub description: String,
-}
-
-fn default_last_updated() -> String {
-    chrono::Utc::now().to_rfc3339()
-}
-
-impl Default for EndpointMetadata {
-    fn default() -> Self {
-        Self {
-            last_updated: default_last_updated(),
-            description: String::new(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Set of addresses for a particular PeerId
 pub struct BootstrapAddresses(pub Vec<BootstrapAddr>);
