@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{node::Node, Error, Marker, Result};
-use ant_evm::{ProofOfPayment, QUOTE_EXPIRATION_SECS};
+use ant_evm::{AttoTokens, ProofOfPayment, QUOTE_EXPIRATION_SECS};
 use ant_networking::NetworkError;
 use ant_protocol::storage::Transaction;
 use ant_protocol::{
@@ -602,7 +602,6 @@ impl Node {
         debug!("Validating record payment for {pretty_key}");
 
         // check if the quote is valid
-        let storecost = payment.quote.cost;
         let self_peer_id = self.network().peer_id();
         if !payment.quote.check_is_signed_by_claimed_peer(self_peer_id) {
             warn!("Payment quote signature is not valid for record {pretty_key}");
@@ -626,17 +625,17 @@ impl Node {
 
         // check if payment is valid on chain
         debug!("Verifying payment for record {pretty_key}");
-        self.evm_network()
+        let reward_amount = self.evm_network()
             .verify_data_payment(
                 payment.tx_hash,
                 payment.quote.hash(),
+                payment.quote.quoting_metrics,
                 *self.reward_address(),
-                storecost.as_atto(),
                 quote_expiration_time_in_secs,
             )
             .await
             .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
-        debug!("Payment is valid for record {pretty_key}");
+        debug!("Payment of {reward_amount:?} is valid for record {pretty_key}");
 
         // Notify `record_store` that the node received a payment.
         self.network().notify_payment_received();
@@ -646,22 +645,22 @@ impl Node {
             // FIXME: We would reach the MAX if the storecost is scaled up.
             let current_value = metrics_recorder.current_reward_wallet_balance.get();
             let new_value =
-                current_value.saturating_add(storecost.as_atto().try_into().unwrap_or(i64::MAX));
+                current_value.saturating_add(reward_amount.try_into().unwrap_or(i64::MAX));
             let _ = metrics_recorder
                 .current_reward_wallet_balance
                 .set(new_value);
         }
         self.events_channel()
-            .broadcast(crate::NodeEvent::RewardReceived(storecost, address.clone()));
+            .broadcast(crate::NodeEvent::RewardReceived(AttoTokens::from(reward_amount), address.clone()));
 
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
-        info!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+        info!("Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}");
 
         // loud mode: print a celebratory message to console
         #[cfg(feature = "loud")]
         {
             println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟   RECEIVED REWARD   🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
-            println!("Total payment of {storecost:?} atto tokens accepted for record {pretty_key}");
+            println!("Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}");
             println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
         }
 

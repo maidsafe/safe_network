@@ -100,8 +100,7 @@ impl Client {
         if let Some(channel) = self.client_event_sender.as_ref() {
             let tokens_spent = receipt
                 .values()
-                .map(|proof| proof.quote.cost.as_atto())
-                .sum::<Amount>();
+                .fold(Amount::ZERO, |acc, (_, cost)| acc + cost.as_atto());
 
             let summary = UploadSummary {
                 record_count,

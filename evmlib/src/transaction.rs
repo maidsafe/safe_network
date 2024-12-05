@@ -105,7 +105,7 @@ pub async fn verify_data_payment(
     reward_addr: Address,
     amount: U256,
     quote_expiration_timestamp_in_secs: u64,
-) -> Result<(), Error> {
+) -> Result<U256, Error> {
     debug!("Verifying data payment for tx_hash: {tx_hash:?}");
     let transaction = get_transaction_receipt_by_hash(network, tx_hash)
         .await?
@@ -147,7 +147,7 @@ pub async fn verify_data_payment(
                 && event.rewards_address == reward_addr
                 && event.amount >= amount
             {
-                return Ok(());
+                return Ok(event.amount);
             }
         }
     }
