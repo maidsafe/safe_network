@@ -58,3 +58,4 @@ pub use client::Client;
 
 #[cfg(feature = "extension-module")]
 mod python;
+mod utils;
