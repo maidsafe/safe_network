@@ -29,11 +29,11 @@ where
     }
 
     /// Fetch a quote from the contract
-    pub async fn fetch_quote(
+    pub async fn get_quote<I: Into<IPaymentVault::QuotingMetrics>>(
         &self,
-        metrics: IPaymentVault::QuotingMetrics,
+        metrics: I,
     ) -> Result<Amount, Error> {
-        let amount = self.contract.getQuote(metrics).call().await?.price;
+        let amount = self.contract.getQuote(metrics.into()).call().await?.price;
         Ok(amount)
     }
 
