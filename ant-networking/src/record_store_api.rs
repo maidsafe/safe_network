@@ -8,7 +8,7 @@
 #![allow(clippy::mutable_key_type)] // for the Bytes in NetworkAddress
 
 use crate::record_store::{ClientRecordStore, NodeRecordStore};
-use ant_evm::{AttoTokens, QuotingMetrics};
+use ant_evm::QuotingMetrics;
 use ant_protocol::{storage::RecordType, NetworkAddress};
 use libp2p::kad::{
     store::{RecordStore, Result},
@@ -111,17 +111,19 @@ impl UnifiedRecordStore {
         }
     }
 
-    pub(crate) fn store_cost(
+    /// Return the quoting metrics used to calculate the cost of storing a record
+    /// and whether the record is already stored locally
+    pub(crate) fn quoting_metrics(
         &self,
         key: &RecordKey,
         network_size: Option<u64>,
-    ) -> (AttoTokens, QuotingMetrics) {
+    ) -> (QuotingMetrics, bool) {
         match self {
             Self::Client(_) => {
-                warn!("Calling store cost calculation at Client. This should not happen");
-                (AttoTokens::zero(), Default::default())
+                warn!("Calling quoting metrics calculation at Client. This should not happen");
+                Default::default()
             }
-            Self::Node(store) => store.store_cost(key, network_size),
+            Self::Node(store) => store.quoting_metrics(key, network_size),
         }
     }
 

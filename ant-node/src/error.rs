@@ -69,9 +69,8 @@ pub enum Error {
     /// Missing network royalties payment
     #[error("Missing network royalties payment in proof received with record: {0:?}.")]
     NoNetworkRoyaltiesPayment(PrettyPrintRecordKey<'static>),
-    /// The amount paid by payment proof is not the required for the received content
-    #[error("The amount paid by payment proof is not the required for the received content, paid {paid}, expected {expected}")]
-    PaymentProofInsufficientAmount {
+    #[error("The amount paid is less than the storecost, paid {paid}, expected {expected}")]
+    PaymentInsufficientAmount {
         paid: AttoTokens,
         expected: AttoTokens,
     },

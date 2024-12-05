@@ -571,16 +571,16 @@ impl Node {
         payment_address: RewardsAddress,
     ) -> Response {
         let resp: QueryResponse = match query {
-            Query::GetStoreCost {
+            Query::GetStoreQuote {
                 key,
                 nonce,
                 difficulty,
             } => {
-                debug!("Got GetStoreCost request for {key:?} with difficulty {difficulty}");
+                debug!("Got GetStoreQuote request for {key:?} with difficulty {difficulty}");
                 let record_key = key.to_record_key();
                 let self_id = network.peer_id();
 
-                let store_cost = network.get_local_storecost(record_key.clone()).await;
+                let maybe_quoting_metrics = network.get_local_quoting_metrics(record_key.clone()).await;
 
                 let storage_proofs = if let Some(nonce) = nonce {
                     Self::respond_x_closest_record_proof(
@@ -595,39 +595,37 @@ impl Node {
                     vec![]
                 };
 
-                match store_cost {
-                    Ok((cost, quoting_metrics, bad_nodes)) => {
-                        if cost == AttoTokens::zero() {
-                            QueryResponse::GetStoreCost {
+                match maybe_quoting_metrics {
+                    Ok((quoting_metrics, is_already_stored)) => {
+                        if is_already_stored {
+                            QueryResponse::GetStoreQuote {
                                 quote: Err(ProtocolError::RecordExists(
                                     PrettyPrintRecordKey::from(&record_key).into_owned(),
                                 )),
-                                payment_address,
                                 peer_address: NetworkAddress::from_peer(self_id),
                                 storage_proofs,
                             }
                         } else {
-                            QueryResponse::GetStoreCost {
-                                quote: Self::create_quote_for_storecost(
+                            QueryResponse::GetStoreQuote {
+                                 quote: Self::create_quote_for_storecost(
                                     network,
-                                    cost,
                                     &key,
                                     &quoting_metrics,
-                                    bad_nodes,
                                     &payment_address,
                                 ),
-                                payment_address,
                                 peer_address: NetworkAddress::from_peer(self_id),
                                 storage_proofs,
                             }
                         }
                     }
-                    Err(_) => QueryResponse::GetStoreCost {
-                        quote: Err(ProtocolError::GetStoreCostFailed),
-                        payment_address,
-                        peer_address: NetworkAddress::from_peer(self_id),
-                        storage_proofs,
-                    },
+                    Err(err) => {
+                        warn!("GetStoreQuote failed for {key:?}: {err}");
+                        QueryResponse::GetStoreQuote {
+                            quote: Err(ProtocolError::GetStoreQuoteFailed),
+                            peer_address: NetworkAddress::from_peer(self_id),
+                            storage_proofs,
+                        }
+                    }
                 }
             }
             Query::GetRegisterRecord { requester, key } => {

@@ -6,10 +6,12 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::common::{Address, QuoteHash, TxHash, U256};
+use crate::common::{Address, QuoteHash, TxHash};
 use crate::transaction::verify_data_payment;
 use alloy::primitives::address;
 use alloy::transports::http::reqwest;
+use common::Amount;
+use quoting_metrics::QuotingMetrics;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use std::str::FromStr;
@@ -24,6 +26,7 @@ pub mod cryptography;
 pub(crate) mod event;
 #[cfg(feature = "external-signer")]
 pub mod external_signer;
+pub mod quoting_metrics;
 pub mod testnet;
 pub mod transaction;
 pub mod utils;
@@ -138,16 +141,17 @@ impl Network {
         &self,
         tx_hash: TxHash,
         quote_hash: QuoteHash,
+        _quoting_metrics: QuotingMetrics,
         reward_addr: Address,
-        amount: U256,
         quote_expiration_timestamp_in_secs: u64,
-    ) -> Result<(), transaction::Error> {
+    ) -> Result<Amount, transaction::Error> {
         verify_data_payment(
             self,
             tx_hash,
             quote_hash,
+            // quoting_metrics, // NB TODO use them here @Mick
             reward_addr,
-            amount,
+            Default::default(), // NB TODO remove amounts @Mick
             quote_expiration_timestamp_in_secs,
         )
         .await

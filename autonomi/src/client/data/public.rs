@@ -96,8 +96,7 @@ impl Client {
         if let Some(channel) = self.client_event_sender.as_ref() {
             let tokens_spent = receipt
                 .values()
-                .map(|proof| proof.quote.cost.as_atto())
-                .sum::<Amount>();
+                .fold(Amount::ZERO, |acc, (_, cost)| acc + cost.as_atto());
 
             let summary = UploadSummary {
                 record_count,
@@ -167,21 +166,18 @@ impl Client {
             .get_store_quotes(content_addrs.into_iter())
             .await
             .inspect_err(|err| error!("Error getting store quotes: {err:?}"))?;
-        let total_cost = AttoTokens::from_atto(
-            cost_map
-                .values()
-                .map(|quote| quote.2.cost.as_atto())
-                .sum::<Amount>(),
-        );
+        let total_cost = cost_map
+            .values()
+            .fold(Amount::ZERO, |acc, q| acc + q.total_cost.as_atto());
         debug!("Total cost calculated: {total_cost:?}");
-        Ok(total_cost)
+        Ok(AttoTokens::from_atto(total_cost))
     }
 
     // Upload chunks and retry failed uploads up to `RETRY_ATTEMPTS` times.
     pub(crate) async fn upload_chunks_with_retries<'a>(
         &self,
         mut chunks: Vec<&'a Chunk>,
-        receipt: &HashMap<XorName, ProofOfPayment>,
+        receipt: &HashMap<XorName, (Vec<ProofOfPayment>, AttoTokens)>,
     ) -> Vec<(&'a Chunk, PutError)> {
         let mut current_attempt: usize = 1;
 
@@ -198,7 +194,7 @@ impl Client {
 
                 upload_tasks.push(async move {
                     self_clone
-                        .chunk_upload_with_payment(chunk, proof.clone())
+                        .chunk_upload_with_payment(chunk, proof.0.clone())
                         .await
                         .inspect_err(|err| error!("Error uploading chunk {address:?} :{err:?}"))
                         // Return chunk reference too, to re-use it next attempt/iteration
