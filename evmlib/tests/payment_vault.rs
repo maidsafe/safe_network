@@ -11,12 +11,15 @@ use alloy::providers::fillers::{
 use alloy::providers::{Identity, ProviderBuilder, ReqwestProvider, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{Client, Http};
-use evmlib::common::U256;
+use evmlib::common::{Amount, U256};
 use evmlib::contract::network_token::NetworkToken;
 use evmlib::contract::payment_vault::handler::PaymentVaultHandler;
 use evmlib::contract::payment_vault::MAX_TRANSFERS_PER_TRANSACTION;
+use evmlib::quoting_metrics::QuotingMetrics;
 use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
+use evmlib::utils::http_provider;
 use evmlib::wallet::wallet_address;
+use evmlib::Network;
 
 async fn setup() -> (
     AnvilInstance,
@@ -110,6 +113,20 @@ async fn provider_with_gas_funded_wallet(
 #[tokio::test]
 async fn test_deploy() {
     setup().await;
+}
+
+#[tokio::test]
+async fn test_proxy_reachable() {
+    let network = Network::ArbitrumOne;
+    let provider = http_provider(network.rpc_url().clone());
+    let payment_vault = PaymentVaultHandler::new(*network.data_payments_address(), provider);
+
+    let amount = payment_vault
+        .get_quote(QuotingMetrics::default())
+        .await
+        .unwrap();
+
+    assert_eq!(amount, Amount::from(1));
 }
 
 #[tokio::test]
