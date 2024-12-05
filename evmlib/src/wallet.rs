@@ -7,9 +7,10 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::common::{Address, Amount, QuoteHash, QuotePayment, TxHash, U256};
-use crate::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
 use crate::contract::network_token::NetworkToken;
-use crate::contract::{data_payments, network_token};
+use crate::contract::payment_vault::handler::PaymentVaultHandler;
+use crate::contract::payment_vault::MAX_TRANSFERS_PER_TRANSACTION;
+use crate::contract::{network_token, payment_vault};
 use crate::utils::http_provider;
 use crate::Network;
 use alloy::hex::ToHexExt;
@@ -36,7 +37,7 @@ pub enum Error {
     #[error("Network token contract error: {0}")]
     NetworkTokenContract(#[from] network_token::Error),
     #[error("Chunk payments contract error: {0}")]
-    ChunkPaymentsContract(#[from] data_payments::error::Error),
+    ChunkPaymentsContract(#[from] payment_vault::error::Error),
 }
 
 #[derive(Clone)]
@@ -331,7 +332,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
     }
 
     let provider = http_provider_with_wallet(network.rpc_url().clone(), wallet);
-    let data_payments = DataPaymentsHandler::new(*network.data_payments_address(), provider);
+    let data_payments = PaymentVaultHandler::new(*network.data_payments_address(), provider);
 
     // Divide transfers over multiple transactions if they exceed the max per transaction.
     let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);
@@ -340,6 +341,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
 
     for batch in chunks {
         let batch: Vec<QuotePayment> = batch.to_vec();
+
         debug!(
             "Paying for batch of quotes of len: {}, {batch:?}",
             batch.len()
@@ -349,6 +351,7 @@ pub async fn pay_for_quotes<T: IntoIterator<Item = QuotePayment>>(
             .pay_for_quotes(batch.clone())
             .await
             .map_err(|err| PayForQuotesError(Error::from(err), tx_hashes_by_quote.clone()))?;
+
         info!("Paid for batch of quotes with final tx hash: {tx_hash}");
 
         for (quote_hash, _, _) in batch {

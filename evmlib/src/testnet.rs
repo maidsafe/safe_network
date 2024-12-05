@@ -7,8 +7,9 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::common::Address;
-use crate::contract::data_payments::DataPaymentsHandler;
 use crate::contract::network_token::NetworkToken;
+use crate::contract::payment_vault;
+use crate::contract::payment_vault::handler::PaymentVaultHandler;
 use crate::reqwest::Url;
 use crate::{CustomNetwork, Network};
 use alloy::hex::ToHexExt;
@@ -119,8 +120,8 @@ pub async fn deploy_network_token_contract(
 pub async fn deploy_data_payments_contract(
     rpc_url: &Url,
     anvil: &AnvilInstance,
-    token_address: Address,
-) -> DataPaymentsHandler<
+    _token_address: Address,
+) -> PaymentVaultHandler<
     Http<Client>,
     FillProvider<
         JoinFill<
@@ -146,5 +147,8 @@ pub async fn deploy_data_payments_contract(
         .on_http(rpc_url.clone());
 
     // Deploy the contract.
-    DataPaymentsHandler::deploy(provider, token_address).await
+    let payment_vault_contract_address = payment_vault::implementation::deploy(&provider).await;
+
+    // Create a handler for the deployed contract
+    PaymentVaultHandler::new(payment_vault_contract_address, provider)
 }

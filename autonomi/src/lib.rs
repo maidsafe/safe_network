@@ -41,7 +41,6 @@ extern crate tracing;
 pub mod client;
 #[cfg(feature = "data")]
 mod self_encryption;
-mod utils;
 
 pub use ant_evm::get_evm_network_from_env;
 pub use ant_evm::EvmNetwork;
@@ -59,3 +58,4 @@ pub use client::Client;
 
 #[cfg(feature = "extension-module")]
 mod python;
+mod utils;

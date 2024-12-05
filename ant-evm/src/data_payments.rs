@@ -6,11 +6,9 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::{AttoTokens, EvmError};
-use evmlib::common::TxHash;
+use crate::EvmError;
 use evmlib::{
-    common::{Address as RewardsAddress, QuoteHash},
-    utils::dummy_address,
+    common::{Address as RewardsAddress, QuoteHash, TxHash}, quoting_metrics::QuotingMetrics, utils::dummy_address
 };
 use libp2p::{identity::PublicKey, PeerId};
 use serde::{Deserialize, Serialize};
@@ -42,46 +40,6 @@ impl ProofOfPayment {
     }
 }
 
-/// Quoting metrics that got used to generate a quote, or to track peer's status.
-#[derive(
-    Clone, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize, custom_debug::Debug,
-)]
-pub struct QuotingMetrics {
-    /// the records stored
-    pub close_records_stored: usize,
-    /// the max_records configured
-    pub max_records: usize,
-    /// number of times that got paid
-    pub received_payment_count: usize,
-    /// the duration that node keeps connected to the network, measured in hours
-    pub live_time: u64,
-    /// network density from this node's perspective, which is the responsible_range as well
-    /// This could be calculated via sampling, or equation calculation.
-    pub network_density: Option<[u8; 32]>,
-    /// estimated network size
-    pub network_size: Option<u64>,
-}
-
-impl QuotingMetrics {
-    /// construct an empty QuotingMetrics
-    pub fn new() -> Self {
-        Self {
-            close_records_stored: 0,
-            max_records: 0,
-            received_payment_count: 0,
-            live_time: 0,
-            network_density: None,
-            network_size: None,
-        }
-    }
-}
-
-impl Default for QuotingMetrics {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 /// A payment quote to store data given by a node to a client
 /// Note that the PaymentQuote is a contract between the node and itself to make sure the clients aren’t mispaying.
 /// It is NOT a contract between the client and the node.
@@ -89,17 +47,10 @@ impl Default for QuotingMetrics {
 pub struct PaymentQuote {
     /// the content paid for
     pub content: XorName,
-    /// how much the node demands for storing the content
-    /// TODO: to be removed once swtich to `client querying smart_contract`
-    pub cost: AttoTokens,
     /// the local node time when the quote was created
     pub timestamp: SystemTime,
     /// quoting metrics being used to generate this quote
     pub quoting_metrics: QuotingMetrics,
-    /// list of bad_nodes that client shall not pick as a payee
-    /// in `serialised` format to avoid cyclic dependent on ant_protocol
-    #[debug(skip)]
-    pub bad_nodes: Vec<u8>,
     /// the node's wallet address
     pub rewards_address: RewardsAddress,
     /// the node's libp2p identity public key in bytes (PeerId)
@@ -115,10 +66,8 @@ impl PaymentQuote {
     pub fn zero() -> Self {
         Self {
             content: Default::default(),
-            cost: AttoTokens::zero(),
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
-            bad_nodes: vec![],
             rewards_address: dummy_address(),
             pub_key: vec![],
             signature: vec![],
@@ -135,14 +84,11 @@ impl PaymentQuote {
     /// returns the bytes to be signed from the given parameters
     pub fn bytes_for_signing(
         xorname: XorName,
-        cost: AttoTokens,
         timestamp: SystemTime,
         quoting_metrics: &QuotingMetrics,
-        serialised_bad_nodes: &[u8],
         rewards_address: &RewardsAddress,
     ) -> Vec<u8> {
         let mut bytes = xorname.to_vec();
-        bytes.extend_from_slice(&cost.to_bytes());
         bytes.extend_from_slice(
             &timestamp
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -152,7 +98,6 @@ impl PaymentQuote {
         );
         let serialised_quoting_metrics = rmp_serde::to_vec(quoting_metrics).unwrap_or_default();
         bytes.extend_from_slice(&serialised_quoting_metrics);
-        bytes.extend_from_slice(serialised_bad_nodes);
         bytes.extend_from_slice(rewards_address.as_slice());
         bytes
     }
@@ -161,10 +106,8 @@ impl PaymentQuote {
     pub fn bytes_for_sig(&self) -> Vec<u8> {
         Self::bytes_for_signing(
             self.content,
-            self.cost,
             self.timestamp,
             &self.quoting_metrics,
-            &self.bad_nodes,
             &self.rewards_address,
         )
     }
@@ -217,13 +160,11 @@ impl PaymentQuote {
     }
 
     /// test utility to create a dummy quote
-    pub fn test_dummy(xorname: XorName, cost: AttoTokens) -> Self {
+    pub fn test_dummy(xorname: XorName) -> Self {
         Self {
             content: xorname,
-            cost,
             timestamp: SystemTime::now(),
             quoting_metrics: Default::default(),
-            bad_nodes: vec![],
             pub_key: vec![],
             signature: vec![],
             rewards_address: dummy_address(),

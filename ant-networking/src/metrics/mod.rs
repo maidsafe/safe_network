@@ -45,8 +45,7 @@ pub(crate) struct NetworkMetricsRecorder {
     pub(crate) peers_in_routing_table: Gauge,
     pub(crate) records_stored: Gauge,
 
-    // store cost
-    store_cost: Gauge,
+    // quoting metrics
     relevant_records: Gauge,
     max_records: Gauge,
     received_payment_count: Gauge,
@@ -149,13 +148,7 @@ impl NetworkMetricsRecorder {
             process_cpu_usage_percentage.clone(),
         );
 
-        // store cost
-        let store_cost = Gauge::default();
-        sub_registry.register(
-            "store_cost",
-            "The store cost of the node",
-            store_cost.clone(),
-        );
+        // quoting metrics
         let relevant_records = Gauge::default();
         sub_registry.register(
             "relevant_records",
@@ -222,7 +215,6 @@ impl NetworkMetricsRecorder {
             connected_peers,
             open_connections,
             peers_in_routing_table,
-            store_cost,
             relevant_records,
             max_records,
             received_payment_count,
@@ -292,11 +284,9 @@ impl NetworkMetricsRecorder {
                     }
                 });
             }
-            Marker::StoreCost {
-                cost,
+            Marker::QuotingMetrics {
                 quoting_metrics,
             } => {
-                let _ = self.store_cost.set(cost.try_into().unwrap_or(i64::MAX));
                 let _ = self.relevant_records.set(
                     quoting_metrics
                         .close_records_stored

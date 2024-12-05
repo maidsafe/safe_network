@@ -12,8 +12,9 @@ use alloy::providers::{Identity, ProviderBuilder, ReqwestProvider, WalletProvide
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use alloy::transports::http::{Client, Http};
 use evmlib::common::U256;
-use evmlib::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
 use evmlib::contract::network_token::NetworkToken;
+use evmlib::contract::payment_vault::handler::PaymentVaultHandler;
+use evmlib::contract::payment_vault::MAX_TRANSFERS_PER_TRANSACTION;
 use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
 use evmlib::wallet::wallet_address;
 
@@ -38,7 +39,7 @@ async fn setup() -> (
         >,
         Ethereum,
     >,
-    DataPaymentsHandler<
+    PaymentVaultHandler<
         Http<Client>,
         FillProvider<
             JoinFill<

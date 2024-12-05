@@ -18,9 +18,9 @@ use serde::{Deserialize, Serialize};
 /// [`protocol`]: crate
 #[derive(Eq, PartialEq, PartialOrd, Clone, Serialize, Deserialize, Debug)]
 pub enum Query {
-    /// Retrieve the cost of storing a record at the given address.
+    /// Retrieve the quote to store a record at the given address.
     /// The storage verification is optional to be undertaken
-    GetStoreCost {
+    GetStoreQuote {
         /// The Address of the record to be stored.
         key: NetworkAddress,
         /// The random nonce that nodes use to produce the Proof (i.e., hash(record+nonce))
@@ -87,7 +87,7 @@ impl Query {
             Query::CheckNodeInProblem(address) => address.clone(),
             // Shall not be called for this, as this is a `one-to-one` message,
             // and the destination shall be decided by the requester already.
-            Query::GetStoreCost { key, .. }
+            Query::GetStoreQuote { key, .. }
             | Query::GetReplicatedRecord { key, .. }
             | Query::GetRegisterRecord { key, .. }
             | Query::GetChunkExistenceProof { key, .. }
@@ -99,12 +99,12 @@ impl Query {
 impl std::fmt::Display for Query {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Query::GetStoreCost {
+            Query::GetStoreQuote {
                 key,
                 nonce,
                 difficulty,
             } => {
-                write!(f, "Query::GetStoreCost({key:?} {nonce:?} {difficulty})")
+                write!(f, "Query::GetStoreQuote({key:?} {nonce:?} {difficulty})")
             }
             Query::GetReplicatedRecord { key, requester } => {
                 write!(f, "Query::GetReplicatedRecord({requester:?} {key:?})")

@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{node::Node, Error, Result};
-use ant_evm::{AttoTokens, PaymentQuote, QuotingMetrics, RewardsAddress};
-use ant_networking::{calculate_cost_for_records, Network, NodeIssue};
+use ant_evm::{PaymentQuote, QuotingMetrics, RewardsAddress};
+use ant_networking::Network;
 use ant_protocol::{error::Error as ProtocolError, storage::ChunkAddress, NetworkAddress};
 use libp2p::PeerId;
 use std::time::Duration;
@@ -16,21 +16,16 @@ use std::time::Duration;
 impl Node {
     pub(crate) fn create_quote_for_storecost(
         network: &Network,
-        cost: AttoTokens,
         address: &NetworkAddress,
         quoting_metrics: &QuotingMetrics,
-        bad_nodes: Vec<NetworkAddress>,
         payment_address: &RewardsAddress,
     ) -> Result<PaymentQuote, ProtocolError> {
         let content = address.as_xorname().unwrap_or_default();
         let timestamp = std::time::SystemTime::now();
-        let serialised_bad_nodes = rmp_serde::to_vec(&bad_nodes).unwrap_or_default();
         let bytes = PaymentQuote::bytes_for_signing(
             content,
-            cost,
             timestamp,
             quoting_metrics,
-            &serialised_bad_nodes,
             payment_address,
         );
 
@@ -40,10 +35,8 @@ impl Node {
 
         let quote = PaymentQuote {
             content,
-            cost,
             timestamp,
             quoting_metrics: quoting_metrics.clone(),
-            bad_nodes: serialised_bad_nodes,
             pub_key: network.get_pub_key(),
             rewards_address: *payment_address,
             signature,
@@ -87,8 +80,7 @@ pub(crate) fn verify_quote_for_storecost(
 //   3, quote is no longer valid
 //
 // Following metrics will be considered as node's bad quote.
-//   1, Price calculation is incorrect
-//   2, QuoteMetrics doesn't match the historical quotes collected by self
+//   1, QuoteMetrics doesn't match the historical quotes collected by self
 pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, PaymentQuote)>) {
     // Do nothing if self is not one of the quoters.
     if let Some((_, self_quote)) = quotes
@@ -98,12 +90,11 @@ pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, 
         let target_address =
             NetworkAddress::from_chunk_address(ChunkAddress::new(self_quote.content));
         if verify_quote_for_storecost(network, self_quote.clone(), &target_address).is_ok() {
-            let mut quotes_for_nodes_duty: Vec<_> = quotes
+            let quotes_for_nodes_duty: Vec<_> = quotes
                 .iter()
                 .filter(|(peer_id, quote)| {
                     let is_same_target = quote.content == self_quote.content;
                     let is_not_self = *peer_id != network.peer_id();
-                    let is_not_zero_quote = quote.cost != AttoTokens::zero();
 
                     let time_gap = Duration::from_secs(10);
                     let is_around_same_time = if quote.timestamp > self_quote.timestamp {
@@ -117,24 +108,11 @@ pub(crate) async fn quotes_verification(network: &Network, quotes: Vec<(PeerId, 
 
                     is_same_target
                         && is_not_self
-                        && is_not_zero_quote
                         && is_around_same_time
                         && is_signed_by_the_claimed_peer
                 })
                 .cloned()
                 .collect();
-
-            quotes_for_nodes_duty.retain(|(peer_id, quote)| {
-                let cost = calculate_cost_for_records(quote.quoting_metrics.close_records_stored);
-                let is_same_as_expected = quote.cost == AttoTokens::from_u64(cost);
-
-                if !is_same_as_expected {
-                    info!("Quote from {peer_id:?} using a different quoting_metrics to achieve the claimed cost. Quote {quote:?} can only result in cost {cost:?}");
-                    network.record_node_issues(*peer_id, NodeIssue::BadQuoting);
-                }
-
-                is_same_as_expected
-            });
 
             // Pass down to swarm_driver level for further bad quote detection
             // against historical collected quotes.

@@ -7,7 +7,6 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::client::payment::Receipt;
-use crate::utils::receipt_from_cost_map_and_payments;
 use ant_evm::{EvmWallet, ProofOfPayment, QuotePayment};
 use ant_networking::{
     GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
@@ -30,6 +29,7 @@ use super::{
     Client,
 };
 use crate::self_encryption::DataMapLevel;
+use crate::utils::receipt_from_cost_map_and_payments;
 
 impl Client {
     /// Fetch and decrypt all chunks in the data map.

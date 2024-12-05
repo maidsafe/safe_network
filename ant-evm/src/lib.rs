@@ -28,7 +28,8 @@ mod amount;
 mod data_payments;
 mod error;
 
-pub use data_payments::{PaymentQuote, ProofOfPayment, QuotingMetrics, QUOTE_EXPIRATION_SECS};
+pub use evmlib::quoting_metrics::QuotingMetrics;
+pub use data_payments::{PaymentQuote, ProofOfPayment, QUOTE_EXPIRATION_SECS};
 
 /// Types used in the public API
 pub use amount::{Amount, AttoTokens};
