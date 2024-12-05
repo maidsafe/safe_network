@@ -8,7 +8,6 @@
 
 pub mod address;
 pub mod payment;
-pub mod quote;
 
 #[cfg(feature = "data")]
 pub mod archive;

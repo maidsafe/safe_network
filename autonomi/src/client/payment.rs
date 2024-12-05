@@ -1,11 +1,11 @@
 use crate::client::data::PayError;
 use crate::Client;
-use ant_evm::{AttoTokens, EvmWallet, ProofOfPayment};
+use ant_evm::{EvmWallet, ProofOfPayment};
 use std::collections::HashMap;
 use xor_name::XorName;
 
-/// Contains the proof of payments for XOR addresses as well as the total cost.
-pub type Receipt = HashMap<XorName, (Vec<ProofOfPayment>, AttoTokens)>;
+/// Contains the proof of payment for XOR addresses.
+pub type Receipt = HashMap<XorName, ProofOfPayment>;
 
 /// Payment options for data payments.
 #[derive(Clone)]
@@ -40,7 +40,7 @@ impl Client {
     ) -> Result<Receipt, PayError> {
         match payment_option {
             PaymentOption::Wallet(wallet) => {
-                let receipt = self.pay(content_addrs, &wallet).await?;
+                let (receipt, _) = self.pay(content_addrs, &wallet).await?;
                 Ok(receipt)
             }
             PaymentOption::Receipt(receipt) => Ok(receipt),
