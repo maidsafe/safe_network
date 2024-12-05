@@ -11,7 +11,6 @@
 
 pub mod address;
 pub mod payment;
-pub mod quote;
 
 pub mod data;
 #[cfg(feature = "external-signer")]

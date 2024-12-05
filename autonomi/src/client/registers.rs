@@ -302,7 +302,7 @@ impl Client {
 
         let reg_xor = address.xorname();
         debug!("Paying for register at address: {address}");
-        let payment_proofs = self
+        let (payment_proofs, _skipped) = self
             .pay(std::iter::once(reg_xor), wallet)
             .await
             .inspect_err(|err| {
@@ -317,11 +317,6 @@ impl Client {
         };
 
         let payee = proof
-            // NB TODO only pay the first one for now, but we should try all of them if first one fails
-            .0
-            .first()
-            .expect("Missing proof of payment")
-            // TODO remove the tmp hack above and upload to all of them one by one until one succeeds
             .to_peer_id_payee()
             .ok_or(RegisterError::InvalidQuote)
             .inspect_err(|err| error!("Failed to get payee from payment proof: {err}"))?;
@@ -364,7 +359,7 @@ impl Client {
         if let Some(channel) = self.client_event_sender.as_ref() {
             let summary = UploadSummary {
                 record_count: 1,
-                tokens_spent: proof.1.as_atto(),
+                tokens_spent: proof.quote.cost.as_atto(),
             };
             if let Err(err) = channel.send(ClientEvent::UploadComplete(summary)).await {
                 error!("Failed to send client event: {err}");

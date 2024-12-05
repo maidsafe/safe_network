@@ -153,9 +153,14 @@ impl Client {
 
         // NB TODO: vault should be priced differently from other data
         let cost_map = self.get_store_quotes(std::iter::once(vault_xor)).await?;
-        let total_cost = cost_map.values().fold(Amount::ZERO, |acc, q| acc + q.total_cost.as_atto());
+        let total_cost = AttoTokens::from_atto(
+            cost_map
+                .values()
+                .map(|quote| quote.2.cost.as_atto())
+                .sum::<Amount>(),
+        );
 
-        Ok(AttoTokens::from_atto(total_cost))
+        Ok(total_cost)
     }
 
     /// Put data into the client's VaultPacket
@@ -193,13 +198,11 @@ impl Client {
                 })?;
 
             let proof = match receipt.values().next() {
-                Some(proof) => {
-                    // NB TODO only use the first one for now, but we should try the others if first one fails
-                    total_cost = proof.1;
-                    proof.0.first().expect("Missing proof of payment")
-                },
+                Some(proof) => proof,
                 None => return Err(PutError::PaymentUnexpectedlyInvalid(scratch_address)),
             };
+
+            total_cost = proof.quote.cost;
 
             Record {
                 key: scratch_key,
