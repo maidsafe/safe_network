@@ -19,7 +19,7 @@ pub type TransactionContent = [u8; 32];
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, Ord, PartialOrd)]
 pub struct Transaction {
     pub owner: PublicKey,
-    pub parent: Vec<PublicKey>,
+    pub parents: Vec<PublicKey>,
     pub content: TransactionContent,
     pub outputs: Vec<(PublicKey, TransactionContent)>,
     /// signs the above 4 fields with the owners key
@@ -29,14 +29,14 @@ pub struct Transaction {
 impl Transaction {
     pub fn new(
         owner: PublicKey,
-        parent: Vec<PublicKey>,
+        parents: Vec<PublicKey>,
         content: TransactionContent,
         outputs: Vec<(PublicKey, TransactionContent)>,
         signature: Signature,
     ) -> Self {
         Self {
             owner,
-            parent,
+            parents,
             content,
             outputs,
             signature,
@@ -53,7 +53,7 @@ impl Transaction {
         bytes.extend_from_slice("parent".as_bytes());
         bytes.extend_from_slice(
             &self
-                .parent
+                .parents
                 .iter()
                 .map(|p| p.to_bytes())
                 .collect::<Vec<_>>()
