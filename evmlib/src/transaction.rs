@@ -10,6 +10,7 @@ use crate::common::{Address, QuoteHash, TxHash, U256};
 use crate::event::{ChunkPaymentEvent, DATA_PAYMENT_EVENT_SIGNATURE};
 use crate::Network;
 use alloy::eips::BlockNumberOrTag;
+use alloy::network::primitives::BlockTransactionsKind;
 use alloy::primitives::FixedBytes;
 use alloy::providers::{Provider, ProviderBuilder};
 use alloy::rpc::types::{Block, Filter, Log, TransactionReceipt};
@@ -54,7 +55,10 @@ async fn get_block_by_number(network: &Network, block_number: u64) -> Result<Opt
         .with_recommended_fillers()
         .on_http(network.rpc_url().clone());
     let block = provider
-        .get_block_by_number(BlockNumberOrTag::Number(block_number), true)
+        .get_block_by_number(
+            BlockNumberOrTag::Number(block_number),
+            BlockTransactionsKind::Full,
+        )
         .await
         .inspect_err(|err| error!("Error getting block by number for {block_number} : {err:?}",))?;
     Ok(block)
