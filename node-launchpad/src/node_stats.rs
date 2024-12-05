@@ -179,7 +179,7 @@ impl NodeStats {
         let mut stats = IndividualNodeStats::default();
 
         for sample in all_metrics.samples.iter() {
-            if sample.metric == "sn_node_total_forwarded_rewards" {
+            if sample.metric == "ant_node_total_forwarded_rewards" {
                 // Nanos
                 match sample.value {
                     prometheus_parse::Value::Counter(val)
@@ -189,7 +189,7 @@ impl NodeStats {
                     }
                     _ => {}
                 }
-            } else if sample.metric == "sn_node_current_reward_wallet_balance" {
+            } else if sample.metric == "ant_node_current_reward_wallet_balance" {
                 // Attos
                 match sample.value {
                     prometheus_parse::Value::Counter(val)
