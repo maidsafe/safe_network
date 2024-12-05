@@ -17,30 +17,6 @@
 //! - Concurrent Access: File locking for safe multi-process access
 //! - Atomic Operations: Safe cache updates using atomic file operations
 //! - Initial Peer Discovery: Fallback web endpoints for new/stale cache scenarios
-//!
-//! # Example
-//!
-//! ```no_run
-//! use ant_bootstrap::{BootstrapCacheStore, BootstrapCacheConfig, PeersArgs};
-//! use url::Url;
-//!
-//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let config = BootstrapCacheConfig::empty();
-//! let args = PeersArgs {
-//!     first: false,
-//!     addrs: vec![],
-//!     network_contacts_url: Some(Url::parse("https://example.com/peers")?),
-//!     local: false,
-//!     disable_mainnet_contacts: false,
-//!     ignore_cache: false,
-//! };
-//!
-//! let mut store = BootstrapCacheStore::empty(config)?;
-//! store.initialize_from_peers_arg(&args).await?;
-//! let addrs = store.get_addrs();
-//! # Ok(())
-//! # }
-//! ```
 
 #[macro_use]
 extern crate tracing;
@@ -103,7 +79,7 @@ pub struct BootstrapAddresses(pub Vec<BootstrapAddr>);
 impl BootstrapAddresses {
     pub fn insert_addr(&mut self, addr: &BootstrapAddr) {
         if let Some(bootstrap_addr) = self.get_addr_mut(&addr.addr) {
-            bootstrap_addr.sync(None, addr);
+            bootstrap_addr.sync(addr);
         } else {
             self.0.push(addr.clone());
         }
@@ -136,19 +112,16 @@ impl BootstrapAddresses {
         }
     }
 
-    pub fn sync(&mut self, old_shared_state: Option<&Self>, current_shared_state: &Self) {
-        for current_bootstrap_addr in current_shared_state.0.iter() {
-            if let Some(bootstrap_addr) = self.get_addr_mut(&current_bootstrap_addr.addr) {
-                let old_bootstrap_addr = old_shared_state.and_then(|old_shared_state| {
-                    old_shared_state.get_addr(&current_bootstrap_addr.addr)
-                });
-                bootstrap_addr.sync(old_bootstrap_addr, current_bootstrap_addr);
+    pub fn sync(&mut self, other: &Self) {
+        for other_addr in other.0.iter() {
+            if let Some(bootstrap_addr) = self.get_addr_mut(&other_addr.addr) {
+                bootstrap_addr.sync(other_addr);
             } else {
                 trace!(
-                    "Addr {:?} from fs not found in memory, inserting it.",
-                    current_bootstrap_addr.addr
+                    "Addr {:?} from other not found in self, inserting it.",
+                    other_addr.addr
                 );
-                self.insert_addr(current_bootstrap_addr);
+                self.insert_addr(other_addr);
             }
         }
     }
@@ -214,37 +187,15 @@ impl BootstrapAddr {
         self.success_count >= self.failure_count
     }
 
-    /// If the peer has a old state, just update the difference in values
-    /// If the peer has no old state, add the values
-    pub fn sync(&mut self, old_shared_state: Option<&Self>, current_shared_state: &Self) {
-        trace!("Syncing addr {:?} with old_shared_state: {old_shared_state:?} and current_shared_state: {current_shared_state:?}. Our in-memory state {self:?}", self.addr);
-        if self.last_seen == current_shared_state.last_seen {
+    /// Add the values from other into self.
+    pub fn sync(&mut self, other: &Self) {
+        trace!("Syncing our state {self:?} with and other: {other:?}.");
+        if self.last_seen == other.last_seen {
             return;
         }
 
-        if let Some(old_shared_state) = old_shared_state {
-            let success_difference = self
-                .success_count
-                .saturating_sub(old_shared_state.success_count);
-
-            self.success_count = current_shared_state
-                .success_count
-                .saturating_add(success_difference);
-
-            let failure_difference = self
-                .failure_count
-                .saturating_sub(old_shared_state.failure_count);
-            self.failure_count = current_shared_state
-                .failure_count
-                .saturating_add(failure_difference);
-        } else {
-            self.success_count = self
-                .success_count
-                .saturating_add(current_shared_state.success_count);
-            self.failure_count = self
-                .failure_count
-                .saturating_add(current_shared_state.failure_count);
-        }
+        self.success_count = self.success_count.saturating_add(other.success_count);
+        self.failure_count = self.failure_count.saturating_add(other.failure_count);
 
         // if at max value, reset to 0
         if self.success_count == u32::MAX {
@@ -254,7 +205,7 @@ impl BootstrapAddr {
             self.failure_count = 1;
             self.success_count = 0;
         }
-        self.last_seen = std::cmp::max(self.last_seen, current_shared_state.last_seen);
+        self.last_seen = std::cmp::max(self.last_seen, other.last_seen);
         trace!("Successfully synced BootstrapAddr: {self:?}");
     }
 

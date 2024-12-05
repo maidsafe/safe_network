@@ -265,8 +265,10 @@ fn main() -> Result<()> {
         init_logging(&opt, keypair.public().to_peer_id())?;
 
     let rt = Runtime::new()?;
-    let mut bootstrap_cache = BootstrapCacheStore::empty(BootstrapCacheConfig::default_config()?)?;
-    rt.block_on(bootstrap_cache.initialize_from_peers_arg(&opt.peers))?;
+    let bootstrap_cache = BootstrapCacheStore::empty_from_peers_args(
+        &opt.peers,
+        Some(BootstrapCacheConfig::default_config()?),
+    )?;
 
     let msg = format!(
         "Running {} v{}",

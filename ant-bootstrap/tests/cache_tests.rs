@@ -32,83 +32,11 @@ async fn test_cache_store_operations() -> Result<(), Box<dyn std::error::Error>>
     cache_store.add_addr(addr.clone());
     cache_store.update_addr_status(&addr, true);
 
-    let addrs = cache_store.get_reliable_addrs().collect::<Vec<_>>();
+    let addrs = cache_store.get_sorted_addrs().collect::<Vec<_>>();
     assert!(!addrs.is_empty(), "Cache should contain the added peer");
     assert!(
-        addrs.iter().any(|p| p.addr == addr),
+        addrs.iter().any(|&a| a == &addr),
         "Cache should contain our specific peer"
-    );
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn test_cache_persistence() -> Result<(), Box<dyn std::error::Error>> {
-    let _guard = LogBuilder::init_single_threaded_tokio_test("cache_tests", false);
-    let temp_dir = TempDir::new()?;
-    let cache_path = temp_dir.path().join("cache.json");
-
-    // Create first cache store
-    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
-
-    let mut cache_store1 = BootstrapCacheStore::empty(config.clone())?;
-
-    // Add a peer and mark it as reliable
-    let addr: Multiaddr =
-        "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
-            .parse()?;
-    cache_store1.add_addr(addr.clone());
-    cache_store1.update_addr_status(&addr, true);
-    cache_store1.sync_and_save_to_disk(true).unwrap();
-
-    // Create a new cache store with the same path
-    let mut cache_store2 = BootstrapCacheStore::empty(config)?;
-    cache_store2.initialize_from_local_cache().unwrap();
-    let addrs = cache_store2.get_reliable_addrs().collect::<Vec<_>>();
-
-    assert!(!addrs.is_empty(), "Cache should persist across instances");
-    assert!(
-        addrs.iter().any(|p| p.addr == addr),
-        "Specific peer should persist"
-    );
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn test_cache_reliability_tracking() -> Result<(), Box<dyn std::error::Error>> {
-    let _guard = LogBuilder::init_single_threaded_tokio_test("cache_tests", false);
-    let temp_dir = TempDir::new()?;
-    let cache_path = temp_dir.path().join("cache.json");
-
-    let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
-    let mut cache_store = BootstrapCacheStore::empty(config)?;
-
-    let addr: Multiaddr =
-        "/ip4/127.0.0.1/udp/8080/quic-v1/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
-            .parse()?;
-    cache_store.add_addr(addr.clone());
-
-    // Test successful connections
-    for _ in 0..3 {
-        cache_store.update_addr_status(&addr, true);
-    }
-
-    let addrs = cache_store.get_reliable_addrs().collect::<Vec<_>>();
-    assert!(
-        addrs.iter().any(|p| p.addr == addr),
-        "Address should be reliable after successful connections"
-    );
-
-    // Test failed connections
-    for _ in 0..5 {
-        cache_store.update_addr_status(&addr, false);
-    }
-
-    let addrs = cache_store.get_reliable_addrs().collect::<Vec<_>>();
-    assert!(
-        !addrs.iter().any(|p| p.addr == addr),
-        "Address should not be reliable after failed connections"
     );
 
     Ok(())
@@ -137,7 +65,7 @@ async fn test_cache_max_peers() -> Result<(), Box<dyn std::error::Error>> {
         sleep(Duration::from_millis(100)).await;
     }
 
-    let addrs = cache_store.get_addrs().collect::<Vec<_>>();
+    let addrs = cache_store.get_all_addrs().collect::<Vec<_>>();
     assert_eq!(addrs.len(), 2, "Cache should respect max_peers limit");
 
     // Get the addresses of the peers we have
@@ -181,12 +109,12 @@ async fn test_cache_file_corruption() -> Result<(), Box<dyn std::error::Error>> 
 
     // Create a new cache store - it should handle the corruption gracefully
     let mut new_cache_store = BootstrapCacheStore::empty(config)?;
-    let addrs = new_cache_store.get_addrs().collect::<Vec<_>>();
+    let addrs = new_cache_store.get_all_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Cache should be empty after corruption");
 
     // Should be able to add peers again
     new_cache_store.add_addr(addr);
-    let addrs = new_cache_store.get_addrs().collect::<Vec<_>>();
+    let addrs = new_cache_store.get_all_addrs().collect::<Vec<_>>();
     assert_eq!(
         addrs.len(),
         1,

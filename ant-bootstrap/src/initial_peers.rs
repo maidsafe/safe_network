@@ -73,41 +73,34 @@ impl PeersArgs {
     /// 2. Addresses from environment variable SAFE_PEERS
     /// 3. Addresses from cache
     /// 4. Addresses from network contacts URL
-    pub async fn get_bootstrap_addr(&self) -> Result<Vec<BootstrapAddr>> {
-        self.get_bootstrap_addr_and_initialize_cache(None).await
-    }
-
-    pub async fn get_addrs(&self) -> Result<Vec<Multiaddr>> {
+    pub async fn get_addrs(&self, config: Option<BootstrapCacheConfig>) -> Result<Vec<Multiaddr>> {
         Ok(self
-            .get_bootstrap_addr()
+            .get_bootstrap_addr(config)
             .await?
             .into_iter()
             .map(|addr| addr.addr)
             .collect())
     }
 
-    /// Helper function to fetch bootstrap addresses and initialize cache based on the passed in args.
-    pub(crate) async fn get_bootstrap_addr_and_initialize_cache(
+    /// Get bootstrap peers
+    /// Order of precedence:
+    /// 1. Addresses from arguments
+    /// 2. Addresses from environment variable SAFE_PEERS
+    /// 3. Addresses from cache
+    /// 4. Addresses from network contacts URL
+    pub async fn get_bootstrap_addr(
         &self,
-        mut cache: Option<&mut BootstrapCacheStore>,
+        config: Option<BootstrapCacheConfig>,
     ) -> Result<Vec<BootstrapAddr>> {
         // If this is the first node, return an empty list
         if self.first {
             info!("First node in network, no initial bootstrap peers");
-            if let Some(cache) = cache {
-                info!("Clearing cache for 'first' node");
-                cache.clear_peers_and_save()?;
-            }
             return Ok(vec![]);
         }
 
         // If local mode is enabled, return empty store (will use mDNS)
         if self.local || cfg!(feature = "local") {
             info!("Local mode enabled, using only local discovery.");
-            if let Some(cache) = cache {
-                info!("Setting config to not write to cache, as 'local' mode is enabled");
-                cache.config.disable_cache_writing = true;
-            }
             return Ok(vec![]);
         }
 
@@ -145,32 +138,20 @@ impl PeersArgs {
 
         // Return here if we fetched peers from the args
         if !bootstrap_addresses.is_empty() {
-            if let Some(cache) = cache.as_mut() {
-                info!("Initializing cache with bootstrap addresses from arguments");
-                for addr in &bootstrap_addresses {
-                    cache.add_addr(addr.addr.clone());
-                }
-            }
+            bootstrap_addresses.sort_by_key(|addr| addr.failure_rate() as u64);
             return Ok(bootstrap_addresses);
         }
 
         // load from cache if present
-
         if !self.ignore_cache {
-            let cfg = if let Some(cache) = cache.as_ref() {
-                Some(cache.config.clone())
+            let cfg = if let Some(config) = config {
+                Some(config)
             } else {
                 BootstrapCacheConfig::default_config().ok()
             };
             if let Some(cfg) = cfg {
                 info!("Loading bootstrap addresses from cache");
                 if let Ok(data) = BootstrapCacheStore::load_cache_data(&cfg) {
-                    if let Some(cache) = cache.as_mut() {
-                        info!("Initializing cache with bootstrap addresses from cache");
-                        cache.data = data.clone();
-                        cache.old_shared_state = data.clone();
-                    }
-
                     bootstrap_addresses = data
                         .peers
                         .into_iter()
@@ -186,22 +167,18 @@ impl PeersArgs {
         }
 
         if !bootstrap_addresses.is_empty() {
+            bootstrap_addresses.sort_by_key(|addr| addr.failure_rate() as u64);
             return Ok(bootstrap_addresses);
         }
 
         if !self.disable_mainnet_contacts {
             let contacts_fetcher = ContactsFetcher::with_mainnet_endpoints()?;
             let addrs = contacts_fetcher.fetch_bootstrap_addresses().await?;
-            if let Some(cache) = cache.as_mut() {
-                info!("Initializing cache with bootstrap addresses from mainnet contacts");
-                for addr in addrs.iter() {
-                    cache.add_addr(addr.addr.clone());
-                }
-            }
             bootstrap_addresses = addrs;
         }
 
         if !bootstrap_addresses.is_empty() {
+            bootstrap_addresses.sort_by_key(|addr| addr.failure_rate() as u64);
             Ok(bootstrap_addresses)
         } else {
             error!("No initial bootstrap peers found through any means");

@@ -1032,10 +1032,26 @@ impl SwarmDriver {
                     let Some(current_interval) = bootstrap_cache_save_interval.as_mut() else {
                         continue;
                     };
+                    let start = Instant::now();
 
-                    if let Err(err) = bootstrap_cache.sync_and_save_to_disk(true) {
-                        error!("Failed to save bootstrap cache: {err}");
-                    }
+                    let config = bootstrap_cache.config().clone();
+                    let mut old_cache = bootstrap_cache.clone();
+
+                    let new = match BootstrapCacheStore::empty(config) {
+                        Ok(new) => new,
+                        Err(err) => {
+                            error!("Failed to create a new empty cache: {err}");
+                            continue;
+                        }
+                    };
+                    *bootstrap_cache = new;
+
+                    // save the cache to disk
+                    spawn(async move {
+                        if let Err(err) = old_cache.sync_and_flush_to_disk(true) {
+                            error!("Failed to save bootstrap cache: {err}");
+                        }
+                    });
 
                     if current_interval.period() >= bootstrap_cache.config().max_cache_save_duration {
                         continue;
@@ -1057,6 +1073,9 @@ impl SwarmDriver {
                     *current_interval = interval(new_duration);
                     #[cfg(not(target_arch = "wasm32"))]
                     current_interval.tick().await;
+
+                    trace!("Bootstrap cache synced in {:?}", start.elapsed());
+
                 },
             }
         }

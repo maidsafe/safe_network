@@ -72,7 +72,7 @@ pub async fn join(
 
     // If no peers are obtained we will attempt to join the existing local network, if one
     // is running.
-    let peers = match peers_args.get_addrs().await {
+    let peers = match peers_args.get_addrs(None).await {
         Ok(peers) => Some(peers),
         Err(err) => match err {
             ant_bootstrap::error::Error::NoBootstrapPeersFound => {

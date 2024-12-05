@@ -117,7 +117,7 @@ pub async fn add(
     // If the `antnode` binary we're using has `network-contacts` enabled (which is the case for released binaries),
     // it's fine if the service definition doesn't call `antnode` with a `--peer` argument.
     let is_first = peers_args.first;
-    let bootstrap_peers = match peers_args.get_addrs().await {
+    let bootstrap_peers = match peers_args.get_addrs(None).await {
         Ok(peers) => {
             info!("Obtained peers of length {}", peers.len());
             peers.into_iter().take(10).collect::<Vec<_>>()

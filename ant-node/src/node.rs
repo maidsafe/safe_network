@@ -184,7 +184,7 @@ impl NodeBuilder {
         let initial_peers = if !self.initial_peers.is_empty() {
             self.initial_peers.clone()
         } else if let Some(cache) = &self.bootstrap_cache {
-            cache.get_unique_peer_addr().cloned().collect()
+            cache.get_sorted_addrs().cloned().collect()
         } else {
             vec![]
         };

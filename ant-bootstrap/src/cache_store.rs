@@ -7,8 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
-    craft_valid_multiaddr, initial_peers::PeersArgs, multiaddr_get_peer_id, BootstrapAddr,
-    BootstrapAddresses, BootstrapCacheConfig, Error, Result,
+    craft_valid_multiaddr, multiaddr_get_peer_id, BootstrapAddr, BootstrapAddresses,
+    BootstrapCacheConfig, Error, PeersArgs, Result,
 };
 use atomic_write_file::AtomicWriteFile;
 use libp2p::{multiaddr::Protocol, Multiaddr, PeerId};
@@ -42,23 +42,17 @@ impl CacheData {
         }
     }
 
-    /// Sync the self cache with another cache by referencing our old_shared_state.
-    /// Since the cache is updated on periodic interval, we cannot just add our state with the shared state on the fs.
-    /// This would lead to race conditions, hence the need to store the old shared state in memory and sync it with the
-    /// new shared state obtained from fs.
-    pub fn sync(&mut self, old_shared_state: &CacheData, current_shared_state: &CacheData) {
-        // Add/sync every BootstrapAddresses from shared state into self
-        for (peer, current_shared_addrs_state) in current_shared_state.peers.iter() {
-            let old_shared_addrs_state = old_shared_state.peers.get(peer);
+    /// Sync the self cache with another cache. This would just add the 'other' state to self.
+    pub fn sync(&mut self, other: &CacheData) {
+        for (peer, other_addresses_state) in other.peers.iter() {
             let bootstrap_addresses = self
                 .peers
                 .entry(*peer)
-                .or_insert(current_shared_addrs_state.clone());
+                .or_insert(other_addresses_state.clone());
 
-            trace!("Syncing {peer:?} from fs with addrs count: {:?}, old state count: {:?}. Our in memory state count: {:?}", current_shared_addrs_state.0.len(), old_shared_addrs_state.map(|x| x.0.len()), bootstrap_addresses.0.len());
+            trace!("Syncing {peer:?} from other with addrs count: {:?}. Our in memory state count: {:?}", other_addresses_state.0.len(), bootstrap_addresses.0.len());
 
-            // Add/sync every BootstrapAddr into self
-            bootstrap_addresses.sync(old_shared_addrs_state, current_shared_addrs_state);
+            bootstrap_addresses.sync(other_addresses_state);
         }
 
         self.last_updated = SystemTime::now();
@@ -153,9 +147,6 @@ pub struct BootstrapCacheStore {
     pub(crate) cache_path: PathBuf,
     pub(crate) config: BootstrapCacheConfig,
     pub(crate) data: CacheData,
-    /// This is our last known state of the cache on disk, which is shared across all instances.
-    /// This is not updated until `sync_to_disk` is called.
-    pub(crate) old_shared_state: CacheData,
 }
 
 impl BootstrapCacheStore {
@@ -182,24 +173,38 @@ impl BootstrapCacheStore {
             cache_path,
             config,
             data: CacheData::default(),
-            old_shared_state: CacheData::default(),
         };
 
         Ok(store)
     }
 
-    pub async fn initialize_from_peers_arg(&mut self, peers_arg: &PeersArgs) -> Result<()> {
-        peers_arg
-            .get_bootstrap_addr_and_initialize_cache(Some(self))
-            .await?;
-        self.sync_and_save_to_disk(true)?;
-        Ok(())
-    }
+    /// Create a CacheStore from the given peers argument.
+    /// This also modifies the cfg if provided based on the PeersArgs.
+    /// And also performs some actions based on the PeersArgs.
+    pub fn empty_from_peers_args(
+        peers_arg: &PeersArgs,
+        cfg: Option<BootstrapCacheConfig>,
+    ) -> Result<Self> {
+        let config = if let Some(cfg) = cfg {
+            cfg
+        } else {
+            BootstrapCacheConfig::default_config()?
+        };
+        let mut store = Self::empty(config)?;
 
-    pub fn initialize_from_local_cache(&mut self) -> Result<()> {
-        self.data = Self::load_cache_data(&self.config)?;
-        self.old_shared_state = self.data.clone();
-        Ok(())
+        // If it is the first node, clear the cache.
+        if peers_arg.first {
+            info!("First node in network, writing empty cache to disk");
+            store.write()?;
+        }
+
+        // If local mode is enabled, return empty store (will use mDNS)
+        if peers_arg.local || cfg!(feature = "local") {
+            info!("Setting config to not write to cache, as 'local' mode is enabled");
+            store.config.disable_cache_writing = true;
+        }
+
+        Ok(store)
     }
 
     /// Load cache data from disk
@@ -232,7 +237,7 @@ impl BootstrapCacheStore {
         self.data.peers.len()
     }
 
-    pub fn get_addrs(&self) -> impl Iterator<Item = &BootstrapAddr> {
+    pub fn get_all_addrs(&self) -> impl Iterator<Item = &BootstrapAddr> {
         self.data
             .peers
             .values()
@@ -240,20 +245,18 @@ impl BootstrapCacheStore {
     }
 
     /// Get a list containing single addr per peer. We use the least faulty addr for each peer.
-    pub fn get_unique_peer_addr(&self) -> impl Iterator<Item = &Multiaddr> {
-        self.data
+    /// This list is sorted by the failure rate of the addr.
+    pub fn get_sorted_addrs(&self) -> impl Iterator<Item = &Multiaddr> {
+        let mut addrs = self
+            .data
             .peers
             .values()
             .flat_map(|bootstrap_addresses| bootstrap_addresses.get_least_faulty())
-            .map(|bootstrap_addr| &bootstrap_addr.addr)
-    }
+            .collect::<Vec<_>>();
 
-    pub fn get_reliable_addrs(&self) -> impl Iterator<Item = &BootstrapAddr> {
-        self.data
-            .peers
-            .values()
-            .flat_map(|bootstrap_addresses| bootstrap_addresses.0.iter())
-            .filter(|bootstrap_addr| bootstrap_addr.is_reliable())
+        addrs.sort_by_key(|addr| addr.failure_rate() as u64);
+
+        addrs.into_iter().map(|addr| &addr.addr)
     }
 
     /// Update the status of an addr in the cache. The peer must be added to the cache first.
@@ -319,49 +322,21 @@ impl BootstrapCacheStore {
         self.data.perform_cleanup(&self.config);
     }
 
-    /// Clear all peers from the cache and save to disk
-    pub fn clear_peers_and_save(&mut self) -> Result<()> {
-        self.data.peers.clear();
-        self.old_shared_state.peers.clear();
-
-        match self.atomic_write() {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                error!("Failed to save cache to disk: {e}");
-                Err(e)
-            }
-        }
-    }
-
-    /// Do not perform cleanup when `data` is fetched from the network.
-    /// The SystemTime might not be accurate.
-    pub fn sync_and_save_to_disk(&mut self, with_cleanup: bool) -> Result<()> {
+    /// Flush the cache to disk after syncing with the CacheData from the file.
+    /// Do not perform cleanup when `data` is fetched from the network. The SystemTime might not be accurate.
+    pub fn sync_and_flush_to_disk(&mut self, with_cleanup: bool) -> Result<()> {
         if self.config.disable_cache_writing {
             info!("Cache writing is disabled, skipping sync to disk");
             return Ok(());
         }
 
         info!(
-            "Syncing cache to disk, with data containing: {} peers and old state containing: {} peers", self.data.peers.len(),
-            self.old_shared_state.peers.len()
+            "Flushing cache to disk, with data containing: {} peers",
+            self.data.peers.len(),
         );
 
-        // Check if the file is read-only before attempting to write
-        let is_readonly = self
-            .cache_path
-            .metadata()
-            .map(|m| m.permissions().readonly())
-            .unwrap_or(false);
-
-        if is_readonly {
-            warn!("Cannot save to disk: cache file is read-only");
-            // todo return err
-            return Ok(());
-        }
-
         if let Ok(data_from_file) = Self::load_cache_data(&self.config) {
-            self.data.sync(&self.old_shared_state, &data_from_file);
-            // Now the synced version is the old_shared_state
+            self.data.sync(&data_from_file);
         } else {
             warn!("Failed to load cache data from file, overwriting with new data");
         }
@@ -370,14 +345,20 @@ impl BootstrapCacheStore {
             self.data.perform_cleanup(&self.config);
             self.data.try_remove_oldest_peers(&self.config);
         }
-        self.old_shared_state = self.data.clone();
 
-        self.atomic_write().inspect_err(|e| {
+        self.write().inspect_err(|e| {
             error!("Failed to save cache to disk: {e}");
-        })
+        })?;
+
+        // Flush after writing
+        self.data.peers.clear();
+
+        Ok(())
     }
 
-    fn atomic_write(&self) -> Result<()> {
+    /// Write the cache to disk atomically. This will overwrite the existing cache file, use sync_and_flush_to_disk to
+    /// sync with the file first.
+    pub fn write(&self) -> Result<()> {
         debug!("Writing cache to disk: {:?}", self.cache_path);
         // Create parent directory if it doesn't exist
         if let Some(parent) = self.cache_path.parent() {
@@ -420,30 +401,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_peer_update_and_save() {
-        let (mut store, _) = create_test_store().await;
-        let addr: Multiaddr =
-            "/ip4/127.0.0.1/tcp/8080/p2p/12D3KooWRBhwfeP2Y4TCx1SM6s9rUoHhR5STiGwxBhgFRcw3UERE"
-                .parse()
-                .unwrap();
-
-        // Manually add a peer without using fallback
-        {
-            let peer_id = multiaddr_get_peer_id(&addr).unwrap();
-            store.data.insert(peer_id, BootstrapAddr::new(addr.clone()));
-        }
-        store.sync_and_save_to_disk(true).unwrap();
-
-        store.update_addr_status(&addr, true);
-
-        let peers = store.get_addrs().collect::<Vec<_>>();
-        assert_eq!(peers.len(), 1);
-        assert_eq!(peers[0].addr, addr);
-        assert_eq!(peers[0].success_count, 1);
-        assert_eq!(peers[0].failure_count, 0);
-    }
-
-    #[tokio::test]
     async fn test_peer_cleanup() {
         let (mut store, _) = create_test_store().await;
         let good_addr: Multiaddr =
@@ -471,7 +428,7 @@ mod tests {
         store.perform_cleanup();
 
         // Get all peers (not just reliable ones)
-        let peers = store.get_addrs().collect::<Vec<_>>();
+        let peers = store.get_all_addrs().collect::<Vec<_>>();
         assert_eq!(peers.len(), 1);
         assert_eq!(peers[0].addr, good_addr);
     }
@@ -495,7 +452,7 @@ mod tests {
         store.perform_cleanup();
 
         // Verify peer is still there
-        let peers = store.get_addrs().collect::<Vec<_>>();
+        let peers = store.get_all_addrs().collect::<Vec<_>>();
         assert_eq!(peers.len(), 1);
         assert_eq!(peers[0].addr, addr);
     }
