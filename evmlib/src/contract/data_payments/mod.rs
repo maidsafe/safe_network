@@ -50,6 +50,10 @@ where
         let contract = DataPaymentsContract::deploy(provider, payment_token_address)
             .await
             .expect("Could not deploy contract");
+        debug!(
+            "DataPayments contract deployed at: {:?}",
+            contract.address()
+        );
 
         DataPaymentsHandler { contract }
     }
@@ -66,6 +70,7 @@ where
         data_payments: I,
     ) -> Result<TxHash, Error> {
         let (calldata, to) = self.pay_for_quotes_calldata(data_payments)?;
+        debug!("Data payments calldata is processed to the address {to:?}");
 
         let transaction_request = self
             .contract
