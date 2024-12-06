@@ -44,7 +44,6 @@ pub async fn add(
     env_variables: Option<Vec<(String, String)>>,
     evm_network: Option<EvmNetwork>,
     home_network: bool,
-    local: bool,
     log_dir_path: Option<PathBuf>,
     log_format: Option<LogFormat>,
     max_archived_log_files: Option<usize>,
@@ -53,7 +52,7 @@ pub async fn add(
     node_ip: Option<Ipv4Addr>,
     node_port: Option<PortRange>,
     owner: Option<String>,
-    peers_args: PeersArgs,
+    mut peers_args: PeersArgs,
     rewards_address: RewardsAddress,
     rpc_address: Option<Ipv4Addr>,
     rpc_port: Option<PortRange>,
@@ -105,47 +104,17 @@ pub async fn add(
 
     debug!("Parsing peers from PeersArgs");
 
-    // Handle the `PeersNotObtained` error to make the `--peer` argument optional for the node
-    // manager.
-    //
-    // Since any application making use of the node manager can enable the `network-contacts` feature on
-    // ant_peers_acquisition, we might end up getting having a huge peer list, and that's problematic for
-    // service definition files.
-    // Thus make use of get_peers_exclude_network_contacts() instead of get_peers() to make sure we only
-    // parse the --peers and ANT_PEERS env var.
-
-    // If the `antnode` binary we're using has `network-contacts` enabled (which is the case for released binaries),
-    // it's fine if the service definition doesn't call `antnode` with a `--peer` argument.
-    let is_first = peers_args.first;
-    let bootstrap_peers = match peers_args.get_addrs(None).await {
-        Ok(peers) => {
-            info!("Obtained peers of length {}", peers.len());
-            peers.into_iter().take(10).collect::<Vec<_>>()
-        }
-        Err(err) => match err {
-            ant_bootstrap::error::Error::NoBootstrapPeersFound => {
-                info!("No bootstrap peers obtained, setting empty vec.");
-                Vec::new()
-            }
-            _ => {
-                error!("Error obtaining peers: {err:?}");
-                return Err(err.into());
-            }
-        },
-    };
+    peers_args.addrs.extend(PeersArgs::read_addr_from_env());
 
     let options = AddNodeServiceOptions {
         auto_restart,
         auto_set_nat_flags,
-        bootstrap_peers,
         count,
         delete_antnode_src: src_path.is_none(),
         enable_metrics_server,
         evm_network: evm_network.unwrap_or(EvmNetwork::ArbitrumOne),
         env_variables,
-        genesis: is_first,
         home_network,
-        local,
         log_format,
         max_archived_log_files,
         max_log_files,
@@ -153,6 +122,7 @@ pub async fn add(
         node_ip,
         node_port,
         owner,
+        peers_args,
         rewards_address,
         rpc_address,
         rpc_port,
@@ -535,7 +505,6 @@ pub async fn upgrade(
         };
         let options = UpgradeOptions {
             auto_restart: false,
-            bootstrap_peers: node_registry.bootstrap_peers.clone(),
             env_variables: env_variables.clone(),
             force: use_force,
             start_service: !do_not_start,
@@ -613,7 +582,6 @@ pub async fn maintain_n_running_nodes(
     env_variables: Option<Vec<(String, String)>>,
     evm_network: Option<EvmNetwork>,
     home_network: bool,
-    local: bool,
     log_dir_path: Option<PathBuf>,
     log_format: Option<LogFormat>,
     max_archived_log_files: Option<usize>,
@@ -622,7 +590,7 @@ pub async fn maintain_n_running_nodes(
     node_ip: Option<Ipv4Addr>,
     node_port: Option<PortRange>,
     owner: Option<String>,
-    peers: PeersArgs,
+    peers_args: PeersArgs,
     rewards_address: RewardsAddress,
     rpc_address: Option<Ipv4Addr>,
     rpc_port: Option<PortRange>,
@@ -718,7 +686,6 @@ pub async fn maintain_n_running_nodes(
                         env_variables.clone(),
                         evm_network.clone(),
                         home_network,
-                        local,
                         log_dir_path.clone(),
                         log_format,
                         max_archived_log_files,
@@ -727,7 +694,7 @@ pub async fn maintain_n_running_nodes(
                         node_ip,
                         Some(PortRange::Single(port)),
                         owner.clone(),
-                        peers.clone(),
+                        peers_args.clone(),
                         rewards_address,
                         rpc_address,
                         rpc_port.clone(),

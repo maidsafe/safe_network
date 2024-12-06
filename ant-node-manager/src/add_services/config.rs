@@ -6,10 +6,11 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use ant_bootstrap::PeersArgs;
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
+use ant_service_management::node::push_arguments_from_peers_args;
 use color_eyre::{eyre::eyre, Result};
-use libp2p::Multiaddr;
 use service_manager::{ServiceInstallCtx, ServiceLabel};
 use std::{
     ffi::OsString,
@@ -71,13 +72,10 @@ impl PortRange {
 pub struct InstallNodeServiceCtxBuilder {
     pub antnode_path: PathBuf,
     pub autostart: bool,
-    pub bootstrap_peers: Vec<Multiaddr>,
     pub data_dir_path: PathBuf,
     pub env_variables: Option<Vec<(String, String)>>,
     pub evm_network: EvmNetwork,
-    pub genesis: bool,
     pub home_network: bool,
-    pub local: bool,
     pub log_dir_path: PathBuf,
     pub log_format: Option<LogFormat>,
     pub name: String,
@@ -87,6 +85,7 @@ pub struct InstallNodeServiceCtxBuilder {
     pub node_ip: Option<Ipv4Addr>,
     pub node_port: Option<u16>,
     pub owner: Option<String>,
+    pub peers_args: PeersArgs,
     pub rewards_address: RewardsAddress,
     pub rpc_socket_addr: SocketAddr,
     pub service_user: Option<String>,
@@ -105,14 +104,9 @@ impl InstallNodeServiceCtxBuilder {
             OsString::from(self.log_dir_path.to_string_lossy().to_string()),
         ];
 
-        if self.genesis {
-            args.push(OsString::from("--first"));
-        }
+        push_arguments_from_peers_args(&self.peers_args, &mut args);
         if self.home_network {
             args.push(OsString::from("--home-network"));
-        }
-        if self.local {
-            args.push(OsString::from("--local"));
         }
         if let Some(log_format) = self.log_format {
             args.push(OsString::from("--log-format"));
@@ -144,17 +138,6 @@ impl InstallNodeServiceCtxBuilder {
         if let Some(log_files) = self.max_log_files {
             args.push(OsString::from("--max-log-files"));
             args.push(OsString::from(log_files.to_string()));
-        }
-
-        if !self.bootstrap_peers.is_empty() {
-            let peers_str = self
-                .bootstrap_peers
-                .iter()
-                .map(|peer| peer.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
-            args.push(OsString::from("--peer"));
-            args.push(OsString::from(peers_str));
         }
 
         args.push(OsString::from("--rewards-address"));
@@ -192,15 +175,12 @@ pub struct AddNodeServiceOptions {
     pub antnode_src_path: PathBuf,
     pub auto_restart: bool,
     pub auto_set_nat_flags: bool,
-    pub bootstrap_peers: Vec<Multiaddr>,
     pub count: Option<u16>,
     pub delete_antnode_src: bool,
     pub enable_metrics_server: bool,
     pub env_variables: Option<Vec<(String, String)>>,
     pub evm_network: EvmNetwork,
-    pub genesis: bool,
     pub home_network: bool,
-    pub local: bool,
     pub log_format: Option<LogFormat>,
     pub max_archived_log_files: Option<usize>,
     pub max_log_files: Option<usize>,
@@ -208,6 +188,7 @@ pub struct AddNodeServiceOptions {
     pub node_ip: Option<Ipv4Addr>,
     pub node_port: Option<PortRange>,
     pub owner: Option<String>,
+    pub peers_args: PeersArgs,
     pub rewards_address: RewardsAddress,
     pub rpc_address: Option<Ipv4Addr>,
     pub rpc_port: Option<PortRange>,
@@ -223,7 +204,6 @@ pub struct AddNodeServiceOptions {
 pub struct InstallAuditorServiceCtxBuilder {
     pub auditor_path: PathBuf,
     pub beta_encryption_key: Option<String>,
-    pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
     pub log_dir_path: PathBuf,
     pub name: String,
@@ -237,16 +217,6 @@ impl InstallAuditorServiceCtxBuilder {
             OsString::from(self.log_dir_path.to_string_lossy().to_string()),
         ];
 
-        if !self.bootstrap_peers.is_empty() {
-            let peers_str = self
-                .bootstrap_peers
-                .iter()
-                .map(|peer| peer.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
-            args.push(OsString::from("--peer"));
-            args.push(OsString::from(peers_str));
-        }
         if let Some(beta_encryption_key) = self.beta_encryption_key {
             args.push(OsString::from("--beta-encryption-key"));
             args.push(OsString::from(beta_encryption_key));
@@ -267,7 +237,6 @@ impl InstallAuditorServiceCtxBuilder {
 
 #[derive(Debug, PartialEq)]
 pub struct InstallFaucetServiceCtxBuilder {
-    pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
     pub faucet_path: PathBuf,
     pub local: bool,
@@ -282,17 +251,6 @@ impl InstallFaucetServiceCtxBuilder {
             OsString::from("--log-output-dest"),
             OsString::from(self.log_dir_path.to_string_lossy().to_string()),
         ];
-
-        if !self.bootstrap_peers.is_empty() {
-            let peers_str = self
-                .bootstrap_peers
-                .iter()
-                .map(|peer| peer.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
-            args.push(OsString::from("--peer"));
-            args.push(OsString::from(peers_str));
-        }
 
         args.push(OsString::from("server"));
 
@@ -313,7 +271,6 @@ pub struct AddAuditorServiceOptions {
     pub auditor_install_bin_path: PathBuf,
     pub auditor_src_bin_path: PathBuf,
     pub beta_encryption_key: Option<String>,
-    pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
     pub service_log_dir_path: PathBuf,
     pub user: String,
@@ -321,7 +278,6 @@ pub struct AddAuditorServiceOptions {
 }
 
 pub struct AddFaucetServiceOptions {
-    pub bootstrap_peers: Vec<Multiaddr>,
     pub env_variables: Option<Vec<(String, String)>>,
     pub faucet_install_bin_path: PathBuf,
     pub faucet_src_bin_path: PathBuf,
@@ -352,13 +308,10 @@ mod tests {
         InstallNodeServiceCtxBuilder {
             antnode_path: PathBuf::from("/bin/antnode"),
             autostart: true,
-            bootstrap_peers: vec![],
             data_dir_path: PathBuf::from("/data"),
             env_variables: None,
             evm_network: EvmNetwork::ArbitrumOne,
-            genesis: false,
             home_network: false,
-            local: false,
             log_dir_path: PathBuf::from("/logs"),
             log_format: None,
             name: "test-node".to_string(),
@@ -368,6 +321,7 @@ mod tests {
             node_ip: None,
             node_port: None,
             owner: None,
+            peers_args: PeersArgs::default(),
             rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")
                 .unwrap(),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
@@ -379,7 +333,6 @@ mod tests {
     fn create_custom_evm_network_builder() -> InstallNodeServiceCtxBuilder {
         InstallNodeServiceCtxBuilder {
             autostart: true,
-            bootstrap_peers: vec![],
             data_dir_path: PathBuf::from("/data"),
             env_variables: None,
             evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -393,9 +346,7 @@ mod tests {
                 )
                 .unwrap(),
             }),
-            genesis: false,
             home_network: false,
-            local: false,
             log_dir_path: PathBuf::from("/logs"),
             log_format: None,
             name: "test-node".to_string(),
@@ -405,6 +356,7 @@ mod tests {
             node_ip: None,
             node_port: None,
             owner: None,
+            peers_args: PeersArgs::default(),
             rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")
                 .unwrap(),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
@@ -417,7 +369,6 @@ mod tests {
     fn create_builder_with_all_options_enabled() -> InstallNodeServiceCtxBuilder {
         InstallNodeServiceCtxBuilder {
             autostart: true,
-            bootstrap_peers: vec![],
             data_dir_path: PathBuf::from("/data"),
             env_variables: None,
             evm_network: EvmNetwork::Custom(CustomNetwork {
@@ -431,9 +382,7 @@ mod tests {
                 )
                 .unwrap(),
             }),
-            genesis: false,
             home_network: false,
-            local: false,
             log_dir_path: PathBuf::from("/logs"),
             log_format: None,
             name: "test-node".to_string(),
@@ -443,6 +392,7 @@ mod tests {
             node_ip: None,
             node_port: None,
             owner: None,
+            peers_args: PeersArgs::default(),
             rewards_address: RewardsAddress::from_str("0x03B770D9cD32077cC0bF330c13C114a87643B124")
                 .unwrap(),
             rpc_socket_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
@@ -525,19 +475,22 @@ mod tests {
     #[test]
     fn build_should_assign_expected_values_when_all_options_are_enabled() {
         let mut builder = create_builder_with_all_options_enabled();
-        builder.genesis = true;
         builder.home_network = true;
-        builder.local = true;
         builder.log_format = Some(LogFormat::Json);
         builder.upnp = true;
         builder.node_ip = Some(Ipv4Addr::new(192, 168, 1, 1));
         builder.node_port = Some(12345);
         builder.metrics_port = Some(9090);
         builder.owner = Some("test-owner".to_string());
-        builder.bootstrap_peers = vec![
+        builder.peers_args.addrs = vec![
             "/ip4/127.0.0.1/tcp/8080".parse().unwrap(),
             "/ip4/192.168.1.1/tcp/8081".parse().unwrap(),
         ];
+        builder.peers_args.first = true;
+        builder.peers_args.local = true;
+        builder.peers_args.network_contacts_url = vec!["http://localhost:8080".parse().unwrap()];
+        builder.peers_args.ignore_cache = true;
+        builder.peers_args.disable_mainnet_contacts = true;
         builder.service_user = Some("antnode-user".to_string());
 
         let result = builder.build().unwrap();
@@ -550,8 +503,14 @@ mod tests {
             "--log-output-dest",
             "/logs",
             "--first",
-            "--home-network",
             "--local",
+            "--peer",
+            "/ip4/127.0.0.1/tcp/8080,/ip4/192.168.1.1/tcp/8081",
+            "--network-contacts-url",
+            "http://localhost:8080",
+            "--testnet",
+            "--ignore-cache",
+            "--home-network",
             "--log-format",
             "json",
             "--upnp",
@@ -567,8 +526,6 @@ mod tests {
             "10",
             "--max-log-files",
             "10",
-            "--peer",
-            "/ip4/127.0.0.1/tcp/8080,/ip4/192.168.1.1/tcp/8081",
             "--rewards-address",
             "0x03B770D9cD32077cC0bF330c13C114a87643B124",
             "evm-custom",

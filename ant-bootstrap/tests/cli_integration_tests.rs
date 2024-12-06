@@ -31,7 +31,7 @@ async fn test_first_flag() -> Result<(), Box<dyn std::error::Error>> {
     let args = PeersArgs {
         first: true,
         addrs: vec![],
-        network_contacts_url: None,
+        network_contacts_url: vec![],
         local: false,
         disable_mainnet_contacts: false,
         ignore_cache: false,
@@ -56,7 +56,7 @@ async fn test_peer_argument() -> Result<(), Box<dyn std::error::Error>> {
     let args = PeersArgs {
         first: false,
         addrs: vec![peer_addr.clone()],
-        network_contacts_url: None,
+        network_contacts_url: vec![],
         local: false,
         disable_mainnet_contacts: true,
         ignore_cache: false,
@@ -90,7 +90,7 @@ async fn test_network_contacts_fallback() -> Result<(), Box<dyn std::error::Erro
     let args = PeersArgs {
         first: false,
         addrs: vec![],
-        network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
+        network_contacts_url: vec![format!("{}/peers", mock_server.uri()).parse()?],
         local: false,
         disable_mainnet_contacts: false,
         ignore_cache: false,
@@ -120,7 +120,7 @@ async fn test_local_mode() -> Result<(), Box<dyn std::error::Error>> {
     let args = PeersArgs {
         first: false,
         addrs: vec![],
-        network_contacts_url: None,
+        network_contacts_url: vec![],
         local: true,
         disable_mainnet_contacts: false,
         ignore_cache: false,
@@ -155,7 +155,7 @@ async fn test_test_network_peers() -> Result<(), Box<dyn std::error::Error>> {
     let args = PeersArgs {
         first: false,
         addrs: vec![peer_addr.clone()],
-        network_contacts_url: None,
+        network_contacts_url: vec![],
         local: false,
         disable_mainnet_contacts: true,
         ignore_cache: false,
