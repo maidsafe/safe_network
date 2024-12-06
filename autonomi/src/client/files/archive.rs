@@ -13,7 +13,6 @@ use std::{
 
 use ant_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
-use super::archive_public::{Metadata, RenameError};
 use crate::{
     client::{
         data::{GetError, PrivateDataAccess, PutError},
@@ -23,10 +22,47 @@ use crate::{
 };
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 /// The address of a private archive
 /// Contains the [`PrivateDataAccess`] leading to the [`PrivateArchive`] data
 pub type PrivateArchiveAccess = PrivateDataAccess;
+
+#[derive(Error, Debug, PartialEq, Eq)]
+pub enum RenameError {
+    #[error("File not found in archive: {0}")]
+    FileNotFound(PathBuf),
+}
+
+/// Metadata for a file in an archive. Time values are UNIX timestamps.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Metadata {
+    /// When the file was (last) uploaded to the network.
+    pub uploaded: u64,
+    /// File creation time on local file system. See [`std::fs::Metadata::created`] for details per OS.
+    pub created: u64,
+    /// Last file modification time taken from local file system. See [`std::fs::Metadata::modified`] for details per OS.
+    pub modified: u64,
+    /// File size in bytes
+    pub size: u64,
+}
+
+impl Metadata {
+    /// Create a new metadata struct with the current time as uploaded, created and modified.
+    pub fn new_with_size(size: u64) -> Self {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or(Duration::from_secs(0))
+            .as_secs();
+
+        Self {
+            uploaded: now,
+            created: now,
+            modified: now,
+            size,
+        }
+    }
+}
 
 /// A private archive of files that containing file paths, their metadata and the files data maps
 /// Using archives is useful for uploading entire directories to the network, only needing to keep track of a single address.

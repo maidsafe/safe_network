@@ -8,7 +8,10 @@
 
 use super::get_progress_bar;
 use autonomi::{
-    client::{address::str_to_addr, archive::ArchiveAddr, archive_private::PrivateArchiveAccess},
+    client::{
+        address::str_to_addr,
+        files::{archive::PrivateArchiveAccess, archive_public::ArchiveAddr},
+    },
     Client,
 };
 use color_eyre::{

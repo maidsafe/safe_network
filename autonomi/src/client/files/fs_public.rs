@@ -6,73 +6,17 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::client::data::{CostError, DataAddr, GetError, PutError};
+use crate::client::data::DataAddr;
+use crate::client::files::archive::Metadata;
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::Client;
 use ant_evm::EvmWallet;
 use ant_networking::target_arch::{Duration, SystemTime};
 use bytes::Bytes;
 use std::path::PathBuf;
-use std::sync::LazyLock;
 
-use super::archive_public::{Archive, ArchiveAddr, Metadata};
-
-/// Number of files to upload in parallel.
-/// Can be overridden by the `FILE_UPLOAD_BATCH_SIZE` environment variable.
-pub static FILE_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
-    let batch_size = std::env::var("FILE_UPLOAD_BATCH_SIZE")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(
-            std::thread::available_parallelism()
-                .map(|n| n.get())
-                .unwrap_or(1)
-                * 8,
-        );
-    info!("File upload batch size: {}", batch_size);
-    batch_size
-});
-
-/// Errors that can occur during the file upload operation.
-#[derive(Debug, thiserror::Error)]
-pub enum UploadError {
-    #[error("Failed to recursively traverse directory")]
-    WalkDir(#[from] walkdir::Error),
-    #[error("Input/output failure")]
-    IoError(#[from] std::io::Error),
-    #[error("Failed to upload file")]
-    PutError(#[from] PutError),
-    #[error("Failed to fetch file")]
-    GetError(#[from] GetError),
-    #[error("Failed to serialize")]
-    Serialization(#[from] rmp_serde::encode::Error),
-    #[error("Failed to deserialize")]
-    Deserialization(#[from] rmp_serde::decode::Error),
-}
-
-/// Errors that can occur during the download operation.
-#[derive(Debug, thiserror::Error)]
-pub enum DownloadError {
-    #[error("Failed to download file")]
-    GetError(#[from] GetError),
-    #[error("IO failure")]
-    IoError(#[from] std::io::Error),
-}
-
-/// Errors that can occur during the file cost calculation.
-#[derive(Debug, thiserror::Error)]
-pub enum FileCostError {
-    #[error("Cost error: {0}")]
-    Cost(#[from] CostError),
-    #[error("IO failure")]
-    IoError(#[from] std::io::Error),
-    #[error("Serialization error")]
-    Serialization(#[from] rmp_serde::encode::Error),
-    #[error("Self encryption error")]
-    SelfEncryption(#[from] crate::self_encryption::Error),
-    #[error("Walkdir error")]
-    WalkDir(#[from] walkdir::Error),
-}
+use super::archive_public::{Archive, ArchiveAddr};
+use super::fs::*;
 
 impl Client {
     /// Download file from network to local file system

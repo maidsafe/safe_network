@@ -18,21 +18,17 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use xor_name::XorName;
 
-/// The address of an archive on the network. Points to an [`Archive`].
-pub type ArchiveAddr = XorName;
-
-use thiserror::Error;
-
+use super::archive::Metadata;
 use crate::{
-    client::data::{CostError, DataAddr, GetError, PutError},
+    client::{
+        data::{CostError, DataAddr, GetError, PutError},
+        files::archive::RenameError,
+    },
     Client,
 };
 
-#[derive(Error, Debug, PartialEq, Eq)]
-pub enum RenameError {
-    #[error("File not found in archive: {0}")]
-    FileNotFound(PathBuf),
-}
+/// The address of an archive on the network. Points to an [`Archive`].
+pub type ArchiveAddr = XorName;
 
 /// An archive of files that containing file paths, their metadata and the files data addresses
 /// Using archives is useful for uploading entire directories to the network, only needing to keep track of a single address.
@@ -40,36 +36,6 @@ pub enum RenameError {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct Archive {
     map: HashMap<PathBuf, (DataAddr, Metadata)>,
-}
-
-/// Metadata for a file in an archive. Time values are UNIX timestamps.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Metadata {
-    /// When the file was (last) uploaded to the network.
-    pub uploaded: u64,
-    /// File creation time on local file system. See [`std::fs::Metadata::created`] for details per OS.
-    pub created: u64,
-    /// Last file modification time taken from local file system. See [`std::fs::Metadata::modified`] for details per OS.
-    pub modified: u64,
-    /// File size in bytes
-    pub size: u64,
-}
-
-impl Metadata {
-    /// Create a new metadata struct with the current time as uploaded, created and modified.
-    pub fn new_with_size(size: u64) -> Self {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or(Duration::from_secs(0))
-            .as_secs();
-
-        Self {
-            uploaded: now,
-            created: now,
-            modified: now,
-            size,
-        }
-    }
 }
 
 impl Archive {

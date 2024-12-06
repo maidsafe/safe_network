@@ -24,6 +24,7 @@ use crate::{self_encryption::encrypt, Client};
 pub mod public;
 
 /// Number of chunks to upload in parallel.
+///
 /// Can be overridden by the `CHUNK_UPLOAD_BATCH_SIZE` environment variable.
 pub(crate) static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
     let batch_size = std::env::var("CHUNK_UPLOAD_BATCH_SIZE")
@@ -39,12 +40,10 @@ pub(crate) static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
     batch_size
 });
 
-/// Number of retries to upload chunks.
-pub(crate) const RETRY_ATTEMPTS: usize = 3;
-
 /// Number of chunks to download in parallel.
+///
 /// Can be overridden by the `CHUNK_DOWNLOAD_BATCH_SIZE` environment variable.
-pub(crate) static CHUNK_DOWNLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
+pub static CHUNK_DOWNLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
     let batch_size = std::env::var("CHUNK_DOWNLOAD_BATCH_SIZE")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -57,6 +56,9 @@ pub(crate) static CHUNK_DOWNLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| 
     info!("Chunk download batch size: {}", batch_size);
     batch_size
 });
+
+/// Number of retries to upload chunks.
+pub(crate) const RETRY_ATTEMPTS: usize = 3;
 
 /// Raw Data Address (points to a DataMap)
 pub type DataAddr = XorName;
