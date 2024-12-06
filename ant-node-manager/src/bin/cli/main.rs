@@ -131,11 +131,6 @@ pub enum SubCmd {
         /// This enables the use of antnode services from a home network with a router.
         #[clap(long)]
         home_network: bool,
-        /// Set this flag to launch antnode with the --local flag.
-        ///
-        /// This is useful for building a service-based local network.
-        #[clap(long)]
-        local: bool,
         /// Provide the path for the log directory for the installed node.
         ///
         /// This path is a prefix. Each installed node will have its own directory underneath it.
@@ -1075,7 +1070,6 @@ async fn main() -> Result<()> {
             env_variables,
             evm_network,
             home_network,
-            local,
             log_dir_path,
             log_format,
             max_archived_log_files,
@@ -1103,7 +1097,7 @@ async fn main() -> Result<()> {
                 env_variables,
                 Some(evm_network.try_into()?),
                 home_network,
-                local,
+                peers.local,
                 log_dir_path,
                 log_format,
                 max_archived_log_files,

@@ -25,7 +25,7 @@ pub struct PeersArgs {
     ///
     /// If this argument is used, any others will be ignored because they do not apply to the first
     /// node.
-    #[clap(long)]
+    #[clap(long, default_value = "false")]
     pub first: bool,
     /// Addr(s) to use for bootstrap, in a 'multiaddr' format containing the peer ID.
     ///
@@ -54,7 +54,7 @@ pub struct PeersArgs {
     /// Set to indicate this is a local network. You could also set the `local` feature flag to set this to true.
     ///
     /// This would use mDNS for peer discovery.
-    #[clap(long, conflicts_with = "network_contacts_url")]
+    #[clap(long, conflicts_with = "network_contacts_url", default_value = "false")]
     pub local: bool,
     /// Set to indicate this is a testnet.
     ///
@@ -63,7 +63,7 @@ pub struct PeersArgs {
     pub disable_mainnet_contacts: bool,
 
     /// Set to not load the bootstrap addresses from the local cache.
-    #[clap(long)]
+    #[clap(long, default_value = "false")]
     pub ignore_cache: bool,
 }
 impl PeersArgs {
