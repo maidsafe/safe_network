@@ -46,6 +46,7 @@ hex = "~0.4.3"
 libp2p = { git = "https://github.com/maqi/rust-libp2p.git", branch = "kad_0.46.2" }
 pyo3 = { version = "0.20", optional = true, features = ["extension-module", "abi3-py38"] }
 rand = "0.8.5"
+rayon = "1.8.0"
 rmp-serde = "1.1.1"
 self_encryption = "~0.30.0"
 serde = { version = "1.0.133", features = ["derive", "rc"] }
