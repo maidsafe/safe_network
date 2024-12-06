@@ -12,7 +12,6 @@ version = "0.5.7"
 [features]
 local = []
 network-contacts = ["ant-protocol"]
-websockets = []
 
 [dependencies]
 ant-protocol = { path = "../ant-protocol", version = "0.17.15", optional = true}

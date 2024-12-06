@@ -12,7 +12,6 @@ version = "0.17.15"
 [features]
 default = []
 rpc=["tonic", "prost"]
-websockets=[]
 
 [dependencies]
 ant-build-info = { path = "../ant-build-info", version = "0.1.19" }

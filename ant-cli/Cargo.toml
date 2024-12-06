@@ -18,7 +18,6 @@ default = ["metrics"]
 local = ["ant-peers-acquisition/local", "autonomi/local"]
 metrics = ["ant-logging/process-metrics"]
 network-contacts = ["ant-peers-acquisition/network-contacts"]
-websockets = ["autonomi/websockets"]
 
 [[bench]]
 name = "files"

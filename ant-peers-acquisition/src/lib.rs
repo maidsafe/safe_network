@@ -158,16 +158,9 @@ pub fn parse_peer_addr(addr: &str) -> std::result::Result<Multiaddr, libp2p::mul
         let start_addr = Multiaddr::from(*addr.ip());
 
         // Turn the address into a `/ip4/<ip>/udp/<port>/quic-v1` multiaddr.
-        #[cfg(not(feature = "websockets"))]
         let multiaddr = start_addr
             .with(Protocol::Udp(addr.port()))
             .with(Protocol::QuicV1);
-
-        // Turn the address into a `/ip4/<ip>/udp/<port>/websocket-websys-v1` multiaddr.
-        #[cfg(feature = "websockets")]
-        let multiaddr = start_addr
-            .with(Protocol::Tcp(addr.port()))
-            .with(Protocol::Ws("/".into()));
 
         return Ok(multiaddr);
     }
