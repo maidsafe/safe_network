@@ -160,7 +160,7 @@ impl Client {
     /// let archive = client.archive_get_public(ArchiveAddr::random(&mut rand::thread_rng())).await?;
     /// # Ok(())
     /// # }
-    /// ```data_get_public
+    /// ```
     pub async fn archive_get_public(&self, addr: ArchiveAddr) -> Result<Archive, GetError> {
         let data = self.data_get_public(addr).await?;
         Ok(Archive::from_bytes(data)?)
