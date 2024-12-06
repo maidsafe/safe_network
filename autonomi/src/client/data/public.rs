@@ -10,124 +10,25 @@ use bytes::Bytes;
 use libp2p::kad::Quorum;
 
 use std::collections::{HashMap, HashSet};
-use std::sync::LazyLock;
 use xor_name::XorName;
 
 use crate::client::payment::PaymentOption;
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::{ClientEvent, UploadSummary};
 use crate::{self_encryption::encrypt, Client};
+use ant_evm::ProofOfPayment;
 use ant_evm::{Amount, AttoTokens};
-use ant_evm::{EvmWalletError, ProofOfPayment};
 use ant_networking::{GetRecordCfg, NetworkError};
 use ant_protocol::{
     storage::{try_deserialize_record, Chunk, ChunkAddress, RecordHeader, RecordKind},
     NetworkAddress,
 };
 
-/// Number of chunks to upload in parallel.
-/// Can be overridden by the `CHUNK_UPLOAD_BATCH_SIZE` environment variable.
-pub static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
-    let batch_size = std::env::var("CHUNK_UPLOAD_BATCH_SIZE")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(
-            std::thread::available_parallelism()
-                .map(|n| n.get())
-                .unwrap_or(1)
-                * 8,
-        );
-    info!("Chunk upload batch size: {}", batch_size);
-    batch_size
-});
-
-/// Number of retries to upload chunks.
-pub const RETRY_ATTEMPTS: usize = 3;
-
-/// Number of chunks to download in parallel.
-/// Can be overridden by the `CHUNK_DOWNLOAD_BATCH_SIZE` environment variable.
-pub static CHUNK_DOWNLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
-    let batch_size = std::env::var("CHUNK_DOWNLOAD_BATCH_SIZE")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(
-            std::thread::available_parallelism()
-                .map(|n| n.get())
-                .unwrap_or(1)
-                * 8,
-        );
-    info!("Chunk download batch size: {}", batch_size);
-    batch_size
-});
-
-/// Raw Data Address (points to a DataMap)
-pub type DataAddr = XorName;
-/// Raw Chunk Address (points to a [`Chunk`])
-pub type ChunkAddr = XorName;
-
-/// Errors that can occur during the put operation.
-#[derive(Debug, thiserror::Error)]
-pub enum PutError {
-    #[error("Failed to self-encrypt data.")]
-    SelfEncryption(#[from] crate::self_encryption::Error),
-    #[error("A network error occurred.")]
-    Network(#[from] NetworkError),
-    #[error("Error occurred during cost estimation.")]
-    CostError(#[from] CostError),
-    #[error("Error occurred during payment.")]
-    PayError(#[from] PayError),
-    #[error("Serialization error: {0}")]
-    Serialization(String),
-    #[error("A wallet error occurred.")]
-    Wallet(#[from] ant_evm::EvmError),
-    #[error("The vault owner key does not match the client's public key")]
-    VaultBadOwner,
-    #[error("Payment unexpectedly invalid for {0:?}")]
-    PaymentUnexpectedlyInvalid(NetworkAddress),
-}
-
-/// Errors that can occur during the pay operation.
-#[derive(Debug, thiserror::Error)]
-pub enum PayError {
-    #[error("Wallet error: {0:?}")]
-    EvmWalletError(#[from] EvmWalletError),
-    #[error("Failed to self-encrypt data.")]
-    SelfEncryption(#[from] crate::self_encryption::Error),
-    #[error("Cost error: {0:?}")]
-    Cost(#[from] CostError),
-}
-
-/// Errors that can occur during the get operation.
-#[derive(Debug, thiserror::Error)]
-pub enum GetError {
-    #[error("Could not deserialize data map.")]
-    InvalidDataMap(rmp_serde::decode::Error),
-    #[error("Failed to decrypt data.")]
-    Decryption(crate::self_encryption::Error),
-    #[error("Failed to deserialize")]
-    Deserialization(#[from] rmp_serde::decode::Error),
-    #[error("General networking error: {0:?}")]
-    Network(#[from] NetworkError),
-    #[error("General protocol error: {0:?}")]
-    Protocol(#[from] ant_protocol::Error),
-}
-
-/// Errors that can occur during the cost calculation.
-#[derive(Debug, thiserror::Error)]
-pub enum CostError {
-    #[error("Failed to self-encrypt data.")]
-    SelfEncryption(#[from] crate::self_encryption::Error),
-    #[error("Could not get store quote for: {0:?} after several retries")]
-    CouldNotGetStoreQuote(XorName),
-    #[error("Could not get store costs: {0:?}")]
-    CouldNotGetStoreCosts(NetworkError),
-    #[error("Failed to serialize {0}")]
-    Serialization(String),
-}
+use super::*;
 
 impl Client {
     /// Fetch a blob of data from the network
-    pub async fn data_get(&self, addr: DataAddr) -> Result<Bytes, GetError> {
+    pub async fn data_get_public(&self, addr: DataAddr) -> Result<Bytes, GetError> {
         info!("Fetching data from Data Address: {addr:?}");
         let data_map_chunk = self.chunk_get(addr).await?;
         let data = self
@@ -141,7 +42,7 @@ impl Client {
     /// Upload a piece of data to the network.
     /// Returns the Data Address at which the data was stored.
     /// This data is publicly accessible.
-    pub async fn data_put(
+    pub async fn data_put_public(
         &self,
         data: Bytes,
         payment_option: PaymentOption,

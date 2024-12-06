@@ -22,12 +22,12 @@
 //!     let wallet = Wallet::new_from_private_key(Default::default(), key)?;
 //!
 //!     // Put and fetch data.
-//!     let data_addr = client.data_put(Bytes::from("Hello, World"), (&wallet).into()).await?;
-//!     let _data_fetched = client.data_get(data_addr).await?;
+//!     let data_addr = client.data_put_public(Bytes::from("Hello, World"), (&wallet).into()).await?;
+//!     let _data_fetched = client.data_get_public(data_addr).await?;
 //!
 //!     // Put and fetch directory from local file system.
-//!     let dir_addr = client.dir_upload("files/to/upload".into(), &wallet).await?;
-//!     client.dir_download(dir_addr, "files/downloaded".into()).await?;
+//!     let dir_addr = client.dir_upload_public("files/to/upload".into(), &wallet).await?;
+//!     client.dir_download_public(dir_addr, "files/downloaded".into()).await?;
 //!
 //!     Ok(())
 //! }
@@ -79,7 +79,7 @@ pub use bytes::Bytes;
 pub use libp2p::Multiaddr;
 
 #[doc(inline)]
-pub use client::Client;
+pub use client::{files::archive::PrivateArchive, Client};
 
 #[cfg(feature = "extension-module")]
 mod python;

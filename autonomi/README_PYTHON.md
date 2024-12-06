@@ -26,11 +26,11 @@ payment = PaymentOption.wallet(wallet)
 
 # Upload data
 data = b"Hello, Safe Network!"
-addr = client.data_put(data, payment)
+addr = client.data_put_public(data, payment)
 print(f"Data uploaded to: {addr}")
 
 # Download data
-retrieved = client.data_get(addr)
+retrieved = client.data_get_public(addr)
 print(f"Retrieved: {retrieved.decode()}")
 ```
 
@@ -40,10 +40,10 @@ print(f"Retrieved: {retrieved.decode()}")
 
 - `Client`: Main interface to the Autonomi network
   - `connect(peers: List[str])`: Connect to network nodes
-  - `data_put(data: bytes, payment: PaymentOption)`: Upload data
-  - `data_get(addr: str)`: Download data
-  - `private_data_put(data: bytes, payment: PaymentOption)`: Store private data
-  - `private_data_get(access: PrivateDataAccess)`: Retrieve private data
+  - `data_put_public(data: bytes, payment: PaymentOption)`: Upload data
+  - `data_get_public(addr: str)`: Download data
+  - `data_put(data: bytes, payment: PaymentOption)`: Store private data
+  - `data_get(access: DataMapChunk)`: Retrieve private data
   - `register_generate_key()`: Generate register key
 
 - `Wallet`: Ethereum wallet management
@@ -56,16 +56,16 @@ print(f"Retrieved: {retrieved.decode()}")
 
 #### Private Data
 
-- `PrivateDataAccess`: Handle private data storage
+- `DataMapChunk`: Handle private data storage
   - `from_hex(hex: str)`: Create from hex string
   - `to_hex()`: Convert to hex string
   - `address()`: Get short reference address
 
 ```python
 # Private data example
-access = client.private_data_put(secret_data, payment)
+access = client.data_put(secret_data, payment)
 print(f"Private data stored at: {access.to_hex()}")
-retrieved = client.private_data_get(access)
+retrieved = client.data_get(access)
 ```
 
 #### Registers
@@ -117,15 +117,15 @@ data, content_type = client.fetch_and_decrypt_vault(vault_key)
 def handle_data_operations(client, payment):
     # Upload text
     text_data = b"Hello, Safe Network!"
-    text_addr = client.data_put(text_data, payment)
+    text_addr = client.data_put_public(text_data, payment)
     
     # Upload binary data
     with open("image.jpg", "rb") as f:
         image_data = f.read()
-        image_addr = client.data_put(image_data, payment)
+        image_addr = client.data_put_public(image_data, payment)
     
     # Download and verify
-    downloaded = client.data_get(text_addr)
+    downloaded = client.data_get_public(text_addr)
     assert downloaded == text_data
 ```
 
@@ -138,11 +138,11 @@ def handle_private_data(client, payment):
     data = json.dumps(secret).encode()
     
     # Store privately
-    access = client.private_data_put(data, payment)
+    access = client.data_put(data, payment)
     print(f"Access token: {access.to_hex()}")
     
     # Retrieve
-    retrieved = client.private_data_get(access)
+    retrieved = client.data_get(access)
     secret = json.loads(retrieved.decode())
 ```
 

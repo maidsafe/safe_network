@@ -22,15 +22,15 @@ def main():
     
     # Upload public data
     data = b"Hello World!"
-    addr = client.data_put(data, wallet)
+    addr = client.data_put_public(data, wallet)
     print(f"Uploaded public data to: {addr}")
-    retrieved = client.data_get(addr)
+    retrieved = client.data_get_public(addr)
     print(f"Retrieved public data: {retrieved}")
     
     # Upload private data
-    private_access = client.private_data_put(b"Secret message", wallet)
+    private_access = client.data_put(b"Secret message", wallet)
     print(f"Private data access: {private_access}")
-    private_data = client.private_data_get(private_access)
+    private_data = client.data_get(private_access)
     print(f"Retrieved private data: {private_data}")
     
     # Create register
@@ -40,7 +40,7 @@ def main():
     print(f"Register values: {reg_values}")
     
     # Upload file/directory
-    file_addr = client.file_upload("./test_data", wallet)
+    file_addr = client.file_upload_public("./test_data", wallet)
     print(f"Uploaded files to: {file_addr}")
     client.file_download(file_addr, "./downloaded_data")
     print("Downloaded files")
@@ -58,9 +58,9 @@ def main():
     print(f"Retrieved user data: {retrieved_data}")
 
     # Private directory operations
-    private_dir_access = client.private_dir_upload("./test_data", wallet)
+    private_dir_access = client.dir_upload("./test_data", wallet)
     print(f"Uploaded private directory, access: {private_dir_access}")
-    client.private_dir_download(private_dir_access, "./downloaded_private")
+    client.dir_download(private_dir_access, "./downloaded_private")
     print("Downloaded private directory")
 
     # External signer example

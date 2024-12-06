@@ -12,19 +12,11 @@
 pub mod address;
 pub mod payment;
 
-pub mod archive;
-pub mod archive_private;
 pub mod data;
-pub mod data_private;
 #[cfg(feature = "external-signer")]
 #[cfg_attr(docsrs, doc(cfg(feature = "external-signer")))]
 pub mod external_signer;
-#[cfg(feature = "fs")]
-#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
-pub mod fs;
-#[cfg(feature = "fs")]
-#[cfg_attr(docsrs, doc(cfg(feature = "fs")))]
-pub mod fs_private;
+pub mod files;
 #[cfg(feature = "registers")]
 #[cfg_attr(docsrs, doc(cfg(feature = "registers")))]
 pub mod registers;

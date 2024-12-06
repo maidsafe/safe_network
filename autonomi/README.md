@@ -28,14 +28,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Put and fetch data.
     let data_addr = client
-        .data_put(Bytes::from("Hello, World"), (&wallet).into())
+        .data_put_public(Bytes::from("Hello, World"), (&wallet).into())
         .await?;
-    let _data_fetched = client.data_get(data_addr).await?;
+    let _data_fetched = client.data_get_public(data_addr).await?;
 
     // Put and fetch directory from local file system.
-    let dir_addr = client.dir_upload("files/to/upload".into(), &wallet).await?;
+    let dir_addr = client.dir_and_archive_upload_public("files/to/upload".into(), &wallet).await?;
     client
-        .dir_download(dir_addr, "files/downloaded".into())
+        .dir_download_public(dir_addr, "files/downloaded".into())
         .await?;
 
     Ok(())
@@ -53,52 +53,44 @@ let wallet = Wallet::new_from_private_key(EvmNetwork::new_custom("<rpc URL>", "<
 
 ## Running tests
 
-### Using a local EVM testnet
+To run the tests, we can run a local network:
 
-1. If you haven't, install Foundry, to be able to run Anvil
-   nodes: https://book.getfoundry.sh/getting-started/installation
-2. Run a local EVM node:
+1. Run a local EVM node:
+    > Note: To run the EVM node, Foundry is required to be installed: https://book.getfoundry.sh/getting-started/installation
 
-```sh
-cargo run --bin=evm-testnet
-```
+    ```sh
+    cargo run --bin evm-testnet
+    ```
 
-3. Run a local network with the `local` feature and use the local evm node.
+2. Run a local network with the `local` feature and use the local EVM node.
+    ```sh
+    cargo run --bin antctl --features local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-local
+    ```
 
-```sh
-cargo run --bin=antctl --features=local -- local run --build --clean --rewards-address=<ETHEREUM_ADDRESS> evm-local
-```
-
-4. Then run the tests with the `local` feature and pass the EVM params again:
-
-```sh
-EVM_NETWORK=local cargo test --package autonomi --features=local
-# Or with logs
-RUST_LOG=autonomi EVM_NETWORK=local cargo test --package autonomi --features local -- --nocapture
-```
+3. Then run the tests with the `local` feature and pass the EVM params again:
+    ```sh
+    EVM_NETWORK=local cargo test --features local --package autonomi
+    ```
 
 ### Using a live testnet or mainnet
 
-Using the hardcoded `Arbitrum One` option as an example, but you can also use the command flags of the steps above and
-point it to a live network.
+Using the hardcoded `Arbitrum One` option as an example, but you can also use the command flags of the steps above and point it to a live network.
 
 1. Run a local network with the `local` feature:
 
 ```sh
-cargo run --bin=antctl --features=local -- local run --build --clean --rewards-address=<ETHEREUM_ADDRESS> evm-arbitrum-one
+cargo run --bin antctl --features local -- local run --build --clean --rewards-address <ETHEREUM_ADDRESS> evm-arbitrum-one
 ```
 
-2. Then run the tests with the `local` feature. Make sure that the wallet of the private key you pass has enough gas and
-   payment tokens on the network (in this case Arbitrum One):
+2. Then pass the private key of the wallet, and ensure it has enough gas and payment tokens on the network (in this case Arbitrum One):
 
 ```sh
-EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package=autonomi --features=local
+EVM_NETWORK=arbitrum-one EVM_PRIVATE_KEY=<PRIVATE_KEY> cargo test --package autonomi --features local
 ```
 
 ## Using funds from the Deployer Wallet
 
-You can use the `Deployer wallet private key` printed in the EVM node output to
-initialise a wallet from with almost infinite gas and payment tokens. Example:
+You can use the `Deployer wallet private key` printed in the EVM node output to initialise a wallet from with almost infinite gas and payment tokens. Example:
 
 ```rust
 let rpc_url = "http://localhost:54370/";
@@ -107,9 +99,9 @@ let data_payments_address = "0x8464135c8F25Da09e49BC8782676a84730C318bC";
 let private_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 let network = Network::Custom(CustomNetwork::new(
-rpc_url,
-payment_token_address,
-data_payments_address,
+    rpc_url,
+    payment_token_address,
+    data_payments_address,
 ));
 
 let deployer_wallet = Wallet::new_from_private_key(network, private_key).unwrap();
@@ -117,15 +109,15 @@ let receiving_wallet = Wallet::new_with_random_wallet(network);
 
 // Send 10 payment tokens (atto)
 let _ = deployer_wallet
-.transfer_tokens(receiving_wallet.address(), Amount::from(10))
-.await;
+    .transfer_tokens(receiving_wallet.address(), Amount::from(10))
+    .await;
 ```
 
 Alternatively, you can provide the wallet address that should own all the gas and payment tokens to the EVM testnet
 startup command using the `--genesis-wallet` flag:
 
 ```sh
-cargo run --bin evm-testnet -- --genesis-wallet=<ETHEREUM_ADDRESS>
+cargo run --bin evm-testnet -- --genesis-wallet <ETHEREUM_ADDRESS>
 ```
 
 ```shell

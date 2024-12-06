@@ -10,8 +10,7 @@ use std::collections::HashMap;
 
 use autonomi::client::{
     address::{addr_to_str, str_to_addr},
-    archive::ArchiveAddr,
-    archive_private::PrivateArchiveAccess,
+    files::{archive::PrivateArchiveAccess, archive_public::ArchiveAddr},
     registers::{RegisterAddress, RegisterSecretKey},
     vault::UserData,
 };
