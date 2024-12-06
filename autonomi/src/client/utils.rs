@@ -9,7 +9,7 @@
 use crate::client::payment::Receipt;
 use ant_evm::{EvmWallet, ProofOfPayment, QuotePayment};
 use ant_networking::{
-    GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
+    GetRecordCfg, Network, NetworkError, SelectedQuotes, PutRecordCfg, VerificationKind,
 };
 use ant_protocol::{
     messages::ChunkProof,
@@ -200,7 +200,7 @@ impl Client {
     pub(crate) async fn get_store_quotes(
         &self,
         content_addrs: impl Iterator<Item = XorName>,
-    ) -> Result<HashMap<XorName, PayeeQuote>, CostError> {
+    ) -> Result<HashMap<XorName, SelectedQuotes>, CostError> {
         let futures: Vec<_> = content_addrs
             .into_iter()
             .map(|content_addr| fetch_store_quote_with_retries(&self.network, content_addr))
@@ -208,7 +208,7 @@ impl Client {
 
         let quotes = futures::future::try_join_all(futures).await?;
 
-        Ok(quotes.into_iter().collect::<HashMap<XorName, PayeeQuote>>())
+        Ok(quotes.into_iter().collect::<HashMap<XorName, SelectedQuotes>>())
     }
 }
 
@@ -216,7 +216,7 @@ impl Client {
 async fn fetch_store_quote_with_retries(
     network: &Network,
     content_addr: XorName,
-) -> Result<(XorName, PayeeQuote), CostError> {
+) -> Result<(XorName, SelectedQuotes), CostError> {
     let mut retries = 0;
 
     loop {
@@ -242,7 +242,7 @@ async fn fetch_store_quote_with_retries(
 async fn fetch_store_quote(
     network: &Network,
     content_addr: XorName,
-) -> Result<PayeeQuote, NetworkError> {
+) -> Result<SelectedQuotes, NetworkError> {
     network
         .get_store_costs_from_network(
             NetworkAddress::from_chunk_address(ChunkAddress::new(content_addr)),
@@ -253,7 +253,7 @@ async fn fetch_store_quote(
 
 /// Form to be executed payments and already executed payments from a cost map.
 pub(crate) fn extract_quote_payments(
-    cost_map: &HashMap<XorName, PayeeQuote>,
+    cost_map: &HashMap<XorName, SelectedQuotes>,
 ) -> (Vec<QuotePayment>, Vec<XorName>) {
     let mut to_be_paid = vec![];
     let mut already_paid = vec![];
