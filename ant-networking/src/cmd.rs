@@ -38,7 +38,7 @@ use crate::target_arch::Instant;
 
 const MAX_CONTINUOUS_HDD_WRITE_ERROR: usize = 5;
 
-// Shall be synced with `sn_node::PERIODIC_REPLICATION_INTERVAL_MAX_S`
+// Shall be synced with `ant_node::PERIODIC_REPLICATION_INTERVAL_MAX_S`
 const REPLICATION_TIMEOUT: Duration = Duration::from_secs(45);
 
 // Throttles replication to at most once every 30 seconds

@@ -59,19 +59,19 @@ enum RecordType {
 
 impl NodeMetricsRecorder {
     pub(crate) fn new(registries: &mut MetricsRegistries) -> Self {
-        let node_metadata_sub_registry = registries.metadata.sub_registry_with_prefix("sn_node");
+        let node_metadata_sub_registry = registries.metadata.sub_registry_with_prefix("ant_node");
         node_metadata_sub_registry.register(
-            "safenode_version",
+            "antnode_version",
             "The version of the safe node",
             Info::new(vec![(
-                "safenode_version".to_string(),
+                "antnode_version".to_string(),
                 env!("CARGO_PKG_VERSION").to_string(),
             )]),
         );
 
         let sub_registry = registries
             .standard_metrics
-            .sub_registry_with_prefix("sn_node");
+            .sub_registry_with_prefix("ant_node");
 
         let put_record_ok = Family::default();
         sub_registry.register(

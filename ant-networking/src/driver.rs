@@ -545,7 +545,7 @@ impl NetworkBuilder {
             let metrics_recorder = NetworkMetricsRecorder::new(&mut metrics_registries);
             let metadata_sub_reg = metrics_registries
                 .metadata
-                .sub_registry_with_prefix("ant-networking");
+                .sub_registry_with_prefix("ant_networking");
 
             metadata_sub_reg.register(
                 "peer_id",

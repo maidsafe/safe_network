@@ -30,7 +30,7 @@ metrics/prometheus/prometheus.yml
 .DS_Store
 *.dot
 
-sn_node_manager/.vagrant
+ant-node-manager/.vagrant
 
 # Python 
 .venv/

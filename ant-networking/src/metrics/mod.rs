@@ -77,7 +77,7 @@ impl NetworkMetricsRecorder {
         let libp2p_metrics = Libp2pMetrics::new(&mut registries.standard_metrics);
         let sub_registry = registries
             .standard_metrics
-            .sub_registry_with_prefix("ant-networking");
+            .sub_registry_with_prefix("ant_networking");
 
         let records_stored = Gauge::default();
         sub_registry.register(
@@ -199,7 +199,7 @@ impl NetworkMetricsRecorder {
 
         let extended_metrics_sub_registry = registries
             .extended_metrics
-            .sub_registry_with_prefix("ant-networking");
+            .sub_registry_with_prefix("ant_networking");
         let shunned_count_across_time_frames = Family::default();
         extended_metrics_sub_registry.register(
             "shunned_count_across_time_frames",
