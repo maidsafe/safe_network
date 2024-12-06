@@ -6,8 +6,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::client::archive::Metadata;
-use crate::client::data::CostError;
+use crate::client::data::{CostError, DataAddr, GetError, PutError};
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::Client;
 use ant_evm::EvmWallet;
@@ -16,8 +15,7 @@ use bytes::Bytes;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 
-use super::archive::{Archive, ArchiveAddr};
-use super::data::{DataAddr, GetError, PutError};
+use super::archive::{Archive, ArchiveAddr, Metadata};
 
 /// Number of files to upload in parallel.
 /// Can be overridden by the `FILE_UPLOAD_BATCH_SIZE` environment variable.

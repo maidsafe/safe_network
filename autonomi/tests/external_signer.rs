@@ -4,9 +4,9 @@ use alloy::network::TransactionBuilder;
 use alloy::providers::Provider;
 use ant_evm::{QuoteHash, TxHash};
 use ant_logging::LogBuilder;
-use autonomi::client::archive::Metadata;
-use autonomi::client::archive_private::PrivateArchive;
 use autonomi::client::external_signer::encrypt_data;
+use autonomi::client::files::archive::Metadata;
+use autonomi::client::files::archive_private::PrivateArchive;
 use autonomi::client::payment::Receipt;
 use autonomi::client::vault::user_data::USER_DATA_VAULT_CONTENT_IDENTIFIER;
 use autonomi::client::vault::VaultSecretKey;
@@ -111,9 +111,7 @@ async fn external_signer_put() -> eyre::Result<()> {
 
     sleep(Duration::from_secs(5)).await;
 
-    let private_data_access = client
-        .data_put(data.clone(), receipt.into())
-        .await?;
+    let private_data_access = client.data_put(data.clone(), receipt.into()).await?;
 
     let mut private_archive = PrivateArchive::new();
     private_archive.add_file(

@@ -13,10 +13,6 @@ use std::{
 
 use ant_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
-use super::{
-    data::{CostError, DataAddr, GetError, PutError},
-    Client,
-};
 use ant_evm::{AttoTokens, EvmWallet};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
@@ -26,6 +22,11 @@ use xor_name::XorName;
 pub type ArchiveAddr = XorName;
 
 use thiserror::Error;
+
+use crate::{
+    client::data::{CostError, DataAddr, GetError, PutError},
+    Client,
+};
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum RenameError {

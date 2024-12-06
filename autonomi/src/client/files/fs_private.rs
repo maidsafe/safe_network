@@ -14,6 +14,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
+use crate::client::data::PrivateDataAccess;
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::Client;
 use ant_evm::EvmWallet;
@@ -21,7 +22,6 @@ use bytes::Bytes;
 use std::path::PathBuf;
 
 use super::archive_private::{PrivateArchive, PrivateArchiveAccess};
-use super::data_private::PrivateDataAccess;
 use super::fs::{DownloadError, UploadError};
 
 use super::fs::FILE_UPLOAD_BATCH_SIZE;

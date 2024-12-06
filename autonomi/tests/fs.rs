@@ -106,7 +106,7 @@ async fn file_into_vault() -> Result<()> {
 
     let (ap, got_version) = new_client.fetch_and_decrypt_vault(&client_sk).await?;
     assert_eq!(set_version, got_version);
-    let ap_archive_fetched = autonomi::client::archive::Archive::from_bytes(ap)?;
+    let ap_archive_fetched = autonomi::client::files::archive::Archive::from_bytes(ap)?;
 
     assert_eq!(
         archive, ap_archive_fetched,

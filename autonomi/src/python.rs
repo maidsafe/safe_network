@@ -2,9 +2,8 @@
 #![allow(non_local_definitions)]
 
 use crate::client::{
-    archive::ArchiveAddr,
-    archive_private::PrivateArchiveAccess,
-    data_private::PrivateDataAccess,
+    data::PrivateDataAccess,
+    files::{archive::ArchiveAddr, archive_private::PrivateArchiveAccess},
     payment::PaymentOption as RustPaymentOption,
     vault::{UserData, VaultSecretKey},
     Client as RustClient,

@@ -13,13 +13,14 @@ use std::{
 
 use ant_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
-use super::{
-    archive::{Metadata, RenameError},
-    data::{GetError, PutError},
-    data_private::PrivateDataAccess,
+use super::archive::{Metadata, RenameError};
+use crate::{
+    client::{
+        data::{GetError, PrivateDataAccess, PutError},
+        payment::PaymentOption,
+    },
     Client,
 };
-use crate::client::payment::PaymentOption;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
