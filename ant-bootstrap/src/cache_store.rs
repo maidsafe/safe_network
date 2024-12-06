@@ -178,7 +178,7 @@ impl BootstrapCacheStore {
         Ok(store)
     }
 
-    /// Create a CacheStore from the given peers argument.
+    /// Create a empty CacheStore from the given peers argument.
     /// This also modifies the cfg if provided based on the PeersArgs.
     /// And also performs some actions based on the PeersArgs.
     pub fn new_from_peers_args(

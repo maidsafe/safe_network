@@ -515,17 +515,17 @@ impl SwarmDriver {
                     }
                 };
 
-                // Just track failures during outgoing connection with `failed_peer_id` inside the bootstrap cache.
-                // OutgoingConnectionError without peer_id can happen when dialing multiple addresses of a peer.
-                // And similarly IncomingConnectionError can happen when a peer has multiple transports/listen addrs.
-                if let (Some((_, failed_addr, _)), Some(bootstrap_cache)) =
-                    (connection_details, self.bootstrap_cache.as_mut())
-                {
-                    bootstrap_cache.update_addr_status(&failed_addr, false);
-                }
-
                 if should_clean_peer {
                     warn!("Tracking issue of {failed_peer_id:?}. Clearing it out for now");
+
+                    // Just track failures during outgoing connection with `failed_peer_id` inside the bootstrap cache.
+                    // OutgoingConnectionError without peer_id can happen when dialing multiple addresses of a peer.
+                    // And similarly IncomingConnectionError can happen when a peer has multiple transports/listen addrs.
+                    if let (Some((_, failed_addr, _)), Some(bootstrap_cache)) =
+                        (connection_details, self.bootstrap_cache.as_mut())
+                    {
+                        bootstrap_cache.update_addr_status(&failed_addr, false);
+                    }
 
                     if let Some(dead_peer) = self
                         .swarm

@@ -11,7 +11,7 @@ use super::{
 };
 #[cfg(feature = "open-metrics")]
 use crate::metrics::NodeMetricsRecorder;
-use crate::{error::Error, RunningNode};
+use crate::RunningNode;
 use ant_bootstrap::BootstrapCacheStore;
 use ant_evm::{AttoTokens, RewardsAddress};
 #[cfg(feature = "open-metrics")]
@@ -134,12 +134,12 @@ impl NodeBuilder {
         self.metrics_server_port = port;
     }
 
-    /// Set the initialized bootstrap cache. This is mutually exclusive with `initial_peers`
+    /// Set the initialized bootstrap cache.
     pub fn bootstrap_cache(&mut self, cache: BootstrapCacheStore) {
         self.bootstrap_cache = Some(cache);
     }
 
-    /// Set the initial peers to dial at startup. This is mutually exclusive with `bootstrap_cache`
+    /// Set the initial peers to dial at startup.
     pub fn initial_peers(&mut self, peers: Vec<Multiaddr>) {
         self.initial_peers = peers;
     }
@@ -177,18 +177,6 @@ impl NodeBuilder {
             None
         };
 
-        if !self.initial_peers.is_empty() && self.bootstrap_cache.is_some() {
-            return Err(Error::InitialPeersAndBootstrapCacheSet);
-        }
-
-        let initial_peers = if !self.initial_peers.is_empty() {
-            self.initial_peers.clone()
-        } else if let Some(cache) = &self.bootstrap_cache {
-            cache.get_sorted_addrs().cloned().collect()
-        } else {
-            vec![]
-        };
-
         network_builder.listen_addr(self.addr);
         #[cfg(feature = "open-metrics")]
         network_builder.metrics_server_port(self.metrics_server_port);
@@ -207,7 +195,7 @@ impl NodeBuilder {
         let node = NodeInner {
             network: network.clone(),
             events_channel: node_events_channel.clone(),
-            initial_peers,
+            initial_peers: self.initial_peers,
             reward_address: self.evm_address,
             #[cfg(feature = "open-metrics")]
             metrics_recorder,

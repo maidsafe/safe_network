@@ -81,8 +81,6 @@ pub enum Error {
     // ---------- Initialize Errors
     #[error("Failed to generate a reward key")]
     FailedToGenerateRewardKey,
-    #[error("Cannot set both initial_peers and bootstrap_cache")]
-    InitialPeersAndBootstrapCacheSet,
 
     // ---------- Miscellaneous Errors
     #[error("Failed to obtain node's current port")]

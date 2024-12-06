@@ -1062,11 +1062,8 @@ impl SwarmDriver {
                         Self::duration_with_variance(bootstrap_cache.config().max_cache_save_duration, 1);
 
                     // scale up the interval until we reach the max
-                    let new_duration = Duration::from_secs(
-                        std::cmp::min(
-                         current_interval.period().as_secs() * bootstrap_cache.config().cache_save_scaling_factor,
-                         max_cache_save_duration.as_secs(),
-                    ));
+                    let scaled = current_interval.period().as_secs().saturating_mul(bootstrap_cache.config().cache_save_scaling_factor);
+                    let new_duration = Duration::from_secs(std::cmp::min(scaled, max_cache_save_duration.as_secs()));
                     info!("Scaling up the bootstrap cache save interval to {new_duration:?}");
 
                     // `Interval` ticks immediately for Tokio, but not for `wasmtimer`, which is used for wasm32.
