@@ -392,7 +392,7 @@ impl Network {
         close_nodes.retain(|peer_id| !ignore_peers.contains(peer_id));
 
         if close_nodes.is_empty() {
-            error!("Cann't get store_cost of {record_address:?}, as all close_nodes are ignored");
+            error!("Can't get store_cost of {record_address:?}, as all close_nodes are ignored");
             return Err(NetworkError::NoStoreCostResponses);
         }
 
@@ -405,6 +405,10 @@ impl Network {
         let responses = self
             .send_and_get_responses(&close_nodes, &request, true)
             .await;
+
+        // consider data to be already paid for if 1/3 of the close nodes already have it
+        let mut peer_already_have_it = 0;
+        let enough_peers_already_have_it = close_nodes.len() / 3;
 
         // loop over responses
         let mut all_quotes = vec![];
@@ -438,8 +442,12 @@ impl Network {
                     if !storage_proofs.is_empty() {
                         debug!("Storage proofing during GetStoreQuote to be implemented.");
                     }
-                    info!("Address {record_address:?} was already paid for according to {peer_address:?}, ending quote request");
-                    return Ok(vec![]);
+                    peer_already_have_it += 1;
+                    info!("Address {record_address:?} was already paid for according to {peer_address:?} ({peer_already_have_it}/{enough_peers_already_have_it})");
+                    if peer_already_have_it >= enough_peers_already_have_it {
+                        info!("Address {record_address:?} was already paid for according to {peer_already_have_it} peers, ending quote request");
+                        return Ok(vec![]);
+                    }
                 }
                 Err(err) => {
                     error!("Got an error while requesting quote from peer {peer:?}: {err}");
