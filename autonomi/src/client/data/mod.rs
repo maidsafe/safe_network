@@ -25,7 +25,7 @@ pub mod public;
 
 /// Number of chunks to upload in parallel.
 /// Can be overridden by the `CHUNK_UPLOAD_BATCH_SIZE` environment variable.
-pub static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
+pub(crate) static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
     let batch_size = std::env::var("CHUNK_UPLOAD_BATCH_SIZE")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -40,11 +40,11 @@ pub static CHUNK_UPLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
 });
 
 /// Number of retries to upload chunks.
-pub const RETRY_ATTEMPTS: usize = 3;
+pub(crate) const RETRY_ATTEMPTS: usize = 3;
 
 /// Number of chunks to download in parallel.
 /// Can be overridden by the `CHUNK_DOWNLOAD_BATCH_SIZE` environment variable.
-pub static CHUNK_DOWNLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
+pub(crate) static CHUNK_DOWNLOAD_BATCH_SIZE: LazyLock<usize> = LazyLock::new(|| {
     let batch_size = std::env::var("CHUNK_DOWNLOAD_BATCH_SIZE")
         .ok()
         .and_then(|s| s.parse().ok())
