@@ -9,8 +9,7 @@ use crate::client::{
     vault::{UserData, VaultSecretKey},
     Client as RustClient,
 };
-use crate::{Bytes, Wallet as RustWallet};
-use ant_evm::EvmNetwork;
+use crate::{Bytes, Network, Wallet as RustWallet};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use xor_name::XorName;
@@ -176,7 +175,7 @@ impl PyWallet {
     #[new]
     fn new(private_key: String) -> PyResult<Self> {
         let wallet = RustWallet::new_from_private_key(
-            EvmNetwork::ArbitrumOne, // TODO: Make this configurable
+            Network::ArbitrumOne, // TODO: Make this configurable
             &private_key,
         )
         .map_err(|e| {
