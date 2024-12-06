@@ -127,7 +127,7 @@ pub enum CostError {
 
 impl Client {
     /// Fetch a blob of data from the network
-    pub async fn data_get(&self, addr: DataAddr) -> Result<Bytes, GetError> {
+    pub async fn data_get_public(&self, addr: DataAddr) -> Result<Bytes, GetError> {
         info!("Fetching data from Data Address: {addr:?}");
         let data_map_chunk = self.chunk_get(addr).await?;
         let data = self
@@ -141,7 +141,7 @@ impl Client {
     /// Upload a piece of data to the network.
     /// Returns the Data Address at which the data was stored.
     /// This data is publicly accessible.
-    pub async fn data_put(
+    pub async fn data_put_public(
         &self,
         data: Bytes,
         payment_option: PaymentOption,

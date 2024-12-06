@@ -86,7 +86,7 @@ async fn download_public(
     client: &mut Client,
 ) -> Result<()> {
     let archive = client
-        .archive_get(address)
+        .archive_get_public(address)
         .await
         .wrap_err("Failed to fetch data from address")?;
 
@@ -94,7 +94,7 @@ async fn download_public(
     let mut all_errs = vec![];
     for (path, addr, _meta) in archive.iter() {
         progress_bar.println(format!("Fetching file: {path:?}..."));
-        let bytes = match client.data_get(*addr).await {
+        let bytes = match client.data_get_public(*addr).await {
             Ok(bytes) => bytes,
             Err(e) => {
                 let err = format!("Failed to fetch file {path:?}: {e}");

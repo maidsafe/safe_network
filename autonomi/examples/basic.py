@@ -22,9 +22,9 @@ def main():
     
     # Upload public data
     data = b"Hello World!"
-    addr = client.data_put(data, wallet)
+    addr = client.data_put_public(data, wallet)
     print(f"Uploaded public data to: {addr}")
-    retrieved = client.data_get(addr)
+    retrieved = client.data_get_public(addr)
     print(f"Retrieved public data: {retrieved}")
     
     # Upload private data
@@ -40,7 +40,7 @@ def main():
     print(f"Register values: {reg_values}")
     
     # Upload file/directory
-    file_addr = client.file_upload("./test_data", wallet)
+    file_addr = client.file_upload_public("./test_data", wallet)
     print(f"Uploaded files to: {file_addr}")
     client.file_download(file_addr, "./downloaded_data")
     print("Downloaded files")

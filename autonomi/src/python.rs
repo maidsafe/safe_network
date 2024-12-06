@@ -67,12 +67,12 @@ impl PyClient {
         Ok(data.to_vec())
     }
 
-    fn data_put(&self, data: Vec<u8>, payment: &PyPaymentOption) -> PyResult<String> {
+    fn data_put_public(&self, data: Vec<u8>, payment: &PyPaymentOption) -> PyResult<String> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let addr = rt
             .block_on(
                 self.inner
-                    .data_put(bytes::Bytes::from(data), payment.inner.clone()),
+                    .data_put_public(bytes::Bytes::from(data), payment.inner.clone()),
             )
             .map_err(|e| {
                 pyo3::exceptions::PyValueError::new_err(format!("Failed to put data: {e}"))
@@ -81,13 +81,13 @@ impl PyClient {
         Ok(crate::client::address::addr_to_str(addr))
     }
 
-    fn data_get(&self, addr: &str) -> PyResult<Vec<u8>> {
+    fn data_get_public(&self, addr: &str) -> PyResult<Vec<u8>> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let addr = crate::client::address::str_to_addr(addr).map_err(|e| {
             pyo3::exceptions::PyValueError::new_err(format!("Invalid address: {e}"))
         })?;
 
-        let data = rt.block_on(self.inner.data_get(addr)).map_err(|e| {
+        let data = rt.block_on(self.inner.data_get_public(addr)).map_err(|e| {
             pyo3::exceptions::PyValueError::new_err(format!("Failed to get data: {e}"))
         })?;
 

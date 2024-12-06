@@ -205,7 +205,7 @@
 //     let _upload_stats = uploader.start_upload().await?;
 
 //     let mut files_download = FilesDownload::new(files_api);
-//     let _ = files_download.download_file(file_addr, None).await?;
+//     let _ = files_download.file_download_public(file_addr, None).await?;
 
 //     Ok(())
 // }
@@ -252,7 +252,7 @@
 //     let mut files_download = FilesDownload::new(files_api);
 //     assert!(
 //         matches!(
-//             files_download.download_file(content_addr, None).await,
+//             files_download.file_download_public(content_addr, None).await,
 //             Err(ClientError::Network(NetworkError::GetRecordError(
 //                 GetRecordError::RecordNotFound
 //             )))

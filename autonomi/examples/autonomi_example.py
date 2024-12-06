@@ -21,17 +21,17 @@ def main():
 
     # Upload some data
     data = b"Hello, Safe Network!"
-    addr = client.data_put(data, payment)
+    addr = client.data_put_public(data, payment)
     print(f"Data uploaded to address: {addr}")
 
     # Download the data back
-    downloaded = client.data_get(addr)
+    downloaded = client.data_get_public(addr)
     print(f"Downloaded data: {downloaded.decode()}")
 
     # You can also upload files
     with open("example.txt", "rb") as f:
         file_data = f.read()
-        file_addr = client.data_put(file_data, payment)
+        file_addr = client.data_put_public(file_data, payment)
         print(f"File uploaded to address: {file_addr}")
 
 if __name__ == "__main__":

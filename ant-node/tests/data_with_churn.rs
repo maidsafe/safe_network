@@ -338,7 +338,7 @@ fn store_chunks_task(
             let mut retries = 1;
             loop {
                 match client
-                    .data_put(random_data.clone(), (&wallet).into())
+                    .data_put_public(random_data.clone(), (&wallet).into())
                     .await
                     .inspect_err(|err| {
                         println!("Error to put chunk: {err:?}");
@@ -537,7 +537,7 @@ async fn query_content(client: &Client, net_addr: &NetworkAddress) -> Result<()>
             Ok(())
         }
         NetworkAddress::ChunkAddress(addr) => {
-            client.data_get(*addr.xorname()).await?;
+            client.data_get_public(*addr.xorname()).await?;
             Ok(())
         }
         _other => Ok(()), // we don't create/store any other type of content in this test yet

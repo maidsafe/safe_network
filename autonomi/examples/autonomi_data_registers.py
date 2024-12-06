@@ -7,22 +7,22 @@ def handle_data_operations(client: Client, payment: PaymentOption):
     
     # Upload some text data
     text_data = b"Hello, Safe Network!"
-    text_addr = client.data_put(text_data, payment)
+    text_addr = client.data_put_public(text_data, payment)
     print(f"Text data uploaded to: {text_addr}")
     
     # Upload binary data (like an image)
     with open("example.jpg", "rb") as f:
         image_data = f.read()
-        image_addr = client.data_put(image_data, payment)
+        image_addr = client.data_put_public(image_data, payment)
         print(f"Image uploaded to: {image_addr}")
     
     # Download and verify data
-    downloaded_text = client.data_get(text_addr)
+    downloaded_text = client.data_get_public(text_addr)
     assert downloaded_text == text_data, "Text data verification failed!"
     print("Text data verified successfully")
     
     # Download and save image
-    downloaded_image = client.data_get(image_addr)
+    downloaded_image = client.data_get_public(image_addr)
     with open("downloaded_example.jpg", "wb") as f:
         f.write(downloaded_image)
     print("Image downloaded successfully")

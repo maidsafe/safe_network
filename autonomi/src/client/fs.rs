@@ -78,12 +78,12 @@ pub enum FileCostError {
 
 impl Client {
     /// Download file from network to local file system
-    pub async fn file_download(
+    pub async fn file_download_public(
         &self,
         data_addr: DataAddr,
         to_dest: PathBuf,
     ) -> Result<(), DownloadError> {
-        let data = self.data_get(data_addr).await?;
+        let data = self.data_get_public(data_addr).await?;
         if let Some(parent) = to_dest.parent() {
             tokio::fs::create_dir_all(parent).await?;
             debug!("Created parent directories {parent:?} for {to_dest:?}");
@@ -94,15 +94,15 @@ impl Client {
     }
 
     /// Download directory from network to local file system
-    pub async fn dir_download(
+    pub async fn dir_download_public(
         &self,
         archive_addr: ArchiveAddr,
         to_dest: PathBuf,
     ) -> Result<(), DownloadError> {
-        let archive = self.archive_get(archive_addr).await?;
+        let archive = self.archive_get_public(archive_addr).await?;
         debug!("Downloaded archive for the directory from the network at {archive_addr:?}");
         for (path, addr, _meta) in archive.iter() {
-            self.file_download(*addr, to_dest.join(path)).await?;
+            self.file_download_public(*addr, to_dest.join(path)).await?;
         }
         debug!(
             "All files in the directory downloaded to {:?} from the network address {:?}",
@@ -114,7 +114,7 @@ impl Client {
 
     /// Upload a directory to the network. The directory is recursively walked.
     /// Reads all files, splits into chunks, uploads chunks, uploads datamaps, uploads archive, returns ArchiveAddr (pointing to the archive)
-    pub async fn dir_upload(
+    pub async fn dir_upload_public(
         &self,
         dir_path: PathBuf,
         wallet: &EvmWallet,
@@ -133,7 +133,7 @@ impl Client {
             let metadata = metadata_from_entry(&entry);
             let path = entry.path().to_path_buf();
             upload_tasks.push(async move {
-                let file = self.file_upload(path.clone(), wallet).await;
+                let file = self.file_upload_public(path.clone(), wallet).await;
                 (path, metadata, file)
             });
         }
@@ -159,7 +159,9 @@ impl Client {
 
         // upload archive
         let archive_serialized = archive.into_bytes()?;
-        let arch_addr = self.data_put(archive_serialized, wallet.into()).await?;
+        let arch_addr = self
+            .data_put_public(archive_serialized, wallet.into())
+            .await?;
 
         info!("Complete archive upload completed in {:?}", start.elapsed());
         #[cfg(feature = "loud")]
@@ -170,7 +172,7 @@ impl Client {
 
     /// Upload a file to the network.
     /// Reads file, splits into chunks, uploads chunks, uploads datamap, returns DataAddr (pointing to the datamap)
-    async fn file_upload(
+    async fn file_upload_public(
         &self,
         path: PathBuf,
         wallet: &EvmWallet,
@@ -181,7 +183,7 @@ impl Client {
 
         let data = tokio::fs::read(path.clone()).await?;
         let data = Bytes::from(data);
-        let addr = self.data_put(data, wallet.into()).await?;
+        let addr = self.data_put_public(data, wallet.into()).await?;
         debug!("File {path:?} uploaded to the network at {addr:?}");
         Ok(addr)
     }

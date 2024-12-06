@@ -157,12 +157,12 @@ impl Client {
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let peers = ["/ip4/127.0.0.1/udp/1234/quic-v1".parse()?];
     /// let client = Client::connect(&peers).await?;      
-    /// let archive = client.archive_get(ArchiveAddr::random(&mut rand::thread_rng())).await?;
+    /// let archive = client.archive_get_public(ArchiveAddr::random(&mut rand::thread_rng())).await?;
     /// # Ok(())
     /// # }
-    /// ```
-    pub async fn archive_get(&self, addr: ArchiveAddr) -> Result<Archive, GetError> {
-        let data = self.data_get(addr).await?;
+    /// ```data_get_public
+    pub async fn archive_get_public(&self, addr: ArchiveAddr) -> Result<Archive, GetError> {
+        let data = self.data_get_public(addr).await?;
         Ok(Archive::from_bytes(data)?)
     }
 
@@ -182,11 +182,11 @@ impl Client {
     /// # let wallet = todo!();
     /// let mut archive = Archive::new();
     /// archive.add_file(PathBuf::from("file.txt"), DataAddr::random(&mut rand::thread_rng()), Metadata::new_with_size(0));
-    /// let address = client.archive_put(archive, &wallet).await?;
+    /// let address = client.archive_put_public(archive, &wallet).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn archive_put(
+    pub async fn archive_put_public(
         &self,
         archive: Archive,
         wallet: &EvmWallet,
@@ -194,7 +194,7 @@ impl Client {
         let bytes = archive
             .into_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
-        let result = self.data_put(bytes, wallet.into()).await;
+        let result = self.data_put_public(bytes, wallet.into()).await;
         debug!("Uploaded archive {archive:?} to the network and the address is {result:?}");
         result
     }

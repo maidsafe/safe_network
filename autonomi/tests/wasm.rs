@@ -25,11 +25,11 @@ async fn put() -> Result<(), Box<dyn std::error::Error>> {
     let wallet = get_funded_wallet();
     let data = gen_random_data(1024 * 1024 * 10);
 
-    let addr = client.data_put(data.clone(), wallet.into()).await?;
+    let addr = client.data_put_public(data.clone(), wallet.into()).await?;
 
     sleep(Duration::from_secs(10)).await;
 
-    let data_fetched = client.data_get(addr).await?;
+    let data_fetched = client.data_get_public(addr).await?;
     assert_eq!(data, data_fetched, "data fetched should match data put");
 
     Ok(())

@@ -100,7 +100,7 @@ impl JsClient {
     #[wasm_bindgen(js_name = putData)]
     pub async fn put_data(&self, data: Vec<u8>, wallet: &JsWallet) -> Result<String, JsError> {
         let data = crate::Bytes::from(data);
-        let xorname = self.0.data_put(data, (&wallet.0).into()).await?;
+        let xorname = self.0.data_put_public(data, (&wallet.0).into()).await?;
 
         Ok(addr_to_str(xorname))
     }
@@ -143,7 +143,7 @@ impl JsClient {
     #[wasm_bindgen(js_name = getData)]
     pub async fn get_data(&self, addr: String) -> Result<Vec<u8>, JsError> {
         let addr = str_to_addr(&addr)?;
-        let data = self.0.data_get(addr).await?;
+        let data = self.0.data_get_public(addr).await?;
 
         Ok(data.to_vec())
     }
@@ -249,7 +249,7 @@ mod archive {
         #[wasm_bindgen(js_name = getArchive)]
         pub async fn get_archive(&self, addr: String) -> Result<JsArchive, JsError> {
             let addr = str_to_addr(&addr)?;
-            let archive = self.0.archive_get(addr).await?;
+            let archive = self.0.archive_get_public(addr).await?;
             let archive = JsArchive(archive);
 
             Ok(archive)
@@ -264,7 +264,10 @@ mod archive {
             archive: &JsArchive,
             wallet: &JsWallet,
         ) -> Result<String, JsError> {
-            let addr = self.0.archive_put(archive.0.clone(), &wallet.0).await?;
+            let addr = self
+                .0
+                .archive_put_public(archive.0.clone(), &wallet.0)
+                .await?;
 
             Ok(addr_to_str(addr))
         }
@@ -691,7 +694,7 @@ mod external_signer {
         ) -> Result<String, JsError> {
             let data = crate::Bytes::from(data);
             let receipt: Receipt = serde_wasm_bindgen::from_value(receipt)?;
-            let xorname = self.0.data_put(data, receipt.into()).await?;
+            let xorname = self.0.data_put_public(data, receipt.into()).await?;
             Ok(addr_to_str(xorname))
         }
     }
