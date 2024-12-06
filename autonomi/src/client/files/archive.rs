@@ -15,7 +15,7 @@ use ant_networking::target_arch::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::{
     client::{
-        data::{GetError, PrivateDataAccess, PutError},
+        data::{DataMapChunk, GetError, PutError},
         payment::PaymentOption,
     },
     Client,
@@ -24,9 +24,10 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// The address of a private archive
-/// Contains the [`PrivateDataAccess`] leading to the [`PrivateArchive`] data
-pub type PrivateArchiveAccess = PrivateDataAccess;
+/// The address of a private archive.
+///
+/// Contains the [`DataMapChunk`] leading to the [`PrivateArchive`] data
+pub type PrivateArchiveAccess = DataMapChunk;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum RenameError {
@@ -68,7 +69,7 @@ impl Metadata {
 /// Using archives is useful for uploading entire directories to the network, only needing to keep track of a single address.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct PrivateArchive {
-    map: HashMap<PathBuf, (PrivateDataAccess, Metadata)>,
+    map: HashMap<PathBuf, (DataMapChunk, Metadata)>,
 }
 
 impl PrivateArchive {
@@ -99,7 +100,7 @@ impl PrivateArchive {
 
     /// Add a file to a local archive
     /// Note that this does not upload the archive to the network
-    pub fn add_file(&mut self, path: PathBuf, data_map: PrivateDataAccess, meta: Metadata) {
+    pub fn add_file(&mut self, path: PathBuf, data_map: DataMapChunk, meta: Metadata) {
         self.map.insert(path.clone(), (data_map, meta));
         debug!("Added a new file to the archive, path: {:?}", path);
     }
@@ -113,7 +114,7 @@ impl PrivateArchive {
     }
 
     /// List all data addresses of the files in the archive
-    pub fn addresses(&self) -> Vec<PrivateDataAccess> {
+    pub fn addresses(&self) -> Vec<DataMapChunk> {
         self.map
             .values()
             .map(|(data_map, _)| data_map.clone())
@@ -122,14 +123,14 @@ impl PrivateArchive {
 
     /// Iterate over the archive items
     /// Returns an iterator over (PathBuf, SecretDataMap, Metadata)
-    pub fn iter(&self) -> impl Iterator<Item = (&PathBuf, &PrivateDataAccess, &Metadata)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&PathBuf, &DataMapChunk, &Metadata)> {
         self.map
             .iter()
             .map(|(path, (data_map, meta))| (path, data_map, meta))
     }
 
     /// Get the underlying map
-    pub fn map(&self) -> &HashMap<PathBuf, (PrivateDataAccess, Metadata)> {
+    pub fn map(&self) -> &HashMap<PathBuf, (DataMapChunk, Metadata)> {
         &self.map
     }
 

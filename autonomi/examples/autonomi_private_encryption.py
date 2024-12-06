@@ -1,5 +1,5 @@
 from autonomi_client import (
-    Client, Wallet, PaymentOption, PrivateDataAccess,
+    Client, Wallet, PaymentOption, DataMapChunk,
     encrypt, hash_to_short_string
 )
 import json

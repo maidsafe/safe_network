@@ -2,7 +2,7 @@
 #![allow(non_local_definitions)]
 
 use crate::client::{
-    data::PrivateDataAccess,
+    data::DataMapChunk,
     files::{archive::PrivateArchiveAccess, archive_public::ArchiveAddr},
     payment::PaymentOption as RustPaymentOption,
     vault::{UserData, VaultSecretKey},
@@ -38,7 +38,7 @@ impl PyClient {
         Ok(Self { inner: client })
     }
 
-    fn data_put(&self, data: Vec<u8>, payment: &PyPaymentOption) -> PyResult<PyPrivateDataAccess> {
+    fn data_put(&self, data: Vec<u8>, payment: &PyPaymentOption) -> PyResult<PyDataMapChunk> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let access = rt
             .block_on(
@@ -49,10 +49,10 @@ impl PyClient {
                 pyo3::exceptions::PyValueError::new_err(format!("Failed to put private data: {e}"))
             })?;
 
-        Ok(PyPrivateDataAccess { inner: access })
+        Ok(PyDataMapChunk { inner: access })
     }
 
-    fn data_get(&self, access: &PyPrivateDataAccess) -> PyResult<Vec<u8>> {
+    fn data_get(&self, access: &PyDataMapChunk) -> PyResult<Vec<u8>> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let data = rt
             .block_on(self.inner.data_get(access.inner.clone()))
@@ -294,17 +294,17 @@ impl PyUserData {
     }
 }
 
-#[pyclass(name = "PrivateDataAccess")]
+#[pyclass(name = "DataMapChunk")]
 #[derive(Clone)]
-pub(crate) struct PyPrivateDataAccess {
-    inner: PrivateDataAccess,
+pub(crate) struct PyDataMapChunk {
+    inner: DataMapChunk,
 }
 
 #[pymethods]
-impl PyPrivateDataAccess {
+impl PyDataMapChunk {
     #[staticmethod]
     fn from_hex(hex: &str) -> PyResult<Self> {
-        PrivateDataAccess::from_hex(hex)
+        DataMapChunk::from_hex(hex)
             .map(|access| Self { inner: access })
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid hex: {e}")))
     }
@@ -342,7 +342,7 @@ fn autonomi_client_module(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPaymentOption>()?;
     m.add_class::<PyVaultSecretKey>()?;
     m.add_class::<PyUserData>()?;
-    m.add_class::<PyPrivateDataAccess>()?;
+    m.add_class::<PyDataMapChunk>()?;
     m.add_function(wrap_pyfunction!(encrypt, m)?)?;
     Ok(())
 }

@@ -14,7 +14,7 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use crate::client::data::{CostError, GetError, PrivateDataAccess, PutError};
+use crate::client::data::{CostError, DataMapChunk, GetError, PutError};
 use crate::client::utils::process_tasks_with_max_concurrency;
 use crate::client::Client;
 use ant_evm::EvmWallet;
@@ -85,7 +85,7 @@ impl Client {
     /// Download a private file from network to local file system
     pub async fn file_download(
         &self,
-        data_access: PrivateDataAccess,
+        data_access: DataMapChunk,
         to_dest: PathBuf,
     ) -> Result<(), DownloadError> {
         let data = self.data_get(data_access).await?;
@@ -171,12 +171,12 @@ impl Client {
     }
 
     /// Upload a private file to the network.
-    /// Reads file, splits into chunks, uploads chunks, uploads datamap, returns [`PrivateDataAccess`] (pointing to the datamap)
+    /// Reads file, splits into chunks, uploads chunks, uploads datamap, returns [`DataMapChunk`] (pointing to the datamap)
     async fn file_upload(
         &self,
         path: PathBuf,
         wallet: &EvmWallet,
-    ) -> Result<PrivateDataAccess, UploadError> {
+    ) -> Result<DataMapChunk, UploadError> {
         info!("Uploading file: {path:?}");
         #[cfg(feature = "loud")]
         println!("Uploading file: {path:?}");

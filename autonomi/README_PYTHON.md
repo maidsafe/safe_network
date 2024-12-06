@@ -43,7 +43,7 @@ print(f"Retrieved: {retrieved.decode()}")
   - `data_put_public(data: bytes, payment: PaymentOption)`: Upload data
   - `data_get_public(addr: str)`: Download data
   - `data_put(data: bytes, payment: PaymentOption)`: Store private data
-  - `data_get(access: PrivateDataAccess)`: Retrieve private data
+  - `data_get(access: DataMapChunk)`: Retrieve private data
   - `register_generate_key()`: Generate register key
 
 - `Wallet`: Ethereum wallet management
@@ -56,7 +56,7 @@ print(f"Retrieved: {retrieved.decode()}")
 
 #### Private Data
 
-- `PrivateDataAccess`: Handle private data storage
+- `DataMapChunk`: Handle private data storage
   - `from_hex(hex: str)`: Create from hex string
   - `to_hex()`: Convert to hex string
   - `address()`: Get short reference address

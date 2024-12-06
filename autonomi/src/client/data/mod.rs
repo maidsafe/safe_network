@@ -127,9 +127,9 @@ pub enum CostError {
 
 /// Private data on the network can be accessed with this
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct PrivateDataAccess(Chunk);
+pub struct DataMapChunk(Chunk);
 
-impl PrivateDataAccess {
+impl DataMapChunk {
     pub fn to_hex(&self) -> String {
         hex::encode(self.0.value())
     }
@@ -139,7 +139,7 @@ impl PrivateDataAccess {
         Ok(Self(Chunk::new(Bytes::from(data))))
     }
 
-    /// Get a private address for [`PrivateDataAccess`]. Note that this is not a network address, it is only used for refering to private data client side.
+    /// Get a private address for [`DataMapChunk`]. Note that this is not a network address, it is only used for refering to private data client side.
     pub fn address(&self) -> String {
         hash_to_short_string(&self.to_hex())
     }
@@ -153,8 +153,8 @@ fn hash_to_short_string(input: &str) -> String {
 }
 
 impl Client {
-    /// Fetch a blob of private data from the network
-    pub async fn data_get(&self, data_map: PrivateDataAccess) -> Result<Bytes, GetError> {
+    /// Fetch a blob of (private) data from the network
+    pub async fn data_get(&self, data_map: DataMapChunk) -> Result<Bytes, GetError> {
         info!(
             "Fetching private data from Data Map {:?}",
             data_map.0.address()
@@ -166,13 +166,14 @@ impl Client {
     }
 
     /// Upload a piece of private data to the network. This data will be self-encrypted.
-    /// Returns the [`PrivateDataAccess`] containing the map to the encrypted chunks.
-    /// This data is private and only accessible with the [`PrivateDataAccess`].
+    /// The [`DataMapChunk`] is not uploaded to the network, keeping the data private.
+    ///
+    /// Returns the [`DataMapChunk`] containing the map to the encrypted chunks.
     pub async fn data_put(
         &self,
         data: Bytes,
         payment_option: PaymentOption,
-    ) -> Result<PrivateDataAccess, PutError> {
+    ) -> Result<DataMapChunk, PutError> {
         let now = ant_networking::target_arch::Instant::now();
         let (data_map_chunk, chunks) = encrypt(data)?;
         debug!("Encryption took: {:.2?}", now.elapsed());
@@ -220,7 +221,7 @@ impl Client {
             }
         }
 
-        Ok(PrivateDataAccess(data_map_chunk))
+        Ok(DataMapChunk(data_map_chunk))
     }
 }
 
@@ -230,9 +231,9 @@ mod tests {
 
     #[test]
     fn test_hex() {
-        let data_map = PrivateDataAccess(Chunk::new(Bytes::from_static(b"hello")));
+        let data_map = DataMapChunk(Chunk::new(Bytes::from_static(b"hello")));
         let hex = data_map.to_hex();
-        let data_map2 = PrivateDataAccess::from_hex(&hex).expect("Failed to decode hex");
+        let data_map2 = DataMapChunk::from_hex(&hex).expect("Failed to decode hex");
         assert_eq!(data_map, data_map2);
     }
 }

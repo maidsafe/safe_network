@@ -1,7 +1,7 @@
 use super::address::{addr_to_str, str_to_addr};
 #[cfg(feature = "vault")]
 use super::vault::UserData;
-use crate::client::data_private::PrivateDataAccess;
+use crate::client::data_private::DataMapChunk;
 use crate::client::payment::Receipt;
 use ant_protocol::storage::Chunk;
 use libp2p::Multiaddr;
@@ -107,7 +107,7 @@ impl JsClient {
 
     /// Upload private data to the network.
     ///
-    /// Returns the `PrivateDataAccess` chunk of the data.
+    /// Returns the `DataMapChunk` chunk of the data.
     #[wasm_bindgen(js_name = putPrivateData)]
     pub async fn put_private_data(
         &self,
@@ -124,7 +124,7 @@ impl JsClient {
     /// Upload private data to the network.
     /// Uses a `Receipt` as payment.
     ///
-    /// Returns the `PrivateDataAccess` chunk of the data.
+    /// Returns the `DataMapChunk` chunk of the data.
     #[wasm_bindgen(js_name = putPrivateDataWithReceipt)]
     pub async fn put_private_data_with_receipt(
         &self,
@@ -151,7 +151,7 @@ impl JsClient {
     /// Fetch the data from the network.
     #[wasm_bindgen(js_name = getPrivateData)]
     pub async fn get_private_data(&self, private_data_access: JsValue) -> Result<Vec<u8>, JsError> {
-        let private_data_access: PrivateDataAccess =
+        let private_data_access: DataMapChunk =
             serde_wasm_bindgen::from_value(private_data_access)?;
         let data = self.0.data_get(private_data_access).await?;
 
@@ -278,7 +278,7 @@ mod archive_private {
     use super::*;
     use crate::client::archive::Metadata;
     use crate::client::archive_private::{PrivateArchive, PrivateArchiveAccess};
-    use crate::client::data_private::PrivateDataAccess;
+    use crate::client::data_private::DataMapChunk;
     use crate::client::payment::Receipt;
     use std::path::PathBuf;
     use wasm_bindgen::{JsError, JsValue};
@@ -304,7 +304,7 @@ mod archive_private {
             metadata: JsValue,
         ) -> Result<(), JsError> {
             let path = PathBuf::from(path);
-            let data_map: PrivateDataAccess = serde_wasm_bindgen::from_value(data_map)?;
+            let data_map: DataMapChunk = serde_wasm_bindgen::from_value(data_map)?;
             let metadata: Metadata = serde_wasm_bindgen::from_value(metadata)?;
             self.0.add_file(path, data_map, metadata);
 
