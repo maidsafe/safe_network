@@ -1,7 +1,7 @@
 use super::address::{addr_to_str, str_to_addr};
 #[cfg(feature = "vault")]
 use super::vault::UserData;
-use crate::client::data_private::DataMapChunk;
+use crate::client::data::DataMapChunk;
 use crate::client::payment::Receipt;
 use ant_protocol::storage::Chunk;
 use libp2p::Multiaddr;
@@ -171,15 +171,14 @@ impl JsClient {
 mod archive {
     use super::*;
     use crate::client::{
-        address::str_to_addr,
-        archive::{Archive, Metadata},
+        address::str_to_addr, files::archive::Metadata, files::archive_public::PublicArchive,
     };
     use std::path::PathBuf;
     use wasm_bindgen::JsError;
 
     /// Structure mapping paths to data addresses.
     #[wasm_bindgen(js_name = Archive)]
-    pub struct JsArchive(Archive);
+    pub struct JsArchive(PublicArchive);
 
     /// Create new metadata with the current time as uploaded, created and modified.
     ///
@@ -201,7 +200,7 @@ mod archive {
         /// Create a new archive.
         #[wasm_bindgen(constructor)]
         pub fn new() -> Self {
-            Self(Archive::new())
+            Self(PublicArchive::new())
         }
 
         /// Add a new file to the archive.
@@ -276,9 +275,8 @@ mod archive {
 
 mod archive_private {
     use super::*;
-    use crate::client::archive::Metadata;
-    use crate::client::archive_private::{PrivateArchive, PrivateArchiveAccess};
-    use crate::client::data_private::DataMapChunk;
+    use crate::client::data::DataMapChunk;
+    use crate::client::files::archive::{Metadata, PrivateArchive, PrivateArchiveAccess};
     use crate::client::payment::Receipt;
     use std::path::PathBuf;
     use wasm_bindgen::{JsError, JsValue};
@@ -388,7 +386,7 @@ mod archive_private {
 mod vault {
     use super::*;
     use crate::client::address::addr_to_str;
-    use crate::client::archive_private::PrivateArchiveAccess;
+    use crate::client::files::archive::PrivateArchiveAccess;
     use crate::client::payment::Receipt;
     use crate::client::vault::key::blst_to_blsttc;
     use crate::client::vault::key::derive_secret_key_from_seed;
