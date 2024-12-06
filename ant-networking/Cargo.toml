@@ -17,7 +17,6 @@ loud = []
 open-metrics = ["libp2p/metrics", "prometheus-client", "hyper", "sysinfo"]
 # tcp is automatically enabled when compiling for wasm32
 upnp = ["libp2p/upnp"]
-websockets = ["libp2p/tcp"]
 
 [dependencies]
 aes-gcm-siv = "0.11.1"

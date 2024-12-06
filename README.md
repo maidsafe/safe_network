@@ -74,13 +74,6 @@ cargo build --release --features network-contacts --bin antnode
 
 The Autonomi network uses `quic` as the default transport protocol.
 
-The `websockets` feature is available for the `ant-networking` crate, and above, and will allow for
-tcp over websockets.
-
-If building for `wasm32` then `websockets` are enabled by default as this is the only method
-available to communicate with a network as things stand. (And that network must have `websockets`
-enabled.)
-
 #### Building for wasm32
 
 WASM support for the autonomi API is currently under active development. More docs coming soon.
