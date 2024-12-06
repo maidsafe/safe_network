@@ -51,7 +51,7 @@ use self::{cmd::NetworkSwarmCmd, error::Result};
 use ant_evm::{PaymentQuote, QuotingMetrics};
 use ant_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
+    messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
     storage::{RecordType, RetryStrategy, Scratchpad},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
@@ -83,8 +83,10 @@ use {
     std::collections::HashSet,
 };
 
-/// The type of quote for a selected payee.
-pub type PayeeQuote = (PeerId, PaymentQuote);
+/// Selected quotes to pay for a data address
+pub struct SelectedQuotes {
+    pub quotes: Vec<(PeerId, PaymentQuote)>,
+}
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -382,7 +384,7 @@ impl Network {
         &self,
         record_address: NetworkAddress,
         ignore_peers: Vec<PeerId>,
-    ) -> Result<Vec<PayeeQuote>> {
+    ) -> Result<SelectedQuotes> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
         let mut close_nodes = self
@@ -446,7 +448,7 @@ impl Network {
                     info!("Address {record_address:?} was already paid for according to {peer_address:?} ({peer_already_have_it}/{enough_peers_already_have_it})");
                     if peer_already_have_it >= enough_peers_already_have_it {
                         info!("Address {record_address:?} was already paid for according to {peer_already_have_it} peers, ending quote request");
-                        return Ok(vec![]);
+                        return Ok(SelectedQuotes { quotes: vec![] });
                     }
                 }
                 Err(err) => {
@@ -458,17 +460,7 @@ impl Network {
             }
         }
 
-        // send the quotes to the other peers for verification
-        for peer_id in close_nodes.iter() {
-            let request = Request::Cmd(Cmd::QuoteVerification {
-                target: NetworkAddress::from_peer(*peer_id),
-                quotes: all_quotes.clone(),
-            });
-
-            self.send_req_ignore_reply(request, *peer_id);
-        }
-
-        Ok(quotes_to_pay)
+        Ok(SelectedQuotes { quotes: quotes_to_pay })
     }
 
     /// Get register from network.
