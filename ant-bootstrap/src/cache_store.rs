@@ -155,7 +155,7 @@ impl BootstrapCacheStore {
     }
 
     /// Create a empty CacheStore with the given configuration
-    pub fn empty(config: BootstrapCacheConfig) -> Result<Self> {
+    pub fn new(config: BootstrapCacheConfig) -> Result<Self> {
         info!("Creating new CacheStore with config: {:?}", config);
         let cache_path = config.cache_file_path.clone();
 
@@ -181,7 +181,7 @@ impl BootstrapCacheStore {
     /// Create a CacheStore from the given peers argument.
     /// This also modifies the cfg if provided based on the PeersArgs.
     /// And also performs some actions based on the PeersArgs.
-    pub fn empty_from_peers_args(
+    pub fn new_from_peers_args(
         peers_arg: &PeersArgs,
         cfg: Option<BootstrapCacheConfig>,
     ) -> Result<Self> {
@@ -190,7 +190,7 @@ impl BootstrapCacheStore {
         } else {
             BootstrapCacheConfig::default_config()?
         };
-        let mut store = Self::empty(config)?;
+        let mut store = Self::new(config)?;
 
         // If it is the first node, clear the cache.
         if peers_arg.first {
@@ -396,7 +396,7 @@ mod tests {
 
         let config = crate::BootstrapCacheConfig::empty().with_cache_path(&cache_file);
 
-        let store = BootstrapCacheStore::empty(config).unwrap();
+        let store = BootstrapCacheStore::new(config).unwrap();
         (store.clone(), store.cache_path.clone())
     }
 

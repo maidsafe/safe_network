@@ -265,10 +265,12 @@ fn main() -> Result<()> {
         init_logging(&opt, keypair.public().to_peer_id())?;
 
     let rt = Runtime::new()?;
-    let bootstrap_cache = BootstrapCacheStore::empty_from_peers_args(
+    let mut bootstrap_cache = BootstrapCacheStore::new_from_peers_args(
         &opt.peers,
         Some(BootstrapCacheConfig::default_config()?),
     )?;
+    // To create the file before startup if it doesn't exist.
+    bootstrap_cache.sync_and_flush_to_disk(true)?;
 
     let msg = format!(
         "Running {} v{}",

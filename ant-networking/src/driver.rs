@@ -1037,7 +1037,7 @@ impl SwarmDriver {
                     let config = bootstrap_cache.config().clone();
                     let mut old_cache = bootstrap_cache.clone();
 
-                    let new = match BootstrapCacheStore::empty(config) {
+                    let new = match BootstrapCacheStore::new(config) {
                         Ok(new) => new,
                         Err(err) => {
                             error!("Failed to create a new empty cache: {err}");

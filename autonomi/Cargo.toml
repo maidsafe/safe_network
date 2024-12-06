@@ -27,6 +27,7 @@ vault = ["data", "registers"]
 websockets = ["ant-networking/websockets"]
 
 [dependencies]
+ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
 ant-evm = { path = "../ant-evm", version = "0.1.4" }
 ant-networking = { path = "../ant-networking", version = "0.19.5" }
 ant-protocol = { version = "0.17.15", path = "../ant-protocol" }

@@ -1539,6 +1539,7 @@ name = "autonomi"
 version = "0.2.4"
 dependencies = [
  "alloy",
+ "ant-bootstrap",
  "ant-evm",
  "ant-logging",
  "ant-networking",

@@ -23,7 +23,7 @@ async fn test_cache_store_operations() -> Result<(), Box<dyn std::error::Error>>
     // Create cache store with config
     let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let mut cache_store = BootstrapCacheStore::empty(config)?;
+    let mut cache_store = BootstrapCacheStore::new(config)?;
 
     // Test adding and retrieving peers
     let addr: Multiaddr =
@@ -53,7 +53,7 @@ async fn test_cache_max_peers() -> Result<(), Box<dyn std::error::Error>> {
     let mut config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
     config.max_peers = 2;
 
-    let mut cache_store = BootstrapCacheStore::empty(config)?;
+    let mut cache_store = BootstrapCacheStore::new(config)?;
 
     // Add three peers with distinct timestamps
     let mut addresses = Vec::new();
@@ -94,7 +94,7 @@ async fn test_cache_file_corruption() -> Result<(), Box<dyn std::error::Error>> 
     // Create cache with some peers
     let config = BootstrapCacheConfig::empty().with_cache_path(&cache_path);
 
-    let mut cache_store = BootstrapCacheStore::empty(config.clone())?;
+    let mut cache_store = BootstrapCacheStore::new(config.clone())?;
 
     // Add a peer
     let addr: Multiaddr =
@@ -108,7 +108,7 @@ async fn test_cache_file_corruption() -> Result<(), Box<dyn std::error::Error>> 
     tokio::fs::write(&cache_path, "invalid json content").await?;
 
     // Create a new cache store - it should handle the corruption gracefully
-    let mut new_cache_store = BootstrapCacheStore::empty(config)?;
+    let mut new_cache_store = BootstrapCacheStore::new(config)?;
     let addrs = new_cache_store.get_all_addrs().collect::<Vec<_>>();
     assert!(addrs.is_empty(), "Cache should be empty after corruption");
 

@@ -34,6 +34,7 @@ pub mod wasm;
 // private module with utility functions
 mod utils;
 
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore};
 pub use ant_evm::Amount;
 
 use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
@@ -132,7 +133,16 @@ impl Client {
 }
 
 fn build_client_and_run_swarm(local: bool) -> (Network, mpsc::Receiver<NetworkEvent>) {
-    let network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
+    let mut network_builder = NetworkBuilder::new(Keypair::generate_ed25519(), local);
+
+    if let Ok(mut config) = BootstrapCacheConfig::default_config() {
+        if local {
+            config.disable_cache_writing = true;
+        }
+        if let Ok(cache) = BootstrapCacheStore::new(config) {
+            network_builder.bootstrap_cache(cache);
+        }
+    }
 
     // TODO: Re-export `Receiver<T>` from `ant-networking`. Else users need to keep their `tokio` dependency in sync.
     // TODO: Think about handling the mDNS error here.
