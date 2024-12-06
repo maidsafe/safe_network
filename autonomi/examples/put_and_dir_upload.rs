@@ -16,7 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Put and fetch directory from local file system.
     let dir_addr = client
-        .dir_upload_public("files/to/upload".into(), &wallet)
+        .dir_and_archive_upload_public("files/to/upload".into(), &wallet)
         .await?;
     client
         .dir_download_public(dir_addr, "files/downloaded".into())

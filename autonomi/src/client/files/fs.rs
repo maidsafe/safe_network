@@ -162,6 +162,19 @@ impl Client {
         Ok(archive)
     }
 
+    /// Same as [`Client::dir_upload`] but also uploads the archive (privately) to the network.
+    ///
+    /// Returns the [`PrivateArchiveAccess`] allowing the private archive to be downloaded from the network.
+    pub async fn dir_and_archive_upload(
+        &self,
+        dir_path: PathBuf,
+        wallet: &EvmWallet,
+    ) -> Result<PrivateArchiveAccess, UploadError> {
+        let archive = self.dir_upload(dir_path, wallet).await?;
+        let archive_addr = self.archive_put(archive, wallet.into()).await?;
+        Ok(archive_addr)
+    }
+
     /// Upload a private file to the network.
     /// Reads file, splits into chunks, uploads chunks, uploads datamap, returns [`DataMapChunk`] (pointing to the datamap)
     async fn file_upload(

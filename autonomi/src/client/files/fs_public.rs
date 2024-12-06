@@ -54,13 +54,16 @@ impl Client {
         Ok(())
     }
 
-    /// Upload a directory to the network. The directory is recursively walked.
-    /// Reads all files, splits into chunks, uploads chunks, uploads datamaps, uploads archive, returns ArchiveAddr (pointing to the archive)
+    /// Upload a directory to the network. The directory is recursively walked and each file is uploaded to the network.
+    ///
+    /// The data maps of these files are uploaded on the network, making the individual files publicly available.
+    ///
+    /// This returns, but does not upload (!),the [`PublicArchive`] containing the data maps of the uploaded files.
     pub async fn dir_upload_public(
         &self,
         dir_path: PathBuf,
         wallet: &EvmWallet,
-    ) -> Result<ArchiveAddr, UploadError> {
+    ) -> Result<PublicArchive, UploadError> {
         info!("Uploading directory: {dir_path:?}");
         let start = tokio::time::Instant::now();
 
@@ -99,17 +102,22 @@ impl Client {
             }
         }
 
-        // upload archive
-        let archive_serialized = archive.into_bytes()?;
-        let arch_addr = self
-            .data_put_public(archive_serialized, wallet.into())
-            .await?;
-
-        info!("Complete archive upload completed in {:?}", start.elapsed());
         #[cfg(feature = "loud")]
         println!("Upload completed in {:?}", start.elapsed());
-        debug!("Directory uploaded to the network at {arch_addr:?}");
-        Ok(arch_addr)
+        Ok(archive)
+    }
+
+    /// Same as [`Client::dir_upload_public`] but also uploads the archive to the network.
+    ///
+    /// Returns the [`ArchiveAddr`] of the uploaded archive.
+    pub async fn dir_and_archive_upload_public(
+        &self,
+        dir_path: PathBuf,
+        wallet: &EvmWallet,
+    ) -> Result<ArchiveAddr, UploadError> {
+        let archive = self.dir_upload_public(dir_path, wallet).await?;
+        let archive_addr = self.archive_put_public(archive, wallet).await?;
+        Ok(archive_addr)
     }
 
     /// Upload a file to the network.
