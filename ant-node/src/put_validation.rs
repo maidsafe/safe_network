@@ -19,7 +19,7 @@ use ant_protocol::{
 };
 use ant_registers::SignedRegister;
 use libp2p::kad::{Record, RecordKey};
-use std::time::{Duration, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use xor_name::XorName;
 
 impl Node {
@@ -614,7 +614,7 @@ impl Node {
         // verify quote timestamp
         let quote_timestamp = payment.quote.timestamp;
         let quote_expiration_time = quote_timestamp + Duration::from_secs(QUOTE_EXPIRATION_SECS);
-        let quote_expiration_time_in_secs = quote_expiration_time
+        let _quote_expiration_time_in_secs = quote_expiration_time
             .duration_since(UNIX_EPOCH)
             .map_err(|e| {
                 Error::InvalidRequest(format!(
@@ -622,16 +622,22 @@ impl Node {
                 ))
             })?
             .as_secs();
+        // NB TODO @mick: can we check if the quote has expired with block time in evmlib? Or should nodes do it manually here? Else keep the block below
+        // manually check if the quote has expired
+        if quote_expiration_time < SystemTime::now() {
+            warn!("Payment quote has expired for record {pretty_key}");
+            return Err(Error::InvalidRequest(format!(
+                "Payment quote has expired for record {pretty_key}"
+            )));
+        }
 
         // check if payment is valid on chain
         debug!("Verifying payment for record {pretty_key}");
         let reward_amount = self.evm_network()
             .verify_data_payment(
-                payment.tx_hash,
                 payment.quote.hash(),
                 payment.quote.quoting_metrics,
                 *self.reward_address(),
-                quote_expiration_time_in_secs,
             )
             .await
             .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;

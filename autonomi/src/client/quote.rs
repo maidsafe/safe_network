@@ -8,7 +8,7 @@
 
 use ant_evm::{PaymentQuote, ProofOfPayment, QuoteHash, TxHash};
 use ant_evm::{Amount, AttoTokens, QuotePayment};
-use ant_networking::{Network, NetworkError, PayeeQuote};
+use ant_networking::{Network, NetworkError, SelectedQuotes};
 use ant_protocol::{
     storage::ChunkAddress,
     NetworkAddress,
@@ -21,7 +21,7 @@ use super::{data::CostError, Client};
 
 pub struct QuotesToPay {
     pub nodes_to_pay: Vec<QuotePayment>,
-    pub nodes_to_upload_to: Vec<PayeeQuote>,
+    pub nodes_to_upload_to: Vec<SelectedQuotes>,
     pub cost_per_node: AttoTokens,
     pub total_cost: AttoTokens,
 }
@@ -66,7 +66,7 @@ impl Client {
 async fn fetch_store_quote(
     network: &Network,
     content_addr: XorName,
-) -> Result<Vec<PayeeQuote>, NetworkError> {
+) -> Result<Vec<SelectedQuotes>, NetworkError> {
     network
         .get_store_quote_from_network(
             NetworkAddress::from_chunk_address(ChunkAddress::new(content_addr)),
@@ -79,7 +79,7 @@ async fn fetch_store_quote(
 async fn fetch_store_quote_with_retries(
     network: &Network,
     content_addr: XorName,
-) -> Result<(XorName, Vec<PayeeQuote>), CostError> {
+) -> Result<(XorName, Vec<SelectedQuotes>), CostError> {
     let mut retries = 0;
 
     loop {

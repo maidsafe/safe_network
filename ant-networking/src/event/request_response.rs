@@ -48,30 +48,6 @@ impl SwarmDriver {
 
                             self.add_keys_to_replication_fetcher(holder, keys);
                         }
-                        Request::Cmd(ant_protocol::messages::Cmd::QuoteVerification {
-                            quotes,
-                            ..
-                        }) => {
-                            let response = Response::Cmd(
-                                ant_protocol::messages::CmdResponse::QuoteVerification(Ok(())),
-                            );
-                            self.queue_network_swarm_cmd(NetworkSwarmCmd::SendResponse {
-                                resp: response,
-                                channel: MsgResponder::FromPeer(channel),
-                            });
-
-                            // The keypair is required to verify the quotes,
-                            // hence throw it up to Network layer for further actions.
-                            let quotes = quotes
-                                .iter()
-                                .filter_map(|(peer_address, quote)| {
-                                    peer_address
-                                        .as_peer_id()
-                                        .map(|peer_id| (peer_id, quote.clone()))
-                                })
-                                .collect();
-                            self.send_event(NetworkEvent::QuoteVerification { quotes })
-                        }
                         Request::Cmd(ant_protocol::messages::Cmd::PeerConsideredAsBad {
                             detected_by,
                             bad_peer,

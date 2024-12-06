@@ -1,17 +1,17 @@
 use crate::client::payment::Receipt;
 use ant_evm::{PaymentQuote, ProofOfPayment, QuoteHash, TxHash};
-use ant_networking::PayeeQuote;
+use ant_networking::SelectedQuotes;
 use std::collections::{BTreeMap, HashMap};
 use xor_name::XorName;
 
 pub fn cost_map_to_quotes(
-    cost_map: HashMap<XorName, PayeeQuote>,
+    cost_map: HashMap<XorName, SelectedQuotes>,
 ) -> HashMap<XorName, PaymentQuote> {
-    cost_map.into_iter().map(|(k, (_, _, v))| (k, v)).collect()
+    cost_map.into_iter().map(|(k, (_, q))| (k, q)).collect()
 }
 
 pub fn receipt_from_cost_map_and_payments(
-    cost_map: HashMap<XorName, PayeeQuote>,
+    cost_map: HashMap<XorName, SelectedQuotes>,
     payments: &BTreeMap<QuoteHash, TxHash>,
 ) -> Receipt {
     let quotes = cost_map_to_quotes(cost_map);
