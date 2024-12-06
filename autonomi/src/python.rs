@@ -3,7 +3,7 @@
 
 use crate::client::{
     data::PrivateDataAccess,
-    files::{archive::ArchiveAddr, archive_private::PrivateArchiveAccess},
+    files::{archive::PrivateArchiveAccess, archive_public::ArchiveAddr},
     payment::PaymentOption as RustPaymentOption,
     vault::{UserData, VaultSecretKey},
     Client as RustClient,

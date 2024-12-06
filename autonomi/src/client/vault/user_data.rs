@@ -10,8 +10,8 @@ use std::collections::HashMap;
 
 use crate::client::data::GetError;
 use crate::client::data::PutError;
-use crate::client::files::archive::ArchiveAddr;
-use crate::client::files::archive_private::PrivateArchiveAccess;
+use crate::client::files::archive::PrivateArchiveAccess;
+use crate::client::files::archive_public::ArchiveAddr;
 use crate::client::payment::PaymentOption;
 use crate::client::registers::RegisterAddress;
 use crate::client::vault::VaultError;
