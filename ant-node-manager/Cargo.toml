@@ -21,7 +21,6 @@ path = "src/bin/daemon/main.rs"
 chaos = []
 default = ["quic"]
 local = []
-network-contacts = []
 nightly = []
 open-metrics = []
 otlp = []
@@ -31,10 +30,10 @@ tcp = []
 websockets = []
 
 [dependencies]
+ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }
 ant-build-info = { path = "../ant-build-info", version = "0.1.19" }
 ant-evm = { path = "../ant-evm", version = "0.1.4" }
 ant-logging = { path = "../ant-logging", version = "0.2.40" }
-ant-peers-acquisition = { path = "../ant-peers-acquisition", version = "0.5.7" }
 ant-protocol = { path = "../ant-protocol", version = "0.17.15" }
 ant-releases = { git = "https://github.com/jacderida/ant-releases.git", branch = "chore-rename_binaries" }
 ant-service-management = { path = "../ant-service-management", version = "0.4.3" }

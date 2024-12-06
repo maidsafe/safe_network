@@ -51,6 +51,7 @@ async fn main() -> Result<()> {
 
 fn init_logging_and_metrics(opt: &Opt) -> Result<(ReloadHandle, Option<WorkerGuard>)> {
     let logging_targets = vec![
+        ("ant_bootstrap".to_string(), Level::DEBUG),
         ("ant_build_info".to_string(), Level::TRACE),
         ("ant_evm".to_string(), Level::TRACE),
         ("ant_networking".to_string(), Level::INFO),
@@ -59,7 +60,6 @@ fn init_logging_and_metrics(opt: &Opt) -> Result<(ReloadHandle, Option<WorkerGua
         ("autonomi".to_string(), Level::TRACE),
         ("evmlib".to_string(), Level::TRACE),
         ("ant_logging".to_string(), Level::TRACE),
-        ("ant_peers_acquisition".to_string(), Level::TRACE),
         ("ant_protocol".to_string(), Level::TRACE),
     ];
     let mut log_builder = LogBuilder::new(logging_targets);

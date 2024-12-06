@@ -9,7 +9,6 @@
 pub mod evm;
 pub mod testnet;
 
-use ant_peers_acquisition::parse_peer_addr;
 use bytes::Bytes;
 use color_eyre::eyre::Result;
 use libp2p::Multiaddr;
@@ -39,10 +38,11 @@ pub fn gen_random_data(len: usize) -> Bytes {
 ///
 /// An empty `Vec` will be returned if the env var is not set or if local discovery is enabled.
 pub fn peers_from_env() -> Result<Vec<Multiaddr>> {
-    let bootstrap_peers = if cfg!(feature = "local") {
-        Ok(vec![])
-    } else if let Some(peers_str) = env_from_runtime_or_compiletime!("ANT_PEERS") {
-        peers_str.split(',').map(parse_peer_addr).collect()
+    let bootstrap_peers = if let Some(peers_str) = env_from_runtime_or_compiletime!("ANT_PEERS") {
+        peers_str
+            .split(',')
+            .map(|str| str.parse::<Multiaddr>())
+            .collect()
     } else {
         Ok(vec![])
     }?;

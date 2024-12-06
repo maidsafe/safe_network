@@ -1,10 +1,10 @@
 use crate::action::{Action, StatusActions};
 use crate::connection_mode::ConnectionMode;
+use ant_bootstrap::PeersArgs;
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_node_manager::{
     add_services::config::PortRange, config::get_node_registry_path, VerbosityLevel,
 };
-use ant_peers_acquisition::PeersArgs;
 use ant_releases::{self, AntReleaseRepoActions, ReleaseType};
 use ant_service_management::NodeRegistry;
 use color_eyre::eyre::{eyre, Error};

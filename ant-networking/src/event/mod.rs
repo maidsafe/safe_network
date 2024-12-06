@@ -16,7 +16,7 @@ use custom_debug::Debug as CustomDebug;
 #[cfg(feature = "local")]
 use libp2p::mdns;
 use libp2p::{
-    kad::{Record, RecordKey, K_VALUE},
+    kad::{Addresses, Record, RecordKey, K_VALUE},
     request_response::ResponseChannel as PeerResponseChannel,
     Multiaddr, PeerId,
 };
@@ -232,13 +232,19 @@ impl SwarmDriver {
     }
 
     /// Update state on addition of a peer to the routing table.
-    pub(crate) fn update_on_peer_addition(&mut self, added_peer: PeerId) {
+    pub(crate) fn update_on_peer_addition(&mut self, added_peer: PeerId, addresses: Addresses) {
         self.peers_in_rt = self.peers_in_rt.saturating_add(1);
         let n_peers = self.peers_in_rt;
         info!("New peer added to routing table: {added_peer:?}, now we have #{n_peers} connected peers");
 
         #[cfg(feature = "loud")]
         println!("New peer added to routing table: {added_peer:?}, now we have #{n_peers} connected peers");
+
+        if let Some(bootstrap_cache) = &mut self.bootstrap_cache {
+            for addr in addresses.iter() {
+                bootstrap_cache.add_addr(addr.clone());
+            }
+        }
 
         self.log_kbuckets(&added_peer);
         self.send_event(NetworkEvent::PeerAdded(added_peer, self.peers_in_rt));

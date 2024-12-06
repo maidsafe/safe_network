@@ -44,7 +44,7 @@ lazy_static! {
 
 // Protocol support shall be downward compatible for patch only version update.
 // i.e. versions of `A.B.X` or `A.B.X-alpha.Y` shall be considered as a same protocol of `A.B`
-fn get_truncate_version_str() -> String {
+pub fn get_truncate_version_str() -> String {
     let version_str = env!("CARGO_PKG_VERSION");
     let parts = version_str.split('.').collect::<Vec<_>>();
     if parts.len() >= 2 {

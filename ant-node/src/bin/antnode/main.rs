@@ -13,12 +13,12 @@ mod rpc_service;
 mod subcommands;
 
 use crate::subcommands::EvmNetworkCommand;
+use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore, PeersArgs};
 use ant_evm::{get_evm_network_from_env, EvmNetwork, RewardsAddress};
 #[cfg(feature = "metrics")]
 use ant_logging::metrics::init_metrics;
 use ant_logging::{Level, LogFormat, LogOutputDest, ReloadHandle};
 use ant_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
-use ant_peers_acquisition::PeersArgs;
 use ant_protocol::{
     node::get_antnode_root_dir,
     node_rpc::{NodeCtrl, StopResult},
@@ -172,12 +172,6 @@ struct Opt {
     #[clap(long)]
     rpc: Option<SocketAddr>,
 
-    /// Run the node in local mode.
-    ///
-    /// When this flag is set, we will not filter out local addresses that we observe.
-    #[clap(long)]
-    local: bool,
-
     /// Specify the owner(readable discord user name).
     #[clap(long)]
     owner: Option<String>,
@@ -271,7 +265,13 @@ fn main() -> Result<()> {
         init_logging(&opt, keypair.public().to_peer_id())?;
 
     let rt = Runtime::new()?;
-    let bootstrap_peers = rt.block_on(opt.peers.get_peers())?;
+    let mut bootstrap_cache = BootstrapCacheStore::new_from_peers_args(
+        &opt.peers,
+        Some(BootstrapCacheConfig::default_config()?),
+    )?;
+    // To create the file before startup if it doesn't exist.
+    bootstrap_cache.sync_and_flush_to_disk(true)?;
+
     let msg = format!(
         "Running {} v{}",
         env!("CARGO_BIN_NAME"),
@@ -285,13 +285,17 @@ fn main() -> Result<()> {
         ant_build_info::git_info()
     );
 
-    info!("Node started with initial_peers {bootstrap_peers:?}");
+    info!(
+        "Node started with bootstrap cache containing {} peers",
+        bootstrap_cache.peer_count()
+    );
 
     // Create a tokio runtime per `run_node` attempt, this ensures
     // any spawned tasks are closed before we would attempt to run
     // another process with these args.
     #[cfg(feature = "metrics")]
     rt.spawn(init_metrics(std::process::id()));
+    let initial_peres = rt.block_on(opt.peers.get_addrs(None))?;
     debug!("Node's owner set to: {:?}", opt.owner);
     let restart_options = rt.block_on(async move {
         let mut node_builder = NodeBuilder::new(
@@ -299,13 +303,14 @@ fn main() -> Result<()> {
             rewards_address,
             evm_network,
             node_socket_addr,
-            bootstrap_peers,
-            opt.local,
+            opt.peers.local,
             root_dir,
             #[cfg(feature = "upnp")]
             opt.upnp,
         );
-        node_builder.is_behind_home_network = opt.home_network;
+        node_builder.initial_peers(initial_peres);
+        node_builder.bootstrap_cache(bootstrap_cache);
+        node_builder.is_behind_home_network(opt.home_network);
         #[cfg(feature = "open-metrics")]
         let mut node_builder = node_builder;
         // if enable flag is provided or only if the port is specified then enable the server by setting Some()
@@ -549,12 +554,12 @@ fn monitor_node_events(mut node_events_rx: NodeEventsReceiver, ctrl_tx: mpsc::Se
 
 fn init_logging(opt: &Opt, peer_id: PeerId) -> Result<(String, ReloadHandle, Option<WorkerGuard>)> {
     let logging_targets = vec![
+        ("ant_bootstrap".to_string(), Level::INFO),
         ("ant_build_info".to_string(), Level::DEBUG),
         ("ant_evm".to_string(), Level::DEBUG),
         ("ant_logging".to_string(), Level::DEBUG),
         ("ant_networking".to_string(), Level::INFO),
         ("ant_node".to_string(), Level::DEBUG),
-        ("ant_peers_acquisition".to_string(), Level::DEBUG),
         ("ant_protocol".to_string(), Level::DEBUG),
         ("ant_registers".to_string(), Level::DEBUG),
         ("antnode".to_string(), Level::DEBUG),

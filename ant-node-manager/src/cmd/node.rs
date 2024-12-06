@@ -18,9 +18,9 @@ use crate::{
     helpers::{download_and_extract_release, get_bin_version},
     print_banner, refresh_node_registry, status_report, ServiceManager, VerbosityLevel,
 };
+use ant_bootstrap::PeersArgs;
 use ant_evm::{EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
-use ant_peers_acquisition::PeersArgs;
 use ant_releases::{AntReleaseRepoActions, ReleaseType};
 use ant_service_management::{
     control::{ServiceControl, ServiceController},
@@ -117,13 +117,13 @@ pub async fn add(
     // If the `antnode` binary we're using has `network-contacts` enabled (which is the case for released binaries),
     // it's fine if the service definition doesn't call `antnode` with a `--peer` argument.
     let is_first = peers_args.first;
-    let bootstrap_peers = match peers_args.get_peers_exclude_network_contacts().await {
+    let bootstrap_peers = match peers_args.get_addrs(None).await {
         Ok(peers) => {
             info!("Obtained peers of length {}", peers.len());
-            peers
+            peers.into_iter().take(10).collect::<Vec<_>>()
         }
         Err(err) => match err {
-            ant_peers_acquisition::error::Error::PeersNotObtained => {
+            ant_bootstrap::error::Error::NoBootstrapPeersFound => {
                 info!("No bootstrap peers obtained, setting empty vec.");
                 Vec::new()
             }

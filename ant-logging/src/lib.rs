@@ -255,6 +255,8 @@ impl LogBuilder {
             None => LogOutputDest::Stdout,
         };
 
+        println!("Logging test at {test_file_name:?} to {output_dest:?}");
+
         let mut layers = TracingLayers::default();
 
         let _reload_handle = layers

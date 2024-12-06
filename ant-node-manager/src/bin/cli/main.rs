@@ -9,6 +9,7 @@
 mod subcommands;
 
 use crate::subcommands::evm_network::EvmNetworkCommand;
+use ant_bootstrap::PeersArgs;
 use ant_evm::RewardsAddress;
 use ant_logging::{LogBuilder, LogFormat};
 use ant_node_manager::{
@@ -16,7 +17,6 @@ use ant_node_manager::{
     cmd::{self},
     VerbosityLevel, DEFAULT_NODE_STARTUP_CONNECTION_TIMEOUT_S,
 };
-use ant_peers_acquisition::PeersArgs;
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::eyre, Result};
 use libp2p::Multiaddr;
@@ -131,11 +131,6 @@ pub enum SubCmd {
         /// This enables the use of antnode services from a home network with a router.
         #[clap(long)]
         home_network: bool,
-        /// Set this flag to launch antnode with the --local flag.
-        ///
-        /// This is useful for building a service-based local network.
-        #[clap(long)]
-        local: bool,
         /// Provide the path for the log directory for the installed node.
         ///
         /// This path is a prefix. Each installed node will have its own directory underneath it.
@@ -1075,7 +1070,6 @@ async fn main() -> Result<()> {
             env_variables,
             evm_network,
             home_network,
-            local,
             log_dir_path,
             log_format,
             max_archived_log_files,
@@ -1103,7 +1097,7 @@ async fn main() -> Result<()> {
                 env_variables,
                 Some(evm_network.try_into()?),
                 home_network,
-                local,
+                peers.local,
                 log_dir_path,
                 log_format,
                 max_archived_log_files,
@@ -1381,9 +1375,9 @@ async fn main() -> Result<()> {
 
 fn get_log_builder(level: Level) -> Result<LogBuilder> {
     let logging_targets = vec![
+        ("ant_bootstrap".to_string(), level),
         ("evmlib".to_string(), level),
         ("evm-testnet".to_string(), level),
-        ("ant_peers_acquisition".to_string(), level),
         ("ant_node_manager".to_string(), level),
         ("antctl".to_string(), level),
         ("antctld".to_string(), level),

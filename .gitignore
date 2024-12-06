@@ -37,7 +37,6 @@ ant-node-manager/.vagrant
 uv.lock
 *.so
 *.pyc
-
-*.pyc
 *.swp
 
+/vendor/
