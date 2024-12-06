@@ -45,6 +45,7 @@ pub async fn get_transaction_receipt_by_hash(
         .get_transaction_receipt(transaction_hash)
         .await
         .inspect_err(|err| error!("Error getting transaction receipt for transaction_hash: {transaction_hash:?} : {err:?}", ))?;
+    debug!("Transaction receipt for {transaction_hash:?}: {maybe_receipt:?}");
     Ok(maybe_receipt)
 }
 

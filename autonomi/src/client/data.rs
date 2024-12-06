@@ -134,6 +134,7 @@ impl Client {
             .fetch_from_data_map_chunk(data_map_chunk.value())
             .await?;
 
+        debug!("Successfully fetched a blob of data from the network");
         Ok(data)
     }
 
@@ -214,7 +215,7 @@ impl Client {
         info!("Getting chunk: {addr:?}");
 
         let key = NetworkAddress::from_chunk_address(ChunkAddress::new(addr)).to_record_key();
-
+        debug!("Fetching chunk from network at: {key:?}");
         let get_cfg = GetRecordCfg {
             get_quorum: Quorum::One,
             retry_strategy: None,
@@ -234,6 +235,10 @@ impl Client {
             let chunk: Chunk = try_deserialize_record(&record)?;
             Ok(chunk)
         } else {
+            error!(
+                "Record kind mismatch: expected Chunk, got {:?}",
+                header.kind
+            );
             Err(NetworkError::RecordKindMismatch(RecordKind::Chunk).into())
         }
     }
@@ -267,6 +272,7 @@ impl Client {
                 .map(|quote| quote.2.cost.as_atto())
                 .sum::<Amount>(),
         );
+        debug!("Total cost calculated: {total_cost:?}");
         Ok(total_cost)
     }
 
