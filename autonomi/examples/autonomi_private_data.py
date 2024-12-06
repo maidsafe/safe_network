@@ -10,12 +10,12 @@ class DataManager:
         
     def store_private_data(self, data: bytes) -> str:
         """Store data privately and return its address"""
-        addr = self.client.private_data_put(data, self.payment)
+        addr = self.client.data_put(data, self.payment)
         return addr
         
     def retrieve_private_data(self, addr: str) -> bytes:
         """Retrieve privately stored data"""
-        return self.client.private_data_get(addr)
+        return self.client.data_get(addr)
         
     def create_shared_register(self, name: str, initial_value: bytes, 
                              allowed_writers: List[str]) -> str:

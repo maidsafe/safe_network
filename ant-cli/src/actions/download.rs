@@ -40,7 +40,7 @@ async fn download_private(
     client: &mut Client,
 ) -> Result<()> {
     let archive = client
-        .private_archive_get(private_address)
+        .archive_get(private_address)
         .await
         .wrap_err("Failed to fetch data from address")?;
 
@@ -48,7 +48,7 @@ async fn download_private(
     let mut all_errs = vec![];
     for (path, access, _meta) in archive.iter() {
         progress_bar.println(format!("Fetching file: {path:?}..."));
-        let bytes = match client.private_data_get(access.clone()).await {
+        let bytes = match client.data_get(access.clone()).await {
             Ok(bytes) => bytes,
             Err(e) => {
                 let err = format!("Failed to fetch file {path:?}: {e}");

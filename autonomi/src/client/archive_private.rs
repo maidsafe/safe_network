@@ -114,16 +114,16 @@ impl PrivateArchive {
 
 impl Client {
     /// Fetch a private archive from the network
-    pub async fn private_archive_get(
+    pub async fn archive_get(
         &self,
         addr: PrivateArchiveAccess,
     ) -> Result<PrivateArchive, GetError> {
-        let data = self.private_data_get(addr).await?;
+        let data = self.data_get(addr).await?;
         Ok(PrivateArchive::from_bytes(data)?)
     }
 
     /// Upload a private archive to the network
-    pub async fn private_archive_put(
+    pub async fn archive_put(
         &self,
         archive: PrivateArchive,
         payment_option: PaymentOption,
@@ -131,7 +131,7 @@ impl Client {
         let bytes = archive
             .into_bytes()
             .map_err(|e| PutError::Serialization(format!("Failed to serialize archive: {e:?}")))?;
-        let result = self.private_data_put(bytes, payment_option).await;
+        let result = self.data_put(bytes, payment_option).await;
         debug!("Uploaded private archive {archive:?} to the network and address is {result:?}");
         result
     }

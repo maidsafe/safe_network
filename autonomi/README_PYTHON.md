@@ -42,8 +42,8 @@ print(f"Retrieved: {retrieved.decode()}")
   - `connect(peers: List[str])`: Connect to network nodes
   - `data_put_public(data: bytes, payment: PaymentOption)`: Upload data
   - `data_get_public(addr: str)`: Download data
-  - `private_data_put(data: bytes, payment: PaymentOption)`: Store private data
-  - `private_data_get(access: PrivateDataAccess)`: Retrieve private data
+  - `data_put(data: bytes, payment: PaymentOption)`: Store private data
+  - `data_get(access: PrivateDataAccess)`: Retrieve private data
   - `register_generate_key()`: Generate register key
 
 - `Wallet`: Ethereum wallet management
@@ -63,9 +63,9 @@ print(f"Retrieved: {retrieved.decode()}")
 
 ```python
 # Private data example
-access = client.private_data_put(secret_data, payment)
+access = client.data_put(secret_data, payment)
 print(f"Private data stored at: {access.to_hex()}")
-retrieved = client.private_data_get(access)
+retrieved = client.data_get(access)
 ```
 
 #### Registers
@@ -138,11 +138,11 @@ def handle_private_data(client, payment):
     data = json.dumps(secret).encode()
     
     # Store privately
-    access = client.private_data_put(data, payment)
+    access = client.data_put(data, payment)
     print(f"Access token: {access.to_hex()}")
     
     # Retrieve
-    retrieved = client.private_data_get(access)
+    retrieved = client.data_get(access)
     secret = json.loads(retrieved.decode())
 ```
 

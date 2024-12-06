@@ -16,12 +16,12 @@ def demonstrate_private_data(client: Client, payment: PaymentOption):
     data_bytes = json.dumps(secret_data).encode()
     
     # Store it privately
-    access = client.private_data_put(data_bytes, payment)
+    access = client.data_put(data_bytes, payment)
     print(f"Stored private data, access token: {access.to_hex()}")
     print(f"Short reference: {access.address()}")
     
     # Retrieve it
-    retrieved_bytes = client.private_data_get(access)
+    retrieved_bytes = client.data_get(access)
     retrieved_data = json.loads(retrieved_bytes.decode())
     print(f"Retrieved private data: {retrieved_data}")
     

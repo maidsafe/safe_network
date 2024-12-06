@@ -115,7 +115,7 @@ impl JsClient {
         wallet: &JsWallet,
     ) -> Result<JsValue, JsError> {
         let data = crate::Bytes::from(data);
-        let private_data_access = self.0.private_data_put(data, (&wallet.0).into()).await?;
+        let private_data_access = self.0.data_put(data, (&wallet.0).into()).await?;
         let js_value = serde_wasm_bindgen::to_value(&private_data_access)?;
 
         Ok(js_value)
@@ -133,7 +133,7 @@ impl JsClient {
     ) -> Result<JsValue, JsError> {
         let data = crate::Bytes::from(data);
         let receipt: Receipt = serde_wasm_bindgen::from_value(receipt)?;
-        let private_data_access = self.0.private_data_put(data, receipt.into()).await?;
+        let private_data_access = self.0.data_put(data, receipt.into()).await?;
         let js_value = serde_wasm_bindgen::to_value(&private_data_access)?;
 
         Ok(js_value)
@@ -153,7 +153,7 @@ impl JsClient {
     pub async fn get_private_data(&self, private_data_access: JsValue) -> Result<Vec<u8>, JsError> {
         let private_data_access: PrivateDataAccess =
             serde_wasm_bindgen::from_value(private_data_access)?;
-        let data = self.0.private_data_get(private_data_access).await?;
+        let data = self.0.data_get(private_data_access).await?;
 
         Ok(data.to_vec())
     }
@@ -335,7 +335,7 @@ mod archive_private {
         ) -> Result<JsPrivateArchive, JsError> {
             let private_archive_access: PrivateArchiveAccess =
                 serde_wasm_bindgen::from_value(private_archive_access)?;
-            let archive = self.0.private_archive_get(private_archive_access).await?;
+            let archive = self.0.archive_get(private_archive_access).await?;
             let archive = JsPrivateArchive(archive);
 
             Ok(archive)
@@ -352,7 +352,7 @@ mod archive_private {
         ) -> Result<JsValue, JsError> {
             let private_archive_access = self
                 .0
-                .private_archive_put(archive.0.clone(), (&wallet.0).into())
+                .archive_put(archive.0.clone(), (&wallet.0).into())
                 .await?;
 
             let js_value = serde_wasm_bindgen::to_value(&private_archive_access)?;
@@ -374,7 +374,7 @@ mod archive_private {
 
             let private_archive_access = self
                 .0
-                .private_archive_put(archive.0.clone(), receipt.into())
+                .archive_put(archive.0.clone(), receipt.into())
                 .await?;
 
             let js_value = serde_wasm_bindgen::to_value(&private_archive_access)?;

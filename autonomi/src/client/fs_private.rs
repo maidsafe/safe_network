@@ -28,12 +28,12 @@ use super::fs::FILE_UPLOAD_BATCH_SIZE;
 
 impl Client {
     /// Download a private file from network to local file system
-    pub async fn private_file_download(
+    pub async fn file_download(
         &self,
         data_access: PrivateDataAccess,
         to_dest: PathBuf,
     ) -> Result<(), DownloadError> {
-        let data = self.private_data_get(data_access).await?;
+        let data = self.data_get(data_access).await?;
         if let Some(parent) = to_dest.parent() {
             tokio::fs::create_dir_all(parent).await?;
             debug!("Created parent directories for {to_dest:?}");
@@ -44,15 +44,14 @@ impl Client {
     }
 
     /// Download a private directory from network to local file system
-    pub async fn private_dir_download(
+    pub async fn dir_download(
         &self,
         archive_access: PrivateArchiveAccess,
         to_dest: PathBuf,
     ) -> Result<(), DownloadError> {
-        let archive = self.private_archive_get(archive_access).await?;
+        let archive = self.archive_get(archive_access).await?;
         for (path, addr, _meta) in archive.iter() {
-            self.private_file_download(addr.clone(), to_dest.join(path))
-                .await?;
+            self.file_download(addr.clone(), to_dest.join(path)).await?;
         }
         debug!("Downloaded directory to {to_dest:?}");
         Ok(())
@@ -60,7 +59,7 @@ impl Client {
 
     /// Upload a private directory to the network. The directory is recursively walked.
     /// Reads all files, splits into chunks, uploads chunks, uploads private archive, returns [`PrivateArchiveAccess`] (pointing to the private archive)
-    pub async fn private_dir_upload(
+    pub async fn dir_upload(
         &self,
         dir_path: PathBuf,
         wallet: &EvmWallet,
@@ -79,7 +78,7 @@ impl Client {
             let metadata = super::fs::metadata_from_entry(&entry);
             let path = entry.path().to_path_buf();
             upload_tasks.push(async move {
-                let file = self.private_file_upload(path.clone(), wallet).await;
+                let file = self.file_upload(path.clone(), wallet).await;
                 (path, metadata, file)
             });
         }
@@ -105,9 +104,7 @@ impl Client {
 
         // upload archive
         let archive_serialized = archive.into_bytes()?;
-        let arch_addr = self
-            .private_data_put(archive_serialized, wallet.into())
-            .await?;
+        let arch_addr = self.data_put(archive_serialized, wallet.into()).await?;
 
         info!(
             "Complete private archive upload completed in {:?}",
@@ -120,7 +117,7 @@ impl Client {
 
     /// Upload a private file to the network.
     /// Reads file, splits into chunks, uploads chunks, uploads datamap, returns [`PrivateDataAccess`] (pointing to the datamap)
-    async fn private_file_upload(
+    async fn file_upload(
         &self,
         path: PathBuf,
         wallet: &EvmWallet,
@@ -131,7 +128,7 @@ impl Client {
 
         let data = tokio::fs::read(path).await?;
         let data = Bytes::from(data);
-        let addr = self.private_data_put(data, wallet.into()).await?;
+        let addr = self.data_put(data, wallet.into()).await?;
         debug!("Uploaded file successfully in the privateAchive: {addr:?}");
         Ok(addr)
     }

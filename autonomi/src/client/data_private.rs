@@ -47,7 +47,7 @@ fn hash_to_short_string(input: &str) -> String {
 
 impl Client {
     /// Fetch a blob of private data from the network
-    pub async fn private_data_get(&self, data_map: PrivateDataAccess) -> Result<Bytes, GetError> {
+    pub async fn data_get(&self, data_map: PrivateDataAccess) -> Result<Bytes, GetError> {
         info!(
             "Fetching private data from Data Map {:?}",
             data_map.0.address()
@@ -61,7 +61,7 @@ impl Client {
     /// Upload a piece of private data to the network. This data will be self-encrypted.
     /// Returns the [`PrivateDataAccess`] containing the map to the encrypted chunks.
     /// This data is private and only accessible with the [`PrivateDataAccess`].
-    pub async fn private_data_put(
+    pub async fn data_put(
         &self,
         data: Bytes,
         payment_option: PaymentOption,

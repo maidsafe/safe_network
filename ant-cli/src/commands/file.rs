@@ -60,7 +60,7 @@ pub async fn upload(file: &str, public: bool, peers: Vec<Multiaddr>) -> Result<(
         local_addr.clone()
     } else {
         let private_data_access = client
-            .private_dir_upload(dir_path, &wallet)
+            .dir_upload(dir_path, &wallet)
             .await
             .wrap_err("Failed to upload file")?;
         local_addr = private_data_access.address();

@@ -28,9 +28,9 @@ def main():
     print(f"Retrieved public data: {retrieved}")
     
     # Upload private data
-    private_access = client.private_data_put(b"Secret message", wallet)
+    private_access = client.data_put(b"Secret message", wallet)
     print(f"Private data access: {private_access}")
-    private_data = client.private_data_get(private_access)
+    private_data = client.data_get(private_access)
     print(f"Retrieved private data: {private_data}")
     
     # Create register
@@ -58,9 +58,9 @@ def main():
     print(f"Retrieved user data: {retrieved_data}")
 
     # Private directory operations
-    private_dir_access = client.private_dir_upload("./test_data", wallet)
+    private_dir_access = client.dir_upload("./test_data", wallet)
     print(f"Uploaded private directory, access: {private_dir_access}")
-    client.private_dir_download(private_dir_access, "./downloaded_private")
+    client.dir_download(private_dir_access, "./downloaded_private")
     print("Downloaded private directory")
 
     # External signer example

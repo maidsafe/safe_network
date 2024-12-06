@@ -39,16 +39,12 @@ impl PyClient {
         Ok(Self { inner: client })
     }
 
-    fn private_data_put(
-        &self,
-        data: Vec<u8>,
-        payment: &PyPaymentOption,
-    ) -> PyResult<PyPrivateDataAccess> {
+    fn data_put(&self, data: Vec<u8>, payment: &PyPaymentOption) -> PyResult<PyPrivateDataAccess> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let access = rt
             .block_on(
                 self.inner
-                    .private_data_put(Bytes::from(data), payment.inner.clone()),
+                    .data_put(Bytes::from(data), payment.inner.clone()),
             )
             .map_err(|e| {
                 pyo3::exceptions::PyValueError::new_err(format!("Failed to put private data: {e}"))
@@ -57,10 +53,10 @@ impl PyClient {
         Ok(PyPrivateDataAccess { inner: access })
     }
 
-    fn private_data_get(&self, access: &PyPrivateDataAccess) -> PyResult<Vec<u8>> {
+    fn data_get(&self, access: &PyPrivateDataAccess) -> PyResult<Vec<u8>> {
         let rt = tokio::runtime::Runtime::new().expect("Could not start tokio runtime");
         let data = rt
-            .block_on(self.inner.private_data_get(access.inner.clone()))
+            .block_on(self.inner.data_get(access.inner.clone()))
             .map_err(|e| {
                 pyo3::exceptions::PyValueError::new_err(format!("Failed to get private data: {e}"))
             })?;
