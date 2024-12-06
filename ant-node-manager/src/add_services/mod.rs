@@ -48,7 +48,7 @@ pub async fn add_node(
     service_control: &dyn ServiceControl,
     verbosity: VerbosityLevel,
 ) -> Result<Vec<String>> {
-    if options.genesis {
+    if options.peers_args.first {
         if let Some(count) = options.count {
             if count > 1 {
                 error!("A genesis node can only be added as a single node");
@@ -56,7 +56,7 @@ pub async fn add_node(
             }
         }
 
-        let genesis_node = node_registry.nodes.iter().find(|n| n.genesis);
+        let genesis_node = node_registry.nodes.iter().find(|n| n.peers_args.first);
         if genesis_node.is_some() {
             error!("A genesis node already exists");
             return Err(eyre!("A genesis node already exists"));
@@ -98,30 +98,11 @@ pub async fn add_node(
         .to_string_lossy()
         .to_string();
 
-    {
-        let mut should_save = false;
-        let new_bootstrap_peers: Vec<_> = options
-            .bootstrap_peers
-            .iter()
-            .filter(|peer| !node_registry.bootstrap_peers.contains(peer))
-            .collect();
-        if !new_bootstrap_peers.is_empty() {
-            node_registry
-                .bootstrap_peers
-                .extend(new_bootstrap_peers.into_iter().cloned());
-            should_save = true;
-        }
-
-        if options.env_variables.is_some() {
-            node_registry
-                .environment_variables
-                .clone_from(&options.env_variables);
-            should_save = true;
-        }
-
-        if should_save {
-            node_registry.save()?;
-        }
+    if options.env_variables.is_some() {
+        node_registry
+            .environment_variables
+            .clone_from(&options.env_variables);
+        node_registry.save()?;
     }
 
     let mut added_service_data = vec![];
@@ -219,13 +200,10 @@ pub async fn add_node(
 
         let install_ctx = InstallNodeServiceCtxBuilder {
             autostart: options.auto_restart,
-            bootstrap_peers: options.bootstrap_peers.clone(),
             data_dir_path: service_data_dir_path.clone(),
             env_variables: options.env_variables.clone(),
             evm_network: options.evm_network.clone(),
-            genesis: options.genesis,
             home_network: options.home_network,
-            local: options.local,
             log_dir_path: service_log_dir_path.clone(),
             log_format: options.log_format,
             max_archived_log_files: options.max_archived_log_files,
@@ -235,6 +213,7 @@ pub async fn add_node(
             node_ip: options.node_ip,
             node_port,
             owner: owner.clone(),
+            peers_args: options.peers_args.clone(),
             rewards_address: options.rewards_address,
             rpc_socket_addr,
             antnode_path: service_antnode_path.clone(),
@@ -260,10 +239,8 @@ pub async fn add_node(
                     connected_peers: None,
                     data_dir_path: service_data_dir_path.clone(),
                     evm_network: options.evm_network.clone(),
-                    genesis: options.genesis,
                     home_network: options.home_network,
                     listen_addr: None,
-                    local: options.local,
                     log_dir_path: service_log_dir_path.clone(),
                     log_format: options.log_format,
                     max_archived_log_files: options.max_archived_log_files,
@@ -277,6 +254,7 @@ pub async fn add_node(
                     rpc_socket_addr,
                     owner: owner.clone(),
                     peer_id: None,
+                    peers_args: options.peers_args.clone(),
                     pid: None,
                     service_name,
                     status: ServiceStatus::Added,
@@ -381,7 +359,6 @@ pub fn add_auditor(
     let install_ctx = InstallAuditorServiceCtxBuilder {
         auditor_path: install_options.auditor_install_bin_path.clone(),
         beta_encryption_key: install_options.beta_encryption_key.clone(),
-        bootstrap_peers: install_options.bootstrap_peers.clone(),
         env_variables: install_options.env_variables.clone(),
         log_dir_path: install_options.service_log_dir_path.clone(),
         name: "auditor".to_string(),
@@ -525,7 +502,6 @@ pub fn add_faucet(
     )?;
 
     let install_ctx = InstallFaucetServiceCtxBuilder {
-        bootstrap_peers: install_options.bootstrap_peers.clone(),
         env_variables: install_options.env_variables.clone(),
         faucet_path: install_options.faucet_install_bin_path.clone(),
         local: install_options.local,

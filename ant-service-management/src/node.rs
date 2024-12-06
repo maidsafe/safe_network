@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{error::Result, rpc::RpcActions, ServiceStateActions, ServiceStatus, UpgradeOptions};
+use ant_bootstrap::PeersArgs;
 use ant_evm::{AttoTokens, EvmNetwork, RewardsAddress};
 use ant_logging::LogFormat;
 use ant_protocol::get_port_from_multiaddr;
@@ -71,12 +72,7 @@ impl ServiceStateActions for NodeService<'_> {
             OsString::from(self.service_data.log_dir_path.to_string_lossy().to_string()),
         ];
 
-        if self.service_data.genesis {
-            args.push(OsString::from("--first"));
-        }
-        if self.service_data.local {
-            args.push(OsString::from("--local"));
-        }
+        push_arguments_from_peers_args(&self.service_data.peers_args, &mut args);
         if let Some(log_fmt) = self.service_data.log_format {
             args.push(OsString::from("--log-format"));
             args.push(OsString::from(log_fmt.as_str()));
@@ -113,17 +109,6 @@ impl ServiceStateActions for NodeService<'_> {
         if let Some(owner) = &self.service_data.owner {
             args.push(OsString::from("--owner"));
             args.push(OsString::from(owner));
-        }
-
-        if !options.bootstrap_peers.is_empty() {
-            let peers_str = options
-                .bootstrap_peers
-                .iter()
-                .map(|peer| peer.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
-            args.push(OsString::from("--peer"));
-            args.push(OsString::from(peers_str));
         }
 
         args.push(OsString::from("--rewards-address"));
@@ -291,10 +276,8 @@ pub struct NodeServiceData {
     pub data_dir_path: PathBuf,
     #[serde(default)]
     pub evm_network: EvmNetwork,
-    pub genesis: bool,
     pub home_network: bool,
     pub listen_addr: Option<Vec<Multiaddr>>,
-    pub local: bool,
     pub log_dir_path: PathBuf,
     pub log_format: Option<LogFormat>,
     pub max_archived_log_files: Option<usize>,
@@ -313,6 +296,7 @@ pub struct NodeServiceData {
         deserialize_with = "deserialize_peer_id"
     )]
     pub peer_id: Option<PeerId>,
+    pub peers_args: PeersArgs,
     pub pid: Option<u32>,
     #[serde(default)]
     pub rewards_address: RewardsAddress,
@@ -402,5 +386,42 @@ impl NodeServiceData {
             }
         }
         None
+    }
+}
+
+/// Pushes arguments from the `PeersArgs` struct to the provided `args` vector.
+pub fn push_arguments_from_peers_args(peers_args: &PeersArgs, args: &mut Vec<OsString>) {
+    if peers_args.first {
+        args.push(OsString::from("--first"));
+    }
+    if peers_args.local {
+        args.push(OsString::from("--local"));
+    }
+    if !peers_args.addrs.is_empty() {
+        let peers_str = peers_args
+            .addrs
+            .iter()
+            .map(|peer| peer.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        args.push(OsString::from("--peer"));
+        args.push(OsString::from(peers_str));
+    }
+    if !peers_args.network_contacts_url.is_empty() {
+        args.push(OsString::from("--network-contacts-url"));
+        args.push(OsString::from(
+            peers_args
+                .network_contacts_url
+                .iter()
+                .map(|url| url.to_string())
+                .collect::<Vec<_>>()
+                .join(","),
+        ));
+    }
+    if peers_args.disable_mainnet_contacts {
+        args.push(OsString::from("--testnet"));
+    }
+    if peers_args.ignore_cache {
+        args.push(OsString::from("--ignore-cache"));
     }
 }
