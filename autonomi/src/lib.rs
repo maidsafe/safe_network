@@ -79,7 +79,7 @@ pub use bytes::Bytes;
 pub use libp2p::Multiaddr;
 
 #[doc(inline)]
-pub use client::Client;
+pub use client::{files::archive::PrivateArchive, Client};
 
 #[cfg(feature = "extension-module")]
 mod python;

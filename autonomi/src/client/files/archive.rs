@@ -24,9 +24,7 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// The address of a private archive.
-///
-/// Contains the [`DataMapChunk`] leading to the [`PrivateArchive`] data
+/// Private archive data map, allowing access to the [`PrivateArchive`] data.
 pub type PrivateArchiveAccess = DataMapChunk;
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -65,8 +63,9 @@ impl Metadata {
     }
 }
 
-/// A private archive of files that containing file paths, their metadata and the files data maps
-/// Using archives is useful for uploading entire directories to the network, only needing to keep track of a single address.
+/// Directory structure mapping filepaths to their data maps and metadata.
+///
+/// The data maps are stored within this structure instead of uploading them to the network, keeping the data private.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct PrivateArchive {
     map: HashMap<PathBuf, (DataMapChunk, Metadata)>,
@@ -121,8 +120,9 @@ impl PrivateArchive {
             .collect()
     }
 
-    /// Iterate over the archive items
-    /// Returns an iterator over (PathBuf, SecretDataMap, Metadata)
+    /// Iterate over the archive items.
+    ///
+    /// Returns an iterator over ([`PathBuf`], [`DataMapChunk`], [`Metadata`])
     pub fn iter(&self) -> impl Iterator<Item = (&PathBuf, &DataMapChunk, &Metadata)> {
         self.map
             .iter()
@@ -151,7 +151,7 @@ impl PrivateArchive {
 }
 
 impl Client {
-    /// Fetch a private archive from the network
+    /// Fetch a [`PrivateArchive`] from the network
     pub async fn archive_get(
         &self,
         addr: PrivateArchiveAccess,
@@ -160,7 +160,7 @@ impl Client {
         Ok(PrivateArchive::from_bytes(data)?)
     }
 
-    /// Upload a private archive to the network
+    /// Upload a [`PrivateArchive`] to the network
     pub async fn archive_put(
         &self,
         archive: PrivateArchive,

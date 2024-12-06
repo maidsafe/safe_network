@@ -59,10 +59,15 @@ pub async fn upload(file: &str, public: bool, peers: Vec<Multiaddr>) -> Result<(
         local_addr = addr_to_str(xor_name);
         local_addr.clone()
     } else {
-        let private_data_access = client
+        let private_archive = client
             .dir_upload(dir_path, &wallet)
             .await
             .wrap_err("Failed to upload file")?;
+        let private_data_access = client
+            .archive_put(private_archive, (&wallet).into())
+            .await
+            .wrap_err("Failed to upload private archive")?;
+
         local_addr = private_data_access.address();
         private_data_access.to_hex()
     };

@@ -15,7 +15,7 @@ use ant_networking::target_arch::{Duration, SystemTime};
 use bytes::Bytes;
 use std::path::PathBuf;
 
-use super::archive_public::{Archive, ArchiveAddr};
+use super::archive_public::{ArchiveAddr, PublicArchive};
 use super::fs::*;
 
 impl Client {
@@ -88,7 +88,7 @@ impl Client {
             uploads.len(),
             start.elapsed()
         );
-        let mut archive = Archive::new();
+        let mut archive = PublicArchive::new();
         for (path, metadata, maybe_file) in uploads.into_iter() {
             match maybe_file {
                 Ok(file) => archive.add_file(path, file, metadata),
@@ -133,7 +133,7 @@ impl Client {
     /// Get the cost to upload a file/dir to the network.
     /// quick and dirty implementation, please refactor once files are cleanly implemented
     pub async fn file_cost(&self, path: &PathBuf) -> Result<ant_evm::AttoTokens, FileCostError> {
-        let mut archive = Archive::new();
+        let mut archive = PublicArchive::new();
         let mut total_cost = ant_evm::Amount::ZERO;
 
         for entry in walkdir::WalkDir::new(path) {

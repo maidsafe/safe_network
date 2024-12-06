@@ -112,13 +112,13 @@ impl Client {
         Ok(())
     }
 
-    /// Upload a private directory to the network. The directory is recursively walked.
-    /// Reads all files, splits into chunks, uploads chunks, uploads private archive, returns [`PrivateArchiveAccess`] (pointing to the private archive)
+    /// Upload a directory to the network. The directory is recursively walked and each file is uploaded to the network.
+    /// The data maps of these (private) files are not uploaded but returned within the [`PrivateArchive`] return type.
     pub async fn dir_upload(
         &self,
         dir_path: PathBuf,
         wallet: &EvmWallet,
-    ) -> Result<PrivateArchiveAccess, UploadError> {
+    ) -> Result<PrivateArchive, UploadError> {
         info!("Uploading directory as private: {dir_path:?}");
         let start = tokio::time::Instant::now();
 
@@ -157,17 +157,9 @@ impl Client {
             }
         }
 
-        // upload archive
-        let archive_serialized = archive.into_bytes()?;
-        let arch_addr = self.data_put(archive_serialized, wallet.into()).await?;
-
-        info!(
-            "Complete private archive upload completed in {:?}",
-            start.elapsed()
-        );
         #[cfg(feature = "loud")]
         println!("Upload completed in {:?}", start.elapsed());
-        Ok(arch_addr)
+        Ok(archive)
     }
 
     /// Upload a private file to the network.
