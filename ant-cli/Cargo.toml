@@ -17,7 +17,6 @@ path = "src/main.rs"
 default = ["metrics"]
 local = ["ant-bootstrap/local", "autonomi/local"]
 metrics = ["ant-logging/process-metrics"]
-websockets = ["autonomi/websockets"]
 
 [[bench]]
 name = "files"
