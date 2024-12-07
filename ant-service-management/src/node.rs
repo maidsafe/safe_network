@@ -424,4 +424,8 @@ pub fn push_arguments_from_peers_args(peers_args: &PeersArgs, args: &mut Vec<OsS
     if peers_args.ignore_cache {
         args.push(OsString::from("--ignore-cache"));
     }
+    if let Some(path) = &peers_args.bootstrap_cache_dir {
+        args.push(OsString::from("--bootstrap-cache-dir"));
+        args.push(OsString::from(path.to_string_lossy().to_string()));
+    }
 }

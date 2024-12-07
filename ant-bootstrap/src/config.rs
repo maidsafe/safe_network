@@ -118,8 +118,13 @@ fn default_cache_path() -> Result<PathBuf> {
 
     std::fs::create_dir_all(&dir)?;
 
-    let network_id = format!("{}_{}", get_key_version_str(), get_truncate_version_str());
-    let path = dir.join(format!("bootstrap_cache_{}.json", network_id));
+    let path = dir.join(cache_file_name());
 
     Ok(path)
+}
+
+/// Returns the name of the cache file
+pub fn cache_file_name() -> String {
+    let network_id = format!("{}_{}", get_key_version_str(), get_truncate_version_str());
+    format!("bootstrap_cache_{network_id}.json")
 }

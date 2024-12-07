@@ -49,6 +49,7 @@ async fn test_multiaddr_format_parsing() -> Result<(), Box<dyn std::error::Error
             local: false,
             disable_mainnet_contacts: false,
             ignore_cache: false,
+            bootstrap_cache_dir: None,
         };
 
         let bootstrap_addresses = args.get_bootstrap_addr(None).await?;
@@ -86,6 +87,7 @@ async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>
         local: false,
         disable_mainnet_contacts: false,
         ignore_cache: false,
+        bootstrap_cache_dir: None,
     };
 
     let addrs = args.get_bootstrap_addr(None).await?;
