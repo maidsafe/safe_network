@@ -7,6 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    config::cache_file_name,
     craft_valid_multiaddr, craft_valid_multiaddr_from_str,
     error::{Error, Result},
     BootstrapAddr, BootstrapCacheConfig, BootstrapCacheStore, ContactsFetcher,
@@ -14,6 +15,7 @@ use crate::{
 use clap::Args;
 use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use url::Url;
 
 /// The name of the environment variable that can be used to pass peers to the node.
@@ -61,17 +63,27 @@ pub struct PeersArgs {
     /// This disables fetching peers from the mainnet network contacts.
     #[clap(name = "testnet", long)]
     pub disable_mainnet_contacts: bool,
-
     /// Set to not load the bootstrap addresses from the local cache.
     #[clap(long, default_value = "false")]
     pub ignore_cache: bool,
+    /// The directory to load and store the bootstrap cache. If not provided, the default path will be used.
+    ///
+    /// The JSON filename will be derived automatically from the network ID
+    ///
+    /// The default location is platform specific:
+    ///  - Linux: $HOME/.local/share/autonomi/bootstrap_cache/bootstrap_cache_<network_id>.json
+    ///  - macOS: $HOME/Library/Application Support/autonomi/bootstrap_cache/bootstrap_cache_<network_id>.json
+    ///  - Windows: C:\Users\<username>\AppData\Roaming\autonomi\bootstrap_cache\bootstrap_cache_<network_id>.json
+    #[clap(long)]
+    pub bootstrap_cache_dir: Option<PathBuf>,
 }
+
 impl PeersArgs {
     /// Get bootstrap peers
     /// Order of precedence:
     /// 1. Addresses from arguments
     /// 2. Addresses from environment variable SAFE_PEERS
-    /// 3. Addresses from cache
+    /// 3. Addresses from cache. `Self::bootstrap_cache_dir` will take precedence over the path provided inside `config`
     /// 4. Addresses from network contacts URL
     pub async fn get_addrs(&self, config: Option<BootstrapCacheConfig>) -> Result<Vec<Multiaddr>> {
         Ok(self
@@ -86,7 +98,7 @@ impl PeersArgs {
     /// Order of precedence:
     /// 1. Addresses from arguments
     /// 2. Addresses from environment variable SAFE_PEERS
-    /// 3. Addresses from cache
+    /// 3. Addresses from cache. `Self::bootstrap_cache_dir` will take precedence over the path provided inside `config`
     /// 4. Addresses from network contacts URL
     pub async fn get_bootstrap_addr(
         &self,
@@ -147,7 +159,10 @@ impl PeersArgs {
             } else {
                 BootstrapCacheConfig::default_config().ok()
             };
-            if let Some(cfg) = cfg {
+            if let Some(mut cfg) = cfg {
+                if let Some(file_path) = self.get_bootstrap_cache_path()? {
+                    cfg.cache_file_path = file_path;
+                }
                 info!("Loading bootstrap addresses from cache");
                 if let Ok(data) = BootstrapCacheStore::load_cache_data(&cfg) {
                     bootstrap_addresses = data
@@ -205,5 +220,23 @@ impl PeersArgs {
             }
         }
         bootstrap_addresses
+    }
+
+    /// Get the path to the bootstrap cache JSON file if `Self::bootstrap_cache_dir` is set
+    pub fn get_bootstrap_cache_path(&self) -> Result<Option<PathBuf>> {
+        if let Some(dir) = &self.bootstrap_cache_dir {
+            if dir.is_file() {
+                return Err(Error::InvalidBootstrapCacheDir);
+            }
+
+            if !dir.exists() {
+                std::fs::create_dir_all(dir)?;
+            }
+
+            let path = dir.join(cache_file_name());
+            Ok(Some(path))
+        } else {
+            Ok(None)
+        }
     }
 }
