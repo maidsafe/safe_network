@@ -45,10 +45,11 @@ async fn test_multiaddr_format_parsing() -> Result<(), Box<dyn std::error::Error
         let args = PeersArgs {
             first: false,
             addrs: vec![addr.clone()],
-            network_contacts_url: None,
+            network_contacts_url: vec![],
             local: false,
             disable_mainnet_contacts: false,
             ignore_cache: false,
+            bootstrap_cache_dir: None,
         };
 
         let bootstrap_addresses = args.get_bootstrap_addr(None).await?;
@@ -82,10 +83,11 @@ async fn test_network_contacts_format() -> Result<(), Box<dyn std::error::Error>
     let args = PeersArgs {
         first: false,
         addrs: vec![],
-        network_contacts_url: Some(format!("{}/peers", mock_server.uri()).parse()?),
+        network_contacts_url: vec![format!("{}/peers", mock_server.uri()).parse()?],
         local: false,
         disable_mainnet_contacts: false,
         ignore_cache: false,
+        bootstrap_cache_dir: None,
     };
 
     let addrs = args.get_bootstrap_addr(None).await?;

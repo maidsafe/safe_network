@@ -1097,7 +1097,6 @@ async fn main() -> Result<()> {
                 env_variables,
                 Some(evm_network.try_into()?),
                 home_network,
-                peers.local,
                 log_dir_path,
                 log_format,
                 max_archived_log_files,

@@ -7,19 +7,22 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{
+    config::cache_file_name,
     craft_valid_multiaddr, craft_valid_multiaddr_from_str,
     error::{Error, Result},
     BootstrapAddr, BootstrapCacheConfig, BootstrapCacheStore, ContactsFetcher,
 };
 use clap::Args;
 use libp2p::Multiaddr;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use url::Url;
 
 /// The name of the environment variable that can be used to pass peers to the node.
 pub const ANT_PEERS_ENV: &str = "ANT_PEERS";
 
 /// Command line arguments for peer configuration
-#[derive(Args, Debug, Clone, Default)]
+#[derive(Args, Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct PeersArgs {
     /// Set to indicate this is the first node in a new network
     ///
@@ -41,16 +44,15 @@ pub struct PeersArgs {
         long = "peer",
         value_name = "multiaddr",
         value_delimiter = ',',
-        conflicts_with = "first",
-        value_parser = parse_multiaddr_str
+        conflicts_with = "first"
     )]
     pub addrs: Vec<Multiaddr>,
     /// Specify the URL to fetch the network contacts from.
     ///
     /// The URL can point to a text file containing Multiaddresses separated by newline character, or
     /// a bootstrap cache JSON file.
-    #[clap(long, conflicts_with = "first")]
-    pub network_contacts_url: Option<Url>,
+    #[clap(long, conflicts_with = "first", value_delimiter = ',')]
+    pub network_contacts_url: Vec<String>,
     /// Set to indicate this is a local network. You could also set the `local` feature flag to set this to true.
     ///
     /// This would use mDNS for peer discovery.
@@ -59,19 +61,29 @@ pub struct PeersArgs {
     /// Set to indicate this is a testnet.
     ///
     /// This disables fetching peers from the mainnet network contacts.
-    #[clap(name = "testnet", long, conflicts_with = "network_contacts_url")]
+    #[clap(name = "testnet", long)]
     pub disable_mainnet_contacts: bool,
-
     /// Set to not load the bootstrap addresses from the local cache.
     #[clap(long, default_value = "false")]
     pub ignore_cache: bool,
+    /// The directory to load and store the bootstrap cache. If not provided, the default path will be used.
+    ///
+    /// The JSON filename will be derived automatically from the network ID
+    ///
+    /// The default location is platform specific:
+    ///  - Linux: $HOME/.local/share/autonomi/bootstrap_cache/bootstrap_cache_<network_id>.json
+    ///  - macOS: $HOME/Library/Application Support/autonomi/bootstrap_cache/bootstrap_cache_<network_id>.json
+    ///  - Windows: C:\Users\<username>\AppData\Roaming\autonomi\bootstrap_cache\bootstrap_cache_<network_id>.json
+    #[clap(long)]
+    pub bootstrap_cache_dir: Option<PathBuf>,
 }
+
 impl PeersArgs {
     /// Get bootstrap peers
     /// Order of precedence:
     /// 1. Addresses from arguments
     /// 2. Addresses from environment variable SAFE_PEERS
-    /// 3. Addresses from cache
+    /// 3. Addresses from cache. `Self::bootstrap_cache_dir` will take precedence over the path provided inside `config`
     /// 4. Addresses from network contacts URL
     pub async fn get_addrs(&self, config: Option<BootstrapCacheConfig>) -> Result<Vec<Multiaddr>> {
         Ok(self
@@ -86,7 +98,7 @@ impl PeersArgs {
     /// Order of precedence:
     /// 1. Addresses from arguments
     /// 2. Addresses from environment variable SAFE_PEERS
-    /// 3. Addresses from cache
+    /// 3. Addresses from cache. `Self::bootstrap_cache_dir` will take precedence over the path provided inside `config`
     /// 4. Addresses from network contacts URL
     pub async fn get_bootstrap_addr(
         &self,
@@ -115,23 +127,21 @@ impl PeersArgs {
                 warn!("Invalid multiaddress format from arguments: {addr}");
             }
         }
-
         // Read from ANT_PEERS environment variable if present
-        if let Ok(addrs) = std::env::var(ANT_PEERS_ENV) {
-            for addr_str in addrs.split(',') {
-                if let Some(addr) = craft_valid_multiaddr_from_str(addr_str, false) {
-                    info!("Adding addr from environment variable: {addr}");
-                    bootstrap_addresses.push(BootstrapAddr::new(addr));
-                } else {
-                    warn!("Invalid multiaddress format from environment variable: {addr_str}");
-                }
-            }
-        }
+        bootstrap_addresses.extend(Self::read_bootstrap_addr_from_env());
 
         // If we have a network contacts URL, fetch addrs from there.
-        if let Some(url) = self.network_contacts_url.clone() {
-            info!("Fetching bootstrap address from network contacts URL: {url}",);
-            let contacts_fetcher = ContactsFetcher::with_endpoints(vec![url])?;
+        if !self.network_contacts_url.is_empty() {
+            info!(
+                "Fetching bootstrap address from network contacts URLs: {:?}",
+                self.network_contacts_url
+            );
+            let addrs = self
+                .network_contacts_url
+                .iter()
+                .map(|url| url.parse::<Url>().map_err(|_| Error::FailedToParseUrl))
+                .collect::<Result<Vec<Url>>>()?;
+            let contacts_fetcher = ContactsFetcher::with_endpoints(addrs)?;
             let addrs = contacts_fetcher.fetch_bootstrap_addresses().await?;
             bootstrap_addresses.extend(addrs);
         }
@@ -149,7 +159,10 @@ impl PeersArgs {
             } else {
                 BootstrapCacheConfig::default_config().ok()
             };
-            if let Some(cfg) = cfg {
+            if let Some(mut cfg) = cfg {
+                if let Some(file_path) = self.get_bootstrap_cache_path()? {
+                    cfg.cache_file_path = file_path;
+                }
                 info!("Loading bootstrap addresses from cache");
                 if let Ok(data) = BootstrapCacheStore::load_cache_data(&cfg) {
                     bootstrap_addresses = data
@@ -185,8 +198,45 @@ impl PeersArgs {
             Err(Error::NoBootstrapPeersFound)
         }
     }
-}
 
-pub fn parse_multiaddr_str(addr: &str) -> std::result::Result<Multiaddr, libp2p::multiaddr::Error> {
-    addr.parse::<Multiaddr>()
+    pub fn read_addr_from_env() -> Vec<Multiaddr> {
+        Self::read_bootstrap_addr_from_env()
+            .into_iter()
+            .map(|addr| addr.addr)
+            .collect()
+    }
+
+    pub fn read_bootstrap_addr_from_env() -> Vec<BootstrapAddr> {
+        let mut bootstrap_addresses = Vec::new();
+        // Read from ANT_PEERS environment variable if present
+        if let Ok(addrs) = std::env::var(ANT_PEERS_ENV) {
+            for addr_str in addrs.split(',') {
+                if let Some(addr) = craft_valid_multiaddr_from_str(addr_str, false) {
+                    info!("Adding addr from environment variable: {addr}");
+                    bootstrap_addresses.push(BootstrapAddr::new(addr));
+                } else {
+                    warn!("Invalid multiaddress format from environment variable: {addr_str}");
+                }
+            }
+        }
+        bootstrap_addresses
+    }
+
+    /// Get the path to the bootstrap cache JSON file if `Self::bootstrap_cache_dir` is set
+    pub fn get_bootstrap_cache_path(&self) -> Result<Option<PathBuf>> {
+        if let Some(dir) = &self.bootstrap_cache_dir {
+            if dir.is_file() {
+                return Err(Error::InvalidBootstrapCacheDir);
+            }
+
+            if !dir.exists() {
+                std::fs::create_dir_all(dir)?;
+            }
+
+            let path = dir.join(cache_file_name());
+            Ok(Some(path))
+        } else {
+            Ok(None)
+        }
+    }
 }
