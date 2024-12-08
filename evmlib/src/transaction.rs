@@ -36,6 +36,7 @@ pub async fn verify_data_payment(
     let is_paid = payment_vault
         .verify_payment(quoting_metrics, (quote_hash, reward_addr, Amount::ZERO))
         .await?;
+
     let amount_paid = Amount::ZERO; // NB TODO @mick we need to get the amount paid from the contract
 
     if is_paid {

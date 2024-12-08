@@ -123,6 +123,8 @@ pub enum CostError {
     CouldNotGetStoreCosts(NetworkError),
     #[error("Failed to serialize {0}")]
     Serialization(String),
+    #[error("Payment vault error: {0:?}")]
+    PaymentVaultError(ant_evm::payment_vault::error::Error),
 }
 
 impl Client {
