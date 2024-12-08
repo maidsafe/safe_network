@@ -6,18 +6,16 @@
 // KIND, either express or implied. Please review the Licences for the specific language governing
 // permissions and limitations relating to use of the SAFE Network Software.
 
-use ant_evm::{PaymentQuote, ProofOfPayment, QuoteHash, TxHash};
-use ant_evm::{Amount, AttoTokens, QuotePayment};
-use ant_networking::{Network, NetworkError, SelectedQuotes};
-use ant_protocol::{
-    storage::ChunkAddress,
-    NetworkAddress,
-};
-use xor_name::XorName;
-use std::collections::{BTreeMap, HashMap};
-
-use crate::client::payment::Receipt;
 use super::{data::CostError, Client};
+use crate::client::payment::Receipt;
+use crate::EvmNetwork;
+use ant_evm::payment_vault::get_quote;
+use ant_evm::{Amount, AttoTokens, QuotePayment};
+use ant_evm::{ProofOfPayment, QuoteHash, TxHash};
+use ant_networking::{Network, NetworkError, SelectedQuotes};
+use ant_protocol::{storage::ChunkAddress, NetworkAddress};
+use std::collections::{BTreeMap, HashMap};
+use xor_name::XorName;
 
 pub struct QuotesToPay {
     pub nodes_to_pay: Vec<QuotePayment>,
@@ -29,6 +27,7 @@ pub struct QuotesToPay {
 impl Client {
     pub(crate) async fn get_store_quotes(
         &self,
+        network: &EvmNetwork,
         content_addrs: impl Iterator<Item = XorName>,
     ) -> Result<HashMap<XorName, QuotesToPay>, CostError> {
         let futures: Vec<_> = content_addrs
@@ -39,23 +38,38 @@ impl Client {
         let quotes = futures::future::try_join_all(futures).await?;
 
         let mut quotes_to_pay_per_addr = HashMap::new();
-        for (content_addr, quotes) in quotes {
-            // NB TODO: get cost from smart contract for each quote and set this value to the median of all quotes!
-            let cost_per_node = Amount::from(1); 
+
+        for (content_addr, selected_quotes) in quotes {
+            let mut prices: Vec<Amount> = vec![];
+
+            for quote in selected_quotes.quotes {
+                let price = get_quote(network, quote.1.quoting_metrics.clone()).await?;
+                prices.push(price);
+            }
+
+            // TODO: set the cost per node by picking the median price of the prices above @anselme
+            let cost_per_node = Amount::from(1);
 
             // NB TODO: that's all the nodes except the invalid ones (rejected by smart contract)
-            let nodes_to_pay: Vec<_> = quotes.iter().map(|(_, q)| (q.hash(), q.rewards_address, cost_per_node)).collect();
-            
+            let nodes_to_pay: Vec<_> = selected_quotes
+                .quotes
+                .iter()
+                .map(|(_, q)| (q.hash(), q.rewards_address, cost_per_node))
+                .collect();
+
             // NB TODO: that's the lower half (quotes under or equal to the median price)
-            let nodes_to_upload_to = quotes.clone();            
+            let nodes_to_upload_to = quotes.clone();
 
             let total_cost = cost_per_node * Amount::from(nodes_to_pay.len());
-            quotes_to_pay_per_addr.insert(content_addr, QuotesToPay {
-                nodes_to_pay,
-                nodes_to_upload_to,
-                cost_per_node: AttoTokens::from_atto(cost_per_node),
-                total_cost: AttoTokens::from_atto(total_cost),
-            });
+            quotes_to_pay_per_addr.insert(
+                content_addr,
+                QuotesToPay {
+                    nodes_to_pay,
+                    nodes_to_upload_to,
+                    cost_per_node: AttoTokens::from_atto(cost_per_node),
+                    total_cost: AttoTokens::from_atto(total_cost),
+                },
+            );
         }
 
         Ok(quotes_to_pay_per_addr)
@@ -66,7 +80,7 @@ impl Client {
 async fn fetch_store_quote(
     network: &Network,
     content_addr: XorName,
-) -> Result<Vec<SelectedQuotes>, NetworkError> {
+) -> Result<SelectedQuotes, NetworkError> {
     network
         .get_store_quote_from_network(
             NetworkAddress::from_chunk_address(ChunkAddress::new(content_addr)),
@@ -79,7 +93,7 @@ async fn fetch_store_quote(
 async fn fetch_store_quote_with_retries(
     network: &Network,
     content_addr: XorName,
-) -> Result<(XorName, Vec<SelectedQuotes>), CostError> {
+) -> Result<(XorName, SelectedQuotes), CostError> {
     let mut retries = 0;
 
     loop {

@@ -672,8 +672,7 @@ impl Node {
                 ))
             })?
             .as_secs();
-        // NB TODO @mick: can we check if the quote has expired with block time in evmlib? Or should nodes do it manually here? Else keep the block below
-        // manually check if the quote has expired
+
         if quote_expiration_time < SystemTime::now() {
             warn!("Payment quote has expired for record {pretty_key}");
             return Err(Error::InvalidRequest(format!(
@@ -683,7 +682,8 @@ impl Node {
 
         // check if payment is valid on chain
         debug!("Verifying payment for record {pretty_key}");
-        let reward_amount = self.evm_network()
+        let reward_amount = self
+            .evm_network()
             .verify_data_payment(
                 payment.quote.hash(),
                 payment.quote.quoting_metrics,
@@ -707,7 +707,10 @@ impl Node {
                 .set(new_value);
         }
         self.events_channel()
-            .broadcast(crate::NodeEvent::RewardReceived(AttoTokens::from(reward_amount), address.clone()));
+            .broadcast(crate::NodeEvent::RewardReceived(
+                AttoTokens::from(reward_amount),
+                address.clone(),
+            ));
 
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}");
@@ -716,7 +719,9 @@ impl Node {
         #[cfg(feature = "loud")]
         {
             println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟   RECEIVED REWARD   🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
-            println!("Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}");
+            println!(
+                "Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}"
+            );
             println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
         }
 
