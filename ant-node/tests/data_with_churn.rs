@@ -285,7 +285,12 @@ fn create_registers_task(
             let mut retries = 1;
             loop {
                 match client
-                    .register_create(random_data.clone(), &random_name, owner.clone(), &wallet)
+                    .register_create(
+                        Some(random_data.clone()),
+                        &random_name,
+                        owner.clone(),
+                        &wallet,
+                    )
                     .await
                 {
                     Ok(register) => {
