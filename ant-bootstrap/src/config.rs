@@ -7,7 +7,7 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::error::{Error, Result};
-use ant_protocol::version::{get_key_version_str, get_truncate_version_str};
+use ant_protocol::version::get_protocol_version;
 use std::{
     path::{Path, PathBuf},
     time::Duration,
@@ -118,7 +118,7 @@ fn default_cache_path() -> Result<PathBuf> {
 
     std::fs::create_dir_all(&dir)?;
 
-    let network_id = format!("{}_{}", get_key_version_str(), get_truncate_version_str());
+    let network_id = get_protocol_version();
     let path = dir.join(format!("bootstrap_cache_{}.json", network_id));
 
     Ok(path)
