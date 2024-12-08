@@ -22,7 +22,7 @@ use ant_node::{Marker, NodeBuilder, NodeEvent, NodeEventsReceiver};
 use ant_protocol::{
     node::get_antnode_root_dir,
     node_rpc::{NodeCtrl, StopResult},
-    version::IDENTIFY_PROTOCOL_STR,
+    version::PROTOCOL_VERSION,
 };
 use clap::{command, Parser};
 use color_eyre::{eyre::eyre, Result};
@@ -223,7 +223,7 @@ fn main() -> Result<()> {
             ant_build_info::version_string(
                 "Autonomi Node",
                 env!("CARGO_PKG_VERSION"),
-                Some(&IDENTIFY_PROTOCOL_STR)
+                Some(&PROTOCOL_VERSION)
             )
         );
         return Ok(());
@@ -240,7 +240,7 @@ fn main() -> Result<()> {
     }
 
     if opt.protocol_version {
-        println!("Network version: {}", *IDENTIFY_PROTOCOL_STR);
+        println!("Network version: {}", *PROTOCOL_VERSION);
         return Ok(());
     }
 
@@ -279,7 +279,7 @@ fn main() -> Result<()> {
     );
     info!("\n{}\n{}", msg, "=".repeat(msg.len()));
 
-    ant_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &IDENTIFY_PROTOCOL_STR);
+    ant_build_info::log_version_info(env!("CARGO_PKG_VERSION"), &PROTOCOL_VERSION);
     debug!(
         "antnode built with git version: {}",
         ant_build_info::git_info()

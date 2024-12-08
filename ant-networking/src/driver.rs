@@ -35,8 +35,7 @@ use ant_protocol::{
     messages::{ChunkProof, Nonce, Request, Response},
     storage::{try_deserialize_record, RetryStrategy},
     version::{
-        get_key_version_str, IDENTIFY_CLIENT_VERSION_STR, IDENTIFY_NODE_VERSION_STR,
-        IDENTIFY_PROTOCOL_STR, REQ_RESPONSE_VERSION_STR,
+        get_protocol_version, CLIENT_VERSION, NODE_VERSION, PROTOCOL_VERSION, REQ_RESPONSE_VERSION,
     },
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey,
 };
@@ -388,7 +387,7 @@ impl NetworkBuilder {
             check_and_wipe_storage_dir_if_necessary(
                 root_dir.clone(),
                 storage_dir_path.clone(),
-                get_key_version_str(),
+                get_protocol_version(),
             )?;
 
             // Configures the disk_store to store records under the provided path and increase the max record size
@@ -425,7 +424,7 @@ impl NetworkBuilder {
             Some(store_cfg),
             false,
             ProtocolSupport::Full,
-            IDENTIFY_NODE_VERSION_STR.to_string(),
+            NODE_VERSION.to_string(),
             #[cfg(feature = "upnp")]
             upnp,
         )?;
@@ -476,7 +475,7 @@ impl NetworkBuilder {
             None,
             true,
             ProtocolSupport::Outbound,
-            IDENTIFY_CLIENT_VERSION_STR.to_string(),
+            CLIENT_VERSION.to_string(),
             #[cfg(feature = "upnp")]
             false,
         )?;
@@ -557,7 +556,7 @@ impl NetworkBuilder {
                 "The protocol version string that is used to connect to the correct network",
                 Info::new(vec![(
                     "identify_protocol_str".to_string(),
-                    IDENTIFY_PROTOCOL_STR.to_string(),
+                    PROTOCOL_VERSION.to_string(),
                 )]),
             );
 
@@ -574,13 +573,10 @@ impl NetworkBuilder {
 
             info!(
                 "Building request response with {:?}",
-                REQ_RESPONSE_VERSION_STR.as_str()
+                REQ_RESPONSE_VERSION.as_str()
             );
             request_response::cbor::Behaviour::new(
-                [(
-                    StreamProtocol::new(&REQ_RESPONSE_VERSION_STR),
-                    req_res_protocol,
-                )],
+                [(StreamProtocol::new(&REQ_RESPONSE_VERSION), req_res_protocol)],
                 cfg,
             )
         };
@@ -635,7 +631,7 @@ impl NetworkBuilder {
         let mdns = mdns::tokio::Behaviour::new(mdns_config, peer_id)?;
 
         // Identify Behaviour
-        let identify_protocol_str = IDENTIFY_PROTOCOL_STR.to_string();
+        let identify_protocol_str = PROTOCOL_VERSION.to_string();
         info!("Building Identify with identify_protocol_str: {identify_protocol_str:?} and identify_version: {identify_version:?}");
         let identify = {
             let mut cfg =

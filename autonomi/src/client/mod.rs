@@ -34,7 +34,7 @@ use ant_bootstrap::{BootstrapCacheConfig, BootstrapCacheStore};
 pub use ant_evm::Amount;
 
 use ant_networking::{interval, multiaddr_is_global, Network, NetworkBuilder, NetworkEvent};
-use ant_protocol::{version::IDENTIFY_PROTOCOL_STR, CLOSE_GROUP_SIZE};
+use ant_protocol::{version::PROTOCOL_VERSION, CLOSE_GROUP_SIZE};
 use libp2p::{identity::Keypair, Multiaddr};
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
@@ -177,7 +177,7 @@ async fn handle_event_receiver(
                         sender
                             .send(Err(ConnectError::TimedOutWithIncompatibleProtocol(
                                 protocols,
-                                IDENTIFY_PROTOCOL_STR.to_string(),
+                                PROTOCOL_VERSION.to_string(),
                             )))
                             .expect("receiver should not close");
                     } else {
