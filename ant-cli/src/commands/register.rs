@@ -67,7 +67,7 @@ pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>
         let permissions = RegisterPermissions::new_anyone_can_write();
         client
             .register_create_with_permissions(
-                value.as_bytes().to_vec().into(),
+                Some(value.as_bytes().to_vec().into()),
                 name,
                 register_key,
                 permissions,
@@ -80,7 +80,7 @@ pub async fn create(name: &str, value: &str, public: bool, peers: Vec<Multiaddr>
         info!("With private write access");
         client
             .register_create(
-                value.as_bytes().to_vec().into(),
+                Some(value.as_bytes().to_vec().into()),
                 name,
                 register_key,
                 &wallet,

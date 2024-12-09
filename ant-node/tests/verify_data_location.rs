@@ -396,7 +396,12 @@ async fn store_registers(
             .map(char::from)
             .collect();
         let register = client
-            .register_create(vec![1, 2, 3, 4].into(), &rand_name, key.clone(), wallet)
+            .register_create(
+                Some(vec![1, 2, 3, 4].into()),
+                &rand_name,
+                key.clone(),
+                wallet,
+            )
             .await?;
 
         println!("Created Register at {:?}", register.address());
