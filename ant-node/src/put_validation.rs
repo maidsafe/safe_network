@@ -7,7 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::{node::Node, Error, Marker, Result};
-use ant_evm::{AttoTokens, ProofOfPayment, QUOTE_EXPIRATION_SECS};
+use ant_evm::payment_vault::verify_data_payment;
+use ant_evm::{AttoTokens, ProofOfPayment};
 use ant_networking::NetworkError;
 use ant_protocol::storage::Transaction;
 use ant_protocol::{
@@ -19,7 +20,6 @@ use ant_protocol::{
 };
 use ant_registers::SignedRegister;
 use libp2p::kad::{Record, RecordKey};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use xor_name::XorName;
 
 impl Node {
@@ -619,14 +619,19 @@ impl Node {
             )));
         }
 
+        let owned_payment_quotes = payment
+            .quotes_by_peer(&self_peer_id)
+            .iter()
+            .map(|quote| quote.hash())
+            .collect();
+
         // check if payment is valid on chain
         let payments_to_verify = payment.digest();
         debug!("Verifying payment for record {pretty_key}");
-        let reward_amount = self
-            .evm_network()
-            .verify_data_payment(payments_to_verify)
-            .await
-            .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
+        let reward_amount =
+            verify_data_payment(self.evm_network(), owned_payment_quotes, payments_to_verify)
+                .await
+                .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
         debug!("Payment of {reward_amount:?} is valid for record {pretty_key}");
 
         // Notify `record_store` that the node received a payment.
