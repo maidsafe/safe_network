@@ -24,7 +24,6 @@ nightly = []
 open-metrics = ["ant-networking/open-metrics", "prometheus-client"]
 otlp = ["ant-logging/otlp"]
 upnp = ["ant-networking/upnp"]
-websockets = ["ant-networking/websockets"]
 
 [dependencies]
 ant-bootstrap = { path = "../ant-bootstrap", version = "0.1.0" }

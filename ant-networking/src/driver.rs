@@ -446,17 +446,6 @@ impl NetworkBuilder {
             .listen_on(addr_quic)
             .expect("Multiaddr should be supported by our configured transports");
 
-        // Listen on WebSocket
-        #[cfg(any(feature = "websockets", target_arch = "wasm32"))]
-        {
-            let addr_ws = Multiaddr::from(listen_socket_addr.ip())
-                .with(Protocol::Tcp(listen_socket_addr.port()))
-                .with(Protocol::Ws("/".into()));
-            swarm_driver
-                .listen_on(addr_ws)
-                .expect("Multiaddr should be supported by our configured transports");
-        }
-
         Ok((network, events_receiver, swarm_driver))
     }
 
