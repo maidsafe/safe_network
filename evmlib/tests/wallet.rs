@@ -8,7 +8,8 @@ use alloy::providers::ext::AnvilApi;
 use alloy::providers::{ProviderBuilder, WalletProvider};
 use alloy::signers::local::{LocalSigner, PrivateKeySigner};
 use evmlib::common::{Amount, TxHash};
-use evmlib::contract::data_payments::MAX_TRANSFERS_PER_TRANSACTION;
+use evmlib::contract::payment_vault::MAX_TRANSFERS_PER_TRANSACTION;
+use evmlib::quoting_metrics::QuotingMetrics;
 use evmlib::testnet::{deploy_data_payments_contract, deploy_network_token_contract, start_node};
 use evmlib::transaction::verify_data_payment;
 use evmlib::wallet::{transfer_tokens, wallet_address, Wallet};
@@ -67,7 +68,6 @@ async fn funded_wallet(network: &Network, genesis_wallet: EthereumWallet) -> Wal
 #[tokio::test]
 async fn test_pay_for_quotes_and_data_payment_verification() {
     const TRANSFERS: usize = 600;
-    const EXPIRATION_TIMESTAMP_IN_SECS: u64 = 4102441200; // The year 2100
 
     let (_anvil, network, genesis_wallet) = local_testnet().await;
     let wallet = funded_wallet(&network, genesis_wallet).await;
@@ -87,23 +87,16 @@ async fn test_pay_for_quotes_and_data_payment_verification() {
         unique_tx_hashes.len(),
         TRANSFERS.div_ceil(MAX_TRANSFERS_PER_TRANSACTION)
     );
-
-    for quote_payment in quote_payments.iter() {
-        let tx_hash = *tx_hashes.get(&quote_payment.0).unwrap();
-
+    for (quote_hash, reward_addr, _) in quote_payments.iter() {
         let result = verify_data_payment(
             &network,
-            tx_hash,
-            quote_payment.0,
-            quote_payment.1,
-            quote_payment.2,
-            EXPIRATION_TIMESTAMP_IN_SECS,
+            vec![(*quote_hash, QuotingMetrics::default(), *reward_addr)]
         )
         .await;
 
         assert!(
             result.is_ok(),
-            "Verification failed for: {quote_payment:?}. Error: {:?}",
+            "Verification failed for: {quote_hash:?}. Error: {:?}",
             result.err()
         );
     }

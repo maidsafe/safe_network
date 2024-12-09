@@ -7,9 +7,8 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::common::{Address, Amount, Calldata, QuoteHash, QuotePayment, U256};
-use crate::contract::data_payments::{DataPaymentsHandler, MAX_TRANSFERS_PER_TRANSACTION};
-use crate::contract::network_token::NetworkToken;
-use crate::contract::{data_payments, network_token};
+use crate::contract::network_token::{NetworkToken, self};
+use crate::contract::payment_vault::MAX_TRANSFERS_PER_TRANSACTION;
 use crate::utils::http_provider;
 use crate::Network;
 use serde::{Deserialize, Serialize};
@@ -20,7 +19,7 @@ pub enum Error {
     #[error("Network token contract error: {0}")]
     NetworkTokenContract(#[from] network_token::Error),
     #[error("Data payments contract error: {0}")]
-    DataPaymentsContract(#[from] data_payments::error::Error),
+    DataPaymentsContract(#[from] crate::contract::payment_vault::error::Error),
 }
 
 /// Approve an address / smart contract to spend this wallet's payment tokens.
@@ -73,7 +72,10 @@ pub fn pay_for_quotes_calldata<T: IntoIterator<Item = QuotePayment>>(
     let approve_amount = total_amount;
 
     let provider = http_provider(network.rpc_url().clone());
-    let data_payments = DataPaymentsHandler::new(*network.data_payments_address(), provider);
+    let data_payments = crate::contract::payment_vault::handler::PaymentVaultHandler::new(
+        *network.data_payments_address(),
+        provider,
+    );
 
     // Divide transfers over multiple transactions if they exceed the max per transaction.
     let chunks = payments.chunks(MAX_TRANSFERS_PER_TRANSACTION);

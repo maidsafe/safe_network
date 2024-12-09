@@ -11,6 +11,7 @@ use crate::client::Client;
 use crate::client::ClientEvent;
 use crate::client::UploadSummary;
 
+use ant_evm::EvmNetwork;
 pub use ant_registers::{Permissions as RegisterPermissions, RegisterAddress};
 pub use bls::SecretKey as RegisterSecretKey;
 
@@ -224,6 +225,7 @@ impl Client {
     /// Get the cost to create a register
     pub async fn register_cost(
         &self,
+        evm_network: &EvmNetwork,
         name: String,
         owner: RegisterSecretKey,
     ) -> Result<AttoTokens, RegisterError> {
@@ -237,7 +239,7 @@ impl Client {
 
         // get cost to store register
         // NB TODO: register should be priced differently from other data
-        let cost_map = self.get_store_quotes(std::iter::once(reg_xor)).await?;
+        let cost_map = self.get_store_quotes(evm_network, std::iter::once(reg_xor)).await?;
         let total_cost = AttoTokens::from_atto(
             cost_map
                 .values()
@@ -292,7 +294,7 @@ impl Client {
 
         let reg_xor = address.xorname();
         debug!("Paying for register at address: {address}");
-        let (payment_proofs, _skipped) = self
+        let payment_proofs = self
             .pay(std::iter::once(reg_xor), wallet)
             .await
             .inspect_err(|err| {

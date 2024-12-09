@@ -10,6 +10,7 @@ use crate::common::{Address, QuoteHash};
 use crate::transaction::verify_data_payment;
 use alloy::primitives::address;
 use alloy::transports::http::reqwest;
+use common::Amount;
 use quoting_metrics::QuotingMetrics;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -137,10 +138,8 @@ impl Network {
 
     pub async fn verify_data_payment(
         &self,
-        quote_hash: QuoteHash,
-        quoting_metrics: QuotingMetrics,
-        reward_addr: Address,
-    ) -> Result<(), transaction::Error> {
-        verify_data_payment(self, quote_hash, reward_addr, quoting_metrics).await
+        payment: Vec<(QuoteHash, QuotingMetrics, Address)>
+    ) -> Result<Amount, transaction::Error> {
+        verify_data_payment(self, payment).await
     }
 }

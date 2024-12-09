@@ -7,29 +7,25 @@
 // permissions and limitations relating to use of the SAFE Network Software.
 
 use crate::client::payment::Receipt;
-use ant_evm::{EvmWallet, ProofOfPayment, QuotePayment};
-use ant_networking::{
-    GetRecordCfg, Network, NetworkError, PayeeQuote, PutRecordCfg, VerificationKind,
-};
+use ant_evm::{EvmNetwork, EvmWallet, ProofOfPayment};
+use ant_networking::{GetRecordCfg, PutRecordCfg, VerificationKind};
 use ant_protocol::{
     messages::ChunkProof,
-    storage::{try_serialize_record, Chunk, ChunkAddress, RecordKind, RetryStrategy},
-    NetworkAddress,
+    storage::{try_serialize_record, Chunk, RecordKind, RetryStrategy},
 };
 use bytes::Bytes;
 use futures::stream::{FuturesUnordered, StreamExt};
 use libp2p::kad::{Quorum, Record};
 use rand::{thread_rng, Rng};
 use self_encryption::{decrypt_full_set, DataMap, EncryptedChunk};
-use std::{collections::HashMap, future::Future, num::NonZero};
+use std::{future::Future, num::NonZero};
 use xor_name::XorName;
 
 use super::{
-    data::{CostError, GetError, PayError, PutError, CHUNK_DOWNLOAD_BATCH_SIZE},
+    data::{GetError, PayError, PutError, CHUNK_DOWNLOAD_BATCH_SIZE},
     Client,
 };
 use crate::self_encryption::DataMapLevel;
-use crate::utils::receipt_from_cost_map_and_payments;
 
 impl Client {
     /// Fetch and decrypt all chunks in the data map.
@@ -161,10 +157,8 @@ impl Client {
         &self,
         content_addrs: impl Iterator<Item = XorName>,
         wallet: &EvmWallet,
-    ) -> Result<(Receipt, Vec<XorName>), PayError> {
-        let cost_map = self.get_store_quotes(content_addrs).await?;
-
-        let (quote_payments, skipped_chunks) = extract_quote_payments(&cost_map);
+    ) -> Result<Receipt, PayError> {
+        let quotes = self.get_store_quotes(wallet.network(), content_addrs).await?;
 
         // Make sure nobody else can use the wallet while we are paying
         debug!("Waiting for wallet lock");
@@ -174,8 +168,9 @@ impl Client {
         // TODO: the error might contain some succeeded quote payments as well. These should be returned on err, so that they can be skipped when retrying.
         // TODO: retry when it fails?
         // Execute chunk payments
+        // NB TODO: make this return a Receipt or something that can turn into a Receipt @mick
         let payments = wallet
-            .pay_for_quotes(quote_payments)
+            .pay_for_quotes(quotes.payments())
             .await
             .map_err(|err| PayError::from(err.0))?;
 
@@ -183,87 +178,15 @@ impl Client {
         drop(lock_guard);
         debug!("Unlocked wallet");
 
-        let proofs = receipt_from_cost_map_and_payments(cost_map, &payments);
-
+        let skipped_chunks = content_addrs.count() - quotes.len();
         trace!(
             "Chunk payments of {} chunks completed. {} chunks were free / already paid for",
-            proofs.len(),
-            skipped_chunks.len()
+            quotes.len(),
+            skipped_chunks
         );
 
-        Ok((proofs, skipped_chunks))
+        Ok(receipt)
     }
-
-    pub(crate) async fn get_store_quotes(
-        &self,
-        content_addrs: impl Iterator<Item = XorName>,
-    ) -> Result<HashMap<XorName, PayeeQuote>, CostError> {
-        let futures: Vec<_> = content_addrs
-            .into_iter()
-            .map(|content_addr| fetch_store_quote_with_retries(&self.network, content_addr))
-            .collect();
-
-        let quotes = futures::future::try_join_all(futures).await?;
-
-        Ok(quotes.into_iter().collect::<HashMap<XorName, PayeeQuote>>())
-    }
-}
-
-/// Fetch a store quote for a content address with a retry strategy.
-async fn fetch_store_quote_with_retries(
-    network: &Network,
-    content_addr: XorName,
-) -> Result<(XorName, PayeeQuote), CostError> {
-    let mut retries = 0;
-
-    loop {
-        match fetch_store_quote(network, content_addr).await {
-            Ok(quote) => {
-                break Ok((content_addr, quote));
-            }
-            Err(err) if retries < 2 => {
-                retries += 1;
-                error!("Error while fetching store quote: {err:?}, retry #{retries}");
-            }
-            Err(err) => {
-                error!(
-                    "Error while fetching store quote: {err:?}, stopping after {retries} retries"
-                );
-                break Err(CostError::CouldNotGetStoreQuote(content_addr));
-            }
-        }
-    }
-}
-
-/// Fetch a store quote for a content address.
-async fn fetch_store_quote(
-    network: &Network,
-    content_addr: XorName,
-) -> Result<PayeeQuote, NetworkError> {
-    network
-        .get_store_costs_from_network(
-            NetworkAddress::from_chunk_address(ChunkAddress::new(content_addr)),
-            vec![],
-        )
-        .await
-}
-
-/// Form to be executed payments and already executed payments from a cost map.
-pub(crate) fn extract_quote_payments(
-    cost_map: &HashMap<XorName, PayeeQuote>,
-) -> (Vec<QuotePayment>, Vec<XorName>) {
-    let mut to_be_paid = vec![];
-    let mut already_paid = vec![];
-
-    for (chunk_address, (_, _, quote)) in cost_map.iter() {
-        if quote.cost.is_zero() {
-            already_paid.push(*chunk_address);
-        } else {
-            to_be_paid.push((quote.hash(), quote.rewards_address, quote.cost.as_atto()));
-        }
-    }
-
-    (to_be_paid, already_paid)
 }
 
 pub(crate) async fn process_tasks_with_max_concurrency<I, R>(tasks: I, batch_size: usize) -> Vec<R>

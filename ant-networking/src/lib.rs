@@ -51,7 +51,7 @@ use self::{cmd::NetworkSwarmCmd, error::Result};
 use ant_evm::{PaymentQuote, QuotingMetrics};
 use ant_protocol::{
     error::Error as ProtocolError,
-    messages::{ChunkProof, Cmd, Nonce, Query, QueryResponse, Request, Response},
+    messages::{ChunkProof, Nonce, Query, QueryResponse, Request, Response},
     storage::{RecordType, RetryStrategy, Scratchpad},
     NetworkAddress, PrettyPrintKBucketKey, PrettyPrintRecordKey, CLOSE_GROUP_SIZE,
 };
@@ -82,9 +82,6 @@ use {
     ant_registers::SignedRegister,
     std::collections::HashSet,
 };
-
-/// The type of quote for a selected payee.
-pub type PayeeQuote = (PeerId, PaymentQuote);
 
 /// Majority of a given group (i.e. > 1/2).
 #[inline]
@@ -382,7 +379,7 @@ impl Network {
         &self,
         record_address: NetworkAddress,
         ignore_peers: Vec<PeerId>,
-    ) -> Result<Vec<PayeeQuote>> {
+    ) -> Result<Vec<(PeerId, PaymentQuote)>> {
         // The requirement of having at least CLOSE_GROUP_SIZE
         // close nodes will be checked internally automatically.
         let mut close_nodes = self
@@ -392,7 +389,7 @@ impl Network {
         close_nodes.retain(|peer_id| !ignore_peers.contains(peer_id));
 
         if close_nodes.is_empty() {
-            error!("Cann't get store_cost of {record_address:?}, as all close_nodes are ignored");
+            error!("Can't get store_cost of {record_address:?}, as all close_nodes are ignored");
             return Err(NetworkError::NoStoreCostResponses);
         }
 
@@ -405,6 +402,10 @@ impl Network {
         let responses = self
             .send_and_get_responses(&close_nodes, &request, true)
             .await;
+
+        // consider data to be already paid for if 1/2 of the close nodes already have it
+        let mut peer_already_have_it = 0;
+        let enough_peers_already_have_it = close_nodes.len() / 2;
 
         // loop over responses
         let mut all_quotes = vec![];
@@ -438,8 +439,12 @@ impl Network {
                     if !storage_proofs.is_empty() {
                         debug!("Storage proofing during GetStoreQuote to be implemented.");
                     }
-                    info!("Address {record_address:?} was already paid for according to {peer_address:?}, ending quote request");
-                    return Ok(vec![]);
+                    peer_already_have_it += 1;
+                    info!("Address {record_address:?} was already paid for according to {peer_address:?} ({peer_already_have_it}/{enough_peers_already_have_it})");
+                    if peer_already_have_it >= enough_peers_already_have_it {
+                        info!("Address {record_address:?} was already paid for according to {peer_already_have_it} peers, ending quote request");
+                        return Ok(vec![]);
+                    }
                 }
                 Err(err) => {
                     error!("Got an error while requesting quote from peer {peer:?}: {err}");
@@ -448,16 +453,6 @@ impl Network {
                     error!("Got an unexpected response while requesting quote from peer {peer:?}: {response:?}");
                 }
             }
-        }
-
-        // send the quotes to the other peers for verification
-        for peer_id in close_nodes.iter() {
-            let request = Request::Cmd(Cmd::QuoteVerification {
-                target: NetworkAddress::from_peer(*peer_id),
-                quotes: all_quotes.clone(),
-            });
-
-            self.send_req_ignore_reply(request, *peer_id);
         }
 
         Ok(quotes_to_pay)

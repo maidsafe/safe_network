@@ -19,7 +19,7 @@ use ant_protocol::{
 };
 use ant_registers::SignedRegister;
 use libp2p::kad::{Record, RecordKey};
-use std::time::{Duration, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use xor_name::XorName;
 
 impl Node {
@@ -603,36 +603,28 @@ impl Node {
 
         // check if the quote is valid
         let self_peer_id = self.network().peer_id();
-        if !payment.quote.check_is_signed_by_claimed_peer(self_peer_id) {
-            warn!("Payment quote signature is not valid for record {pretty_key}");
+        if !payment.verify_for(self_peer_id) {
+            warn!("Payment is not valid for record {pretty_key}");
             return Err(Error::InvalidRequest(format!(
-                "Payment quote signature is not valid for record {pretty_key}"
+                "Payment is not valid for record {pretty_key}"
             )));
         }
-        debug!("Payment quote signature is valid for record {pretty_key}");
+        debug!("Payment is valid for record {pretty_key}");
 
-        // verify quote timestamp
-        let quote_timestamp = payment.quote.timestamp;
-        let quote_expiration_time = quote_timestamp + Duration::from_secs(QUOTE_EXPIRATION_SECS);
-        let quote_expiration_time_in_secs = quote_expiration_time
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| {
-                Error::InvalidRequest(format!(
-                    "Payment quote timestamp is invalid for record {pretty_key}: {e}"
-                ))
-            })?
-            .as_secs();
+        // verify quote expiration
+        if payment.has_expired() {
+            warn!("Payment quote has expired for record {pretty_key}");
+            return Err(Error::InvalidRequest(format!(
+                "Payment quote has expired for record {pretty_key}"
+            )));
+        }
 
         // check if payment is valid on chain
+        let payments_to_verify = payment.digest();
         debug!("Verifying payment for record {pretty_key}");
-        let reward_amount = self.evm_network()
-            .verify_data_payment(
-                payment.tx_hash,
-                payment.quote.hash(),
-                payment.quote.quoting_metrics,
-                *self.reward_address(),
-                quote_expiration_time_in_secs,
-            )
+        let reward_amount = self
+            .evm_network()
+            .verify_data_payment(payments_to_verify)
             .await
             .map_err(|e| Error::EvmNetwork(format!("Failed to verify chunk payment: {e}")))?;
         debug!("Payment of {reward_amount:?} is valid for record {pretty_key}");
@@ -651,7 +643,10 @@ impl Node {
                 .set(new_value);
         }
         self.events_channel()
-            .broadcast(crate::NodeEvent::RewardReceived(AttoTokens::from(reward_amount), address.clone()));
+            .broadcast(crate::NodeEvent::RewardReceived(
+                AttoTokens::from(reward_amount),
+                address.clone(),
+            ));
 
         // vdash metric (if modified please notify at https://github.com/happybeing/vdash/issues):
         info!("Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}");
@@ -660,7 +655,9 @@ impl Node {
         #[cfg(feature = "loud")]
         {
             println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟   RECEIVED REWARD   🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
-            println!("Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}");
+            println!(
+                "Total payment of {reward_amount:?} atto tokens accepted for record {pretty_key}"
+            );
             println!("🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟🌟");
         }
 

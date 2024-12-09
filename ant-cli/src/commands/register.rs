@@ -41,9 +41,10 @@ pub async fn cost(name: &str, peers: Vec<Multiaddr>) -> Result<()> {
     let register_key = crate::keys::get_register_signing_key()
         .wrap_err("The register key is required to perform this action")?;
     let client = crate::actions::connect_to_network(peers).await?;
+    let wallet = load_wallet()?;
 
     let cost = client
-        .register_cost(name.to_string(), register_key)
+        .register_cost(&wallet.network(), name.to_string(), register_key)
         .await
         .wrap_err("Failed to get cost for register")?;
     info!("Estimated cost to create a register with name {name}: {cost}");
