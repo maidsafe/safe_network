@@ -28,7 +28,9 @@ impl Client {
     > {
         let quote = self.get_store_quotes(content_addrs.clone()).await?;
         let payments = quote.payments();
-        let free_chunks = content_addrs.filter(|addr| !quote.0.contains_key(addr)).collect();
+        let free_chunks = content_addrs
+            .filter(|addr| !quote.0.contains_key(addr))
+            .collect();
         let quotes_per_addr = quote.0.into_iter().collect();
 
         debug!(

@@ -669,12 +669,21 @@ impl Node {
             )));
         }
 
+        // verify the claimed payees are all known to us within the certain range.
+        let closest_k_peers = self.network().get_closest_k_value_local_peers().await?;
+        let mut payees = payment.payees();
+        payees.retain(|peer_id| !closest_k_peers.contains(peer_id));
+        if !payees.is_empty() {
+            return Err(Error::InvalidRequest(format!(
+                "Payment quote has out-of-range payees {payees:?}"
+            )));
+        }
+
         let owned_payment_quotes = payment
             .quotes_by_peer(&self_peer_id)
             .iter()
             .map(|quote| quote.hash())
             .collect();
-
         // check if payment is valid on chain
         let payments_to_verify = payment.digest();
         debug!("Verifying payment for record {pretty_key}");

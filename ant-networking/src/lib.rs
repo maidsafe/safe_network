@@ -411,8 +411,7 @@ impl Network {
         let mut all_quotes = vec![];
         let mut quotes_to_pay = vec![];
         for (peer, response) in responses {
-            info!(
-                "StoreCostReq for {record_address:?} received response: {response:?}");
+            info!("StoreCostReq for {record_address:?} received response: {response:?}");
             match response {
                 Ok(Response::Query(QueryResponse::GetStoreQuote {
                     quote: Ok(quote),
